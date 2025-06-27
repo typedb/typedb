@@ -30,7 +30,7 @@ use ir::translation::pipeline::{translate_pipeline, TranslatedPipeline};
 use lending_iterator::LendingIterator;
 use options::TransactionOptions;
 use resource::profile::{QueryProfile};
-use resource::profile::test::StageProfileSummary;
+use resource::profile::test::{StorageCounterCopy};
 use storage::durability_client::WALClient;
 use storage::snapshot::{ReadableSnapshot};
 
@@ -49,7 +49,7 @@ fn run_plan(
 ) -> QueryProfile {
     const CHECK_FINISHED_EVERY: Duration = Duration::from_millis(100);
     const INTERRUPT_AFTER: Duration = Duration::from_millis(5000);
-    let total_checks = (INTERRUPT_AFTER.div_duration_f64(CHECK_FINISHED_EVERY).round()) as usize;
+    let total_checks = INTERRUPT_AFTER.div_duration_f64(CHECK_FINISHED_EVERY).round() as usize;
     let query_profile = Arc::new(QueryProfile::new(true));
     let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
     let interrupt = ExecutionInterrupt::new(query_interrupt_receiver);
@@ -75,8 +75,8 @@ fn run_plan(
     let initial_stage =ReadPipelineStage::Initial(Box::new(InitialStage::new_empty(context)));
     let executor = MatchStageExecutor::new(executable.clone(), initial_stage, Arc::new(ExecutableFunctionRegistry::empty()));
     let (iterator, context) = executor.into_iterator(interrupt).map_err(|(boxed_err,_)| boxed_err).unwrap();
-    let answer_count = iterator.count();
-    // assert_eq!(answer_count, expected_answer_count);
+    let _answer_count = iterator.count();
+    // assert_eq!(_answer_count, expected_answer_count);
     finished.store(true, Ordering::Relaxed);
     handle.join().unwrap();
     Arc::into_inner(context.profile).unwrap()
@@ -112,8 +112,10 @@ fn sample_plans(database: Arc<Database<WALClient>>, match_stage: &AnnotatedStage
     .collect()
 }
 
-fn derive_cost_from_profile_summary(summary: StageProfileSummary) -> Cost {
-    cost_of(summary.raw_seek, summary.raw_advance, summary.last_step_rows as f64)
+struct CostComparison {
+    plan_cumulative_cost: Cost,
+    plan_per_step_estimated_cost: Vec<Cost>, // zip with steps in profile
+    executed_per_step_counters: Vec<StorageCounterCopy>,
 }
 
 #[test]
@@ -127,22 +129,31 @@ fn foo() {
     let actual_n_plans = plans.len();
     println!("Sampled {} plans (desired: {}). Executing...", plans.len(), actual_n_plans);
     let mut costs_for_comparison = Vec::new();
-    for (i, SampledConjunctionPlan { executable, total_cost: cost, executable_step_costs }) in plans.into_iter().enumerate() {
+    for (i, SampledConjunctionPlan { executable, total_cost, per_step_estimated_cost }) in plans.into_iter().enumerate() {
         eprintln!("{:#?}", &executable.steps());
         let executable_id = executable.executable_id();
         let profile = run_plan(database.clone(), parameters.clone(), Arc::new(executable));
         let guard = profile.stage_profiles().read().unwrap();
-        let stage_profile = guard.get(&executable_id).unwrap();
-        let cost_from_profile = derive_cost_from_profile_summary(StageProfileSummary::from(stage_profile));
-        costs_for_comparison.push((cost, cost_from_profile));
+        let stage_profile = guard.get(&executable_id).unwrap().clone();
+        let executed_per_step_counters = StorageCounterCopy::from(&stage_profile);
+        let cost_comparison = CostComparison {
+            plan_cumulative_cost: total_cost,
+            plan_per_step_estimated_cost: per_step_estimated_cost,
+            executed_per_step_counters,
+        };
+        costs_for_comparison.push(cost_comparison);
         println!("Completed {}/{}", i+1, actual_n_plans);
     }
     print_costs_for_comparison(&costs_for_comparison);
 }
 
-fn print_costs_for_comparison(costs_for_comparison: &Vec<(Cost, Cost)>) {
+fn print_costs_for_comparison(costs_for_comparison: &Vec<CostComparison>) {
     println!("Plan\t|Executed");
-    for (plan_cost, execution_cost) in costs_for_comparison {
-        println!("{:.3}\t|{:.3}", plan_cost.cost, execution_cost.cost);
+    for cost_comparison in costs_for_comparison {
+        let CostComparison { plan_cumulative_cost, executed_per_step_counters, .. } = &cost_comparison;
+        let total_cost_from_profile = executed_per_step_counters.iter().fold(StorageCounterCopy::default(), |a,b| a.add(b));
+        let last_stage_rows = executed_per_step_counters.last().unwrap().rows;
+        let cost_from_execution = cost_of(total_cost_from_profile.raw_seek, total_cost_from_profile.raw_advance, last_stage_rows as f64);
+        println!("{:.3}\t|{:.3}", plan_cumulative_cost.cost, cost_from_execution.cost);
     }
 }

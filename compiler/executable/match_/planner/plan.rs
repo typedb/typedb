@@ -1269,7 +1269,7 @@ impl PartialOrd for StepExtension {
 
 impl Ord for StepExtension {
     fn cmp(&self, other: &Self) -> Ordering {
-        (self.heuristic.cost.partial_cmp(&other.heuristic.cost).unwrap_or(Ordering::Equal))
+        self.heuristic.cost.partial_cmp(&other.heuristic.cost).unwrap_or(Ordering::Equal)
             .then_with(|| self.pattern_id.cmp(&other.pattern_id))
     }
 }
@@ -2206,14 +2206,14 @@ pub mod test {
     use crate::annotation::type_annotations::BlockAnnotations;
     use crate::executable::function::ExecutableFunctionRegistry;
     use crate::executable::match_::planner::match_executable::{ExecutionStep, MatchExecutable};
-    use crate::executable::match_::planner::plan::{CompleteCostPlan, ConjunctionPlanBuilder, Graph, make_builder, MAX_BEAM_WIDTH, PartialCostPlan, QueryPlanningError, VariableVertexId, VertexId};
-    use crate::executable::match_::planner::vertex::{Cost, Costed, CostMetaData, PlannerVertex};
+    use crate::executable::match_::planner::plan::{CompleteCostPlan, Graph, make_builder, PartialCostPlan, QueryPlanningError, VertexId};
+    use crate::executable::match_::planner::vertex::{Cost, Costed, CostMetaData};
 
     #[derive(Debug)]
     pub struct SampledConjunctionPlan {
         pub executable: MatchExecutable,
         pub total_cost: Cost,
-        pub executable_step_costs: Vec<Cost>,
+        pub per_step_estimated_cost: Vec<Cost>,
     }
 
     pub fn get_multiple_plans_for_simple_conjunction_with<'a>(
@@ -2251,9 +2251,50 @@ pub mod test {
             let conjunction_plan = builder.clone().build_conjunction_plan(complete_plan.clone())?;
             let executable = conjunction_plan.lower(&BTreeMap::new(), [].into_iter(), block.block_variables().collect::<Vec<_>>(), &HashMap::new(), variable_registry, None)?
                 .finish(variable_registry);
-            let executable_step_costs = recreate_step_costs_from_complete_plan(&builder.graph, &complete_plan, &executable);
-            Ok(SampledConjunctionPlan { executable, total_cost: complete_plan.cumulative_cost, executable_step_costs })
+            let per_step_estimated_cost = recreate_step_costs_from_complete_plan(&builder.graph, &complete_plan, &executable);
+            Ok(SampledConjunctionPlan { executable, total_cost: complete_plan.cumulative_cost, per_step_estimated_cost })
         }).collect::<Result<_, _>>()
+    }
+
+    fn plan_sampler(graph: &Graph<'_>, initial_empty_plan: PartialCostPlan, n_samples: usize) -> Result<Vec<CompleteCostPlan>, QueryPlanningError> {
+        let num_patterns = graph.pattern_to_variable.len();
+        let mut best_partial_plans = Vec::new();
+        best_partial_plans.push(initial_empty_plan);
+        let mut rng = rand::thread_rng();
+        for _i in 0..num_patterns {
+            let mut new_plans = Vec::new();
+            let mut candidates = Vec::new();
+            for plan in best_partial_plans {
+                for extension in plan.extensions_iter(graph)? {
+                    if extension.is_trivial(graph) {
+                        let mut plan = plan.clone();
+                        plan.add_to_stash(extension.pattern_id, graph);
+                        new_plans.push(plan);
+                        break;
+                    }
+                    let new_plan = if !extension.is_constraint(graph) {
+                        plan.clone_and_extend_with_new_step(extension, graph)
+                    } else if extension.step_join_var.is_some()
+                        && (plan.ongoing_step_join_var.is_none()
+                        || plan.ongoing_step_join_var == extension.step_join_var)
+                    {
+                        plan.clone_and_extend_with_continued_step(extension, graph)
+                    } else {
+                        plan.clone_and_extend_with_new_step(extension, graph)
+                    };
+                    candidates.push(new_plan);
+                }
+            }
+            candidates.sort();
+            let selection_probability = 0.25;// 1.0 / (candidates.len() as f64).sqrt();
+            new_plans.extend(candidates.into_iter().filter(|c| {
+                (rng.next_u64() as f64 / u64::MAX as f64 ) < selection_probability
+            }).take(n_samples));
+            new_plans.sort();
+            best_partial_plans = new_plans;
+            eprintln!("{:?}", best_partial_plans.iter().map(|p| p.cumulative_cost.cost).collect::<Vec<_>>());
+        }
+        Ok(best_partial_plans.into_iter().take(n_samples).map(|plan| plan.into_complete_plan(graph)).collect())
     }
 
     fn recreate_step_costs_from_complete_plan(graph: &Graph<'_>, plan: &CompleteCostPlan, lowered: &MatchExecutable) -> Vec<Cost> {
@@ -2335,49 +2376,8 @@ pub mod test {
             }
         }
         let _cumulative_cost = lowered_step_costs.iter().fold(Cost::NOOP, |running, step| running.chain(*step));
-        let _cumulative_cost_relative_err = ((plan.cumulative_cost.cost - _cumulative_cost.cost)/ plan.cumulative_cost.cost);
+        let _cumulative_cost_relative_err = (plan.cumulative_cost.cost - _cumulative_cost.cost)/ plan.cumulative_cost.cost;
         debug_assert!(_cumulative_cost_relative_err.abs() < 0.01, "Relative err was: {_cumulative_cost_relative_err} = relerr({},{})", _cumulative_cost.cost, plan.cumulative_cost.cost);
         lowered_step_costs
-    }
-
-    fn plan_sampler(graph: &Graph<'_>, initial_empty_plan: PartialCostPlan, n_samples: usize) -> Result<Vec<CompleteCostPlan>, QueryPlanningError> {
-        let num_patterns = graph.pattern_to_variable.len();
-        let mut best_partial_plans = Vec::new();
-        best_partial_plans.push(initial_empty_plan);
-        let mut rng = rand::thread_rng();
-        for _i in 0..num_patterns {
-            let mut new_plans = Vec::new();
-            let mut candidates = Vec::new();
-            for plan in best_partial_plans {
-                for extension in plan.extensions_iter(graph)? {
-                    if extension.is_trivial(graph) {
-                        let mut plan = plan.clone();
-                        plan.add_to_stash(extension.pattern_id, graph);
-                        new_plans.push(plan);
-                        break;
-                    }
-                    let new_plan = if !extension.is_constraint(graph) {
-                        plan.clone_and_extend_with_new_step(extension, graph)
-                    } else if extension.step_join_var.is_some()
-                        && (plan.ongoing_step_join_var.is_none()
-                        || plan.ongoing_step_join_var == extension.step_join_var)
-                    {
-                        plan.clone_and_extend_with_continued_step(extension, graph)
-                    } else {
-                        plan.clone_and_extend_with_new_step(extension, graph)
-                    };
-                    candidates.push(new_plan);
-                }
-            }
-            candidates.sort();
-            let selection_probability = 0.25;// 1.0 / (candidates.len() as f64).sqrt();
-            new_plans.extend(candidates.into_iter().filter(|c| {
-                (rng.next_u64() as f64 / u64::MAX as f64 ) < selection_probability
-            }).take(n_samples));
-            new_plans.sort();
-            best_partial_plans = new_plans;
-            eprintln!("{:?}", best_partial_plans.iter().map(|p| p.cumulative_cost.cost).collect::<Vec<_>>());
-        }
-        Ok(best_partial_plans.into_iter().take(n_samples).map(|plan| plan.into_complete_plan(graph)).collect())
     }
 }
