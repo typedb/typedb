@@ -26,15 +26,17 @@ def typeql():
     )
 
 def typedb_protocol():
+    # TODO: Return ref after merge to master
     git_repository(
         name = "typedb_protocol",
         remote = "https://github.com/typedb/typedb-protocol",
-        tag = "3.4.0",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_protocol
+        commit = "94560a87db703ba1686fa830d12d095dc8ab2795",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_protocol
     )
 
 def typedb_behaviour():
+    # TODO: Update ref after merge to master
     git_repository(
         name = "typedb_behaviour",
         remote = "https://github.com/typedb/typedb-behaviour",
-        commit = "87348ee136df8bacdd01ff19a7d5ae7c1e7b8c90",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_behaviour
+        commit = "bd271460ce37a54d4d1b48e00a9eb78153b357e4",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_behaviour
     )

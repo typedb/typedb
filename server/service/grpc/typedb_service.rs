@@ -15,7 +15,6 @@ use typedb_protocol::{
     self,
     database::export::Server as DatabaseExportServerProto,
     database_manager::import::Server as DatabasesImportServerProto,
-    server_manager::all::{Req, Res},
     transaction::{Client as TransactionClientProto, Server as TransactionServerProto},
 };
 use uuid::Uuid;
@@ -36,6 +35,7 @@ use crate::{
                 connection::connection_open_res,
                 database::{database_delete_res, database_schema_res, database_type_schema_res},
                 database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
+                server::server_version_res,
                 server_manager::servers_all_res,
                 user_manager::{
                     user_create_res, user_update_res, users_all_res, users_contains_res, users_delete_res,
@@ -115,7 +115,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     Ok(Response::new(connection_open_res(
                         generate_connection_id(),
                         receive_time,
-                        database_all_res(&self.address, self.server_state.databases_all()),
+                        servers_all_res(&self.address),
                         token_create_res(token),
                     )))
                 }
@@ -152,7 +152,19 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         .await
     }
 
-    async fn servers_all(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {
+    async fn server_version(
+        &self,
+        _request: Request<typedb_protocol::server::version::Req>,
+    ) -> Result<Response<typedb_protocol::server::version::Res>, Status> {
+        run_with_diagnostics(&self.server_state.diagnostics_manager(), None::<&str>, ActionKind::ServerVersion, || {
+            Ok(Response::new(server_version_res(self.server_state.server_info())))
+        })
+    }
+
+    async fn servers_all(
+        &self,
+        _request: Request<typedb_protocol::server_manager::all::Req>,
+    ) -> Result<Response<typedb_protocol::server_manager::all::Res>, Status> {
         run_with_diagnostics(&self.server_state.diagnostics_manager(), None::<&str>, ActionKind::ServersAll, || {
             Ok(Response::new(servers_all_res(&self.address)))
         })
@@ -163,7 +175,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         _request: Request<typedb_protocol::database_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
         run_with_diagnostics(&self.server_state.diagnostics_manager(), None::<&str>, ActionKind::DatabasesAll, || {
-            Ok(Response::new(database_all_res(&self.address, self.server_state.databases_all())))
+            Ok(Response::new(database_all_res(self.server_state.databases_all())))
         })
     }
 
@@ -177,8 +189,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             Some(name.clone()),
             ActionKind::DatabasesGet,
             || match self.server_state.databases_get(&name) {
-                Some(db) => Ok(Response::new(database_get_res(&self.address, db.name().to_string()))),
-                None => Err(ServerStateError::DatabaseDoesNotExist { name }.into_error_message().into_status()),
+                Some(db) => Ok(Response::new(database_get_res(db.name().to_string()))),
+                None => Err(ServerStateError::DatabaseNotFound { name }.into_error_message().into_status()),
             },
         )
     }
@@ -208,7 +220,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             || {
                 self.server_state
                     .databases_create(&name)
-                    .map(|_| Response::new(database_create_res(name, &self.address)))
+                    .map(|_| Response::new(database_create_res(name)))
                     .map_err(|err| err.into_error_message().into_status())
             },
         )
@@ -286,7 +298,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             ActionKind::DatabaseExport,
             || async {
                 match self.server_state.database_manager().database(&database_name) {
-                    None => Err(ServerStateError::DatabaseDoesNotExist { name: database_name }
+                    None => Err(ServerStateError::DatabaseNotFound { name: database_name }
                         .into_error_message()
                         .into_status()),
                     Some(database) => {
