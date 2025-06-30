@@ -36,8 +36,8 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::State { typedb_source } => match typedb_source {
                 ServerStateError::Unimplemented { .. } => StatusCode::NOT_IMPLEMENTED,
                 ServerStateError::OperationNotPermitted { .. } => StatusCode::FORBIDDEN,
-                ServerStateError::DatabaseDoesNotExist { .. } => StatusCode::NOT_FOUND,
-                ServerStateError::UserDoesNotExist { .. } => StatusCode::NOT_FOUND,
+                ServerStateError::DatabaseNotFound { .. } => StatusCode::NOT_FOUND,
+                ServerStateError::UserNotFound { .. } => StatusCode::NOT_FOUND,
                 ServerStateError::FailedToOpenPrerequisiteTransaction { .. } => StatusCode::BAD_REQUEST,
                 ServerStateError::ConceptReadError { .. } => StatusCode::BAD_REQUEST,
                 ServerStateError::FunctionReadError { .. } => StatusCode::BAD_REQUEST,
