@@ -237,10 +237,17 @@ impl TypeDBService {
     }
 
     async fn version(_version: ProtocolVersion, State(service): State<Arc<TypeDBService>>) -> impl IntoResponse {
-        Ok::<_, HttpServiceError>(JsonBody(encode_server_version(
-            service.server_info.distribution.to_string(),
-            service.server_info.version.to_string(),
-        )))
+        run_with_diagnostics(
+            &service.server_state.diagnostics_manager(),
+            None::<&str>,
+            ActionKind::ServerVersion,
+            || {
+                Ok::<_, HttpServiceError>(JsonBody(encode_server_version(
+                    service.server_info.distribution.to_string(),
+                    service.server_info.version.to_string(),
+                )))
+            },
+        )
     }
 
     async fn redirect_to_version(version: ProtocolVersion) -> impl IntoResponse {

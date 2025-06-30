@@ -302,13 +302,13 @@ impl ServerState for LocalServerState {
     fn database_schema(&self, name: String) -> Result<String, ServerStateError> {
         match self.database_manager.database(&name) {
             Some(db) => Self::get_database_schema(db),
-            None => Err(ServerStateError::DatabaseDoesNotExist { name }),
+            None => Err(ServerStateError::DatabaseNotFound { name }),
         }
     }
 
     fn database_type_schema(&self, name: String) -> Result<String, ServerStateError> {
         match self.database_manager.database(&name) {
-            None => Err(ServerStateError::DatabaseDoesNotExist { name: name.clone() }),
+            None => Err(ServerStateError::DatabaseNotFound { name: name.clone() }),
             Some(database) => match Self::get_database_type_schema(database) {
                 Ok(type_schema) => Ok(type_schema),
                 Err(err) => Err(err),
@@ -328,7 +328,7 @@ impl ServerState for LocalServerState {
         match self.user_manager.get(name) {
             Ok(get) => match get {
                 Some((user, _)) => Ok(user),
-                None => Err(ServerStateError::UserDoesNotExist {}),
+                None => Err(ServerStateError::UserNotFound {}),
             },
             Err(err) => Err(ServerStateError::UserCannotBeRetrieved { typedb_source: err }),
         }
@@ -416,8 +416,8 @@ typedb_error! {
     pub ServerStateError(component = "Server state", prefix = "SRV") {
         Unimplemented(1, "Not implemented: {description}", description: String),
         OperationNotPermitted(2, "The user is not permitted to execute the operation"),
-        DatabaseDoesNotExist(3, "Database '{name}' does not exist.", name: String),
-        UserDoesNotExist(4, "User does not exist"),
+        DatabaseNotFound(3, "Database '{name}' not found.", name: String),
+        UserNotFound(4, "User not found."),
         FailedToOpenPrerequisiteTransaction(5, "Failed to open transaction, which is a prerequisite for the operation."),
         ConceptReadError(6, "Error reading concepts", typedb_source: Box<ConceptReadError>),
         FunctionReadError(7, "Error reading functions", typedb_source: FunctionReadError),
