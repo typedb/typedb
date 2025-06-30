@@ -36,7 +36,7 @@ pub(crate) mod server_manager {
 
     pub(crate) fn servers_all_res(address: &SocketAddr) -> typedb_protocol::server_manager::all::Res {
         typedb_protocol::server_manager::all::Res {
-            servers: vec![typedb_protocol::Server { address: address.to_string(), replication_status: None }],
+            servers: vec![typedb_protocol::Server { address: address.to_string(), replica_status: None }],
         }
     }
 }
