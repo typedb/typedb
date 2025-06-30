@@ -683,6 +683,9 @@ mod tests {
                 fn name(&self) -> &'static str {
                     match *self { $(Self::$variant => $name),* }
                 }
+                fn prefix_length(&self) -> Option<usize> {
+                    None
+                }
             }
         };
     }
