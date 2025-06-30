@@ -219,7 +219,7 @@ impl Keyspace {
 
     pub(super) fn new_read_options(&self) -> ReadOptions {
         let mut options = ReadOptions::default();
-        options.set_total_order_seek(true); // Override this to false to use bloom-filters
+        options.set_total_order_seek(true); // Set this to 'false' to use bloom-filters
         options
     }
 
