@@ -106,7 +106,7 @@ impl UserManager {
         match self.contains(username) {
             Ok(contains) => {
                 if !contains {
-                    return Err(UserDeleteError::UserDoesNotExist {});
+                    return Err(UserDeleteError::UserNotFound {});
                 }
             }
             Err(user_get_err) => {
