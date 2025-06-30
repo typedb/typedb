@@ -102,6 +102,7 @@ impl KeyspaceSet for EncodingKeyspace {
         options.set_max_write_buffer_size_to_maintain(0);
         options.set_max_write_buffer_number(2);
         options.set_memtable_whole_key_filtering(false);
+        options.set_optimize_filters_for_hits(false); // true => don't build bloom filters for the last level
         options.set_compression_per_level(&[
             DBCompressionType::None,
             DBCompressionType::None,
@@ -122,34 +123,29 @@ impl KeyspaceSet for EncodingKeyspace {
         block_options.set_block_size(16 * 1024);
         block_options.set_whole_key_filtering(false);
 
-        // block_options.set_bloom_filter(10.0, false);
-        // block_options.set_partition_filters(true);
+        block_options.set_bloom_filter(10.0, false);
+        block_options.set_partition_filters(true);
         block_options.set_index_type(BlockBasedIndexType::TwoLevelIndexSearch);
         block_options.set_optimize_filters_for_memory(true);
         block_options.set_pin_top_level_index_and_filter(true);
         block_options.set_pin_l0_filter_and_index_blocks_in_cache(true);
         block_options.set_cache_index_and_filter_blocks(true);
 
-        match self {
-            EncodingKeyspace::DefaultOptimisedPrefix11 => {
-                options.set_prefix_extractor(SliceTransform::create_fixed_prefix(11))
-            }
-            EncodingKeyspace::OptimisedPrefix15 => {
-                options.set_prefix_extractor(SliceTransform::create_fixed_prefix(15))
-            }
-            EncodingKeyspace::OptimisedPrefix16 => {
-                options.set_prefix_extractor(SliceTransform::create_fixed_prefix(16))
-            }
-            EncodingKeyspace::OptimisedPrefix17 => {
-                options.set_prefix_extractor(SliceTransform::create_fixed_prefix(17))
-            }
-            EncodingKeyspace::OptimisedPrefix25 => {
-                options.set_prefix_extractor(SliceTransform::create_fixed_prefix(25))
-            }
+        if let Some(prefix_len) = self.prefix_length() {
+            options.set_prefix_extractor(SliceTransform::create_fixed_prefix(prefix_len))
         }
-
         options.set_block_based_table_factory(&block_options);
         options
+    }
+
+    fn prefix_length(&self) -> Option<usize> {
+        Some(match self {
+            EncodingKeyspace::DefaultOptimisedPrefix11 => 11,
+            EncodingKeyspace::OptimisedPrefix15 => 15,
+            EncodingKeyspace::OptimisedPrefix16 => 16,
+            EncodingKeyspace::OptimisedPrefix17 => 17,
+            EncodingKeyspace::OptimisedPrefix25 => 25,
+        })
     }
 }
 
