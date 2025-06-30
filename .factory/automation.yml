@@ -14,7 +14,8 @@ build:
   quality:
     filter:
       owner: typedb
-      branch: [master, development]
+      # TODO: Remove xxx-feature-branch
+      branch: [master, cluster-support-feature-branch]
     dependency-analysis:
       image: typedb-ubuntu-22.04
       command: |
