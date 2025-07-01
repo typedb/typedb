@@ -11,7 +11,7 @@ use ir::pattern::constraint::Comparator;
 use typeql::common::Span;
 
 use crate::executable::{
-    fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::MatchCompilationError,
+    fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::ConjunctionCompilationError,
 };
 
 pub mod delete;
@@ -37,8 +37,8 @@ typedb_error! {
         UpdateExecutableCompilation(2, "Error compiling update clause into executable.", typedb_source: Box<WriteCompilationError>),
         DeleteExecutableCompilation(3, "Error compiling delete stage into executable.", typedb_source: Box<WriteCompilationError>),
         FetchCompilation(4, "Error compiling fetch stage into executable.", typedb_source: FetchCompilationError),
-        MatchCompilation(5, "Error compiling match stage into executable.", typedb_source: MatchCompilationError),
-        PutMatchCompilation(6, "Error compiling put stage into a match executable.", typedb_source: MatchCompilationError),
+        MatchCompilation(5, "Error compiling match stage into executable.", typedb_source: ConjunctionCompilationError),
+        PutMatchCompilation(6, "Error compiling put stage into a match executable.", typedb_source: ConjunctionCompilationError),
         PutInsertCompilation(7, "Error compiling put stage into an insert executable.", typedb_source: Box<WriteCompilationError>),
     }
 }

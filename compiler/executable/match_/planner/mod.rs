@@ -44,7 +44,7 @@ pub mod plan;
 pub(crate) mod vertex;
 
 typedb_error! {
-    pub MatchCompilationError(component = "Match compiler", prefix = "MCP") {
+    pub ConjunctionCompilationError(component = "Match compiler", prefix = "MCP") {
         PlanningError(1, "Error during planning of match stage.", typedb_source: QueryPlanningError),
     }
 }
@@ -59,7 +59,7 @@ pub fn compile(
     expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
-) -> Result<ConjunctionExecutable, MatchCompilationError> {
+) -> Result<ConjunctionExecutable, ConjunctionCompilationError> {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
 
@@ -78,17 +78,17 @@ pub fn compile(
         statistics,
         call_cost_provider,
     )
-    .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
-    .lower(
-        stage_input_annotations,
-        stage_input_positions.keys().copied(),
-        selected_variables,
-        &assigned_identities,
-        variable_registry,
-        None,
-    )
-    .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
-    .finish(variable_registry);
+        .map_err(|source| ConjunctionCompilationError::PlanningError { typedb_source: source })?
+        .lower(
+            stage_input_annotations,
+            stage_input_positions.keys().copied(),
+            selected_variables,
+            &assigned_identities,
+            variable_registry,
+            None,
+        )
+        .map_err(|source| ConjunctionCompilationError::PlanningError { typedb_source: source })?
+        .finish(variable_registry);
 
     trace!("Finished planning conjunction:\n{conjunction}");
     debug!("Lowered plan:\n{plan}");
@@ -282,12 +282,12 @@ impl StepBuilder {
             }
 
             StepInstructionsBuilder::FunctionCall(FunctionCallBuilder {
-                function_id,
-                arguments,
-                assigned,
-                output_width,
-                ..
-            }) => ExecutionStep::FunctionCall(FunctionCallStep {
+                                                      function_id,
+                                                      arguments,
+                                                      assigned,
+                                                      output_width,
+                                                      ..
+                                                  }) => ExecutionStep::FunctionCall(FunctionCallStep {
                 function_id,
                 arguments,
                 assigned,
@@ -511,44 +511,48 @@ impl ConjunctionExecutableBuilder {
             .iter()
             .filter_map(|(var, &pos)| variable_registry.variable_names().get(var).and(Some(pos)))
             .collect();
-        let mut steps = Vec::with_capacity(self.steps.len() + 1);
-
-        let optional_inputs_in_constraints = self.optional_inputs_in_constraints(variable_registry);
-        if !optional_inputs_in_constraints.is_empty() {
-            let mut builder = StepBuilder {
-                selected_variables: Vec::from_iter(self.current_outputs.iter().copied()),
-                builder: StepInstructionsBuilder::Check(CheckBuilder::default()),
-            };
-            builder.builder.as_check_mut().unwrap().instructions.push(
-                CheckInstruction::NotNone { variables: optional_inputs_in_constraints },
-            );
-            steps.push(builder.finish(&self.index, &named_variables, variable_registry));
-        }
-
-        steps.extend(self
+        let mut finished_steps = Vec::with_capacity(self.steps.len() + 1);
+        self.check_optional_inputs(variable_registry, &named_variables, &mut finished_steps);
+        finished_steps.extend(self
             .steps
             .into_iter()
             .map(|builder| builder.finish(&self.index, &named_variables, variable_registry))
         );
         ConjunctionExecutable::new(
             next_executable_id(),
-            steps,
+            finished_steps,
             self.index.into_iter().filter_map(|(var, id)| Some((var, id.as_position()?))).collect(),
             self.reverse_index,
             self.planner_statistics,
         )
     }
 
-    fn optional_inputs_in_constraints(&self, variable_registry: &VariableRegistry) -> Vec<ExecutorVariable> {
+    fn check_optional_inputs(&self, variable_registry: &VariableRegistry, named_variables: &HashSet<ExecutorVariable>, finished_steps: &mut Vec<ExecutionStep>) {
+        let mut optional_inputs_in_constraints = self.optional_inputs(variable_registry)
+            .filter(|var| self.constraint_variables.contains(var))
+            .peekable();
+        if optional_inputs_in_constraints.peek().is_some() {
+            let mut builder = StepBuilder {
+                selected_variables: self.input_variables.clone(),
+                builder: StepInstructionsBuilder::Check(CheckBuilder::default()),
+            };
+            builder.builder.as_check_mut().unwrap().instructions.push(CheckInstruction::NotNone {
+                variables: optional_inputs_in_constraints.map(|var| self.index[&var]).collect()
+            });
+            finished_steps.push(builder.finish(&self.index, &named_variables, variable_registry));
+        } else {
+            drop(optional_inputs_in_constraints);
+        }
+    }
+
+    fn optional_inputs<'a>(&'a self, variable_registry: &'a VariableRegistry) -> impl Iterator<Item=Variable> + 'a {
         self.input_variables
             .iter()
             .filter(|&var| variable_registry
                 .get_variable_optionality(*var)
                 .is_some_and(|optionality| {
-                    matches!(optionality, VariableOptionality::Optional) &&
-                        self.constraint_variables.contains(var)
+                    matches!(optionality, VariableOptionality::Optional)
                 }))
-            .map(|optional_var| self.index[optional_var])
-            .collect_vec()
+            .copied()
     }
 }
