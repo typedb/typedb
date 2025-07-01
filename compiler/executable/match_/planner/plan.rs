@@ -58,8 +58,8 @@ use crate::{
                         OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner,
                     },
                     variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
-                    ComparisonPlanner, Cost, CostMetaData, Costed, Direction, ChildDisjunctionPlanner, ExpressionPlanner,
-                    FunctionCallPlanner, Input, IsPlanner, LinksDeduplicationPlanner, ChildNegationPlan, PlannerVertex,
+                    ComparisonPlanner, Cost, CostMetaData, Costed, Direction, NestedDisjunctionPlanner, ExpressionPlanner,
+                    FunctionCallPlanner, Input, IsPlanner, LinksDeduplicationPlanner, NestedNegationPlan, PlannerVertex,
                     UnsatisfiablePlanner,
                 },
                 DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder,
@@ -70,7 +70,7 @@ use crate::{
     ExecutorVariable, VariablePosition,
 };
 use crate::executable::match_::planner::OptionalBuilder;
-use crate::executable::match_::planner::vertex::ChildOptionalPlan;
+use crate::executable::match_::planner::vertex::NestedOptionalPlan;
 
 pub const MAX_BEAM_WIDTH: usize = 96;
 pub const MIN_BEAM_WIDTH: usize = 1;
@@ -123,9 +123,9 @@ fn make_builder<'a>(
     for pattern in conjunction.nested_patterns() {
         match pattern {
             NestedPattern::Disjunction(disjunction) => {
-                let shared_disjunction_variables = disjunction.named_always_binding_variables(block_context).collect();
+                let shared_variables = disjunction.named_always_binding_variables(block_context).collect();
                 let planner = DisjunctionPlanBuilder::new(
-                    shared_disjunction_variables,
+                    shared_variables,
                     disjunction.conjunctions_by_branch_id().map(|(id, _)| *id).collect(),
                     disjunction
                         .conjunctions()
@@ -147,7 +147,7 @@ fn make_builder<'a>(
                 disjunction_planners.push(planner)
             }
             NestedPattern::Negation(negation) => {
-                let parent_variables = negation.conjunction().referenced_variables()
+                let parent_bound_variables = negation.conjunction().referenced_variables()
                     .filter(|var| block_context.is_in_scope_or_parent(conjunction.scope_id(), *var));
                 negation_subplans.push(
                     make_builder(
@@ -160,15 +160,18 @@ fn make_builder<'a>(
                         statistics,
                         call_cost_provider,
                     )?
-                    .with_inputs(parent_variables)
+                    .with_inputs(parent_bound_variables)
                     .plan()?,
                 )
             }
             NestedPattern::Optional(optional) => {
-                let referenced_parent_variables = optional
+                let parent_bound_variables: HashSet<_> = optional
                     .referenced_variables()
-                    .filter(|var| block_context.is_in_scope_or_parent(conjunction.scope_id(), *var));
-                let optional_vars = optional.named_visible_binding_variables(block_context).collect();
+                    .filter(|var| block_context.is_in_scope_or_parent(conjunction.scope_id(), *var))
+                    .collect();
+                let optional_vars = optional.named_visible_binding_variables(block_context)
+                    .filter(|var| !parent_bound_variables.contains(&var))
+                    .collect();
                 optional_subplans.push(
                     OptionalPlan::new(
                         optional.branch_id(),
@@ -183,7 +186,7 @@ fn make_builder<'a>(
                             statistics,
                             call_cost_provider,
                         )?
-                            .with_inputs(referenced_parent_variables)
+                            .with_inputs(parent_bound_variables.into_iter())
                             .plan()?,
                     )
                 )
@@ -605,19 +608,19 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn register_disjunctions(&mut self, disjunctions: Vec<DisjunctionPlanBuilder<'a>>) {
         for disjunction in disjunctions {
-            self.graph.push_disjunction(ChildDisjunctionPlanner::from_builder(disjunction, &self.graph.variable_index));
+            self.graph.push_disjunction(NestedDisjunctionPlanner::from_builder(disjunction, &self.graph.variable_index));
         }
     }
 
     fn register_negations(&mut self, negations: Vec<ConjunctionPlan<'a>>) {
         for negation_plan in negations {
-            self.graph.push_negation(ChildNegationPlan::new(negation_plan, &self.graph.variable_index));
+            self.graph.push_negation(NestedNegationPlan::new(negation_plan, &self.graph.variable_index));
         }
     }
 
     fn register_optionals(&mut self, optionals: Vec<OptionalPlan<'a>>) {
         for optional_plan in optionals {
-            self.graph.push_optional(ChildOptionalPlan::new(optional_plan, &self.graph.variable_index));
+            self.graph.push_optional(NestedOptionalPlan::new(optional_plan, &self.graph.variable_index));
         }
     }
 
@@ -895,7 +898,7 @@ impl PartialCostPlan {
                 let all_available_vars = all_available_vars.clone();
                 move |&&extension| {
                     let pattern_id = VertexId::Pattern(extension);
-                    graph.elements[&pattern_id].is_valid(pattern_id, &all_available_vars, graph)
+                    graph.elements[&pattern_id].is_valid(pattern_id, &all_available_vars)
                 }
             })
             .flat_map(move |&extension| {
@@ -1048,8 +1051,7 @@ impl PartialCostPlan {
             let num_produced_vars = self.all_produced_vars.len()
                 + self.ongoing_step_produced_vars.len()
                 + graph.elements[&VertexId::Pattern(pattern)]
-                    .visible_variables(graph)
-                    .map(|var| graph.variable_index[&var])
+                    .visible_variable_vertex_ids()
                     .filter(|v| !self.ongoing_step_produced_vars.contains(v) && !self.all_produced_vars.contains(v))
                     .count();
             let cost_estimate = AVERAGE_STEP_COST
@@ -1064,8 +1066,7 @@ impl PartialCostPlan {
         self.remaining_patterns.remove(&pattern);
         self.pattern_metadata.insert(pattern, CostMetaData::None);
         self.ongoing_step_stash_produced_vars.extend(
-            graph.elements[&VertexId::Pattern(pattern)].visible_variables(graph)
-                .map(|var| graph.variable_index[&var])
+            graph.elements[&VertexId::Pattern(pattern)].visible_variable_vertex_ids()
         );
     }
 
@@ -1092,8 +1093,7 @@ impl PartialCostPlan {
         }
         for &pattern in self.ongoing_step_stash.iter() {
             current_step.push(VertexId::Pattern(pattern));
-            for var in graph.elements[&VertexId::Pattern(pattern)].visible_variables(graph) {
-                let var_id = graph.variable_index[&var];
+            for var_id in graph.elements[&VertexId::Pattern(pattern)].visible_variable_vertex_ids() {
                 if !self.all_produced_vars.contains(&var_id) && !current_step.contains(&VertexId::Variable(var_id)) {
                     current_step.push(VertexId::Variable(var_id));
                     current_stash_produced_vars.insert(var_id);
@@ -1117,8 +1117,7 @@ impl PartialCostPlan {
         let mut new_ongoing_produced_vars = self.ongoing_step_produced_vars.clone();
         new_ongoing_produced_vars.extend(
             graph.elements[&VertexId::Pattern(extension.pattern_id)]
-                .visible_variables(graph)
-                .map(|var| graph.variable_index[&var])
+                .visible_variable_vertex_ids()
                 .filter(|var| !self.all_produced_vars.contains(var)),
         );
 
@@ -1165,8 +1164,7 @@ impl PartialCostPlan {
         let mut new_ongoing_produced_vars = HashSet::new();
         new_ongoing_produced_vars.extend(
             graph.elements[&VertexId::Pattern(extension.pattern_id)]
-                .visible_variables(graph)
-                .map(|var| graph.variable_index[&var])
+                .visible_variable_vertex_ids()
                 .filter(|var| !self.all_produced_vars.contains(var)),
         );
 
@@ -2213,25 +2211,25 @@ impl<'a> Graph<'a> {
         })
     }
 
-    fn push_disjunction(&mut self, disjunction: ChildDisjunctionPlanner<'a>) {
+    fn push_disjunction(&mut self, disjunction: NestedDisjunctionPlanner<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(disjunction.referenced_parent_and_shared_ids());
-        for var_id in disjunction.referenced_parent_and_shared_ids() {
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(disjunction.referenced_parent_vertex_ids());
+        for var_id in disjunction.referenced_parent_vertex_ids() {
             self.variable_to_pattern.entry(var_id).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Disjunction(disjunction));
     }
 
-    fn push_negation(&mut self, negation: ChildNegationPlan<'a>) {
+    fn push_negation(&mut self, negation: NestedNegationPlan<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(negation.referenced_parent_ids());
-        for var_id in negation.referenced_parent_ids() {
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(negation.referenced_parent_vertex_ids());
+        for var_id in negation.referenced_parent_vertex_ids() {
             self.variable_to_pattern.entry(var_id).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Negation(negation));
     }
 
-    fn push_optional(&mut self, optional: ChildOptionalPlan<'a>) {
+    fn push_optional(&mut self, optional: NestedOptionalPlan<'a>) {
         let pattern_index = self.next_pattern_index();
         self.pattern_to_variable.entry(pattern_index).or_default().extend(optional.referenced_parent_and_optional_ids());
         for var_id in optional.referenced_parent_and_optional_ids() {
