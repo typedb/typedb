@@ -130,11 +130,8 @@ fn make_builder<'a>(
                     disjunction
                         .conjunctions()
                         .iter()
-                        .map(|branch| {
-                            // let parent_variables = branch
-                            //     .referenced_variables()
-                            //     .filter(|var| block_context.is_in_scope_or_parent(conjunction.scope_id(), *var));
-                            let mut builder = make_builder(
+                        .map(|branch|
+                            make_builder(
                                 branch,
                                 block_context,
                                 stage_inputs,
@@ -143,10 +140,8 @@ fn make_builder<'a>(
                                 expressions,
                                 statistics,
                                 call_cost_provider,
-                            )?;
-                            // builder = builder.with_inputs(parent_variables);
-                            Ok(builder)
-                        })
+                            )
+                        )
                         .collect::<Result<Vec<_>, _>>()?,
                 );
                 disjunction_planners.push(planner)
@@ -159,7 +154,6 @@ fn make_builder<'a>(
                         negation.conjunction(),
                         block_context,
                         stage_inputs,
-                        // &negation_selected_vars,
                         block_annotations,
                         variable_registry,
                         expressions,
@@ -183,7 +177,6 @@ fn make_builder<'a>(
                             optional.conjunction(),
                             block_context,
                             stage_inputs,
-                            // &optional_selected_variables,
                             block_annotations,
                             variable_registry,
                             expressions,
@@ -205,13 +198,12 @@ fn make_builder<'a>(
         statistics,
     );
 
-    let visible_optional_vars = optional_subplans.iter()
+    let optional_variables = optional_subplans.iter()
         .flat_map(|optional| optional.optional_variables.iter())
         .copied();
-
     plan_builder.register_variables(
         stage_inputs.keys().copied(),
-        chain!(conjunction.local_variables(block_context), visible_optional_vars),
+        chain!(conjunction.local_variables(block_context), optional_variables),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
