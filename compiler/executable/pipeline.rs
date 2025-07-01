@@ -389,11 +389,12 @@ fn compile_stage(
                 BTreeSet::new(),
             ))
         }
-        AnnotatedStage::Sort(sort) => {
-            Ok((
-                ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), input_variables.clone())))
-                BTreeSet::new(),
-            ))
+        AnnotatedStage::Sort(sort) => Ok(ExecutableStage::Sort(Arc::new(SortExecutable::new(
+            sort.variables.clone(),
+            stage_input_positions.clone(),
+        )))),
+        AnnotatedStage::Offset(offset) => {
+            Ok(ExecutableStage::Offset(Arc::new(OffsetExecutable::new(offset.offset(), stage_input_positions.clone()))))
         }
         AnnotatedStage::Sort(sort) => Ok((
             ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), input_variables.clone()))),
@@ -414,7 +415,10 @@ fn compile_stage(
                 required_positions.insert(pos);
             }
             Ok((
-                ExecutableStage::Require(Arc::new(RequireExecutable::new(required_positions, stage_input_positions.clone()))),
+                ExecutableStage::Require(Arc::new(RequireExecutable::new(
+                required_positions,
+                stage_input_positions.clone(),
+            ))),
                 BTreeSet::new(),
             ))
         }

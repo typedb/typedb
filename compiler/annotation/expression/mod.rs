@@ -15,8 +15,7 @@ use ir::{
 };
 use typeql::common::Span;
 
-use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
-use crate::annotation::TypeInferenceError;
+use crate::annotation::{expression::instructions::op_codes::ExpressionOpCode, TypeInferenceError};
 
 pub mod block_compiler;
 pub mod compiled_expression;

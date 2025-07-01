@@ -19,9 +19,8 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         BranchID, Scope, ScopeId, VariableBindingMode,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext},
+    pipeline::block::{BlockBuilderContext, BlockContext, ScopeType, VariableLocality},
 };
-use crate::pipeline::block::{ScopeType, VariableLocality};
 
 #[derive(Clone, Debug)]
 pub struct Disjunction {
@@ -32,11 +31,7 @@ pub struct Disjunction {
 
 impl Disjunction {
     pub fn new(scope_id: ScopeId) -> Self {
-        Self {
-            conjunctions: Vec::new(),
-            branch_ids: Vec::new(),
-            scope_id,
-        }
+        Self { conjunctions: Vec::new(), branch_ids: Vec::new(), scope_id }
     }
 
     pub fn conjunctions_by_branch_id(&self) -> impl Iterator<Item = (&BranchID, &Conjunction)> {
@@ -62,7 +57,7 @@ impl Disjunction {
     // Union of non-binding variables used here or below, and variables declared in parent scopes
     pub fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
         self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
-            if mode.is_non_binding() {
+            if mode.is_require_prebound() {
                 debug_assert!(block_context.variable_locality_in_scope(v, self.scope_id) == VariableLocality::Parent);
                 Some(v)
             } else {

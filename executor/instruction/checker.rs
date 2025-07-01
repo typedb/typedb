@@ -4,32 +4,38 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::instruction::FilterFn;
-use crate::pipeline::stage::ExecutionContext;
-use crate::row::MaybeOwnedRow;
-use answer::variable_value::VariableValue;
-use answer::{Thing, Type};
+use std::{
+    collections::{Bound, HashMap},
+    marker::PhantomData,
+    sync::Arc,
+};
+
+use answer::{variable_value::VariableValue, Thing, Type};
 use bytes::byte_array::ByteArray;
-use compiler::executable::match_::instructions::{CheckInstruction, CheckVertex};
-use compiler::ExecutorVariable;
-use concept::error::ConceptReadError;
-use concept::thing::object::ObjectAPI;
-use concept::thing::thing_manager::ThingManager;
-use concept::thing::ThingAPI;
-use concept::type_::{OwnerAPI, PlayerAPI};
-use encoding::graph::thing::THING_VERTEX_MAX_LENGTH;
-use encoding::value::value::Value;
-use encoding::value::ValueEncodable;
-use encoding::AsBytes;
+use compiler::{
+    executable::match_::instructions::{CheckInstruction, CheckVertex},
+    ExecutorVariable,
+};
+use concept::{
+    error::ConceptReadError,
+    thing::{object::ObjectAPI, thing_manager::ThingManager, ThingAPI},
+    type_::{OwnerAPI, PlayerAPI},
+};
+use encoding::{
+    graph::thing::THING_VERTEX_MAX_LENGTH,
+    value::{value::Value, ValueEncodable},
+    AsBytes,
+};
 use error::unimplemented_feature;
-use ir::pattern::constraint::{Comparator, IsaKind, SubKind};
-use ir::pipeline::ParameterRegistry;
+use ir::{
+    pattern::constraint::{Comparator, IsaKind, SubKind},
+    pipeline::ParameterRegistry,
+};
 use resource::profile::StorageCounters;
-use std::collections::{Bound, HashMap};
-use std::marker::PhantomData;
-use std::sync::Arc;
 use storage::snapshot::ReadableSnapshot;
 use unicase::UniCase;
+
+use crate::{instruction::FilterFn, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 
 #[derive(Debug)]
 pub(crate) struct Checker<T: 'static> {
@@ -209,9 +215,7 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         for check in &self.checks {
             let passes = match check {
-                CheckInstruction::Iid { var, iid } => {
-                    self.filter_iid(context, row, *var, &source, *iid)
-                },
+                CheckInstruction::Iid { var, iid } => self.filter_iid(context, row, *var, &source, *iid),
                 CheckInstruction::TypeList { type_var, types } => {
                     self.filter_type_list(context, row, *type_var, &source, types)
                 }
@@ -223,13 +227,13 @@ impl<T> Checker<T> {
                 }
                 CheckInstruction::Owns { owner, attribute } => {
                     self.filter_owns(context, row, &source, owner, attribute)?
-                },
+                }
                 CheckInstruction::Relates { relation, role_type } => {
                     self.filter_relates(context, row, &source, relation, role_type)?
                 }
                 CheckInstruction::Plays { player, role_type } => {
                     self.filter_plays(context, row, &source, player, role_type)?
-                },
+                }
                 CheckInstruction::Isa { isa_kind, ref type_, ref thing } => {
                     self.filter_isa(context, row, &source, *isa_kind, type_, thing)?
                 }
@@ -258,9 +262,7 @@ impl<T> Checker<T> {
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     self.filter_comparison(context, row, &source, lhs, rhs, *comparator, storage_counters.clone())?
                 }
-                CheckInstruction::NotNone { variables } => {
-                    Self::filter_not_none(row, variables)
-                },
+                CheckInstruction::NotNone { variables } => Self::filter_not_none(row, variables),
                 CheckInstruction::Unsatisfiable => false,
             };
             if !passes {
@@ -355,9 +357,7 @@ impl<T> Checker<T> {
             None => make_const_extractor(&CheckVertex::Variable(var), row, context),
         };
         let iid = context.parameters().iid(iid).unwrap().clone();
-        Box::new(move |value: &T| {
-            Ok(Self::check_iid(&iid, var(value)))
-        })
+        Box::new(move |value: &T| Ok(Self::check_iid(&iid, var(value))))
     }
 
     fn filter_iid(
@@ -376,10 +376,7 @@ impl<T> Checker<T> {
         Self::check_iid(iid, extracted)
     }
 
-    fn check_iid(
-        iid: &ByteArray<{ THING_VERTEX_MAX_LENGTH }>,
-        value: VariableValue<'_>
-    ) -> bool {
+    fn check_iid(iid: &ByteArray<{ THING_VERTEX_MAX_LENGTH }>, value: VariableValue<'_>) -> bool {
         match value {
             VariableValue::Thing(thing) => match thing {
                 Thing::Entity(entity) => *iid == *entity.vertex().to_bytes(),
@@ -504,7 +501,7 @@ impl<T> Checker<T> {
             context.thing_manager.as_ref(),
             sub_kind,
             unwrap_or_result_false!(subtype => Type),
-            unwrap_or_result_false!(supertype => Type)
+            unwrap_or_result_false!(supertype => Type),
         )
     }
 
@@ -516,9 +513,7 @@ impl<T> Checker<T> {
         supertype: Type,
     ) -> Result<bool, Box<ConceptReadError>> {
         match sub_kind {
-            SubKind::Subtype => {
-                subtype.is_transitive_subtype_of(supertype, &*snapshot, thing_manager.type_manager())
-            }
+            SubKind::Subtype => subtype.is_transitive_subtype_of(supertype, &*snapshot, thing_manager.type_manager()),
             SubKind::Exact => subtype.is_direct_subtype_of(supertype, &*snapshot, thing_manager.type_manager()),
         }
     }
@@ -557,7 +552,7 @@ impl<T> Checker<T> {
         owner: &CheckVertex<ExecutorVariable>,
         attribute: &CheckVertex<ExecutorVariable>,
     ) -> Result<bool, Box<ConceptReadError>> {
-        let owner  = match owner.as_variable().and_then(|var| self.extractors.get(&var)) {
+        let owner = match owner.as_variable().and_then(|var| self.extractors.get(&var)) {
             Some(&function) => function(source),
             None => get_vertex_value(owner, Some(row), &context.parameters),
         };
@@ -567,10 +562,10 @@ impl<T> Checker<T> {
         };
         let owner = unwrap_or_result_false!(owner => Type).as_object_type();
         let attribute = unwrap_or_result_false!(attribute => Type).as_attribute_type();
-        owner.get_owns_attribute(context.snapshot.as_ref(), context.thing_manager.clone().type_manager(), attribute)
+        owner
+            .get_owns_attribute(context.snapshot.as_ref(), context.thing_manager.clone().type_manager(), attribute)
             .map(|owns| owns.is_some())
     }
-
 
     fn filter_relates_fn(
         &self,
@@ -709,7 +704,6 @@ impl<T> Checker<T> {
         })
     }
 
-
     fn filter_isa(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
@@ -785,7 +779,12 @@ impl<T> Checker<T> {
         };
         let owner = unwrap_or_result_false!(&owner => Thing).as_object();
         let attribute = unwrap_or_result_false!(&attribute => Thing).as_attribute();
-        owner.has_attribute(context.snapshot.as_ref(), context.thing_manager.as_ref(), attribute, storage_counters.clone())
+        owner.has_attribute(
+            context.snapshot.as_ref(),
+            context.thing_manager.as_ref(),
+            attribute,
+            storage_counters.clone(),
+        )
     }
 
     fn filter_links_fn(
@@ -849,7 +848,13 @@ impl<T> Checker<T> {
         let relation = unwrap_or_result_false!(relation => Thing).as_relation();
         let player = unwrap_or_result_false!(player => Thing).as_object();
         let role = unwrap_or_result_false!(role => Type).as_role_type();
-        relation.has_role_player(context.snapshot.as_ref(), context.thing_manager.as_ref(), player, role, storage_counters.clone())
+        relation.has_role_player(
+            context.snapshot.as_ref(),
+            context.thing_manager.as_ref(),
+            player,
+            role,
+            storage_counters.clone(),
+        )
     }
 
     fn filter_indexed_relation_fn(
@@ -986,13 +991,7 @@ impl<T> Checker<T> {
         Box::new(move |value: &T| Ok(lhs(value) == rhs(value)))
     }
 
-    fn filter_is(
-        &self,
-        row: &MaybeOwnedRow<'_>,
-        source: &T,
-        lhs: ExecutorVariable,
-        rhs: ExecutorVariable,
-    ) -> bool {
+    fn filter_is(&self, row: &MaybeOwnedRow<'_>, source: &T, lhs: ExecutorVariable, rhs: ExecutorVariable) -> bool {
         let lhs = match self.extractors.get(&lhs) {
             Some(function) => function(source),
             None => {
@@ -1101,18 +1100,17 @@ impl<T> Checker<T> {
         row: &MaybeOwnedRow<'_>,
         variables: Arc<Vec<ExecutorVariable>>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let values: Vec<_> = variables.iter().map(|var| {
-            let ExecutorVariable::RowPosition(pos) = var else { unreachable!() };
-            row.get(*pos).clone().into_owned()
-        })
+        let values: Vec<_> = variables
+            .iter()
+            .map(|var| {
+                let ExecutorVariable::RowPosition(pos) = var else { unreachable!() };
+                row.get(*pos).clone().into_owned()
+            })
             .collect();
         Box::new(move |_value: &T| Ok(values.iter().all(|value| !value.is_none())))
     }
 
-    fn filter_not_none(
-        row: &MaybeOwnedRow<'_>,
-        variables: &[ExecutorVariable],
-    ) -> bool {
+    fn filter_not_none(row: &MaybeOwnedRow<'_>, variables: &[ExecutorVariable]) -> bool {
         variables.iter().all(|var| {
             let ExecutorVariable::RowPosition(pos) = var else { unreachable!() };
             let value = row.get(*pos);
@@ -1173,7 +1171,6 @@ impl<T> Checker<T> {
             }
         })
     }
-
 
     fn filter_comparison(
         &self,

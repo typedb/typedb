@@ -21,6 +21,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         sub_executor::{SubFilterFn, SubFilterMapFn, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
         tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, TuplePositions},
@@ -29,7 +30,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::checker::Checker;
 
 pub(crate) struct SubReverseExecutor {
     sub: ir::pattern::constraint::Sub<ExecutorVariable>,

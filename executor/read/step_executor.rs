@@ -19,7 +19,7 @@ use compiler::{
     VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use error::{unimplemented_feature, UnimplementedFeature};
+use error::UnimplementedFeature;
 use itertools::Itertools;
 use resource::profile::QueryProfile;
 use storage::snapshot::ReadableSnapshot;
@@ -30,13 +30,12 @@ use crate::{
     read::{
         collecting_stage_executor::CollectingStageExecutor,
         immediate_executor::ImmediateExecutor,
-        nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor},
+        nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor, OptionalExecutor},
         pattern_executor::PatternExecutor,
         stream_modifier::StreamModifierExecutor,
         tabled_call_executor::TabledCallExecutor,
     },
 };
-use crate::read::nested_pattern_executor::OptionalExecutor;
 
 #[derive(Debug)]
 pub enum StepExecutors {
@@ -243,7 +242,7 @@ pub(crate) fn create_executors_for_conjunction(
                 ));
                 steps.push(step);
             }
-            ExecutionStep::Optional(step) =>  {
+            ExecutionStep::Optional(step) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
                 let _step_profile = stage_profile.extend_or_get(index, || format!("{}", step));
                 let inner = create_executors_for_conjunction(

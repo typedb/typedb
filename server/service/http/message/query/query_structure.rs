@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, marker::PhantomData, str::FromStr};
+use std::{collections::HashMap, str::FromStr};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;

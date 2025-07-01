@@ -31,6 +31,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator, TupleSeekable},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, Tuple, TuplePositions, TupleResult},
         BinaryIterateMode, FilterMapUnchangedFn, VariableModes, TYPES_EMPTY,
@@ -38,7 +39,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::checker::Checker;
 
 #[derive(Debug)]
 pub(crate) struct IsaExecutor {

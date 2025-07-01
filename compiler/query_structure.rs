@@ -8,7 +8,6 @@ use std::{collections::HashMap, marker::PhantomData, str::FromStr, sync::Arc};
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
-use error::unimplemented_feature;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID},
     pipeline::{

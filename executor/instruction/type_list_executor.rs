@@ -16,6 +16,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{type_to_tuple, TuplePositions, TypeToTupleFn},
         FilterMapUnchangedFn, VariableModes,
@@ -23,7 +24,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::checker::Checker;
 
 #[derive(Debug)]
 pub(crate) struct TypeListExecutor {

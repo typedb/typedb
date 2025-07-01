@@ -70,7 +70,7 @@ impl Negation {
     pub fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
         self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
             let locality = block_context.variable_locality_in_scope(v, self.scope_id());
-            if locality == VariableLocality::Parent || mode.is_non_binding() {
+            if locality == VariableLocality::Parent || mode.is_require_prebound() {
                 Some(v)
             } else {
                 None

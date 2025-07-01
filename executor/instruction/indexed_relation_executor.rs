@@ -40,6 +40,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         tuple::{unsafe_compare_result_tuple, Tuple, TupleOrderingFn, TuplePositions, TupleResult},
         FilterFn, FilterMapUnchangedFn,
@@ -47,7 +48,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::checker::Checker;
 
 pub(crate) type IndexedRelationTupleIteratorSingle = IndexedRelationTupleIterator<IndexedRelationsIterator>;
 pub(crate) type IndexedRelationTupleIteratorMerged =
