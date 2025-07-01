@@ -301,10 +301,7 @@ impl TypeInferenceGraph<'_> {
         is_modified
     }
 
-    pub(crate) fn collect_type_annotations(
-        self,
-        type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
-    ) {
+    pub(crate) fn collect_type_annotations(self, type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>) {
         let TypeInferenceGraph {
             vertices,
             edges,

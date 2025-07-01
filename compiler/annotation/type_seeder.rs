@@ -513,7 +513,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         something_changed |= self.propagate_vertex_annotations(nested)?;
 
         // Update parent from the optional variables
-        for (vertex, types) in  nested.vertices.iter() {
+        for (vertex, types) in nested.vertices.iter() {
             if !parent_vertices.contains_key(vertex) {
                 parent_vertices.insert(vertex.clone(), types.clone());
                 something_changed = true;

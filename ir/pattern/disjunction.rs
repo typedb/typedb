@@ -19,9 +19,8 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         BranchID, Scope, ScopeId, VariableBindingMode,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext},
+    pipeline::block::{BlockBuilderContext, BlockContext, ScopeType, VariableLocality},
 };
-use crate::pipeline::block::{ScopeType, VariableLocality};
 
 #[derive(Clone, Debug)]
 pub struct Disjunction {
@@ -32,14 +31,10 @@ pub struct Disjunction {
 
 impl Disjunction {
     pub fn new(scope_id: ScopeId) -> Self {
-        Self {
-            conjunctions: Vec::new(),
-            branch_ids: Vec::new(),
-            scope_id,
-        }
+        Self { conjunctions: Vec::new(), branch_ids: Vec::new(), scope_id }
     }
 
-    pub fn conjunctions_by_branch_id(&self) -> impl Iterator<Item=(&BranchID, &Conjunction)> {
+    pub fn conjunctions_by_branch_id(&self) -> impl Iterator<Item = (&BranchID, &Conjunction)> {
         self.branch_ids.iter().zip(self.conjunctions.iter())
     }
 

@@ -16,10 +16,10 @@ use crate::{
     read::{
         control_instruction::{
             CollectingStage, ControlInstruction, ExecuteDisjunctionBranch, ExecuteImmediate, ExecuteInlinedFunction,
-            ExecuteNegation, ExecuteStreamModifier, ExecuteTabledCall, MapBatchToRowsForNested, PatternStart,
-            ReshapeForReturn, RestoreSuspension, StreamCollected, Yield,
+            ExecuteNegation, ExecuteOptional, ExecuteStreamModifier, ExecuteTabledCall, MapBatchToRowsForNested,
+            PatternStart, ReshapeForReturn, RestoreSuspension, StreamCollected, Yield,
         },
-        nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor},
+        nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor, OptionalExecutor},
         step_executor::StepExecutors,
         suspension::{NestedPatternSuspension, PatternSuspension, QueryPatternSuspensions, TabledCallSuspension},
         tabled_call_executor::TabledCallResult,
@@ -29,8 +29,6 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt, Provenance,
 };
-use crate::read::control_instruction::ExecuteOptional;
-use crate::read::nested_pattern_executor::OptionalExecutor;
 
 #[derive(Debug)]
 pub(crate) struct PatternExecutor {
@@ -145,7 +143,9 @@ impl PatternExecutor {
                 }
                 ControlInstruction::ExecuteOptional(ExecuteOptional { index, input, any_found }) => {
                     let optional = &mut executors[*index].unwrap_optional();
-                    let batch_opt = optional.inner.batch_continue(context, interrupt, tabled_functions, suspensions)?
+                    let batch_opt = optional
+                        .inner
+                        .batch_continue(context, interrupt, tabled_functions, suspensions)?
                         .map(|batch| optional.map_output(batch));
                     if let Some(batch) = batch_opt {
                         debug_assert!(!batch.is_empty());
@@ -412,8 +412,7 @@ fn restore_suspension(
                     optional.inner.prepare_to_restore_from_suspension(nested_pattern_depth);
                     // TODO: verify correct? ***How do we know if any where found??***
                     //  ---> Can we only be resuming an optional if we already found an answer before?
-                    control_stack
-                        .push(ExecuteOptional { index, input: input_row.into_owned(), any_found: true }.into())
+                    control_stack.push(ExecuteOptional { index, input: input_row.into_owned(), any_found: true }.into())
                 }
                 StepExecutors::InlinedCall(inlined) => {
                     inlined.inner.prepare_to_restore_from_suspension(nested_pattern_depth);

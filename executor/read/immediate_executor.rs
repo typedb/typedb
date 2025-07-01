@@ -25,7 +25,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
-    instruction::{iterator::TupleIterator, InstructionExecutor},
+    instruction::{checker::Checker, iterator::TupleIterator, InstructionExecutor},
     pipeline::stage::ExecutionContext,
     read::{
         expression_executor::{evaluate_expression, ExpressionValue},
@@ -34,7 +34,6 @@ use crate::{
     row::{MaybeOwnedRow, Row},
     ExecutionInterrupt, Provenance, SelectedPositions,
 };
-use crate::instruction::checker::Checker;
 
 #[derive(Debug)]
 pub(crate) enum ImmediateExecutor {
@@ -894,7 +893,9 @@ impl CheckExecutor {
 
         while let Some(row) = input.next() {
             let input_row = row.map_err(|err| err.clone())?;
-            if self.checker.filter(context, &input_row, (), self.profile.storage_counters())
+            if self
+                .checker
+                .filter(context, &input_row, (), self.profile.storage_counters())
                 .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
             {
                 output.append(|mut row| {

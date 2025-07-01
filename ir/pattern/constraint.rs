@@ -292,7 +292,9 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         debug_assert!(
             self.context.is_variable_available_in(self.constraints.scope, links1.role_type.as_variable().unwrap())
                 && self.context.is_variable_available_in(self.constraints.scope, links1.player.as_variable().unwrap())
-                && self.context.is_variable_available_in(self.constraints.scope, links2.role_type.as_variable().unwrap())
+                && self
+                    .context
+                    .is_variable_available_in(self.constraints.scope, links2.role_type.as_variable().unwrap())
                 && self.context.is_variable_available_in(self.constraints.scope, links2.player.as_variable().unwrap())
         );
         let dedup = Constraint::from(LinksDeduplication::new(links1, links2));

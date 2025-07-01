@@ -259,7 +259,8 @@ impl BlockContext {
             // We can only later validate the requirements about whether each pattern conforms to the required variable usages & visibility
 
             let ancestor = lowest_common_ancestor(&self.scope_parents, recorded_scope, scope);
-            let ancestor_conjunction = lowest_parent_conjunction_or_negation(&self.scope_parents, &self.scope_types, ancestor);
+            let ancestor_conjunction =
+                lowest_parent_conjunction_or_negation(&self.scope_parents, &self.scope_types, ancestor);
             *self.variable_declaration.get_mut(&var).unwrap() = ancestor_conjunction;
         }
         Ok(())
@@ -454,7 +455,11 @@ fn lowest_common_ancestor(parents: &HashMap<ScopeId, ScopeId>, left: ScopeId, ri
     }
 }
 
-fn lowest_parent_conjunction_or_negation(parents: &HashMap<ScopeId, ScopeId>, scope_types: &HashMap<ScopeId, ScopeType>, scope_id: ScopeId) -> ScopeId {
+fn lowest_parent_conjunction_or_negation(
+    parents: &HashMap<ScopeId, ScopeId>,
+    scope_types: &HashMap<ScopeId, ScopeType>,
+    scope_id: ScopeId,
+) -> ScopeId {
     debug_assert!(scope_types.contains_key(&scope_id));
     let scope_type = *scope_types.get(&scope_id).unwrap();
     if scope_type == ScopeType::Conjunction || scope_type == ScopeType::Negation {

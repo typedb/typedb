@@ -713,31 +713,27 @@ impl<ID: IrID> CheckInstruction<ID> {
             CheckInstruction::Has { owner, attribute } => {
                 Box::new(owner.as_variable().into_iter().chain(attribute.as_variable().into_iter()))
             }
-            CheckInstruction::Links { relation, player, role } => {
-                Box::new(
-                    relation.as_variable().into_iter()
-                        .chain(player.as_variable().into_iter())
-                        .chain(role.as_variable().into_iter()),
-                )
-            }
-            CheckInstruction::IndexedRelation { relation, start_player, end_player, start_role, end_role } => {
-                Box::new(
-                    relation.as_variable().into_iter()
-                        .chain(start_player.as_variable().into_iter())
-                        .chain(end_player.as_variable().into_iter())
-                        .chain(start_role.as_variable().into_iter())
-                        .chain(end_role.as_variable().into_iter()),
-                )
-            }
-            CheckInstruction::Is { lhs, rhs } => {
-                Box::new([*lhs, *rhs].into_iter())
-            }
+            CheckInstruction::Links { relation, player, role } => Box::new(
+                relation
+                    .as_variable()
+                    .into_iter()
+                    .chain(player.as_variable().into_iter())
+                    .chain(role.as_variable().into_iter()),
+            ),
+            CheckInstruction::IndexedRelation { relation, start_player, end_player, start_role, end_role } => Box::new(
+                relation
+                    .as_variable()
+                    .into_iter()
+                    .chain(start_player.as_variable().into_iter())
+                    .chain(end_player.as_variable().into_iter())
+                    .chain(start_role.as_variable().into_iter())
+                    .chain(end_role.as_variable().into_iter()),
+            ),
+            CheckInstruction::Is { lhs, rhs } => Box::new([*lhs, *rhs].into_iter()),
             CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
                 Box::new([*role1, *player1, *role2, *player2].into_iter())
             }
-            CheckInstruction::NotNone { variables } => {
-                Box::new(variables.iter().copied())
-            }
+            CheckInstruction::NotNone { variables } => Box::new(variables.iter().copied()),
             CheckInstruction::Comparison { lhs, rhs, .. } => {
                 Box::new(lhs.as_variable().into_iter().chain(rhs.as_variable().into_iter()))
             }

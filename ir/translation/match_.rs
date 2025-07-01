@@ -5,7 +5,7 @@
  */
 
 use crate::{
-    pattern::conjunction::ConjunctionBuilder,
+    pattern::{conjunction::ConjunctionBuilder, nested_pattern::NestedPattern, Scope},
     pipeline::{
         block::{Block, BlockBuilder},
         function_signature::FunctionSignatureIndex,
@@ -14,8 +14,6 @@ use crate::{
     translation::{constraints::add_statement, PipelineTranslationContext},
     RepresentationError,
 };
-use crate::pattern::nested_pattern::NestedPattern;
-use crate::pattern::Scope;
 
 pub fn translate_match<'a>(
     context: &'a mut PipelineTranslationContext,
@@ -41,11 +39,13 @@ pub(crate) fn add_patterns(
         typeql::Pattern::Statement(statement) => add_statement(function_index, conjunction, statement),
     })?;
 
-    conjunction.conjunction.nested_patterns()
+    conjunction
+        .conjunction
+        .nested_patterns()
         .iter()
         .filter_map(|nested| match nested {
             NestedPattern::Optional(optional) => Some(optional),
-            _ => None
+            _ => None,
         })
         .for_each(|optional| {
             for var in optional.conjunction().referenced_variables() {
@@ -88,9 +88,6 @@ fn add_optional(
     let parent_scope = parent_conjunction.conjunction.scope_id();
     let mut optional_builder = parent_conjunction.add_optional(optional.span)?;
     add_patterns(function_index, &mut optional_builder, &optional.patterns)?;
-    let ConjunctionBuilder {
-        conjunction,
-        context,
-    } = optional_builder;
+    let ConjunctionBuilder { conjunction, context } = optional_builder;
     Ok(())
 }

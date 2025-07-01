@@ -6,14 +6,16 @@
 
 use std::{iter::Peekable, sync::Arc};
 
-use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable};
+use compiler::executable::{
+    function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
+};
 use itertools::{Itertools, UniqueBy};
 use lending_iterator::{adaptors::Map, IntoIter, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    error::ReadExecutionError,
     conjunction_executor::{ConjunctionExecutor, PatternIterator},
+    error::ReadExecutionError,
     pipeline::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,

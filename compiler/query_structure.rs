@@ -8,7 +8,6 @@ use std::{collections::HashMap, marker::PhantomData, str::FromStr, sync::Arc};
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
-use error::unimplemented_feature;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID},
     pipeline::{
@@ -196,19 +195,24 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                     .stages
                     .push(QueryStructureStage::Delete { block, deleted_variables: vec_from(deleted_variables.iter()) });
             }
-            AnnotatedStage::Select(select) => {
-                self.query_structure.stages.push(QueryStructureStage::Select { variables: vec_from(select.variables.iter()) })
-            }
-            AnnotatedStage::Sort(sort) => {
-                self.query_structure.stages.push(QueryStructureStage::Sort { variables: vec_from(sort.variables.iter()) })
-            }
+            AnnotatedStage::Select(select) => self
+                .query_structure
+                .stages
+                .push(QueryStructureStage::Select { variables: vec_from(select.variables.iter()) }),
+            AnnotatedStage::Sort(sort) => self
+                .query_structure
+                .stages
+                .push(QueryStructureStage::Sort { variables: vec_from(sort.variables.iter()) }),
             AnnotatedStage::Offset(offset) => {
                 self.query_structure.stages.push(QueryStructureStage::Offset { offset: offset.offset() })
             }
-            AnnotatedStage::Limit(limit) => self.query_structure.stages.push(QueryStructureStage::Limit { limit: limit.limit() }),
-            AnnotatedStage::Require(require) => {
-                self.query_structure.stages.push(QueryStructureStage::Require { variables: vec_from(require.variables.iter()) })
+            AnnotatedStage::Limit(limit) => {
+                self.query_structure.stages.push(QueryStructureStage::Limit { limit: limit.limit() })
             }
+            AnnotatedStage::Require(require) => self
+                .query_structure
+                .stages
+                .push(QueryStructureStage::Require { variables: vec_from(require.variables.iter()) }),
             AnnotatedStage::Distinct(_) => self.query_structure.stages.push(QueryStructureStage::Distinct),
             AnnotatedStage::Reduce(reduce, _) => self.query_structure.stages.push(QueryStructureStage::Reduce {
                 reducers: vec_from(reduce.assigned_reductions.iter()),

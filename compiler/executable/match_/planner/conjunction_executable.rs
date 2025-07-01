@@ -10,7 +10,6 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::unimplemented_feature;
 use ir::{pattern::BranchID, pipeline::function_signature::FunctionID};
 
 use crate::{
@@ -488,7 +487,12 @@ pub struct OptionalStep {
 }
 
 impl OptionalStep {
-    pub fn new(optional: ConjunctionExecutable, selected_variables: Vec<VariablePosition>, output_width: u32, branch_id: BranchID) -> Self {
+    pub fn new(
+        optional: ConjunctionExecutable,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+        branch_id: BranchID,
+    ) -> Self {
         Self { optional, selected_variables, output_width, branch_id }
     }
 

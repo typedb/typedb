@@ -18,7 +18,7 @@ use compiler::{
         match_::{
             instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
             planner::{
-                conjunction_executable::{ExecutionStep, IntersectionStep, ConjunctionExecutable},
+                conjunction_executable::{ConjunctionExecutable, ExecutionStep, IntersectionStep},
                 plan::PlannerStatistics,
             },
         },
@@ -29,7 +29,7 @@ use compiler::{
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, conjunction_executor::ConjunctionExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    conjunction_executor::ConjunctionExecutor, error::ReadExecutionError, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use ir::{

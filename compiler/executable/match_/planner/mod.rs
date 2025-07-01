@@ -13,12 +13,12 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use error::typedb_error;
 use ir::{
-    pattern::{constraint::ExpressionBinding, BranchID, Vertex},
+    pattern::{constraint::ExpressionBinding, variable_category::VariableOptionality, BranchID, Vertex},
     pipeline::{block::Block, function_signature::FunctionID, VariableRegistry},
 };
 use itertools::Itertools;
 use tracing::{debug, trace};
-use ir::pattern::variable_category::VariableOptionality;
+
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::BlockAnnotations},
     executable::{
@@ -27,8 +27,8 @@ use crate::{
             instructions::{CheckInstruction, ConstraintInstruction},
             planner::{
                 conjunction_executable::{
-                    AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
-                    ConjunctionExecutable, NegationStep,
+                    AssignmentStep, CheckStep, ConjunctionExecutable, DisjunctionStep, ExecutionStep, FunctionCallStep,
+                    IntersectionStep, NegationStep, OptionalStep,
                 },
                 plan::{plan_conjunction, PlannerStatistics, QueryPlanningError},
             },
@@ -37,7 +37,6 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::planner::conjunction_executable::OptionalStep;
 
 pub mod conjunction_executable;
 pub mod plan;
@@ -78,17 +77,17 @@ pub fn compile(
         statistics,
         call_cost_provider,
     )
-        .map_err(|source| ConjunctionCompilationError::PlanningError { typedb_source: source })?
-        .lower(
-            stage_input_annotations,
-            stage_input_positions.keys().copied(),
-            selected_variables,
-            &assigned_identities,
-            variable_registry,
-            None,
-        )
-        .map_err(|source| ConjunctionCompilationError::PlanningError { typedb_source: source })?
-        .finish(variable_registry);
+    .map_err(|source| ConjunctionCompilationError::PlanningError { typedb_source: source })?
+    .lower(
+        stage_input_annotations,
+        stage_input_positions.keys().copied(),
+        selected_variables,
+        &assigned_identities,
+        variable_registry,
+        None,
+    )
+    .map_err(|source| ConjunctionCompilationError::PlanningError { typedb_source: source })?
+    .finish(variable_registry);
 
     trace!("Finished planning conjunction:\n{conjunction}");
     debug!("Lowered plan:\n{plan}");
@@ -268,9 +267,12 @@ impl StepBuilder {
             StepInstructionsBuilder::Optional(builder) => {
                 let branch_id = builder.branch_id();
                 let OptionalBuilder { optional } = builder;
-                ExecutionStep::Optional(
-                    OptionalStep::new(optional.finish(variable_registry), selected_variables, output_width, branch_id)
-                )
+                ExecutionStep::Optional(OptionalStep::new(
+                    optional.finish(variable_registry),
+                    selected_variables,
+                    output_width,
+                    branch_id,
+                ))
             }
             StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branch_ids, branches }) => {
                 ExecutionStep::Disjunction(DisjunctionStep::new(
@@ -282,12 +284,12 @@ impl StepBuilder {
             }
 
             StepInstructionsBuilder::FunctionCall(FunctionCallBuilder {
-                                                      function_id,
-                                                      arguments,
-                                                      assigned,
-                                                      output_width,
-                                                      ..
-                                                  }) => ExecutionStep::FunctionCall(FunctionCallStep {
+                function_id,
+                arguments,
+                assigned,
+                output_width,
+                ..
+            }) => ExecutionStep::FunctionCall(FunctionCallStep {
                 function_id,
                 arguments,
                 assigned,
@@ -422,9 +424,8 @@ impl ConjunctionExecutableBuilder {
                 for instruction in intersection.instructions.iter_mut() {
                     // if any check variable is produced and all other variables are available
                     let any_produced = check.ids().any(|id| instruction.is_new_variable(id));
-                    let all_available = check.ids().all(|id| {
-                        instruction.is_new_variable(id) || instruction.is_input_variable(id)
-                    });
+                    let all_available =
+                        check.ids().all(|id| instruction.is_new_variable(id) || instruction.is_input_variable(id));
                     if any_produced && all_available {
                         instruction.add_check(check.clone());
                         is_added = true;
@@ -512,10 +513,8 @@ impl ConjunctionExecutableBuilder {
             .filter_map(|(var, &pos)| variable_registry.variable_names().get(var).and(Some(pos)))
             .collect();
         let mut finished_steps = Vec::with_capacity(self.steps.len() + 1);
-        finished_steps.extend(self
-            .steps
-            .into_iter()
-            .map(|builder| builder.finish(&self.index, &named_variables, variable_registry))
+        finished_steps.extend(
+            self.steps.into_iter().map(|builder| builder.finish(&self.index, &named_variables, variable_registry)),
         );
         ConjunctionExecutable::new(
             next_executable_id(),

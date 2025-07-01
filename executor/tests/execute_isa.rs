@@ -21,7 +21,7 @@ use compiler::{
                 ConstraintInstruction, Inputs,
             },
             planner::{
-                conjunction_executable::{ExecutionStep, IntersectionStep, ConjunctionExecutable},
+                conjunction_executable::{ConjunctionExecutable, ExecutionStep, IntersectionStep},
                 plan::PlannerStatistics,
             },
         },
@@ -31,8 +31,8 @@ use compiler::{
 };
 use encoding::value::label::Label;
 use executor::{
-    error::ReadExecutionError, conjunction_executor::ConjunctionExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    conjunction_executor::ConjunctionExecutor, error::ReadExecutionError, pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use ir::{
     pattern::{constraint::IsaKind, Vertex},

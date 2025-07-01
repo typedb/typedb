@@ -508,7 +508,6 @@ async fn answer_contains_document(context: &mut Context, contains_or_doesnt: par
     });
 }
 
-
 #[apply(generic_step)]
 #[step(expr = r"answers do not contain variable: {word}")]
 async fn answers_do_not_contain_variable(context: &mut Context, variable: String, step: &Step) {

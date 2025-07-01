@@ -360,9 +360,10 @@ fn compile_stage(
                 removed_positions,
             ))))
         }
-        AnnotatedStage::Sort(sort) => {
-            Ok(ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), stage_input_positions.clone()))))
-        }
+        AnnotatedStage::Sort(sort) => Ok(ExecutableStage::Sort(Arc::new(SortExecutable::new(
+            sort.variables.clone(),
+            stage_input_positions.clone(),
+        )))),
         AnnotatedStage::Offset(offset) => {
             Ok(ExecutableStage::Offset(Arc::new(OffsetExecutable::new(offset.offset(), stage_input_positions.clone()))))
         }
@@ -375,7 +376,10 @@ fn compile_stage(
                 let pos = stage_input_positions[&variable];
                 required_positions.insert(pos);
             }
-            Ok(ExecutableStage::Require(Arc::new(RequireExecutable::new(required_positions, stage_input_positions.clone()))))
+            Ok(ExecutableStage::Require(Arc::new(RequireExecutable::new(
+                required_positions,
+                stage_input_positions.clone(),
+            ))))
         }
         AnnotatedStage::Distinct(_distinct) => {
             Ok(ExecutableStage::Distinct(Arc::new(DistinctExecutable::new(stage_input_positions.clone()))))
