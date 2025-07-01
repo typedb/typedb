@@ -284,9 +284,13 @@ pub mod tests {
         config::{Config, ConfigBuilder},
         ConfigError,
     };
+    use assert as assert_true;
 
     fn config_path() -> PathBuf {
+        #[cfg(feature = "bazel")]
         return std::env::current_dir().unwrap().join("server/config.yml");
+        #[cfg(not(feature = "bazel"))]
+        return std::env::current_dir().unwrap().join("config.yml");
     }
 
     fn load_and_parse(yaml: PathBuf, args: Vec<&str>) -> Result<Config, ConfigError> {
@@ -301,7 +305,7 @@ pub mod tests {
 
     #[test]
     fn server_toml_parser_properly() {
-        assert!(load_and_parse(config_path(), vec![]).is_ok());
+        assert_true!(load_and_parse(config_path(), vec![]).is_ok());
     }
 
     #[test]
@@ -316,7 +320,7 @@ pub mod tests {
         {
             // Check pre-conditions
             let config = load_and_parse(config_path(), vec![]).unwrap();
-            assert!(
+            assert_true!(
                 config.server.encryption.enabled == false
                     && config.server.encryption.certificate_key.is_none()
                     && config.server.encryption.certificate.is_none()
@@ -325,7 +329,7 @@ pub mod tests {
 
         {
             let args = vec!["--server.encryption.enabled", "true"];
-            assert!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
+            assert_true!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
         }
 
         {
@@ -337,17 +341,17 @@ pub mod tests {
                 "--server.encryption.certificate",
                 "somecert.pem",
             ];
-            assert!(load_and_parse(config_path(), args).is_ok());
+            assert_true!(load_and_parse(config_path(), args).is_ok());
         }
 
         {
             let args = vec!["--server.encryption.enabled", "true", "--server.encryption.certificate", "somecert.pem"];
-            assert!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
+            assert_true!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
         }
 
         {
             let args = vec!["--server.encryption.enabled", "true", "--server.encryption.certificate-key", "somekey"];
-            assert!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
+            assert_true!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
         }
     }
 }

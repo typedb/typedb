@@ -95,6 +95,7 @@ pub mod tests {
         type_seeder::TypeGraphSeedingContext,
         TypeInferenceError,
     };
+    use assert as assert_true;
 
     #[test]
     fn test_functions() {
@@ -493,7 +494,7 @@ pub mod tests {
             )
             .unwrap_err();
 
-            assert!(match err {
+            assert_true!(match err {
                 TypeInferenceError::DetectedUnsatisfiableEdge { left_variable, right_variable, .. } => {
                     left_variable == "animal" && right_variable == "name"
                 }
@@ -1341,7 +1342,7 @@ pub mod tests {
                 false,
             )
             .unwrap_err();
-            assert!(match err {
+            assert_true!(match err {
                 TypeInferenceError::DetectedUnsatisfiableEdge { left_variable, right_variable, .. } => {
                     left_variable == "animal" && right_variable == "name"
                 }
