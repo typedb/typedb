@@ -31,7 +31,7 @@ use ir::{
 };
 use itertools::{chain, Itertools};
 use tracing::{event, Level};
-
+use ir::pattern::variable_category::VariableOptionality;
 use crate::{
     annotation::{
         expression::compiled_expression::ExecutableExpression,
@@ -69,7 +69,8 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::planner::OptionalBuilder;
+use crate::executable::match_::planner::conjunction_executable::ExecutionStep;
+use crate::executable::match_::planner::{CheckBuilder, OptionalBuilder};
 use crate::executable::match_::planner::vertex::NestedOptionalPlan;
 
 pub const MAX_BEAM_WIDTH: usize = 96;
@@ -148,7 +149,7 @@ fn make_builder<'a>(
             }
             NestedPattern::Negation(negation) => {
                 let parent_bound_variables = negation.conjunction().referenced_variables()
-                    .filter(|var| block_context.is_in_scope_or_parent(conjunction.scope_id(), *var));
+                    .filter(|var| block_context.is_variable_available_in(conjunction.scope_id(), *var));
                 negation_subplans.push(
                     make_builder(
                         negation.conjunction(),
@@ -167,7 +168,7 @@ fn make_builder<'a>(
             NestedPattern::Optional(optional) => {
                 let parent_bound_variables: HashSet<_> = optional
                     .referenced_variables()
-                    .filter(|var| block_context.is_in_scope_or_parent(conjunction.scope_id(), *var))
+                    .filter(|var| block_context.is_variable_available_in(conjunction.scope_id(), *var))
                     .collect();
                 let optional_vars = optional.named_visible_binding_variables(block_context)
                     .filter(|var| !parent_bound_variables.contains(&var))
@@ -1321,9 +1322,9 @@ impl ConjunctionPlan<'_> {
             self.constraint_variables().collect(),
             self.planner_statistics,
         );
-        self.may_make_input_check_step(
+        self.may_make_input_check_steps(
             &mut conjunction_builder,
-            input_variables.into_iter(),
+            input_variables.clone(),
             input_variable_annotations,
             variable_registry,
         );
@@ -1568,7 +1569,7 @@ impl ConjunctionPlan<'_> {
                 let lhs = is.is().lhs().as_variable().unwrap();
                 let rhs = is.is().rhs().as_variable().unwrap();
                 let check = CheckInstruction::Is { lhs, rhs }.map(conjunction_builder.position_mapping());
-                conjunction_builder.push_check(&[lhs, rhs], check)
+                conjunction_builder.push_check(check)
             }
 
             PlannerVertex::LinksDeduplication(deduplication) => {
@@ -1578,7 +1579,7 @@ impl ConjunctionPlan<'_> {
                 let player2 = deduplication.links_deduplication().links2().player().as_variable().unwrap();
                 let check = CheckInstruction::LinksDeduplication { role1, player1, role2, player2 }
                     .map(conjunction_builder.position_mapping());
-                conjunction_builder.push_check(&[role1, player1, role2, player2], check)
+                conjunction_builder.push_check(check)
             }
 
             PlannerVertex::Comparison(comparison) => {
@@ -1610,13 +1611,12 @@ impl ConjunctionPlan<'_> {
                     comparator,
                 };
 
-                let vars = [lhs_var, rhs_var].into_iter().flatten().collect_vec();
-                conjunction_builder.push_check(&vars, check)
+                conjunction_builder.push_check(check)
             }
 
             PlannerVertex::Constraint(constraint) => self.lower_constraint_check(conjunction_builder, constraint),
 
-            PlannerVertex::Unsatisfiable(_) => conjunction_builder.push_check(&[], CheckInstruction::Unsatisfiable),
+            PlannerVertex::Unsatisfiable(_) => conjunction_builder.push_check( CheckInstruction::Unsatisfiable),
 
             PlannerVertex::Expression(_) => {
                 unreachable!("Would require multiple assignments to the same variable and be flagged")
@@ -1876,22 +1876,20 @@ impl ConjunctionPlan<'_> {
                     $($with: $con.$with(),)?
                 };
 
-                let vars = [lhs_var, rhs_var].into_iter().flatten().collect_vec();
-                conjunction_builder.push_check(&vars, check);
+                conjunction_builder.push_check(check);
             }};
         }
 
         match constraint {
             ConstraintVertex::TypeList(type_list) => {
-                let var = type_list.constraint().var();
                 let instruction = type_list.lower_check();
-                conjunction_builder.push_check(&[var], instruction.map(conjunction_builder.position_mapping()));
+                conjunction_builder.push_check(instruction.map(conjunction_builder.position_mapping()));
             }
 
             ConstraintVertex::Iid(iid) => {
                 let var = iid.iid().var().as_variable().unwrap();
                 let instruction = CheckInstruction::Iid { var, iid: iid.iid().iid().as_parameter().unwrap() };
-                conjunction_builder.push_check(&[var], instruction.map(conjunction_builder.position_mapping()));
+                conjunction_builder.push_check(instruction.map(conjunction_builder.position_mapping()));
             }
 
             ConstraintVertex::Sub(planner) => {
@@ -1936,7 +1934,7 @@ impl ConjunctionPlan<'_> {
                     role: CheckVertex::resolve(role_pos, self.local_annotations),
                 };
 
-                conjunction_builder.push_check(&[relation, player, role], check);
+                conjunction_builder.push_check(check);
             }
             ConstraintVertex::IndexedRelation(planner) => {
                 let player_1 = planner.indexed_relation().player_1().as_variable().unwrap();
@@ -1958,7 +1956,7 @@ impl ConjunctionPlan<'_> {
                     start_role: CheckVertex::resolve(start_role_pos, self.local_annotations),
                     end_role: CheckVertex::resolve(end_role_pos, self.local_annotations),
                 };
-                conjunction_builder.push_check(&[player_1, player_2, relation, player_1_role, player_2_role], check);
+                conjunction_builder.push_check(check);
             }
         }
     }
@@ -1976,15 +1974,17 @@ impl ConjunctionPlan<'_> {
         self.planner_statistics.query_cost
     }
 
-    fn may_make_input_check_step(
+    fn may_make_input_check_steps(
         &self,
         conjunction_builder: &mut ConjunctionExecutableBuilder,
-        input_variables: impl Iterator<Item = Variable>,
+        input_variables: impl IntoIterator<Item = Variable> + Clone,
         input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
         variable_registry: &VariableRegistry,
     ) {
         let mut pushed_any = false;
         input_variables
+            .clone()
+            .into_iter()
             .filter_map(|variable| {
                 let vertex = variable.clone().into();
                 let local_annotations = self.local_annotations.vertex_annotations_of(&vertex)?;
@@ -2002,11 +2002,44 @@ impl ConjunctionPlan<'_> {
                     true => CheckInstruction::ThingTypeList { thing_var: executor_var, types },
                     false => CheckInstruction::TypeList { type_var: executor_var, types },
                 };
-                conjunction_builder.push_check(&[variable], check);
+                conjunction_builder.push_check(check);
                 pushed_any = true;
             });
         if pushed_any {
             conjunction_builder.finish_one();
+        }
+        self.check_optional_inputs(
+            conjunction_builder,
+            input_variables,
+            variable_registry,
+        );
+    }
+
+    fn check_optional_inputs(
+        &self,
+        conjunction_builder: &mut ConjunctionExecutableBuilder,
+        input_variables: impl IntoIterator<Item=Variable>,
+        variable_registry: &VariableRegistry,
+    ) {
+        let mut optional_inputs_in_constraints = input_variables.into_iter()
+            .filter(|&var| variable_registry
+                .get_variable_optionality(var)
+                .is_some_and(|optionality| {
+                    matches!(optionality, VariableOptionality::Optional)
+                })
+            )
+            .filter(|var| conjunction_builder.constraint_variables.contains(var))
+            .peekable();
+        if optional_inputs_in_constraints.peek().is_some() {
+            let instruction = CheckInstruction::NotNone {
+                variables: optional_inputs_in_constraints
+                    .map(|var| conjunction_builder.position(var))
+                    .collect()
+            };
+            conjunction_builder.push_check(instruction);
+            conjunction_builder.finish_one();
+        } else {
+            drop(optional_inputs_in_constraints);
         }
     }
 }

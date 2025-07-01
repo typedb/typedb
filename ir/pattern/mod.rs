@@ -355,7 +355,7 @@ impl fmt::Display for ValueType {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum BindingMode {
-    NonBinding,
+    RequirePrebound,
     AlwaysBinding,
     LocallyBindingInChild,
     OptionallyBinding,
@@ -365,7 +365,7 @@ impl BitAndAssign for BindingMode {
     fn bitand_assign(&mut self, rhs: Self) {
         match (*self, rhs) {
             (Self::AlwaysBinding, _) | (_, Self::AlwaysBinding) => *self = Self::AlwaysBinding,
-            (Self::NonBinding, _) | (_, Self::NonBinding) => *self = Self::NonBinding,
+            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => *self = Self::RequirePrebound,
             (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::LocallyBindingInChild,
             (Self::OptionallyBinding, Self::OptionallyBinding) => (),
         }
@@ -375,7 +375,7 @@ impl BitAndAssign for BindingMode {
 impl BitOrAssign for BindingMode {
     fn bitor_assign(&mut self, rhs: Self) {
         match (*self, rhs) {
-            (Self::NonBinding, _) | (_, Self::NonBinding) => *self = Self::NonBinding,
+            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => *self = Self::RequirePrebound,
             (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => *self = Self::OptionallyBinding,
             (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::LocallyBindingInChild,
             (Self::AlwaysBinding, Self::AlwaysBinding) => (),
@@ -390,16 +390,16 @@ pub struct VariableBindingMode<'a> {
 }
 
 impl<'a> VariableBindingMode<'a> {
-    pub fn non_binding(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: BindingMode::NonBinding, referencing_constraints: vec![constraint] }
+    pub fn require_prebound(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: BindingMode::RequirePrebound, referencing_constraints: vec![constraint] }
     }
 
     pub fn always_binding(constraint: &'a Constraint<Variable>) -> Self {
         Self { mode: BindingMode::AlwaysBinding, referencing_constraints: vec![constraint] }
     }
 
-    pub fn set_non_binding(&mut self) {
-        self.mode = BindingMode::NonBinding;
+    pub fn set_require_prebound(&mut self) {
+        self.mode = BindingMode::RequirePrebound;
     }
 
     pub fn set_locally_binding_in_child(&mut self) {
@@ -410,8 +410,8 @@ impl<'a> VariableBindingMode<'a> {
         self.mode = BindingMode::OptionallyBinding;
     }
 
-    pub fn is_non_binding(&self) -> bool {
-        self.mode == BindingMode::NonBinding
+    pub fn is_require_prebound(&self) -> bool {
+        self.mode == BindingMode::RequirePrebound
     }
 
     pub fn is_always_binding(&self) -> bool {

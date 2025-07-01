@@ -292,8 +292,6 @@ impl PatternExecutor {
                 self.control_stack.push(ExecuteOptional { index, input: input.into_owned(), any_found: false }.into());
             }
             StepExecutors::Negation(NegationExecutor { inner }) => {
-                // TODO: question: why do we send the input row into the Inner, but also stash it in the ExecuteNegation control instruction?
-                //     Is it so we can restore the executor to the same state somehow?
                 inner.prepare(FixedBatch::from(input.as_reference()));
                 self.control_stack.push(ExecuteNegation { index, input: input.into_owned() }.into());
             }

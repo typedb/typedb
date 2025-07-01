@@ -25,7 +25,6 @@ use crate::{
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
 };
-use crate::pattern::variable_category::VariableOptionality;
 
 #[derive(Debug, Clone)]
 pub struct Block {
@@ -147,7 +146,7 @@ fn validate_conjunction(
     }
 
     for (var, mode) in conjunction.variable_binding_modes() {
-        if mode.is_non_binding() && block_context.get_declaring_scope(&var) != Some(ScopeId::INPUT) {
+        if mode.is_require_prebound() && block_context.get_declaring_scope(&var) != Some(ScopeId::INPUT) {
             let variable = variable_registry.get_variable_name(var).unwrap().clone();
             let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
             return Err(Box::new(RepresentationError::UnboundRequiredVariable {
@@ -261,12 +260,6 @@ impl BlockContext {
 
             let ancestor = lowest_common_ancestor(&self.scope_parents, recorded_scope, scope);
             let ancestor_conjunction = lowest_parent_conjunction_or_negation(&self.scope_parents, &self.scope_types, ancestor);
-            // if !self.is_visible_child(scope, ancestor) || !self.is_visible_child(recorded_scope, ancestor) {
-            //     return Err(Box::new(RepresentationError::DisjointVariableReuse {
-            //         name: var_name.to_owned(),
-            //         source_span,
-            //     }));
-            // }
             *self.variable_declaration.get_mut(&var).unwrap() = ancestor_conjunction;
         }
         Ok(())
@@ -274,17 +267,6 @@ impl BlockContext {
 
     pub fn get_declaring_scope(&self, var: &Variable) -> Option<ScopeId> {
         self.variable_declaration.get(var).cloned()
-    }
-
-    pub(crate) fn is_transparent(&self, scope: ScopeId) -> bool {
-        debug_assert!(self.scope_types.contains_key(&scope));
-        self.scope_types.get(&scope).is_some_and(|scope_type| match scope_type {
-            ScopeType::Input
-            | ScopeType::Conjunction
-            | ScopeType::Disjunction
-            | ScopeType::Optional => true,
-            ScopeType::Negation => false,
-        })
     }
 
     fn add_referenced_variable(&mut self, var: Variable) {
@@ -295,7 +277,7 @@ impl BlockContext {
         self.referenced_variables.iter().copied()
     }
 
-    pub fn is_in_scope_or_parent(&self, scope: ScopeId, variable: Variable) -> bool {
+    pub fn is_variable_available_in(&self, scope: ScopeId, variable: Variable) -> bool {
         let variable_scope = self.variable_declaration.get(&variable);
         let in_scope = variable_scope
             .is_some_and(|variable_scope| is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope));
@@ -305,14 +287,6 @@ impl BlockContext {
     pub fn is_child_scope(&self, child: ScopeId, ancestor: ScopeId) -> bool {
         let Some(&parent) = self.scope_parents.get(&child) else { return false };
         parent == ancestor || self.is_child_scope(parent, ancestor)
-    }
-
-    pub fn is_visible_child(&self, child: ScopeId, ancestor: ScopeId) -> bool {
-        if !self.is_transparent(child) {
-            return false;
-        }
-        let Some(&parent) = self.scope_parents.get(&child) else { return false };
-        parent == ancestor || self.is_visible_child(parent, ancestor)
     }
 
     pub fn variable_locality_in_scope(&self, var: Variable, scope: ScopeId) -> VariableLocality {
@@ -427,8 +401,8 @@ impl<'a> BlockBuilderContext<'a> {
         Ok(variable)
     }
 
-    pub fn is_variable_in_scope_or_parent(&self, scope: ScopeId, variable: Variable) -> bool {
-        self.block_context.is_in_scope_or_parent(scope, variable)
+    pub fn is_variable_available_in(&self, scope: ScopeId, variable: Variable) -> bool {
+        self.block_context.is_variable_available_in(scope, variable)
     }
 
     pub(crate) fn is_variable_input(&self, variable: Variable) -> bool {

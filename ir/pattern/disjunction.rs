@@ -62,7 +62,7 @@ impl Disjunction {
     // Union of non-binding variables used here or below, and variables declared in parent scopes
     pub fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
         self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
-            if mode.is_non_binding() {
+            if mode.is_require_prebound() {
                 debug_assert!(block_context.variable_locality_in_scope(v, self.scope_id) == VariableLocality::Parent);
                 Some(v)
             } else {

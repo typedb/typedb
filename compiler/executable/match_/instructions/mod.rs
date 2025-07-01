@@ -689,6 +689,61 @@ impl<ID: IrID> CheckInstruction<ID> {
             Self::Unsatisfiable => CheckInstruction::Unsatisfiable,
         }
     }
+
+    pub fn ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
+        match self {
+            CheckInstruction::TypeList { type_var, .. } => Box::new(std::iter::once(*type_var)),
+            CheckInstruction::ThingTypeList { thing_var, .. } => Box::new(std::iter::once(*thing_var)),
+            CheckInstruction::Iid { var, .. } => Box::new(std::iter::once(*var)),
+            CheckInstruction::Sub { subtype, supertype, .. } => {
+                Box::new(subtype.as_variable().into_iter().chain(supertype.as_variable().into_iter()))
+            }
+            CheckInstruction::Owns { owner, attribute } => {
+                Box::new(owner.as_variable().into_iter().chain(attribute.as_variable().into_iter()))
+            }
+            CheckInstruction::Relates { relation, role_type } => {
+                Box::new(relation.as_variable().into_iter().chain(role_type.as_variable().into_iter()))
+            }
+            CheckInstruction::Plays { player, role_type } => {
+                Box::new(player.as_variable().into_iter().chain(role_type.as_variable().into_iter()))
+            }
+            CheckInstruction::Isa { thing, type_, .. } => {
+                Box::new(thing.as_variable().into_iter().chain(type_.as_variable().into_iter()))
+            }
+            CheckInstruction::Has { owner, attribute } => {
+                Box::new(owner.as_variable().into_iter().chain(attribute.as_variable().into_iter()))
+            }
+            CheckInstruction::Links { relation, player, role } => {
+                Box::new(
+                    relation.as_variable().into_iter()
+                        .chain(player.as_variable().into_iter())
+                        .chain(role.as_variable().into_iter()),
+                )
+            }
+            CheckInstruction::IndexedRelation { relation, start_player, end_player, start_role, end_role } => {
+                Box::new(
+                    relation.as_variable().into_iter()
+                        .chain(start_player.as_variable().into_iter())
+                        .chain(end_player.as_variable().into_iter())
+                        .chain(start_role.as_variable().into_iter())
+                        .chain(end_role.as_variable().into_iter()),
+                )
+            }
+            CheckInstruction::Is { lhs, rhs } => {
+                Box::new([*lhs, *rhs].into_iter())
+            }
+            CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
+                Box::new([*role1, *player1, *role2, *player2].into_iter())
+            }
+            CheckInstruction::NotNone { variables } => {
+                Box::new(variables.iter().copied())
+            }
+            CheckInstruction::Comparison { lhs, rhs, .. } => {
+                Box::new(lhs.as_variable().into_iter().chain(rhs.as_variable().into_iter()))
+            }
+            CheckInstruction::Unsatisfiable => Box::new(std::iter::empty()),
+        }
+    }
 }
 
 impl<ID: IrID> fmt::Display for CheckInstruction<ID> {

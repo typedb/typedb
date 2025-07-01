@@ -12,11 +12,11 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::unimplemented_feature;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
+use crate::pipeline::block::ScopeType;
 use crate::{pattern::{
     constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
     disjunction::{Disjunction, DisjunctionBuilder},
@@ -25,8 +25,6 @@ use crate::{pattern::{
     optional::Optional,
     Scope, ScopeId, VariableBindingMode,
 }, pipeline::block::{BlockBuilderContext, BlockContext}, RepresentationError};
-use crate::pattern::variable_category::VariableOptionality;
-use crate::pipeline::block::ScopeType;
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {
@@ -70,7 +68,7 @@ impl Conjunction {
     }
 
     pub fn local_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        self.referenced_variables().filter(|var| block_context.is_in_scope_or_parent(self.scope_id, *var))
+        self.referenced_variables().filter(|var| block_context.is_variable_available_in(self.scope_id, *var))
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
@@ -98,7 +96,7 @@ impl Conjunction {
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_non_binding().then_some(v))
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(v))
     }
 
     pub fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
@@ -131,9 +129,6 @@ impl Conjunction {
             if scope == self.scope_id && (mode.is_locally_binding_in_child() || mode.is_optionally_binding()) {
                 return ControlFlow::Break((var, mode.referencing_constraints().first().and_then(|c| c.source_span())));
             }
-
-            // TODO: this check currently won't catch ( ( A(x) ) or ( B(x) ) ) & ( C(x) or D(y) ) ??
-            //   --> actually this might be find, it's equal to Z(x) & ( C(x) or D(y) ) where x is bound outside...
         }
         for nested in &self.nested_patterns {
             nested.find_disjoint_variable(block_context)?;

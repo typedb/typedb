@@ -385,9 +385,9 @@ impl ConjunctionExecutableBuilder {
         current.instructions.push(instruction.map(&self.index));
     }
 
-    fn push_check(&mut self, variables: &[Variable], check: CheckInstruction<ExecutorVariable>) {
+    fn push_check(&mut self, check: CheckInstruction<ExecutorVariable>) {
         // if it is a comparison or IID (TODO) we can inline the check into previous instructions
-        if self.inline_as_optimisation(variables, &check) {
+        if self.inline_as_optimisation(&check) {
             return;
         }
 
@@ -406,7 +406,7 @@ impl ConjunctionExecutableBuilder {
     }
 
     /// inject the check as an optimisation into previously built steps
-    fn inline_as_optimisation(&mut self, variables: &[Variable], check: &CheckInstruction<ExecutorVariable>) -> bool {
+    fn inline_as_optimisation(&mut self, check: &CheckInstruction<ExecutorVariable>) -> bool {
         if !matches!(check, CheckInstruction::Comparison { .. } | CheckInstruction::Iid { .. }) {
             // TODO: inject IID check as well
             return false;
@@ -421,9 +421,9 @@ impl ConjunctionExecutableBuilder {
                 let mut is_added = false;
                 for instruction in intersection.instructions.iter_mut() {
                     // if any check variable is produced and all other variables are available
-                    let any_produced = variables.iter().any(|var| instruction.is_new_variable(self.index[var]));
-                    let all_available = variables.iter().all(|var| {
-                        instruction.is_new_variable(self.index[var]) || instruction.is_input_variable(self.index[var])
+                    let any_produced = check.ids().any(|id| instruction.is_new_variable(id));
+                    let all_available = check.ids().all(|id| {
+                        instruction.is_new_variable(id) || instruction.is_input_variable(id)
                     });
                     if any_produced && all_available {
                         instruction.add_check(check.clone());
@@ -512,7 +512,6 @@ impl ConjunctionExecutableBuilder {
             .filter_map(|(var, &pos)| variable_registry.variable_names().get(var).and(Some(pos)))
             .collect();
         let mut finished_steps = Vec::with_capacity(self.steps.len() + 1);
-        self.check_optional_inputs(variable_registry, &named_variables, &mut finished_steps);
         finished_steps.extend(self
             .steps
             .into_iter()
@@ -525,34 +524,5 @@ impl ConjunctionExecutableBuilder {
             self.reverse_index,
             self.planner_statistics,
         )
-    }
-
-    fn check_optional_inputs(&self, variable_registry: &VariableRegistry, named_variables: &HashSet<ExecutorVariable>, finished_steps: &mut Vec<ExecutionStep>) {
-        let mut optional_inputs_in_constraints = self.optional_inputs(variable_registry)
-            .filter(|var| self.constraint_variables.contains(var))
-            .peekable();
-        if optional_inputs_in_constraints.peek().is_some() {
-            let mut builder = StepBuilder {
-                selected_variables: self.input_variables.clone(),
-                builder: StepInstructionsBuilder::Check(CheckBuilder::default()),
-            };
-            builder.builder.as_check_mut().unwrap().instructions.push(CheckInstruction::NotNone {
-                variables: optional_inputs_in_constraints.map(|var| self.index[&var]).collect()
-            });
-            finished_steps.push(builder.finish(&self.index, &named_variables, variable_registry));
-        } else {
-            drop(optional_inputs_in_constraints);
-        }
-    }
-
-    fn optional_inputs<'a>(&'a self, variable_registry: &'a VariableRegistry) -> impl Iterator<Item=Variable> + 'a {
-        self.input_variables
-            .iter()
-            .filter(|&var| variable_registry
-                .get_variable_optionality(*var)
-                .is_some_and(|optionality| {
-                    matches!(optionality, VariableOptionality::Optional)
-                }))
-            .copied()
     }
 }
