@@ -8,7 +8,7 @@ use std::{
     collections::{HashMap, HashSet},
     fmt, iter,
 };
-
+use itertools::chain;
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::{constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, Unsatisfiable}, BranchID, Vertex};
@@ -68,7 +68,7 @@ impl PlannerVertex<'_> {
         }
     }
 
-    pub(super) fn variables<'a>(&'a self, graph: &'a Graph<'a>) -> Box<dyn Iterator<Item = Variable> + 'a> {
+    pub(super) fn visible_variables<'a>(&'a self, graph: &'a Graph<'a>) -> Box<dyn Iterator<Item = Variable> + 'a> {
         match self {
             Self::Variable(_) => Box::new(iter::empty()),
             Self::Constraint(inner) => Box::new(inner.variables().map(|var_id| graph.index_to_variable[&var_id])),
@@ -77,9 +77,9 @@ impl PlannerVertex<'_> {
             Self::Comparison(inner) => Box::new(inner.variables().map(|var_id| graph.index_to_variable[&var_id])),
             Self::Expression(inner) => Box::new(inner.variables().map(|var_id| graph.index_to_variable[&var_id])),
             Self::FunctionCall(inner) => Box::new(inner.variables().map(|var_id| graph.index_to_variable[&var_id])),
-            Self::Negation(inner) => Box::new(inner.referenced_variables()),
-            Self::Disjunction(inner) => Box::new(inner.referenced_variables()),
-            Self::Optional(inner) => Box::new(inner.referenced_variables()),
+            Self::Negation(inner) => Box::new(inner.referenced_parent_ids().map(|var_id| graph.index_to_variable[&var_id])),
+            Self::Disjunction(inner) => Box::new(inner.referenced_parent_and_shared_ids().map(|var_id| graph.index_to_variable[&var_id])),
+            Self::Optional(inner) => Box::new(inner.referenced_parent_and_optional_ids().map(|var_id| graph.index_to_variable[&var_id])),
             Self::Unsatisfiable(inner) => Box::new(inner.variables().map(|var_id| graph.index_to_variable[&var_id])),
         }
     }
@@ -569,12 +569,8 @@ impl<'a> ChildNegationPlan<'a> {
         self.referenced_parent_inputs.iter().all(|var| ordered.contains(&VertexId::Variable(*var)))
     }
 
-    pub(crate) fn referenced_input_variable_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+    pub(crate) fn referenced_parent_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
         self.referenced_parent_inputs.iter().copied()
-    }
-
-    pub(crate) fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.plan.referenced_variables()
     }
 
     pub(super) fn plan(&self) -> &ConjunctionPlan<'a> {
@@ -597,32 +593,22 @@ impl Costed for ChildNegationPlan<'_> {
 pub(super) struct ChildOptionalPlan<'a> {
     pub(super) plan: OptionalPlan<'a>,
     pub(super) referenced_parent_inputs: HashSet<VariableVertexId>,
-    pub(super) referenced_parent_and_local: HashSet<VariableVertexId>,
+    pub(super) optional_variables: HashSet<VariableVertexId>,
 }
 
 impl<'a> ChildOptionalPlan<'a> {
     pub(super) fn new(plan: OptionalPlan<'a>, parent_variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
-        let mut referenced_parent_inputs = plan.referenced_input_variables().map(|v| parent_variable_index[&v]).collect();
-        let mut referenced_parent_and_local = plan.referenced_variables().filter_map(|v| parent_variable_index.get(&v).copied()).collect();
-
-        Self { plan, referenced_parent_inputs, referenced_parent_and_local }
+        let referenced_parent_inputs: HashSet<_> = plan.referenced_input_variables().map(|v| parent_variable_index[&v]).collect();
+        let optional_variables = plan.optional_variables().map(|v| parent_variable_index[&v]).collect();
+        Self { plan, referenced_parent_inputs, optional_variables }
     }
 
     fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         self.referenced_parent_inputs.iter().all(|var| ordered.contains(&VertexId::Variable(*var)))
     }
 
-
-    pub(crate) fn referenced_input_variable_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
-        self.referenced_parent_inputs.iter().copied()
-    }
-
-    pub(crate) fn referenced_parent_and_local_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
-        self.referenced_parent_and_local.iter().copied()
-    }
-
-    pub(crate) fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.plan.plan().referenced_variables()
+    pub(crate) fn referenced_parent_and_optional_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+        chain!(self.referenced_parent_inputs.iter(), self.optional_variables.iter()).copied()
     }
 
     pub(super) fn plan(&self) -> &OptionalPlan<'a> {
@@ -643,7 +629,9 @@ impl Costed for ChildOptionalPlan<'_> {
 
 #[derive(Clone, Debug)]
 pub(super) struct ChildDisjunctionPlanner<'a> {
-    referenced_parent_inputs: HashSet<VariableVertexId>,
+    referenced_parent_vars: HashSet<VariableVertexId>,
+    required_parent_vars: HashSet<VariableVertexId>,
+    shared_disjunction_vars: HashSet<VariableVertexId>,
     builder: DisjunctionPlanBuilder<'a>,
 }
 
@@ -652,22 +640,22 @@ impl<'a> ChildDisjunctionPlanner<'a> {
         builder: DisjunctionPlanBuilder<'a>,
         parent_variable_index: &HashMap<Variable, VariableVertexId>,
     ) -> Self {
-        let referenced_parent_inputs = builder.branches().iter()
-            .flat_map(|branch| branch.referenced_input_variables().map(|v| parent_variable_index[&v]))
+        let shared_disjunction_vars = builder.shared_variables().map(|v| parent_variable_index[&v]).collect();
+        let referenced_parent_vars = builder.branches().iter()
+            .flat_map(|branch| branch.referenced_variables().filter_map(|v| parent_variable_index.get(&v).copied()))
             .collect();
-        Self { referenced_parent_inputs, builder }
+        let required_parent_vars = builder.branches().iter().flat_map(|branch| branch.required_input_variables())
+            .map(|v| parent_variable_index[&v])
+            .collect();
+        Self { referenced_parent_vars, required_parent_vars, shared_disjunction_vars, builder, }
     }
 
     fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
-        self.referenced_parent_inputs.iter().all(|&var| ordered.contains(&VertexId::Variable(var)))
+        self.required_parent_vars.iter().all(|&var| ordered.contains(&VertexId::Variable(var)))
     }
 
-    pub(crate) fn referenced_input_variable_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
-        self.referenced_parent_inputs.iter().copied()
-    }
-
-    pub(crate) fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.builder.branches().iter().flat_map(|branch| branch.referenced_variables())
+    pub(crate) fn referenced_parent_and_shared_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+        chain!(self.referenced_parent_vars.iter().copied(), self.shared_disjunction_vars.iter().copied())
     }
 
     pub(crate) fn plan(
