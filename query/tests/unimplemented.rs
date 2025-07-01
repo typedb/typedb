@@ -176,18 +176,6 @@ fn structs_lists_optionals() {
 
     {
         let query = r#"
-        match
-            $p isa person;
-            try {
-                $f isa friendship(person: $p);
-            };
-        "#;
-        let Either::Left(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
-        check_unimplemented_language_feature(&err, &error::UnimplementedFeature::Optionals);
-    }
-
-    {
-        let query = r#"
         with
         fun return_optional() -> { integer? }:
         match
@@ -209,7 +197,7 @@ fn structs_lists_optionals() {
                 } = err.as_ref()
                 {
                     if let RepresentationError::UnimplementedLanguageFeature { feature } = err.as_ref() {
-                        matches = feature == &error::UnimplementedFeature::Optionals
+                        matches = feature == &error::UnimplementedFeature::OptionalFunctions
                     }
                 }
             }

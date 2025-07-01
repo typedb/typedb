@@ -340,6 +340,7 @@ pub enum UnimplementedFeature {
     BuiltinFunction(String),
     LetInBuiltinCall,
     Subkey,
+    OptionalFunctions,
 
     UnsortedJoin,
 
