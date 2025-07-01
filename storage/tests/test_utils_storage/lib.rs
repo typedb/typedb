@@ -27,7 +27,7 @@ macro_rules! test_keyspace_set {
             fn name(&self) -> &'static str {
                 match *self { $(Self::$variant => $name),* }
             }
-            fn prefix_length(&self) -> Option {
+            fn prefix_length(&self) -> Option<usize> {
                 None
             }
         }
