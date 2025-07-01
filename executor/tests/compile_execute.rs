@@ -14,7 +14,9 @@ use compiler::{
         expression::block_compiler::compile_expressions, function::EmptyAnnotatedFunctionSignatures,
         match_inference::infer_types,
     },
-    executable::{function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable},
+    executable::{
+        function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
+    },
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -22,7 +24,8 @@ use concept::{
 };
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{
-    conjunction_executor::ConjunctionExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow, ExecutionInterrupt,
+    conjunction_executor::ConjunctionExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::{
@@ -973,7 +976,8 @@ fn test_mismatched_input_types() {
             select $x;
         ";
         let snapshot = Arc::new(storage.clone().open_snapshot_read());
-        let conjunction_executable = compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
+        let conjunction_executable =
+            compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
         let executor = ConjunctionExecutor::new(
             &conjunction_executable,
             &snapshot,
@@ -1007,7 +1011,8 @@ fn test_mismatched_input_types() {
             distinct;
         ";
         let snapshot = Arc::new(storage.clone().open_snapshot_read());
-        let conjunction_executable = compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
+        let conjunction_executable =
+            compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
         let executor = ConjunctionExecutor::new(
             &conjunction_executable,
             &snapshot,

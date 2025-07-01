@@ -86,8 +86,9 @@ impl OptionalExecutor {
 
     pub(crate) fn map_as_failed_output(&self, unmapped_input: MaybeOwnedRow<'_>) -> FixedBatch {
         let mut output = FixedBatch::new(self.output_width);
-        output.append(|mut output_row|  {
-            output_row.copy_mapped(unmapped_input.as_reference(), self.selected_variables.iter().map(|&pos| (pos, pos)));
+        output.append(|mut output_row| {
+            output_row
+                .copy_mapped(unmapped_input.as_reference(), self.selected_variables.iter().map(|&pos| (pos, pos)));
             output_row.set_provenance(unmapped_input.provenance()); // Pass through old provenance
         });
         output

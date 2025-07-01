@@ -15,10 +15,8 @@ use async_trait::async_trait;
 use concept::error::ConceptReadError;
 use concurrency::IntervalRunner;
 use database::{
-    database::DatabaseCreateError,
-    database_manager::DatabaseManager,
-    transaction::{TransactionRead, TransactionSchema},
-    Database, DatabaseDeleteError,
+    database::DatabaseCreateError, database_manager::DatabaseManager, transaction::TransactionRead, Database,
+    DatabaseDeleteError,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;

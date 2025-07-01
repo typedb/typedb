@@ -21,7 +21,7 @@ use compiler::{
                 CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
             },
             planner::{
-                conjunction_executable::{CheckStep, ExecutionStep, IntersectionStep, ConjunctionExecutable},
+                conjunction_executable::{CheckStep, ConjunctionExecutable, ExecutionStep, IntersectionStep},
                 plan::PlannerStatistics,
             },
         },
@@ -35,8 +35,8 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, conjunction_executor::ConjunctionExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    conjunction_executor::ConjunctionExecutor, error::ReadExecutionError, pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use ir::{
     pattern::{

@@ -20,6 +20,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
         FilterFn, FilterMapUnchangedFn, VariableModes,
@@ -27,7 +28,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::checker::Checker;
 
 pub(crate) struct IidExecutor {
     iid: Iid<ExecutorVariable>,

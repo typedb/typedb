@@ -28,6 +28,7 @@ use storage::snapshot::ReadableSnapshot;
 use super::has_executor::{FixedHasBounds, HasFilterMapFn};
 use crate::{
     instruction::{
+        checker::Checker,
         has_executor::{HasFilterFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         iterator::{SortedTupleIterator, TupleIterator},
         min_max_types,
@@ -40,7 +41,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::checker::Checker;
 
 pub(crate) struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,

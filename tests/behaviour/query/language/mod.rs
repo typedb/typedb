@@ -8,8 +8,8 @@
 
 mod define;
 mod delete;
-mod expressions;
 mod disjunction;
+mod expressions;
 mod fetch;
 mod insert;
 mod r#match;

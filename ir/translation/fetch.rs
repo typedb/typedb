@@ -457,7 +457,10 @@ fn create_anonymous_function(
 }
 
 // Given a function body, and the _parent_ translation context, we can reconstruct which are arguments
-fn find_function_body_arguments(parent_context: &PipelineTranslationContext, function_body: &FunctionBody) -> Vec<Variable> {
+fn find_function_body_arguments(
+    parent_context: &PipelineTranslationContext,
+    function_body: &FunctionBody,
+) -> Vec<Variable> {
     let mut arguments = HashSet::new();
     // Note: we rely on the fact that named variables that are "the same" become the same Variable, and the logic of
     //       selecting variables in/out is handled by the translation of the stages

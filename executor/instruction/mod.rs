@@ -9,9 +9,7 @@ use std::fmt;
 use ::iterator::minmax_or;
 use answer::{variable_value::VariableValue, Type};
 use compiler::{
-    executable::match_::instructions::{
-        ConstraintInstruction, VariableMode, VariableModes,
-    },
+    executable::match_::instructions::{ConstraintInstruction, VariableMode, VariableModes},
     ExecutorVariable,
 };
 use concept::{
@@ -19,14 +17,12 @@ use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager, ThingAPI},
     type_::{OwnerAPI, PlayerAPI},
 };
-use encoding::{
-    value::ValueEncodable,
-    AsBytes,
-};
+use encoding::{value::ValueEncodable, AsBytes};
 use ir::pattern::Vertex;
 use itertools::Itertools;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
+
 use crate::{
     instruction::{
         has_executor::HasExecutor, has_reverse_executor::HasReverseExecutor, iid_executor::IidExecutor,
@@ -42,6 +38,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
+pub(crate) mod checker;
 mod has_executor;
 mod has_reverse_executor;
 mod iid_executor;
@@ -62,7 +59,6 @@ mod sub_executor;
 mod sub_reverse_executor;
 pub(crate) mod tuple;
 mod type_list_executor;
-pub(crate) mod checker;
 
 pub(crate) const TYPES_EMPTY: Vec<Type> = Vec::new();
 
@@ -359,7 +355,6 @@ pub(super) type FilterMapUnchangedFn<T> =
 pub(super) type FilterMapFn<T, U> =
     dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<U, Box<ConceptReadError>>>;
 type FilterFn<T> = dyn Fn(&Result<T, Box<ConceptReadError>>) -> Result<bool, Box<ConceptReadError>>;
-
 
 fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (&'a Type, &'a Type) {
     minmax_or!(types.into_iter(), unreachable!("Empty type iterator"))

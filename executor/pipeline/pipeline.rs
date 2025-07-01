@@ -138,8 +138,11 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(conjunction_executable) => {
-                    let match_stage =
-                        MatchStageExecutor::new(conjunction_executable.clone(), last_stage, executable_functions.clone());
+                    let match_stage = MatchStageExecutor::new(
+                        conjunction_executable.clone(),
+                        last_stage,
+                        executable_functions.clone(),
+                    );
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 ExecutableStage::Insert(_) => {

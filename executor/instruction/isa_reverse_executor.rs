@@ -26,6 +26,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         isa_executor::{IsaFilterMapFn, EXTRACT_THING, EXTRACT_TYPE},
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, Tuple, TuplePositions, TupleResult},
@@ -34,7 +35,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::checker::Checker;
 
 #[derive(Debug)]
 pub(crate) struct IsaReverseExecutor {

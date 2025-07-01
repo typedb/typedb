@@ -6,7 +6,9 @@
 
 use std::sync::Arc;
 
-use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable};
+use compiler::executable::{
+    function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator};
 use resource::profile::QueryProfile;
@@ -16,7 +18,9 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    read::{create_pattern_executor_for_conjunction, pattern_executor::PatternExecutor, tabled_functions::TabledFunctions},
+    read::{
+        create_pattern_executor_for_conjunction, pattern_executor::PatternExecutor, tabled_functions::TabledFunctions,
+    },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };

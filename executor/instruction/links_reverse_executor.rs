@@ -31,6 +31,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         links_executor::{
             may_get_role, verify_role, FixedLinksBounds, LinksFilterFn, LinksFilterMapFn, LinksTupleIterator,
@@ -48,7 +49,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::checker::Checker;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
