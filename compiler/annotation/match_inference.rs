@@ -231,8 +231,6 @@ fn pre_check_edges_for_trivial_unsatisfiability<'a>(
         .nested_disjunctions
         .iter()
         .flat_map(|d| d.disjunction.iter())
-        .chain(graph.nested_negations.iter())
-        .chain(graph.nested_optionals.iter())
         .try_for_each(|nested| pre_check_edges_for_trivial_unsatisfiability(nested))?;
     Ok(())
 }
@@ -241,26 +239,9 @@ pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) {
     while graph.prune_vertices_from_constraints() {
         graph.prune_constraints_from_vertices();
     }
-
     // Then do it for the nested negations & optionals
     // TODO: This is too permissive. We should have seeded these with the pruned types from the parent.
-    prune_types_for_nested_negations_and_optionals(graph);
-}
-
-fn prune_types_for_nested_negations_and_optionals(graph: &mut TypeInferenceGraph<'_>) {
-    graph
-        .nested_disjunctions
-        .iter_mut()
-        .flat_map(|disjunction| disjunction.disjunction.iter_mut())
-        .for_each(|nested| prune_types_for_nested_negations_and_optionals(nested));
-    chain(graph.nested_negations.iter_mut(), graph.nested_optionals.iter_mut()).for_each(|nested| {
-        for (vertex, parent_annotations) in &graph.vertices.annotations {
-            if let Some(nested_annotations) = nested.vertices.annotations.get_mut(vertex) {
-                nested_annotations.retain(|t| parent_annotations.contains(t));
-            }
-        }
-        prune_types(nested)
-    });
+    // prune_types_for_nested_negations_and_optionals(graph); // DOING: 20250702
 }
 
 #[derive(Debug)]
@@ -269,8 +250,6 @@ pub(crate) struct TypeInferenceGraph<'this> {
     pub(crate) vertices: VertexAnnotations,
     pub(crate) edges: Vec<TypeInferenceEdge<'this>>,
     pub(crate) nested_disjunctions: Vec<NestedTypeInferenceGraphDisjunction<'this>>,
-    pub(crate) nested_negations: Vec<TypeInferenceGraph<'this>>,
-    pub(crate) nested_optionals: Vec<TypeInferenceGraph<'this>>,
 }
 
 impl TypeInferenceGraph<'_> {
@@ -303,8 +282,6 @@ impl TypeInferenceGraph<'_> {
             vertices,
             edges,
             nested_disjunctions,
-            nested_negations,
-            nested_optionals,
             conjunction,
         } = self;
         let mut constraint_annotations = HashMap::new();
@@ -338,10 +315,7 @@ impl TypeInferenceGraph<'_> {
         let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
         type_annotations_by_scope.insert(conjunction.scope_id(), type_annotations);
 
-        chain(
-            chain(nested_negations, nested_optionals),
-            nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction),
-        )
+        nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction)
         .for_each(|nested| nested.collect_type_annotations(_variable_registry, type_annotations_by_scope));
     }
 
@@ -363,8 +337,6 @@ impl TypeInferenceGraph<'_> {
         self.nested_disjunctions
             .iter()
             .flat_map(|d| d.disjunction.iter())
-            .chain(self.nested_optionals.iter())
-            .chain(self.nested_negations.iter())
             .try_for_each(|graph| graph.check_thing_constraints_satisfiable(variable_registry))?;
         Ok(())
     }

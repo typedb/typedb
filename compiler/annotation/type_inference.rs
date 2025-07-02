@@ -389,8 +389,6 @@ pub mod tests {
                     expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_graph.vertices, graph.vertices);
@@ -457,8 +455,7 @@ pub mod tests {
                     expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
+                
             };
             assert_eq!(expected_graph, graph);
         }
@@ -567,8 +564,7 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
+                
             };
             assert_eq!(expected_graph.edges, graph.edges);
             assert_eq!(expected_graph, graph);
@@ -647,8 +643,7 @@ pub mod tests {
                     vec![(type_cat, type_cat)],
                 )],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
+                
             },
             TypeInferenceGraph {
                 conjunction: b2,
@@ -664,8 +659,7 @@ pub mod tests {
                     vec![(type_dog, type_dog)],
                 )],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
+                
             },
         ];
 
@@ -696,8 +690,6 @@ pub mod tests {
                 shared_variables: BTreeSet::new(),
                 shared_vertex_annotations: VertexAnnotations::default(),
             }],
-            nested_negations: Vec::new(),
-            nested_optionals: Vec::new(),
         };
 
         assert_eq!(expected_graph, graph);
@@ -752,8 +744,6 @@ pub mod tests {
                 vec![(type_cat, type_catname), (type_dog, type_dogname)],
             )],
             nested_disjunctions: Vec::new(),
-            nested_negations: Vec::new(),
-            nested_optionals: Vec::new(),
         };
 
         assert_eq!(expected_graph, graph);
@@ -891,8 +881,6 @@ pub mod tests {
                 ),
             ],
             nested_disjunctions: Vec::new(),
-            nested_negations: Vec::new(),
-            nested_optionals: Vec::new(),
         };
 
         assert_eq!(expected_graph, graph);
@@ -972,8 +960,7 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
+                
             };
 
             assert_eq!(expected_graph, graph);
@@ -1042,8 +1029,7 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
+                
             };
             assert_eq!(expected_graph, graph);
         }
@@ -1097,8 +1083,7 @@ pub mod tests {
                     expected_edge(&constraints[4], var_animal_type.into(), var_name_type.into(), Vec::new()),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
+                
             };
             assert_eq!(expected_graph, graph);
         }
@@ -1164,8 +1149,7 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
+                
             };
 
             assert_eq!(expected_graph, graph);
@@ -1238,8 +1222,7 @@ pub mod tests {
                     expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
+                
             };
 
             assert_eq!(expected_graph.vertices, graph.vertices);
@@ -1305,8 +1288,7 @@ pub mod tests {
                     expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
+                
             };
             assert_eq!(expected_graph, graph);
         }
@@ -1411,8 +1393,7 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
+                
             };
             assert_eq!(expected_graph.vertices, graph.vertices);
             assert_eq!(expected_graph.edges, graph.edges);
@@ -1457,8 +1438,6 @@ pub mod tests {
                 vec![(type_cat, type_catname), (type_dog, type_dogname)],
             )],
             nested_disjunctions: vec![],
-            nested_negations: vec![],
-            nested_optionals: vec![],
         };
 
         let snapshot = storage.clone().open_snapshot_write();
