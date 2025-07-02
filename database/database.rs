@@ -29,7 +29,7 @@ use concept::{
 };
 use concurrency::IntervalRunner;
 use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
-use durability::wal::{WALError, WAL};
+use durability::{wal::WAL, DurabilityServiceError};
 use encoding::{
     error::EncodingError,
     graph::{
@@ -536,7 +536,7 @@ typedb_error! {
         DirectoryRead(2, "Error while reading directory for '{name}'.", name: String, source: Arc<io::Error>),
         DirectoryCreate(3, "Error creating directory for '{name}'", name: String, source: Arc<io::Error>),
         StorageOpen(4, "Error opening storage layer.", typedb_source: StorageOpenError),
-        WALOpen(5, "Error opening WAL.", source: WALError),
+        WALOpen(5, "Error opening WAL.", source: DurabilityServiceError),
         DurabilityClientOpen(6, "Error opening durability client.", typedb_source:DurabilityClientError),
         DurabilityClientRead(7, "Error reading from durability client.", typedb_source: DurabilityClientError),
         CheckpointLoad(8, "Error loading checkpoint for database '{name}'.", name: String, typedb_source: CheckpointLoadError),

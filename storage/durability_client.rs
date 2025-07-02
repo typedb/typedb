@@ -113,30 +113,13 @@ impl WALClient {
 
     fn serialise_record(record: &impl DurabilityRecord) -> Result<Vec<u8>, DurabilityClientError> {
         let mut buf = Vec::new();
-        let mut encoder = lz4::EncoderBuilder::new()
-            .build(&mut buf)
-            .map_err(|err| DurabilityClientError::CompressionError { source: Arc::new(err) })?;
-        record.serialise_into(&mut encoder)?;
-        encoder.finish().1.map_err(|err| DurabilityClientError::CompressionError { source: Arc::new(err) })?;
+        record.serialise_into(&mut buf)?;
         Ok(buf)
     }
 
     fn deserialise_record<Record: DurabilityRecord>(raw_bytes: &[u8]) -> Result<Record, DurabilityClientError> {
-        let ptr = &mut &*raw_bytes;
-        let mut decoder =
-            lz4::Decoder::new(ptr).map_err(|err| DurabilityClientError::CompressionError { source: Arc::new(err) })?;
-        let record = Record::deserialise_from(&mut decoder)
-            .map_err(|err| DurabilityClientError::SerializeError { source: Arc::new(err) })?;
-        Ok(record)
-    }
-
-    fn decompress(raw_bytes: &[u8]) -> Result<Vec<u8>, DurabilityClientError> {
-        let mut buf = Vec::new();
-        lz4::Decoder::new(&mut &*raw_bytes)
-            .map_err(|err| DurabilityClientError::CompressionError { source: Arc::new(err) })?
-            .read_to_end(&mut buf)
-            .map_err(|err| DurabilityClientError::CompressionError { source: Arc::new(err) })?;
-        Ok(buf)
+        Record::deserialise_from(&mut &*raw_bytes)
+            .map_err(|err| DurabilityClientError::SerializeError { source: Arc::new(err) })
     }
 }
 
@@ -181,19 +164,10 @@ impl DurabilityClient for WALClient {
         &self,
         sequence_number: SequenceNumber,
     ) -> Result<impl Iterator<Item = Result<RawRecord<'static>, DurabilityClientError>>, DurabilityClientError> {
-        self.wal.iter_any_from(sequence_number).map_err(|err| DurabilityClientError::ServiceError { source: err }).map(
-            |iter| {
-                iter.map(|item| {
-                    item.map_err(|err| DurabilityClientError::ServiceError { source: err }).and_then(|raw_record| {
-                        Ok(RawRecord {
-                            record_type: raw_record.record_type,
-                            sequence_number: raw_record.sequence_number,
-                            bytes: Cow::Owned(Self::decompress(&raw_record.bytes)?),
-                        })
-                    })
-                })
-            },
-        )
+        self.wal
+            .iter_any_from(sequence_number)
+            .map_err(|err| DurabilityClientError::ServiceError { source: err })
+            .map(|iter| iter.map(|item| item.map_err(|err| DurabilityClientError::ServiceError { source: err })))
     }
 
     fn iter_type_from<Record>(
