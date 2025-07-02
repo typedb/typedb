@@ -113,8 +113,21 @@ pub fn infer_types(
     is_write_stage: bool,
 ) -> Result<BlockAnnotations, TypeInferenceError> {
     let mut type_annotations_by_scope = HashMap::new();
-    let input_annotations = previous_stage_variable_annotations.iter().map(|(var, annotations)| (Vertex::Variable(*var), (**annotations).clone())).collect();
-    infer_types_impl(snapshot, block.block_context(), block.conjunction(), variable_registry, type_manager, &input_annotations, annotated_function_signatures, is_write_stage, &mut type_annotations_by_scope)?;
+    let input_annotations = previous_stage_variable_annotations
+        .iter()
+        .map(|(var, annotations)| (Vertex::Variable(*var), (**annotations).clone()))
+        .collect();
+    infer_types_impl(
+        snapshot,
+        block.block_context(),
+        block.conjunction(),
+        variable_registry,
+        type_manager,
+        &input_annotations,
+        annotated_function_signatures,
+        is_write_stage,
+        &mut type_annotations_by_scope,
+    )?;
     Ok(BlockAnnotations::new(type_annotations_by_scope))
 }
 
@@ -140,14 +153,19 @@ fn infer_types_impl(
         is_write_stage,
     )?;
 
-    infer_types_in_negations_and_conjunctions(snapshot, block_context, variable_registry, type_manager, &graph, annotated_function_signatures, is_write_stage, type_annotations_by_scope)?;
+    infer_types_in_negations_and_conjunctions(
+        snapshot,
+        block_context,
+        variable_registry,
+        type_manager,
+        &graph,
+        annotated_function_signatures,
+        is_write_stage,
+        type_annotations_by_scope,
+    )?;
 
     graph.collect_type_annotations(type_annotations_by_scope);
-    debug_assert_all_vertex_annotations_available(
-        block_context,
-        conjunction,
-        &type_annotations_by_scope,
-    );
+    debug_assert_all_vertex_annotations_available(block_context, conjunction, &type_annotations_by_scope);
     Ok(())
 }
 
@@ -163,17 +181,44 @@ fn infer_types_in_negations_and_conjunctions(
 ) -> Result<(), TypeInferenceError> {
     for nested in graph.nested_disjunctions.iter().flat_map(|disjunction| disjunction.disjunction.iter()) {
         infer_types_in_negations_and_conjunctions(
-            snapshot, block_context, variable_registry, type_manager, nested, annotated_function_signatures, is_write_stage, type_annotations_by_scope
+            snapshot,
+            block_context,
+            variable_registry,
+            type_manager,
+            nested,
+            annotated_function_signatures,
+            is_write_stage,
+            type_annotations_by_scope,
         )?;
     }
     for nested in graph.conjunction.nested_patterns() {
         match nested {
-            NestedPattern::Disjunction(_) => {}, // Done above
+            NestedPattern::Disjunction(_) => {} // Done above
             NestedPattern::Negation(negation) => {
-                infer_types_impl(snapshot, block_context, negation.conjunction(), variable_registry, type_manager, &graph.vertices, annotated_function_signatures, is_write_stage, type_annotations_by_scope)?;
+                infer_types_impl(
+                    snapshot,
+                    block_context,
+                    negation.conjunction(),
+                    variable_registry,
+                    type_manager,
+                    &graph.vertices,
+                    annotated_function_signatures,
+                    is_write_stage,
+                    type_annotations_by_scope,
+                )?;
             }
             NestedPattern::Optional(optional) => {
-                infer_types_impl(snapshot, block_context, optional.conjunction(), variable_registry, type_manager, &graph.vertices, annotated_function_signatures, is_write_stage, type_annotations_by_scope)?;
+                infer_types_impl(
+                    snapshot,
+                    block_context,
+                    optional.conjunction(),
+                    variable_registry,
+                    type_manager,
+                    &graph.vertices,
+                    annotated_function_signatures,
+                    is_write_stage,
+                    type_annotations_by_scope,
+                )?;
                 todo!("Copy optional variable annotations into parent annotations");
             }
         }
@@ -324,16 +369,8 @@ impl TypeInferenceGraph<'_> {
         is_modified
     }
 
-    pub(crate) fn collect_type_annotations(
-        self,
-        type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
-    ) {
-        let TypeInferenceGraph {
-            vertices,
-            edges,
-            nested_disjunctions,
-            conjunction,
-        } = self;
+    pub(crate) fn collect_type_annotations(self, type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>) {
+        let TypeInferenceGraph { vertices, edges, nested_disjunctions, conjunction } = self;
         let mut constraint_annotations = HashMap::new();
         let mut combine_links_edges = HashMap::new();
         edges.into_iter().for_each(|edge| {
@@ -365,8 +402,10 @@ impl TypeInferenceGraph<'_> {
         let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
         type_annotations_by_scope.insert(conjunction.scope_id(), type_annotations);
 
-        nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction)
-        .for_each(|nested| nested.collect_type_annotations(type_annotations_by_scope));
+        nested_disjunctions
+            .into_iter()
+            .flat_map(|disjunction| disjunction.disjunction)
+            .for_each(|nested| nested.collect_type_annotations(type_annotations_by_scope));
     }
 
     fn check_thing_constraints_satisfiable(
