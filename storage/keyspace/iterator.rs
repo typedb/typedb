@@ -19,6 +19,7 @@ pub struct KeyspaceRangeIterator {
     iterator: DBIterator,
     continue_condition: ContinueCondition,
     keyspace_name: &'static str,
+    is_finished: bool,
 }
 
 enum ContinueCondition {
@@ -62,7 +63,7 @@ impl KeyspaceRangeIterator {
             RangeEnd::EndPrefixExclusive(end) => ContinueCondition::EndPrefixExclusive(ByteArray::from(&**end)),
             RangeEnd::Unbounded => ContinueCondition::Always,
         };
-        KeyspaceRangeIterator { iterator, continue_condition, keyspace_name: keyspace.name() }
+        KeyspaceRangeIterator { iterator, continue_condition, keyspace_name: keyspace.name(), is_finished: false }
     }
 
     fn may_skip_start(iterator: &mut DBIterator, excluded_value: &[u8]) {
@@ -126,19 +127,26 @@ impl LendingIterator for KeyspaceRangeIterator {
         Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
+        if self.is_finished {
+            return None;
+        }
         let next = self
             .iterator
             .next()
             .map(|result| result.map_err(|err| KeyspaceError::Iterate { name: self.keyspace_name, source: err }));
 
         // validate next against the Condition
-        match next {
+        let item = match next {
             None => None,
             Some(result) => match Self::accept_value(&self.continue_condition, &result) {
                 true => Some(result),
                 false => None,
             },
+        };
+        if item.is_none() {
+            self.is_finished = true;
         }
+        item
     }
 }
 
