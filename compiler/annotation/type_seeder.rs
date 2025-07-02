@@ -237,9 +237,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
             self.seed_vertex_annotations_from_type_and_called_function_signatures(nested_graph)?;
         }
-        for nested_graph in graph.nested_optionals.iter_mut() {
-            self.seed_vertex_annotations_from_type_and_called_function_signatures(nested_graph)?
-        }
         Ok(())
     }
 
@@ -320,9 +317,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     any |= self.annotate_some_unannotated_vertex(nested_graph, context)?;
                 }
             }
-            for optional in &mut graph.nested_optionals {
-                any |= self.annotate_some_unannotated_vertex(optional, context)?;
-            }
             Ok(any)
         }
     }
@@ -372,11 +366,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         // Propagate to & from nested disjunctions
         for nested in &mut graph.nested_disjunctions {
             is_modified |= self.reconcile_nested_disjunction(nested, &mut graph.vertices)?;
-        }
-
-        // Propagate from nested disjunctions
-        for nested in &mut graph.nested_optionals {
-            is_modified |= self.reconcile_nested_optional(nested, &mut graph.vertices)?;
         }
 
         Ok(is_modified)
@@ -488,32 +477,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
         // Update parent from the shared variables
         for (vertex, types) in shared_vertex_annotations.iter() {
-            if !parent_vertices.contains_key(vertex) {
-                parent_vertices.insert(vertex.clone(), types.clone());
-                something_changed = true;
-            }
-        }
-        Ok(something_changed)
-    }
-
-    fn reconcile_nested_optional(
-        &self,
-        nested: &mut TypeInferenceGraph<'_>,
-        parent_vertices: &mut VertexAnnotations,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        let mut something_changed = false;
-        // Apply annotations of the parent on the nested
-        for vertex in nested.vertices.keys().cloned().collect_vec().into_iter() {
-            if let Some(parent_annotations) = parent_vertices.get_mut(&vertex) {
-                nested.vertices.add_or_intersect(&vertex, Cow::Borrowed(parent_annotations));
-            }
-        }
-
-        // Propagate it within the child & recursively into nested
-        something_changed |= self.propagate_vertex_annotations(nested)?;
-
-        // Update parent from the optional variables
-        for (vertex, types) in nested.vertices.iter() {
             if !parent_vertices.contains_key(vertex) {
                 parent_vertices.insert(vertex.clone(), types.clone());
                 something_changed = true;

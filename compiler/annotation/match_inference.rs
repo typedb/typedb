@@ -10,6 +10,7 @@ use std::{
     ops::{Deref, DerefMut},
     sync::Arc,
 };
+use std::collections::HashSet;
 
 use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
@@ -282,9 +283,6 @@ impl TypeInferenceGraph<'_> {
         for nested_graph in &mut self.nested_disjunctions {
             nested_graph.prune_self_from_vertices(&self.vertices)
         }
-        for nested_graph in &mut self.nested_optionals {
-            nested_graph.prune_constraints_from_vertices()
-        }
     }
 
     fn prune_vertices_from_constraints(&mut self) -> bool {
@@ -294,9 +292,6 @@ impl TypeInferenceGraph<'_> {
         }
         for nested_graph in &mut self.nested_disjunctions {
             is_modified |= nested_graph.prune_vertices_from_self(&mut self.vertices);
-        }
-        for nested_graph in &mut self.nested_optionals {
-            is_modified |= nested_graph.prune_vertices_from_constraints();
         }
         is_modified
     }
