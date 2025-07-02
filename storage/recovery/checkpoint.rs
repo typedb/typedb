@@ -150,7 +150,13 @@ impl Checkpoint {
         let keyspaces = Keyspaces::open::<KS>(&keyspaces_dir).map_err(|error| KeyspaceOpen { source: error })?;
 
         trace!("Finished recovering keyspaces, recovering missing commits");
-        let recovery_start = self.read_sequence_number()? + 1;
+
+        let checkpoint_sequence_number = self.read_sequence_number()?;
+        if checkpoint_sequence_number > durability_client.previous() {
+            panic!("The checkpoint is ahead of the durability service! The durability logs may have been corrupted. Aborting.");
+        }
+
+        let recovery_start = checkpoint_sequence_number + 1;
         let recovered_commits = load_commit_data_from(recovery_start, durability_client, usize::MAX)
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;

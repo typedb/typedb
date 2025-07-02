@@ -26,6 +26,7 @@ use std::{
 use itertools::Itertools;
 use logger::result::ResultExt;
 use resource::constants::storage::WAL_SYNC_INTERVAL_MICROSECONDS;
+use tracing::error;
 
 use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, DurabilityServiceError, RawRecord};
 
@@ -255,7 +256,12 @@ impl Files {
         files.sort_unstable_by(|lhs, rhs| lhs.path.cmp(&rhs.path));
 
         let last = files.last_mut();
-        let writer = if let Some(last) = last { Some(File::writer(last)?) } else { None };
+        let writer = if let Some(last) = last {
+            last.trim_corrupted_tail()?;
+            Some(File::writer(last)?)
+        } else {
+            None
+        };
         Ok((files, writer))
     }
 
@@ -349,6 +355,24 @@ impl File {
             path.file_name().and_then(|s| s.to_str()).and_then(|s| s.split('-').nth(1)).unwrap().parse().unwrap();
         let len = fs::metadata(&path).map(|md| md.len()).unwrap_or(0);
         Ok(Self { start: DurabilitySequenceNumber::from(num), len, path })
+    }
+
+    fn trim_corrupted_tail(&mut self) -> Result<(), DurabilityServiceError> {
+        let mut reader = FileReader::new(self.clone())?;
+        let mut last_successful_read_pos = 0;
+        while let Some(record) = reader.read_one_record().transpose() {
+            if record.as_ref().is_ok_and(|record| !record.bytes.is_empty()) {
+                last_successful_read_pos = reader.reader.stream_position()?;
+            } else {
+                match record {
+                    Ok(_record) => error!("Encountered a zero-length WAL record. WAL may be incomplete. Discarding the rest of the log."),
+                    Err(err) => error!("Encountered a corrupted WAL record: {err}. WAL may be corrupted. Discarding the rest of the log."),
+                }
+                StdFile::open(&self.path)?.set_len(last_successful_read_pos)?;
+                break;
+            }
+        }
+        Ok(())
     }
 
     fn writer(&self) -> io::Result<BufWriter<StdFile>> {
