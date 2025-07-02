@@ -152,7 +152,9 @@ impl LendingIterator for KeyspaceRangeIterator {
 
 impl Seekable<[u8]> for KeyspaceRangeIterator {
     fn seek(&mut self, key: &[u8]) {
-        self.iterator.seek(key);
+        if !self.is_finished {
+            self.iterator.seek(key);
+        }
     }
 
     fn compare_key(&self, item: &Self::Item<'_>, key: &[u8]) -> Ordering {
