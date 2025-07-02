@@ -106,6 +106,12 @@ typedb_error! {
             "A non-anonymous variable is expected in this context.",
             source_span: Option<Span>,
         ),
+        UnimplementedFunctionOptionals(
+            255,
+            "Functions returning optionals are not yet implemented.",
+            source_span: Option<Span>,
+            feature: error::UnimplementedFeature
+        ),
     }
 }
 

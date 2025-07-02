@@ -193,12 +193,9 @@ fn structs_lists_optionals() {
         if let Either::Left(err) = &outer_err {
             if let QueryError::Representation { typedb_source: err, .. } = err.as_ref() {
                 if let RepresentationError::FunctionRepresentation {
-                    typedb_source: FunctionRepresentationError::BlockDefinition { typedb_source: err, .. },
-                } = err.as_ref()
-                {
-                    if let RepresentationError::UnimplementedLanguageFeature { feature } = err.as_ref() {
-                        matches = feature == &error::UnimplementedFeature::OptionalFunctions
-                    }
+                    typedb_source: FunctionRepresentationError::UnimplementedFunctionOptionals { feature, .. },
+                } = err.as_ref() {
+                    matches = feature == &error::UnimplementedFeature::OptionalFunctions
                 }
             }
         }
