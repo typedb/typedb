@@ -9,7 +9,6 @@ use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 use bytes::byte_array::ByteArray;
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 use resource::profile::StorageCounters;
-use tracing::log::Log;
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
