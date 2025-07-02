@@ -62,13 +62,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     pub(crate) fn create_graph<'graph>(
         &self,
         context: &BlockContext,
-        upstream_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
+        upstream_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
         conjunction: &'graph Conjunction,
     ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
         let mut graph = self.build_recursive(context, conjunction);
         // Pre-seed with upstream variable annotations.
-        for variable in context.referenced_variables() {
-            if let Some(annotations) = upstream_annotations.get(&variable) {
+        for variable in conjunction.referenced_variables() {
+            if let Some(annotations) = upstream_annotations.get(&Vertex::Variable(variable)) {
                 graph.vertices.add_or_intersect(&Vertex::Variable(variable), Cow::Borrowed(annotations));
             }
         }
