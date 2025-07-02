@@ -563,17 +563,13 @@ impl FsyncThread {
             let mut context = context;
             let jh = thread::spawn(move || {
                 let mut last_sync = Instant::now();
-                loop {
-                    if context.shutting_down.load(Ordering::Relaxed) {
-                        break;
-                    } else {
-                        let micros_since_last_sync = (Instant::now() - last_sync).as_micros() as u64;
-                        if micros_since_last_sync < WAL_SYNC_INTERVAL_MICROSECONDS {
-                            sleep(Duration::from_micros(WAL_SYNC_INTERVAL_MICROSECONDS - micros_since_last_sync));
-                        }
-                        last_sync = Instant::now(); // Should we reset the timer before or after the sync completes?
-                        Self::may_sync_and_update_state(&mut context);
+                while !context.shutting_down.load(Ordering::Relaxed) {
+                    let micros_since_last_sync = (Instant::now() - last_sync).as_micros() as u64;
+                    if micros_since_last_sync < WAL_SYNC_INTERVAL_MICROSECONDS {
+                        sleep(Duration::from_micros(WAL_SYNC_INTERVAL_MICROSECONDS - micros_since_last_sync));
                     }
+                    last_sync = Instant::now(); // Should we reset the timer before or after the sync completes?
+                    Self::may_sync_and_update_state(&mut context);
                 }
             });
             *handle = Some(jh);
@@ -639,10 +635,6 @@ mod test {
     impl UnsequencedTestRecord {
         const RECORD_TYPE: DurabilityRecordType = 1;
         const RECORD_NAME: &'static str = "UNSEQUENCED_TEST";
-
-        fn new(bytes: &[u8]) -> Self {
-            Self { bytes: bytes.try_into().unwrap() }
-        }
 
         fn bytes(&self) -> &[u8] {
             &self.bytes
