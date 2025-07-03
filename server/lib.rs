@@ -4,22 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#![deny(unused_must_use)]
-#![deny(elided_lifetimes_in_paths)]
-extern crate core;
-
-use std::{net::SocketAddr, sync::Arc};
-
-use axum_server::{tls_rustls::RustlsConfig, Handle};
-use database::database_manager::DatabaseManager;
-use resource::{
-    constants::server::{GRPC_CONNECTION_KEEPALIVE, SERVER_INFO},
-    server_info::ServerInfo,
-};
-use tokio::{
-    net::lookup_host,
-    sync::watch::{channel, Receiver, Sender},
-};
+pub mod authentication;
+pub mod error;
+pub mod parameters;
+pub mod service;
+pub mod state;
 
 use crate::{
     error::ServerOpenError,
@@ -27,17 +16,27 @@ use crate::{
     service::{grpc, http},
     state::{BoxServerState, LocalServerState},
 };
-
-pub mod authentication;
-pub mod error;
-pub mod parameters;
-pub mod service;
-pub mod state;
+use axum_server::{tls_rustls::RustlsConfig, Handle};
+use database::database_manager::DatabaseManager;
+use rand::prelude::SliceRandom;
+use resource::constants::server::{SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH};
+use resource::{
+    constants::server::{GRPC_CONNECTION_KEEPALIVE, SERVER_INFO},
+    server_info::ServerInfo,
+};
+use std::path::Path;
+use std::{fs, net::SocketAddr, sync::Arc};
+use std::future::Future;
+use tokio::{
+    net::lookup_host,
+    sync::watch::{channel, Receiver, Sender},
+};
+use std::pin::Pin;
 
 #[derive(Default)]
 pub struct ServerBuilder {
     server_info: Option<ServerInfo>,
-    server_state: Option<BoxServerState>,
+    server_state_builder: Option<Box<dyn FnOnce(String) -> Pin<Box<dyn Future<Output = BoxServerState>>>>>,
     shutdown_channel: Option<(Sender<()>, Receiver<()>)>,
 }
 
@@ -47,8 +46,8 @@ impl ServerBuilder {
         self
     }
 
-    pub fn server_state(mut self, server_state: BoxServerState) -> Self {
-        self.server_state = Some(server_state);
+    pub fn server_state_builder(mut self, server_state_builder: Option<Box<dyn FnOnce(String) -> Pin<Box<dyn Future<Output = BoxServerState>>>>>) -> Self {
+        self.server_state_builder = server_state_builder;
         self
     }
 
@@ -58,15 +57,73 @@ impl ServerBuilder {
     }
 
     pub async fn build(self, config: Config) -> Result<Server, ServerOpenError> {
+        Self::may_initialise_storage_directory(&config.storage.data_directory)?;
+        let server_id = Self::may_initialise_server_id(&config.storage.data_directory)?;
         let server_info = self.server_info.unwrap_or(SERVER_INFO);
         let (shutdown_sender, shutdown_receiver) = self.shutdown_channel.unwrap_or_else(|| channel(()));
-        let server_state = match self.server_state {
-            Some(s) => s,
+        let server_state = match self.server_state_builder {
+            Some(builder) => builder(server_id).await,
             None => {
-                Box::new(LocalServerState::new(SERVER_INFO, config.clone(), None, shutdown_receiver.clone()).await?)
+                let mut server_state = LocalServerState::new(
+                    SERVER_INFO, config.clone(), server_id, None, shutdown_receiver.clone()
+                ).await?;
+                server_state.initialise();
+                Box::new(server_state)
             }
         };
         Ok(Server::new(server_info, config, Arc::new(server_state), shutdown_sender, shutdown_receiver))
+    }
+
+    fn may_initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
+        debug_assert!(storage_directory.is_absolute());
+        if !storage_directory.exists() {
+            Self::create_storage_directory(storage_directory)
+        } else if !storage_directory.is_dir() {
+            Err(ServerOpenError::NotADirectory { path: storage_directory.to_str().unwrap_or("").to_owned() })
+        } else {
+            Ok(())
+        }
+    }
+
+    fn create_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
+        fs::create_dir_all(storage_directory).map_err(|source| ServerOpenError::CouldNotCreateDataDirectory {
+            path: storage_directory.to_str().unwrap_or("").to_owned(),
+            source: Arc::new(source),
+        })?;
+        Ok(())
+    }
+
+    fn may_initialise_server_id(storage_directory: &Path) -> Result<String, ServerOpenError> {
+        let server_id_file = storage_directory.join(SERVER_ID_FILE_NAME);
+        if server_id_file.exists() {
+            let server_id = fs::read_to_string(&server_id_file)
+                .map_err(|source| ServerOpenError::CouldNotReadServerIDFile {
+                    path: server_id_file.to_str().unwrap_or("").to_owned(),
+                    source: Arc::new(source),
+                })?
+                .trim()
+                .to_owned();
+            if server_id.is_empty() {
+                Err(ServerOpenError::InvalidServerID { path: server_id_file.to_str().unwrap_or("").to_owned() })
+            } else {
+                Ok(server_id)
+            }
+        } else {
+            let server_id = Self::generate_server_id();
+            assert!(!server_id.is_empty(), "Generated server ID should not be empty");
+            fs::write(server_id_file.clone(), &server_id).map_err(|source| {
+                ServerOpenError::CouldNotCreateServerIDFile {
+                    path: server_id_file.to_str().unwrap_or("").to_owned(),
+                    source: Arc::new(source),
+                }
+            })?;
+            Ok(server_id)
+        }
+    }
+
+    fn generate_server_id() -> String {
+        let mut rng = rand::thread_rng();
+        (0..SERVER_ID_LENGTH).map(|_| SERVER_ID_ALPHABET.choose(&mut rng).unwrap()).collect()
     }
 }
 
@@ -196,7 +253,7 @@ impl Server {
             }
             None => axum_server::bind(address).handle(shutdown_handle).serve(router_service).await,
         }
-        .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
+            .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
     }
 
     async fn validate_and_resolve_http_address(
@@ -261,7 +318,7 @@ impl Server {
             .map_err(|_| ServerOpenError::HttpTlsUnsetDefaultCryptoProvider {})
     }
 
-    pub fn database_manager(&self) -> Arc<DatabaseManager> {
-        self.server_state.database_manager()
+    pub async fn database_manager(&self) -> Arc<DatabaseManager> {
+        self.server_state.database_manager().await
     }
 }
