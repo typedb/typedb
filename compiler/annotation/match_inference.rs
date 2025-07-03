@@ -136,6 +136,12 @@ pub fn infer_types(
         .map(|(k, v)| (Vertex::Variable(*k), v.clone()))
         .collect::<Vec<_>>();
     root_annotations.extend(annotations_passing_through);
+
+    debug_assert!({
+        debug_assert_all_vertex_annotations_available(block.block_context(), block.conjunction(), &type_annotations_by_scope);
+        true
+    });
+
     Ok(BlockAnnotations::new(type_annotations_by_scope))
 }
 
@@ -173,7 +179,6 @@ fn infer_types_impl(
     )?;
 
     graph.collect_type_annotations(type_annotations_by_scope);
-    debug_assert_all_vertex_annotations_available(block_context, conjunction, &type_annotations_by_scope);
     Ok(())
 }
 
@@ -239,11 +244,12 @@ fn debug_assert_all_vertex_annotations_available(
     conjunction: &Conjunction,
     by_scope: &HashMap<ScopeId, TypeAnnotations>,
 ) {
-    let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap();
-    conjunction
+    let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap(); // This unwrap will fail
+    debug_assert!(conjunction
         .named_producible_variables(context)
         .chain(conjunction.variable_dependency(context).keys().copied())
-        .all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some());
+        .all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some())
+    );
     conjunction.nested_patterns().iter().for_each(|nested| match nested {
         NestedPattern::Disjunction(disj) => {
             disj.conjunctions()
