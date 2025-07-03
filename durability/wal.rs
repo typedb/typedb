@@ -368,7 +368,8 @@ impl File {
                     Ok(_record) => error!("Encountered a zero-length WAL record. WAL may be incomplete. Discarding the rest of the log."),
                     Err(err) => error!("Encountered a corrupted WAL record: {err}. WAL may be corrupted. Discarding the rest of the log."),
                 }
-                StdFile::open(&self.path)?.set_len(last_successful_read_pos)?;
+                OpenOptions::new().write(true).open(&self.path)?.set_len(last_successful_read_pos)?;
+                self.len = last_successful_read_pos;
                 break;
             }
         }
