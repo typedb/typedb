@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{ops::DerefMut, sync::Arc};
 
 use concept::type_::{annotation, constraint::Constraint, plays::PlaysAnnotation, Capability, PlayerAPI, TypeAPI};
 use cucumber::gherkin::Step;
