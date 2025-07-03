@@ -352,15 +352,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
+                &type_manager,
+                &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
+                false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
                 block.block_context(),
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
-                false,
             )
             .unwrap();
 
@@ -419,15 +422,18 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
+                &type_manager,
+                &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
+                false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
                 block.block_context(),
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
-                false,
             )
             .unwrap();
 
@@ -481,15 +487,18 @@ pub mod tests {
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
-            let err = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
+                &type_manager,
+                &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
+                false,
+            );
+            let err = compute_type_inference_graph(
+                &seeder_context,
                 block.block_context(),
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
-                false,
             )
             .unwrap_err();
 
@@ -524,15 +533,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
+                &type_manager,
+                &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
+                false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
                 block.block_context(),
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
-                false,
             )
             .unwrap();
 
@@ -614,17 +626,16 @@ pub mod tests {
         let block = builder.finish().unwrap();
 
         let snapshot = storage.clone().open_snapshot_write();
-        let graph = compute_type_inference_graph(
+        let seeder_context = TypeGraphSeedingContext::new(
             &snapshot,
-            block.block_context(),
-            block.conjunction(),
-            &translation_context.variable_registry,
             &type_manager,
-            &BTreeMap::new(),
             &EmptyAnnotatedFunctionSignatures,
+            &translation_context.variable_registry,
             false,
-        )
-        .unwrap();
+        );
+        let graph =
+            compute_type_inference_graph(&seeder_context, block.block_context(), block.conjunction(), &BTreeMap::new())
+                .unwrap();
 
         let conjunction = block.conjunction();
         let disj = conjunction.nested_patterns()[0].as_disjunction().unwrap();
@@ -721,17 +732,16 @@ pub mod tests {
         let block = builder.finish().unwrap();
         let conjunction = block.conjunction();
         let constraints = conjunction.constraints();
-        let graph = compute_type_inference_graph(
+        let seeder_context = TypeGraphSeedingContext::new(
             &snapshot,
-            block.block_context(),
-            block.conjunction(),
-            &translation_context.variable_registry,
             &type_manager,
-            &BTreeMap::new(),
             &EmptyAnnotatedFunctionSignatures,
+            &translation_context.variable_registry,
             false,
-        )
-        .unwrap();
+        );
+        let graph =
+            compute_type_inference_graph(&seeder_context, block.block_context(), block.conjunction(), &BTreeMap::new())
+                .unwrap();
 
         let expected_graph = TypeInferenceGraph {
             conjunction,
@@ -809,17 +819,16 @@ pub mod tests {
 
         let conjunction = block.conjunction();
 
-        let graph = compute_type_inference_graph(
+        let seeder_context = TypeGraphSeedingContext::new(
             &snapshot,
-            block.block_context(),
-            block.conjunction(),
-            &translation_context.variable_registry,
             &type_manager,
-            &BTreeMap::new(),
             &EmptyAnnotatedFunctionSignatures,
+            &translation_context.variable_registry,
             false,
-        )
-        .unwrap();
+        );
+        let graph =
+            compute_type_inference_graph(&seeder_context, block.block_context(), block.conjunction(), &BTreeMap::new())
+                .unwrap();
 
         let expected_graph = TypeInferenceGraph {
             conjunction,
@@ -922,15 +931,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
+                &type_manager,
+                &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
+                false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
                 block.block_context(),
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
-                false,
             )
             .unwrap();
 
@@ -991,15 +1003,18 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
+                &type_manager,
+                &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
+                false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
                 block.block_context(),
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
-                false,
             )
             .unwrap();
 
@@ -1111,15 +1126,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
+                &type_manager,
+                &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
+                false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
                 block.block_context(),
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
-                false,
             )
             .unwrap();
 
@@ -1189,15 +1207,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
+                &type_manager,
+                &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
+                false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
                 block.block_context(),
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
-                false,
             )
             .unwrap();
 
@@ -1255,15 +1276,18 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
+                &type_manager,
+                &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
+                false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
                 block.block_context(),
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
-                false,
             )
             .unwrap();
 
@@ -1316,15 +1340,18 @@ pub mod tests {
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
-            let err = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
+                &type_manager,
+                &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
+                false,
+            );
+            let err = compute_type_inference_graph(
+                &seeder_context,
                 block.block_context(),
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
-                false,
             )
             .unwrap_err();
             assert!(match err {
@@ -1356,15 +1383,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
+                &type_manager,
+                &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
+                false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
                 block.block_context(),
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
-                false,
             )
             .unwrap();
 

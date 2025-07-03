@@ -6,11 +6,10 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     ops::{Deref, DerefMut},
     sync::Arc,
 };
-use std::collections::HashSet;
 
 use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
@@ -113,20 +112,23 @@ pub fn infer_types(
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     is_write_stage: bool,
 ) -> Result<BlockAnnotations, TypeInferenceError> {
+    let seeder_context = TypeGraphSeedingContext::new(
+        snapshot,
+        type_manager,
+        annotated_function_signatures,
+        variable_registry,
+        is_write_stage,
+    );
     let mut type_annotations_by_scope = HashMap::new();
     let input_annotations = previous_stage_variable_annotations
         .iter()
         .map(|(var, annotations)| (Vertex::Variable(*var), (**annotations).clone()))
         .collect();
     infer_types_impl(
-        snapshot,
+        &seeder_context,
         block.block_context(),
         block.conjunction(),
-        variable_registry,
-        type_manager,
         &input_annotations,
-        annotated_function_signatures,
-        is_write_stage,
         &mut type_annotations_by_scope,
     )?;
     // Copy over any input variables that haven't been included (and refined)
@@ -137,118 +139,82 @@ pub fn infer_types(
         .map(|(k, v)| (Vertex::Variable(*k), v.clone()))
         .collect::<Vec<_>>();
     root_annotations.extend(annotations_passing_through);
-    debug_assert!(
-        all_vertex_annotations_available(block.block_context(), variable_registry, block.conjunction(), &type_annotations_by_scope)
-    );
+    debug_assert!(all_vertex_annotations_available(
+        block.block_context(),
+        variable_registry,
+        block.conjunction(),
+        &type_annotations_by_scope
+    ));
 
     Ok(BlockAnnotations::new(type_annotations_by_scope))
 }
 
 fn infer_types_impl(
-    snapshot: &impl ReadableSnapshot,
+    seeder_context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
     block_context: &BlockContext,
     conjunction: &Conjunction,
-    variable_registry: &VariableRegistry,
-    type_manager: &TypeManager,
     input_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
-    is_write_stage: bool,
     type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
 ) -> Result<(), TypeInferenceError> {
-    let mut graph = compute_type_inference_graph(
-        snapshot,
-        block_context,
-        conjunction,
-        variable_registry,
-        type_manager,
-        input_annotations,
-        annotated_function_signatures,
-        is_write_stage,
-    )?;
-    infer_types_in_negations_and_conjunctions(
-        snapshot,
-        block_context,
-        variable_registry,
-        type_manager,
-        &mut graph,
-        annotated_function_signatures,
-        is_write_stage,
-        type_annotations_by_scope,
-    )?;
+    let mut graph = compute_type_inference_graph(seeder_context, block_context, conjunction, input_annotations)?;
+    infer_types_in_negations_and_conjunctions(seeder_context, block_context, &mut graph, type_annotations_by_scope)?;
 
     graph.collect_type_annotations(type_annotations_by_scope);
     Ok(())
 }
 
 fn infer_types_in_negations_and_conjunctions(
-    snapshot: &impl ReadableSnapshot,
+    seeder_context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
     block_context: &BlockContext,
-    variable_registry: &VariableRegistry,
-    type_manager: &TypeManager,
     graph: &mut TypeInferenceGraph<'_>,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
-    is_write_stage: bool,
     type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
 ) -> Result<(), TypeInferenceError> {
-    let TypeInferenceGraph { conjunction, vertices, nested_disjunctions, ..} = graph;
-    let optionals_in_conjunction = conjunction.variable_binding_modes().iter()
-        .filter(|(var,mode)| {
+    let TypeInferenceGraph { conjunction, vertices, nested_disjunctions, .. } = graph;
+    let optionals_in_conjunction = conjunction
+        .variable_binding_modes()
+        .iter()
+        .filter(|(var, mode)| {
             mode.is_optionally_binding() && block_context.get_declaring_scope(var) != Some(ScopeId::INPUT)
-        }).map(|(v,_)| Vertex::Variable(*v))
+        })
+        .map(|(v, _)| Vertex::Variable(*v))
         .collect::<HashSet<_>>();
 
     for nested in nested_disjunctions.iter_mut().flat_map(|disjunction| disjunction.disjunction.iter_mut()) {
-        infer_types_in_negations_and_conjunctions(
-            snapshot,
-            block_context,
-            variable_registry,
-            type_manager,
-            nested,
-            annotated_function_signatures,
-            is_write_stage,
-            type_annotations_by_scope,
-        )?;
-        optionals_in_conjunction.iter().filter_map(|var| {
-            nested.vertices.get(var).map(|annotations| (var, annotations))
-        }).for_each(|(var, annotations)| {
-            vertices.annotations.entry(var.clone()).or_default().extend(annotations)
-        });
+        infer_types_in_negations_and_conjunctions(seeder_context, block_context, nested, type_annotations_by_scope)?;
+        optionals_in_conjunction
+            .iter()
+            .filter_map(|var| nested.vertices.get(var).map(|annotations| (var, annotations)))
+            .for_each(|(var, annotations)| vertices.annotations.entry(var.clone()).or_default().extend(annotations));
     }
     for nested in graph.conjunction.nested_patterns() {
         match nested {
             NestedPattern::Disjunction(_) => {} // Done above
             NestedPattern::Negation(negation) => {
                 infer_types_impl(
-                    snapshot,
+                    seeder_context,
                     block_context,
                     negation.conjunction(),
-                    variable_registry,
-                    type_manager,
                     vertices,
-                    annotated_function_signatures,
-                    is_write_stage,
                     type_annotations_by_scope,
                 )?;
             }
             NestedPattern::Optional(optional) => {
                 infer_types_impl(
-                    snapshot,
+                    seeder_context,
                     block_context,
                     optional.conjunction(),
-                    variable_registry,
-                    type_manager,
                     &vertices,
-                    annotated_function_signatures,
-                    is_write_stage,
                     type_annotations_by_scope,
                 )?;
-                let optional_root_annotations = type_annotations_by_scope.get(&optional.conjunction().scope_id()).unwrap().vertex_annotations();
-                optionals_in_conjunction.iter().filter_map(|var| {
-                    optional_root_annotations.get(var).map(|annotations| (var, annotations))
-                }).for_each(|(var, annotations)| {
-                    debug_assert!(!vertices.annotations.contains_key(var));
-                    vertices.annotations.insert(var.clone(), (**annotations).clone());
-                });
+                let optional_root_annotations =
+                    type_annotations_by_scope.get(&optional.conjunction().scope_id()).unwrap().vertex_annotations();
+                optionals_in_conjunction
+                    .iter()
+                    .filter_map(|var| optional_root_annotations.get(var).map(|annotations| (var, annotations)))
+                    .for_each(|(var, annotations)| {
+                        debug_assert!(!vertices.annotations.contains_key(var));
+                        vertices.annotations.insert(var.clone(), (**annotations).clone());
+                    });
             }
         }
     }
@@ -262,69 +228,53 @@ fn all_vertex_annotations_available(
     by_scope: &HashMap<ScopeId, TypeAnnotations>,
 ) -> bool {
     let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap();
-    (
-        conjunction
-            .variable_binding_modes()
-            .iter()
-            .filter_map(|(var, mode)| (!mode.is_locally_binding_in_child()).then_some(*var))
-            .filter(|var| {
-                let category = variable_registry.get_variable_category(*var).unwrap();
-                category.is_category_type() || category.is_category_thing()
-            }).all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some())
-    ) && (
-        conjunction.nested_patterns().iter().all(|nested| match nested {
-            NestedPattern::Disjunction(disj) => {
-                disj.conjunctions()
-                    .iter()
-                    .all(|inner| all_vertex_annotations_available(context, variable_registry, inner, by_scope))
-            }
+    (conjunction
+        .variable_binding_modes()
+        .iter()
+        .filter_map(|(var, mode)| (!mode.is_locally_binding_in_child()).then_some(*var))
+        .filter(|var| {
+            let category = variable_registry.get_variable_category(*var).unwrap();
+            category.is_category_type() || category.is_category_thing()
+        })
+        .all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some()))
+        && (conjunction.nested_patterns().iter().all(|nested| match nested {
+            NestedPattern::Disjunction(disj) => disj
+                .conjunctions()
+                .iter()
+                .all(|inner| all_vertex_annotations_available(context, variable_registry, inner, by_scope)),
             NestedPattern::Negation(inner) => {
                 all_vertex_annotations_available(context, variable_registry, inner.conjunction(), by_scope)
             }
             NestedPattern::Optional(inner) => {
                 all_vertex_annotations_available(context, variable_registry, inner.conjunction(), by_scope)
             }
-        })
-    )
+        }))
 }
 
-pub(crate) fn compute_type_inference_graph<'graph>(
-    snapshot: &impl ReadableSnapshot,
+pub(crate) fn compute_type_inference_graph<'graph, 'seeder, Snapshot: ReadableSnapshot>(
+    seeder_context: &TypeGraphSeedingContext<'seeder, Snapshot>,
     block_context: &BlockContext,
     conjunction: &'graph Conjunction,
-    variable_registry: &VariableRegistry,
-    type_manager: &TypeManager,
     input_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
-    is_write_stage: bool,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
-    let mut graph = TypeGraphSeedingContext::new(
-        snapshot,
-        type_manager,
-        annotated_function_signatures,
-        variable_registry,
-        is_write_stage,
-    )
-    .create_graph(block_context, input_annotations, conjunction)?;
-    pre_check_edges_for_trivial_unsatisfiability(&graph).map_err(|(graph, edge)| {
-        construct_error_message_for_unsatisfiable_edge(snapshot, type_manager, variable_registry, graph, edge)
-    })?;
+    let mut graph = seeder_context.create_graph(block_context, input_annotations, conjunction)?;
+    pre_check_edges_for_trivial_unsatisfiability(&graph)
+        .map_err(|(graph, edge)| construct_error_message_for_unsatisfiable_edge(seeder_context, graph, edge))?;
 
     prune_types(&mut graph);
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
-    graph.check_thing_constraints_satisfiable(variable_registry)?;
+    graph.check_thing_constraints_satisfiable(seeder_context.variable_registry)?;
     Ok(graph)
 }
 
 fn construct_error_message_for_unsatisfiable_edge(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    variable_registry: &VariableRegistry,
+    seeder_context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>,
     graph: &TypeInferenceGraph<'_>,
     edge: &TypeInferenceEdge<'_>,
 ) -> TypeInferenceError {
     let resolve_vertex = |vertex: &Vertex<Variable>| match vertex {
-        Vertex::Variable(v) => variable_registry
+        Vertex::Variable(v) => seeder_context
+            .variable_registry
             .get_variable_name(*v)
             .cloned()
             .unwrap_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
@@ -333,7 +283,7 @@ fn construct_error_message_for_unsatisfiable_edge(
     };
     let resolve_type_label = |type_: &answer::Type| {
         type_
-            .get_label(snapshot, type_manager)
+            .get_label(seeder_context.snapshot, seeder_context.type_manager)
             .map(|label| label.scoped_name().to_string())
             .unwrap_or("(Error while resolving label)".to_owned())
     };

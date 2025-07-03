@@ -41,11 +41,11 @@ use crate::annotation::{
 };
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
-    snapshot: &'this Snapshot,
-    type_manager: &'this TypeManager,
-    function_annotations: &'this dyn AnnotatedFunctionSignatures,
-    variable_registry: &'this VariableRegistry,
-    is_write_stage: bool,
+    pub(super) snapshot: &'this Snapshot,
+    pub(super) type_manager: &'this TypeManager,
+    pub(super) function_annotations: &'this dyn AnnotatedFunctionSignatures,
+    pub(super) variable_registry: &'this VariableRegistry,
+    pub(super) is_write_stage: bool,
 }
 
 impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot> {
