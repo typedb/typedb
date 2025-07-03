@@ -137,10 +137,9 @@ pub fn infer_types(
         .collect::<Vec<_>>();
     root_annotations.extend(annotations_passing_through);
 
-    debug_assert!({
-        debug_assert_all_vertex_annotations_available(block.block_context(), block.conjunction(), &type_annotations_by_scope);
-        true
-    });
+    debug_assert!(
+        all_vertex_annotations_available(block.block_context(), variable_registry, block.conjunction(), &type_annotations_by_scope)
+    );
 
     Ok(BlockAnnotations::new(type_annotations_by_scope))
 }
@@ -239,30 +238,36 @@ fn infer_types_in_negations_and_conjunctions(
     Ok(())
 }
 
-fn debug_assert_all_vertex_annotations_available(
+fn all_vertex_annotations_available(
     context: &BlockContext,
+    variable_registry: &VariableRegistry,
     conjunction: &Conjunction,
     by_scope: &HashMap<ScopeId, TypeAnnotations>,
-) {
-    let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap(); // This unwrap will fail
-    debug_assert!(conjunction
+) -> bool {
+    let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap();
+    (
+        conjunction
         .named_producible_variables(context)
         .chain(conjunction.variable_dependency(context).keys().copied())
-        .all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some())
-    );
-    conjunction.nested_patterns().iter().for_each(|nested| match nested {
-        NestedPattern::Disjunction(disj) => {
-            disj.conjunctions()
-                .iter()
-                .for_each(|inner| debug_assert_all_vertex_annotations_available(context, inner, by_scope));
-        }
-        NestedPattern::Negation(inner) => {
-            debug_assert_all_vertex_annotations_available(context, inner.conjunction(), by_scope)
-        }
-        NestedPattern::Optional(inner) => {
-            debug_assert_all_vertex_annotations_available(context, inner.conjunction(), by_scope)
-        }
-    })
+        .filter(|var| {
+            let category = variable_registry.get_variable_category(*var).unwrap();
+            category.is_category_type() || category.is_category_thing()
+        }).all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some())
+    ) && (
+        conjunction.nested_patterns().iter().all(|nested| match nested {
+            NestedPattern::Disjunction(disj) => {
+                disj.conjunctions()
+                    .iter()
+                    .all(|inner| all_vertex_annotations_available(context, variable_registry, inner, by_scope))
+            }
+            NestedPattern::Negation(inner) => {
+                all_vertex_annotations_available(context, variable_registry, inner.conjunction(), by_scope)
+            }
+            NestedPattern::Optional(inner) => {
+                all_vertex_annotations_available(context, variable_registry, inner.conjunction(), by_scope)
+            }
+        })
+    )
 }
 
 pub(crate) fn compute_type_inference_graph<'graph>(
