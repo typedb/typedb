@@ -1343,7 +1343,7 @@ fn intersection_seeks() {
     // total advance: 25 (24 ? off by one...)
     // for each person, we should skip directly to the person + owned name
     assert_eq!(storage_counters.get_raw_seek().unwrap(), 4);
-    assert_eq!(storage_counters.get_raw_advance().unwrap(), 24);
+    assert_eq!(storage_counters.get_raw_advance().unwrap(), 23);
 }
 
 #[test]
@@ -1515,5 +1515,5 @@ fn intersections_seeks_with_extra_values() {
     //      ==> TODO: this should be optimisable with a short-circuit, but it is currently impossible due to iterators skipping values internally!
 
     assert_eq!(storage_counters.get_raw_seek().unwrap(), 3);
-    assert_eq!(storage_counters.get_raw_advance().unwrap(), 10)
+    assert_eq!(storage_counters.get_raw_advance().unwrap(), 9)
 }

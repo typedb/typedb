@@ -19,6 +19,7 @@ pub struct KeyspaceRangeIterator {
     iterator: DBIterator,
     continue_condition: ContinueCondition,
     keyspace_name: &'static str,
+    is_finished: bool,
 }
 
 enum ContinueCondition {
@@ -35,9 +36,6 @@ impl KeyspaceRangeIterator {
         range: &KeyRange<Bytes<'a, INLINE_BYTES>>,
         storage_counters: StorageCounters,
     ) -> Self {
-        // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
-        // read_opts.set_prefix_same_as_start(true);
-
         let start_prefix = match range.start() {
             RangeStart::Inclusive(bytes) => Bytes::Reference(bytes.as_ref()),
             RangeStart::ExcludeFirstWithPrefix(bytes) => Bytes::Reference(bytes.as_ref()),
@@ -47,12 +45,12 @@ impl KeyspaceRangeIterator {
                 Bytes::Array(cloned)
             }
         };
-
-        let mut iterator = raw_iterator::DBIterator::new_from(
-            iterpool.get_iterator(keyspace),
-            start_prefix.as_ref(),
-            storage_counters,
-        );
+        let raw_iterator = if Self::can_use_prefix(keyspace, range) {
+            iterpool.get_iterator_prefixed(keyspace)
+        } else {
+            iterpool.get_iterator_unprefixed(keyspace)
+        };
+        let mut iterator = DBIterator::new_from(raw_iterator, start_prefix.as_ref(), storage_counters);
         if matches!(range.start(), RangeStart::ExcludeFirstWithPrefix(_)) {
             Self::may_skip_start(&mut iterator, range.start().get_value());
         }
@@ -65,7 +63,7 @@ impl KeyspaceRangeIterator {
             RangeEnd::EndPrefixExclusive(end) => ContinueCondition::EndPrefixExclusive(ByteArray::from(&**end)),
             RangeEnd::Unbounded => ContinueCondition::Always,
         };
-        KeyspaceRangeIterator { iterator, continue_condition, keyspace_name: keyspace.name() }
+        KeyspaceRangeIterator { iterator, continue_condition, keyspace_name: keyspace.name(), is_finished: false }
     }
 
     fn may_skip_start(iterator: &mut DBIterator, excluded_value: &[u8]) {
@@ -97,6 +95,29 @@ impl KeyspaceRangeIterator {
             Err(_err) => true,
         }
     }
+
+    fn can_use_prefix<const INLINE_BYTES: usize>(
+        keyspace: &Keyspace,
+        range: &KeyRange<Bytes<'_, INLINE_BYTES>>,
+    ) -> bool {
+        let Some(prefix_length) = keyspace.prefix_length() else {
+            return false;
+        };
+        let start = range.start().get_value();
+        if start.length() < prefix_length {
+            return false;
+        };
+        match range.end() {
+            RangeEnd::WithinStartAsPrefix => true,
+            RangeEnd::EndPrefixInclusive(end) => {
+                end.length() >= prefix_length && end[0..prefix_length] == start[0..prefix_length]
+            }
+            RangeEnd::EndPrefixExclusive(end) => {
+                end.length() >= prefix_length && end[0..prefix_length] == start[0..prefix_length]
+            }
+            RangeEnd::Unbounded => false,
+        }
+    }
 }
 
 impl LendingIterator for KeyspaceRangeIterator {
@@ -106,25 +127,34 @@ impl LendingIterator for KeyspaceRangeIterator {
         Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
+        if self.is_finished {
+            return None;
+        }
         let next = self
             .iterator
             .next()
             .map(|result| result.map_err(|err| KeyspaceError::Iterate { name: self.keyspace_name, source: err }));
 
         // validate next against the Condition
-        match next {
+        let item = match next {
             None => None,
             Some(result) => match Self::accept_value(&self.continue_condition, &result) {
                 true => Some(result),
                 false => None,
             },
+        };
+        if item.is_none() {
+            self.is_finished = true;
         }
+        item
     }
 }
 
 impl Seekable<[u8]> for KeyspaceRangeIterator {
     fn seek(&mut self, key: &[u8]) {
-        self.iterator.seek(key);
+        if !self.is_finished {
+            self.iterator.seek(key);
+        }
     }
 
     fn compare_key(&self, item: &Self::Item<'_>, key: &[u8]) -> Ordering {

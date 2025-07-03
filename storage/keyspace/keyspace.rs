@@ -51,6 +51,7 @@ pub trait KeyspaceSet: Copy {
         options.create_if_missing(true);
         options
     }
+    fn prefix_length(&self) -> Option<usize>;
 }
 
 #[derive(Debug)]
@@ -191,6 +192,7 @@ pub(crate) struct Keyspace {
     pub(super) kv_storage: DB,
     read_options: ReadOptions,
     write_options: WriteOptions,
+    prefix_length: Option<usize>,
 }
 
 impl Keyspace {
@@ -211,12 +213,13 @@ impl Keyspace {
         let read_options = ReadOptions::default();
         let mut write_options = WriteOptions::default();
         write_options.disable_wal(true);
-        Self { path, name: keyspace.name(), id: keyspace.id(), kv_storage, read_options, write_options }
+        let prefix_length = keyspace.prefix_length();
+        Self { path, name: keyspace.name(), id: keyspace.id(), kv_storage, read_options, write_options, prefix_length }
     }
 
     pub(super) fn new_read_options(&self) -> ReadOptions {
         let mut options = ReadOptions::default();
-        options.set_total_order_seek(false);
+        options.set_total_order_seek(true); // Set this to 'false' to use bloom-filters
         options
     }
 
@@ -226,6 +229,10 @@ impl Keyspace {
 
     pub(crate) fn name(&self) -> &'static str {
         self.name
+    }
+
+    pub(crate) fn prefix_length(&self) -> Option<usize> {
+        self.prefix_length.clone()
     }
 
     pub(crate) fn put(&self, key: &[u8], value: &[u8]) -> Result<(), KeyspaceError> {
