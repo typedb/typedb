@@ -34,7 +34,7 @@ impl Authenticator {
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<BoxBody>) -> Result<Request<BoxBody>, Status> {
         run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
+            self.server_state.diagnostics_manager().await,
             None::<&str>,
             ActionKind::Authenticate,
             || async {

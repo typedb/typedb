@@ -8,7 +8,6 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use std::path::PathBuf;
-
 use clap::Parser;
 use logger::initialise_logging_global;
 use resource::constants::server::{DEFAULT_CONFIG_PATH, SENTRY_REPORTING_URI, SERVER_INFO};

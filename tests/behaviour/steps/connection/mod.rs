@@ -69,7 +69,7 @@ pub async fn connection_ignore(_: &mut Context) {}
 #[cucumber::given(expr = r"connection has {int} database(s)")]
 #[cucumber::then(expr = r"connection has {int} database(s)")]
 pub async fn connection_has_count_databases(context: &mut Context, count: usize) {
-    assert_eq!(context.server().unwrap().lock().unwrap().database_manager().database_names().len(), count)
+    assert_eq!(context.server().unwrap().lock().unwrap().database_manager().await.database_names().len(), count)
 }
 
 #[derive(Debug, Clone)]
