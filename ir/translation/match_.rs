@@ -14,6 +14,7 @@ use crate::{
     translation::{constraints::add_statement, PipelineTranslationContext},
     RepresentationError,
 };
+use crate::pattern::Pattern;
 
 pub fn translate_match<'a>(
     context: &'a mut PipelineTranslationContext,

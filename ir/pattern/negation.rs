@@ -16,6 +16,7 @@ use crate::{
     },
     pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };
+use crate::pattern::Pattern;
 
 #[derive(Debug, Clone)]
 pub struct Negation {
@@ -42,11 +43,27 @@ impl Negation {
         &mut self.conjunction
     }
 
-    pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+}
+
+impl Pattern for Negation {
+
+    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunction().referenced_variables()
     }
 
-    pub fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
+    // Union of non-binding variables used here or below, and variables declared in parent scopes
+    fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
+            let locality = block_context.variable_locality_in_scope(v, self.scope_id());
+            if locality == VariableLocality::Parent || mode.is_require_prebound() {
+                Some(v)
+            } else {
+                None
+            }
+        })
+    }
+
+    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         self.conjunction
             .variable_binding_modes()
             .into_iter()
@@ -64,18 +81,6 @@ impl Negation {
                 Some((var, mode))
             })
             .collect()
-    }
-
-    // Union of non-binding variables used here or below, and variables declared in parent scopes
-    pub fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
-            let locality = block_context.variable_locality_in_scope(v, self.scope_id());
-            if locality == VariableLocality::Parent || mode.is_require_prebound() {
-                Some(v)
-            } else {
-                None
-            }
-        })
     }
 }
 

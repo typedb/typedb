@@ -18,7 +18,7 @@ use constraint::Constraint;
 use encoding::value::label::Label;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
-
+use crate::pipeline::block::BlockContext;
 use crate::pipeline::VariableRegistry;
 
 pub mod conjunction;
@@ -67,6 +67,26 @@ pub trait IrID: Copy + fmt::Display + fmt::Debug + Hash + Eq + PartialEq + Ord +
 }
 
 impl IrID for Variable {}
+
+pub trait Pattern {
+    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
+
+    fn required_inputs<'a>(&'a self, _block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(v))
+    }
+
+    fn named_visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.visible_binding_variables(block_context).filter(Variable::is_named)
+    }
+
+    fn visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_binding_modes()
+            .into_iter()
+            .filter_map(|(v, mode)| (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v))
+    }
+
+    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>>;
+}
 
 // TODO: rename to 'Identifier' in lieu of a better name
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]

@@ -23,6 +23,7 @@ use ir::{
     },
 };
 use itertools::{chain, Itertools};
+use ir::pattern::Pattern;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{

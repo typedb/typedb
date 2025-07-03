@@ -33,6 +33,7 @@ use ir::{
     translation::{match_::translate_match, PipelineTranslationContext},
 };
 use itertools::Itertools;
+use ir::pattern::Pattern;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, QueryProfile};

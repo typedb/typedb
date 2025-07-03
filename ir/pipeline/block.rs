@@ -25,6 +25,7 @@ use crate::{
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
 };
+use crate::pattern::Pattern;
 
 #[derive(Debug, Clone)]
 pub struct Block {
