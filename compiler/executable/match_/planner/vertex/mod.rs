@@ -43,17 +43,17 @@ pub(super) enum PlannerVertex<'a> {
     Variable(VariableVertex),
     Constraint(ConstraintVertex<'a>),
 
-    Is(IsPlanner<'a>),
-    LinksDeduplication(LinksDeduplicationPlanner<'a>),
-    Comparison(ComparisonPlanner<'a>),
-    Unsatisfiable(UnsatisfiablePlanner<'a>),
+    Is(IsVertex<'a>),
+    LinksDeduplication(LinksDeduplicationVertex<'a>),
+    Comparison(ComparisonVertex<'a>),
+    Unsatisfiable(UnsatisfiableVertex<'a>),
 
-    Expression(ExpressionPlanner<'a>),
-    FunctionCall(FunctionCallPlanner<'a>),
+    Expression(ExpressionVertex<'a>),
+    FunctionCall(FunctionCallVertex<'a>),
 
-    Negation(NestedNegationPlan<'a>),
-    Disjunction(NestedDisjunctionPlanner<'a>),
-    Optional(NestedOptionalPlan<'a>),
+    Negation(NegationVertex<'a>),
+    Disjunction(DisjunctionVertex<'a>),
+    Optional(OptionalVertex<'a>),
 }
 
 impl PlannerVertex<'_> {
@@ -300,14 +300,14 @@ impl Input {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct ExpressionPlanner<'a> {
+pub(crate) struct ExpressionVertex<'a> {
     pub expression: &'a ExecutableExpression<Variable>,
     inputs: Vec<VariableVertexId>,
     pub output: VariableVertexId,
     cost: Cost,
 }
 
-impl<'a> ExpressionPlanner<'a> {
+impl<'a> ExpressionVertex<'a> {
     pub(crate) fn from_expression(
         expression: &'a ExecutableExpression<Variable>,
         inputs: Vec<VariableVertexId>,
@@ -326,7 +326,7 @@ impl<'a> ExpressionPlanner<'a> {
     }
 }
 
-impl Costed for ExpressionPlanner<'_> {
+impl Costed for ExpressionVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -338,14 +338,14 @@ impl Costed for ExpressionPlanner<'_> {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct FunctionCallPlanner<'a> {
+pub(crate) struct FunctionCallVertex<'a> {
     pub call_binding: &'a FunctionCallBinding<Variable>,
     pub(super) arguments: Vec<VariableVertexId>,
     pub(super) assigned: Vec<VariableVertexId>,
     cost: Cost,
 }
 
-impl<'a> FunctionCallPlanner<'a> {
+impl<'a> FunctionCallVertex<'a> {
     pub(crate) fn from_constraint(
         call_binding: &'a FunctionCallBinding<Variable>,
         arguments: Vec<VariableVertexId>,
@@ -364,7 +364,7 @@ impl<'a> FunctionCallPlanner<'a> {
     }
 }
 
-impl Costed for FunctionCallPlanner<'_> {
+impl Costed for FunctionCallVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -376,13 +376,13 @@ impl Costed for FunctionCallPlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct IsPlanner<'a> {
+pub(super) struct IsVertex<'a> {
     is: &'a Is<Variable>,
     pub lhs: VariableVertexId,
     pub rhs: VariableVertexId,
 }
 
-impl<'a> IsPlanner<'a> {
+impl<'a> IsVertex<'a> {
     pub(crate) fn from_constraint(
         is: &'a Is<Variable>,
         variable_index: &HashMap<Variable, VariableVertexId>,
@@ -407,7 +407,7 @@ impl<'a> IsPlanner<'a> {
     }
 }
 
-impl Costed for IsPlanner<'_> {
+impl Costed for IsVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -418,7 +418,7 @@ impl Costed for IsPlanner<'_> {
     }
 }
 #[derive(Clone, Debug)]
-pub(super) struct LinksDeduplicationPlanner<'a> {
+pub(super) struct LinksDeduplicationVertex<'a> {
     links_deduplication: &'a LinksDeduplication<Variable>,
     pub role1: VariableVertexId,
     pub player1: VariableVertexId,
@@ -426,7 +426,7 @@ pub(super) struct LinksDeduplicationPlanner<'a> {
     pub player2: VariableVertexId,
 }
 
-impl<'a> LinksDeduplicationPlanner<'a> {
+impl<'a> LinksDeduplicationVertex<'a> {
     pub(crate) fn from_constraint(
         links_deduplication: &'a LinksDeduplication<Variable>,
         variable_index: &HashMap<Variable, VariableVertexId>,
@@ -459,7 +459,7 @@ impl<'a> LinksDeduplicationPlanner<'a> {
     }
 }
 
-impl Costed for LinksDeduplicationPlanner<'_> {
+impl Costed for LinksDeduplicationVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -471,13 +471,13 @@ impl Costed for LinksDeduplicationPlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct ComparisonPlanner<'a> {
+pub(super) struct ComparisonVertex<'a> {
     comparison: &'a Comparison<Variable>,
     pub lhs: Input,
     pub rhs: Input,
 }
 
-impl<'a> ComparisonPlanner<'a> {
+impl<'a> ComparisonVertex<'a> {
     pub(crate) fn from_constraint(
         comparison: &'a Comparison<Variable>,
         variable_index: &HashMap<Variable, VariableVertexId>,
@@ -514,7 +514,7 @@ impl<'a> ComparisonPlanner<'a> {
     }
 }
 
-impl Costed for ComparisonPlanner<'_> {
+impl Costed for ComparisonVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -526,11 +526,11 @@ impl Costed for ComparisonPlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct UnsatisfiablePlanner<'a> {
+pub(super) struct UnsatisfiableVertex<'a> {
     _unsatisfiable: &'a Unsatisfiable,
 }
 
-impl<'a> UnsatisfiablePlanner<'a> {
+impl<'a> UnsatisfiableVertex<'a> {
     pub(crate) fn from_constraint(
         _unsatisfiable: &'a Unsatisfiable,
         _variable_index: &HashMap<Variable, VariableVertexId>,
@@ -549,7 +549,7 @@ impl<'a> UnsatisfiablePlanner<'a> {
     }
 }
 
-impl Costed for UnsatisfiablePlanner<'_> {
+impl Costed for UnsatisfiableVertex<'_> {
     fn cost_and_metadata(
         &self,
         _: &[VertexId],
@@ -561,16 +561,16 @@ impl Costed for UnsatisfiablePlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct NestedNegationPlan<'a> {
+pub(super) struct NegationVertex<'a> {
     plan: ConjunctionPlan<'a>,
     referenced_parent_vertex_ids: HashSet<VariableVertexId>,
 }
 
-impl<'a> NestedNegationPlan<'a> {
-    pub(super) fn new(plan: ConjunctionPlan<'a>, parent_variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
+impl<'a> NegationVertex<'a> {
+    pub(super) fn new(negation_plan: ConjunctionPlan<'a>, parent_variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
         let referenced_parent_vertex_ids =
-            plan.referenced_input_variables().map(|v| parent_variable_index[&v]).collect();
-        Self { plan, referenced_parent_vertex_ids }
+            negation_plan.referenced_input_variables().map(|v| parent_variable_index[&v]).collect();
+        Self { plan: negation_plan, referenced_parent_vertex_ids }
     }
 
     fn is_valid(&self, ordered: &[VertexId]) -> bool {
@@ -586,7 +586,7 @@ impl<'a> NestedNegationPlan<'a> {
     }
 }
 
-impl Costed for NestedNegationPlan<'_> {
+impl Costed for NegationVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -598,13 +598,13 @@ impl Costed for NestedNegationPlan<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct NestedOptionalPlan<'a> {
+pub(super) struct OptionalVertex<'a> {
     pub(super) plan: OptionalPlan<'a>,
     pub(super) referenced_parent_vertex_ids: HashSet<VariableVertexId>,
     pub(super) optional_vertex_ids: HashSet<VariableVertexId>,
 }
 
-impl<'a> NestedOptionalPlan<'a> {
+impl<'a> OptionalVertex<'a> {
     pub(super) fn new(plan: OptionalPlan<'a>, parent_variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
         let referenced_parent_vertex_ids: HashSet<_> =
             plan.referenced_input_variables().map(|v| parent_variable_index[&v]).collect();
@@ -625,7 +625,7 @@ impl<'a> NestedOptionalPlan<'a> {
     }
 }
 
-impl Costed for NestedOptionalPlan<'_> {
+impl Costed for OptionalVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -637,13 +637,13 @@ impl Costed for NestedOptionalPlan<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct NestedDisjunctionPlanner<'a> {
+pub(super) struct DisjunctionVertex<'a> {
     referenced_parent_vertex_ids: HashSet<VariableVertexId>,
     required_parent_vertex_ids: HashSet<VariableVertexId>,
     builder: DisjunctionPlanBuilder<'a>,
 }
 
-impl<'a> NestedDisjunctionPlanner<'a> {
+impl<'a> DisjunctionVertex<'a> {
     pub(super) fn from_builder(
         builder: DisjunctionPlanBuilder<'a>,
         parent_variable_index: &HashMap<Variable, VariableVertexId>,
@@ -687,7 +687,7 @@ impl<'a> NestedDisjunctionPlanner<'a> {
     }
 }
 
-impl Costed for NestedDisjunctionPlanner<'_> {
+impl Costed for DisjunctionVertex<'_> {
     fn cost_and_metadata(
         &self,
         vertex_ordering: &[VertexId],

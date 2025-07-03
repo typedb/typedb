@@ -16,7 +16,7 @@ use ir::{
     pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, Vertex},
     pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
 };
-
+use ir::pattern::Pattern;
 use crate::{
     annotation::{
         fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},

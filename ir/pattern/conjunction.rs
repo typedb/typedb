@@ -28,6 +28,7 @@ use crate::{
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
     RepresentationError,
 };
+use crate::pattern::Pattern;
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {
@@ -74,53 +75,6 @@ impl Conjunction {
         self.referenced_variables().filter(|var| block_context.is_variable_available_in(self.scope_id, *var))
     }
 
-    pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.constraints()
-            .iter()
-            .flat_map(|constraint| constraint.ids())
-            .chain(self.nested_patterns.iter().flat_map(|nested| -> Box<dyn Iterator<Item = Variable>> {
-                match nested {
-                    NestedPattern::Disjunction(disjunction) => Box::new(disjunction.referenced_variables()),
-                    NestedPattern::Negation(negation) => Box::new(negation.referenced_variables()),
-                    NestedPattern::Optional(optional) => Box::new(optional.referenced_variables()),
-                }
-            }))
-            .unique()
-    }
-
-    pub fn named_visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.visible_binding_variables(block_context).filter(Variable::is_named)
-    }
-
-    fn visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes()
-            .into_iter()
-            .filter_map(|(v, mode)| (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v))
-    }
-
-    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(v))
-    }
-
-    pub fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
-        let mut binding_modes = self.constraints.variable_binding_modes();
-        for nested in self.nested_patterns.iter() {
-            let nested_pattern_modes = nested.variable_binding_modes();
-            for (var, mode) in nested_pattern_modes {
-                match binding_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => {
-                        // Eg. if it's binding in one part of the conjunction, but non-binding in another, it's still binding
-                        //   in this whole conjunction.
-                        *entry.get_mut() &= mode
-                    }
-                    hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(mode);
-                    }
-                }
-            }
-        }
-        binding_modes
-    }
 
     pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
         for (var, mode) in self.variable_binding_modes() {
@@ -139,6 +93,43 @@ impl Conjunction {
         ControlFlow::Continue(())
     }
 }
+
+impl Pattern for Conjunction {
+    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.constraints()
+            .iter()
+            .flat_map(|constraint| constraint.ids())
+            .chain(self.nested_patterns.iter().flat_map(|nested| -> Box<dyn Iterator<Item = Variable>> {
+                match nested {
+                    NestedPattern::Disjunction(disjunction) => Box::new(disjunction.referenced_variables()),
+                    NestedPattern::Negation(negation) => Box::new(negation.referenced_variables()),
+                    NestedPattern::Optional(optional) => Box::new(optional.referenced_variables()),
+                }
+            }))
+            .unique()
+    }
+
+    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
+        let mut binding_modes = self.constraints.variable_binding_modes();
+        for nested in self.nested_patterns.iter() {
+            let nested_pattern_modes = nested.variable_binding_modes();
+            for (var, mode) in nested_pattern_modes {
+                match binding_modes.entry(var) {
+                    hash_map::Entry::Occupied(mut entry) => {
+                        // Eg. if it's binding in one part of the conjunction, but non-binding in another, it's still binding
+                        //   in this whole conjunction.
+                        *entry.get_mut() &= mode
+                    }
+                    hash_map::Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(mode);
+                    }
+                }
+            }
+        }
+        binding_modes
+    }
+}
+
 
 impl Scope for Conjunction {
     fn scope_id(&self) -> ScopeId {

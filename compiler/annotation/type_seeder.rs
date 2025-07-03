@@ -31,6 +31,7 @@ use ir::{
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
+use ir::pattern::Pattern;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{

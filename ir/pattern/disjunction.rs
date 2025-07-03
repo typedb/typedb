@@ -21,6 +21,7 @@ use crate::{
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeType, VariableLocality},
 };
+use crate::pattern::Pattern;
 
 #[derive(Clone, Debug)]
 pub struct Disjunction {
@@ -54,26 +55,34 @@ impl Disjunction {
         self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_always_binding().then_some(v))
     }
 
-    // Union of non-binding variables used here or below, and variables declared in parent scopes
-    pub fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
-            if mode.is_require_prebound() {
-                debug_assert!(block_context.variable_locality_in_scope(v, self.scope_id) == VariableLocality::Parent);
-                Some(v)
-            } else {
-                None
-            }
-        })
+    pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
+        for conjunction in &self.conjunctions {
+            conjunction.find_disjoint_variable(block_context)?;
+        }
+        ControlFlow::Continue(())
     }
 
-    pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
+        let unsatisfiable_branch_ids = self
+            .conjunctions
+            .iter()
+            .zip(self.branch_ids.iter())
+            .filter_map(|(conj, branch_id)| unsatisfiable.contains(&conj.scope_id()).then_some(*branch_id))
+            .collect::<Vec<_>>();
+        self.branch_ids.retain(|branch_id| !unsatisfiable_branch_ids.contains(branch_id));
+        self.conjunctions.retain(|conj| !unsatisfiable.contains(&conj.scope_id()))
+    }
+}
+
+impl Pattern for Disjunction {
+    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
     }
 
     /// Returns: non_binding for any variable in any branch that is required as an argument/input
     ///          locally_binding for any binding variable that is not binding in all branches
     ///          binding for any variable that is bound in all branches
-    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
+    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
         }
@@ -106,23 +115,7 @@ impl Disjunction {
         binding_modes
     }
 
-    pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
-        for conjunction in &self.conjunctions {
-            conjunction.find_disjoint_variable(block_context)?;
-        }
-        ControlFlow::Continue(())
-    }
 
-    pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
-        let unsatisfiable_branch_ids = self
-            .conjunctions
-            .iter()
-            .zip(self.branch_ids.iter())
-            .filter_map(|(conj, branch_id)| unsatisfiable.contains(&conj.scope_id()).then_some(*branch_id))
-            .collect::<Vec<_>>();
-        self.branch_ids.retain(|branch_id| !unsatisfiable_branch_ids.contains(branch_id));
-        self.conjunctions.retain(|conj| !unsatisfiable.contains(&conj.scope_id()))
-    }
 }
 
 impl StructuralEquality for Disjunction {

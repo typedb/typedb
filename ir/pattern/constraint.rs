@@ -31,6 +31,8 @@ use crate::{
     },
     LiteralParseError, RepresentationError,
 };
+use crate::pattern::Pattern;
+use crate::pipeline::block::BlockContext;
 
 #[derive(Debug, Clone)]
 pub struct Constraints {
@@ -67,8 +69,17 @@ impl Constraints {
         self.constraints.push(constraint);
         self.constraints.last().unwrap()
     }
+}
 
-    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
+impl Pattern for Constraints {
+    fn referenced_variables(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.constraints()
+            .iter()
+            .flat_map(|constraint| constraint.ids())
+            .unique()
+    }
+
+    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
             for var in constraint.binding_ids() {
                 match acc.entry(var) {

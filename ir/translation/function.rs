@@ -29,6 +29,7 @@ use crate::{
         PipelineTranslationContext,
     },
 };
+use crate::pattern::Pattern;
 
 macro_rules! verify_variable_available {
     ($context:ident, $var:expr => $error:ident ) => {
