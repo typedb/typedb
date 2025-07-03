@@ -47,8 +47,16 @@ pub(crate) mod server {
     pub(crate) fn server_version_res(server_info: ServerInfo) -> typedb_protocol::server::version::Res {
         typedb_protocol::server::version::Res {
             distribution: server_info.distribution.to_string(),
-            version: server_info.version.to_string(),
+            version: server_info.version.to_string(), // todo
         }
+    }
+
+    pub(crate) fn servers_register_res() -> typedb_protocol::server_manager::register::Res {
+        typedb_protocol::server_manager::register::Res {}
+    }
+
+    pub(crate) fn servers_deregister_res() -> typedb_protocol::server_manager::deregister::Res {
+        typedb_protocol::server_manager::deregister::Res {}
     }
 }
 
