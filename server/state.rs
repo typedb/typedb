@@ -5,9 +5,9 @@
  */
 
 use std::{
-    fmt::Debug,
-    fs,
-    path::{Path, PathBuf},
+    fmt::Debug
+    ,
+    path::PathBuf,
     sync::Arc,
 };
 
@@ -22,11 +22,12 @@ use database::{
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
+use futures::{StreamExt, TryFutureExt};
 use ir::pipeline::FunctionReadError;
+use itertools::Itertools;
 use options::TransactionOptions;
-use rand::prelude::SliceRandom;
 use resource::{
-    constants::server::{DATABASE_METRICS_UPDATE_INTERVAL, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH},
+    constants::server::DATABASE_METRICS_UPDATE_INTERVAL,
     server_info::ServerInfo,
 };
 use storage::durability_client::{DurabilityClient, WALClient};
@@ -55,27 +56,31 @@ pub type BoxServerState = Box<dyn ServerState + Send + Sync>;
 
 #[async_trait]
 pub trait ServerState: Debug {
-    fn databases_all(&self) -> Vec<String>;
+    async fn servers_register(&self, clustering_id: u64, address: String) -> Result<(), ServerStateError>;
 
-    fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>>;
+    async fn servers_deregister(&self, clustering_id: u64) -> Result<(), ServerStateError>;
 
-    fn databases_contains(&self, name: &str) -> bool;
+    async fn databases_all(&self) -> Result<Vec<String>, ServerStateError>;
 
-    fn databases_create(&self, name: &str) -> Result<(), DatabaseCreateError>;
+    async fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>>;
 
-    fn database_schema(&self, name: String) -> Result<String, ServerStateError>;
+    async fn databases_contains(&self, name: &str) -> bool;
 
-    fn database_type_schema(&self, name: String) -> Result<String, ServerStateError>;
+    async fn databases_create(&self, name: &str) -> Result<(), ServerStateError>;
 
-    fn database_delete(&self, name: &str) -> Result<(), DatabaseDeleteError>;
+    async fn database_schema(&self, name: String) -> Result<String, ServerStateError>;
 
-    fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ServerStateError>;
+    async fn database_type_schema(&self, name: String) -> Result<String, ServerStateError>;
 
-    fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ServerStateError>;
+    async fn database_delete(&self, name: &str) -> Result<(), ServerStateError>;
 
-    fn users_contains(&self, name: &str) -> Result<bool, UserGetError>;
+    async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ServerStateError>;
 
-    fn users_create(&self, user: &User, credential: &Credential, accessor: Accessor) -> Result<(), ServerStateError>;
+    async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ServerStateError>;
+
+    async fn users_contains(&self, name: &str) -> Result<bool, ServerStateError>;
+
+    async fn users_create(&self, user: &User, credential: &Credential, accessor: Accessor) -> Result<(), ServerStateError>;
 
     async fn users_update(
         &self,
@@ -87,28 +92,50 @@ pub trait ServerState: Debug {
 
     async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ServerStateError>;
 
-    fn user_verify_password(&self, username: &str, password: &str) -> Result<(), AuthenticationError>;
+    async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ServerStateError>;
 
-    async fn token_create(&self, username: String, password: String) -> Result<String, AuthenticationError>;
+    async fn token_create(&self, username: String, password: String) -> Result<String, ServerStateError>;
 
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 
     fn server_info(&self) -> ServerInfo;
 
-    fn database_manager(&self) -> Arc<DatabaseManager>;
+    async fn database_manager(&self) -> Arc<DatabaseManager>;
 
-    // TODO: Do we really want to make this pub?
-    fn diagnostics_manager(&self) -> Arc<DiagnosticsManager>;
+    async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager>;
 
-    fn shutdown_receiver(&self) -> Receiver<()>;
+    async fn shutdown_receiver(&self) -> Receiver<()>;
+}
+
+typedb_error! {
+    pub ServerStateError(component = "Server state", prefix = "SRV") {
+        NotInitialised(16, "Not yet initialised"),
+        Unimplemented(1, "Not implemented: {description}", description: String),
+        OperationFailedDueToReplicaUnavailability(12, "Unable to execute as one or more servers could not respond in time"),
+        OperationFailedNonPrimaryReplica(13, "Unable to execute as this server is not the primary replica"),
+        OperationNotPermitted(2, "The user is not permitted to execute the operation"),
+        DatabaseNotFound(3, "Database '{name}' not found.", name: String),
+        DatabaseCannotBeCreated(14, "Unable to create database", typedb_source: DatabaseCreateError),
+        DatabaseCannotBeDeleted(15, "Unable to delete database", typedb_source: DatabaseDeleteError),
+        UserNotFound(4, "User not found."),
+        UserCannotBeRetrieved(8, "Unable to retrieve user", typedb_source: UserGetError),
+        UserCannotBeCreated(9, "Unable to create user", typedb_source: UserCreateError),
+        UserCannotBeUpdated(10, "Unable to update user", typedb_source: UserUpdateError),
+        UserCannotBeDeleted(11, "Unable to delete user", typedb_source: UserDeleteError),
+        FailedToOpenPrerequisiteTransaction(5, "Failed to open transaction, which is a prerequisite for the operation."),
+        ConceptReadError(6, "Error reading concepts", typedb_source: Box<ConceptReadError>),
+        FunctionReadError(7, "Error reading functions", typedb_source: FunctionReadError),
+        AuthenticationError(17, "Error when authenticating", typedb_source: AuthenticationError),
+        DatabaseExport(18, "Database export error", typedb_source: DatabaseExportError),
+    }
 }
 
 #[derive(Debug)]
 pub struct LocalServerState {
     server_info: ServerInfo,
     database_manager: Arc<DatabaseManager>,
-    user_manager: Arc<UserManager>,
-    credential_verifier: Arc<CredentialVerifier>,
+    user_manager: Option<Arc<UserManager>>,
+    credential_verifier: Option<Arc<CredentialVerifier>>,
     token_manager: Arc<TokenManager>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     _database_diagnostics_updater: IntervalRunner,
@@ -119,38 +146,25 @@ impl LocalServerState {
     pub async fn new(
         server_info: ServerInfo,
         config: Config,
+        server_id: String,
         deployment_id: Option<String>,
         shutdown_receiver: Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
-        let storage_directory = &config.storage.data_directory;
-        let diagnostics_config = &config.diagnostics;
-
-        Self::may_initialise_storage_directory(storage_directory)?;
-
-        let server_id = Self::may_initialise_server_id(storage_directory)?;
-
-        let deployment_id = deployment_id.unwrap_or(server_id.clone());
-
-        let database_manager = DatabaseManager::new(storage_directory)
+        let database_manager = DatabaseManager::new(&config.storage.data_directory)
             .map_err(|err| ServerOpenError::DatabaseOpen { typedb_source: err })?;
-        let system_database = initialise_system_database(&database_manager);
-
-        let user_manager = Arc::new(UserManager::new(system_database));
-        initialise_default_user(&user_manager);
-
-        let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
         let token_manager = Arc::new(
             TokenManager::new(config.server.authentication.token_expiration)
-                .map_err(|typedb_source| ServerOpenError::TokenConfiguration { typedb_source })?,
+                .map_err(|err| ServerOpenError::TokenConfiguration { typedb_source: err })?,
         );
 
+        let deployment_id = deployment_id.unwrap_or(server_id.clone());
         let diagnostics_manager = Arc::new(
             Self::initialise_diagnostics(
                 deployment_id.clone(),
                 server_id.clone(),
                 server_info,
-                diagnostics_config,
-                storage_directory.clone(),
+                &config.diagnostics,
+                config.storage.data_directory.clone(),
                 config.development_mode.enabled,
             )
             .await,
@@ -159,8 +173,8 @@ impl LocalServerState {
         Ok(Self {
             server_info,
             database_manager: database_manager.clone(),
-            user_manager,
-            credential_verifier,
+            user_manager: None,
+            credential_verifier: None,
             token_manager,
             diagnostics_manager: diagnostics_manager.clone(),
             _database_diagnostics_updater: IntervalRunner::new(
@@ -171,56 +185,13 @@ impl LocalServerState {
         })
     }
 
-    fn may_initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
-        debug_assert!(storage_directory.is_absolute());
-        if !storage_directory.exists() {
-            Self::create_storage_directory(storage_directory)
-        } else if !storage_directory.is_dir() {
-            Err(ServerOpenError::NotADirectory { path: storage_directory.to_str().unwrap_or("").to_owned() })
-        } else {
-            Ok(())
-        }
-    }
-
-    fn create_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
-        fs::create_dir_all(storage_directory).map_err(|source| ServerOpenError::CouldNotCreateDataDirectory {
-            path: storage_directory.to_str().unwrap_or("").to_owned(),
-            source: Arc::new(source),
-        })?;
-        Ok(())
-    }
-
-    fn may_initialise_server_id(storage_directory: &Path) -> Result<String, ServerOpenError> {
-        let server_id_file = storage_directory.join(SERVER_ID_FILE_NAME);
-        if server_id_file.exists() {
-            let server_id = fs::read_to_string(&server_id_file)
-                .map_err(|source| ServerOpenError::CouldNotReadServerIDFile {
-                    path: server_id_file.to_str().unwrap_or("").to_owned(),
-                    source: Arc::new(source),
-                })?
-                .trim()
-                .to_owned();
-            if server_id.is_empty() {
-                Err(ServerOpenError::InvalidServerID { path: server_id_file.to_str().unwrap_or("").to_owned() })
-            } else {
-                Ok(server_id)
-            }
-        } else {
-            let server_id = Self::generate_server_id();
-            assert!(!server_id.is_empty(), "Generated server ID should not be empty");
-            fs::write(server_id_file.clone(), &server_id).map_err(|source| {
-                ServerOpenError::CouldNotCreateServerIDFile {
-                    path: server_id_file.to_str().unwrap_or("").to_owned(),
-                    source: Arc::new(source),
-                }
-            })?;
-            Ok(server_id)
-        }
-    }
-
-    fn generate_server_id() -> String {
-        let mut rng = rand::thread_rng();
-        (0..SERVER_ID_LENGTH).map(|_| SERVER_ID_ALPHABET.choose(&mut rng).unwrap()).collect()
+    pub fn initialise(&mut self) {
+        let system_database = initialise_system_database(&self.database_manager);
+        let user_manager = Arc::new(UserManager::new(system_database));
+        initialise_default_user(&user_manager);
+        let credential_verifier = Some(Arc::new(CredentialVerifier::new(user_manager.clone())));
+        self.user_manager = Some(user_manager);
+        self.credential_verifier = credential_verifier;
     }
 
     async fn initialise_diagnostics(
@@ -272,6 +243,13 @@ impl LocalServerState {
         Ok(schema)
     }
 
+    pub fn get_functions_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, ServerStateError> {
+        transaction
+            .function_manager
+            .get_functions_syntax(transaction.snapshot())
+            .map_err(|err| ServerStateError::FunctionReadError { typedb_source: err })
+    }
+
     pub(crate) fn get_database_type_schema<D: DurabilityClient>(
         database: Arc<Database<D>>,
     ) -> Result<String, ServerStateError> {
@@ -281,34 +259,70 @@ impl LocalServerState {
             .map_err(|typedb_source| ServerStateError::DatabaseExport { typedb_source })?;
         Ok(type_schema)
     }
+
+    pub fn get_types_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, ServerStateError> {
+        transaction
+            .type_manager
+            .get_types_syntax(transaction.snapshot())
+            .map_err(|err| ServerStateError::ConceptReadError { typedb_source: err })
+    }
+
+    fn get_user_manager(&self) -> Result<Arc<UserManager>, ServerStateError> {
+        match self.user_manager.clone() {
+            Some(user_manager) => Ok(user_manager),
+            None => Err(ServerStateError::NotInitialised {})
+        }
+    }
+
+    fn get_credential_verifier(&self) -> Result<Arc<CredentialVerifier>, ServerStateError> {
+        match self.credential_verifier.clone() {
+            Some(credential_verifier) => Ok(credential_verifier),
+            None => Err(ServerStateError::NotInitialised {})
+        }
+    }
 }
 
 #[async_trait]
 impl ServerState for LocalServerState {
-    fn databases_all(&self) -> Vec<String> {
-        self.database_manager.database_names()
+    async fn servers_register(&self, clustering_id: u64, address: String) -> Result<(), ServerStateError> {
+        // todo: error message
+        Err(
+            ServerStateError::Unimplemented { description: "This functionality is not available".to_string() }
+        )
     }
 
-    fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
+    async fn servers_deregister(&self, clustering_id: u64) -> Result<(), ServerStateError> {
+        // todo: error message
+        Err(
+            ServerStateError::Unimplemented { description: "This functionality is not available".to_string() }
+        )
+    }
+
+    async fn databases_all(&self) -> Result<Vec<String>, ServerStateError> {
+        Ok(self.database_manager.database_names())
+    }
+
+    async fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
         self.database_manager.database(name)
     }
 
-    fn databases_contains(&self, name: &str) -> bool {
+    async fn databases_contains(&self, name: &str) -> bool {
         self.database_manager.database(name).is_some()
     }
 
-    fn databases_create(&self, name: &str) -> Result<(), DatabaseCreateError> {
+    async fn databases_create(&self, name: &str) -> Result<(), ServerStateError> {
         self.database_manager.put_database(name)
+            .map_err(|err| ServerStateError::DatabaseCannotBeCreated { typedb_source: err })
     }
 
-    fn database_schema(&self, name: String) -> Result<String, ServerStateError> {
+    async fn database_schema(&self, name: String) -> Result<String, ServerStateError> {
         match self.database_manager.database(&name) {
             Some(db) => Self::get_database_schema(db),
             None => Err(ServerStateError::DatabaseNotFound { name }),
         }
     }
 
-    fn database_type_schema(&self, name: String) -> Result<String, ServerStateError> {
+    async fn database_type_schema(&self, name: String) -> Result<String, ServerStateError> {
         match self.database_manager.database(&name) {
             None => Err(ServerStateError::DatabaseNotFound { name: name.clone() }),
             Some(database) => match Self::get_database_type_schema(database) {
@@ -318,43 +332,66 @@ impl ServerState for LocalServerState {
         }
     }
 
-    fn database_delete(&self, name: &str) -> Result<(), DatabaseDeleteError> {
+    async fn database_delete(&self, name: &str) -> Result<(), ServerStateError> {
         self.database_manager.delete_database(name)
+            .map_err(|err| ServerStateError::DatabaseCannotBeDeleted { typedb_source: err })
+
     }
 
-    fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ServerStateError> {
+    async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ServerStateError> {
         if !PermissionManager::exec_user_get_permitted(accessor.0.as_str(), name) {
             return Err(ServerStateError::OperationNotPermitted {});
         }
 
-        match self.user_manager.get(name) {
-            Ok(get) => match get {
-                Some((user, _)) => Ok(user),
-                None => Err(ServerStateError::UserNotFound {}),
-            },
-            Err(err) => Err(ServerStateError::UserCannotBeRetrieved { typedb_source: err }),
+        match self.get_user_manager() {
+            Ok(user_manager) => {
+                match user_manager.get(name) {
+                    Ok(get) => match get {
+                        Some((user, _)) => Ok(user),
+                        None => Err(ServerStateError::UserNotFound {}),
+                    },
+                    Err(err) => Err(ServerStateError::UserCannotBeRetrieved { typedb_source: err }),
+                }
+            }
+            Err(err) => Err(err)
         }
     }
 
-    fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ServerStateError> {
+    async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ServerStateError> {
         if !PermissionManager::exec_user_all_permitted(accessor.0.as_str()) {
             return Err(ServerStateError::OperationNotPermitted {});
         }
-        Ok(self.user_manager.all())
+
+        match self.get_user_manager() {
+            Ok(user_manager) => Ok(user_manager.all()),
+            Err(err) => Err(err)
+        }
     }
 
-    fn users_contains(&self, name: &str) -> Result<bool, UserGetError> {
-        self.user_manager.contains(name)
+    async fn users_contains(&self, name: &str) -> Result<bool, ServerStateError> {
+        match self.get_user_manager() {
+            Ok(user_manager) => {
+                match user_manager.contains(name) {
+                    Ok(bool) => Ok(bool),
+                    Err(err) => Err(ServerStateError::UserCannotBeRetrieved { typedb_source: err })
+                }
+            },
+            Err(err) => Err(err)
+        }
     }
 
-    fn users_create(&self, user: &User, credential: &Credential, accessor: Accessor) -> Result<(), ServerStateError> {
+    async fn users_create(&self, user: &User, credential: &Credential, accessor: Accessor) -> Result<(), ServerStateError> {
         if !PermissionManager::exec_user_create_permitted(accessor.0.as_str()) {
             return Err(ServerStateError::OperationNotPermitted {});
         }
-        self.user_manager
-            .create(user, credential)
-            .map(|_user| ())
-            .map_err(|err| ServerStateError::UserCannotBeCreated { typedb_source: err })
+        match self.get_user_manager() {
+            Ok(user_manager) => {
+                user_manager.create(user, credential)
+                    .map(|_user| ())
+                    .map_err(|err| ServerStateError::UserCannotBeCreated { typedb_source: err })
+            }
+            Err(err) => Err(err)
+        }
     }
 
     async fn users_update(
@@ -367,11 +404,15 @@ impl ServerState for LocalServerState {
         if !PermissionManager::exec_user_update_permitted(accessor.0.as_str(), name) {
             return Err(ServerStateError::OperationNotPermitted {});
         }
-        self.user_manager
-            .update(name, &user_update, &credential_update)
-            .map_err(|err| ServerStateError::UserCannotBeUpdated { typedb_source: err })?;
-        self.token_manager.invalidate_user(name).await;
-        Ok(())
+        match self.get_user_manager() {
+            Ok(user_manager) => {
+                user_manager.update(name, &user_update, &credential_update)
+                    .map_err(|err| ServerStateError::UserCannotBeUpdated { typedb_source: err })?;
+                self.token_manager.invalidate_user(name).await;
+                Ok(())
+            }
+            Err(err) => Err(err)
+        }
     }
 
     async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ServerStateError> {
@@ -379,18 +420,31 @@ impl ServerState for LocalServerState {
             return Err(ServerStateError::OperationNotPermitted {});
         }
 
-        self.user_manager.delete(name).map_err(|err| ServerStateError::UserCannotBeDeleted { typedb_source: err })?;
-        self.token_manager.invalidate_user(name).await;
-        Ok(())
+        match self.get_user_manager() {
+            Ok(user_manager) => {
+                user_manager.delete(name).map_err(|err| ServerStateError::UserCannotBeDeleted { typedb_source: err })?;
+                self.token_manager.invalidate_user(name).await;
+                Ok(())
+            }
+            Err(err) => Err(err)
+        }
     }
 
-    fn user_verify_password(&self, username: &str, password: &str) -> Result<(), AuthenticationError> {
-        self.credential_verifier.verify_password(username, password)
-    }
-
-    async fn token_create(&self, username: String, password: String) -> Result<String, AuthenticationError> {
-        self.user_verify_password(&username, &password)?;
+    async fn token_create(&self, username: String, password: String) -> Result<String, ServerStateError> {
+        self.user_verify_password(&username, &password).await?;
         Ok(self.token_manager.new_token(username).await)
+    }
+
+    async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ServerStateError> {
+        match self.get_credential_verifier() {
+            Ok(credential_verifier) => {
+                match credential_verifier.verify_password(username, password) {
+                    Ok(()) => Ok(()),
+                    Err(err) => Err(ServerStateError::AuthenticationError { typedb_source: err })
+                }
+            },
+            Err(err) => Err(err)
+        }
     }
 
     async fn token_get_owner(&self, token: &str) -> Option<String> {
@@ -401,32 +455,15 @@ impl ServerState for LocalServerState {
         self.server_info
     }
 
-    fn database_manager(&self) -> Arc<DatabaseManager> {
+    async fn database_manager(&self) -> Arc<DatabaseManager> {
         self.database_manager.clone()
     }
 
-    fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
+    async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
         self.diagnostics_manager.clone()
     }
 
-    fn shutdown_receiver(&self) -> Receiver<()> {
+    async fn shutdown_receiver(&self) -> Receiver<()> {
         self.shutdown_receiver.clone()
-    }
-}
-
-typedb_error! {
-    pub ServerStateError(component = "Server state", prefix = "SRV") {
-        Unimplemented(1, "Not implemented: {description}", description: String),
-        OperationNotPermitted(2, "The user is not permitted to execute the operation"),
-        DatabaseNotFound(3, "Database '{name}' not found.", name: String),
-        UserNotFound(4, "User not found."),
-        FailedToOpenPrerequisiteTransaction(5, "Failed to open transaction, which is a prerequisite for the operation."),
-        ConceptReadError(6, "Error reading concepts", typedb_source: Box<ConceptReadError>),
-        FunctionReadError(7, "Error reading functions", typedb_source: FunctionReadError),
-        UserCannotBeRetrieved(8, "Unable to retrieve user", typedb_source: UserGetError),
-        UserCannotBeCreated(9, "Unable to create user", typedb_source: UserCreateError),
-        UserCannotBeUpdated(10, "Unable to update user", typedb_source: UserUpdateError),
-        UserCannotBeDeleted(11, "Unable to delete user", typedb_source: UserDeleteError),
-        DatabaseExport(12, "Database export error", typedb_source: DatabaseExportError),
     }
 }

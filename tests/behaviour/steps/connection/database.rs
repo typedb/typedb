@@ -13,11 +13,11 @@ use server::Server;
 use crate::{generic_step, util, Context};
 
 async fn server_create_database(server: &'_ Server, name: String, may_error: params::MayError) {
-    may_error.check(server.database_manager().put_database(&name));
+    may_error.check(server.database_manager().await.put_database(&name));
 }
 
 async fn server_delete_database(server: &'_ Server, name: String, may_error: params::MayError) {
-    may_error.check(server.database_manager().delete_database(&name));
+    may_error.check(server.database_manager().await.delete_database(&name));
 }
 
 #[apply(generic_step)]
@@ -59,7 +59,7 @@ pub async fn connection_reset_database(context: &mut Context, name: String) {
     if context.active_transaction.is_some() {
         context.close_active_transaction();
     }
-    context.server().unwrap().lock().unwrap().database_manager().reset_else_recreate_database(&name).unwrap();
+    context.server().unwrap().lock().unwrap().database_manager().await.reset_else_recreate_database(&name).unwrap();
 }
 
 #[apply(generic_step)]
@@ -93,7 +93,7 @@ async fn connection_delete_databases_in_parallel(context: &mut Context, step: &S
 #[step(expr = "connection has database: {word}")]
 async fn connection_has_database(context: &mut Context, name: String) {
     assert!(
-        context.server().unwrap().lock().unwrap().database_manager().database(&name).is_some(),
+        context.server().unwrap().lock().unwrap().database_manager().await.database(&name).is_some(),
         "Connection doesn't contain database {name}.",
     );
 }
@@ -110,7 +110,7 @@ async fn connection_has_databases(context: &mut Context, step: &Step) {
 #[step(expr = "connection does not have database: {word}")]
 async fn connection_does_not_have_database(context: &mut Context, name: String) {
     assert!(
-        context.server().unwrap().lock().unwrap().database_manager().database(&name).is_none(),
+        context.server().unwrap().lock().unwrap().database_manager().await.database(&name).is_none(),
         "Connection should not contain database {name}.",
     );
 }
