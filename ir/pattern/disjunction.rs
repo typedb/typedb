@@ -33,7 +33,7 @@ impl Disjunction {
         Self::default()
     }
 
-    pub fn conjunctions_by_branch_id(&self) -> impl Iterator<Item=(&BranchID, &Conjunction)> {
+    pub fn conjunctions_by_branch_id(&self) -> impl Iterator<Item = (&BranchID, &Conjunction)> {
         self.branch_ids.iter().zip(self.conjunctions.iter())
     }
 
