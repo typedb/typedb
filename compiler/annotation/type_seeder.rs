@@ -62,13 +62,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     pub(crate) fn create_graph<'graph>(
         &self,
         context: &BlockContext,
-        upstream_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
+        upstream_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
         conjunction: &'graph Conjunction,
     ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
         let mut graph = self.build_recursive(context, conjunction);
         // Pre-seed with upstream variable annotations.
-        for variable in context.referenced_variables() {
-            if let Some(annotations) = upstream_annotations.get(&variable) {
+        for variable in conjunction.referenced_variables() {
+            if let Some(annotations) = upstream_annotations.get(&Vertex::Variable(variable)) {
                 graph.vertices.add_or_intersect(&Vertex::Variable(variable), Cow::Borrowed(annotations));
             }
         }
@@ -123,29 +123,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         self.prune_abstract_types_from_thing_vertex_annotations_recursive(graph)?;
 
         // Seed edges in root & disjunctions
-        self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
-
-        // Now we recurse into the nested negations & optionals
-        self.seed_types_in_nested_negations_and_optionals(graph, context)
-    }
-
-    fn seed_types_in_nested_negations_and_optionals(
-        &self,
-        graph: &mut TypeInferenceGraph<'_>,
-        context: &BlockContext,
-    ) -> Result<(), TypeInferenceError> {
-        let TypeInferenceGraph { vertices, nested_disjunctions, nested_negations, nested_optionals, .. } = graph;
-        for nested_graph in nested_disjunctions.iter_mut().flat_map(|disjunction| disjunction.disjunction.iter_mut()) {
-            self.seed_types_in_nested_negations_and_optionals(nested_graph, context)?;
-        }
-        for nested_graph in nested_negations {
-            self.seed_types(nested_graph, context, vertices)?;
-        }
-        for nested_graph in nested_optionals {
-            self.seed_types(nested_graph, context, vertices)?;
-        }
-
-        Ok(())
+        self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })
     }
 
     fn build_recursive<'conj>(
@@ -154,18 +132,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         conjunction: &'conj Conjunction,
     ) -> TypeInferenceGraph<'conj> {
         let mut nested_disjunctions = Vec::new();
-        let mut nested_optionals = Vec::new();
-        let mut nested_negations = Vec::new();
         for pattern in conjunction.nested_patterns() {
             match pattern {
                 NestedPattern::Disjunction(disjunction) => {
                     nested_disjunctions.push(self.build_disjunction_recursive(context, conjunction, disjunction));
                 }
-                NestedPattern::Negation(negation) => {
-                    nested_negations.push(self.build_recursive(context, negation.conjunction()));
-                }
-                NestedPattern::Optional(optional) => {
-                    nested_optionals.push(self.build_recursive(context, optional.conjunction()));
+                NestedPattern::Negation(_) | NestedPattern::Optional(_) => {
+                    // Done after full type-inference for the conjunctions & disjunctions.
                 }
             }
         }
@@ -175,8 +148,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             vertices: VertexAnnotations::default(),
             edges: Vec::new(),
             nested_disjunctions,
-            nested_negations,
-            nested_optionals,
         }
     }
 
@@ -592,12 +563,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             }
         }
         for nested in graph.nested_disjunctions.iter_mut().flat_map(|nested| nested.disjunction.iter_mut()) {
-            self.prune_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
-        }
-        for nested in &mut graph.nested_negations {
-            self.prune_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
-        }
-        for nested in &mut graph.nested_optionals {
             self.prune_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
         }
         Ok(())
@@ -1752,8 +1717,6 @@ pub mod tests {
                 expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
             ],
             nested_disjunctions: vec![],
-            nested_negations: vec![],
-            nested_optionals: vec![],
         };
 
         let snapshot = storage.clone().open_snapshot_write();
@@ -1888,8 +1851,6 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: vec![],
-                nested_negations: vec![],
-                nested_optionals: vec![],
             };
 
             let snapshot = storage.clone().open_snapshot_write();

@@ -53,6 +53,7 @@ pub mod tests {
     };
 
     use answer::{variable::Variable, Type};
+    use assert as assert_true;
     use encoding::{
         graph::definition::definition_key::{DefinitionID, DefinitionKey},
         layout::prefix::Prefix,
@@ -353,7 +354,8 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                &block,
+                block.block_context(),
+                block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
@@ -388,8 +390,6 @@ pub mod tests {
                     expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_graph.vertices, graph.vertices);
@@ -421,7 +421,8 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                &block,
+                block.block_context(),
+                block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
@@ -456,8 +457,6 @@ pub mod tests {
                     expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
         }
@@ -484,7 +483,8 @@ pub mod tests {
             let block = builder.finish().unwrap();
             let err = compute_type_inference_graph(
                 &snapshot,
-                &block,
+                block.block_context(),
+                block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
@@ -526,7 +526,8 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                &block,
+                block.block_context(),
+                block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
@@ -566,8 +567,6 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph.edges, graph.edges);
             assert_eq!(expected_graph, graph);
@@ -617,7 +616,8 @@ pub mod tests {
         let snapshot = storage.clone().open_snapshot_write();
         let graph = compute_type_inference_graph(
             &snapshot,
-            &block,
+            block.block_context(),
+            block.conjunction(),
             &translation_context.variable_registry,
             &type_manager,
             &BTreeMap::new(),
@@ -646,8 +646,6 @@ pub mod tests {
                     vec![(type_cat, type_cat)],
                 )],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             },
             TypeInferenceGraph {
                 conjunction: b2,
@@ -663,8 +661,6 @@ pub mod tests {
                     vec![(type_dog, type_dog)],
                 )],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             },
         ];
 
@@ -695,8 +691,6 @@ pub mod tests {
                 shared_variables: BTreeSet::new(),
                 shared_vertex_annotations: VertexAnnotations::default(),
             }],
-            nested_negations: Vec::new(),
-            nested_optionals: Vec::new(),
         };
 
         assert_eq!(expected_graph, graph);
@@ -729,7 +723,8 @@ pub mod tests {
         let constraints = conjunction.constraints();
         let graph = compute_type_inference_graph(
             &snapshot,
-            &block,
+            block.block_context(),
+            block.conjunction(),
             &translation_context.variable_registry,
             &type_manager,
             &BTreeMap::new(),
@@ -751,8 +746,6 @@ pub mod tests {
                 vec![(type_cat, type_catname), (type_dog, type_dogname)],
             )],
             nested_disjunctions: Vec::new(),
-            nested_negations: Vec::new(),
-            nested_optionals: Vec::new(),
         };
 
         assert_eq!(expected_graph, graph);
@@ -818,7 +811,8 @@ pub mod tests {
 
         let graph = compute_type_inference_graph(
             &snapshot,
-            &block,
+            block.block_context(),
+            block.conjunction(),
             &translation_context.variable_registry,
             &type_manager,
             &BTreeMap::new(),
@@ -890,8 +884,6 @@ pub mod tests {
                 ),
             ],
             nested_disjunctions: Vec::new(),
-            nested_negations: Vec::new(),
-            nested_optionals: Vec::new(),
         };
 
         assert_eq!(expected_graph, graph);
@@ -932,7 +924,8 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                &block,
+                block.block_context(),
+                block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
@@ -971,8 +964,6 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_graph, graph);
@@ -1002,7 +993,8 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                &block,
+                block.block_context(),
+                block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
@@ -1041,8 +1033,6 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
         }
@@ -1096,8 +1086,6 @@ pub mod tests {
                     expected_edge(&constraints[4], var_animal_type.into(), var_name_type.into(), Vec::new()),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
         }
@@ -1125,7 +1113,8 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                &block,
+                block.block_context(),
+                block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
@@ -1163,8 +1152,6 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_graph, graph);
@@ -1204,7 +1191,8 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                &block,
+                block.block_context(),
+                block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
@@ -1237,8 +1225,6 @@ pub mod tests {
                     expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_graph.vertices, graph.vertices);
@@ -1271,7 +1257,8 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                &block,
+                block.block_context(),
+                block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
@@ -1304,8 +1291,6 @@ pub mod tests {
                     expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
         }
@@ -1333,7 +1318,8 @@ pub mod tests {
             let block = builder.finish().unwrap();
             let err = compute_type_inference_graph(
                 &snapshot,
-                &block,
+                block.block_context(),
+                block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
@@ -1372,7 +1358,8 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                &block,
+                block.block_context(),
+                block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
@@ -1410,8 +1397,6 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph.vertices, graph.vertices);
             assert_eq!(expected_graph.edges, graph.edges);
@@ -1456,8 +1441,6 @@ pub mod tests {
                 vec![(type_cat, type_catname), (type_dog, type_dogname)],
             )],
             nested_disjunctions: vec![],
-            nested_negations: vec![],
-            nested_optionals: vec![],
         };
 
         let snapshot = storage.clone().open_snapshot_write();
