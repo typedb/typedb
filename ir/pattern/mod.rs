@@ -353,6 +353,7 @@ impl fmt::Display for ValueType {
     }
 }
 
+// TODO: consider if this makes Scopes entirely redundant
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum BindingMode {
     RequirePrebound,

@@ -161,7 +161,7 @@ fn make_builder<'a>(
                         statistics,
                         call_cost_provider,
                     )?
-                    .with_inputs(parent_bound_variables)
+                    .set_to_input(parent_bound_variables)
                     .plan()?,
                 )
             }
@@ -187,7 +187,7 @@ fn make_builder<'a>(
                         statistics,
                         call_cost_provider,
                     )?
-                    .with_inputs(parent_bound_variables.into_iter())
+                    .set_to_input(parent_bound_variables.into_iter())
                     .plan()?,
                 ))
             }
@@ -307,13 +307,15 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     /// Set additional variables as bound from the parent(s)
-    pub(super) fn with_inputs(mut self, input_variables: impl Iterator<Item = Variable>) -> Self {
+    pub(super) fn set_to_input(mut self, input_variables: impl Iterator<Item = Variable>) -> Self {
         for var in input_variables {
             if let Some(&id) = self.graph.variable_index.get(&var) {
                 self.graph.elements.insert(
                     VertexId::Variable(id),
                     PlannerVertex::Variable(VariableVertex::Input(InputPlanner::from_variable(var))),
                 );
+            } else {
+                unreachable!() // TODO
             }
         }
         self
@@ -981,7 +983,7 @@ impl PartialCostPlan {
         let PlannerVertex::Constraint(constraint) = planner else { return None };
         // Determine whether there are any candidate join variables:
         let candidate_join_var = constraint
-            .variables()
+            .variable_vertex_ids()
             .filter(|var| self.ongoing_step_produced_vars.contains(var) && constraint.can_join_on(*var))
             .exactly_one()
             .ok()?;
@@ -1042,7 +1044,7 @@ impl PartialCostPlan {
             let num_produced_vars = self.all_produced_vars.len()
                 + self.ongoing_step_produced_vars.len()
                 + graph.elements[&VertexId::Pattern(pattern)]
-                    .visible_variable_vertex_ids()
+                    .variable_vertex_ids()
                     .filter(|v| !self.ongoing_step_produced_vars.contains(v) && !self.all_produced_vars.contains(v))
                     .count();
             let cost_estimate = AVERAGE_STEP_COST
@@ -1057,7 +1059,7 @@ impl PartialCostPlan {
         self.remaining_patterns.remove(&pattern);
         self.pattern_metadata.insert(pattern, CostMetaData::None);
         self.ongoing_step_stash_produced_vars
-            .extend(graph.elements[&VertexId::Pattern(pattern)].visible_variable_vertex_ids());
+            .extend(graph.elements[&VertexId::Pattern(pattern)].variable_vertex_ids());
     }
 
     fn finalize_current_step(&self, graph: &Graph<'_>) -> (Vec<VertexId>, HashSet<VariableVertexId>) {
@@ -1083,7 +1085,7 @@ impl PartialCostPlan {
         }
         for &pattern in self.ongoing_step_stash.iter() {
             current_step.push(VertexId::Pattern(pattern));
-            for var_id in graph.elements[&VertexId::Pattern(pattern)].visible_variable_vertex_ids() {
+            for var_id in graph.elements[&VertexId::Pattern(pattern)].variable_vertex_ids() {
                 if !self.all_produced_vars.contains(&var_id) && !current_step.contains(&VertexId::Variable(var_id)) {
                     current_step.push(VertexId::Variable(var_id));
                     current_stash_produced_vars.insert(var_id);
@@ -1107,7 +1109,7 @@ impl PartialCostPlan {
         let mut new_ongoing_produced_vars = self.ongoing_step_produced_vars.clone();
         new_ongoing_produced_vars.extend(
             graph.elements[&VertexId::Pattern(extension.pattern_id)]
-                .visible_variable_vertex_ids()
+                .variable_vertex_ids()
                 .filter(|var| !self.all_produced_vars.contains(var)),
         );
 
@@ -1154,7 +1156,7 @@ impl PartialCostPlan {
         let mut new_ongoing_produced_vars = HashSet::new();
         new_ongoing_produced_vars.extend(
             graph.elements[&VertexId::Pattern(extension.pattern_id)]
-                .visible_variable_vertex_ids()
+                .variable_vertex_ids()
                 .filter(|var| !self.all_produced_vars.contains(var)),
         );
 
@@ -1653,7 +1655,7 @@ impl ConjunctionPlan<'_> {
             ..
         }) = conjunction_builder.current.as_deref()
         {
-            if !constraint.variables().contains(&self.graph.variable_index[sort_variable]) {
+            if !constraint.variable_vertex_ids().contains(&self.graph.variable_index[sort_variable]) {
                 conjunction_builder.finish_one();
                 event!(Level::WARN, "Ignoring planned join (incompatible join variables found)");
             }
@@ -2165,8 +2167,8 @@ impl<'a> Graph<'a> {
 
     fn push_constraint(&mut self, constraint: ConstraintVertex<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(constraint.variables());
-        for var in constraint.variables() {
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(constraint.variable_vertex_ids());
+        for var in constraint.variable_vertex_ids() {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Constraint(constraint));
@@ -2174,8 +2176,8 @@ impl<'a> Graph<'a> {
 
     fn push_is(&mut self, is: IsPlanner<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(is.variables());
-        for var in is.variables() {
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(is.variable_vertex_ids());
+        for var in is.variable_vertex_ids() {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Is(is));
@@ -2183,8 +2185,8 @@ impl<'a> Graph<'a> {
 
     fn push_links_deduplication(&mut self, deduplication: LinksDeduplicationPlanner<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(deduplication.variables());
-        for var in deduplication.variables() {
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(deduplication.variable_vertex_ids());
+        for var in deduplication.variable_vertex_ids() {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::LinksDeduplication(deduplication));
@@ -2192,8 +2194,8 @@ impl<'a> Graph<'a> {
 
     fn push_comparison(&mut self, comparison: ComparisonPlanner<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(comparison.variables());
-        for var in comparison.variables() {
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(comparison.variable_vertex_ids());
+        for var in comparison.variable_vertex_ids() {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Comparison(comparison));
@@ -2207,8 +2209,8 @@ impl<'a> Graph<'a> {
 
     fn push_expression(&mut self, output: VariableVertexId, expression: ExpressionPlanner<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(expression.variables());
-        for var in expression.variables() {
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(expression.variable_vertex_ids());
+        for var in expression.variable_vertex_ids() {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Expression(expression));
@@ -2219,8 +2221,8 @@ impl<'a> Graph<'a> {
 
     fn push_function_call(&mut self, function_call: FunctionCallPlanner<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(function_call.variables());
-        for var in function_call.variables() {
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(function_call.variable_vertex_ids());
+        for var in function_call.variable_vertex_ids() {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
         let assigned = function_call.assigned.clone();
@@ -2233,8 +2235,8 @@ impl<'a> Graph<'a> {
 
     fn push_disjunction(&mut self, disjunction: NestedDisjunctionPlanner<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(disjunction.referenced_parent_vertex_ids());
-        for var_id in disjunction.referenced_parent_vertex_ids() {
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(disjunction.variable_vertex_ids());
+        for var_id in disjunction.variable_vertex_ids() {
             self.variable_to_pattern.entry(var_id).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Disjunction(disjunction));
@@ -2242,8 +2244,8 @@ impl<'a> Graph<'a> {
 
     fn push_negation(&mut self, negation: NestedNegationPlan<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(negation.referenced_parent_vertex_ids());
-        for var_id in negation.referenced_parent_vertex_ids() {
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(negation.variable_vertex_ids());
+        for var_id in negation.variable_vertex_ids() {
             self.variable_to_pattern.entry(var_id).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Negation(negation));
@@ -2254,8 +2256,8 @@ impl<'a> Graph<'a> {
         self.pattern_to_variable
             .entry(pattern_index)
             .or_default()
-            .extend(optional.referenced_parent_and_optional_ids());
-        for var_id in optional.referenced_parent_and_optional_ids() {
+            .extend(optional.variable_vertex_ids());
+        for var_id in optional.variable_vertex_ids() {
             self.variable_to_pattern.entry(var_id).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Optional(optional));

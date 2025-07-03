@@ -155,7 +155,6 @@ impl PatternExecutor {
                         // if we never found anything for this input, we still push the next instruction
                         //   this will continue with None for all the new variables
                         //   we also don't re-visit this instruction on backtracking.
-                        // TODO: verify correctness
                         let batch = optional.map_as_failed_output(input);
                         self.push_next_instruction(context, index.next(), batch)?;
                     } // else: we've already found some optional values, so we don't need to re-explore and just backtrack
