@@ -1214,8 +1214,8 @@ impl PartialCostPlan {
         }
     }
 
-    fn hash(&self) -> PartialCostHash {
-        PartialCostHash {
+    fn hash(&self) -> PartialPlanHash {
+        PartialPlanHash {
             n_remaining_patterns: self.remaining_patterns.len() as u32,
             planned_patterns: self.vertex_ordering.iter().filter_map(|v| v.as_pattern_id()).collect::<BTreeSet<_>>(),
             ongoing_step_join_var: self.ongoing_step_join_var,
@@ -1239,7 +1239,7 @@ impl Ord for PartialCostPlan {
 }
 
 #[derive(Clone, Hash, PartialEq, Eq)]
-pub(super) struct PartialCostHash {
+pub(super) struct PartialPlanHash {
     n_remaining_patterns: u32, // Needed for continuous search (A*), but not step-based (beam)
     planned_patterns: BTreeSet<PatternVertexId>,
     ongoing_non_trivial_patterns: BTreeSet<PatternVertexId>,
