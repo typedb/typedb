@@ -1334,6 +1334,7 @@ dependencies = [
  "logger",
  "lz4",
  "primitive",
+ "rand 0.8.5",
  "resource",
  "serde",
  "tempdir",
