@@ -51,7 +51,7 @@ pub(crate) enum ConstraintVertex<'a> {
 }
 
 impl ConstraintVertex<'_> {
-    pub(super) fn is_valid(&self, _: &[VertexId], _: &Graph<'_>) -> bool {
+    pub(super) fn is_valid(&self, _: &[VertexId]) -> bool {
         true // always valid
     }
 

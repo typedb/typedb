@@ -31,9 +31,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator, TupleSeekable},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, Tuple, TuplePositions, TupleResult},
-        BinaryIterateMode, Checker, FilterMapUnchangedFn, VariableModes, TYPES_EMPTY,
+        BinaryIterateMode, FilterMapUnchangedFn, VariableModes, TYPES_EMPTY,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -116,7 +117,7 @@ impl IsaExecutor {
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
         let filter_for_row: Box<IsaFilterMapFn> = Box::new(move |item| match check(&item) {
             Ok(true) | Err(_) => Some(item),
             Ok(false) => None,

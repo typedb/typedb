@@ -14,12 +14,12 @@ use crate::{
         reduce::{AssignedReduction, Reduce, Reducer},
         VariableRegistry,
     },
-    translation::{verify_variable_available, TranslationContext},
+    translation::{verify_variable_available, PipelineTranslationContext},
     RepresentationError,
 };
 
 pub fn translate_reduce(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     typeql_reduce: &typeql::query::stage::Reduce,
 ) -> Result<Reduce, Box<RepresentationError>> {
     let mut reductions = Vec::with_capacity(typeql_reduce.reduce_assignments.len());
@@ -48,7 +48,7 @@ pub fn translate_reduce(
             .collect::<Result<Vec<_>, _>>()?,
     };
     context
-        .visible_variables
+        .last_stage_visible_variables
         .retain(|name, var| group.contains(var) || reductions.iter().any(|reduction| &reduction.assigned == var));
     Ok(Reduce::new(reductions, group, typeql_reduce.span()))
 }
@@ -67,7 +67,7 @@ fn resolve_category_optionality(reduce: &Reducer, variable_registry: &VariableRe
 }
 
 pub(crate) fn build_reducer(
-    context: &TranslationContext,
+    context: &PipelineTranslationContext,
     reduce_value: &TypeQLReducer,
 ) -> Result<Reducer, Box<RepresentationError>> {
     match reduce_value {

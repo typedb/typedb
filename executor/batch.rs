@@ -60,7 +60,7 @@ impl FixedBatch {
         let size = width * FIXED_BATCH_ROWS_MAX;
         FixedBatch {
             width,
-            data: vec![VariableValue::Empty; size as usize],
+            data: vec![VariableValue::None; size as usize],
             entries: 0,
             multiplicities: FixedBatch::INIT_MULTIPLICITIES,
             provenance: FixedBatch::INIT_PROVENANCES,
@@ -228,7 +228,7 @@ impl Batch {
     }
 
     pub(crate) fn append<T>(&mut self, writer: impl FnOnce(Row<'_>) -> T) -> T {
-        self.data.resize(self.data.len() + self.width as usize, VariableValue::Empty);
+        self.data.resize(self.data.len() + self.width as usize, VariableValue::None);
         self.multiplicities.push(1);
         self.provenance.push(Provenance::INITIAL);
         debug_assert!(self.data.len() == self.multiplicities.len() * self.width as usize);
@@ -343,7 +343,7 @@ fn get_value<'a, T: ReadableSnapshot>(
         VariableValue::Thing(Thing::Attribute(attribute)) => {
             Some(Cow::Owned(attribute.get_value(snapshot, &context.thing_manager, storage_counters).unwrap()))
         }
-        VariableValue::Empty => None,
+        VariableValue::None => None,
         VariableValue::Type(_) | VariableValue::Thing(_) => {
             unreachable!("Should have been caught earlier")
         }

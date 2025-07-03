@@ -34,6 +34,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         min_max_types,
         tuple::{
@@ -41,7 +42,7 @@ use crate::{
             tuple_owner_attribute_to_has_canonical, unsafe_compare_result_tuple, HasToTupleFn, Tuple, TupleOrderingFn,
             TuplePositions, TupleResult, TupleToHasFn,
         },
-        BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
+        BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -175,7 +176,7 @@ impl HasExecutor {
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
         let filter_for_row: Arc<HasFilterMapFn> = Arc::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),

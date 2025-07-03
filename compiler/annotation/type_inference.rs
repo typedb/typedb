@@ -53,6 +53,7 @@ pub mod tests {
     };
 
     use answer::{variable::Variable, Type};
+    use assert as assert_true;
     use encoding::{
         graph::definition::definition_key::{DefinitionID, DefinitionKey},
         layout::prefix::Prefix,
@@ -70,7 +71,7 @@ pub mod tests {
             function_signature::{FunctionID, FunctionSignature},
             ParameterRegistry, VariableRegistry,
         },
-        translation::{pipeline::TranslatedStage, TranslationContext},
+        translation::{pipeline::TranslatedStage, PipelineTranslationContext},
     };
     use itertools::Itertools;
 
@@ -116,7 +117,7 @@ pub mod tests {
         .map(|function_id| {
             // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
             // match $animal = fn_test();
-            let mut function_context = TranslationContext::new();
+            let mut function_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(function_context.new_block_builder_context(&mut value_parameters));
             let mut f_conjunction = builder.conjunction_mut();
@@ -144,7 +145,7 @@ pub mod tests {
                 ),
             );
 
-            let mut entry_context = TranslationContext::new();
+            let mut entry_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(entry_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -334,7 +335,7 @@ pub mod tests {
         {
             // Case 1: $a isa cat, has name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -352,14 +353,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
                 false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
+                block.block_context(),
+                block.conjunction(),
+                &BTreeMap::new(),
             )
             .unwrap();
 
@@ -389,8 +394,6 @@ pub mod tests {
                     expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_graph.vertices, graph.vertices);
@@ -401,7 +404,7 @@ pub mod tests {
         {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -420,14 +423,18 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
                 false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
+                block.block_context(),
+                block.conjunction(),
+                &BTreeMap::new(),
             )
             .unwrap();
 
@@ -457,8 +464,6 @@ pub mod tests {
                     expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
         }
@@ -466,7 +471,7 @@ pub mod tests {
         {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -483,14 +488,18 @@ pub mod tests {
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
-            let err = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
                 false,
+            );
+            let err = compute_type_inference_graph(
+                &seeder_context,
+                block.block_context(),
+                block.conjunction(),
+                &BTreeMap::new(),
             )
             .unwrap_err();
 
@@ -507,7 +516,7 @@ pub mod tests {
             let types_a = all_concrete_animals.clone();
             let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -525,14 +534,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
                 false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
+                block.block_context(),
+                block.conjunction(),
+                &BTreeMap::new(),
             )
             .unwrap();
 
@@ -567,8 +580,6 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph.edges, graph.edges);
             assert_eq!(expected_graph, graph);
@@ -584,7 +595,7 @@ pub mod tests {
         let ((_, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
-        let mut translation_context = TranslationContext::new();
+        let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
@@ -616,16 +627,16 @@ pub mod tests {
         let block = builder.finish().unwrap();
 
         let snapshot = storage.clone().open_snapshot_write();
-        let graph = compute_type_inference_graph(
+        let seeder_context = TypeGraphSeedingContext::new(
             &snapshot,
-            &block,
-            &translation_context.variable_registry,
             &type_manager,
-            &BTreeMap::new(),
             &EmptyAnnotatedFunctionSignatures,
+            &translation_context.variable_registry,
             false,
-        )
-        .unwrap();
+        );
+        let graph =
+            compute_type_inference_graph(&seeder_context, block.block_context(), block.conjunction(), &BTreeMap::new())
+                .unwrap();
 
         let conjunction = block.conjunction();
         let disj = conjunction.nested_patterns()[0].as_disjunction().unwrap();
@@ -647,8 +658,6 @@ pub mod tests {
                     vec![(type_cat, type_cat)],
                 )],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             },
             TypeInferenceGraph {
                 conjunction: b2,
@@ -664,8 +673,6 @@ pub mod tests {
                     vec![(type_dog, type_dog)],
                 )],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             },
         ];
 
@@ -696,8 +703,6 @@ pub mod tests {
                 shared_variables: BTreeSet::new(),
                 shared_vertex_annotations: VertexAnnotations::default(),
             }],
-            nested_negations: Vec::new(),
-            nested_optionals: Vec::new(),
         };
 
         assert_eq!(expected_graph, graph);
@@ -713,7 +718,7 @@ pub mod tests {
 
         // Case 1: $a has $n;
         let snapshot = storage.clone().open_snapshot_write();
-        let mut translation_context = TranslationContext::new();
+        let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
@@ -728,16 +733,16 @@ pub mod tests {
         let block = builder.finish().unwrap();
         let conjunction = block.conjunction();
         let constraints = conjunction.constraints();
-        let graph = compute_type_inference_graph(
+        let seeder_context = TypeGraphSeedingContext::new(
             &snapshot,
-            &block,
-            &translation_context.variable_registry,
             &type_manager,
-            &BTreeMap::new(),
             &EmptyAnnotatedFunctionSignatures,
+            &translation_context.variable_registry,
             false,
-        )
-        .unwrap();
+        );
+        let graph =
+            compute_type_inference_graph(&seeder_context, block.block_context(), block.conjunction(), &BTreeMap::new())
+                .unwrap();
 
         let expected_graph = TypeInferenceGraph {
             conjunction,
@@ -752,8 +757,6 @@ pub mod tests {
                 vec![(type_cat, type_catname), (type_dog, type_dogname)],
             )],
             nested_disjunctions: Vec::new(),
-            nested_negations: Vec::new(),
-            nested_optionals: Vec::new(),
         };
 
         assert_eq!(expected_graph, graph);
@@ -769,7 +772,7 @@ pub mod tests {
 
         // With roles specified
         let snapshot = storage.clone().open_snapshot_write();
-        let mut translation_context = TranslationContext::new();
+        let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
@@ -817,16 +820,16 @@ pub mod tests {
 
         let conjunction = block.conjunction();
 
-        let graph = compute_type_inference_graph(
+        let seeder_context = TypeGraphSeedingContext::new(
             &snapshot,
-            &block,
-            &translation_context.variable_registry,
             &type_manager,
-            &BTreeMap::new(),
             &EmptyAnnotatedFunctionSignatures,
+            &translation_context.variable_registry,
             false,
-        )
-        .unwrap();
+        );
+        let graph =
+            compute_type_inference_graph(&seeder_context, block.block_context(), block.conjunction(), &BTreeMap::new())
+                .unwrap();
 
         let expected_graph = TypeInferenceGraph {
             conjunction,
@@ -891,8 +894,6 @@ pub mod tests {
                 ),
             ],
             nested_disjunctions: Vec::new(),
-            nested_negations: Vec::new(),
-            nested_optionals: Vec::new(),
         };
 
         assert_eq!(expected_graph, graph);
@@ -913,7 +914,7 @@ pub mod tests {
         {
             // Case 1: $a isa $at; $at label cat; $n isa! $nt; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -931,14 +932,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
                 false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
+                block.block_context(),
+                block.conjunction(),
+                &BTreeMap::new(),
             )
             .unwrap();
 
@@ -972,8 +977,6 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_graph, graph);
@@ -983,7 +986,7 @@ pub mod tests {
             // Case 2: $a isa $at; $n isa $nt; $nt type catname; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
 
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1001,14 +1004,18 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
                 false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
+                block.block_context(),
+                block.conjunction(),
+                &BTreeMap::new(),
             )
             .unwrap();
 
@@ -1042,8 +1049,6 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
         }
@@ -1051,7 +1056,7 @@ pub mod tests {
         {
             // Case 3: $a isa $at; $at type cat; $n isa $nt; $nt type dogname; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1097,8 +1102,6 @@ pub mod tests {
                     expected_edge(&constraints[4], var_animal_type.into(), var_name_type.into(), Vec::new()),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
         }
@@ -1108,7 +1111,7 @@ pub mod tests {
             let types_a = all_concrete_animals.clone();
             let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1124,14 +1127,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
                 false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
+                block.block_context(),
+                block.conjunction(),
+                &BTreeMap::new(),
             )
             .unwrap();
 
@@ -1164,8 +1171,6 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_graph, graph);
@@ -1187,7 +1192,7 @@ pub mod tests {
         {
             // Case 1: $a isa cat, has name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1203,14 +1208,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
                 false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
+                block.block_context(),
+                block.conjunction(),
+                &BTreeMap::new(),
             )
             .unwrap();
 
@@ -1238,8 +1247,6 @@ pub mod tests {
                     expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
 
             assert_eq!(expected_graph.vertices, graph.vertices);
@@ -1250,7 +1257,7 @@ pub mod tests {
         {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1270,14 +1277,18 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
                 false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
+                block.block_context(),
+                block.conjunction(),
+                &BTreeMap::new(),
             )
             .unwrap();
 
@@ -1305,8 +1316,6 @@ pub mod tests {
                     expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph, graph);
         }
@@ -1314,7 +1323,7 @@ pub mod tests {
         {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1332,14 +1341,18 @@ pub mod tests {
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
-            let err = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
                 false,
+            );
+            let err = compute_type_inference_graph(
+                &seeder_context,
+                block.block_context(),
+                block.conjunction(),
+                &BTreeMap::new(),
             )
             .unwrap_err();
             assert_true!(match err {
@@ -1355,7 +1368,7 @@ pub mod tests {
             let types_a = all_concrete_animals.clone();
             let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1371,14 +1384,18 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let graph = compute_type_inference_graph(
+            let seeder_context = TypeGraphSeedingContext::new(
                 &snapshot,
-                &block,
-                &translation_context.variable_registry,
                 &type_manager,
-                &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                &translation_context.variable_registry,
                 false,
+            );
+            let graph = compute_type_inference_graph(
+                &seeder_context,
+                block.block_context(),
+                block.conjunction(),
+                &BTreeMap::new(),
             )
             .unwrap();
 
@@ -1411,8 +1428,6 @@ pub mod tests {
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
-                nested_negations: Vec::new(),
-                nested_optionals: Vec::new(),
             };
             assert_eq!(expected_graph.vertices, graph.vertices);
             assert_eq!(expected_graph.edges, graph.edges);
@@ -1430,7 +1445,7 @@ pub mod tests {
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         // Case 1: $a has $n;
-        let mut translation_context = TranslationContext::new();
+        let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
@@ -1457,8 +1472,6 @@ pub mod tests {
                 vec![(type_cat, type_catname), (type_dog, type_dogname)],
             )],
             nested_disjunctions: vec![],
-            nested_negations: vec![],
-            nested_optionals: vec![],
         };
 
         let snapshot = storage.clone().open_snapshot_write();

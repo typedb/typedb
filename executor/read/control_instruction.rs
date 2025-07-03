@@ -28,6 +28,7 @@ pub(super) enum ControlInstruction {
 
     MapBatchToRowsForNested(MapBatchToRowsForNested),
     ExecuteNegation(ExecuteNegation),
+    ExecuteOptional(ExecuteOptional),
 
     ExecuteDisjunctionBranch(ExecuteDisjunctionBranch),
     ExecuteInlinedFunction(ExecuteInlinedFunction),
@@ -76,6 +77,13 @@ pub(super) struct ExecuteInlinedFunction {
 pub(super) struct ExecuteNegation {
     pub(super) index: ExecutorIndex,
     pub(super) input: MaybeOwnedRow<'static>,
+}
+
+#[derive(Debug)]
+pub(super) struct ExecuteOptional {
+    pub(super) index: ExecutorIndex,
+    pub(super) input: MaybeOwnedRow<'static>,
+    pub(super) any_found: bool,
 }
 
 #[derive(Debug)]
@@ -143,6 +151,7 @@ impl_control_instruction_from_inner!(
     MapBatchToRowsForNested,
     ExecuteImmediate,
     ExecuteNegation,
+    ExecuteOptional,
     ExecuteDisjunctionBranch,
     ExecuteInlinedFunction,
     ExecuteStreamModifier,

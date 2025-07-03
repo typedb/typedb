@@ -88,7 +88,7 @@ impl TabledCallExecutor {
             .iter()
             .enumerate()
             .filter_map(|(src, &dst)| Some((VariablePosition::new(src as u32), dst?)))
-            .filter(|(_, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::Empty)
+            .filter(|(_, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::None)
             .collect(); // TODO: Can we move this to compilation?
 
         for return_index in 0..returned_batch.len() {

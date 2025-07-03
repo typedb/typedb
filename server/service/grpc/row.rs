@@ -48,7 +48,7 @@ pub(crate) fn encode_row_entry(
     storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::row_entry::Entry, Box<ConceptReadError>> {
     match variable_value {
-        VariableValue::Empty => Ok(typedb_protocol::row_entry::Entry::Empty(typedb_protocol::row_entry::Empty {})),
+        VariableValue::None => Ok(typedb_protocol::row_entry::Entry::Empty(typedb_protocol::row_entry::Empty {})),
         VariableValue::Type(type_) => {
             Ok(typedb_protocol::row_entry::Entry::Concept(encode_type_concept(type_, snapshot, type_manager)?))
         }

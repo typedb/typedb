@@ -4,14 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    any::type_name,
-    error::Error,
-    fmt,
-    iter::empty,
-    ops::{Deref, DerefMut},
-    sync::Arc,
-};
+use std::{any::type_name, error::Error, fmt, iter::empty, ops::Deref, sync::Arc};
 
 use bytes::byte_array::ByteArray;
 use error::typedb_error;

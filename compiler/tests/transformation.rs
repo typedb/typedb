@@ -20,7 +20,7 @@ use encoding::value::label::Label;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, Vertex},
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-    translation::{match_::translate_match, TranslationContext},
+    translation::{match_::translate_match, PipelineTranslationContext},
 };
 use itertools::Itertools;
 use resource::profile::{CommitProfile, StorageCounters};
@@ -104,7 +104,7 @@ fn test_relation_index_transformation_single() {
 
     let query = "match $r links ($role_x: $x, $role_y: $y);";
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
-    let mut context = TranslationContext::new();
+    let mut context = PipelineTranslationContext::new();
     let mut parameters = ParameterRegistry::new();
     let translated =
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
@@ -153,7 +153,7 @@ fn test_relation_index_transformation_dual() {
 
     let query = "match $r links ($x, $y); $q links ($a, $b);";
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
-    let mut context = TranslationContext::new();
+    let mut context = PipelineTranslationContext::new();
     let mut parameters = ParameterRegistry::new();
     let translated =
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
@@ -216,7 +216,7 @@ fn test_relation_index_transformation_not_applied_ternary() {
 
     let query = "match $r links ($x, $y, $z);";
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
-    let mut context = TranslationContext::new();
+    let mut context = PipelineTranslationContext::new();
     let mut parameters = ParameterRegistry::new();
     let translated =
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
@@ -361,7 +361,7 @@ fn translate_and_annotate(
     query: &str,
 ) -> (Conjunction, BlockAnnotations) {
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
-    let mut context = TranslationContext::new();
+    let mut context = PipelineTranslationContext::new();
     let mut parameters = ParameterRegistry::new();
     let translated =
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();

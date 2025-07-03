@@ -40,9 +40,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         tuple::{unsafe_compare_result_tuple, Tuple, TupleOrderingFn, TuplePositions, TupleResult},
-        Checker, FilterFn, FilterMapUnchangedFn,
+        FilterFn, FilterMapUnchangedFn,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -240,7 +241,7 @@ impl IndexedRelationExecutor {
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
 
         let (relation, start_role, end_role) = self.may_get_relation_and_roles(row.as_reference());
 
