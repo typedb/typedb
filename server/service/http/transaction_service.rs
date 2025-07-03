@@ -355,50 +355,15 @@ impl TransactionService {
                 match request {
                     TransactionRequest::Query(query_options, query) => {
                         self.handle_query(query_options, query, response_sender).await
-                        // run_with_diagnostics_async(
-                        //     self.diagnostics_manager.clone(),
-                        //     self.get_database_name().map(|name| name.to_owned()),
-                        //     ActionKind::TransactionQuery,
-                        //     || async { self.handle_query(query, response_sender).await },
-                        // )
-                        //     .await
                     }
                     TransactionRequest::Commit => {
                         self.handle_commit(response_sender).await
-                        // run_with_diagnostics_async(
-                        //     self.diagnostics_manager.clone(),
-                        //     self.get_database_name().map(|name| name.to_owned()),
-                        //     ActionKind::TransactionCommit,
-                        //     || async {
-                        //         // Eagerly executed in main loop
-                        //         self.handle_commit(response_sender).await?;
-                        //         Ok(Break(()))
-                        //     },
-                        // )
-                        //     .await
                     }
                     TransactionRequest::Rollback => {
                         self.handle_rollback(response_sender).await
-                        // run_with_diagnostics_async(
-                        //     self.diagnostics_manager.clone(),
-                        //     self.get_database_name().map(|name| name.to_owned()),
-                        //     ActionKind::TransactionRollback,
-                        //     || async { self.handle_rollback(response_sender).await },
-                        // )
-                        //     .await
                     }
                     TransactionRequest::Close => {
                         self.handle_close(response_sender).await
-                        // run_with_diagnostics_async(
-                        //     self.diagnostics_manager.clone(),
-                        //     self.get_database_name().map(|name| name.to_owned()),
-                        //     ActionKind::TransactionClose,
-                        //     || async {
-                        //         self.handle_close(response_sender).await;
-                        //         Ok(Break(()))
-                        //     },
-                        // )
-                        //     .await
                     }
                 }
             }
