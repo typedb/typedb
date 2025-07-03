@@ -128,6 +128,13 @@ pub fn infer_types(
         is_write_stage,
         &mut type_annotations_by_scope,
     )?;
+    // Copy over any input variables that haven't been included (and refined)
+    let mut root_annotations = type_annotations_by_scope.get_mut(&ScopeId::ROOT).unwrap().vertex_annotations_mut();
+    let annotations_passing_through = previous_stage_variable_annotations.iter()
+        .filter(|(k, _)| !root_annotations.contains_key(&Vertex::Variable(**k)))
+        .map(|(k,v)| (Vertex::Variable(*k), v.clone()))
+        .collect::<Vec<_>>();
+    root_annotations.extend(annotations_passing_through);
     Ok(BlockAnnotations::new(type_annotations_by_scope))
 }
 
