@@ -22,6 +22,7 @@ use ir::{
 };
 use itertools::Itertools;
 use typeql::query::stage::Stage;
+use ir::pattern::variable_category::VariableOptionality;
 
 #[derive(Debug)]
 pub enum PatternDefitionOrExpressionCompileError {
@@ -51,7 +52,7 @@ fn compile_expression_via_match(
     let query = format!("match let $x = {}; select $x;", s);
     // Avoid unbound variable errors
     let input_variable_categories =
-        variable_types.iter().map(|(name, _)| ((*name).to_owned(), None, VariableCategory::Value)).collect();
+        variable_types.iter().map(|(name, _)| ((*name).to_owned(), None, (VariableCategory::Value, VariableOptionality::Required))).collect();
     let (mut translation_context, _) = PipelineTranslationContext::new_function_pipeline(input_variable_categories)
         .expect("Expected function transaction context");
     let mut value_parameters = ParameterRegistry::new();
