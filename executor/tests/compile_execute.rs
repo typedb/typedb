@@ -14,7 +14,9 @@ use compiler::{
         expression::block_compiler::compile_expressions, function::EmptyAnnotatedFunctionSignatures,
         match_inference::infer_types,
     },
-    executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable},
+    executable::{
+        function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
+    },
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -22,14 +24,16 @@ use concept::{
 };
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{
-    match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow, ExecutionInterrupt,
+    conjunction_executor::ConjunctionExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::{
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-    translation::{match_::translate_match, TranslationContext},
+    translation::{match_::translate_match, PipelineTranslationContext},
 };
 use itertools::Itertools;
+use ir::pattern::Pattern;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, QueryProfile};
@@ -115,7 +119,7 @@ fn test_has_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -136,11 +140,11 @@ fn test_has_planning_traversal() {
     )
     .unwrap();
 
-    let match_executable = compiler::executable::match_::planner::compile(
+    let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        block.conjunction().named_visible_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -148,8 +152,8 @@ fn test_has_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = MatchExecutor::new(
-        &match_executable,
+    let executor = ConjunctionExecutor::new(
+        &conjunction_executable,
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
@@ -205,7 +209,7 @@ fn test_expression_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -237,11 +241,11 @@ fn test_expression_planning_traversal() {
     )
     .unwrap();
 
-    let match_executable = compiler::executable::match_::planner::compile(
+    let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        block.conjunction().named_visible_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &compiled_expressions,
@@ -249,8 +253,8 @@ fn test_expression_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = MatchExecutor::new(
-        &match_executable,
+    let executor = ConjunctionExecutor::new(
+        &conjunction_executable,
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
@@ -305,7 +309,7 @@ fn test_links_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -326,11 +330,11 @@ fn test_links_planning_traversal() {
     )
     .unwrap();
 
-    let match_executable = compiler::executable::match_::planner::compile(
+    let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        block.conjunction().named_visible_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -338,8 +342,8 @@ fn test_links_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = MatchExecutor::new(
-        &match_executable,
+    let executor = ConjunctionExecutor::new(
+        &conjunction_executable,
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
@@ -401,7 +405,7 @@ fn test_links_intersection() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -422,11 +426,11 @@ fn test_links_intersection() {
     )
     .unwrap();
 
-    let match_executable = compiler::executable::match_::planner::compile(
+    let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        block.conjunction().named_visible_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -434,8 +438,8 @@ fn test_links_intersection() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = MatchExecutor::new(
-        &match_executable,
+    let executor = ConjunctionExecutor::new(
+        &conjunction_executable,
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
@@ -488,7 +492,7 @@ fn test_negation_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -509,11 +513,11 @@ fn test_negation_planning_traversal() {
     )
     .unwrap();
 
-    let match_executable = compiler::executable::match_::planner::compile(
+    let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        block.conjunction().named_visible_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -521,8 +525,8 @@ fn test_negation_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = MatchExecutor::new(
-        &match_executable,
+    let executor = ConjunctionExecutor::new(
+        &conjunction_executable,
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
@@ -596,7 +600,7 @@ fn test_forall_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -617,11 +621,11 @@ fn test_forall_planning_traversal() {
     )
     .unwrap();
 
-    let match_executable = compiler::executable::match_::planner::compile(
+    let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        block.conjunction().named_visible_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -630,8 +634,8 @@ fn test_forall_planning_traversal() {
     )
     .unwrap();
 
-    let executor = MatchExecutor::new(
-        &match_executable,
+    let executor = ConjunctionExecutor::new(
+        &conjunction_executable,
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
@@ -691,7 +695,7 @@ fn test_named_var_select() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -712,11 +716,11 @@ fn test_named_var_select() {
     )
     .unwrap();
 
-    let match_executable = compiler::executable::match_::planner::compile(
+    let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        block.conjunction().named_visible_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -724,8 +728,8 @@ fn test_named_var_select() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = MatchExecutor::new(
-        &match_executable,
+    let executor = ConjunctionExecutor::new(
+        &conjunction_executable,
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
@@ -747,7 +751,7 @@ fn test_named_var_select() {
     for row in &rows {
         let mut non_empty_count = 0;
         for value in row {
-            non_empty_count += !value.is_empty() as usize;
+            non_empty_count += !value.is_none() as usize;
             print!("{}, ", value);
         }
         println!();
@@ -785,7 +789,7 @@ fn test_disjunction_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -806,11 +810,11 @@ fn test_disjunction_planning_traversal() {
     )
     .unwrap();
 
-    let match_executable = compiler::executable::match_::planner::compile(
+    let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        block.conjunction().named_visible_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -818,8 +822,8 @@ fn test_disjunction_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = MatchExecutor::new(
-        &match_executable,
+    let executor = ConjunctionExecutor::new(
+        &conjunction_executable,
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
@@ -883,7 +887,7 @@ fn test_disjunction_planning_nested_negations() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -904,11 +908,11 @@ fn test_disjunction_planning_nested_negations() {
     )
     .unwrap();
 
-    let match_executable = compiler::executable::match_::planner::compile(
+    let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        block.conjunction().named_visible_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -916,8 +920,8 @@ fn test_disjunction_planning_nested_negations() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = MatchExecutor::new(
-        &match_executable,
+    let executor = ConjunctionExecutor::new(
+        &conjunction_executable,
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
@@ -973,9 +977,10 @@ fn test_mismatched_input_types() {
             select $x;
         ";
         let snapshot = Arc::new(storage.clone().open_snapshot_read());
-        let match_executable = compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
-        let executor = MatchExecutor::new(
-            &match_executable,
+        let conjunction_executable =
+            compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
+        let executor = ConjunctionExecutor::new(
+            &conjunction_executable,
             &snapshot,
             &thing_manager,
             MaybeOwnedRow::empty(),
@@ -1007,9 +1012,10 @@ fn test_mismatched_input_types() {
             distinct;
         ";
         let snapshot = Arc::new(storage.clone().open_snapshot_read());
-        let match_executable = compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
-        let executor = MatchExecutor::new(
-            &match_executable,
+        let conjunction_executable =
+            compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
+        let executor = ConjunctionExecutor::new(
+            &conjunction_executable,
             &snapshot,
             &thing_manager,
             MaybeOwnedRow::empty(),
@@ -1043,11 +1049,11 @@ fn compile_query(
     thing_manager: Arc<ThingManager>,
     statistics: &Statistics,
     query: &str,
-) -> MatchExecutable {
+) -> ConjunctionExecutable {
     // IR
     let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -1069,7 +1075,7 @@ fn compile_query(
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        block.conjunction().named_visible_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),

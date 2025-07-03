@@ -19,8 +19,6 @@ use tokio::time::Instant;
 use typeql::query::stage::Stage;
 use uuid::Uuid;
 
-use crate::service::TransactionType;
-
 pub(crate) const TRANSACTION_REQUEST_BUFFER_SIZE: usize = 10;
 
 #[derive(Debug)]

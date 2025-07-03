@@ -23,6 +23,7 @@ use ir::{
     },
 };
 use itertools::{chain, Itertools};
+use ir::pattern::Pattern;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
@@ -122,7 +123,7 @@ pub fn infer_types(
         is_write_stage,
     )?;
     let mut type_annotations_by_scope = HashMap::new();
-    graph.collect_type_annotations(Some(variable_registry), &mut type_annotations_by_scope);
+    graph.collect_type_annotations(&mut type_annotations_by_scope);
     debug_assert_all_vertex_annotations_available(
         block.block_context(),
         block.conjunction(),
@@ -138,8 +139,9 @@ fn debug_assert_all_vertex_annotations_available(
 ) {
     let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap();
     conjunction
-        .named_producible_variables(context)
-        .chain(conjunction.variable_dependency(context).keys().copied())
+        .variable_binding_modes()
+        .keys()
+        .copied()
         .all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some());
     conjunction.nested_patterns().iter().for_each(|nested| match nested {
         NestedPattern::Disjunction(disj) => {
@@ -281,6 +283,9 @@ impl TypeInferenceGraph<'_> {
         for nested_graph in &mut self.nested_disjunctions {
             nested_graph.prune_self_from_vertices(&self.vertices)
         }
+        for nested_graph in &mut self.nested_optionals {
+            nested_graph.prune_constraints_from_vertices()
+        }
     }
 
     fn prune_vertices_from_constraints(&mut self) -> bool {
@@ -291,14 +296,13 @@ impl TypeInferenceGraph<'_> {
         for nested_graph in &mut self.nested_disjunctions {
             is_modified |= nested_graph.prune_vertices_from_self(&mut self.vertices);
         }
+        for nested_graph in &mut self.nested_optionals {
+            is_modified |= nested_graph.prune_vertices_from_constraints();
+        }
         is_modified
     }
 
-    pub(crate) fn collect_type_annotations(
-        self,
-        _variable_registry: Option<&VariableRegistry>,
-        type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
-    ) {
+    pub(crate) fn collect_type_annotations(self, type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>) {
         let TypeInferenceGraph {
             vertices,
             edges,
@@ -342,7 +346,7 @@ impl TypeInferenceGraph<'_> {
             chain(nested_negations, nested_optionals),
             nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction),
         )
-        .for_each(|nested| nested.collect_type_annotations(_variable_registry, type_annotations_by_scope));
+        .for_each(|nested| nested.collect_type_annotations(type_annotations_by_scope));
     }
 
     fn check_thing_constraints_satisfiable(

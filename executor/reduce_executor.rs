@@ -82,7 +82,7 @@ impl GroupedReducer {
             batch.append(|mut row| {
                 group
                     .into_iter()
-                    .chain(reducers.into_iter().map(|reducer| reducer.finalise().unwrap_or(VariableValue::Empty)))
+                    .chain(reducers.into_iter().map(|reducer| reducer.finalise().unwrap_or(VariableValue::None)))
                     .enumerate()
                     .for_each(|(index, value)| row.set(VariablePosition::new(index as u32), value));
                 // Reducers combine many rows. provenance is pointless
@@ -112,7 +112,7 @@ fn extract_value<Snapshot: ReadableSnapshot>(
     storage_counters: StorageCounters,
 ) -> Option<Value<'static>> {
     match row.get(position) {
-        VariableValue::Empty => None,
+        VariableValue::None => None,
         VariableValue::Value(value) => Some(value.clone().into_owned()),
         VariableValue::Thing(Thing::Attribute(attribute)) => {
             // As long as these are trivial, it's safe to unwrap
@@ -250,7 +250,7 @@ impl ReducerAPI for CountVarExecutor {
         _: &ExecutionContext<Snapshot>,
         _: StorageCounters,
     ) {
-        if &VariableValue::Empty != row.get(self.target) {
+        if &VariableValue::None != row.get(self.target) {
             self.count += row.multiplicity();
         }
     }

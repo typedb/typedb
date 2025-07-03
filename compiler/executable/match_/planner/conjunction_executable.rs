@@ -10,7 +10,6 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::unimplemented_feature;
 use ir::{pattern::BranchID, pipeline::function_signature::FunctionID};
 
 use crate::{
@@ -23,7 +22,7 @@ use crate::{
 };
 
 #[derive(Clone, Debug)]
-pub struct MatchExecutable {
+pub struct ConjunctionExecutable {
     executable_id: u64,
     pub(crate) steps: Vec<ExecutionStep>,
     variable_positions: HashMap<Variable, VariablePosition>,
@@ -31,7 +30,7 @@ pub struct MatchExecutable {
     planner_statistics: PlannerStatistics,
 }
 
-impl MatchExecutable {
+impl ConjunctionExecutable {
     pub fn new(
         executable_id: u64,
         steps: Vec<ExecutionStep>,
@@ -72,11 +71,11 @@ impl MatchExecutable {
     }
 }
 
-impl fmt::Display for MatchExecutable {
+impl fmt::Display for ConjunctionExecutable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let selected = self.selected_variables();
         let output_width = self.steps().last().map(|s| s.output_width()).unwrap_or(0);
-        write!(f, "Match executable plan [selected={:?}, output_width={}]:", selected, output_width)?;
+        write!(f, "Conjunction executable plan [selected={:?}, output_width={}]:", selected, output_width)?;
         for (i, step) in self.steps().iter().enumerate() {
             write!(f, "\n  {i}: {step}")?;
         }
@@ -105,7 +104,7 @@ impl ExecutionStep {
             ExecutionStep::Check(step) => &step.selected_variables,
             ExecutionStep::Disjunction(step) => &step.selected_variables,
             ExecutionStep::Negation(step) => &step.selected_variables,
-            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
+            ExecutionStep::Optional(step) => &step.selected_variables,
             ExecutionStep::FunctionCall(step) => &step.selected_variables,
         }
     }
@@ -132,7 +131,7 @@ impl ExecutionStep {
             ExecutionStep::Check(step) => step.output_width(),
             ExecutionStep::Disjunction(step) => step.output_width(),
             ExecutionStep::Negation(step) => step.output_width(),
-            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
+            ExecutionStep::Optional(step) => step.output_width(),
             ExecutionStep::FunctionCall(step) => step.output_width(),
         }
     }
@@ -421,7 +420,7 @@ impl fmt::Display for VarMappedCheckStep<'_> {
 #[derive(Clone, Debug)]
 pub struct DisjunctionStep {
     pub branch_ids: Vec<BranchID>,
-    pub branches: Vec<MatchExecutable>,
+    pub branches: Vec<ConjunctionExecutable>,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
@@ -429,7 +428,7 @@ pub struct DisjunctionStep {
 impl DisjunctionStep {
     pub fn new(
         branch_ids: Vec<BranchID>,
-        branches: Vec<MatchExecutable>,
+        branches: Vec<ConjunctionExecutable>,
         selected_variables: Vec<VariablePosition>,
         output_width: u32,
     ) -> Self {
@@ -455,13 +454,13 @@ impl fmt::Display for DisjunctionStep {
 
 #[derive(Clone, Debug)]
 pub struct NegationStep {
-    pub negation: MatchExecutable,
+    pub negation: ConjunctionExecutable,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
 impl NegationStep {
-    pub fn new(negation: MatchExecutable, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
+    pub fn new(negation: ConjunctionExecutable, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
         Self { negation, selected_variables, output_width }
     }
 
@@ -481,7 +480,25 @@ impl fmt::Display for NegationStep {
 
 #[derive(Clone, Debug)]
 pub struct OptionalStep {
-    pub optional: MatchExecutable,
+    pub optional: ConjunctionExecutable,
+    pub selected_variables: Vec<VariablePosition>,
+    pub output_width: u32,
+    pub branch_id: BranchID,
+}
+
+impl OptionalStep {
+    pub fn new(
+        optional: ConjunctionExecutable,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+        branch_id: BranchID,
+    ) -> Self {
+        Self { optional, selected_variables, output_width, branch_id }
+    }
+
+    pub fn output_width(&self) -> u32 {
+        self.output_width
+    }
 }
 
 impl fmt::Display for OptionalStep {

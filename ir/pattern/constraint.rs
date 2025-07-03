@@ -24,13 +24,15 @@ use crate::{
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ParameterID, ScopeId, ValueType, VariableDependency, Vertex,
+        IrID, ParameterID, ScopeId, ValueType, VariableBindingMode, Vertex,
     },
     pipeline::{
         block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry, VariableRegistry,
     },
     LiteralParseError, RepresentationError,
 };
+use crate::pattern::Pattern;
+use crate::pipeline::block::BlockContext;
 
 #[derive(Debug, Clone)]
 pub struct Constraints {
@@ -67,26 +69,35 @@ impl Constraints {
         self.constraints.push(constraint);
         self.constraints.last().unwrap()
     }
+}
 
-    pub(crate) fn variable_dependency(&self) -> HashMap<Variable, VariableDependency<'_>> {
+impl Pattern for Constraints {
+    fn referenced_variables(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.constraints()
+            .iter()
+            .flat_map(|constraint| constraint.ids())
+            .unique()
+    }
+
+    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
-            for var in constraint.produced_ids() {
+            for var in constraint.binding_ids() {
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() &= VariableDependency::producing(constraint);
+                        *entry.get_mut() &= VariableBindingMode::always_binding(constraint);
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableDependency::producing(constraint));
+                        vacant_entry.insert(VariableBindingMode::always_binding(constraint));
                     }
                 }
             }
-            for var in constraint.required_ids() {
+            for var in constraint.non_binding_ids() {
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() &= VariableDependency::required(constraint);
+                        *entry.get_mut() &= VariableBindingMode::require_prebound(constraint);
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableDependency::required(constraint));
+                        vacant_entry.insert(VariableBindingMode::require_prebound(constraint));
                     }
                 }
             }
@@ -130,7 +141,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         variable: Variable,
         label: encoding::value::label::Label, // contains a span already!
     ) -> Result<&Label<Variable>, Box<RepresentationError>> {
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
+        debug_assert!(self.context.is_variable_available_in(self.constraints.scope, variable));
         let type_ = Label::new(variable, label);
         self.context.set_variable_category(variable, VariableCategory::Type, type_.clone().into())?;
         let as_ref = self.constraints.add_constraint(type_);
@@ -143,7 +154,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         name: &str,
         source_span: Option<Span>,
     ) -> Result<&RoleName<Variable>, Box<RepresentationError>> {
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
+        debug_assert!(self.context.is_variable_available_in(self.constraints.scope, variable));
         let role_name = RoleName::new(variable, name.to_owned(), source_span);
         self.context.set_variable_category(variable, VariableCategory::RoleType, role_name.clone().into())?;
         let as_ref = self.constraints.add_constraint(role_name);
@@ -156,7 +167,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         variable: Variable,
         source_span: Option<Span>,
     ) -> Result<&Kind<Variable>, Box<RepresentationError>> {
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
+        debug_assert!(self.context.is_variable_available_in(self.constraints.scope, variable));
         let category = match kind {
             typeql::token::Kind::Entity => VariableCategory::ThingType,
             typeql::token::Kind::Relation => VariableCategory::ThingType,
@@ -181,12 +192,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let sub = Sub::new(kind, subtype, supertype, source_span);
 
         if let Some(subtype) = subtype_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, subtype));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, subtype));
             self.context.set_variable_category(subtype, VariableCategory::Type, sub.clone().into())?;
         };
 
         if let Some(supertype) = supertype_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, supertype));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, supertype));
             self.context.set_variable_category(supertype, VariableCategory::Type, sub.clone().into())?;
         };
 
@@ -215,11 +226,11 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let type_var = type_.as_variable();
         let isa = Isa::new(kind, thing, type_, source_span);
 
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, thing));
+        debug_assert!(self.context.is_variable_available_in(self.constraints.scope, thing));
         self.context.set_variable_category(thing, VariableCategory::Thing, isa.clone().into())?;
 
         if let Some(type_) = type_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, type_));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, type_));
             self.context.set_variable_category(type_, VariableCategory::ThingType, isa.clone().into())?;
         };
 
@@ -235,7 +246,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     ) -> Result<&Iid<Variable>, Box<RepresentationError>> {
         let iid = Iid::new(var, iid, source_span);
 
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, var));
+        debug_assert!(self.context.is_variable_available_in(self.constraints.scope, var));
         self.context.set_variable_category(var, VariableCategory::Thing, iid.clone().into())?;
 
         let constraint = self.constraints.add_constraint(iid);
@@ -250,10 +261,10 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     ) -> Result<&Has<Variable>, Box<RepresentationError>> {
         let has = Has::new(owner, attribute, source_span);
 
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, owner));
+        debug_assert!(self.context.is_variable_available_in(self.constraints.scope, owner));
         self.context.set_variable_category(owner, VariableCategory::Object, has.clone().into())?;
 
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute));
+        debug_assert!(self.context.is_variable_available_in(self.constraints.scope, attribute));
         self.context.set_variable_category(attribute, VariableCategory::Attribute, has.clone().into())?;
 
         let constraint = self.constraints.add_constraint(has);
@@ -270,9 +281,9 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let links = Constraint::from(Links::new(relation, player, role_type, source_span));
 
         debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, relation)
-                && self.context.is_variable_available(self.constraints.scope, player)
-                && self.context.is_variable_available(self.constraints.scope, role_type)
+            self.context.is_variable_available_in(self.constraints.scope, relation)
+                && self.context.is_variable_available_in(self.constraints.scope, player)
+                && self.context.is_variable_available_in(self.constraints.scope, role_type)
         );
 
         self.context.set_variable_category(relation, VariableCategory::Object, links.clone())?;
@@ -290,10 +301,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         links2: Links<Variable>,
     ) -> Result<&LinksDeduplication<Variable>, Box<RepresentationError>> {
         debug_assert!(
-            self.context.is_variable_available(self.constraints.scope, links1.role_type.as_variable().unwrap())
-                && self.context.is_variable_available(self.constraints.scope, links1.player.as_variable().unwrap())
-                && self.context.is_variable_available(self.constraints.scope, links2.role_type.as_variable().unwrap())
-                && self.context.is_variable_available(self.constraints.scope, links2.player.as_variable().unwrap())
+            self.context.is_variable_available_in(self.constraints.scope, links1.role_type.as_variable().unwrap())
+                && self.context.is_variable_available_in(self.constraints.scope, links1.player.as_variable().unwrap())
+                && self
+                    .context
+                    .is_variable_available_in(self.constraints.scope, links2.role_type.as_variable().unwrap())
+                && self.context.is_variable_available_in(self.constraints.scope, links2.player.as_variable().unwrap())
         );
         let dedup = Constraint::from(LinksDeduplication::new(links1, links2));
         let constraint = self.constraints.add_constraint(dedup);
@@ -310,7 +323,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         comparator.validate_arguments(&lhs, &rhs, self.parameters(), source_span)?;
         let comparison = Comparison::new(lhs.clone(), rhs.clone(), comparator, source_span);
         if let Vertex::Variable(lhs_var) = lhs {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, lhs_var));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, lhs_var));
             self.context.set_variable_category(
                 lhs_var,
                 VariableCategory::AttributeOrValue,
@@ -318,7 +331,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             )?;
         }
         if let Vertex::Variable(rhs_var) = rhs {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, rhs_var));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, rhs_var));
             self.context.set_variable_category(
                 rhs_var,
                 VariableCategory::AttributeOrValue,
@@ -373,8 +386,8 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         source_span: Option<Span>,
     ) -> Result<FunctionCall<Variable>, Box<RepresentationError>> {
         use RepresentationError::{FunctionCallArgumentCountMismatch, FunctionCallReturnCountMismatch};
-        debug_assert!(assigned.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
-        debug_assert!(arguments.iter().all(|var| self.context.is_variable_available(self.constraints.scope, *var)));
+        debug_assert!(assigned.iter().all(|var| self.context.is_variable_available_in(self.constraints.scope, *var)));
+        debug_assert!(arguments.iter().all(|var| self.context.is_variable_available_in(self.constraints.scope, *var)));
 
         // Validate
         if assigned.len() != callee_signature.returns.len() {
@@ -403,7 +416,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         expression: ExpressionTree<Variable>,
         source_span: Option<Span>,
     ) -> Result<&ExpressionBinding<Variable>, Box<RepresentationError>> {
-        debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
+        debug_assert!(self.context.is_variable_available_in(self.constraints.scope, variable));
         if self.context.is_variable_input(variable) {
             let variable = self
                 .context
@@ -438,12 +451,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let owns = Constraint::from(Owns::new(owner_type, attribute_type, source_span));
 
         if let Some(owner_type) = owner_type_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, owner_type));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, owner_type));
             self.context.set_variable_category(owner_type, VariableCategory::ThingType, owns.clone())?;
         };
 
         if let Some(attribute_type) = attribute_type_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute_type));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, attribute_type));
             self.context.set_variable_category(attribute_type, VariableCategory::AttributeType, owns.clone())?;
         };
 
@@ -462,12 +475,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let relates = Constraint::from(Relates::new(relation_type, role_type, source_span));
 
         if let Some(relation_type) = relation_type_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, relation_type));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, relation_type));
             self.context.set_variable_category(relation_type, VariableCategory::ThingType, relates.clone())?;
         };
 
         if let Some(role_type) = role_type_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, role_type));
             self.context.set_variable_category(role_type, VariableCategory::RoleType, relates.clone())?;
         };
 
@@ -486,12 +499,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let plays = Constraint::from(Plays::new(player_type, role_type, source_span));
 
         if let Some(player_type) = player_type_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, player_type));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, player_type));
             self.context.set_variable_category(player_type, VariableCategory::ThingType, plays.clone())?;
         };
 
         if let Some(role_type) = role_type_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, role_type));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, role_type));
             self.context.set_variable_category(role_type, VariableCategory::RoleType, plays.clone())?;
         };
 
@@ -509,7 +522,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         let value = Constraint::from(Value::new(attribute_type, value_type, source_span));
 
         if let Some(attribute_type) = attribute_type_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, attribute_type));
+            debug_assert!(self.context.is_variable_available_in(self.constraints.scope, attribute_type));
             self.context.set_variable_category(attribute_type, VariableCategory::AttributeType, value.clone())?;
         };
 
@@ -610,7 +623,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn produced_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
+    pub fn binding_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
             Constraint::Is(is) => Box::new(is.ids()),
             Constraint::Kind(kind) => Box::new(kind.ids()),
@@ -634,7 +647,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn required_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
+    pub fn non_binding_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
             Constraint::Is(is) => Box::new(is.ids()), // FIXME _technically_ it's legal to only have one side of `is` bound
             | Constraint::Kind(_)
@@ -652,8 +665,8 @@ impl<ID: IrID> Constraint<ID> {
             | Constraint::Value(_)
             | Constraint::LinksDeduplication(_)
             | Constraint::Unsatisfiable(_) => Box::new(iter::empty()),
-            Constraint::ExpressionBinding(binding) => Box::new(binding.required_ids()),
-            Constraint::FunctionCallBinding(binding) => Box::new(binding.required_ids()),
+            Constraint::ExpressionBinding(binding) => Box::new(binding.expression_ids()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.function_call_arg_ids()),
             Constraint::Comparison(comparison) => Box::new(comparison.ids()),
         }
     }
@@ -2056,8 +2069,8 @@ impl<ID: IrID> ExpressionBinding<ID> {
         [&self.left].into_iter()
     }
 
-    pub fn required_ids(&self) -> impl Iterator<Item = ID> + '_ {
-        self.expression.variables()
+    pub fn expression_ids(&self) -> impl Iterator<Item = ID> + '_ {
+        self.expression.ids()
     }
 
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
@@ -2065,7 +2078,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
     }
 
     pub(crate) fn ids(&self) -> impl Iterator<Item = ID> + '_ {
-        self.ids_assigned().chain(self.expression().variables())
+        self.ids_assigned().chain(self.expression().ids())
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
@@ -2073,7 +2086,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
         F: FnMut(ID),
     {
         self.ids_assigned().for_each(&mut function);
-        self.expression().variables().for_each(function);
+        self.expression().ids().for_each(function);
     }
 
     pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
@@ -2168,7 +2181,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         self.ids_assigned().chain(self.function_call.argument_ids())
     }
 
-    pub fn required_ids(&self) -> impl Iterator<Item = ID> + '_ {
+    pub fn function_call_arg_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.function_call.argument_ids()
     }
 

@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{ops::DerefMut, sync::Arc};
+use std::{sync::Arc};
 
 use cucumber::gherkin::Step;
 use database::{
@@ -124,7 +124,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
             ));
         }
         ActiveTransaction::Write(tx) => {
-            let (profile, result) = tx.commit();
+            let (_profile, result) = tx.commit();
             if let Either::Right(error) = may_error.check(result) {
                 match error {
                     DataCommitError::ConceptWriteErrors { write_errors: errors, .. } => {
@@ -143,8 +143,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
         }
         ActiveTransaction::Schema(tx) => {
             let types_syntax = tx.type_manager.get_types_syntax(tx.snapshot.as_ref()).unwrap();
-            let schema = format!("define\n{}", types_syntax);
-            let (profile, result) = tx.commit();
+            let (_profile, result) = tx.commit();
             if let Either::Right(error) = may_error.check(result) {
                 match error {
                     SchemaCommitError::ConceptWriteErrors { write_errors: errors, .. } => {

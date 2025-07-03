@@ -250,12 +250,12 @@ pub mod tests {
             Vertex,
         },
         pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-        translation::{match_::translate_match, TranslationContext},
+        translation::{match_::translate_match, PipelineTranslationContext},
         RepresentationError,
     };
 
     fn parse_query_get_match(
-        context: &mut TranslationContext,
+        context: &mut PipelineTranslationContext,
         value_parameters: &mut ParameterRegistry,
         query_str: &str,
     ) -> Result<Block, Box<RepresentationError>> {
@@ -267,7 +267,7 @@ pub mod tests {
 
     #[test]
     fn basic() {
-        let mut context = TranslationContext::new();
+        let mut context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let block =
             parse_query_get_match(&mut context, &mut value_parameters, "match let $y = 5 + 9 * 6; select $y;").unwrap();
@@ -294,7 +294,7 @@ pub mod tests {
         assert_eq!(rhs[4], Expression::Operation(Operation::new(Operator::Add, 0, 3, None)));
     }
 
-    fn get_named_variable(translation_context: &TranslationContext, name: &str) -> Variable {
+    fn get_named_variable(translation_context: &PipelineTranslationContext, name: &str) -> Variable {
         *translation_context.variable_registry.variable_names().iter().find(|(k, v)| v.as_str() == name).unwrap().0
     }
 }

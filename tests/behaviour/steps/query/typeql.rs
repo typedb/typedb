@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter, ops::DerefMut, str::FromStr, sync::Arc};
+use std::{collections::HashMap, iter, str::FromStr};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
@@ -342,8 +342,8 @@ fn does_var_in_row_match_spec(
 ) -> bool {
     let var_value =
         answer_row.get(var).unwrap_or_else(|| panic!("no answer found for {var} in one of the answer rows"));
-    if spec == "empty" {
-        var_value == &VariableValue::Empty
+    if spec == "none" {
+        var_value == &VariableValue::None
     } else {
         let (kind, id) = spec.split_once(':').expect("answer concept specifier must be of the form `<kind>:<id>`");
         match kind {
@@ -509,6 +509,12 @@ async fn answer_contains_document(context: &mut Context, contains_or_doesnt: par
 }
 
 #[apply(generic_step)]
+#[step(expr = r"answers do not contain variable: {word}")]
+async fn answers_do_not_contain_variable(context: &mut Context, variable: String, step: &Step) {
+    context.query_answer.as_ref().unwrap().as_rows().iter().all(|row| !row.contains_key(&variable));
+}
+
+#[apply(generic_step)]
 #[step(expr = r"each answer satisfies")]
 async fn each_answer_satisfies(context: &mut Context, step: &Step) {
     let templated_query = step.docstring().unwrap();
@@ -581,8 +587,8 @@ async fn verify_answer_set(context: &mut Context, step: &Step) {
             assert!(expected.iter().all(|answer| actual.contains(answer)));
         }
         (
-            QueryAnswer::ConceptDocuments(actual_tree, actual_params),
-            QueryAnswer::ConceptDocuments(expected_tree, expected_params),
+            QueryAnswer::ConceptDocuments(_actual_tree, _actual_params),
+            QueryAnswer::ConceptDocuments(_expected_tree, _expected_params),
         ) => {
             todo!()
         }
@@ -593,5 +599,5 @@ async fn verify_answer_set(context: &mut Context, step: &Step) {
             panic!("Expected documents, found rows")
         }
     }
-    let num_answers = context.query_answer.as_ref().unwrap().as_rows().len();
+    let _num_answers = context.query_answer.as_ref().unwrap().as_rows().len();
 }

@@ -31,6 +31,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         min_max_types,
         tuple::{
@@ -40,7 +41,7 @@ use crate::{
             unsafe_compare_result_tuple, LinksToTupleFn, Tuple, TupleOrderingFn, TuplePositions, TupleResult,
             TupleToLinksFn,
         },
-        Checker, FilterFn, FilterMapUnchangedFn, LinksIterateMode, VariableModes,
+        FilterFn, FilterMapUnchangedFn, LinksIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -172,7 +173,7 @@ impl LinksExecutor {
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
 
         let existing_role = may_get_role(self.links.role_type().as_variable().unwrap(), row.as_reference());
         let filter_for_row: Arc<LinksFilterMapFn> = Arc::new(move |item| match filter(&item) {

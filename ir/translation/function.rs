@@ -5,7 +5,7 @@
  */
 
 use answer::variable::Variable;
-use error::needs_update_when_feature_is_implemented;
+use error::{needs_update_when_feature_is_implemented, UnimplementedFeature};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
@@ -15,7 +15,7 @@ use typeql::{
     },
     type_::{NamedType, NamedTypeAny},
 };
-
+use typeql::common::Span;
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},
     pipeline::{
@@ -26,9 +26,10 @@ use crate::{
     translation::{
         pipeline::{translate_pipeline_stages, TranslatedStage},
         reduce::build_reducer,
-        TranslationContext,
+        PipelineTranslationContext,
     },
 };
+use crate::pattern::Pattern;
 
 macro_rules! verify_variable_available {
     ($context:ident, $var:expr => $error:ident ) => {
@@ -65,6 +66,23 @@ pub fn translate_function_from(
             source_span: signature.ident.span(),
         }
     })?;
+    let output_types = match &signature.output {
+        Output::Stream(stream) => &stream.types,
+        Output::Single(single) => &single.types,
+    };
+
+    if let Some((source, _)) = output_types
+        .iter()
+        .map(|output_type| (output_type.span(), named_type_any_to_category_and_optionality(output_type)))
+        .filter(|(source, (_, optionality))| *optionality == VariableOptionality::Optional)
+        .next()
+     {
+        Err(FunctionRepresentationError::UnimplementedFunctionOptionals {
+            source_span: source.clone(),
+            feature: UnimplementedFeature::OptionalFunctions
+        })?;
+    }
+
     let argument_labels = signature.args.iter().map(|arg| arg.type_.clone()).collect();
     let args_sources_categories = signature
         .args
@@ -78,11 +96,12 @@ pub fn translate_function_from(
             Ok::<_, FunctionRepresentationError>((
                 name,
                 arg.var.span(),
-                named_type_any_to_category_and_optionality(&arg.type_).0,
+                named_type_any_to_category_and_optionality(&arg.type_),
             ))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let (mut context, arguments) = TranslationContext::new_with_function_arguments(args_sources_categories)
+
+    let (mut context, arguments) = PipelineTranslationContext::new_function_pipeline(args_sources_categories)
         .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
     let mut value_parameters = ParameterRegistry::new();
     let body = translate_function_block(snapshot, function_index, &mut context, &mut value_parameters, block)?;
@@ -137,7 +156,7 @@ pub fn translate_function_from(
 pub(crate) fn translate_function_block(
     snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_block: &FunctionBlock,
 ) -> Result<FunctionBody, Box<FunctionRepresentationError>> {
@@ -226,7 +245,7 @@ fn named_type_any_to_category_and_optionality(
 }
 
 fn build_return_stream(
-    context: &TranslationContext,
+    context: &PipelineTranslationContext,
     stream: &ReturnStream,
 ) -> Result<ReturnOperation, FunctionRepresentationError> {
     let variables = stream
@@ -238,7 +257,7 @@ fn build_return_stream(
 }
 
 fn build_return_single(
-    context: &TranslationContext,
+    context: &PipelineTranslationContext,
     single: &ReturnSingle,
 ) -> Result<ReturnOperation, FunctionRepresentationError> {
     let variables = single
@@ -251,7 +270,7 @@ fn build_return_single(
 }
 
 fn build_return_reduce(
-    context: &TranslationContext,
+    context: &PipelineTranslationContext,
     reduction: &ReturnReduction,
 ) -> Result<ReturnOperation, FunctionRepresentationError> {
     match reduction {
