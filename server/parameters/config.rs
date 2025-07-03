@@ -277,6 +277,7 @@ impl ConfigBuilder {
 pub mod tests {
     use std::path::PathBuf;
 
+    use assert as assert_true;
     use clap::Parser;
 
     use crate::parameters::{
@@ -284,7 +285,6 @@ pub mod tests {
         config::{Config, ConfigBuilder},
         ConfigError,
     };
-    use assert as assert_true;
 
     fn config_path() -> PathBuf {
         #[cfg(feature = "bazel")]

@@ -851,13 +851,14 @@ mod tests {
         thread::{self, JoinHandle},
     };
 
+    use assert as assert_true;
+
     use crate::{
         isolation_manager::{CommitRecord, CommitStatus, CommitType, Timeline, TIMELINE_WINDOW_SIZE},
         keyspace::{KeyspaceId, KeyspaceSet},
         sequence_number::SequenceNumber,
         snapshot::buffer::OperationsBuffer,
     };
-    use assert as assert_true;
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
             #[derive(Clone, Copy)]
