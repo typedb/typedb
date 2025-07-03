@@ -4,12 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use database::{database::DatabaseCreateError, DatabaseDeleteError};
 use error::{typedb_error, TypeDBError};
 
-use crate::{
-    authentication::AuthenticationError, service::transaction_service::TransactionServiceError, state::ServerStateError,
-};
+use crate::{authentication::AuthenticationError, service::transaction_service::TransactionServiceError, state::ServerStateError};
 
 typedb_error!(
     pub HttpServiceError(component = "HTTP Service", prefix = "HSR") {
@@ -22,8 +19,6 @@ typedb_error!(
         InvalidPathParameter(7, "Requested resource not found: invalid path parameter {parameter}.", parameter: String),
         State(8, "State error.", typedb_source: ServerStateError),
         Authentication(9, "Authentication error.", typedb_source: AuthenticationError),
-        DatabaseCreate(10, "Database create error.", typedb_source: DatabaseCreateError),
-        DatabaseDelete(11, "Database delete error.", typedb_source: DatabaseDeleteError),
         Transaction(16, "Transaction error.", typedb_source: TransactionServiceError),
         QueryClose(17, "Error while closing single-query transaction.", typedb_source: TransactionServiceError),
         QueryCommit(18, "Error while committing single-query transaction.", typedb_source: TransactionServiceError),
