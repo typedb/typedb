@@ -75,8 +75,6 @@ pub mod server {
 
     pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10 * SECONDS_IN_MINUTE);
 
-    pub const DEFAULT_ADDRESS: &str = "0.0.0.0:1729";
-    pub const DEFAULT_HTTP_ADDRESS: &str = "0.0.0.0:8000";
     pub const DEFAULT_USER_NAME: &str = "admin";
     pub const DEFAULT_USER_PASSWORD: &str = "password";
     pub const DEFAULT_DATA_DIR: &str = "data";

@@ -6,11 +6,16 @@
 use std::{convert, sync::Arc};
 
 use axum::{body::Body, response::IntoResponse};
+use diagnostics::metrics::ActionKind;
 use futures::future::BoxFuture;
 use http::{Request, Response};
 use tower::{Layer, Service};
 
-use crate::{authentication::authenticate, service::http::error::HttpServiceError, state::BoxServerState};
+use crate::{
+    authentication::authenticate,
+    service::http::{diagnostics::run_with_diagnostics_async, error::HttpServiceError},
+    state::BoxServerState,
+};
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
@@ -25,9 +30,17 @@ impl Authenticator {
 
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<Body>) -> Result<Request<Body>, impl IntoResponse> {
-        authenticate(self.server_state.clone(), request)
-            .await
-            .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager(),
+            None::<&str>,
+            ActionKind::Authenticate,
+            || async {
+                authenticate(self.server_state.clone(), request)
+                    .await
+                    .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })
+            },
+        )
+        .await
     }
 }
 
