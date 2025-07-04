@@ -628,12 +628,12 @@ impl Drop for FsyncThread {
 
 #[cfg(test)]
 mod test {
+    use assert as assert_true;
     use itertools::Itertools;
     use tempdir::TempDir;
 
     use super::WAL;
     use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, RawRecord};
-    use assert as assert_true;
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     struct TestRecord {
         bytes: [u8; 4],
