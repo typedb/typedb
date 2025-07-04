@@ -19,7 +19,7 @@ use crate::{
             ExecutableFunctionRegistry,
         },
         next_executable_id,
-        pipeline::{compile_stages_and_fetch, ExecutableStage},
+        pipeline::{compile_stages_and_fetch, ExecutableStage, TypePopulations},
         ExecutableCompilationError,
     },
     VariablePosition,
@@ -70,9 +70,10 @@ pub fn compile_fetch(
     available_functions: &ExecutableFunctionRegistry,
     fetch: AnnotatedFetch,
     variable_positions: &HashMap<Variable, VariablePosition>,
-) -> Result<ExecutableFetch, FetchCompilationError> {
-    let compiled = compile_object(statistics, available_functions, fetch.object, variable_positions)?;
-    Ok(ExecutableFetch::new(compiled))
+) -> Result<(ExecutableFetch, TypePopulations), FetchCompilationError> {
+    let (compiled, type_populations) =
+        compile_object(statistics, available_functions, fetch.object, variable_positions)?;
+    Ok((ExecutableFetch::new(compiled), type_populations))
 }
 
 fn compile_object(
@@ -80,21 +81,23 @@ fn compile_object(
     available_functions: &ExecutableFunctionRegistry,
     fetch_object: AnnotatedFetchObject,
     variable_positions: &HashMap<Variable, VariablePosition>,
-) -> Result<FetchObjectInstruction, FetchCompilationError> {
+) -> Result<(FetchObjectInstruction, TypePopulations), FetchCompilationError> {
     match fetch_object {
         AnnotatedFetchObject::Entries(entries) => {
             let mut compiled_entries = HashMap::with_capacity(entries.len());
+            let mut type_populations = TypePopulations::default();
             for (key, value) in entries {
-                let compiled = compile_some(statistics, available_functions, value, variable_positions)?;
+                let (compiled, pop) = compile_some(statistics, available_functions, value, variable_positions)?;
                 compiled_entries.insert(key, compiled);
+                type_populations.extend(pop);
             }
-            Ok(FetchObjectInstruction::Entries(compiled_entries))
+            Ok((FetchObjectInstruction::Entries(compiled_entries), type_populations))
         }
         AnnotatedFetchObject::Attributes(var) => {
             let Some(position) = variable_positions.get(&var) else {
                 return Err(FetchCompilationError::FetchVariableNotFound { var });
             };
-            Ok(FetchObjectInstruction::Attributes(*position))
+            Ok((FetchObjectInstruction::Attributes(*position), TypePopulations::default()))
         }
     }
 }
@@ -104,37 +107,38 @@ fn compile_some(
     available_functions: &ExecutableFunctionRegistry,
     some: AnnotatedFetchSome,
     variable_positions: &HashMap<Variable, VariablePosition>,
-) -> Result<FetchSomeInstruction, FetchCompilationError> {
+) -> Result<(FetchSomeInstruction, TypePopulations), FetchCompilationError> {
     match some {
         AnnotatedFetchSome::SingleVar(var) => {
             let Some(position) = variable_positions.get(&var) else {
                 return Err(FetchCompilationError::FetchVariableNotFound { var });
             };
-            Ok(FetchSomeInstruction::SingleVar(*position))
+            Ok((FetchSomeInstruction::SingleVar(*position), TypePopulations::default()))
         }
         AnnotatedFetchSome::SingleAttribute(var, attribute_type) => {
             let Some(position) = variable_positions.get(&var) else {
                 return Err(FetchCompilationError::FetchVariableNotFound { var });
             };
-            Ok(FetchSomeInstruction::SingleAttribute(*position, attribute_type))
+            Ok((FetchSomeInstruction::SingleAttribute(*position, attribute_type), TypePopulations::default()))
         }
         AnnotatedFetchSome::SingleFunction(function) => {
             let compiled = compile_single_untabled_function(statistics, available_functions, function)
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
-            Ok(FetchSomeInstruction::SingleFunction(compiled, variable_positions.clone()))
+            Ok((FetchSomeInstruction::SingleFunction(compiled, variable_positions.clone()), TypePopulations::default()))
         }
         AnnotatedFetchSome::Object(object) => {
-            let compiled = compile_object(statistics, available_functions, *object, variable_positions)?;
-            Ok(FetchSomeInstruction::Object(Box::new(compiled)))
+            let (compiled, type_populations) =
+                compile_object(statistics, available_functions, *object, variable_positions)?;
+            Ok((FetchSomeInstruction::Object(Box::new(compiled)), type_populations))
         }
         AnnotatedFetchSome::ListFunction(function) => {
             let compiled = compile_single_untabled_function(statistics, available_functions, function)
                 .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
-            Ok(FetchSomeInstruction::ListFunction(compiled, variable_positions.clone()))
+            Ok((FetchSomeInstruction::ListFunction(compiled, variable_positions.clone()), TypePopulations::default()))
         }
         AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
             let AnnotatedFetchListSubFetch { variable_registry, input_variables, stages, fetch } = sub_fetch;
-            let (input_positions, compiled_stages, compiled_fetch, _) = compile_stages_and_fetch(
+            let (input_positions, compiled_stages, compiled_fetch, type_populations) = compile_stages_and_fetch(
                 statistics,
                 &variable_registry,
                 available_functions,
@@ -152,24 +156,27 @@ fn compile_some(
                 })
                 .collect();
 
-            Ok(FetchSomeInstruction::ListSubFetch(ExecutableFetchListSubFetch {
-                variable_registry: Arc::new(variable_registry),
-                input_position_mapping: input_position_remapping,
-                stages: compiled_stages,
-                fetch: compiled_fetch.unwrap(),
-            }))
+            Ok((
+                FetchSomeInstruction::ListSubFetch(ExecutableFetchListSubFetch {
+                    variable_registry: Arc::new(variable_registry),
+                    input_position_mapping: input_position_remapping,
+                    stages: compiled_stages,
+                    fetch: compiled_fetch.unwrap(),
+                }),
+                type_populations,
+            ))
         }
         AnnotatedFetchSome::ListAttributesAsList(var, attribute_type) => {
             let Some(position) = variable_positions.get(&var) else {
                 return Err(FetchCompilationError::FetchVariableNotFound { var });
             };
-            Ok(FetchSomeInstruction::ListAttributesAsList(*position, attribute_type))
+            Ok((FetchSomeInstruction::ListAttributesAsList(*position, attribute_type), TypePopulations::default()))
         }
         AnnotatedFetchSome::ListAttributesFromList(var, attribute_type) => {
             let Some(position) = variable_positions.get(&var) else {
                 return Err(FetchCompilationError::FetchVariableNotFound { var });
             };
-            Ok(FetchSomeInstruction::ListAttributesFromList(*position, attribute_type))
+            Ok((FetchSomeInstruction::ListAttributesFromList(*position, attribute_type), TypePopulations::default()))
         }
     }
 }
