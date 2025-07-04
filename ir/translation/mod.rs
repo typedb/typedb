@@ -44,7 +44,7 @@ impl PipelineTranslationContext {
         Self { variable_registry: VariableRegistry::new(), visible_variables: HashMap::new() }
     }
 
-    pub fn new_with_function_arguments(
+    pub fn new_function_pipeline(
         input_variables: Vec<(String, Option<Span>, VariableCategory)>,
     ) -> Result<(Self, Vec<Variable>), Box<RepresentationError>> {
         let mut visible_variables = HashMap::new();

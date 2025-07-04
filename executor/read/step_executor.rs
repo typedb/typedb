@@ -122,7 +122,7 @@ impl ReshapeForReturnExecutor {
     }
 }
 
-pub(crate) fn create_executors_for_match(
+pub(crate) fn create_executors_for_conjunction(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
@@ -163,7 +163,7 @@ pub(crate) fn create_executors_for_match(
             ExecutionStep::Negation(negation_step) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
                 let _step_profile = stage_profile.extend_or_get(index, || format!("{}", negation_step));
-                let inner = create_executors_for_match(
+                let inner = create_executors_for_conjunction(
                     snapshot,
                     thing_manager,
                     function_registry,
@@ -210,7 +210,7 @@ pub(crate) fn create_executors_for_match(
                     .branches
                     .iter()
                     .map(|branch_executable| {
-                        let executors = create_executors_for_match(
+                        let executors = create_executors_for_conjunction(
                             snapshot,
                             thing_manager,
                             function_registry,
@@ -308,14 +308,14 @@ pub(super) fn create_executors_for_function_pipeline_stages(
 
     match &executable_stages[at_index] {
         ExecutableStage::Match(conjunction_executable) => {
-            let mut match_stages = create_executors_for_match(
+            let mut executors = create_executors_for_conjunction(
                 snapshot,
                 thing_manager,
                 function_registry,
                 query_profile,
                 conjunction_executable,
             )?;
-            previous_stage_steps.append(&mut match_stages);
+            previous_stage_steps.append(&mut executors);
             Ok(previous_stage_steps)
         }
         ExecutableStage::Select(select_executable) => {

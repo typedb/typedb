@@ -82,7 +82,7 @@ pub fn translate_function_from(
             ))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let (mut context, arguments) = PipelineTranslationContext::new_with_function_arguments(args_sources_categories)
+    let (mut context, arguments) = PipelineTranslationContext::new_function_pipeline(args_sources_categories)
         .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
     let mut value_parameters = ParameterRegistry::new();
     let body = translate_function_block(snapshot, function_index, &mut context, &mut value_parameters, block)?;

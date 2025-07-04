@@ -59,7 +59,7 @@ pub(super) fn create_pattern_executor_for_conjunction(
     conjunction_executable: &ConjunctionExecutable,
     profile: &QueryProfile,
 ) -> Result<PatternExecutor, Box<ConceptReadError>> {
-    let executors = step_executor::create_executors_for_match(
+    let executors = step_executor::create_executors_for_conjunction(
         snapshot,
         thing_manager,
         function_registry,
