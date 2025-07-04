@@ -31,7 +31,7 @@ use compiler::{
 };
 use encoding::value::label::Label;
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, conjunction_executor::ConjunctionExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use ir::{
@@ -151,7 +151,7 @@ fn traverse_isa_unbounded_sorted_thing() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -231,7 +231,7 @@ fn traverse_isa_unbounded_sorted_type() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -325,7 +325,7 @@ fn traverse_isa_bounded_thing() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -407,7 +407,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -487,7 +487,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -581,7 +581,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -679,7 +679,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -762,7 +762,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -842,7 +842,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,

@@ -16,20 +16,20 @@ use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    read::{create_pattern_executor_for_match, pattern_executor::PatternExecutor, tabled_functions::TabledFunctions},
+    read::{create_pattern_executor_for_conjunction, pattern_executor::PatternExecutor, tabled_functions::TabledFunctions},
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 
-pub struct MatchExecutor {
+pub struct ConjunctionExecutor {
     entry: PatternExecutor,
     input: Option<MaybeOwnedRow<'static>>,
     tabled_functions: TabledFunctions,
 }
 
-impl MatchExecutor {
+impl ConjunctionExecutor {
     pub fn new(
-        match_executable: &ConjunctionExecutable,
+        conjunction_executable: &ConjunctionExecutable,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,
@@ -37,11 +37,11 @@ impl MatchExecutor {
         profile: &QueryProfile,
     ) -> Result<Self, Box<ConceptReadError>> {
         Ok(Self {
-            entry: create_pattern_executor_for_match(
+            entry: create_pattern_executor_for_conjunction(
                 snapshot,
                 thing_manager,
                 &function_registry,
-                match_executable,
+                conjunction_executable,
                 profile,
             )?,
             tabled_functions: TabledFunctions::new(function_registry),
@@ -72,14 +72,14 @@ impl MatchExecutor {
 }
 
 pub(crate) struct BatchIterator<Snapshot> {
-    executor: MatchExecutor,
+    executor: ConjunctionExecutor,
     context: ExecutionContext<Snapshot>,
     interrupt: ExecutionInterrupt,
 }
 
 impl<Snapshot> BatchIterator<Snapshot> {
     pub(crate) fn new(
-        executor: MatchExecutor,
+        executor: ConjunctionExecutor,
         context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Self {

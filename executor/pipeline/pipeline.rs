@@ -137,10 +137,10 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         ));
         for executable_stage in executable_stages {
             match executable_stage {
-                ExecutableStage::Match(match_executable) => {
+                ExecutableStage::Match(conjunction_executable) => {
                     // TODO: Pass expressions & functions
                     let match_stage =
-                        MatchStageExecutor::new(match_executable.clone(), last_stage, executable_functions.clone());
+                        MatchStageExecutor::new(conjunction_executable.clone(), last_stage, executable_functions.clone());
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));
                 }
                 ExecutableStage::Insert(_) => {
@@ -214,10 +214,10 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         let mut last_stage = WritePipelineStage::Initial(Box::new(InitialStage::new_empty(context)));
         for executable_stage in executable_stages {
             match executable_stage {
-                ExecutableStage::Match(match_executable) => {
+                ExecutableStage::Match(conjunction_executable) => {
                     // TODO: Pass expressions & functions
                     let match_stage =
-                        MatchStageExecutor::new(match_executable, last_stage, executable_functions.clone());
+                        MatchStageExecutor::new(conjunction_executable, last_stage, executable_functions.clone());
                     last_stage = WritePipelineStage::Match(Box::new(match_stage));
                 }
                 ExecutableStage::Insert(insert_executable) => {

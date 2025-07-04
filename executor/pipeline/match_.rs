@@ -13,7 +13,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ReadExecutionError,
-    match_executor::{MatchExecutor, PatternIterator},
+    conjunction_executor::{ConjunctionExecutor, PatternIterator},
     pipeline::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,
@@ -96,7 +96,7 @@ where
                 Err(err) => return Some(Err(err)),
             };
 
-            let executor = MatchExecutor::new(
+            let executor = ConjunctionExecutor::new(
                 &self.executable,
                 snapshot,
                 thing_manager,
