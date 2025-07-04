@@ -695,9 +695,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     plan.cumulative_cost.chain(plan.ongoing_step_cost),
                     plan.heuristic
                 );
+
                 debug_assert!(extension_heap.is_empty());
                 // Add best k extensions from this plan to new_plan_heap (k = extension_width)
-                for extension in plan.extensions_iter(&self.graph)? {
+                for extension in plan.extensions_iter(&self.graph) {
+                    let extension = extension?;
                     if extension.is_trivial(&self.graph) {
                         extension_heap.clear();
                         extension_heap.push(Reverse(extension));
@@ -894,7 +896,10 @@ impl PartialCostPlan {
         }
     }
 
-    fn extensions_iter<'a>(&'a self, graph: &'a Graph<'_>) -> Result<Vec<StepExtension>, QueryPlanningError> {
+    fn extensions_iter<'a>(
+        &'a self,
+        graph: &'a Graph<'_>,
+    ) -> impl Iterator<Item = Result<StepExtension, QueryPlanningError>> + 'a {
         let mut all_available_vars = self.vertex_ordering.clone();
         all_available_vars.extend(
             chain(&self.ongoing_step_produced_vars, &self.ongoing_step_stash_produced_vars)
@@ -949,7 +954,6 @@ impl PartialCostPlan {
                     heuristic,
                 })
             })
-            .collect::<Result<Vec<_>, _>>()
     }
 
     pub(crate) fn extend_with(&self, graph: &Graph<'_>, extension: StepExtension) -> PartialCostPlan {
@@ -1063,8 +1067,7 @@ impl PartialCostPlan {
                 + graph.elements[&VertexId::Pattern(pattern)]
                     .variables()
                     .filter(|v| !self.ongoing_step_produced_vars.contains(v) && !self.all_produced_vars.contains(v))
-                    .collect::<Vec<_>>()
-                    .len();
+                    .count();
             let cost_estimate = AVERAGE_STEP_COST
                 * (num_remaining as f64)
                 * (1.0 - VARIABLE_PRODUCTION_ADVANTAGE).powi(num_produced_vars as i32);
@@ -1948,7 +1951,7 @@ impl ConjunctionPlan<'_> {
         let mut pushed_any = false;
         input_variables
             .filter_map(|variable| {
-                let vertex = variable.clone().into();
+                let vertex = variable.into();
                 let local_annotations = self.local_annotations.vertex_annotations_of(&vertex)?;
                 input_variable_annotations
                     .get(&vertex)? // Functions don't have any

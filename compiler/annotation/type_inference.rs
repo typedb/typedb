@@ -53,6 +53,7 @@ pub mod tests {
     };
 
     use answer::{variable::Variable, Type};
+    use assert as assert_true;
     use encoding::{
         graph::definition::definition_key::{DefinitionID, DefinitionKey},
         layout::prefix::Prefix,
@@ -95,7 +96,6 @@ pub mod tests {
         type_seeder::TypeGraphSeedingContext,
         TypeInferenceError,
     };
-    use assert as assert_true;
 
     #[test]
     fn test_functions() {

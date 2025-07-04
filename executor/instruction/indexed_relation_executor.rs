@@ -698,10 +698,10 @@ where
             Option<RoleType>,
             Option<RoleType>,
         ) = (
-            self.fixed_bounds.from.clone(),
-            self.fixed_bounds.to.clone(),
-            self.fixed_bounds.relation_type_id.clone(),
-            self.fixed_bounds.relation_id.clone(),
+            self.fixed_bounds.from,
+            self.fixed_bounds.to,
+            self.fixed_bounds.relation_type_id,
+            self.fixed_bounds.relation_id,
             None,
             None,
         );

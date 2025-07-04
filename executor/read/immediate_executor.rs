@@ -289,7 +289,7 @@ impl IntersectionExecutor {
                 self.compute_next_row(context)
             }
         } else {
-            while !self.iterators.is_empty() {
+            while self.input.as_mut().unwrap().peek().is_some() {
                 let found = self.find_intersection()?;
                 if found {
                     self.record_intersection()?;
@@ -299,9 +299,13 @@ impl IntersectionExecutor {
                 } else {
                     self.iterators.clear();
                     self.cartesian_iterator.clear();
-                    let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone());
-                    if self.input.as_mut().unwrap().peek().is_some() {
-                        self.may_create_intersection_iterators(context)?;
+                    while self.iterators.is_empty() {
+                        let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone());
+                        if self.input.as_mut().unwrap().peek().is_some() {
+                            self.may_create_intersection_iterators(context)?;
+                        } else {
+                            break;
+                        }
                     }
                 }
             }
@@ -310,8 +314,9 @@ impl IntersectionExecutor {
     }
 
     fn find_intersection(&mut self) -> Result<bool, ReadExecutionError> {
-        debug_assert!(!self.iterators.is_empty());
-        if self.iterators.len() == 1 {
+        if self.iterators.is_empty() {
+            return Ok(false);
+        } else if self.iterators.len() == 1 {
             // if there's only 1 iterator, we can just use it without any intersection
             return Ok(self.iterators[0].peek().is_some());
         } else if self.iterators[0].peek().is_none() {
@@ -395,14 +400,17 @@ impl IntersectionExecutor {
             let next_row: &MaybeOwnedRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
             self.intersection_provenance = next_row.provenance();
             for executor in &self.instruction_executors {
-                self.iterators.push(
-                    executor.get_iterator(context, next_row.as_reference(), self.profile.storage_counters()).map_err(
-                        |err| ReadExecutionError::CreatingIterator {
-                            instruction_name: executor.name().to_string(),
-                            typedb_source: err,
-                        },
-                    )?,
-                );
+                let mut iterator = executor
+                    .get_iterator(context, next_row.as_reference(), self.profile.storage_counters())
+                    .map_err(|err| ReadExecutionError::CreatingIterator {
+                        instruction_name: executor.name().to_string(),
+                        typedb_source: err,
+                    })?;
+                if iterator.peek().is_none() {
+                    self.iterators.clear();
+                    return Ok(());
+                }
+                self.iterators.push(iterator);
             }
         }
         Ok(())
