@@ -70,7 +70,7 @@ impl QueryCache {
                         Type::Attribute(ty) => new_statistics.attribute_counts[&ty],
                         Type::RoleType(_) => 1, // uhhh
                     };
-                    match u64::min(type_count, 1) as f64 / u64::min(pop, 1) as f64 {
+                    match u64::max(type_count, 1) as f64 / u64::max(pop, 1) as f64 {
                         increase @ 1.0.. => total_increase *= increase,
                         decrease @ ..1.0 => total_decrease /= decrease,
                         _ => panic!("NaN?!"),
