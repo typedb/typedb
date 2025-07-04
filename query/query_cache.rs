@@ -64,10 +64,10 @@ impl QueryCache {
                 let mut total_decrease = 1.0;
                 for (&ty, &pop) in &pipeline.type_populations {
                     let type_count = match ty {
-                        Type::Entity(ty) => new_statistics.entity_counts[&ty],
-                        Type::Relation(ty) => new_statistics.relation_counts[&ty],
-                        Type::Attribute(ty) => new_statistics.attribute_counts[&ty],
-                        Type::RoleType(ty) => new_statistics.role_counts[&ty],
+                        Type::Entity(ty) => new_statistics.entity_counts.get(&ty).copied().unwrap_or_default(),
+                        Type::Relation(ty) => new_statistics.relation_counts.get(&ty).copied().unwrap_or_default(),
+                        Type::Attribute(ty) => new_statistics.attribute_counts.get(&ty).copied().unwrap_or_default(),
+                        Type::RoleType(ty) => new_statistics.role_counts.get(&ty).copied().unwrap_or_default(),
                     };
                     match u64::max(type_count, 1) as f64 / u64::max(pop, 1) as f64 {
                         increase @ 1.0.. => total_increase *= increase,
