@@ -31,7 +31,6 @@ rust_test(
         "@typedb_behaviour//query/language:modifiers.feature",
         "@typedb_behaviour//query/language:negation.feature",
         "@typedb_behaviour//query/language:disjunction.feature",
-        "@typedb_behaviour//query/language:optional.feature",
         "@typedb_behaviour//query/language:pipelines.feature",
         "@typedb_behaviour//query/language:put.feature",
         "@typedb_behaviour//query/language:redefine.feature",
