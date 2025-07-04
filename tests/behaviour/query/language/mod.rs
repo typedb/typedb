@@ -8,13 +8,14 @@
 
 mod define;
 mod delete;
-mod expressions;
 mod disjunction;
+mod expressions;
 mod fetch;
 mod insert;
 mod r#match;
 mod modifiers;
 mod negation;
+mod optional;
 mod pipelines;
 mod put;
 mod redefine;

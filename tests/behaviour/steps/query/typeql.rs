@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter, ops::DerefMut, str::FromStr, sync::Arc};
+use std::{collections::HashMap, iter, str::FromStr};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
@@ -581,8 +581,8 @@ async fn verify_answer_set(context: &mut Context, step: &Step) {
             assert!(expected.iter().all(|answer| actual.contains(answer)));
         }
         (
-            QueryAnswer::ConceptDocuments(actual_tree, actual_params),
-            QueryAnswer::ConceptDocuments(expected_tree, expected_params),
+            QueryAnswer::ConceptDocuments(_actual_tree, _actual_params),
+            QueryAnswer::ConceptDocuments(_expected_tree, _expected_params),
         ) => {
             todo!()
         }
@@ -593,5 +593,5 @@ async fn verify_answer_set(context: &mut Context, step: &Step) {
             panic!("Expected documents, found rows")
         }
     }
-    let num_answers = context.query_answer.as_ref().unwrap().as_rows().len();
+    let _num_answers = context.query_answer.as_ref().unwrap().as_rows().len();
 }
