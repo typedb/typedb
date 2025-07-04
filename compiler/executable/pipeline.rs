@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet},
     iter::zip,
     sync::Arc,
 };
@@ -28,7 +28,7 @@ use crate::{
         fetch::executable::{compile_fetch, ExecutableFetch},
         function::{executable::compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider},
         insert::{self, executable::InsertExecutable},
-        match_::planner::{conjunction_executable::ConjunctionExecutable, vertex::Cost},
+        match_::planner::conjunction_executable::ConjunctionExecutable,
         modifiers::{
             DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
         },
@@ -41,13 +41,45 @@ use crate::{
     VariablePosition,
 };
 
+#[derive(Debug, Default, Clone)]
+pub struct TypePopulations {
+    counts: HashMap<Type, u64>,
+}
+
+impl TypePopulations {
+    fn update(&mut self, types: &BTreeSet<Type>, statistics: &Statistics) {
+        for &ty in types {
+            self.counts.entry(ty).or_insert_with(|| match ty {
+                Type::Entity(ty) => statistics.entity_counts[&ty],
+                Type::Relation(ty) => statistics.relation_counts[&ty],
+                Type::Attribute(ty) => statistics.attribute_counts[&ty],
+                Type::RoleType(ty) => statistics.role_counts[&ty],
+            });
+        }
+    }
+
+    pub(crate) fn extend(&mut self, other: Self) {
+        self.counts.extend(other.counts)
+    }
+}
+
+impl<'a> IntoIterator for &'a TypePopulations {
+    type Item = (&'a Type, &'a u64);
+
+    type IntoIter = hash_map::Iter<'a, Type, u64>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.counts.iter()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ExecutablePipeline {
     pub executable_functions: ExecutableFunctionRegistry,
     pub executable_stages: Vec<ExecutableStage>,
     pub executable_fetch: Option<Arc<ExecutableFetch>>,
     pub query_structure: Option<Arc<ParametrisedQueryStructure>>,
-    pub type_pop: HashMap<answer::Type, u64>,
+    pub type_populations: TypePopulations,
 }
 
 #[derive(Debug, Clone)]
@@ -144,7 +176,7 @@ pub fn compile_pipeline_and_functions(
 
     let schema_and_preamble_functions: ExecutableFunctionRegistry =
         ExecutableFunctionRegistry::new(arced_executable_schema_functions, executable_preamble_functions);
-    let (_input_positions, executable_stages, executable_fetch, type_pop) = compile_stages_and_fetch(
+    let (_input_positions, executable_stages, executable_fetch, type_populations) = compile_stages_and_fetch(
         statistics,
         variable_registry,
         &schema_and_preamble_functions,
@@ -158,7 +190,7 @@ pub fn compile_pipeline_and_functions(
         executable_functions: schema_and_preamble_functions,
         executable_stages,
         executable_fetch,
-        type_pop,
+        type_populations,
     })
 }
 
@@ -170,10 +202,10 @@ pub fn compile_stages_and_fetch(
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
 ) -> Result<
-    (HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Option<Arc<ExecutableFetch>>, HashMap<Type, u64>),
+    (HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Option<Arc<ExecutableFetch>>, TypePopulations),
     ExecutableCompilationError,
 > {
-    let (input_positions, executable_stages, type_pop) = compile_pipeline_stages(
+    let (input_positions, executable_stages, mut type_populations) = compile_pipeline_stages(
         statistics,
         variable_registry,
         available_functions,
@@ -184,13 +216,15 @@ pub fn compile_stages_and_fetch(
     let stages_variable_positions =
         executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
 
-    let executable_fetch = annotated_fetch
-        .map(|fetch| match compile_fetch(statistics, available_functions, fetch, &stages_variable_positions) {
-            Ok(fetch) => Ok(Arc::new(fetch)),
-            Err(err) => Err(ExecutableCompilationError::FetchCompilation { typedb_source: err }),
-        })
-        .transpose()?;
-    Ok((input_positions, executable_stages, executable_fetch, type_pop))
+    if let Some(fetch) = annotated_fetch {
+        let (executable_fetch, fetch_type_populations) =
+            compile_fetch(statistics, available_functions, fetch, &stages_variable_positions)
+                .map_err(|err| ExecutableCompilationError::FetchCompilation { typedb_source: err })?;
+        type_populations.extend(fetch_type_populations);
+        Ok((input_positions, executable_stages, Some(Arc::new(executable_fetch)), type_populations))
+    } else {
+        Ok((input_positions, executable_stages, None, type_populations))
+    }
 }
 
 pub(crate) fn compile_pipeline_stages(
@@ -200,13 +234,12 @@ pub(crate) fn compile_pipeline_stages(
     annotated_stages: &[AnnotatedStage],
     input_variables: impl Iterator<Item = Variable>,
     function_return: Option<&[Variable]>,
-) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, HashMap<Type, u64>), ExecutableCompilationError>
-{
+) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, TypePopulations), ExecutableCompilationError> {
     let mut executable_stages: Vec<ExecutableStage> = Vec::with_capacity(annotated_stages.len());
     let input_variable_positions =
         input_variables.enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))).collect();
     let mut last_match_annotations = None;
-    let mut type_pop = HashMap::new();
+    let mut type_populations = TypePopulations::default();
     for stage in annotated_stages {
         // TODO: We can filter out the variables that are no longer needed in the future stages, but are carried as selected variables from the previous one
         let (executable_stage, referenced_types) =
@@ -218,7 +251,7 @@ pub(crate) fn compile_pipeline_stages(
                     &row_mapping,
                     last_match_annotations.unwrap_or(&BTreeMap::new()),
                     function_return,
-                    &stage,
+                    stage,
                 )?,
                 None => compile_stage(
                     statistics,
@@ -227,27 +260,17 @@ pub(crate) fn compile_pipeline_stages(
                     &input_variable_positions,
                     last_match_annotations.unwrap_or(&BTreeMap::new()),
                     function_return,
-                    &stage,
+                    stage,
                 )?,
             };
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
             last_match_annotations =
                 Some(block_annotations.type_annotations_of(block.conjunction()).unwrap().vertex_annotations())
         }
-        for ty in referenced_types {
-            if !type_pop.contains_key(&ty) {
-                let count = match ty {
-                    Type::Entity(ty) => statistics.entity_counts[&ty],
-                    Type::Relation(ty) => statistics.relation_counts[&ty],
-                    Type::Attribute(ty) => statistics.attribute_counts[&ty],
-                    Type::RoleType(_) => 1, // uhhh
-                };
-                type_pop.insert(ty, count);
-            }
-        }
+        type_populations.update(&referenced_types, statistics);
         executable_stages.push(executable_stage);
     }
-    Ok((input_variable_positions, executable_stages, type_pop))
+    Ok((input_variable_positions, executable_stages, type_populations))
 }
 
 fn compile_stage(

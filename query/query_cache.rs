@@ -5,9 +5,8 @@
  */
 
 use std::{
-    collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},
-    sync::{Arc, Mutex},
+    sync::Arc,
 };
 
 use answer::Type;
@@ -63,12 +62,12 @@ impl QueryCache {
             .invalidate_entries_if(move |_, pipeline| {
                 let mut total_increase = 1.0;
                 let mut total_decrease = 1.0;
-                for (&ty, &pop) in &pipeline.type_pop {
+                for (&ty, &pop) in &pipeline.type_populations {
                     let type_count = match ty {
                         Type::Entity(ty) => new_statistics.entity_counts[&ty],
                         Type::Relation(ty) => new_statistics.relation_counts[&ty],
                         Type::Attribute(ty) => new_statistics.attribute_counts[&ty],
-                        Type::RoleType(_) => 1, // uhhh
+                        Type::RoleType(ty) => new_statistics.role_counts[&ty],
                     };
                     match u64::max(type_count, 1) as f64 / u64::max(pop, 1) as f64 {
                         increase @ 1.0.. => total_increase *= increase,
