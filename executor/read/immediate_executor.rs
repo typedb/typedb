@@ -11,7 +11,7 @@ use compiler::{
     annotation::expression::compiled_expression::ExecutableExpression,
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
-        planner::match_executable::{AssignmentStep, CheckStep, IntersectionStep, UnsortedJoinStep},
+        planner::conjunction_executable::{AssignmentStep, CheckStep, IntersectionStep, UnsortedJoinStep},
     },
     ExecutorVariable, VariablePosition,
 };
@@ -893,7 +893,7 @@ impl CheckExecutor {
 
         while let Some(row) = input.next() {
             let input_row = row.map_err(|err| err.clone())?;
-            if self.checker.filter_for_row(context, &input_row, self.profile.storage_counters())(&Ok(()))
+            if self.checker.filter_fn_for_row(context, &input_row, self.profile.storage_counters())(&Ok(()))
                 .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
             {
                 output.append(|mut row| {

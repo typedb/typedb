@@ -11,12 +11,12 @@ use crate::{
         function_signature::FunctionSignatureIndex,
         ParameterRegistry,
     },
-    translation::{constraints::add_statement, TranslationContext},
+    translation::{constraints::add_statement, PipelineTranslationContext},
     RepresentationError,
 };
 
 pub fn translate_match<'a>(
-    context: &'a mut TranslationContext,
+    context: &'a mut PipelineTranslationContext,
     value_parameters: &'a mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     match_: &typeql::query::stage::Match,

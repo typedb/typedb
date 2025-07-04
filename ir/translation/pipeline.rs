@@ -38,7 +38,7 @@ use crate::{
         },
         reduce::translate_reduce,
         writes::{translate_delete, translate_insert, translate_put, translate_update},
-        TranslationContext,
+        PipelineTranslationContext,
     },
     RepresentationError,
 };
@@ -54,7 +54,7 @@ pub struct TranslatedPipeline {
 
 impl TranslatedPipeline {
     pub(crate) fn new(
-        translation_context: TranslationContext,
+        translation_context: PipelineTranslationContext,
         value_parameters: ParameterRegistry,
         translated_preamble: Vec<Function>,
         translated_fetch: Option<FetchObject>,
@@ -175,7 +175,7 @@ pub fn translate_pipeline(
         .collect::<Result<Vec<_>, _>>()
         .map_err(|source| RepresentationError::FunctionRepresentation { typedb_source: *source })?;
 
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let (translated_stages, translated_fetch) = translate_pipeline_stages(
         snapshot,
@@ -197,7 +197,7 @@ pub fn translate_pipeline(
 pub(crate) fn translate_pipeline_stages(
     snapshot: &impl ReadableSnapshot,
     all_function_signatures: &impl FunctionSignatureIndex,
-    translation_context: &mut TranslationContext,
+    translation_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     stages: &[Stage],
 ) -> Result<(Vec<TranslatedStage>, Option<FetchObject>), Box<RepresentationError>> {
@@ -221,7 +221,7 @@ pub(crate) fn translate_pipeline_stages(
 
 fn translate_stage(
     snapshot: &impl ReadableSnapshot,
-    translation_context: &mut TranslationContext,
+    translation_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     all_function_signatures: &impl FunctionSignatureIndex,
     typeql_stage: &TypeQLStage,

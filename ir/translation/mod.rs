@@ -28,23 +28,23 @@ pub mod tokens;
 pub mod writes;
 
 #[derive(Debug, Clone)]
-pub struct TranslationContext {
+pub struct PipelineTranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
     visible_variables: HashMap<String, Variable>,
 }
 
-impl Default for TranslationContext {
+impl Default for PipelineTranslationContext {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl TranslationContext {
+impl PipelineTranslationContext {
     pub fn new() -> Self {
         Self { variable_registry: VariableRegistry::new(), visible_variables: HashMap::new() }
     }
 
-    pub fn new_with_function_arguments(
+    pub fn new_function_pipeline(
         input_variables: Vec<(String, Option<Span>, VariableCategory)>,
     ) -> Result<(Self, Vec<Variable>), Box<RepresentationError>> {
         let mut visible_variables = HashMap::new();

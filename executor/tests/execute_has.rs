@@ -21,7 +21,7 @@ use compiler::{
                 ConstraintInstruction, Inputs,
             },
             planner::{
-                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+                conjunction_executable::{ExecutionStep, IntersectionStep, ConjunctionExecutable},
                 plan::PlannerStatistics,
             },
         },
@@ -35,13 +35,13 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, conjunction_executor::ConjunctionExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use ir::{
     pattern::constraint::IsaKind,
     pipeline::{block::Block, ParameterRegistry},
-    translation::TranslationContext,
+    translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
@@ -165,7 +165,7 @@ fn traverse_has_unbounded_sorted_from() {
     //    $person isa person, has age $age;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -214,11 +214,11 @@ fn traverse_has_unbounded_sorted_from() {
         2,
     ))];
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -255,7 +255,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     //    $person-2 has name $name; # reverse!
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -325,11 +325,11 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
         )),
     ];
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -365,7 +365,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     // IR
 
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -424,11 +424,11 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         3,
     ))];
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -464,7 +464,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     // IR
 
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -505,7 +505,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &named_variables,
         2,
     ))];
-    let executable = MatchExecutable::new(
+    let executable = ConjunctionExecutable::new(
         next_executable_id(),
         steps,
         variable_positions.clone(),
@@ -515,7 +515,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -565,7 +565,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     // IR
 
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -614,11 +614,11 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         2,
     ))];
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,

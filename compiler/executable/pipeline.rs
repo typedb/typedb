@@ -28,7 +28,7 @@ use crate::{
         fetch::executable::{compile_fetch, ExecutableFetch},
         function::{executable::compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider},
         insert::{self, executable::InsertExecutable},
-        match_::planner::{match_executable::MatchExecutable, vertex::Cost},
+        match_::planner::{conjunction_executable::ConjunctionExecutable, vertex::Cost},
         modifiers::{
             DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
         },
@@ -51,7 +51,7 @@ pub struct ExecutablePipeline {
 
 #[derive(Debug, Clone)]
 pub enum ExecutableStage {
-    Match(Arc<MatchExecutable>),
+    Match(Arc<ConjunctionExecutable>),
     Insert(Arc<InsertExecutable>),
     Update(Arc<UpdateExecutable>),
     Put(Arc<PutExecutable>),

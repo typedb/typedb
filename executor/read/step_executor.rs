@@ -12,7 +12,7 @@ use compiler::{
             executable::{ExecutableFunction, ExecutableReturn},
             ExecutableFunctionRegistry, FunctionTablingType,
         },
-        match_::planner::match_executable::{ExecutionStep, MatchExecutable},
+        match_::planner::conjunction_executable::{ExecutionStep, ConjunctionExecutable},
         next_executable_id,
         pipeline::ExecutableStage,
     },
@@ -122,23 +122,23 @@ impl ReshapeForReturnExecutor {
     }
 }
 
-pub(crate) fn create_executors_for_match(
+pub(crate) fn create_executors_for_conjunction(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     query_profile: &QueryProfile,
-    match_executable: &MatchExecutable,
+    conjunction_executable: &ConjunctionExecutable,
 ) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let stage_profile = query_profile.profile_stage(
-        || format!("Match\n  ~ {}", match_executable.planner_statistics()),
-        match_executable.executable_id(),
+        || format!("Match\n  ~ {}", conjunction_executable.planner_statistics()),
+        conjunction_executable.executable_id(),
     );
-    let mut steps = Vec::with_capacity(match_executable.steps().len());
-    for (index, step) in match_executable.steps().iter().enumerate() {
+    let mut steps = Vec::with_capacity(conjunction_executable.steps().len());
+    for (index, step) in conjunction_executable.steps().iter().enumerate() {
         match step {
             ExecutionStep::Intersection(inner) => {
                 let step_profile = stage_profile.extend_or_get(index, || {
-                    format!("{}", inner.make_var_mapped(match_executable.variable_reverse_map()))
+                    format!("{}", inner.make_var_mapped(conjunction_executable.variable_reverse_map()))
                 });
                 let step = ImmediateExecutor::new_intersection(inner, snapshot, thing_manager, step_profile)?;
                 steps.push(step.into());
@@ -155,7 +155,7 @@ pub(crate) fn create_executors_for_match(
             }
             ExecutionStep::Check(inner) => {
                 let step_profile = stage_profile.extend_or_get(index, || {
-                    format!("{}", inner.make_var_mapped(match_executable.variable_reverse_map()))
+                    format!("{}", inner.make_var_mapped(conjunction_executable.variable_reverse_map()))
                 });
                 let step = ImmediateExecutor::new_check(inner, step_profile)?;
                 steps.push(step.into());
@@ -163,7 +163,7 @@ pub(crate) fn create_executors_for_match(
             ExecutionStep::Negation(negation_step) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
                 let _step_profile = stage_profile.extend_or_get(index, || format!("{}", negation_step));
-                let inner = create_executors_for_match(
+                let inner = create_executors_for_conjunction(
                     snapshot,
                     thing_manager,
                     function_registry,
@@ -210,7 +210,7 @@ pub(crate) fn create_executors_for_match(
                     .branches
                     .iter()
                     .map(|branch_executable| {
-                        let executors = create_executors_for_match(
+                        let executors = create_executors_for_conjunction(
                             snapshot,
                             thing_manager,
                             function_registry,
@@ -307,15 +307,15 @@ pub(super) fn create_executors_for_function_pipeline_stages(
     };
 
     match &executable_stages[at_index] {
-        ExecutableStage::Match(match_executable) => {
-            let mut match_stages = create_executors_for_match(
+        ExecutableStage::Match(conjunction_executable) => {
+            let mut executors = create_executors_for_conjunction(
                 snapshot,
                 thing_manager,
                 function_registry,
                 query_profile,
-                match_executable,
+                conjunction_executable,
             )?;
-            previous_stage_steps.append(&mut match_stages);
+            previous_stage_steps.append(&mut executors);
             Ok(previous_stage_steps)
         }
         ExecutableStage::Select(select_executable) => {

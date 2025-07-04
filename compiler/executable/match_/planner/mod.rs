@@ -26,9 +26,9 @@ use crate::{
         match_::{
             instructions::{CheckInstruction, ConstraintInstruction},
             planner::{
-                match_executable::{
+                conjunction_executable::{
                     AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
-                    MatchExecutable, NegationStep,
+                    ConjunctionExecutable, NegationStep,
                 },
                 plan::{plan_conjunction, PlannerStatistics, QueryPlanningError},
             },
@@ -38,7 +38,7 @@ use crate::{
     ExecutorVariable, VariablePosition,
 };
 
-pub mod match_executable;
+pub mod conjunction_executable;
 pub mod plan;
 pub(crate) mod vertex;
 
@@ -58,7 +58,7 @@ pub fn compile(
     expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
-) -> Result<MatchExecutable, MatchCompilationError> {
+) -> Result<ConjunctionExecutable, MatchCompilationError> {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
 
@@ -477,7 +477,7 @@ impl MatchExecutableBuilder {
         }
     }
 
-    fn finish(mut self, variable_registry: &VariableRegistry) -> MatchExecutable {
+    fn finish(mut self, variable_registry: &VariableRegistry) -> ConjunctionExecutable {
         self.finish_one();
         let named_variables = self
             .index
@@ -489,7 +489,7 @@ impl MatchExecutableBuilder {
             .into_iter()
             .map(|builder| builder.finish(&self.index, &named_variables, variable_registry))
             .collect();
-        MatchExecutable::new(
+        ConjunctionExecutable::new(
             next_executable_id(),
             steps,
             self.index.into_iter().filter_map(|(var, id)| Some((var, id.as_position()?))).collect(),

@@ -18,7 +18,7 @@ use compiler::{
         match_::{
             instructions::{thing::HasInstruction, ConstraintInstruction, Inputs},
             planner::{
-                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+                conjunction_executable::{ExecutionStep, IntersectionStep, ConjunctionExecutable},
                 plan::PlannerStatistics,
             },
         },
@@ -32,13 +32,13 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, conjunction_executor::ConjunctionExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use ir::{
     pattern::constraint::IsaKind,
     pipeline::{block::Block, ParameterRegistry},
-    translation::TranslationContext,
+    translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
@@ -196,7 +196,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     //    $person has $_;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -243,12 +243,12 @@ fn anonymous_vars_not_enumerated_or_counted() {
         1,
     ))];
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -291,7 +291,7 @@ fn unselected_named_vars_counted() {
     //   select $person;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -340,12 +340,12 @@ fn unselected_named_vars_counted() {
     ))];
 
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -388,7 +388,7 @@ fn cartesian_named_counted_checked() {
     //   select $person, $name;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -456,14 +456,14 @@ fn cartesian_named_counted_checked() {
         2,
     ))];
 
-    let match_executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+    let conjunction_executable =
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = MatchExecutor::new(
-        &match_executable,
+    let executor = ConjunctionExecutor::new(
+        &conjunction_executable,
         &snapshot,
         &thing_manager,
         MaybeOwnedRow::empty(),
