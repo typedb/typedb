@@ -28,18 +28,18 @@ pub mod tokens;
 pub mod writes;
 
 #[derive(Debug, Clone)]
-pub struct TranslationContext {
+pub struct PipelineTranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
     visible_variables: HashMap<String, Variable>,
 }
 
-impl Default for TranslationContext {
+impl Default for PipelineTranslationContext {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl TranslationContext {
+impl PipelineTranslationContext {
     pub fn new() -> Self {
         Self { variable_registry: VariableRegistry::new(), visible_variables: HashMap::new() }
     }

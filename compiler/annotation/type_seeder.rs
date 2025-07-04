@@ -1681,7 +1681,7 @@ pub mod tests {
             Vertex,
         },
         pipeline::{block::Block, ParameterRegistry},
-        translation::TranslationContext,
+        translation::PipelineTranslationContext,
     };
     use resource::profile::{CommitProfile, StorageCounters};
     use storage::snapshot::CommittableSnapshot;
@@ -1711,7 +1711,7 @@ pub mod tests {
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         // Case 1: $a isa cat, has name $n;
-        let mut translation_context = TranslationContext::new();
+        let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
@@ -1819,7 +1819,7 @@ pub mod tests {
 
         {
             // // Case 1: $x isa owner, has $a; $a > $b;
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();

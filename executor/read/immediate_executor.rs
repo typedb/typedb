@@ -11,7 +11,7 @@ use compiler::{
     annotation::expression::compiled_expression::ExecutableExpression,
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
-        planner::match_executable::{AssignmentStep, CheckStep, IntersectionStep, UnsortedJoinStep},
+        planner::conjunction_executable::{AssignmentStep, CheckStep, IntersectionStep, UnsortedJoinStep},
     },
     ExecutorVariable, VariablePosition,
 };

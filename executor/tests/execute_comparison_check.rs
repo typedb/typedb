@@ -18,7 +18,7 @@ use compiler::{
         match_::{
             instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
             planner::{
-                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+                conjunction_executable::{ExecutionStep, IntersectionStep, ConjunctionExecutable},
                 plan::PlannerStatistics,
             },
         },
@@ -35,7 +35,7 @@ use executor::{
 use ir::{
     pattern::constraint::{Comparator, IsaKind},
     pipeline::{block::Block, ParameterRegistry},
-    translation::TranslationContext,
+    translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
@@ -105,7 +105,7 @@ fn attribute_equality() {
     //     $a isa age; $b isa age; $a == $b;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -174,7 +174,7 @@ fn attribute_equality() {
     ];
 
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());

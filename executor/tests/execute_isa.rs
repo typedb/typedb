@@ -21,7 +21,7 @@ use compiler::{
                 ConstraintInstruction, Inputs,
             },
             planner::{
-                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+                conjunction_executable::{ExecutionStep, IntersectionStep, ConjunctionExecutable},
                 plan::PlannerStatistics,
             },
         },
@@ -37,7 +37,7 @@ use executor::{
 use ir::{
     pattern::{constraint::IsaKind, Vertex},
     pipeline::{block::Block, ParameterRegistry},
-    translation::TranslationContext,
+    translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
@@ -106,7 +106,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     //   match $x isa $t; $t label dog;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -147,7 +147,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     ))];
 
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -184,7 +184,7 @@ fn traverse_isa_unbounded_sorted_type() {
     //   match $x isa $t; $t label dog;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -227,7 +227,7 @@ fn traverse_isa_unbounded_sorted_type() {
     ))];
 
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -264,7 +264,7 @@ fn traverse_isa_bounded_thing() {
     //   match $x isa! $t; $x isa $u;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -321,7 +321,7 @@ fn traverse_isa_bounded_thing() {
     ];
 
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -362,7 +362,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     //   match $x isa $t; $t label dog;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -403,7 +403,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     ))];
 
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -440,7 +440,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     //   match $x isa $t; $t label dog;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -483,7 +483,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     ))];
 
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -520,7 +520,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
     //   match $x isa! $t; $y isa! $t;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -577,7 +577,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
     ];
 
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -618,7 +618,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
     //   match $x isa $t; $y isa $t;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -675,7 +675,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
     ];
 
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -717,7 +717,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
     //   match $x isa! animal;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -758,7 +758,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
     ))];
 
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -796,7 +796,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
     //   match $x isa animal;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -838,7 +838,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
     ))];
 
     let executable =
-        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());

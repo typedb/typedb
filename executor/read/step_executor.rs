@@ -12,7 +12,7 @@ use compiler::{
             executable::{ExecutableFunction, ExecutableReturn},
             ExecutableFunctionRegistry, FunctionTablingType,
         },
-        match_::planner::match_executable::{ExecutionStep, MatchExecutable},
+        match_::planner::conjunction_executable::{ExecutionStep, ConjunctionExecutable},
         next_executable_id,
         pipeline::ExecutableStage,
     },
@@ -127,7 +127,7 @@ pub(crate) fn create_executors_for_match(
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     query_profile: &QueryProfile,
-    match_executable: &MatchExecutable,
+    match_executable: &ConjunctionExecutable,
 ) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let stage_profile = query_profile.profile_stage(
         || format!("Match\n  ~ {}", match_executable.planner_statistics()),

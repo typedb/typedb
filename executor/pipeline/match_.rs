@@ -6,7 +6,7 @@
 
 use std::{iter::Peekable, sync::Arc};
 
-use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
+use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable};
 use itertools::{Itertools, UniqueBy};
 use lending_iterator::{adaptors::Map, IntoIter, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
@@ -23,14 +23,14 @@ use crate::{
 };
 
 pub struct MatchStageExecutor<PreviousStage> {
-    executable: Arc<MatchExecutable>,
+    executable: Arc<ConjunctionExecutable>,
     previous: PreviousStage,
     function_registry: Arc<ExecutableFunctionRegistry>,
 }
 
 impl<PreviousStage> MatchStageExecutor<PreviousStage> {
     pub fn new(
-        executable: Arc<MatchExecutable>,
+        executable: Arc<ConjunctionExecutable>,
         previous: PreviousStage,
         function_registry: Arc<ExecutableFunctionRegistry>,
     ) -> Self {
@@ -61,7 +61,7 @@ where
 
 pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
     context: ExecutionContext<Snapshot>,
-    executable: Arc<MatchExecutable>,
+    executable: Arc<ConjunctionExecutable>,
     function_registry: Arc<ExecutableFunctionRegistry>,
     source_iterator: Iterator,
     current_iterator: Option<Peekable<UniqueRows<AsOwnedRows<PatternIterator<Snapshot>>>>>,
@@ -71,7 +71,7 @@ pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
 impl<Snapshot: ReadableSnapshot + 'static, Iterator> MatchStageIterator<Snapshot, Iterator> {
     fn new(
         iterator: Iterator,
-        executable: Arc<MatchExecutable>,
+        executable: Arc<ConjunctionExecutable>,
         function_registry: Arc<ExecutableFunctionRegistry>,
         context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,

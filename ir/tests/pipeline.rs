@@ -18,7 +18,7 @@ use ir::{
         function_signature::{FunctionID, FunctionSignature},
         ParameterRegistry,
     },
-    translation::TranslationContext,
+    translation::PipelineTranslationContext,
 };
 
 // TODO: if we re-instante modifiers/stream operators as part of blocks, then we can bring this test back
@@ -47,7 +47,7 @@ use ir::{
 
 #[test]
 fn build_with_functions() {
-    let mut context = TranslationContext::new();
+    let mut context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();

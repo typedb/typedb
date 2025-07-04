@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
+use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator};
 use resource::profile::QueryProfile;
@@ -29,7 +29,7 @@ pub struct MatchExecutor {
 
 impl MatchExecutor {
     pub fn new(
-        match_executable: &MatchExecutable,
+        match_executable: &ConjunctionExecutable,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
         thing_manager: &Arc<ThingManager>,
         input: MaybeOwnedRow<'_>,

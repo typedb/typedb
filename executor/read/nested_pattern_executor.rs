@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use answer::variable_value::VariableValue;
-use compiler::{executable::match_::planner::match_executable::FunctionCallStep, VariablePosition};
+use compiler::{executable::match_::planner::conjunction_executable::FunctionCallStep, VariablePosition};
 use ir::{pattern::BranchID, pipeline::ParameterRegistry};
 
 use crate::{

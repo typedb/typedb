@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
+use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use resource::profile::QueryProfile;
 use storage::snapshot::ReadableSnapshot;
@@ -56,7 +56,7 @@ pub(super) fn create_pattern_executor_for_match(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
-    match_executable: &MatchExecutable,
+    match_executable: &ConjunctionExecutable,
     profile: &QueryProfile,
 ) -> Result<PatternExecutor, Box<ConceptReadError>> {
     let executors = step_executor::create_executors_for_match(

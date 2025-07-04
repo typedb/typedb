@@ -17,7 +17,7 @@ use executor::read::expression_executor::{evaluate_expression, ExpressionValue};
 use ir::{
     pattern::{constraint::Constraint, variable_category::VariableCategory},
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-    translation::{match_::translate_match, TranslationContext},
+    translation::{match_::translate_match, PipelineTranslationContext},
     RepresentationError,
 };
 use itertools::Itertools;
@@ -52,7 +52,7 @@ fn compile_expression_via_match(
     // Avoid unbound variable errors
     let input_variable_categories =
         variable_types.iter().map(|(name, _)| ((*name).to_owned(), None, VariableCategory::Value)).collect();
-    let (mut translation_context, _) = TranslationContext::new_with_function_arguments(input_variable_categories)
+    let (mut translation_context, _) = PipelineTranslationContext::new_with_function_arguments(input_variable_categories)
         .expect("Expected function transaction context");
     let mut value_parameters = ParameterRegistry::new();
     if let Stage::Match(match_) =

@@ -25,7 +25,7 @@ use compiler::{
                 CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
             },
             planner::{
-                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+                conjunction_executable::{ExecutionStep, IntersectionStep, ConjunctionExecutable},
                 plan::PlannerStatistics,
             },
         },
@@ -51,7 +51,7 @@ use ir::{
         Vertex,
     },
     pipeline::{block::Block, ParameterRegistry},
-    translation::TranslationContext,
+    translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
@@ -420,7 +420,7 @@ fn position_mapping<const N: usize, const M: usize>(
 }
 
 fn get_type_annotations(
-    translation_context: &TranslationContext,
+    translation_context: &PipelineTranslationContext,
     entry: &Block,
     snapshot: &impl ReadableSnapshot,
     type_manager: &Arc<TypeManager>,
@@ -450,7 +450,7 @@ fn execute_steps(
     value_parameters: Arc<ParameterRegistry>,
     profile: &QueryProfile,
 ) -> Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> {
-    let executable = MatchExecutable::new(
+    let executable = ConjunctionExecutable::new(
         next_executable_id(),
         steps,
         variable_positions.clone(),
@@ -488,7 +488,7 @@ fn value_int_equality_isa_reads() {
     //    $attr isa id; $attr == 2; # middle of the range
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let value_int_2_id = value_parameters.register_value(Value::Integer(2), Span { begin_offset: 0, end_offset: 0 });
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
@@ -580,7 +580,7 @@ fn value_int_equality_has_reverse_reads() {
     //    $person isa person, has gov_id 1; # middle value
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let value_int_1_id = value_parameters.register_value(Value::Integer(1), Span { begin_offset: 0, end_offset: 0 });
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
@@ -668,7 +668,7 @@ fn value_int_equality_has_bound_owner() {
     //    $person isa person, has gov_id 1; # middle value
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let value_int_1_id = value_parameters.register_value(Value::Integer(1), Span { begin_offset: 0, end_offset: 0 });
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
@@ -768,7 +768,7 @@ fn value_int_inequality_has_bound_owner() {
     //    $person isa person, has gov_id $gov_id; $gov_id >= 1; $gov_id < 3; # middle range
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let value_int_1_id = value_parameters.register_value(Value::Integer(1), Span { begin_offset: 0, end_offset: 0 });
     let value_int_3_id = value_parameters.register_value(Value::Integer(3), Span { begin_offset: 0, end_offset: 0 });
@@ -885,7 +885,7 @@ fn value_inline_string_equality_has_bound_owner() {
     //    $person isa person, has name "abby";
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let value_string_abby = value_parameters
         .register_value(Value::String(Cow::Borrowed(VALUE_STRING_ABBY)), Span { begin_offset: 0, end_offset: 0 });
@@ -983,7 +983,7 @@ fn value_hashed_string_equality_has_bound_owner() {
     //    $person isa person, has name "long....etc";
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let value_string_hashed = value_parameters.register_value(
         Value::String(Cow::Borrowed(VALUE_STRING_LONG_UNINLINEABLE)),
@@ -1084,7 +1084,7 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
     //    $person isa person, has name $name; $name >= "bolton"; $name < "willow";
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let value_string_bolton = value_parameters
         .register_value(Value::String(Cow::Borrowed(VALUE_STRING_BOLTON)), Span { begin_offset: 0, end_offset: 0 });
@@ -1203,7 +1203,7 @@ fn intersection_seeks() {
     //    $person has gov_id $gov_id;
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let value_int_10 = value_parameters.register_value(Value::Integer(10), Span { begin_offset: 0, end_offset: 0 });
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
@@ -1384,7 +1384,7 @@ fn intersections_seeks_with_extra_values() {
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let value_int_12 = value_parameters.register_value(Value::Integer(12), Span { begin_offset: 0, end_offset: 0 });
     let value_int_2 = value_parameters.register_value(Value::Integer(2), Span { begin_offset: 0, end_offset: 0 });
