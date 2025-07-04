@@ -165,7 +165,6 @@ pub enum DurabilityServiceError {
     WAL {
         source: WALError,
     },
-
     DeleteFailed {
         source: Arc<io::Error>,
     },
@@ -176,12 +175,18 @@ impl fmt::Display for DurabilityServiceError {
         error::todo_display_for_error!(f, self)
     }
 }
-//
+
 // impl From<bincode::Error> for DurabilityError {
 //     fn from(source: bincode::Error) -> Self {
 //         Self::BincodeSerialize { source }
 //     }
 // }
+
+impl From<WALError> for DurabilityServiceError {
+    fn from(source: WALError) -> Self {
+        Self::WAL { source }
+    }
+}
 
 impl From<io::Error> for DurabilityServiceError {
     fn from(source: io::Error) -> Self {

@@ -7,10 +7,7 @@
 use std::{
     collections::VecDeque,
     ffi::OsString,
-    fmt, fs,
-    fs::OpenOptions,
-    io,
-    io::Write,
+    fmt, fs, io,
     path::{Path, PathBuf},
     sync::{
         mpsc::{sync_channel, SyncSender},
@@ -19,7 +16,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use cache::CACHE_DB_NAME_PREFIX;
 use concept::{
     thing::statistics::{Statistics, StatisticsError},
     type_::type_manager::{
@@ -29,7 +25,7 @@ use concept::{
 };
 use concurrency::IntervalRunner;
 use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
-use durability::wal::{WALError, WAL};
+use durability::{wal::WAL, DurabilityServiceError};
 use encoding::{
     error::EncodingError,
     graph::{
@@ -204,13 +200,10 @@ impl<D> Database<D> {
                 else {
                     panic!("Expected the next schema request: the queue cannot be changed")
                 };
-                match notifier.send(()).ok() {
-                    Some(_) => {
-                        // fulfill exactly 1 awaiting schema request
-                        *has_schema_transaction = true;
-                        break;
-                    }
-                    None => {}
+                if notifier.send(()).is_ok() {
+                    // fulfill exactly 1 awaiting schema request
+                    *has_schema_transaction = true;
+                    break;
                 }
             } else if next_write {
                 let TransactionReservationRequest::Write(notifier) =
@@ -218,12 +211,9 @@ impl<D> Database<D> {
                 else {
                     panic!("Expected the next write request: the queue cannot be changed")
                 };
-                match notifier.send(()).ok() {
-                    Some(_) => {
-                        // fulfill as many write requests as possible
-                        *running_write_transactions += 1;
-                    }
-                    None => {}
+                if notifier.send(()).is_ok() {
+                    // fulfill as many write requests as possible
+                    *running_write_transactions += 1;
                 }
             } else {
                 break;
@@ -536,7 +526,7 @@ typedb_error! {
         DirectoryRead(2, "Error while reading directory for '{name}'.", name: String, source: Arc<io::Error>),
         DirectoryCreate(3, "Error creating directory for '{name}'", name: String, source: Arc<io::Error>),
         StorageOpen(4, "Error opening storage layer.", typedb_source: StorageOpenError),
-        WALOpen(5, "Error opening WAL.", source: WALError),
+        WALOpen(5, "Error opening WAL.", source: DurabilityServiceError),
         DurabilityClientOpen(6, "Error opening durability client.", typedb_source:DurabilityClientError),
         DurabilityClientRead(7, "Error reading from durability client.", typedb_source: DurabilityClientError),
         CheckpointLoad(8, "Error loading checkpoint for database '{name}'.", name: String, typedb_source: CheckpointLoadError),

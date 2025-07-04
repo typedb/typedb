@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
+
 use std::fs;
 
 use durability::wal::WAL;

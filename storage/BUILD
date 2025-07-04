@@ -29,7 +29,6 @@ rust_library(
         "@typeql//rust:typeql", # leaky but enables generic TypeDBError
 
         "@crates//:bincode",
-        "@crates//:lz4",
         "@crates//:chrono",
         "@crates//:itertools",
         "@crates//:same-file",
