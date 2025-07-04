@@ -530,7 +530,7 @@ impl<T> Checker<T> {
         }
     }
 
-    pub(crate) fn filter_for_row(
+    pub(crate) fn filter_fn_for_row(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
