@@ -5,12 +5,12 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet},
     iter::zip,
     sync::Arc,
 };
 
-use answer::variable::Variable;
+use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::{
     pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, Vertex},
@@ -28,7 +28,7 @@ use crate::{
         fetch::executable::{compile_fetch, ExecutableFetch},
         function::{executable::compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider},
         insert::{self, executable::InsertExecutable},
-        match_::planner::{conjunction_executable::ConjunctionExecutable, vertex::Cost},
+        match_::planner::conjunction_executable::ConjunctionExecutable,
         modifiers::{
             DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
         },
@@ -41,12 +41,45 @@ use crate::{
     VariablePosition,
 };
 
+#[derive(Debug, Default, Clone)]
+pub struct TypePopulations {
+    counts: HashMap<Type, u64>,
+}
+
+impl TypePopulations {
+    fn update(&mut self, types: &BTreeSet<Type>, statistics: &Statistics) {
+        for &ty in types {
+            self.counts.entry(ty).or_insert_with(|| match ty {
+                Type::Entity(ty) => statistics.entity_counts.get(&ty).copied().unwrap_or_default(),
+                Type::Relation(ty) => statistics.relation_counts.get(&ty).copied().unwrap_or_default(),
+                Type::Attribute(ty) => statistics.attribute_counts.get(&ty).copied().unwrap_or_default(),
+                Type::RoleType(ty) => statistics.role_counts.get(&ty).copied().unwrap_or_default(),
+            });
+        }
+    }
+
+    pub(crate) fn extend(&mut self, other: Self) {
+        self.counts.extend(other.counts)
+    }
+}
+
+impl<'a> IntoIterator for &'a TypePopulations {
+    type Item = (&'a Type, &'a u64);
+
+    type IntoIter = hash_map::Iter<'a, Type, u64>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.counts.iter()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ExecutablePipeline {
     pub executable_functions: ExecutableFunctionRegistry,
     pub executable_stages: Vec<ExecutableStage>,
     pub executable_fetch: Option<Arc<ExecutableFetch>>,
     pub query_structure: Option<Arc<ParametrisedQueryStructure>>,
+    pub type_populations: TypePopulations,
 }
 
 #[derive(Debug, Clone)]
@@ -125,9 +158,8 @@ pub fn compile_pipeline_and_functions(
     );
     let referenced_schema_functions = annotated_schema_functions
         .iter()
-        .filter_map(|(fid, function)| {
-            referenced_functions.contains(&fid.clone().into()).then(|| (fid.clone(), function.clone()))
-        })
+        .filter(|&(fid, _)| referenced_functions.contains(&fid.clone().into()))
+        .map(|(fid, function)| (fid.clone(), function.clone()))
         .collect();
     let arced_executable_schema_functions =
         Arc::new(compile_functions(statistics, &ExecutableFunctionRegistry::empty(), referenced_schema_functions)?);
@@ -137,16 +169,14 @@ pub fn compile_pipeline_and_functions(
     let referenced_preamble_functions = annotated_preamble
         .into_iter()
         .enumerate()
-        .filter_map(|(fid, function)| {
-            referenced_functions.contains(&fid.clone().into()).then(|| (fid.clone(), function.clone()))
-        })
+        .filter(|&(fid, _)| referenced_functions.contains(&fid.into()))
         .collect();
     let executable_preamble_functions =
         compile_functions(statistics, &schema_function_registry, referenced_preamble_functions)?;
 
     let schema_and_preamble_functions: ExecutableFunctionRegistry =
         ExecutableFunctionRegistry::new(arced_executable_schema_functions, executable_preamble_functions);
-    let (_input_positions, executable_stages, executable_fetch) = compile_stages_and_fetch(
+    let (_input_positions, executable_stages, executable_fetch, type_populations) = compile_stages_and_fetch(
         statistics,
         variable_registry,
         &schema_and_preamble_functions,
@@ -160,6 +190,7 @@ pub fn compile_pipeline_and_functions(
         executable_functions: schema_and_preamble_functions,
         executable_stages,
         executable_fetch,
+        type_populations,
     })
 }
 
@@ -171,28 +202,29 @@ pub fn compile_stages_and_fetch(
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
 ) -> Result<
-    (HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Option<Arc<ExecutableFetch>>),
+    (HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Option<Arc<ExecutableFetch>>, TypePopulations),
     ExecutableCompilationError,
 > {
-    let (input_positions, executable_stages, _) = compile_pipeline_stages(
+    let (input_positions, executable_stages, mut type_populations) = compile_pipeline_stages(
         statistics,
         variable_registry,
         available_functions,
-        &annotated_stages,
+        annotated_stages,
         input_variables.iter().copied(),
         None,
     )?;
     let stages_variable_positions =
         executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
 
-    let executable_fetch = annotated_fetch
-        .map(|fetch| {
+    if let Some(fetch) = annotated_fetch {
+        let (executable_fetch, fetch_type_populations) =
             compile_fetch(statistics, available_functions, fetch, &stages_variable_positions)
-                .map_err(|err| ExecutableCompilationError::FetchCompilation { typedb_source: err })
-        })
-        .transpose()?
-        .map(Arc::new);
-    Ok((input_positions, executable_stages, executable_fetch))
+                .map_err(|err| ExecutableCompilationError::FetchCompilation { typedb_source: err })?;
+        type_populations.extend(fetch_type_populations);
+        Ok((input_positions, executable_stages, Some(Arc::new(executable_fetch)), type_populations))
+    } else {
+        Ok((input_positions, executable_stages, None, type_populations))
+    }
 }
 
 pub(crate) fn compile_pipeline_stages(
@@ -202,52 +234,43 @@ pub(crate) fn compile_pipeline_stages(
     annotated_stages: &[AnnotatedStage],
     input_variables: impl Iterator<Item = Variable>,
     function_return: Option<&[Variable]>,
-) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Cost), ExecutableCompilationError> {
+) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, TypePopulations), ExecutableCompilationError> {
     let mut executable_stages: Vec<ExecutableStage> = Vec::with_capacity(annotated_stages.len());
     let input_variable_positions =
         input_variables.enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))).collect();
     let mut last_match_annotations = None;
+    let mut type_populations = TypePopulations::default();
     for stage in annotated_stages {
         // TODO: We can filter out the variables that are no longer needed in the future stages, but are carried as selected variables from the previous one
-        let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
-            Some(row_mapping) => compile_stage(
-                statistics,
-                variable_registry,
-                call_cost_provider,
-                &row_mapping,
-                last_match_annotations.unwrap_or(&BTreeMap::new()),
-                function_return,
-                &stage,
-            )?,
-            None => compile_stage(
-                statistics,
-                variable_registry,
-                call_cost_provider,
-                &input_variable_positions,
-                last_match_annotations.unwrap_or(&BTreeMap::new()),
-                function_return,
-                &stage,
-            )?,
-        };
+        let (executable_stage, referenced_types) =
+            match executable_stages.last().map(|stage| stage.output_row_mapping()) {
+                Some(row_mapping) => compile_stage(
+                    statistics,
+                    variable_registry,
+                    call_cost_provider,
+                    &row_mapping,
+                    last_match_annotations.unwrap_or(&BTreeMap::new()),
+                    function_return,
+                    stage,
+                )?,
+                None => compile_stage(
+                    statistics,
+                    variable_registry,
+                    call_cost_provider,
+                    &input_variable_positions,
+                    last_match_annotations.unwrap_or(&BTreeMap::new()),
+                    function_return,
+                    stage,
+                )?,
+            };
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
             last_match_annotations =
                 Some(block_annotations.type_annotations_of(block.conjunction()).unwrap().vertex_annotations())
         }
+        type_populations.update(&referenced_types, statistics);
         executable_stages.push(executable_stage);
     }
-    let total_cost =
-        executable_stages
-            .iter()
-            .filter_map(|stage| {
-                if let ExecutableStage::Match(m) = stage {
-                    Some(m.planner_statistics().query_cost)
-                } else {
-                    None
-                }
-            })
-            .reduce(|x, y| x.chain(y))
-            .unwrap_or(Cost { cost: 1.0, io_ratio: 1.0 });
-    Ok((input_variable_positions, executable_stages, total_cost))
+    Ok((input_variable_positions, executable_stages, type_populations))
 }
 
 fn compile_stage(
@@ -258,7 +281,7 @@ fn compile_stage(
     input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
     function_return: Option<&[Variable]>,
     annotated_stage: &AnnotatedStage,
-) -> Result<ExecutableStage, ExecutableCompilationError> {
+) -> Result<(ExecutableStage, BTreeSet<Type>), ExecutableCompilationError> {
     match annotated_stage {
         AnnotatedStage::Match { block, block_annotations, executable_expressions, .. } => {
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
@@ -276,7 +299,7 @@ fn compile_stage(
                 call_cost_provider,
             )
             .map_err(|source| ExecutableCompilationError::MatchCompilation { typedb_source: source })?;
-            Ok(ExecutableStage::Match(Arc::new(plan)))
+            Ok((ExecutableStage::Match(Arc::new(plan)), block_annotations.referenced_types()))
         }
         AnnotatedStage::Insert { block, annotations, source_span } => {
             let plan = crate::executable::insert::executable::compile(
@@ -288,7 +311,7 @@ fn compile_stage(
                 *source_span,
             )
             .map_err(|typedb_source| ExecutableCompilationError::InsertExecutableCompilation { typedb_source })?;
-            Ok(ExecutableStage::Insert(Arc::new(plan)))
+            Ok((ExecutableStage::Insert(Arc::new(plan)), BTreeSet::new()))
         }
         AnnotatedStage::Update { block, annotations, source_span } => {
             let plan = crate::executable::update::executable::compile(
@@ -299,7 +322,7 @@ fn compile_stage(
                 *source_span,
             )
             .map_err(|typedb_source| ExecutableCompilationError::UpdateExecutableCompilation { typedb_source })?;
-            Ok(ExecutableStage::Update(Arc::new(plan)))
+            Ok((ExecutableStage::Update(Arc::new(plan)), BTreeSet::new()))
         }
         AnnotatedStage::Put { block, match_annotations, insert_annotations, source_span } => {
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
@@ -326,7 +349,10 @@ fn compile_stage(
                 *source_span,
             )
             .map_err(|typedb_source| ExecutableCompilationError::PutInsertCompilation { typedb_source })?;
-            Ok(ExecutableStage::Put(Arc::new(PutExecutable::new(match_plan, insert_plan))))
+            Ok((
+                ExecutableStage::Put(Arc::new(PutExecutable::new(match_plan, insert_plan))),
+                match_annotations.referenced_types(),
+            ))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations, source_span } => {
             let plan = crate::executable::delete::executable::compile(
@@ -338,7 +364,7 @@ fn compile_stage(
                 *source_span,
             )
             .map_err(|typedb_source| ExecutableCompilationError::DeleteExecutableCompilation { typedb_source })?;
-            Ok(ExecutableStage::Delete(Arc::new(plan)))
+            Ok((ExecutableStage::Delete(Arc::new(plan)), BTreeSet::new()))
         }
         AnnotatedStage::Select(select) => {
             let mut retained_positions = HashSet::with_capacity(select.variables.len());
@@ -353,31 +379,40 @@ fn compile_stage(
                     removed_positions.insert(pos);
                 }
             }
-            Ok(ExecutableStage::Select(Arc::new(SelectExecutable::new(
-                retained_positions,
-                output_row_mapping,
-                removed_positions,
-            ))))
+            Ok((
+                ExecutableStage::Select(Arc::new(SelectExecutable::new(
+                    retained_positions,
+                    output_row_mapping,
+                    removed_positions,
+                ))),
+                BTreeSet::new(),
+            ))
         }
-        AnnotatedStage::Sort(sort) => {
-            Ok(ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), input_variables.clone()))))
-        }
-        AnnotatedStage::Offset(offset) => {
-            Ok(ExecutableStage::Offset(Arc::new(OffsetExecutable::new(offset.offset(), input_variables.clone()))))
-        }
-        AnnotatedStage::Limit(limit) => {
-            Ok(ExecutableStage::Limit(Arc::new(LimitExecutable::new(limit.limit(), input_variables.clone()))))
-        }
+        AnnotatedStage::Sort(sort) => Ok((
+            ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), input_variables.clone()))),
+            BTreeSet::new(),
+        )),
+        AnnotatedStage::Offset(offset) => Ok((
+            ExecutableStage::Offset(Arc::new(OffsetExecutable::new(offset.offset(), input_variables.clone()))),
+            BTreeSet::new(),
+        )),
+        AnnotatedStage::Limit(limit) => Ok((
+            ExecutableStage::Limit(Arc::new(LimitExecutable::new(limit.limit(), input_variables.clone()))),
+            BTreeSet::new(),
+        )),
         AnnotatedStage::Require(require) => {
             let mut required_positions = HashSet::with_capacity(require.variables.len());
             for &variable in &require.variables {
                 let pos = input_variables[&variable];
                 required_positions.insert(pos);
             }
-            Ok(ExecutableStage::Require(Arc::new(RequireExecutable::new(required_positions, input_variables.clone()))))
+            Ok((
+                ExecutableStage::Require(Arc::new(RequireExecutable::new(required_positions, input_variables.clone()))),
+                BTreeSet::new(),
+            ))
         }
         AnnotatedStage::Distinct(_distinct) => {
-            Ok(ExecutableStage::Distinct(Arc::new(DistinctExecutable::new(input_variables.clone()))))
+            Ok((ExecutableStage::Distinct(Arc::new(DistinctExecutable::new(input_variables.clone()))), BTreeSet::new()))
         }
         AnnotatedStage::Reduce(reduce, typed_reducers) => {
             debug_assert_eq!(reduce.assigned_reductions.len(), typed_reducers.len());
@@ -396,10 +431,13 @@ fn compile_stage(
                 let reducer_on_position = reducer_on_variable.clone().map(input_variables);
                 reductions.push(reducer_on_position);
             }
-            Ok(ExecutableStage::Reduce(Arc::new(ReduceExecutable::new(
-                ReduceRowsExecutable { reductions, input_group_positions },
-                output_row_mapping,
-            ))))
+            Ok((
+                ExecutableStage::Reduce(Arc::new(ReduceExecutable::new(
+                    ReduceRowsExecutable { reductions, input_group_positions },
+                    output_row_mapping,
+                ))),
+                BTreeSet::new(),
+            ))
         }
     }
 }

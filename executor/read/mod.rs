@@ -6,7 +6,9 @@
 
 use std::sync::Arc;
 
-use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable};
+use compiler::executable::{
+    function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use resource::profile::QueryProfile;
 use storage::snapshot::ReadableSnapshot;

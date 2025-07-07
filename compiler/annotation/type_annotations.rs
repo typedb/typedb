@@ -37,6 +37,10 @@ impl BlockAnnotations {
     pub(crate) fn into_parts(self) -> HashMap<ScopeId, TypeAnnotations> {
         self.scope_annotations
     }
+
+    pub(crate) fn referenced_types(&self) -> BTreeSet<Type> {
+        self.scope_annotations.values().flat_map(|ta| ta.vertex.values().map(|v| &**v)).flatten().copied().collect()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

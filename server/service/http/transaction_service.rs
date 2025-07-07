@@ -351,22 +351,14 @@ impl TransactionService {
     async fn handle_next(&mut self, next: Option<(TransactionRequest, TransactionResponder)>) -> ControlFlow<(), ()> {
         match next {
             None => Break(()),
-            Some((request, response_sender)) => {
-                match request {
-                    TransactionRequest::Query(query_options, query) => {
-                        self.handle_query(query_options, query, response_sender).await
-                    }
-                    TransactionRequest::Commit => {
-                        self.handle_commit(response_sender).await
-                    }
-                    TransactionRequest::Rollback => {
-                        self.handle_rollback(response_sender).await
-                    }
-                    TransactionRequest::Close => {
-                        self.handle_close(response_sender).await
-                    }
+            Some((request, response_sender)) => match request {
+                TransactionRequest::Query(query_options, query) => {
+                    self.handle_query(query_options, query, response_sender).await
                 }
-            }
+                TransactionRequest::Commit => self.handle_commit(response_sender).await,
+                TransactionRequest::Rollback => self.handle_rollback(response_sender).await,
+                TransactionRequest::Close => self.handle_close(response_sender).await,
+            },
         }
     }
 

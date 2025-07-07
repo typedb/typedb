@@ -136,7 +136,7 @@ fn add_type_statement(
     for constraint in &type_statement.constraints {
         if !constraint.annotations.is_empty() {
             return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-                feature: UnimplementedFeature::QueryingAnnotations
+                feature: UnimplementedFeature::QueryingAnnotations,
             }));
         }
         match &constraint.base {
