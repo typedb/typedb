@@ -713,6 +713,7 @@ impl fmt::Display for LoadKind {
 #[derive(Serialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ActionKind {
+    // ATTENTION: When adding new Kinds, update all_empty_counts_map()!
     ConnectionOpen,
     SignIn,
     ServersAll,
@@ -741,7 +742,6 @@ pub enum ActionKind {
     TransactionRollback,
     TransactionQuery,
     OneshotQuery,
-    // ATTENTION: When adding new Kinds, update all_empty_counts_map()!
 }
 
 impl ActionKind {
@@ -751,6 +751,8 @@ impl ActionKind {
             (Self::SignIn, ActionInfo::default()),
             (Self::ServersAll, ActionInfo::default()),
             (Self::ServerVersion, ActionInfo::default()),
+            (Self::ServersRegister, ActionInfo::default()),
+            (Self::ServersDeregister, ActionInfo::default()),
             (Self::UsersContains, ActionInfo::default()),
             (Self::UsersCreate, ActionInfo::default()),
             (Self::UsersUpdate, ActionInfo::default()),
