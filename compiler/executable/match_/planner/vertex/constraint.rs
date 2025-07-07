@@ -142,7 +142,7 @@ impl ConstraintVertex<'_> {
             Self::IndexedRelation(indexed) => (indexed.player_1, indexed.player_2),
             _ => return Err(QueryPlanningError::UnimplementedJoinForConstraint {} ),
         };
-        // It can't be a join var if it's being newly produced in this step
+        // We can't do a join if two participating iterators produce the same non-join var.
         let direction = if join_var == canonical_from {
             debug_assert!(all_produced.contains(&canonical_to) || !_ongoing_step_produced.contains(&canonical_to));
             if all_produced.contains(&canonical_to) { Direction::Reverse } else { Direction::Canonical }
@@ -1204,6 +1204,7 @@ impl Costed for SubPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        // TODO: Seeking on type edge iterators isn't implemented yet.
         Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Reverse, None)))
     }
 }
@@ -1243,6 +1244,7 @@ impl Costed for OwnsPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        // TODO: Seeking on type edge iterators isn't implemented yet.
         Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical, None)))
     }
 }
@@ -1282,6 +1284,7 @@ impl Costed for RelatesPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        // TODO: Seeking on type edge iterators isn't implemented yet.
         Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical, None)))
     }
 }
@@ -1321,6 +1324,7 @@ impl Costed for PlaysPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        // TODO: Seeking on type edge iterators isn't implemented yet.
         Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical, None)))
     }
 }
@@ -1333,24 +1337,12 @@ fn pick_join_var(
     to_var: VariableVertexId,
 ) -> Option<VariableVertexId> {
     if is_from_bound && is_to_bound {
-        None
-    } else {
-        let join_var = match direction {
-            Direction::Canonical => {
-                if is_from_bound {
-                    to_var
-                } else {
-                    from_var
-                }
-            }
-            Direction::Reverse => {
-                if is_to_bound {
-                    from_var
-                } else {
-                    to_var
-                }
-            }
-        };
-        Some(join_var)
+        return None;
+    }
+    match direction {
+        Direction::Canonical if is_from_bound => Some(to_var),
+        Direction::Canonical => Some(from_var),
+        Direction::Reverse if is_to_bound => Some(from_var),
+        Direction::Reverse => Some(to_var),
     }
 }
