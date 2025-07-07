@@ -10,7 +10,8 @@ use answer::variable::Variable;
 
 use crate::{
     executable::{
-        insert::executable::InsertExecutable, match_::planner::conjunction_executable::ConjunctionExecutable, next_executable_id,
+        insert::executable::InsertExecutable, match_::planner::conjunction_executable::ConjunctionExecutable,
+        next_executable_id,
     },
     VariablePosition,
 };

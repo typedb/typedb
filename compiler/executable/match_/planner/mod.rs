@@ -27,8 +27,8 @@ use crate::{
             instructions::{CheckInstruction, ConstraintInstruction},
             planner::{
                 conjunction_executable::{
-                    AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
-                    ConjunctionExecutable, NegationStep,
+                    AssignmentStep, CheckStep, ConjunctionExecutable, DisjunctionStep, ExecutionStep, FunctionCallStep,
+                    IntersectionStep, NegationStep,
                 },
                 plan::{plan_conjunction, PlannerStatistics, QueryPlanningError},
             },

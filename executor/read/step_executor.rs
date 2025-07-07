@@ -12,7 +12,7 @@ use compiler::{
             executable::{ExecutableFunction, ExecutableReturn},
             ExecutableFunctionRegistry, FunctionTablingType,
         },
-        match_::planner::conjunction_executable::{ExecutionStep, ConjunctionExecutable},
+        match_::planner::conjunction_executable::{ConjunctionExecutable, ExecutionStep},
         next_executable_id,
         pipeline::ExecutableStage,
     },

@@ -14,10 +14,10 @@ use ir::pattern::BranchID;
 use tokio::sync::broadcast::error::TryRecvError;
 
 pub mod batch;
+pub mod conjunction_executor;
 pub mod document;
 pub mod error;
 pub(crate) mod instruction;
-pub mod conjunction_executor;
 pub mod pipeline;
 pub mod read;
 pub(crate) mod reduce_executor;

@@ -25,11 +25,16 @@ fn build_conjunction_constraints() {
     eprintln!("{:#}\n", match_); // TODO
     eprintln!(
         "{}\n",
-        translate_match(&mut PipelineTranslationContext::new(), &mut ParameterRegistry::new(), &empty_function_index, match_)
-            .unwrap()
-            .finish()
-            .unwrap()
-            .conjunction()
+        translate_match(
+            &mut PipelineTranslationContext::new(),
+            &mut ParameterRegistry::new(),
+            &empty_function_index,
+            match_
+        )
+        .unwrap()
+        .finish()
+        .unwrap()
+        .conjunction()
     );
 
     let query = "match
@@ -46,11 +51,16 @@ fn build_conjunction_constraints() {
     eprintln!("{:#}\n", match_); // TODO
     eprintln!(
         "{}\n",
-        translate_match(&mut PipelineTranslationContext::new(), &mut ParameterRegistry::new(), &empty_function_index, match_)
-            .unwrap()
-            .finish()
-            .unwrap()
-            .conjunction()
+        translate_match(
+            &mut PipelineTranslationContext::new(),
+            &mut ParameterRegistry::new(),
+            &empty_function_index,
+            match_
+        )
+        .unwrap()
+        .finish()
+        .unwrap()
+        .conjunction()
     );
 
     let query = "match
@@ -69,11 +79,16 @@ fn build_conjunction_constraints() {
     eprintln!("{:#}\n", match_); // TODO
     eprintln!(
         "{}\n",
-        translate_match(&mut PipelineTranslationContext::new(), &mut ParameterRegistry::new(), &empty_function_index, match_)
-            .unwrap()
-            .finish()
-            .unwrap()
-            .conjunction()
+        translate_match(
+            &mut PipelineTranslationContext::new(),
+            &mut ParameterRegistry::new(),
+            &empty_function_index,
+            match_
+        )
+        .unwrap()
+        .finish()
+        .unwrap()
+        .conjunction()
     );
 
     // let mut block = FunctionalBlock::new();
