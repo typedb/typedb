@@ -756,6 +756,8 @@ impl ActionKind {
             (Self::ServersRegister, ActionInfo::default()),
             (Self::ServersDeregister, ActionInfo::default()),
             (Self::ServerVersion, ActionInfo::default()),
+            (Self::ServersRegister, ActionInfo::default()),
+            (Self::ServersDeregister, ActionInfo::default()),
             (Self::UsersContains, ActionInfo::default()),
             (Self::UsersCreate, ActionInfo::default()),
             (Self::UsersUpdate, ActionInfo::default()),
