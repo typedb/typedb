@@ -918,14 +918,13 @@ impl PartialCostPlan {
                 }
             })
             .flat_map(move |&extension| match self.determine_joinability(graph, extension) {
-                None => vec![(extension, None)].into_iter(),
-                Some(var) => vec![(extension, None), (extension, Some(var))].into_iter(),
+                None => vec![(extension, None)],
+                Some(var) => vec![(extension, None), (extension, Some(var))],
             })
             .map(move |(extension, join_var_opt)| {
                 let planner_vertex = &graph.elements[&VertexId::Pattern(extension)];
                 let (cost_before_extension, cost_of_extension, metadata) = if let Some(join_var) = join_var_opt {
                     // Step continues
-                    debug_assert!(matches!(planner_vertex, PlannerVertex::Constraint(_)));
                     let PlannerVertex::Constraint(constraint) = planner_vertex else {
                         unreachable!("Cannot join unless constraint");
                     };
@@ -1667,9 +1666,10 @@ impl ConjunctionPlan<'_> {
                 };
 
                 let direction = if matches!(inputs, Inputs::None([])) {
-                    let CostMetaData::Direction(unbound_direction, _) = metadata else {
+                    let CostMetaData::Direction(unbound_direction, _sort_var) = metadata else {
                         unreachable!("expected metadata for constraint")
                     };
+                    debug_assert!(sort_variable.is_none() || sort_variable.as_ref().map(|v| self.graph.variable_index[v]) == _sort_var);
                     unbound_direction
                 } else if rhs_var.is_some_and(|rhs| inputs.contains(rhs)) {
                     Direction::Reverse
