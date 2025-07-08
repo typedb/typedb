@@ -193,8 +193,6 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         }
     }
 
-    pub fn commit_finish(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Result<(), DataCommitError> {}
-
     pub fn rollback(&mut self) {
         self.snapshot.as_mut().expect("Expected owning snapshot on rollback").clear()
     }
