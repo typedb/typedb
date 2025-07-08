@@ -17,11 +17,10 @@ use typeql::common::Span;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        BranchID, Scope, ScopeId, VariableBindingMode,
+        BranchID, Pattern, Scope, ScopeId, VariableBindingMode,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext, ScopeType, VariableLocality},
+    pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
 };
-use crate::pattern::Pattern;
 
 #[derive(Clone, Debug)]
 pub struct Disjunction {
@@ -114,8 +113,6 @@ impl Pattern for Disjunction {
         }
         binding_modes
     }
-
-
 }
 
 impl StructuralEquality for Disjunction {

@@ -11,10 +11,9 @@ use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
 use crate::{
-    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, VariableBindingMode},
+    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, Pattern, VariableBindingMode},
     pipeline::block::BlockContext,
 };
-use crate::pattern::Pattern;
 
 #[derive(Debug, Clone)]
 pub enum NestedPattern {

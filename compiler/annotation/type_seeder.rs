@@ -26,12 +26,11 @@ use ir::{
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Scope, Vertex,
+        Pattern, Scope, Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
-use ir::pattern::Pattern;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{

@@ -194,7 +194,8 @@ fn structs_lists_optionals() {
             if let QueryError::Representation { typedb_source: err, .. } = err.as_ref() {
                 if let RepresentationError::FunctionRepresentation {
                     typedb_source: FunctionRepresentationError::UnimplementedFunctionOptionals { feature, .. },
-                } = err.as_ref() {
+                } = err.as_ref()
+                {
                     matches = feature == &error::UnimplementedFeature::OptionalFunctions
                 }
             }

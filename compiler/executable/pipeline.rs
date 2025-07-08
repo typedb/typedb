@@ -13,10 +13,10 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::{
-    pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, Vertex},
+    pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, Pattern, Vertex},
     pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
 };
-use ir::pattern::Pattern;
+
 use crate::{
     annotation::{
         fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
@@ -389,15 +389,16 @@ fn compile_stage(
                 BTreeSet::new(),
             ))
         }
-        AnnotatedStage::Sort(sort) => Ok(ExecutableStage::Sort(Arc::new(SortExecutable::new(
-            sort.variables.clone(),
-            stage_input_positions.clone(),
-        )))),
-        AnnotatedStage::Offset(offset) => {
-            Ok(ExecutableStage::Offset(Arc::new(OffsetExecutable::new(offset.offset(), stage_input_positions.clone()))))
-        }
         AnnotatedStage::Sort(sort) => Ok((
-            ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), input_variables.clone()))),
+            ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), stage_input_positions.clone()))),
+            BTreeSet::new(),
+        )),
+        AnnotatedStage::Offset(offset) => Ok((
+            ExecutableStage::Offset(Arc::new(OffsetExecutable::new(offset.offset(), stage_input_positions.clone()))),
+            BTreeSet::new(),
+        )),
+        AnnotatedStage::Sort(sort) => Ok((
+            ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), stage_input_positions.clone()))),
             BTreeSet::new(),
         )),
         AnnotatedStage::Offset(offset) => Ok((
@@ -416,15 +417,16 @@ fn compile_stage(
             }
             Ok((
                 ExecutableStage::Require(Arc::new(RequireExecutable::new(
-                required_positions,
-                stage_input_positions.clone(),
-            ))),
+                    required_positions,
+                    stage_input_positions.clone(),
+                ))),
                 BTreeSet::new(),
             ))
         }
-        AnnotatedStage::Distinct(_distinct) => {
-            Ok((ExecutableStage::Distinct(Arc::new(DistinctExecutable::new(stage_input_positions.clone()))), BTreeSet::new()))
-        }
+        AnnotatedStage::Distinct(_distinct) => Ok((
+            ExecutableStage::Distinct(Arc::new(DistinctExecutable::new(stage_input_positions.clone()))),
+            BTreeSet::new(),
+        )),
         AnnotatedStage::Reduce(reduce, typed_reducers) => {
             debug_assert_eq!(reduce.assigned_reductions.len(), typed_reducers.len());
             let mut output_row_mapping = HashMap::new();

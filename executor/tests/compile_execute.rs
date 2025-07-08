@@ -29,11 +29,11 @@ use executor::{
 };
 use function::function_manager::FunctionManager;
 use ir::{
+    pattern::Pattern,
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{match_::translate_match, PipelineTranslationContext},
 };
 use itertools::Itertools;
-use ir::pattern::Pattern;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, QueryProfile};

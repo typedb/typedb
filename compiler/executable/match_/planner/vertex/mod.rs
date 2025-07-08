@@ -567,7 +567,10 @@ pub(super) struct NegationVertex<'a> {
 }
 
 impl<'a> NegationVertex<'a> {
-    pub(super) fn new(negation_plan: ConjunctionPlan<'a>, parent_variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
+    pub(super) fn new(
+        negation_plan: ConjunctionPlan<'a>,
+        parent_variable_index: &HashMap<Variable, VariableVertexId>,
+    ) -> Self {
         let referenced_parent_vertex_ids =
             negation_plan.referenced_input_variables().map(|v| parent_variable_index[&v]).collect();
         Self { plan: negation_plan, referenced_parent_vertex_ids }

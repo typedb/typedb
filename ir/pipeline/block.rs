@@ -20,12 +20,11 @@ use crate::{
         constraint::Constraint,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        BranchID, Scope, ScopeId,
+        BranchID, Pattern, Scope, ScopeId,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
 };
-use crate::pattern::Pattern;
 
 #[derive(Debug, Clone)]
 pub struct Block {

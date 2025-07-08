@@ -12,11 +12,10 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Scope, ScopeId, VariableBindingMode,
+        Pattern, Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };
-use crate::pattern::Pattern;
 
 #[derive(Debug, Clone)]
 pub struct Negation {
@@ -42,11 +41,9 @@ impl Negation {
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
         &mut self.conjunction
     }
-
 }
 
 impl Pattern for Negation {
-
     fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunction().referenced_variables()
     }

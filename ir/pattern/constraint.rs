@@ -24,15 +24,15 @@ use crate::{
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ParameterID, ScopeId, ValueType, VariableBindingMode, Vertex,
+        IrID, ParameterID, Pattern, ScopeId, ValueType, VariableBindingMode, Vertex,
     },
     pipeline::{
-        block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry, VariableRegistry,
+        block::{BlockBuilderContext, BlockContext},
+        function_signature::FunctionSignature,
+        ParameterRegistry, VariableRegistry,
     },
     LiteralParseError, RepresentationError,
 };
-use crate::pattern::Pattern;
-use crate::pipeline::block::BlockContext;
 
 #[derive(Debug, Clone)]
 pub struct Constraints {
@@ -72,11 +72,8 @@ impl Constraints {
 }
 
 impl Pattern for Constraints {
-    fn referenced_variables(&self) -> impl Iterator<Item=Variable> + '_ {
-        self.constraints()
-            .iter()
-            .flat_map(|constraint| constraint.ids())
-            .unique()
+    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.constraints().iter().flat_map(|constraint| constraint.ids()).unique()
     }
 
     fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {

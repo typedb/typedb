@@ -5,7 +5,7 @@
  */
 
 use crate::{
-    pattern::{conjunction::ConjunctionBuilder, nested_pattern::NestedPattern, Scope},
+    pattern::{conjunction::ConjunctionBuilder, nested_pattern::NestedPattern, Pattern, Scope},
     pipeline::{
         block::{Block, BlockBuilder},
         function_signature::FunctionSignatureIndex,
@@ -14,7 +14,6 @@ use crate::{
     translation::{constraints::add_statement, PipelineTranslationContext},
     RepresentationError,
 };
-use crate::pattern::Pattern;
 
 pub fn translate_match<'a>(
     context: &'a mut PipelineTranslationContext,

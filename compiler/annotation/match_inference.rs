@@ -15,7 +15,8 @@ use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
-        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Scope, ScopeId, Vertex,
+        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Pattern, Scope, ScopeId,
+        Vertex,
     },
     pipeline::{
         block::{Block, BlockContext},
@@ -23,7 +24,6 @@ use ir::{
     },
 };
 use itertools::Itertools;
-use ir::pattern::Pattern;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{

@@ -9,15 +9,18 @@ use error::{needs_update_when_feature_is_implemented, UnimplementedFeature};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
-    common::Spanned,
+    common::{Span, Spanned},
     schema::definable::function::{
         FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },
     type_::{NamedType, NamedTypeAny},
 };
-use typeql::common::Span;
+
 use crate::{
-    pattern::variable_category::{VariableCategory, VariableOptionality},
+    pattern::{
+        variable_category::{VariableCategory, VariableOptionality},
+        Pattern,
+    },
     pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
@@ -29,7 +32,6 @@ use crate::{
         PipelineTranslationContext,
     },
 };
-use crate::pattern::Pattern;
 
 macro_rules! verify_variable_available {
     ($context:ident, $var:expr => $error:ident ) => {
@@ -76,10 +78,10 @@ pub fn translate_function_from(
         .map(|output_type| (output_type.span(), named_type_any_to_category_and_optionality(output_type)))
         .filter(|(source, (_, optionality))| *optionality == VariableOptionality::Optional)
         .next()
-     {
+    {
         Err(FunctionRepresentationError::UnimplementedFunctionOptionals {
             source_span: source.clone(),
-            feature: UnimplementedFeature::OptionalFunctions
+            feature: UnimplementedFeature::OptionalFunctions,
         })?;
     }
 

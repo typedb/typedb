@@ -18,8 +18,8 @@ use constraint::Constraint;
 use encoding::value::label::Label;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
-use crate::pipeline::block::BlockContext;
-use crate::pipeline::VariableRegistry;
+
+use crate::pipeline::{block::BlockContext, VariableRegistry};
 
 pub mod conjunction;
 pub mod constraint;

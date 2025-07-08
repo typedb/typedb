@@ -23,12 +23,11 @@ use crate::{
         negation::Negation,
         nested_pattern::NestedPattern,
         optional::Optional,
-        Scope, ScopeId, VariableBindingMode,
+        Pattern, Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
     RepresentationError,
 };
-use crate::pattern::Pattern;
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {
@@ -74,7 +73,6 @@ impl Conjunction {
     pub fn local_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
         self.referenced_variables().filter(|var| block_context.is_variable_available_in(self.scope_id, *var))
     }
-
 
     pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
         for (var, mode) in self.variable_binding_modes() {
@@ -129,7 +127,6 @@ impl Pattern for Conjunction {
         binding_modes
     }
 }
-
 
 impl Scope for Conjunction {
     fn scope_id(&self) -> ScopeId {

@@ -12,11 +12,10 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        BranchID, Scope, ScopeId, VariableBindingMode,
+        BranchID, Pattern, Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };
-use crate::pattern::Pattern;
 
 #[derive(Debug, Clone)]
 pub struct Optional {

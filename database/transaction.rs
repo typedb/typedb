@@ -24,10 +24,12 @@ use query::query_manager::QueryManager;
 use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
+    isolation_manager::CommitRecord,
     snapshot::{
         CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotDropGuard, SnapshotError, WritableSnapshot,
         WriteSnapshot,
     },
+    MVCCStorage,
 };
 use tracing::Level;
 
@@ -190,6 +192,8 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             Err(err) => (profile, Err(DataCommitError::SnapshotError { typedb_source: err })),
         }
     }
+
+    pub fn commit_finish(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Result<(), DataCommitError> {}
 
     pub fn rollback(&mut self) {
         self.snapshot.as_mut().expect("Expected owning snapshot on rollback").clear()

@@ -9,7 +9,7 @@ use std::{
     cmp::{Ordering, Reverse},
     collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet},
     fmt,
-    hash::{DefaultHasher, Hash, Hasher},
+    hash::{DefaultHasher, Hash},
     sync::Arc,
 };
 
@@ -25,13 +25,13 @@ use ir::{
         },
         nested_pattern::NestedPattern,
         variable_category::{VariableCategory, VariableOptionality},
-        BranchID, Scope, Vertex,
+        BranchID, Pattern, Scope, Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::{chain, Itertools};
 use tracing::{event, Level};
-use ir::pattern::Pattern;
+
 use crate::{
     annotation::{
         expression::compiled_expression::ExecutableExpression,
@@ -59,9 +59,9 @@ use crate::{
                         OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner,
                     },
                     variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
-                    ComparisonVertex, Cost, CostMetaData, Costed, Direction, ExpressionVertex, FunctionCallVertex,
-                    Input, IsVertex, LinksDeduplicationVertex, DisjunctionVertex, NegationVertex,
-                    OptionalVertex, PlannerVertex, UnsatisfiableVertex,
+                    ComparisonVertex, Cost, CostMetaData, Costed, Direction, DisjunctionVertex, ExpressionVertex,
+                    FunctionCallVertex, Input, IsVertex, LinksDeduplicationVertex, NegationVertex, OptionalVertex,
+                    PlannerVertex, UnsatisfiableVertex,
                 },
                 CheckBuilder, ConjunctionExecutableBuilder, DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder,
                 IntersectionBuilder, NegationBuilder, OptionalBuilder, StepBuilder, StepInstructionsBuilder,
@@ -600,8 +600,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn register_disjunctions(&mut self, disjunctions: Vec<DisjunctionPlanBuilder<'a>>) {
         for disjunction in disjunctions {
-            self.graph
-                .push_disjunction(DisjunctionVertex::from_builder(disjunction, &self.graph.variable_index));
+            self.graph.push_disjunction(DisjunctionVertex::from_builder(disjunction, &self.graph.variable_index));
         }
     }
 
@@ -1056,8 +1055,7 @@ impl PartialCostPlan {
         self.ongoing_step_stash.push(pattern);
         self.remaining_patterns.remove(&pattern);
         self.pattern_metadata.insert(pattern, CostMetaData::None);
-        self.ongoing_step_stash_produced_vars
-            .extend(graph.elements[&VertexId::Pattern(pattern)].variable_vertex_ids());
+        self.ongoing_step_stash_produced_vars.extend(graph.elements[&VertexId::Pattern(pattern)].variable_vertex_ids());
     }
 
     fn finalize_current_step(&self, graph: &Graph<'_>) -> (Vec<VertexId>, HashSet<VariableVertexId>) {
@@ -2251,10 +2249,7 @@ impl<'a> Graph<'a> {
 
     fn push_optional(&mut self, optional: OptionalVertex<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable
-            .entry(pattern_index)
-            .or_default()
-            .extend(optional.variable_vertex_ids());
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(optional.variable_vertex_ids());
         for var_id in optional.variable_vertex_ids() {
             self.variable_to_pattern.entry(var_id).or_default().insert(pattern_index);
         }
