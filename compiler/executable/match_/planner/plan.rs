@@ -122,9 +122,7 @@ fn make_builder<'a>(
     for pattern in conjunction.nested_patterns() {
         match pattern {
             NestedPattern::Disjunction(disjunction) => {
-                let shared_variables = disjunction.named_always_binding_variables(block_context).collect();
                 let planner = DisjunctionPlanBuilder::new(
-                    shared_variables,
                     disjunction.conjunctions_by_branch_id().map(|(id, _)| *id).collect(),
                     disjunction
                         .conjunctions()
@@ -2025,24 +2023,15 @@ impl ConjunctionPlan<'_> {
 pub(super) struct DisjunctionPlanBuilder<'a> {
     pub(super) branch_ids: Vec<BranchID>,
     pub(super) branches: Vec<ConjunctionPlanBuilder<'a>>,
-    shared_variables: HashSet<Variable>,
 }
 
 impl<'a> DisjunctionPlanBuilder<'a> {
-    fn new(
-        shared_variables: HashSet<Variable>,
-        branch_ids: Vec<BranchID>,
-        branches: Vec<ConjunctionPlanBuilder<'a>>,
-    ) -> Self {
-        Self { branch_ids, branches, shared_variables }
+    fn new(branch_ids: Vec<BranchID>, branches: Vec<ConjunctionPlanBuilder<'a>>) -> Self {
+        Self { branch_ids, branches }
     }
 
     pub(super) fn branches(&self) -> &[ConjunctionPlanBuilder<'a>] {
         &self.branches
-    }
-
-    pub(super) fn shared_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.shared_variables.iter().copied()
     }
 }
 
