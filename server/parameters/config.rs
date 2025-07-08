@@ -33,10 +33,17 @@ pub struct Config {
 #[serde(rename_all = "kebab-case")]
 pub struct ServerConfig {
     pub(crate) address: String,
-    pub(crate) http_enabled: bool,
-    pub(crate) http_address: String,
+    pub(crate) http: HttpEndpointConfig,
     pub(crate) authentication: AuthenticationConfig,
     pub(crate) encryption: EncryptionConfig,
+}
+
+#[serde_as]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct HttpEndpointConfig {
+    pub(crate) enabled: bool,
+    pub(crate) address: String,
 }
 
 #[serde_as]
@@ -55,6 +62,7 @@ impl Default for AuthenticationConfig {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct EncryptionConfig {
     pub enabled: bool,
     pub certificate: Option<PathBuf>,
@@ -174,10 +182,10 @@ impl ConfigBuilder {
             server_authentication_token_ttl_seconds,
             server_encryption_enabled,
             server_encryption_certificate,
-            server_encryption_cert_key,
+            server_encryption_certificate_key,
             server_encryption_ca_certificate,
-            storage_data,
-            logging_logdir,
+            storage_data_directory,
+            logging_directory,
             diagnostics_reporting_metrics,
             diagnostics_reporting_errors,
             diagnostics_monitoring_enabled,
@@ -187,17 +195,17 @@ impl ConfigBuilder {
         let Self { config } = self;
         override_config! {
             config.server.address => server_address;
-            config.server.http_enabled => server_http_enabled;
-            config.server.http_address => server_http_address;
+            config.server.http.enabled => server_http_enabled;
+            config.server.http.address => server_http_address;
             config.server.authentication.token_expiration => server_authentication_token_ttl_seconds.map(|secs| Duration::new(secs, 0));
 
             config.server.encryption.enabled => server_encryption_enabled;
             config.server.encryption.certificate => server_encryption_certificate.map(|cert| Some(cert.into()));
-            config.server.encryption.certificate_key => server_encryption_cert_key.map(|cert| Some(cert.into()));
+            config.server.encryption.certificate_key => server_encryption_certificate_key.map(|cert| Some(cert.into()));
             config.server.encryption.ca_certificate => server_encryption_ca_certificate.map(|cert| Some(cert.into()));
 
-            config.storage.data_directory => storage_data.map(|p| CLIArgs::resolve_path_from_pwd(&p.into()));
-            config.logging.directory => logging_logdir.map(|p| CLIArgs::resolve_path_from_pwd(&p.into()));
+            config.storage.data_directory => storage_data_directory.map(|p| CLIArgs::resolve_path_from_pwd(&p.into()));
+            config.logging.directory => logging_directory.map(|p| CLIArgs::resolve_path_from_pwd(&p.into()));
 
             config.diagnostics.reporting.report_metrics => diagnostics_reporting_metrics;
             config.diagnostics.reporting.report_errors => diagnostics_reporting_errors;
@@ -242,8 +250,13 @@ impl ConfigBuilder {
         self
     }
 
+    pub fn server_http_enabled(mut self, enabled: bool) -> Self {
+        self.config.server.http.enabled = enabled;
+        self
+    }
+
     pub fn server_http_address(mut self, address: impl Into<String>) -> Self {
-        self.config.server.http_address = address.into();
+        self.config.server.http.address = address.into();
         self
     }
 

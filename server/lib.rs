@@ -96,9 +96,9 @@ impl Server {
         Self::install_default_encryption_provider()?;
 
         let grpc_address = Self::resolve_address(self.config.server.address).await;
-        let http_address_opt = if self.config.server.http_enabled {
+        let http_address_opt = if self.config.server.http.enabled {
             Some(
-                Self::validate_and_resolve_http_address(self.config.server.http_address.clone(), grpc_address.clone())
+                Self::validate_and_resolve_http_address(self.config.server.http.address.clone(), grpc_address.clone())
                     .await?,
             )
         } else {
