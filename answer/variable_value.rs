@@ -13,7 +13,7 @@ use crate::{Thing, Type};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum VariableValue<'a> {
-    Empty,
+    None,
     Type(Type),
     Thing(Thing),
     Value(Value<'a>),
@@ -54,7 +54,7 @@ impl<'a> VariableValue<'a> {
 
     pub fn to_owned(&self) -> VariableValue<'static> {
         match self {
-            VariableValue::Empty => VariableValue::Empty,
+            VariableValue::None => VariableValue::None,
             &VariableValue::Type(type_) => VariableValue::Type(type_),
             VariableValue::Thing(thing) => VariableValue::Thing(thing.to_owned()),
             VariableValue::Value(value) => VariableValue::Value(value.clone().into_owned()),
@@ -65,7 +65,7 @@ impl<'a> VariableValue<'a> {
 
     pub fn as_reference(&self) -> VariableValue<'_> {
         match self {
-            VariableValue::Empty => VariableValue::Empty,
+            VariableValue::None => VariableValue::None,
             &VariableValue::Type(type_) => VariableValue::Type(type_),
             VariableValue::Thing(thing) => VariableValue::Thing(thing.clone()),
             VariableValue::Value(value) => VariableValue::Value(value.as_reference()),
@@ -76,7 +76,7 @@ impl<'a> VariableValue<'a> {
 
     pub fn into_owned(self) -> VariableValue<'static> {
         match self {
-            VariableValue::Empty => VariableValue::Empty,
+            VariableValue::None => VariableValue::None,
             VariableValue::Type(type_) => VariableValue::Type(type_),
             VariableValue::Thing(thing) => VariableValue::Thing(thing),
             VariableValue::Value(value) => VariableValue::Value(value.into_owned()),
@@ -87,7 +87,7 @@ impl<'a> VariableValue<'a> {
 
     pub fn next_possible(&self) -> VariableValue<'static> {
         match self {
-            VariableValue::Empty => unreachable!("No next value for an Empty value."),
+            VariableValue::None => unreachable!("No next value for an Empty value."),
             VariableValue::Type(type_) => VariableValue::Type(type_.next_possible()),
             VariableValue::Thing(thing) => VariableValue::Thing(thing.next_possible()),
             VariableValue::Value(_) => unreachable!("Value instances don't have a well defined order."),
@@ -99,15 +99,15 @@ impl<'a> VariableValue<'a> {
 
     /// Returns `true` if the variable value is [`Empty`].
     ///
-    /// [`Empty`]: VariableValue::Empty
+    /// [`Empty`]: VariableValue::None
     #[must_use]
     pub fn is_empty(&self) -> bool {
-        matches!(self, Self::Empty)
+        matches!(self, Self::None)
     }
 
     pub fn variant_name(&self) -> &'static str {
         match self {
-            VariableValue::Empty => "empty",
+            VariableValue::None => "empty",
             VariableValue::Type(_) => "type",
             VariableValue::Thing(_) => "thing",
             VariableValue::Value(_) => "value",
@@ -125,9 +125,9 @@ impl PartialOrd for VariableValue<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
             // special case: Empty is less than everything, except also equal to Empty
-            (Self::Empty, Self::Empty) => Some(Ordering::Equal),
-            (Self::Empty, _) => Some(Ordering::Less),
-            (_, Self::Empty) => Some(Ordering::Greater),
+            (Self::None, Self::None) => Some(Ordering::Equal),
+            (Self::None, _) => Some(Ordering::Less),
+            (_, Self::None) => Some(Ordering::Greater),
             (Self::Type(self_type), Self::Type(other_type)) => self_type.partial_cmp(other_type),
             (Self::Thing(self_thing), Self::Thing(other_thing)) => self_thing.partial_cmp(other_thing),
             (Self::Value(self_value), Self::Value(other_value)) => self_value.partial_cmp(other_value),
@@ -139,7 +139,7 @@ impl PartialOrd for VariableValue<'_> {
 impl fmt::Display for VariableValue<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            VariableValue::Empty => write!(f, "[None]"),
+            VariableValue::None => write!(f, "[None]"),
             VariableValue::Type(type_) => write!(f, "{}", type_),
             VariableValue::Thing(thing) => write!(f, "{}", thing),
             VariableValue::Value(value) => write!(f, "{}", value),
@@ -162,7 +162,7 @@ impl fmt::Display for VariableValue<'_> {
 }
 
 impl VariableValue<'_> {
-    pub const EMPTY: VariableValue<'static> = VariableValue::Empty;
+    pub const EMPTY: VariableValue<'static> = VariableValue::None;
 }
 
 pub enum FunctionValue<'a> {

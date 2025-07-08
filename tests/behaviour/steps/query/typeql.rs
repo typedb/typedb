@@ -343,7 +343,7 @@ fn does_var_in_row_match_spec(
     let var_value =
         answer_row.get(var).unwrap_or_else(|| panic!("no answer found for {var} in one of the answer rows"));
     if spec == "empty" {
-        var_value == &VariableValue::Empty
+        var_value == &VariableValue::None
     } else {
         let (kind, id) = spec.split_once(':').expect("answer concept specifier must be of the form `<kind>:<id>`");
         match kind {

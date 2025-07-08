@@ -30,7 +30,7 @@ pub mod writes;
 #[derive(Debug, Clone)]
 pub struct PipelineTranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
-    visible_variables: HashMap<String, Variable>,
+    last_stage_visible_variables: HashMap<String, Variable>,
 }
 
 impl Default for PipelineTranslationContext {
@@ -41,21 +41,21 @@ impl Default for PipelineTranslationContext {
 
 impl PipelineTranslationContext {
     pub fn new() -> Self {
-        Self { variable_registry: VariableRegistry::new(), visible_variables: HashMap::new() }
+        Self { variable_registry: VariableRegistry::new(), last_stage_visible_variables: HashMap::new() }
     }
 
     pub fn new_function_pipeline(
         input_variables: Vec<(String, Option<Span>, VariableCategory)>,
     ) -> Result<(Self, Vec<Variable>), Box<RepresentationError>> {
-        let mut visible_variables = HashMap::new();
+        let mut last_stage_visible_variables = HashMap::new();
         let mut variable_registry = VariableRegistry::new();
         let mut variables = Vec::with_capacity(input_variables.len());
         for (name, source_span, category) in input_variables {
             let variable = variable_registry.register_function_argument(name.as_str(), category, source_span)?;
-            visible_variables.insert(name.clone(), variable);
+            last_stage_visible_variables.insert(name.clone(), variable);
             variables.push(variable);
         }
-        let this = Self { variable_registry, visible_variables };
+        let this = Self { variable_registry, last_stage_visible_variables };
         Ok((this, variables))
     }
 
@@ -63,7 +63,7 @@ impl PipelineTranslationContext {
         &'a mut self,
         parameters: &'a mut ParameterRegistry,
     ) -> BlockBuilderContext<'a> {
-        let Self { variable_registry, visible_variables } = self;
+        let Self { variable_registry, last_stage_visible_variables: visible_variables } = self;
         BlockBuilderContext::new(variable_registry, visible_variables, parameters)
     }
 
@@ -82,12 +82,12 @@ impl PipelineTranslationContext {
             source_span,
             reducer,
         )?;
-        self.visible_variables.insert(name.to_owned(), variable);
+        self.last_stage_visible_variables.insert(name.to_owned(), variable);
         Ok(variable)
     }
 
     pub fn get_variable(&self, variable: &str) -> Option<Variable> {
-        self.visible_variables.get(variable).cloned()
+        self.last_stage_visible_variables.get(variable).cloned()
     }
 }
 

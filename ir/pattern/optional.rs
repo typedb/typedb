@@ -12,7 +12,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Scope, ScopeId, VariableDependency,
+        Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext},
 };
@@ -45,7 +45,7 @@ impl Optional {
     pub(crate) fn variable_dependency(
         &self,
         block_context: &BlockContext,
-    ) -> HashMap<Variable, VariableDependency<'_>> {
+    ) -> HashMap<Variable, VariableBindingMode<'_>> {
         self.conjunction
             .variable_dependency(block_context)
             .into_iter()

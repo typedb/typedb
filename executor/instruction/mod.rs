@@ -620,7 +620,7 @@ impl<T> Checker<T> {
                     Thing::Relation(relation) => Ok(*iid == *relation.vertex().to_bytes()),
                     Thing::Attribute(attribute) => Ok(*iid == *attribute.vertex().to_bytes()),
                 },
-                VariableValue::Empty => Ok(false),
+                VariableValue::None => Ok(false),
                 VariableValue::Type(_) => Ok(false),
                 VariableValue::Value(_) => Ok(false), // or unreachable?
                 VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
@@ -1038,7 +1038,7 @@ impl<T> Checker<T> {
             }
             VariableValue::Value(value) => Ok(value.into_owned()),
             VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+            VariableValue::None | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
         };
         let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
             Comparator::Equal => |a, b| a == b,
@@ -1068,7 +1068,7 @@ impl<T> Checker<T> {
                 }
                 VariableValue::Value(value) => value,
                 VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-                VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+                VariableValue::None | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
             };
             let rhs = rhs.clone()?;
             if rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) {

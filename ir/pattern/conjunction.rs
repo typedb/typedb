@@ -24,7 +24,7 @@ use crate::{
         negation::Negation,
         nested_pattern::NestedPattern,
         optional::Optional,
-        Scope, ScopeId, VariableDependency,
+        Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
 };
@@ -100,7 +100,7 @@ impl Conjunction {
         self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_required().then_some(v))
     }
 
-    pub fn variable_dependency(&self, block_context: &BlockContext) -> HashMap<Variable, VariableDependency<'_>> {
+    pub fn variable_dependency(&self, block_context: &BlockContext) -> HashMap<Variable, VariableBindingMode<'_>> {
         let mut dependencies = self.constraints.variable_dependency();
         for nested in self.nested_patterns.iter() {
             let nested_pattern_dependencies = nested.variable_dependency(block_context);
