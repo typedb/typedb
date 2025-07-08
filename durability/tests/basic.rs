@@ -9,7 +9,7 @@
 
 use std::{
     fs::{self, read_dir, OpenOptions},
-    io::{BufWriter, Seek, Write},
+    io::{Seek, Write},
 };
 
 use durability::DurabilityService;
@@ -36,6 +36,8 @@ fn basic() {
 
 #[test]
 fn added_zeros() {
+    const ADDED_LEN: usize = 120;
+
     let directory = TempDir::new("wal-test").unwrap();
 
     let message = TestRecord { bytes: b"hello world".to_vec() };
@@ -46,8 +48,10 @@ fn added_zeros() {
 
     let wal_file = &read_dir(directory.path().join("wal")).unwrap().exactly_one().unwrap().unwrap().path();
     let len = fs::metadata(wal_file).unwrap().len();
-    let mut file = BufWriter::new(OpenOptions::new().read(true).append(true).open(wal_file).unwrap());
-    file.write_all(&[0; 120]).unwrap();
+    let mut file = OpenOptions::new().read(true).append(true).open(wal_file).unwrap();
+    file.write_all(&[0; ADDED_LEN]).unwrap();
+    file.sync_all().unwrap();
+    assert_eq!(fs::metadata(wal_file).unwrap().len(), len + ADDED_LEN as u64);
 
     let wal = load_wal(&directory);
     let mut wal_iterator = wal.iter_any_from(written_entry_id).unwrap();
@@ -60,6 +64,8 @@ fn added_zeros() {
 
 #[test]
 fn added_junk() {
+    const ADDED_LEN: usize = 32; // Maximum number of bytes rand will generate in one go.
+
     let directory = TempDir::new("wal-test").unwrap();
 
     let message = TestRecord { bytes: b"hello world".to_vec() };
@@ -70,8 +76,10 @@ fn added_junk() {
 
     let wal_file = &read_dir(directory.path().join("wal")).unwrap().exactly_one().unwrap().unwrap().path();
     let len = fs::metadata(wal_file).unwrap().len();
-    let mut file = BufWriter::new(OpenOptions::new().read(true).append(true).open(wal_file).unwrap());
-    file.write_all(&thread_rng().gen::<[u8; 32]>()).unwrap();
+    let mut file = OpenOptions::new().read(true).append(true).open(wal_file).unwrap();
+    file.write_all(&thread_rng().gen::<[u8; ADDED_LEN]>()).unwrap();
+    file.sync_all().unwrap();
+    assert_eq!(fs::metadata(wal_file).unwrap().len(), len + ADDED_LEN as u64);
 
     let wal = load_wal(&directory);
     let mut wal_iterator = wal.iter_any_from(written_entry_id).unwrap();
@@ -83,22 +91,51 @@ fn added_junk() {
 }
 
 #[test]
-fn corrupted_record() {
-    let directory = TempDir::new("wal-test").unwrap();
-
+fn corrupted_record_zeros() {
     let message = TestRecord { bytes: b"hello world".to_vec() };
 
-    let wal = create_wal(&directory);
-    let written_entry_id = wal.sequenced_write(TestRecord::RECORD_TYPE, message.bytes()).unwrap();
-    drop(wal);
+    for corrupt_size in 1..=16 {
+        let directory = TempDir::new("wal-test").unwrap();
+        let wal = create_wal(&directory);
+        let written_entry_id = wal.sequenced_write(TestRecord::RECORD_TYPE, message.bytes()).unwrap();
+        drop(wal);
 
-    let wal_file = &read_dir(directory.path().join("wal")).unwrap().exactly_one().unwrap().unwrap().path();
-    let mut file = OpenOptions::new().read(true).write(true).open(wal_file).unwrap();
-    file.seek(std::io::SeekFrom::End(-16)).unwrap();
-    file.write_all(&[0; 16]).unwrap();
-    file.sync_all().unwrap();
+        let wal_file = &read_dir(directory.path().join("wal")).unwrap().exactly_one().unwrap().unwrap().path();
+        let len = fs::metadata(wal_file).unwrap().len();
+        let mut file = OpenOptions::new().read(true).write(true).open(wal_file).unwrap();
+        file.seek(std::io::SeekFrom::End(-16)).unwrap();
+        file.write_all(&vec![0; corrupt_size]).unwrap();
+        file.sync_all().unwrap();
+        assert_eq!(fs::metadata(wal_file).unwrap().len(), len);
 
-    let wal = load_wal(&directory);
-    assert!(wal.iter_any_from(written_entry_id).unwrap().next().is_none());
-    assert_eq!(fs::metadata(wal_file).unwrap().len(), 0)
+        let wal = load_wal(&directory);
+        assert!(wal.iter_any_from(written_entry_id).unwrap().next().is_none());
+        assert_eq!(fs::metadata(wal_file).unwrap().len(), 0)
+    }
+}
+
+#[test]
+fn corrupted_record_junk() {
+    let message = TestRecord { bytes: b"hello world".to_vec() };
+
+    for corrupt_size in 1..=16 {
+        let directory = TempDir::new("wal-test").unwrap();
+        let wal = create_wal(&directory);
+        let written_entry_id = wal.sequenced_write(TestRecord::RECORD_TYPE, message.bytes()).unwrap();
+        drop(wal);
+
+        let wal_file = &read_dir(directory.path().join("wal")).unwrap().exactly_one().unwrap().unwrap().path();
+        let len = fs::metadata(wal_file).unwrap().len();
+        let mut file = OpenOptions::new().read(true).write(true).open(wal_file).unwrap();
+        file.seek(std::io::SeekFrom::End(-16)).unwrap();
+        let mut buf = vec![0; corrupt_size];
+        thread_rng().fill_bytes(&mut buf);
+        file.write_all(&buf).unwrap();
+        file.sync_all().unwrap();
+        assert_eq!(fs::metadata(wal_file).unwrap().len(), len);
+
+        let wal = load_wal(&directory);
+        assert!(wal.iter_any_from(written_entry_id).unwrap().next().is_none());
+        assert_eq!(fs::metadata(wal_file).unwrap().len(), 0)
+    }
 }
