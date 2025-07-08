@@ -200,7 +200,7 @@ fn execute_single_attribute(
 ) -> Result<DocumentNode, FetchExecutionError> {
     let variable_value = row.get(*position).as_reference();
     match variable_value {
-        VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
+        VariableValue::None => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
         VariableValue::Thing(Thing::Entity(entity)) => {
             execute_attribute_single(entity, *attribute_type, snapshot, thing_manager).map(DocumentNode::Leaf)
         }
@@ -368,7 +368,7 @@ fn execute_list_subfetch(
         )
     } else {
         let max_position = input_position_mapping.values().max().map(|pos| pos.as_usize()).unwrap();
-        let mut initial_row = vec![VariableValue::Empty; max_position + 1];
+        let mut initial_row = vec![VariableValue::None; max_position + 1];
         input_position_mapping.iter().for_each(|(parent_row_position, local_row_position)| {
             initial_row[local_row_position.as_usize()] =
                 row[parent_row_position.as_usize()].as_reference().into_owned();
@@ -409,7 +409,7 @@ fn execute_list_attributes_as_list(
 ) -> Result<DocumentNode, FetchExecutionError> {
     let variable_value = row.get(*position).as_reference();
     match variable_value {
-        VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
+        VariableValue::None => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
         VariableValue::Thing(Thing::Entity(entity)) => {
             execute_attributes_list(entity, *attribute_type, snapshot, thing_manager).map(DocumentNode::List)
         }
@@ -431,7 +431,7 @@ fn execute_object_attributes(
 ) -> Result<DocumentNode, FetchExecutionError> {
     let concept = row.get(variable_position);
     match concept {
-        VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
+        VariableValue::None => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
         &VariableValue::Thing(Thing::Entity(entity)) => execute_attributes_all(entity, snapshot, thing_manager),
         &VariableValue::Thing(Thing::Relation(relation)) => execute_attributes_all(relation, snapshot, thing_manager),
         VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
@@ -557,7 +557,7 @@ fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
     row: MaybeOwnedRow<'_>,
     function: &ExecutableFunction,
 ) -> Result<(PatternExecutor, Arc<ExecutionContext<Snapshot>>), FetchExecutionError> {
-    let mut args = vec![VariableValue::Empty; function.argument_positions.len()];
+    let mut args = vec![VariableValue::None; function.argument_positions.len()];
     for (var, write_pos) in &function.argument_positions {
         debug_assert!(write_pos.as_usize() < args.len());
         args[write_pos.as_usize()] = row.get(*variable_positions.get(var).unwrap()).clone().into_owned();
@@ -603,7 +603,7 @@ fn execute_object_entries(
 
 fn variable_value_to_document(variable_value: VariableValue<'_>) -> Result<DocumentNode, FetchExecutionError> {
     match variable_value.into_owned() {
-        VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
+        VariableValue::None => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
         VariableValue::Type(type_) => Ok(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Type(type_)))),
         VariableValue::Thing(thing) => match thing {
             Thing::Entity(_) => Err(FetchExecutionError::FetchEntities {}),

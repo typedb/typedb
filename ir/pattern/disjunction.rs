@@ -17,7 +17,7 @@ use typeql::common::Span;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        BranchID, Scope, ScopeId, VariableDependency,
+        BranchID, Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
 };
@@ -75,7 +75,7 @@ impl Disjunction {
     pub(crate) fn variable_dependency(
         &self,
         block_context: &BlockContext,
-    ) -> HashMap<Variable, VariableDependency<'_>> {
+    ) -> HashMap<Variable, VariableBindingMode<'_>> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
         }

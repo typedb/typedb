@@ -473,7 +473,7 @@ impl<It: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekabl
         target_tuple.values_mut()[first_unbound_index] = target.clone();
         // zero out the rest of the values
         for i in (first_unbound_index + 1)..target_tuple.values().len() {
-            target_tuple.values_mut()[i] = VariableValue::Empty;
+            target_tuple.values_mut()[i] = VariableValue::None;
         }
         if target_tuple > *current {
             self.iterator.seek(&target_tuple)?;

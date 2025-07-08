@@ -24,7 +24,7 @@ pub fn translate_select(
         .map(|typeql_var| verify_variable_available!(context, typeql_var => OperatorStageVariableUnavailable))
         .collect::<Result<HashSet<_>, _>>()?;
     let select = Select::new(selected_variables, typeql_select.span());
-    context.visible_variables.retain(|name, var| select.variables.contains(var));
+    context.last_stage_visible_variables.retain(|name, var| select.variables.contains(var));
     Ok(select)
 }
 

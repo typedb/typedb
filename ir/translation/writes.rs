@@ -104,7 +104,7 @@ pub fn translate_delete(
         }
     }
     let block = builder.finish()?;
-    context.visible_variables.retain(|name, var| !deleted_concepts.contains(var));
+    context.last_stage_visible_variables.retain(|name, var| !deleted_concepts.contains(var));
     Ok((block, deleted_concepts))
 }
 

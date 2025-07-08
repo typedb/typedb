@@ -66,7 +66,7 @@ pub fn encode_row_entry(
     storage_counters: StorageCounters,
 ) -> Result<serde_json::Value, Box<ConceptReadError>> {
     match variable_value {
-        VariableValue::Empty => Ok(json!(serde_json::Value::Null)),
+        VariableValue::None => Ok(json!(serde_json::Value::Null)),
         VariableValue::Type(type_) => Ok(json!(encode_type_concept(type_, snapshot, type_manager)?)),
         VariableValue::Thing(thing) => Ok(json!(encode_thing_concept(
             thing,

@@ -24,7 +24,7 @@ use crate::{
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ParameterID, ScopeId, ValueType, VariableDependency, Vertex,
+        IrID, ParameterID, ScopeId, ValueType, VariableBindingMode, Vertex,
     },
     pipeline::{
         block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry, VariableRegistry,
@@ -68,25 +68,25 @@ impl Constraints {
         self.constraints.last().unwrap()
     }
 
-    pub(crate) fn variable_dependency(&self) -> HashMap<Variable, VariableDependency<'_>> {
+    pub(crate) fn variable_dependency(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
             for var in constraint.produced_ids() {
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() &= VariableDependency::producing(constraint);
+                        *entry.get_mut() &= VariableBindingMode::producing(constraint);
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableDependency::producing(constraint));
+                        vacant_entry.insert(VariableBindingMode::producing(constraint));
                     }
                 }
             }
             for var in constraint.required_ids() {
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() &= VariableDependency::required(constraint);
+                        *entry.get_mut() &= VariableBindingMode::required(constraint);
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableDependency::required(constraint));
+                        vacant_entry.insert(VariableBindingMode::required(constraint));
                     }
                 }
             }
