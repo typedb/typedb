@@ -353,9 +353,6 @@ pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) {
     while graph.prune_vertices_from_constraints() {
         graph.prune_constraints_from_vertices();
     }
-    // Then do it for the nested negations & optionals
-    // TODO: This is too permissive. We should have seeded these with the pruned types from the parent.
-    // prune_types_for_nested_negations_and_optionals(graph); // DOING: 20250702
 }
 
 #[derive(Debug)]

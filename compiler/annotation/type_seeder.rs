@@ -8,7 +8,6 @@ use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet, HashSet},
     iter::zip,
-    sync::Arc,
 };
 
 use answer::{variable::Variable, Type as TypeAnnotation, Type};
