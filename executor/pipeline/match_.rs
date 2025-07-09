@@ -14,7 +14,7 @@ use lending_iterator::{adaptors::Map, IntoIter, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    conjunction_executor::{ConjunctionExecutor, PatternIterator},
+    match_executor::{MatchExecutor, PatternIterator},
     error::ReadExecutionError,
     pipeline::{
         stage::{ExecutionContext, StageAPI},
@@ -98,7 +98,7 @@ where
                 Err(err) => return Some(Err(err)),
             };
 
-            let executor = ConjunctionExecutor::new(
+            let executor = MatchExecutor::new(
                 &self.executable,
                 snapshot,
                 thing_manager,

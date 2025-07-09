@@ -35,7 +35,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    conjunction_executor::ConjunctionExecutor, error::ReadExecutionError, pipeline::stage::ExecutionContext,
+    match_executor::MatchExecutor, error::ReadExecutionError, pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use ir::{
@@ -218,7 +218,7 @@ fn traverse_has_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -329,7 +329,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -428,7 +428,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -515,7 +515,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -618,7 +618,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(snapshot);
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,

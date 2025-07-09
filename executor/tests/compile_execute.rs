@@ -24,7 +24,7 @@ use concept::{
 };
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{
-    conjunction_executor::ConjunctionExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
@@ -152,7 +152,7 @@ fn test_has_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &conjunction_executable,
         &snapshot,
         &thing_manager,
@@ -253,7 +253,7 @@ fn test_expression_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &conjunction_executable,
         &snapshot,
         &thing_manager,
@@ -342,7 +342,7 @@ fn test_links_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &conjunction_executable,
         &snapshot,
         &thing_manager,
@@ -438,7 +438,7 @@ fn test_links_intersection() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &conjunction_executable,
         &snapshot,
         &thing_manager,
@@ -525,7 +525,7 @@ fn test_negation_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &conjunction_executable,
         &snapshot,
         &thing_manager,
@@ -634,7 +634,7 @@ fn test_forall_planning_traversal() {
     )
     .unwrap();
 
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &conjunction_executable,
         &snapshot,
         &thing_manager,
@@ -728,7 +728,7 @@ fn test_named_var_select() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &conjunction_executable,
         &snapshot,
         &thing_manager,
@@ -822,7 +822,7 @@ fn test_disjunction_planning_traversal() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &conjunction_executable,
         &snapshot,
         &thing_manager,
@@ -920,7 +920,7 @@ fn test_disjunction_planning_nested_negations() {
         &ExecutableFunctionRegistry::empty(),
     )
     .unwrap();
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &conjunction_executable,
         &snapshot,
         &thing_manager,
@@ -979,7 +979,7 @@ fn test_mismatched_input_types() {
         let snapshot = Arc::new(storage.clone().open_snapshot_read());
         let conjunction_executable =
             compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
-        let executor = ConjunctionExecutor::new(
+        let executor = MatchExecutor::new(
             &conjunction_executable,
             &snapshot,
             &thing_manager,
@@ -1014,7 +1014,7 @@ fn test_mismatched_input_types() {
         let snapshot = Arc::new(storage.clone().open_snapshot_read());
         let conjunction_executable =
             compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
-        let executor = ConjunctionExecutor::new(
+        let executor = MatchExecutor::new(
             &conjunction_executable,
             &snapshot,
             &thing_manager,

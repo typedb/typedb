@@ -14,7 +14,7 @@ use ir::pattern::BranchID;
 use tokio::sync::broadcast::error::TryRecvError;
 
 pub mod batch;
-pub mod conjunction_executor;
+pub mod match_executor;
 pub mod document;
 pub mod error;
 pub(crate) mod instruction;

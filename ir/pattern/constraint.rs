@@ -2067,7 +2067,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
     }
 
     pub fn expression_ids(&self) -> impl Iterator<Item = ID> + '_ {
-        self.expression.ids()
+        self.expression.argument_ids()
     }
 
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
@@ -2075,7 +2075,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
     }
 
     pub(crate) fn ids(&self) -> impl Iterator<Item = ID> + '_ {
-        self.ids_assigned().chain(self.expression().ids())
+        self.ids_assigned().chain(self.expression().argument_ids())
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
@@ -2083,7 +2083,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
         F: FnMut(ID),
     {
         self.ids_assigned().for_each(&mut function);
-        self.expression().ids().for_each(function);
+        self.expression().argument_ids().for_each(function);
     }
 
     pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {

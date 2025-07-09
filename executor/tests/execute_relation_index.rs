@@ -35,7 +35,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    conjunction_executor::ConjunctionExecutor, error::ReadExecutionError, pipeline::stage::ExecutionContext,
+    match_executor::MatchExecutor, error::ReadExecutionError, pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use ir::{
@@ -427,7 +427,7 @@ fn traverse_index_from_unbound() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -516,7 +516,7 @@ fn traverse_index_from_unbound() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -693,7 +693,7 @@ fn traverse_index_from_bound() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -864,7 +864,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
