@@ -246,10 +246,9 @@ fn all_vertex_annotations_available(
 ) -> bool {
     let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap();
     (
-        conjunction
-        .named_producible_variables(context)
-        .chain(conjunction.variable_dependency(context).keys().copied())
-        .filter(|var| {
+        conjunction.variable_dependency(context).iter().filter_map(|(v, mode)| {
+            (!mode.is_referencing()).then_some(*v)
+        }).filter(|var| {
             let category = variable_registry.get_variable_category(*var).unwrap();
             category.is_category_type() || category.is_category_thing()
         }).all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some())
