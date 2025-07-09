@@ -18,7 +18,7 @@ use test_utils::create_tmp_dir;
 
 use crate::{
     generic_step,
-    message::{authenticate, authenticate_default, check_health, databases, send_get_request, users},
+    message::{authenticate, authenticate_default, check_health, databases, send_get_request, version,users},
     Context, HttpBehaviourTestError, TEST_TOKEN_EXPIRATION,
 };
 
@@ -156,6 +156,22 @@ async fn connection_opens_with_a_wrong_port(context: &mut Context, may_error: pa
         )
         .await,
     );
+}
+
+#[apply(generic_step)]
+#[step(expr = r"connection contains distribution{may_error}")]
+async fn connection_has_distribution(context: &mut Context, may_error: params::MayError) {
+    if let Either::Left(server_version) = may_error.check(version(context.http_client()).await) {
+        assert!(!server_version.distribution.is_empty());
+    }
+}
+
+#[apply(generic_step)]
+#[step(expr = r"connection contains version{may_error}")]
+async fn connection_has_version(context: &mut Context, may_error: params::MayError) {
+    if let Either::Left(server_version) = may_error.check(version(context.http_client()).await) {
+        assert!(!server_version.version.is_empty());
+    }
 }
 
 #[apply(generic_step)]

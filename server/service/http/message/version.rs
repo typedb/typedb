@@ -24,8 +24,8 @@ use crate::service::http::error::HttpServiceError;
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerVersionResponse {
-    distribution: String,
-    version: String,
+    pub distribution: String,
+    pub version: String,
 }
 
 pub(crate) fn encode_server_version(distribution: String, version: String) -> ServerVersionResponse {
