@@ -123,6 +123,11 @@ fn make_builder<'a>(
     for pattern in conjunction.nested_patterns() {
         match pattern {
             NestedPattern::Disjunction(disjunction) => {
+                let disjunction_dependency_modes = disjunction.variable_dependency(block_context);
+                let required_inputs = disjunction_dependency_modes.iter().filter(|(v,mode)| {
+                        mode.is_referencing() && block_context.is_variable_available(conjunction.scope_id(), **v)
+                    }).map(|(v,_)| *v)
+                    .chain(disjunction.required_inputs(block_context)).collect::<Vec<_>>();
                 let planner = DisjunctionPlanBuilder::new(
                     disjunction.conjunctions_by_branch_id().map(|(id, _)| *id).collect(),
                     disjunction
@@ -146,7 +151,7 @@ fn make_builder<'a>(
                             )
                         })
                         .collect::<Result<Vec<_>, _>>()?,
-                    disjunction.required_inputs(block_context).collect(),
+                    required_inputs,
                 );
                 disjunction_planners.push(planner)
             }
