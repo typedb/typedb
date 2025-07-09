@@ -231,7 +231,8 @@ fn infer_types_in_negations_and_conjunctions(
                     is_write_stage,
                     type_annotations_by_scope,
                 )?;
-                todo!("Copy optional variable annotations into parent annotations");
+                // TODO: Copy optional variable annotations into parent annotations
+                return Err(TypeInferenceError::OptionalTypesUnsupported {})
             }
         }
     }
