@@ -46,7 +46,7 @@ pub struct CLIArgs {
 
     /// Encryption certificate key. Must be supplied if encryption is enabled
     #[arg(long = "server.encryption.certificate-key", value_name = "FILE")]
-    pub server_encryption_cert_key: Option<String>,
+    pub server_encryption_certificate_key: Option<String>,
 
     /// Encryption CA in PEM format.
     #[arg(long = "server.encryption.ca-certificate", value_name = "FILE")]
@@ -54,11 +54,11 @@ pub struct CLIArgs {
 
     /// Path to the data directory
     #[arg(long = "storage.data-directory", value_name = "DIR")]
-    pub storage_data: Option<String>,
+    pub storage_data_directory: Option<String>,
 
     /// Path to the log directory
-    #[arg(long = "logging.logdir")]
-    pub logging_logdir: Option<String>,
+    #[arg(long = "logging.directory")]
+    pub logging_directory: Option<String>,
 
     /// Enable usage metrics reporting
     #[arg(long = "diagnostics.reporting.metrics")]

@@ -4,8 +4,9 @@
 
 server:
     address: 0.0.0.0:1729
-    http-enabled: true
-    http-address: 0.0.0.0:8000
+    http:
+        enabled: true
+        address: 0.0.0.0:8000
 
     authentication:
         token-expiration-seconds: 5000
@@ -13,7 +14,7 @@ server:
     encryption:
         enabled: false
         certificate:
-        certificate_key:
+        certificate-key:
         ca-certificate:
 
 storage:
@@ -29,6 +30,3 @@ diagnostics:
     reporting:
         metrics: true
         errors: true
-
-development-mode:
-    enabled: false
