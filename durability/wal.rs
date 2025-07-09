@@ -26,7 +26,7 @@ use std::{
 use itertools::Itertools;
 use logger::result::ResultExt;
 use resource::constants::storage::WAL_SYNC_INTERVAL_MICROSECONDS;
-use tracing::error;
+use tracing::warn;
 
 use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, DurabilityServiceError, RawRecord};
 
@@ -365,8 +365,13 @@ impl File {
                 last_successful_read_pos = reader.reader.stream_position()?;
             } else {
                 match record {
-                    Ok(_record) => error!("Encountered a zero-length WAL record. WAL may be incomplete. Discarding the rest of the log."),
-                    Err(err) => error!("Encountered a corrupted WAL record: {err}. WAL may be corrupted. Discarding the rest of the log."),
+                    Ok(_record) => warn!(
+                        "Encountered a zero-length WAL record. The last write may have been interrupted, discarding."
+                    ),
+                    Err(err) => warn!(
+                        "Encountered a corrupted WAL record: {}. The last write may have been interrupted, discarding.",
+                        err,
+                    ),
                 }
                 OpenOptions::new().write(true).open(&self.path)?.set_len(last_successful_read_pos)?;
                 self.len = last_successful_read_pos;
