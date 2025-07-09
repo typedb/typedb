@@ -15,6 +15,8 @@ rust_test(
         "//durability/tests/common:durability_test_common",
 
         "@crates//:bincode",
+        "@crates//:itertools",
+        "@crates//:rand",
         "@crates//:tempdir",
     ],
 )

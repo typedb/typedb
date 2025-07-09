@@ -19,14 +19,14 @@ use std::{
         atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
         mpsc, Arc, Mutex, RwLock, RwLockReadGuard,
     },
-    thread,
-    thread::{sleep, JoinHandle},
+    thread::{self, sleep, JoinHandle},
     time::{Duration, Instant},
 };
 
 use itertools::Itertools;
 use logger::result::ResultExt;
 use resource::constants::storage::WAL_SYNC_INTERVAL_MICROSECONDS;
+use tracing::warn;
 
 use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, DurabilityServiceError, RawRecord};
 
@@ -45,7 +45,7 @@ pub struct WAL {
 impl WAL {
     pub const WAL_DIR_NAME: &'static str = "wal";
 
-    pub fn create(directory: impl AsRef<Path>) -> Result<Self, WALError> {
+    pub fn create(directory: impl AsRef<Path>) -> Result<Self, DurabilityServiceError> {
         let directory = directory.as_ref().to_owned();
         let wal_dir = directory.join(Self::WAL_DIR_NAME);
         if wal_dir.exists() {
@@ -54,11 +54,10 @@ impl WAL {
             fs::create_dir_all(wal_dir.clone()).map_err(|err| WALError::CreateError { source: Arc::new(err) })?;
         }
 
-        let files = Files::open(wal_dir.clone()).map_err(|err| WALError::CreateError { source: Arc::new(err) })?;
+        let files = Files::open(wal_dir.clone())?;
 
         let files = Arc::new(RwLock::new(files));
-        let next = RecordIterator::new(files.read().unwrap(), DurabilitySequenceNumber::MIN)
-            .map_err(|err| WALError::CreateError { source: Arc::new(err) })?
+        let next = RecordIterator::new(files.read().unwrap(), DurabilitySequenceNumber::MIN)?
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
@@ -72,22 +71,22 @@ impl WAL {
         })
     }
 
-    pub fn load(directory: impl AsRef<Path>) -> Result<Self, WALError> {
+    pub fn load(directory: impl AsRef<Path>) -> Result<Self, DurabilityServiceError> {
         let directory = directory.as_ref().to_owned();
         let wal_dir = directory.join(Self::WAL_DIR_NAME);
         if !wal_dir.exists() {
             Err(WALError::LoadErrorDirectoryMissing { directory: wal_dir.clone() })?
         }
-        let files = Files::open(wal_dir.clone()).map_err(|err| WALError::LoadError { source: Arc::new(err) })?;
+        let files = Files::open(wal_dir.clone())?;
+
+        let start_seq_nr = files.files.iter().map(|f| f.start).max().unwrap_or(DurabilitySequenceNumber::MIN);
 
         let files = Arc::new(RwLock::new(files));
-        let start_seq_nr =
-            files.read().unwrap().files.iter().map(|f| f.start).max().unwrap_or(DurabilitySequenceNumber::MIN);
-        let next = RecordIterator::new(files.read().unwrap(), start_seq_nr)
-            .map_err(|err| WALError::LoadError { source: Arc::new(err) })?
+        let next = RecordIterator::new(files.read().unwrap(), start_seq_nr)?
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
+
         let mut fsync_thread = FsyncThread::new(files.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
@@ -148,7 +147,7 @@ impl DurabilityService for WAL {
         &self,
         sequence_number: DurabilitySequenceNumber,
     ) -> Result<impl Iterator<Item = Result<RawRecord<'static>, DurabilityServiceError>>, DurabilityServiceError> {
-        Ok(RecordIterator::new(self.files.read().unwrap(), sequence_number)?)
+        RecordIterator::new(self.files.read().unwrap(), sequence_number)
     }
 
     fn iter_type_from(
@@ -171,8 +170,7 @@ impl DurabilityService for WAL {
         let files = self.files.read().unwrap();
         let files_newest_first = files.iter().rev();
         for file in files_newest_first {
-            let iterator = FileRecordIterator::new(file, DurabilitySequenceNumber::MIN)
-                .map_err(|err| DurabilityServiceError::IO { source: Arc::new(err) })?;
+            let iterator = FileRecordIterator::new(file, DurabilitySequenceNumber::MIN)?;
 
             let mut found_record = None;
             for record_result in iterator {
@@ -200,7 +198,7 @@ impl DurabilityService for WAL {
 
     fn reset(&mut self) -> Result<(), DurabilityServiceError> {
         self.next_sequence_number.store(DurabilitySequenceNumber::MIN.next().number, Ordering::SeqCst);
-        self.files.write().unwrap().reset().map_err(|err| DurabilityServiceError::IO { source: Arc::new(err) })
+        self.files.write().unwrap().reset()
     }
 }
 
@@ -210,6 +208,8 @@ pub enum WALError {
     CreateErrorDirectoryExists { directory: PathBuf },
     LoadError { source: Arc<io::Error> },
     LoadErrorDirectoryMissing { directory: PathBuf },
+    Compression { source: Arc<io::Error> },
+    Decompression { source: Arc<io::Error> },
 }
 
 impl fmt::Display for WALError {
@@ -225,6 +225,8 @@ impl Error for WALError {
             Self::CreateErrorDirectoryExists { .. } => None,
             Self::LoadError { source, .. } => Some(source),
             Self::LoadErrorDirectoryMissing { .. } => None,
+            Self::Compression { source, .. } => Some(source),
+            Self::Decompression { source, .. } => Some(source),
         }
     }
 }
@@ -237,12 +239,12 @@ struct Files {
 }
 
 impl Files {
-    fn open(directory: PathBuf) -> io::Result<Self> {
+    fn open(directory: PathBuf) -> Result<Self, DurabilityServiceError> {
         let (files, writer) = Self::init_files_writer(&directory)?;
         Ok(Self { directory, writer, files })
     }
 
-    fn init_files_writer(directory: &Path) -> io::Result<(Vec<File>, Option<BufWriter<StdFile>>)> {
+    fn init_files_writer(directory: &Path) -> Result<(Vec<File>, Option<BufWriter<StdFile>>), DurabilityServiceError> {
         let mut files: Vec<File> = directory
             .read_dir()?
             .map_ok(|entry| entry.path())
@@ -253,7 +255,13 @@ impl Files {
             .try_collect()?;
         files.sort_unstable_by(|lhs, rhs| lhs.path.cmp(&rhs.path));
 
-        let writer = files.last().map(File::writer).transpose()?;
+        let last = files.last_mut();
+        let writer = if let Some(last) = last {
+            last.trim_corrupted_tail()?;
+            Some(File::writer(last)?)
+        } else {
+            None
+        };
         Ok((files, writer))
     }
 
@@ -268,17 +276,25 @@ impl Files {
         if self.files.is_empty() || self.files.last().unwrap().len >= MAX_WAL_FILE_SIZE {
             self.open_new_file_at(record.sequence_number)?;
         }
+
+        let mut compressed_bytes = Vec::new();
+        let mut encoder = lz4::EncoderBuilder::new()
+            .build(&mut compressed_bytes)
+            .map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+        encoder.write_all(&record.bytes).map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+        encoder.finish().1.map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+
         let writer = self.writer.as_mut().unwrap();
         write_header(
             writer,
             RecordHeader {
                 sequence_number: record.sequence_number,
-                len: record.bytes.len() as u64,
+                len: compressed_bytes.len() as u64,
                 record_type: record.record_type,
             },
         )?;
 
-        writer.write_all(&record.bytes)?;
+        writer.write_all(&compressed_bytes)?;
         writer.flush()?;
 
         self.files.last_mut().unwrap().len = writer.stream_position()?;
@@ -298,7 +314,7 @@ impl Files {
         std::fs::remove_dir_all(&self.directory)
     }
 
-    fn reset(&mut self) -> Result<(), io::Error> {
+    fn reset(&mut self) -> Result<(), DurabilityServiceError> {
         std::fs::remove_dir_all(&self.directory)?;
         std::fs::create_dir(&self.directory)?;
         self.files.clear();
@@ -341,6 +357,30 @@ impl File {
         Ok(Self { start: DurabilitySequenceNumber::from(num), len, path })
     }
 
+    fn trim_corrupted_tail(&mut self) -> Result<(), DurabilityServiceError> {
+        let mut reader = FileReader::new(self.clone())?;
+        let mut last_successful_read_pos = 0;
+        while let Some(record) = reader.read_one_record().transpose() {
+            if record.as_ref().is_ok_and(|record| !record.bytes.is_empty()) {
+                last_successful_read_pos = reader.reader.stream_position()?;
+            } else {
+                match record {
+                    Ok(_record) => warn!(
+                        "Encountered a zero-length WAL record. The last write may have been interrupted, discarding."
+                    ),
+                    Err(err) => warn!(
+                        "Encountered a corrupted WAL record: {}. The last write may have been interrupted, discarding.",
+                        err,
+                    ),
+                }
+                OpenOptions::new().write(true).open(&self.path)?.set_len(last_successful_read_pos)?;
+                self.len = last_successful_read_pos;
+                break;
+            }
+        }
+        Ok(())
+    }
+
     fn writer(&self) -> io::Result<BufWriter<StdFile>> {
         Ok(BufWriter::new(OpenOptions::new().read(true).append(true).create(true).open(&self.path)?))
     }
@@ -367,16 +407,18 @@ impl FileReader {
         Ok(Some(DurabilitySequenceNumber::from_be_bytes(&buf)))
     }
 
-    fn read_one_record(&mut self) -> io::Result<Option<RawRecord<'static>>> {
+    fn read_one_record(&mut self) -> Result<Option<RawRecord<'static>>, DurabilityServiceError> {
         if self.reader.stream_position()? == self.file.len {
             return Ok(None);
         }
         let RecordHeader { sequence_number, len, record_type } = self.read_header()?;
 
-        let mut buf = vec![0; len as usize];
-        self.reader.read_exact(&mut buf)?;
+        let mut decompressed_bytes = Vec::new();
+        lz4::Decoder::new((&mut self.reader).take(len))
+            .and_then(|mut decoder| decoder.read_to_end(&mut decompressed_bytes))
+            .map_err(|err| WALError::Decompression { source: Arc::new(err) })?;
 
-        Ok(Some(RawRecord { sequence_number, record_type, bytes: Cow::Owned(buf) }))
+        Ok(Some(RawRecord { sequence_number, record_type, bytes: Cow::Owned(decompressed_bytes) }))
     }
 
     fn read_header(&mut self) -> io::Result<RecordHeader> {
@@ -411,7 +453,7 @@ struct RecordIterator<'a> {
 }
 
 impl<'a> RecordIterator<'a> {
-    fn new(files: RwLockReadGuard<'a, Files>, start: DurabilitySequenceNumber) -> io::Result<Self> {
+    fn new(files: RwLockReadGuard<'a, Files>, start: DurabilitySequenceNumber) -> Result<Self, DurabilityServiceError> {
         if files.files.is_empty() {
             return Ok(Self { files, current: 0, reader: None });
         }
@@ -426,11 +468,8 @@ impl<'a> RecordIterator<'a> {
 
         while current_start < start {
             match reader.peek_sequence_number().transpose() {
-                None => {
-                    // sequence number is past the end of this file.
-                    break;
-                }
-                Some(Err(err)) => return Err(err),
+                None => break, // sequence number is past the end of this file.
+                Some(Err(err)) => return Err(DurabilityServiceError::IO { source: Arc::new(err) }),
                 Some(Ok(sequence_number)) if sequence_number == start => break,
                 Some(Ok(sequence_number)) => {
                     current_start = sequence_number;
@@ -459,8 +498,7 @@ impl Iterator for RecordIterator<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         let reader = self.reader.as_mut()?;
         match reader.read_one_record().transpose() {
-            Some(Ok(item)) => Some(Ok(item)),
-            Some(Err(error)) => Some(Err(DurabilityServiceError::IO { source: Arc::new(error) })),
+            Some(item) => Some(item),
             None => match self.advance_file().transpose()? {
                 Ok(()) => self.next(),
                 Err(error) => {
@@ -479,17 +517,14 @@ struct FileRecordIterator<'a> {
 }
 
 impl<'a> FileRecordIterator<'a> {
-    fn new(file: &'a File, start: DurabilitySequenceNumber) -> io::Result<Self> {
+    fn new(file: &'a File, start: DurabilitySequenceNumber) -> Result<Self, DurabilityServiceError> {
         let mut reader = FileReader::new(file.clone())?;
 
         let mut current_start = file.start;
         while current_start < start {
             match reader.peek_sequence_number().transpose() {
-                None => {
-                    // sequence number is past the end of this file.
-                    break;
-                }
-                Some(Err(err)) => return Err(err),
+                None => break, // sequence number is past the end of this file.
+                Some(Err(err)) => return Err(DurabilityServiceError::IO { source: Arc::new(err) }),
                 Some(Ok(sequence_number)) if sequence_number == start => break,
                 Some(Ok(sequence_number)) => {
                     current_start = sequence_number;
@@ -506,11 +541,7 @@ impl Iterator for FileRecordIterator<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let reader = self.reader.as_mut()?;
-        match reader.read_one_record().transpose() {
-            Some(Ok(item)) => Some(Ok(item)),
-            Some(Err(error)) => Some(Err(DurabilityServiceError::IO { source: Arc::new(error) })),
-            None => None,
-        }
+        reader.read_one_record().transpose()
     }
 }
 
@@ -562,17 +593,13 @@ impl FsyncThread {
             let mut context = context;
             let jh = thread::spawn(move || {
                 let mut last_sync = Instant::now();
-                loop {
-                    if context.shutting_down.load(Ordering::Relaxed) {
-                        break;
-                    } else {
-                        let micros_since_last_sync = (Instant::now() - last_sync).as_micros() as u64;
-                        if micros_since_last_sync < WAL_SYNC_INTERVAL_MICROSECONDS {
-                            sleep(Duration::from_micros(WAL_SYNC_INTERVAL_MICROSECONDS - micros_since_last_sync));
-                        }
-                        last_sync = Instant::now(); // Should we reset the timer before or after the sync completes?
-                        Self::may_sync_and_update_state(&mut context);
+                while !context.shutting_down.load(Ordering::Relaxed) {
+                    let micros_since_last_sync = (Instant::now() - last_sync).as_micros() as u64;
+                    if micros_since_last_sync < WAL_SYNC_INTERVAL_MICROSECONDS {
+                        sleep(Duration::from_micros(WAL_SYNC_INTERVAL_MICROSECONDS - micros_since_last_sync));
                     }
+                    last_sync = Instant::now(); // Should we reset the timer before or after the sync completes?
+                    Self::may_sync_and_update_state(&mut context);
                 }
             });
             *handle = Some(jh);
@@ -606,8 +633,6 @@ impl Drop for FsyncThread {
 
 #[cfg(test)]
 mod test {
-    use std::borrow::Cow;
-
     use assert as assert_true;
     use itertools::Itertools;
     use tempdir::TempDir;
@@ -640,10 +665,6 @@ mod test {
     impl UnsequencedTestRecord {
         const RECORD_TYPE: DurabilityRecordType = 1;
         const RECORD_NAME: &'static str = "UNSEQUENCED_TEST";
-
-        fn new(bytes: &[u8]) -> Self {
-            Self { bytes: bytes.try_into().unwrap() }
-        }
 
         fn bytes(&self) -> &[u8] {
             &self.bytes
@@ -815,7 +836,7 @@ mod test {
 
         let found = wal.find_last_type(UnsequencedTestRecord::RECORD_TYPE).unwrap().unwrap();
         assert_true!(
-            matches!(found, RawRecord { bytes: Cow::Owned(bytes), record_type: UnsequencedTestRecord::RECORD_TYPE, .. } if bytes == unsequenced_2.bytes())
+            matches!(found, RawRecord { bytes, record_type: UnsequencedTestRecord::RECORD_TYPE, .. } if bytes == unsequenced_2.bytes())
         );
 
         drop(wal);
@@ -824,7 +845,7 @@ mod test {
 
         let found = wal.find_last_type(UnsequencedTestRecord::RECORD_TYPE).unwrap().unwrap();
         assert_true!(
-            matches!(found, RawRecord { bytes: Cow::Owned(bytes), record_type: UnsequencedTestRecord::RECORD_TYPE, .. } if bytes == unsequenced_2.bytes())
+            matches!(found, RawRecord { bytes, record_type: UnsequencedTestRecord::RECORD_TYPE, .. } if bytes == unsequenced_2.bytes())
         );
     }
 }
