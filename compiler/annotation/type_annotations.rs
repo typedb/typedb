@@ -65,6 +65,10 @@ impl TypeAnnotations {
         self.vertex.get(vertex)
     }
 
+    pub(super) fn vertex_annotations_mut(&mut self) -> &mut BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
+        &mut self.vertex
+    }
+
     pub fn constraint_annotations(&self) -> &HashMap<Constraint<Variable>, ConstraintTypeAnnotations> {
         &self.constraints
     }
