@@ -72,7 +72,7 @@ impl Disjunction {
         self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_required().then_some(v))
     }
 
-    pub(crate) fn variable_dependency(
+    pub fn variable_dependency(
         &self,
         block_context: &BlockContext,
     ) -> HashMap<Variable, VariableBindingMode<'_>> {
