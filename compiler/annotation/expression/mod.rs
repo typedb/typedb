@@ -15,7 +15,7 @@ use ir::{
 };
 use typeql::common::Span;
 
-use crate::annotation::{expression::instructions::op_codes::ExpressionOpCode, TypeInferenceError};
+use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
 
 pub mod block_compiler;
 pub mod compiled_expression;
@@ -61,61 +61,54 @@ typedb_error! {
             variable: String,
             source_span: Option<Span>,
         ),
-        CouldNotDetermineValueTypeForVariableDueToTyping(
-            10,
-            "Could not determine a value type for variable '{variable}'.",
-            variable: String,
-            source_span: Option<Span>,
-            typedb_source: TypeInferenceError,
-        ),
         VariableMultipleValueTypes(
-            11,
+            10,
             "The variable '{variable}' must have a single possible value type to be used in an expression, but it could have any of: {value_types}.",
             variable: String,
             value_types: String,
             source_span: Option<Span>,
         ),
         VariableMustBeValueOrAttribute(
-            12,
+            11,
             "Variable '{variable}' used in expressions must contain either a value or an attribute, but it is a '{category}'.",
             variable: String,
             category: VariableCategory,
             source_span: Option<Span>,
         ),
         UnsupportedArgumentsForBuiltin(
-            13,
+            12,
             "Built-in function '{function}' cannot be applied to arguments of type '{category}'.",
             function: BuiltInFunctionID,
             category: ValueTypeCategory,
             source_span: Option<Span>,
         ),
         ListIndexMustBeInteger(
-            14,
+            13,
             "List indices must be of integer type.",
             source_span: Option<Span>,
         ),
         HeterogeneusListConstructor(
-            15,
+            14,
             "Values in a constructed list must have the same types.",
             source_span: Option<Span>,
         ),
         EmptyListConstructorCannotInferValueType(
-            18,
+            17,
             "Cannot infer inner value types of an empty list constructor.",
             source_span: Option<Span>,
         ),
         ReassigningValueVariableFromPreviousStage(
-            19,
+            18,
             "The variable '{variable}' cannot be assigned to, as it was already assigned in a previous stage.",
             variable: String,
         ),
         ValueVariableConflictingAssignmentTypes(
-            20,
+            19,
             "All assignments of the variable '{variable}' must have the same value type. Found: {value_types}.",
             variable: String,
             value_types: String,
             source_span: Option<Span>,
         ),
-        Representation(21, "Error building expression reprentation.", typedb_source: Box<RepresentationError>),
+        Representation(20, "Error building expression reprentation.", typedb_source: Box<RepresentationError>),
     }
 }
