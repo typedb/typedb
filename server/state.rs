@@ -133,7 +133,7 @@ typedb_error! {
 #[derive(Debug)]
 pub struct LocalServerState {
     distribution_info: DistributionInfo,
-    server_address: SocketAddr,
+    server_status: LocalServerStatus,
     database_manager: Arc<DatabaseManager>,
     user_manager: Option<Arc<UserManager>>,
     credential_verifier: Option<Arc<CredentialVerifier>>,
@@ -174,7 +174,7 @@ impl LocalServerState {
 
         Ok(Self {
             distribution_info,
-            server_address,
+            server_status: LocalServerStatus { address: server_address },
             database_manager: database_manager.clone(),
             user_manager: None,
             credential_verifier: None,
@@ -294,7 +294,7 @@ impl ServerState for LocalServerState {
     }
 
     async fn servers_statuses(&self) -> Vec<Box<dyn ServerStatus>> {
-        vec![Box::new(LocalServerStatus { address: self.server_address })]
+        vec![Box::new(self.server_status)]
     }
 
     async fn servers_register(&self, _clustering_id: u64, _clustering_address: String) -> Result<(), ServerStateError> {
