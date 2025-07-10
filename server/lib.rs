@@ -65,13 +65,6 @@ impl ServerBuilder {
         let server_id = Self::may_initialise_server_id(&config.storage.data_directory)?;
         let distribution_info = self.distribution_info.unwrap_or(DISTRIBUTION_INFO);
 
-        let grpc_address = Self::resolve_address(&config.server.address).await;
-        let http_address = if config.server.http.enabled {
-            Some(Self::validate_and_resolve_http_address(&config.server.http.address, grpc_address).await?)
-        } else {
-            None
-        };
-
         let (shutdown_sender, shutdown_receiver) = self.shutdown_channel.unwrap_or_else(|| channel(()));
         let server_state = match self.server_state_builder {
             Some(builder) => builder(server_id).await,
@@ -81,7 +74,6 @@ impl ServerBuilder {
                     config.clone(),
                     server_id,
                     None,
-                    grpc_address,
                     shutdown_receiver.clone(),
                 )
                 .await?;
@@ -89,6 +81,9 @@ impl ServerBuilder {
                 Box::new(server_state)
             }
         };
+
+        let grpc_address = server_state.grpc_address().await;
+        let http_address = server_state.http_address().await;
         Ok(Server::new(
             distribution_info,
             config,
@@ -150,25 +145,6 @@ impl ServerBuilder {
     fn generate_server_id() -> String {
         let mut rng = rand::thread_rng();
         (0..SERVER_ID_LENGTH).map(|_| SERVER_ID_ALPHABET.choose(&mut rng).unwrap()).collect()
-    }
-
-    async fn validate_and_resolve_http_address(
-        http_address: &str,
-        grpc_address: SocketAddr,
-    ) -> Result<SocketAddr, ServerOpenError> {
-        let http_address = Self::resolve_address(http_address).await;
-        if grpc_address == http_address {
-            return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
-        }
-        Ok(http_address)
-    }
-
-    pub async fn resolve_address(address: &str) -> SocketAddr {
-        lookup_host(address)
-            .await
-            .unwrap()
-            .next()
-            .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
     }
 }
 

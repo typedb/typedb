@@ -27,7 +27,7 @@ use system::{
     concepts::{Credential, User},
     initialise_system_database,
 };
-use tokio::sync::watch::Receiver;
+use tokio::{net::lookup_host, sync::watch::Receiver};
 use user::{
     errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError},
     initialise_default_user,
@@ -50,6 +50,10 @@ pub type BoxServerState = Box<dyn ServerState + Send + Sync>;
 #[async_trait]
 pub trait ServerState: Debug {
     async fn distribution_info(&self) -> DistributionInfo;
+
+    async fn grpc_address(&self) -> SocketAddr;
+
+    async fn http_address(&self) -> Option<SocketAddr>;
 
     async fn servers_statuses(&self) -> Vec<Box<dyn ServerStatus>>;
 
@@ -149,7 +153,6 @@ impl LocalServerState {
         config: Config,
         server_id: String,
         deployment_id: Option<String>,
-        server_address: SocketAddr,
         shutdown_receiver: Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
         let database_manager = DatabaseManager::new(&config.storage.data_directory)
@@ -172,9 +175,16 @@ impl LocalServerState {
             .await,
         );
 
+        let grpc_address = Self::resolve_address(&config.server.address).await;
+        let http_address = if config.server.http.enabled {
+            Some(Self::validate_and_resolve_http_address(&config.server.http.address, grpc_address).await?)
+        } else {
+            None
+        };
+
         Ok(Self {
             distribution_info,
-            server_status: LocalServerStatus { address: server_address },
+            server_status: LocalServerStatus::new(grpc_address, http_address),
             database_manager: database_manager.clone(),
             user_manager: None,
             credential_verifier: None,
@@ -285,12 +295,39 @@ impl LocalServerState {
             None => Err(ServerStateError::NotInitialised {}),
         }
     }
+
+    async fn validate_and_resolve_http_address(
+        http_address: &str,
+        grpc_address: SocketAddr,
+    ) -> Result<SocketAddr, ServerOpenError> {
+        let http_address = Self::resolve_address(http_address).await;
+        if grpc_address == http_address {
+            return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
+        }
+        Ok(http_address)
+    }
+
+    pub async fn resolve_address(address: &str) -> SocketAddr {
+        lookup_host(address)
+            .await
+            .unwrap()
+            .next()
+            .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
+    }
 }
 
 #[async_trait]
 impl ServerState for LocalServerState {
     async fn distribution_info(&self) -> DistributionInfo {
         self.distribution_info
+    }
+
+    async fn grpc_address(&self) -> SocketAddr {
+        self.server_status.grpc_address()
+    }
+
+    async fn http_address(&self) -> Option<SocketAddr> {
+        self.server_status.http_address()
     }
 
     async fn servers_statuses(&self) -> Vec<Box<dyn ServerStatus>> {
