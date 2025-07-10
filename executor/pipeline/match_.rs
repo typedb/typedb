@@ -14,8 +14,8 @@ use lending_iterator::{adaptors::Map, IntoIter, LendingIterator};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    match_executor::{MatchExecutor, PatternIterator},
     error::ReadExecutionError,
+    match_executor::{MatchExecutor, PatternIterator},
     pipeline::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,

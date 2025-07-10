@@ -6,17 +6,17 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     ops::{Deref, DerefMut},
     sync::Arc,
 };
-use std::collections::HashSet;
 
 use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
-        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Scope, ScopeId, Vertex,
+        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Pattern, Scope, ScopeId,
+        Vertex,
     },
     pipeline::{
         block::{Block, BlockContext},
@@ -159,7 +159,7 @@ fn infer_types_impl(
     is_write_stage: bool,
     type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
 ) -> Result<(), TypeInferenceError> {
-    let graph = compute_type_inference_graph(
+    let mut graph = compute_type_inference_graph(
         snapshot,
         block_context,
         conjunction,
@@ -175,7 +175,7 @@ fn infer_types_impl(
         block_context,
         variable_registry,
         type_manager,
-        &graph,
+        &mut graph,
         annotated_function_signatures,
         is_write_stage,
         type_annotations_by_scope,
@@ -190,16 +190,22 @@ fn infer_types_in_negations_and_conjunctions(
     block_context: &BlockContext,
     variable_registry: &VariableRegistry,
     type_manager: &TypeManager,
-    parent_conjunction_graph: &TypeInferenceGraph<'_>,
+    parent_conjunction_graph: &mut TypeInferenceGraph<'_>,
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     is_write_stage: bool,
     type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
 ) -> Result<(), TypeInferenceError> {
-    parent_conjunction_graph
-        .nested_disjunctions
+    let TypeInferenceGraph { conjunction, vertices, nested_disjunctions, .. } = parent_conjunction_graph;
+    let optionals_in_conjunction = conjunction
+        .variable_binding_modes()
         .iter()
-        .flat_map(|disjunction| disjunction.disjunction.iter())
-        .try_for_each(|nested| {
+        .filter(|(var, mode)| {
+            mode.is_optionally_binding() && block_context.get_declaring_scope(var) != Some(ScopeId::INPUT)
+        })
+        .map(|(v, _)| Vertex::Variable(*v))
+        .collect::<HashSet<_>>();
+    nested_disjunctions.iter_mut().flat_map(|disjunction| disjunction.disjunction.iter_mut()).try_for_each(
+        |nested| {
             infer_types_in_negations_and_conjunctions(
                 snapshot,
                 block_context,
@@ -210,8 +216,9 @@ fn infer_types_in_negations_and_conjunctions(
                 is_write_stage,
                 type_annotations_by_scope,
             )
-        })?;
-    for nested in parent_conjunction_graph.conjunction.nested_patterns() {
+        },
+    )?;
+    for nested in conjunction.nested_patterns() {
         match nested {
             NestedPattern::Disjunction(_) => {} // Done above
             NestedPattern::Negation(negation) => {
@@ -221,7 +228,7 @@ fn infer_types_in_negations_and_conjunctions(
                     negation.conjunction(),
                     variable_registry,
                     type_manager,
-                    &parent_conjunction_graph.vertices,
+                    &vertices,
                     annotated_function_signatures,
                     is_write_stage,
                     type_annotations_by_scope,
@@ -234,13 +241,20 @@ fn infer_types_in_negations_and_conjunctions(
                     optional.conjunction(),
                     variable_registry,
                     type_manager,
-                    &parent_conjunction_graph.vertices,
+                    &vertices,
                     annotated_function_signatures,
                     is_write_stage,
                     type_annotations_by_scope,
                 )?;
-                // TODO: Copy optional variable annotations into parent annotations
-                return Err(TypeInferenceError::OptionalTypesUnsupported {});
+                let optional_root_annotations =
+                    type_annotations_by_scope.get(&optional.conjunction().scope_id()).unwrap().vertex_annotations();
+                optionals_in_conjunction
+                    .iter()
+                    .filter_map(|var| optional_root_annotations.get(var).map(|annotations| (var, annotations)))
+                    .for_each(|(var, annotations)| {
+                        debug_assert!(!vertices.annotations.contains_key(var));
+                        vertices.annotations.insert(var.clone(), (**annotations).clone());
+                    });
             }
         }
     }
@@ -255,9 +269,9 @@ fn all_vertex_annotations_available(
 ) -> bool {
     let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap();
     (conjunction
-        .variable_dependency(context)
+        .variable_binding_modes()
         .iter()
-        .filter_map(|(v, mode)| (!mode.is_referencing()).then_some(*v))
+        .filter_map(|(v, mode)| (!mode.is_locally_binding_in_child()).then_some(*v))
         .filter(|var| {
             let category = variable_registry.get_variable_category(*var).unwrap();
             category.is_category_type() || category.is_category_thing()

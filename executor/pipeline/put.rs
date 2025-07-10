@@ -15,8 +15,8 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     batch::Batch,
-    match_executor::MatchExecutor,
     error::ReadExecutionError,
+    match_executor::MatchExecutor,
     pipeline::{
         stage::{ExecutionContext, StageAPI, StageIterator},
         PipelineExecutionError, WrittenRowsIterator,

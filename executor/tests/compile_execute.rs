@@ -24,8 +24,7 @@ use concept::{
 };
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{
-    match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::{

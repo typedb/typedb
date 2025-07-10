@@ -65,11 +65,6 @@ impl Pattern for Negation {
             .variable_binding_modes()
             .into_iter()
             .filter_map(|(var, mut mode)| {
-                // let locality = block_context.variable_locality_in_scope(var, self.scope_id());
-                // if locality == VariableLocality::Parent {
-                //     // if it is expected to originate from the parent, even if it is binding in any form, it is treated as non-binding
-                //     mode.set_non_binding();
-                // }
                 if mode.is_always_binding() {
                     // if it is binding, we demote it to only locally binding (only relevant in the negation)
                     mode.set_locally_binding_in_child();
