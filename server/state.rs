@@ -49,7 +49,7 @@ pub type BoxServerState = Box<dyn ServerState + Send + Sync>;
 
 #[async_trait]
 pub trait ServerState: Debug {
-    fn distribution_info(&self) -> DistributionInfo;
+    async fn distribution_info(&self) -> DistributionInfo;
 
     async fn servers_statuses(&self) -> Vec<Box<dyn ServerStatus>>;
 
@@ -289,7 +289,7 @@ impl LocalServerState {
 
 #[async_trait]
 impl ServerState for LocalServerState {
-    fn distribution_info(&self) -> DistributionInfo {
+    async fn distribution_info(&self) -> DistributionInfo {
         self.distribution_info
     }
 

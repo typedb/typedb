@@ -165,7 +165,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             self.server_state.diagnostics_manager().await,
             None::<&str>,
             ActionKind::ServerVersion,
-            || async { Ok(Response::new(server_version_res(self.server_state.distribution_info()))) },
+            || async { Ok(Response::new(server_version_res(self.server_state.distribution_info().await))) },
         )
         .await
     }
@@ -387,7 +387,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     Some(database) => {
                         let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
                         let service = DatabaseExportService::new(
-                            self.server_state.distribution_info(),
+                            self.server_state.distribution_info().await,
                             database,
                             response_sender,
                             self.server_state.shutdown_receiver().await,
