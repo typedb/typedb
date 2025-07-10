@@ -31,7 +31,7 @@ use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
     service::{grpc, http},
-    state::{BoxServerState, LocalServerState},
+    state::{BoxServerState, BoxServerStatus, LocalServerState},
 };
 
 #[derive(Default)]
@@ -82,17 +82,7 @@ impl ServerBuilder {
             }
         };
 
-        let grpc_address = server_state.grpc_address().await;
-        let http_address = server_state.http_address().await;
-        Ok(Server::new(
-            distribution_info,
-            config,
-            Arc::new(server_state),
-            grpc_address,
-            http_address,
-            shutdown_sender,
-            shutdown_receiver,
-        ))
+        Ok(Server::new(distribution_info, config, Arc::new(server_state), shutdown_sender, shutdown_receiver))
     }
 
     fn may_initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
@@ -153,8 +143,6 @@ pub struct Server {
     distribution_info: DistributionInfo,
     config: Config,
     server_state: Arc<BoxServerState>,
-    grpc_address: SocketAddr,
-    http_address: Option<SocketAddr>,
     shutdown_sender: Sender<()>,
     shutdown_receiver: Receiver<()>,
 }
@@ -164,12 +152,10 @@ impl Server {
         distribution_info: DistributionInfo,
         config: Config,
         server_state: Arc<BoxServerState>,
-        grpc_address: SocketAddr,
-        http_address: Option<SocketAddr>,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
     ) -> Self {
-        Self { distribution_info, config, server_state, grpc_address, http_address, shutdown_sender, shutdown_receiver }
+        Self { distribution_info, config, server_state, shutdown_sender, shutdown_receiver }
     }
 
     pub async fn serve(self) -> Result<(), ServerOpenError> {
@@ -177,13 +163,15 @@ impl Server {
 
         Self::install_default_encryption_provider()?;
 
+        let server_status = self.server_state.server_status().await;
+
         let grpc_server = Self::serve_grpc(
-            self.grpc_address,
+            server_status.grpc_address(),
             &self.config.server.encryption,
             self.server_state.clone(),
             self.shutdown_receiver.clone(),
         );
-        let http_server = if let Some(http_address) = self.http_address {
+        let http_server = if let Some(http_address) = server_status.http_address() {
             let server = Self::serve_http(
                 self.distribution_info,
                 http_address,
@@ -196,7 +184,7 @@ impl Server {
             None
         };
 
-        Self::print_serving_information(self.grpc_address, self.http_address);
+        Self::print_serving_information(server_status);
 
         Self::spawn_shutdown_handler(self.shutdown_sender);
         if let Some(http_server) = http_server {
@@ -280,9 +268,9 @@ impl Server {
         }
     }
 
-    fn print_serving_information(grpc_address: SocketAddr, http_address: Option<SocketAddr>) {
-        print!("Serving gRPC on {grpc_address}");
-        if let Some(http_address) = http_address {
+    fn print_serving_information(server_status: BoxServerStatus) {
+        print!("Serving gRPC on {}", server_status.grpc_address());
+        if let Some(http_address) = server_status.http_address() {
             print!(" and HTTP on {http_address}");
         }
         println!(".\nReady!");

@@ -46,16 +46,15 @@ use crate::{
 };
 
 pub type BoxServerState = Box<dyn ServerState + Send + Sync>;
+pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
 
 #[async_trait]
 pub trait ServerState: Debug {
     async fn distribution_info(&self) -> DistributionInfo;
 
-    async fn grpc_address(&self) -> SocketAddr;
+    async fn server_status(&self) -> BoxServerStatus;
 
-    async fn http_address(&self) -> Option<SocketAddr>;
-
-    async fn servers_statuses(&self) -> Vec<Box<dyn ServerStatus>>;
+    async fn servers_statuses(&self) -> Vec<BoxServerStatus>;
 
     async fn servers_register(&self, clustering_id: u64, clustering_address: String) -> Result<(), ServerStateError>;
 
@@ -322,15 +321,11 @@ impl ServerState for LocalServerState {
         self.distribution_info
     }
 
-    async fn grpc_address(&self) -> SocketAddr {
-        self.server_status.grpc_address()
+    async fn server_status(&self) -> BoxServerStatus {
+        Box::new(self.server_status)
     }
 
-    async fn http_address(&self) -> Option<SocketAddr> {
-        self.server_status.http_address()
-    }
-
-    async fn servers_statuses(&self) -> Vec<Box<dyn ServerStatus>> {
+    async fn servers_statuses(&self) -> Vec<BoxServerStatus> {
         vec![Box::new(self.server_status)]
     }
 
