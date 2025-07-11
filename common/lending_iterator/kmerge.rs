@@ -92,13 +92,24 @@ where
     fn seek(&mut self, key: &K) {
         self.iterators = mem::take(&mut self.iterators)
             .drain()
-            .map(|mut it| {
-                it.iter.seek(key);
-                it
+            .filter_map(|mut it| {
+                it.iter.peek();
+                if let Some(item) = it.iter.get_peeked() {
+                    if it.iter.compare_key(item, key) == Ordering::Less {
+                        it.iter.seek(key);
+                    }
+                }
+                it.iter.peek().is_some().then_some(it)
             })
             .collect();
-        if let Some(next_iterator) = self.next_iterator.as_mut() {
-            next_iterator.iter.seek(key);
+        if let Some(mut next_iterator) = self.next_iterator.take() {
+            next_iterator.iter.peek();
+            if let Some(item) = next_iterator.iter.get_peeked() {
+                if next_iterator.iter.compare_key(item, key) == Ordering::Less {
+                    next_iterator.iter.seek(key);
+                }
+            }
+            self.next_iterator = Some(next_iterator);
         }
         // force recomputation of heap element
         self.state = State::Used;
@@ -108,7 +119,7 @@ where
         if let Some(inner) = self.next_iterator.as_ref().or(self.iterators.peek()) {
             inner.iter.compare_key(item, key)
         } else {
-            Ordering::Less // let the enclosing iterator exhaust itself?
+            unreachable!("Called `Seekable::compare_key` on an empty KMergeBy") // no inner iterators
         }
     }
 }
