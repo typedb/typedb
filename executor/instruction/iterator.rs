@@ -113,6 +113,10 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
 {
     fn seek(&mut self, target: &Tuple<'_>) -> Result<(), Box<ConceptReadError>> {
         // TODO: this is close to a copy-paste of the Seek() implementation for seekable KMergeBy<I>
+        if self.state == kmerge::State::Used {
+            self.return_last_to_heap();
+            self.find_next_state();
+        }
         if let Some(next_iterator) = &mut self.next_iterator {
             next_iterator.iter.seek(target)?;
         }

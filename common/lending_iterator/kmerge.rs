@@ -15,7 +15,7 @@ pub struct KMergeBy<I: LendingIterator, F> {
     phantom_compare: PhantomData<F>,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum State {
     Init,
     Used,
@@ -43,13 +43,20 @@ where
         Self { iterators: queue, next_iterator: None, state: State::Init, phantom_compare: PhantomData }
     }
 
-    fn find_next_state(&mut self) {
+    pub fn find_next_state(&mut self) {
         match self.iterators.pop() {
             None => self.state = State::Done,
             Some(iterator) => {
                 self.next_iterator = Some(iterator);
                 self.state = State::Ready;
             }
+        }
+    }
+
+    pub fn return_last_to_heap(&mut self) {
+        let mut last_iterator = self.next_iterator.take().unwrap();
+        if last_iterator.iter.peek().is_some() {
+            self.iterators.push(last_iterator);
         }
     }
 }
@@ -68,10 +75,7 @@ where
                 self.next()
             }
             State::Used => {
-                let mut last_iterator = self.next_iterator.take().unwrap();
-                if last_iterator.iter.peek().is_some() {
-                    self.iterators.push(last_iterator);
-                }
+                self.return_last_to_heap();
                 self.find_next_state();
                 self.next()
             }
@@ -90,6 +94,10 @@ where
     F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy + 'static,
 {
     fn seek(&mut self, key: &K) {
+        if self.state == State::Used {
+            self.return_last_to_heap();
+            self.find_next_state();
+        }
         if let Some(next_iterator) = &mut self.next_iterator {
             next_iterator.iter.seek(key);
         }
