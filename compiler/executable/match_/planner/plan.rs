@@ -701,7 +701,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
 
         let best_plan =
-            best_partial_plans.into_iter().min().ok_or_else(|| QueryPlanningError::ExpectedPlannableConjunction {})?;
+            best_partial_plans.into_iter().min().ok_or(QueryPlanningError::ExpectedPlannableConjunction {})?;
         let complete_plan = best_plan.into_complete_plan(&self.graph);
         event!(
             Level::TRACE,

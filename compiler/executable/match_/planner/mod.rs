@@ -512,13 +512,14 @@ impl ConjunctionExecutableBuilder {
             .iter()
             .filter_map(|(var, &pos)| variable_registry.variable_names().get(var).and(Some(pos)))
             .collect();
-        let mut finished_steps = Vec::with_capacity(self.steps.len() + 1);
-        finished_steps.extend(
-            self.steps.into_iter().map(|builder| builder.finish(&self.index, &named_variables, variable_registry)),
-        );
+        let steps = self
+            .steps
+            .into_iter()
+            .map(|builder| builder.finish(&self.index, &named_variables, variable_registry))
+            .collect();
         ConjunctionExecutable::new(
             next_executable_id(),
-            finished_steps,
+            steps,
             self.index.into_iter().filter_map(|(var, id)| Some((var, id.as_position()?))).collect(),
             self.reverse_index,
             self.planner_statistics,

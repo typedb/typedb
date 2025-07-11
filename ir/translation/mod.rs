@@ -27,6 +27,8 @@ pub mod reduce;
 pub mod tokens;
 pub mod writes;
 
+use crate::pattern::variable_category::VariableOptionality;
+
 #[derive(Debug, Clone)]
 pub struct PipelineTranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
@@ -106,5 +108,3 @@ macro_rules! verify_variable_available {
     };
 }
 pub(super) use verify_variable_available;
-
-use crate::pattern::variable_category::VariableOptionality;
