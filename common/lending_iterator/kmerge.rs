@@ -90,6 +90,9 @@ where
     F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy + 'static,
 {
     fn seek(&mut self, key: &K) {
+        if let Some(next_iterator) = &mut self.next_iterator {
+            next_iterator.iter.seek(key);
+        }
         self.iterators = mem::take(&mut self.iterators)
             .drain()
             .filter_map(|mut it| {
@@ -102,15 +105,6 @@ where
                 it.iter.peek().is_some().then_some(it)
             })
             .collect();
-        if let Some(mut next_iterator) = self.next_iterator.take() {
-            next_iterator.iter.peek();
-            if let Some(item) = next_iterator.iter.get_peeked() {
-                if next_iterator.iter.compare_key(item, key) == Ordering::Less {
-                    next_iterator.iter.seek(key);
-                }
-            }
-            self.next_iterator = Some(next_iterator);
-        }
         // force recomputation of heap element
         self.state = State::Used;
     }
