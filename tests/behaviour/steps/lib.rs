@@ -159,7 +159,14 @@ impl Context {
         if clean_databases {
             let database_names = self.server().unwrap().lock().unwrap().database_manager().await.database_names();
             for database_name in database_names {
-                self.server().unwrap().lock().unwrap().database_manager().await.delete_database(&database_name).unwrap();
+                self.server()
+                    .unwrap()
+                    .lock()
+                    .unwrap()
+                    .database_manager()
+                    .await
+                    .delete_database(&database_name)
+                    .unwrap();
             }
         }
 
