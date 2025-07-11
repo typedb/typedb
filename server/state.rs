@@ -280,6 +280,10 @@ impl LocalServerState {
             .get_types_syntax(transaction.snapshot())
             .map_err(|err| ServerStateError::ConceptReadError { typedb_source: err })
     }
+    
+    pub fn local_server_status(&self) -> LocalServerStatus {
+        self.server_status
+    }
 
     fn get_user_manager(&self) -> Result<Arc<UserManager>, ServerStateError> {
         match self.user_manager.clone() {
