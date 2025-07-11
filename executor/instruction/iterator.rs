@@ -69,12 +69,10 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>>> TupleSeekable 
     fn seek(&mut self, target: &Tuple<'_>) -> Result<(), Box<ConceptReadError>> {
         loop {
             match self.iter.peek() {
-                Some(Ok(tuple)) => match tuple.partial_cmp(&target) {
+                Some(Ok(tuple)) => match tuple.partial_cmp(target) {
                     Some(Ordering::Less) => (),
                     Some(_ordering) => return Ok(()),
-                    None => {
-                        unreachable!("seeking toward incomparable tuple")
-                    }
+                    None => unreachable!("seeking toward incomparable tuple"),
                 },
                 Some(Err(err)) => return Err(err.clone()),
                 None => return Ok(()),
@@ -89,22 +87,14 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
         // TODO: this is close to a copy-paste of the Seek() implementation for Peekable<I> where I is seekable
         if self.item.is_some() {
             let item = self.item.as_ref().unwrap().as_ref().map_err(|err| err.clone())?;
-            let ordering = match PartialOrd::partial_cmp(item, &target) {
+            let ordering = match PartialOrd::partial_cmp(item, target) {
                 None => Err(Box::new(ConceptReadError::InternalIncomparableTypes {}))?,
                 Some(ordering) => ordering,
             };
             match ordering {
-                Ordering::Less => {
-                    // fallthrough to seek operation
-                    ()
-                }
-                Ordering::Equal => {
-                    // do nothing
-                    return Ok(());
-                }
-                Ordering::Greater => {
-                    unreachable!("Key behind the stored item in a Peekable iterator")
-                }
+                Ordering::Less => (),             // fallthrough to seek operation
+                Ordering::Equal => return Ok(()), // do nothing
+                Ordering::Greater => unreachable!("Seek target behind the stored item in a Peekable iterator"),
             }
         }
         self.item = None;
@@ -123,13 +113,26 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
 {
     fn seek(&mut self, target: &Tuple<'_>) -> Result<(), Box<ConceptReadError>> {
         // TODO: this is close to a copy-paste of the Seek() implementation for seekable KMergeBy<I>
-        self.iterators = mem::take(&mut self.iterators)
-            .drain()
-            .map(|mut it| it.iter.seek(target).map(|_| it))
-            .collect::<Result<_, _>>()?;
-        if let Some(next_iterator) = self.next_iterator.as_mut() {
+        if self.state == kmerge::State::Used {
+            self.return_last_to_heap();
+            self.find_next_state();
+        }
+        if let Some(next_iterator) = &mut self.next_iterator {
             next_iterator.iter.seek(target)?;
         }
+        self.iterators = mem::take(&mut self.iterators)
+            .drain()
+            .filter_map(|mut it| {
+                if let Some(Ok(item)) = it.iter.peek() {
+                    if item < target {
+                        if let Err(err) = it.iter.seek(target) {
+                            return Some(Err(err));
+                        }
+                    }
+                }
+                it.iter.peek().is_some().then_some(Ok::<_, Box<ConceptReadError>>(it))
+            })
+            .collect::<Result<_, _>>()?;
         // force recomputation of heap element
         self.state = kmerge::State::Used;
         Ok(())

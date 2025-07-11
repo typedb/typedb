@@ -15,7 +15,7 @@ pub struct KMergeBy<I: LendingIterator, F> {
     phantom_compare: PhantomData<F>,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum State {
     Init,
     Used,
@@ -43,13 +43,20 @@ where
         Self { iterators: queue, next_iterator: None, state: State::Init, phantom_compare: PhantomData }
     }
 
-    fn find_next_state(&mut self) {
+    pub fn find_next_state(&mut self) {
         match self.iterators.pop() {
             None => self.state = State::Done,
             Some(iterator) => {
                 self.next_iterator = Some(iterator);
                 self.state = State::Ready;
             }
+        }
+    }
+
+    pub fn return_last_to_heap(&mut self) {
+        let mut last_iterator = self.next_iterator.take().unwrap();
+        if last_iterator.iter.peek().is_some() {
+            self.iterators.push(last_iterator);
         }
     }
 }
@@ -68,10 +75,7 @@ where
                 self.next()
             }
             State::Used => {
-                let mut last_iterator = self.next_iterator.take().unwrap();
-                if last_iterator.iter.peek().is_some() {
-                    self.iterators.push(last_iterator);
-                }
+                self.return_last_to_heap();
                 self.find_next_state();
                 self.next()
             }
@@ -90,16 +94,25 @@ where
     F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy + 'static,
 {
     fn seek(&mut self, key: &K) {
-        self.iterators = mem::take(&mut self.iterators)
-            .drain()
-            .map(|mut it| {
-                it.iter.seek(key);
-                it
-            })
-            .collect();
-        if let Some(next_iterator) = self.next_iterator.as_mut() {
+        if self.state == State::Used {
+            self.return_last_to_heap();
+            self.find_next_state();
+        }
+        if let Some(next_iterator) = &mut self.next_iterator {
             next_iterator.iter.seek(key);
         }
+        self.iterators = mem::take(&mut self.iterators)
+            .drain()
+            .filter_map(|mut it| {
+                it.iter.peek();
+                if let Some(item) = it.iter.get_peeked() {
+                    if it.iter.compare_key(item, key) == Ordering::Less {
+                        it.iter.seek(key);
+                    }
+                }
+                it.iter.peek().is_some().then_some(it)
+            })
+            .collect();
         // force recomputation of heap element
         self.state = State::Used;
     }
@@ -108,7 +121,7 @@ where
         if let Some(inner) = self.next_iterator.as_ref().or(self.iterators.peek()) {
             inner.iter.compare_key(item, key)
         } else {
-            Ordering::Less // let the enclosing iterator exhaust itself?
+            unreachable!("Called `Seekable::compare_key` on an empty KMergeBy") // no inner iterators
         }
     }
 }
