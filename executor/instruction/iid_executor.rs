@@ -20,9 +20,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
-        Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
+        FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

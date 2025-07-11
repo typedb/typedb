@@ -32,8 +32,8 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    conjunction_executor::ConjunctionExecutor, error::ReadExecutionError, pipeline::stage::ExecutionContext,
-    row::MaybeOwnedRow, ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use ir::{
     pattern::constraint::IsaKind,
@@ -248,7 +248,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -345,7 +345,7 @@ fn unselected_named_vars_counted() {
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -462,7 +462,7 @@ fn cartesian_named_counted_checked() {
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
     let (_, thing_manager) = load_managers(storage.clone(), None);
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &conjunction_executable,
         &snapshot,
         &thing_manager,

@@ -40,9 +40,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         tuple::{unsafe_compare_result_tuple, Tuple, TupleOrderingFn, TuplePositions, TupleResult},
-        Checker, FilterFn, FilterMapUnchangedFn,
+        FilterFn, FilterMapUnchangedFn,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

@@ -24,10 +24,12 @@ use query::query_manager::QueryManager;
 use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
+    isolation_manager::CommitRecord,
     snapshot::{
         CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotDropGuard, SnapshotError, WritableSnapshot,
         WriteSnapshot,
     },
+    MVCCStorage,
 };
 use tracing::Level;
 

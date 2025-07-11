@@ -16,9 +16,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{type_to_tuple, TuplePositions, TypeToTupleFn},
-        Checker, FilterMapUnchangedFn, VariableModes,
+        FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

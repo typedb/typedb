@@ -106,6 +106,12 @@ typedb_error! {
             "A non-anonymous variable is expected in this context.",
             source_span: Option<Span>,
         ),
+        UnimplementedFunctionOptionals(
+            255,
+            "Functions returning optionals are not yet implemented.",
+            source_span: Option<Span>,
+            feature: error::UnimplementedFeature
+        ),
     }
 }
 
@@ -235,13 +241,6 @@ impl VariableRegistry {
         }
     }
 
-    fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
-        match optional {
-            true => self.variable_optionality.insert(variable, VariableOptionality::Optional),
-            false => self.variable_optionality.remove(&variable),
-        };
-    }
-
     pub fn variable_categories(&self) -> impl Iterator<Item = (Variable, VariableCategory)> + '_ {
         self.variable_categories.iter().map(|(&variable, &(category, _))| (variable, category))
     }
@@ -267,6 +266,13 @@ impl VariableRegistry {
             VariableOptionality::Required => false,
             VariableOptionality::Optional => true,
         }
+    }
+
+    fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
+        match optional {
+            true => self.variable_optionality.insert(variable, VariableOptionality::Optional),
+            false => self.variable_optionality.remove(&variable),
+        };
     }
 
     pub fn has_variable_as_named(&self, variable: &Variable) -> bool {

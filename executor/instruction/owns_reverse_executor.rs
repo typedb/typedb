@@ -24,13 +24,14 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         owns_executor::{
             OwnsFilterFn, OwnsFilterMapFn, OwnsTupleIterator, OwnsVariableValueExtractor, EXTRACT_ATTRIBUTE,
             EXTRACT_OWNER,
         },
         tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

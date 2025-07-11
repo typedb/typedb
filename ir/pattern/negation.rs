@@ -12,7 +12,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Scope, ScopeId, VariableBindingMode,
+        Pattern, Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };
@@ -41,29 +41,38 @@ impl Negation {
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
         &mut self.conjunction
     }
+}
 
-    pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+impl Pattern for Negation {
+    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunction().referenced_variables()
     }
 
-    pub fn variable_dependency(&self, block_context: &BlockContext) -> HashMap<Variable, VariableBindingMode<'_>> {
-        self.conjunction
-            .variable_dependency(block_context)
-            .into_iter()
-            .filter_map(|(var, mut mode)| {
-                let status = block_context.variable_status_in_scope(var, self.scope_id());
-                if status == VariableLocality::Parent || mode.is_required() {
-                    mode.set_required();
-                    Some((var, mode))
-                } else {
-                    None
-                }
-            })
-            .collect()
+    // Union of non-binding variables used here or below, and variables declared in parent scopes
+    fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
+            let locality = block_context.variable_locality_in_scope(v, self.scope_id());
+            if locality == VariableLocality::Parent || mode.is_require_prebound() {
+                Some(v)
+            } else {
+                None
+            }
+        })
     }
 
-    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_required().then_some(v))
+    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
+        self.conjunction
+            .variable_binding_modes()
+            .into_iter()
+            .filter_map(|(var, mut mode)| {
+                if mode.is_always_binding() {
+                    // if it is binding, we demote it to only locally binding (only relevant in the negation)
+                    mode.set_locally_binding_in_child();
+                }
+                // everything is either locally binding or non-binding (& therefore must be from parent)
+                Some((var, mode))
+            })
+            .collect()
     }
 }
 

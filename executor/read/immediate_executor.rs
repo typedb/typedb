@@ -25,7 +25,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
-    instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
+    instruction::{checker::Checker, iterator::TupleIterator, InstructionExecutor},
     pipeline::stage::ExecutionContext,
     read::{
         expression_executor::{evaluate_expression, ExpressionValue},
@@ -450,7 +450,7 @@ impl IntersectionExecutor {
         let mut provenance = Provenance::INITIAL;
         let mut row = Row::new(&mut self.intersection_row, &mut self.intersection_multiplicity, &mut provenance);
         for iter in &mut self.iterators {
-            if !self.intersection_value.is_empty() {
+            if !self.intersection_value.is_none() {
                 iter.peek_first_unbound_value()
                     .transpose()
                     .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
@@ -466,15 +466,15 @@ impl IntersectionExecutor {
             }
             iter.write_values(&mut row)
         }
-        assert!(!self.intersection_value.is_empty());
+        assert!(!self.intersection_value.is_none());
 
         let input_row = self.input.as_mut().unwrap().peek().unwrap().as_ref().map_err(|&err| err.clone())?;
         for &position in &self.outputs_selected {
             // note: some input variable positions are re-used across stages, so we should only copy
             //       inputs into the output row if it is not already populated by the intersection
             if position.as_usize() < input_row.len()
-                && !input_row.get(position).is_empty()
-                && row.get(position).is_empty()
+                && !input_row.get(position).is_none()
+                && row.get(position).is_none()
             {
                 row.set(position, input_row.get(position).clone().into_owned())
             }
@@ -901,7 +901,9 @@ impl CheckExecutor {
 
         while let Some(row) = input.next() {
             let input_row = row.map_err(|err| err.clone())?;
-            if self.checker.filter_fn_for_row(context, &input_row, self.profile.storage_counters())(&Ok(()))
+            if self
+                .checker
+                .filter(context, &input_row, (), self.profile.storage_counters())
                 .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
             {
                 output.append(|mut row| {

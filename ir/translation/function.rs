@@ -5,11 +5,11 @@
  */
 
 use answer::variable::Variable;
-use error::needs_update_when_feature_is_implemented;
+use error::{needs_update_when_feature_is_implemented, UnimplementedFeature};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
-    common::Spanned,
+    common::{Span, Spanned},
     schema::definable::function::{
         FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },
@@ -17,7 +17,10 @@ use typeql::{
 };
 
 use crate::{
-    pattern::variable_category::{VariableCategory, VariableOptionality},
+    pattern::{
+        variable_category::{VariableCategory, VariableOptionality},
+        Pattern,
+    },
     pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
@@ -65,6 +68,23 @@ pub fn translate_function_from(
             source_span: signature.ident.span(),
         }
     })?;
+    let output_types = match &signature.output {
+        Output::Stream(stream) => &stream.types,
+        Output::Single(single) => &single.types,
+    };
+
+    if let Some((source, _)) = output_types
+        .iter()
+        .map(|output_type| (output_type.span(), named_type_any_to_category_and_optionality(output_type)))
+        .filter(|(source, (_, optionality))| *optionality == VariableOptionality::Optional)
+        .next()
+    {
+        Err(FunctionRepresentationError::UnimplementedFunctionOptionals {
+            source_span: source.clone(),
+            feature: UnimplementedFeature::OptionalFunctions,
+        })?;
+    }
+
     let argument_labels = signature.args.iter().map(|arg| arg.type_.clone()).collect();
     let args_sources_categories = signature
         .args
@@ -78,10 +98,11 @@ pub fn translate_function_from(
             Ok::<_, FunctionRepresentationError>((
                 name,
                 arg.var.span(),
-                named_type_any_to_category_and_optionality(&arg.type_).0,
+                named_type_any_to_category_and_optionality(&arg.type_),
             ))
         })
         .collect::<Result<Vec<_>, _>>()?;
+
     let (mut context, arguments) = PipelineTranslationContext::new_function_pipeline(args_sources_categories)
         .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
     let mut value_parameters = ParameterRegistry::new();

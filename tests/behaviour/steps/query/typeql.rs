@@ -342,7 +342,7 @@ fn does_var_in_row_match_spec(
 ) -> bool {
     let var_value =
         answer_row.get(var).unwrap_or_else(|| panic!("no answer found for {var} in one of the answer rows"));
-    if spec == "empty" {
+    if spec == "none" {
         var_value == &VariableValue::None
     } else {
         let (kind, id) = spec.split_once(':').expect("answer concept specifier must be of the form `<kind>:<id>`");
@@ -506,6 +506,12 @@ async fn answer_contains_document(context: &mut Context, contains_or_doesnt: par
             &format!("\nConcept documents: {:?}\nGiven document: {:?}", documents, expected_document),
         );
     });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"answers do not contain variable: {word}")]
+async fn answers_do_not_contain_variable(context: &mut Context, variable: String, step: &Step) {
+    context.query_answer.as_ref().unwrap().as_rows().iter().all(|row| !row.contains_key(&variable));
 }
 
 #[apply(generic_step)]

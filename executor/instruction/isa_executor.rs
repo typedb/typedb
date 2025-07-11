@@ -31,9 +31,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator, TupleSeekable},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, Tuple, TuplePositions, TupleResult},
-        BinaryIterateMode, Checker, FilterMapUnchangedFn, VariableModes, TYPES_EMPTY,
+        BinaryIterateMode, FilterMapUnchangedFn, VariableModes, TYPES_EMPTY,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

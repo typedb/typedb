@@ -5,7 +5,7 @@
  */
 
 use crate::{
-    pattern::conjunction::ConjunctionBuilder,
+    pattern::{conjunction::ConjunctionBuilder, nested_pattern::NestedPattern, Pattern, Scope},
     pipeline::{
         block::{Block, BlockBuilder},
         function_signature::FunctionSignatureIndex,
@@ -35,14 +35,26 @@ pub(crate) fn add_patterns(
         typeql::Pattern::Conjunction(nested) => add_patterns(function_index, conjunction, &nested.patterns),
         typeql::Pattern::Disjunction(disjunction) => add_disjunction(function_index, conjunction, disjunction),
         typeql::Pattern::Negation(negation) => add_negation(function_index, conjunction, negation),
-        typeql::Pattern::Optional(optional) => {
-            // add_optional(function_index, conjunction, optional)
-            Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-                feature: error::UnimplementedFeature::Optionals,
-            }))
-        }
+        typeql::Pattern::Optional(optional) => add_optional(function_index, conjunction, optional),
         typeql::Pattern::Statement(statement) => add_statement(function_index, conjunction, statement),
     })?;
+
+    conjunction
+        .conjunction
+        .nested_patterns()
+        .iter()
+        .filter_map(|nested| match nested {
+            NestedPattern::Optional(optional) => Some(optional),
+            _ => None,
+        })
+        .for_each(|optional| {
+            for var in optional.conjunction().referenced_variables() {
+                // if the variable is available in the parent scope, it's bound externally and passed in so not optional
+                if !conjunction.context.is_variable_available_in(conjunction.conjunction.scope_id(), var) {
+                    conjunction.context.set_variable_optionality(var, true)
+                }
+            }
+        });
     Ok(())
 }
 
@@ -70,9 +82,12 @@ fn add_negation(
 
 fn add_optional(
     function_index: &impl FunctionSignatureIndex,
-    conjunction: &mut ConjunctionBuilder<'_, '_>,
+    parent_conjunction: &mut ConjunctionBuilder<'_, '_>,
     optional: &typeql::pattern::Optional,
 ) -> Result<(), Box<RepresentationError>> {
-    let mut optional_builder = conjunction.add_optional();
-    add_patterns(function_index, &mut optional_builder, &optional.patterns)
+    let parent_scope = parent_conjunction.conjunction.scope_id();
+    let mut optional_builder = parent_conjunction.add_optional(optional.span)?;
+    add_patterns(function_index, &mut optional_builder, &optional.patterns)?;
+    let ConjunctionBuilder { conjunction, context } = optional_builder;
+    Ok(())
 }

@@ -25,13 +25,13 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub struct ConjunctionExecutor {
+pub struct MatchExecutor {
     entry: PatternExecutor,
     input: Option<MaybeOwnedRow<'static>>,
     tabled_functions: TabledFunctions,
 }
 
-impl ConjunctionExecutor {
+impl MatchExecutor {
     pub fn new(
         conjunction_executable: &ConjunctionExecutable,
         snapshot: &Arc<impl ReadableSnapshot + 'static>,
@@ -76,14 +76,14 @@ impl ConjunctionExecutor {
 }
 
 pub(crate) struct BatchIterator<Snapshot> {
-    executor: ConjunctionExecutor,
+    executor: MatchExecutor,
     context: ExecutionContext<Snapshot>,
     interrupt: ExecutionInterrupt,
 }
 
 impl<Snapshot> BatchIterator<Snapshot> {
     pub(crate) fn new(
-        executor: ConjunctionExecutor,
+        executor: MatchExecutor,
         context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Self {

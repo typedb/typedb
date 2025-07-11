@@ -23,9 +23,10 @@ pub mod translation;
 
 typedb_error! {
     pub RepresentationError(component = "Representation", prefix = "REP") {
-        DisjointVariableReuse(
+        LocallyBoundVariableReuse(
             0,
-            "Variable '{name}' is re-used across different branches of the query. Variables that do not represent the same concept must be named uniquely, to prevent clashes within answers.",
+            "Locally-scoped variable '{name}' cannot be re-used elsewhere as a locally-scoped variable. \
+            Variables are not local if bound in a conjunction constraint, a parent scope, or bound in every branch of a disjunction.",
             name: String,
             source_span: Option<Span>,
         ),
@@ -147,7 +148,7 @@ typedb_error! {
         ),
         ReduceVariableNotAvailable(
             19,
-            "The variable '{variable}' was not available in for use in the reduce.",
+            "The variable '{variable}' was not available for use in the reduce.",
             variable: String,
             source_span: Option<Span>,
         ),
@@ -259,6 +260,23 @@ typedb_error! {
             52,
             "The query is too big and exceeds the limit of {variable_count} declared and anonymous variables. Please split it into parts and execute separately for better performance.",
             variable_count: u16,
+            source_span: Option<Span>,
+        ),
+        OptionalInNegation(
+            53,
+            "Optionals are not allowed in negations as this can never return a meaningful result.",
+            source_span: Option<Span>,
+        ),
+        InvalidTimezoneNamed(
+            200,
+            "Unrecognised timezone '{name}'.",
+            name: String,
+            source_span: Option<Span>,
+        ),
+        InvalidTimezoneFixedOffset(
+            201,
+            "Invalid timezone offset '{offset}'.",
+            offset: String,
             source_span: Option<Span>,
         ),
         UnimplementedLanguageFeature(

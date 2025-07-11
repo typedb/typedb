@@ -87,7 +87,7 @@ impl<'a> VariableValue<'a> {
 
     pub fn next_possible(&self) -> VariableValue<'static> {
         match self {
-            VariableValue::None => unreachable!("No next value for an Empty value."),
+            VariableValue::None => unreachable!("No next value for an None value."),
             VariableValue::Type(type_) => VariableValue::Type(type_.next_possible()),
             VariableValue::Thing(thing) => VariableValue::Thing(thing.next_possible()),
             VariableValue::Value(_) => unreachable!("Value instances don't have a well defined order."),
@@ -97,17 +97,17 @@ impl<'a> VariableValue<'a> {
         }
     }
 
-    /// Returns `true` if the variable value is [`Empty`].
+    /// Returns `true` if the variable value is [`None`].
     ///
-    /// [`Empty`]: VariableValue::None
+    /// [`None`]: VariableValue::None
     #[must_use]
-    pub fn is_empty(&self) -> bool {
+    pub fn is_none(&self) -> bool {
         matches!(self, Self::None)
     }
 
     pub fn variant_name(&self) -> &'static str {
         match self {
-            VariableValue::None => "empty",
+            VariableValue::None => "none",
             VariableValue::Type(_) => "type",
             VariableValue::Thing(_) => "thing",
             VariableValue::Value(_) => "value",
@@ -124,7 +124,7 @@ impl Hkt for VariableValue<'static> {
 impl PartialOrd for VariableValue<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            // special case: Empty is less than everything, except also equal to Empty
+            // special case: None is less than everything, except also equal to None
             (Self::None, Self::None) => Some(Ordering::Equal),
             (Self::None, _) => Some(Ordering::Less),
             (_, Self::None) => Some(Ordering::Greater),
@@ -162,7 +162,7 @@ impl fmt::Display for VariableValue<'_> {
 }
 
 impl VariableValue<'_> {
-    pub const EMPTY: VariableValue<'static> = VariableValue::None;
+    pub const NONE: VariableValue<'static> = VariableValue::None;
 }
 
 pub enum FunctionValue<'a> {

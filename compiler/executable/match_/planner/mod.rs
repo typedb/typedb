@@ -13,7 +13,7 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use error::typedb_error;
 use ir::{
-    pattern::{constraint::ExpressionBinding, BranchID, Vertex},
+    pattern::{constraint::ExpressionBinding, variable_category::VariableOptionality, BranchID, Vertex},
     pipeline::{block::Block, function_signature::FunctionID, VariableRegistry},
 };
 use itertools::Itertools;
@@ -28,7 +28,7 @@ use crate::{
             planner::{
                 conjunction_executable::{
                     AssignmentStep, CheckStep, ConjunctionExecutable, DisjunctionStep, ExecutionStep, FunctionCallStep,
-                    IntersectionStep, NegationStep,
+                    IntersectionStep, NegationStep, OptionalStep,
                 },
                 plan::{plan_conjunction, PlannerStatistics, QueryPlanningError},
             },
@@ -43,51 +43,50 @@ pub mod plan;
 pub(crate) mod vertex;
 
 typedb_error! {
-    pub MatchCompilationError(component = "Match compiler", prefix = "MCP") {
+    pub ConjunctionCompilationError(component = "Match compiler", prefix = "MCP") {
         PlanningError(1, "Error during planning of match stage.", typedb_source: QueryPlanningError),
     }
 }
 
 pub fn compile(
     block: &Block,
-    input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
-    input_variables: &HashMap<Variable, VariablePosition>,
-    selected_variables: &HashSet<Variable>,
+    stage_input_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
+    stage_input_positions: &HashMap<Variable, VariablePosition>,
+    selected_variables: HashSet<Variable>,
     type_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
-) -> Result<ConjunctionExecutable, MatchCompilationError> {
+) -> Result<ConjunctionExecutable, ConjunctionCompilationError> {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
 
     debug!("Planning conjunction:\n{conjunction}");
 
     let assigned_identities =
-        input_variables.iter().map(|(&var, &position)| (var, ExecutorVariable::RowPosition(position))).collect();
+        stage_input_positions.iter().map(|(&var, &position)| (var, ExecutorVariable::RowPosition(position))).collect();
 
     let plan = plan_conjunction(
         conjunction,
         block_context,
-        input_variables,
-        selected_variables,
+        stage_input_positions,
         type_annotations,
         variable_registry,
         expressions,
         statistics,
         call_cost_provider,
     )
-    .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
+    .map_err(|source| ConjunctionCompilationError::PlanningError { typedb_source: source })?
     .lower(
-        input_variable_annotations,
-        input_variables.keys().copied(),
-        selected_variables.iter().copied(),
+        stage_input_annotations,
+        stage_input_positions.keys().copied(),
+        selected_variables,
         &assigned_identities,
         variable_registry,
         None,
     )
-    .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
+    .map_err(|source| ConjunctionCompilationError::PlanningError { typedb_source: source })?
     .finish(variable_registry);
 
     trace!("Finished planning conjunction:\n{conjunction}");
@@ -121,23 +120,38 @@ struct CheckBuilder {
 
 #[derive(Debug)]
 struct NegationBuilder {
-    negation: MatchExecutableBuilder,
+    negation: ConjunctionExecutableBuilder,
 }
 
 impl NegationBuilder {
-    fn new(negation: MatchExecutableBuilder) -> Self {
+    fn new(negation: ConjunctionExecutableBuilder) -> Self {
         Self { negation }
+    }
+}
+
+#[derive(Debug)]
+struct OptionalBuilder {
+    optional: ConjunctionExecutableBuilder,
+}
+
+impl OptionalBuilder {
+    fn new(optional: ConjunctionExecutableBuilder) -> Self {
+        Self { optional }
+    }
+
+    fn branch_id(&self) -> BranchID {
+        self.optional.branch_id.expect("Optionals must be assigned a branch ID")
     }
 }
 
 #[derive(Debug)]
 struct DisjunctionBuilder {
     branch_ids: Vec<BranchID>,
-    branches: Vec<MatchExecutableBuilder>,
+    branches: Vec<ConjunctionExecutableBuilder>,
 }
 
 impl DisjunctionBuilder {
-    fn new(branch_ids: Vec<BranchID>, branches: Vec<MatchExecutableBuilder>) -> Self {
+    fn new(branch_ids: Vec<BranchID>, branches: Vec<ConjunctionExecutableBuilder>) -> Self {
         Self { branch_ids, branches }
     }
 }
@@ -157,6 +171,7 @@ enum StepInstructionsBuilder {
     Check(CheckBuilder),
     Negation(NegationBuilder),
     Disjunction(DisjunctionBuilder),
+    Optional(OptionalBuilder),
     Expression(ExpressionBuilder),
     FunctionCall(FunctionCallBuilder),
 }
@@ -249,6 +264,16 @@ impl StepBuilder {
             StepInstructionsBuilder::Negation(NegationBuilder { negation }) => ExecutionStep::Negation(
                 NegationStep::new(negation.finish(variable_registry), selected_variables, output_width),
             ),
+            StepInstructionsBuilder::Optional(builder) => {
+                let branch_id = builder.branch_id();
+                let OptionalBuilder { optional } = builder;
+                ExecutionStep::Optional(OptionalStep::new(
+                    optional.finish(variable_registry),
+                    selected_variables,
+                    output_width,
+                    branch_id,
+                ))
+            }
             StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branch_ids, branches }) => {
                 ExecutionStep::Disjunction(DisjunctionStep::new(
                     branch_ids,
@@ -276,9 +301,11 @@ impl StepBuilder {
 }
 
 #[derive(Debug)]
-struct MatchExecutableBuilder {
-    selected_variables: Vec<Variable>,
+struct ConjunctionExecutableBuilder {
+    selected_variables: HashSet<Variable>,
     input_variables: Vec<Variable>,
+    constraint_variables: HashSet<Variable>,
+
     current_outputs: HashSet<Variable>,
     produced_so_far: HashSet<Variable>,
 
@@ -293,12 +320,13 @@ struct MatchExecutableBuilder {
     branch_id: Option<BranchID>,
 }
 
-impl MatchExecutableBuilder {
+impl ConjunctionExecutableBuilder {
     fn new(
         branch_id: Option<BranchID>,
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
-        selected_variables: Vec<Variable>,
+        selected_variables: HashSet<Variable>,
         input_variables: Vec<Variable>,
+        constraint_variables: HashSet<Variable>,
         planner_statistics: PlannerStatistics,
     ) -> Self {
         let index = assigned_positions.clone();
@@ -316,6 +344,7 @@ impl MatchExecutableBuilder {
             branch_id,
             selected_variables,
             input_variables,
+            constraint_variables,
             current_outputs,
             produced_so_far,
             steps: Vec::new(),
@@ -358,9 +387,9 @@ impl MatchExecutableBuilder {
         current.instructions.push(instruction.map(&self.index));
     }
 
-    fn push_check(&mut self, variables: &[Variable], check: CheckInstruction<ExecutorVariable>) {
+    fn push_check(&mut self, check: CheckInstruction<ExecutorVariable>) {
         // if it is a comparison or IID (TODO) we can inline the check into previous instructions
-        if self.inline_as_optimisation(variables, &check) {
+        if self.inline_as_optimisation(&check) {
             return;
         }
 
@@ -379,7 +408,7 @@ impl MatchExecutableBuilder {
     }
 
     /// inject the check as an optimisation into previously built steps
-    fn inline_as_optimisation(&mut self, variables: &[Variable], check: &CheckInstruction<ExecutorVariable>) -> bool {
+    fn inline_as_optimisation(&mut self, check: &CheckInstruction<ExecutorVariable>) -> bool {
         if !matches!(check, CheckInstruction::Comparison { .. } | CheckInstruction::Iid { .. }) {
             // TODO: inject IID check as well
             return false;
@@ -394,10 +423,9 @@ impl MatchExecutableBuilder {
                 let mut is_added = false;
                 for instruction in intersection.instructions.iter_mut() {
                     // if any check variable is produced and all other variables are available
-                    let any_produced = variables.iter().any(|var| instruction.is_new_variable(self.index[var]));
-                    let all_available = variables.iter().all(|var| {
-                        instruction.is_new_variable(self.index[var]) || instruction.is_input_variable(self.index[var])
-                    });
+                    let any_produced = check.ids().any(|id| instruction.is_new_variable(id));
+                    let all_available =
+                        check.ids().all(|id| instruction.is_new_variable(id) || instruction.is_input_variable(id));
                     if any_produced && all_available {
                         instruction.add_check(check.clone());
                         is_added = true;

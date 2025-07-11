@@ -8,7 +8,6 @@ use std::{collections::HashMap, marker::PhantomData, str::FromStr, sync::Arc};
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
-use error::unimplemented_feature;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID},
     pipeline::{
@@ -247,8 +246,9 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 let inner = self.add_block(None, negation.conjunction(), block_annotations);
                 conjuncts.push(QueryStructurePattern::Not(inner));
             }
-            NestedPattern::Optional(_) => {
-                unimplemented_feature!(Optionals);
+            NestedPattern::Optional(optional) => {
+                let inner = self.add_block(Some(optional.branch_id()), optional.conjunction(), block_annotations);
+                conjuncts.push(QueryStructurePattern::Try(inner));
             }
         });
         QueryStructureConjunction { conjunction: conjuncts }

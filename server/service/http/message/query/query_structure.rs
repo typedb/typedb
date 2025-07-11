@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, marker::PhantomData, str::FromStr};
+use std::{collections::HashMap, str::FromStr};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
@@ -371,7 +371,7 @@ fn encode_structure_constraint(
                 .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
                 .collect::<Result<Vec<_>, _>>()?;
             let arguments = expr
-                .required_ids()
+                .expression_ids()
                 .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
                 .collect::<Result<Vec<_>, _>>()?;
             constraints.push(StructureConstraintWithSpan {

@@ -20,7 +20,10 @@ use itertools::chain;
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::match_::planner::{
-        plan::{ConjunctionPlan, DisjunctionPlanBuilder, Graph, QueryPlanningError, VariableVertexId, VertexId},
+        plan::{
+            ConjunctionPlan, DisjunctionPlan, DisjunctionPlanBuilder, Graph, OptionalPlan, QueryPlanningError,
+            VariableVertexId, VertexId,
+        },
         vertex::{constraint::ConstraintVertex, variable::VariableVertex},
     },
 };
@@ -35,52 +38,54 @@ pub(super) const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
 const _REGEX_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 const _CONTAINS_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 
-// FIXME name
 #[derive(Clone, Debug)]
 pub(super) enum PlannerVertex<'a> {
     Variable(VariableVertex),
     Constraint(ConstraintVertex<'a>),
 
-    Is(IsPlanner<'a>),
-    LinksDeduplication(LinksDeduplicationPlanner<'a>),
-    Comparison(ComparisonPlanner<'a>),
-    Unsatisfiable(UnsatisfiablePlanner<'a>),
+    Is(IsVertex<'a>),
+    LinksDeduplication(LinksDeduplicationVertex<'a>),
+    Comparison(ComparisonVertex<'a>),
+    Unsatisfiable(UnsatisfiableVertex<'a>),
 
-    Expression(ExpressionPlanner<'a>),
-    FunctionCall(FunctionCallPlanner<'a>),
+    Expression(ExpressionVertex<'a>),
+    FunctionCall(FunctionCallVertex<'a>),
 
-    Negation(NegationPlanner<'a>),
-    Disjunction(DisjunctionPlanner<'a>),
+    Negation(NegationVertex<'a>),
+    Disjunction(DisjunctionVertex<'a>),
+    Optional(OptionalVertex<'a>),
 }
 
 impl PlannerVertex<'_> {
-    pub(super) fn is_valid(&self, _id: VertexId, vertex_plan: &[VertexId], graph: &Graph<'_>) -> bool {
+    pub(super) fn is_valid(&self, _id: VertexId, vertex_plan: &[VertexId]) -> bool {
         match self {
             Self::Variable(_) => false,
-            Self::Constraint(inner) => inner.is_valid(vertex_plan, graph),
-            Self::Is(inner) => inner.is_valid(vertex_plan, graph),
-            Self::LinksDeduplication(inner) => inner.is_valid(vertex_plan, graph),
-            Self::Comparison(inner) => inner.is_valid(vertex_plan, graph),
-            Self::Expression(inner) => inner.is_valid(vertex_plan, graph),
-            Self::FunctionCall(inner) => inner.is_valid(vertex_plan, graph),
-            Self::Negation(inner) => inner.is_valid(vertex_plan, graph),
-            Self::Disjunction(inner) => inner.is_valid(vertex_plan, graph),
-            Self::Unsatisfiable(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Constraint(inner) => inner.is_valid(vertex_plan),
+            Self::Is(inner) => inner.is_valid(vertex_plan),
+            Self::LinksDeduplication(inner) => inner.is_valid(vertex_plan),
+            Self::Comparison(inner) => inner.is_valid(vertex_plan),
+            Self::Expression(inner) => inner.is_valid(vertex_plan),
+            Self::FunctionCall(inner) => inner.is_valid(vertex_plan),
+            Self::Negation(inner) => inner.is_valid(vertex_plan),
+            Self::Disjunction(inner) => inner.is_valid(vertex_plan),
+            Self::Optional(inner) => inner.is_valid(vertex_plan),
+            Self::Unsatisfiable(inner) => inner.is_valid(vertex_plan),
         }
     }
 
-    pub(super) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
+    pub(super) fn variable_vertex_ids<'a>(&'a self) -> Box<dyn Iterator<Item = VariableVertexId> + 'a> {
         match self {
             Self::Variable(_) => Box::new(iter::empty()),
-            Self::Constraint(inner) => inner.variables(),
-            Self::Is(inner) => Box::new(inner.variables()),
-            Self::LinksDeduplication(inner) => Box::new(inner.variables()),
-            Self::Comparison(inner) => Box::new(inner.variables()),
-            Self::Expression(inner) => Box::new(inner.variables()),
-            Self::FunctionCall(inner) => Box::new(inner.variables()),
-            Self::Negation(inner) => Box::new(inner.variables()),
-            Self::Disjunction(inner) => Box::new(inner.variables()),
-            Self::Unsatisfiable(inner) => Box::new(inner.variables()),
+            Self::Constraint(inner) => Box::new(inner.variable_vertex_ids()),
+            Self::Is(inner) => Box::new(inner.variable_vertex_ids()),
+            Self::LinksDeduplication(inner) => Box::new(inner.variable_vertex_ids()),
+            Self::Comparison(inner) => Box::new(inner.variable_vertex_ids()),
+            Self::Expression(inner) => Box::new(inner.variable_vertex_ids()),
+            Self::FunctionCall(inner) => Box::new(inner.variable_vertex_ids()),
+            Self::Negation(inner) => Box::new(inner.variable_vertex_ids()),
+            Self::Disjunction(inner) => Box::new(inner.variable_vertex_ids()),
+            Self::Optional(inner) => Box::new(inner.variable_vertex_ids()),
+            Self::Unsatisfiable(inner) => Box::new(inner.variable_vertex_ids()),
         }
     }
 
@@ -155,6 +160,9 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
             } //TODO
             PlannerVertex::Disjunction(_) => {
                 write!(f, "|Disjunction|")
+            } //TODO
+            PlannerVertex::Optional(_) => {
+                write!(f, "|Optional|")
             } //TODO
             PlannerVertex::Unsatisfiable(_) => {
                 write!(f, "|Unsatisfiable|")
@@ -239,6 +247,7 @@ impl Costed for PlannerVertex<'_> {
 
             Self::Negation(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
             Self::Disjunction(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::Optional(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
             Self::Unsatisfiable(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
         }
     }
@@ -291,14 +300,14 @@ impl Input {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct ExpressionPlanner<'a> {
+pub(crate) struct ExpressionVertex<'a> {
     pub expression: &'a ExecutableExpression<Variable>,
     inputs: Vec<VariableVertexId>,
     pub output: VariableVertexId,
     cost: Cost,
 }
 
-impl<'a> ExpressionPlanner<'a> {
+impl<'a> ExpressionVertex<'a> {
     pub(crate) fn from_expression(
         expression: &'a ExecutableExpression<Variable>,
         inputs: Vec<VariableVertexId>,
@@ -308,16 +317,16 @@ impl<'a> ExpressionPlanner<'a> {
         Self { inputs, output, cost, expression }
     }
 
-    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId]) -> bool {
         self.inputs.iter().all(|&input| ordered.contains(&VertexId::Variable(input)))
     }
 
-    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+    pub(crate) fn variable_vertex_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
         self.inputs.iter().chain(iter::once(&self.output)).copied()
     }
 }
 
-impl Costed for ExpressionPlanner<'_> {
+impl Costed for ExpressionVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -329,14 +338,14 @@ impl Costed for ExpressionPlanner<'_> {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct FunctionCallPlanner<'a> {
+pub(crate) struct FunctionCallVertex<'a> {
     pub call_binding: &'a FunctionCallBinding<Variable>,
     pub(super) arguments: Vec<VariableVertexId>,
     pub(super) assigned: Vec<VariableVertexId>,
     cost: Cost,
 }
 
-impl<'a> FunctionCallPlanner<'a> {
+impl<'a> FunctionCallVertex<'a> {
     pub(crate) fn from_constraint(
         call_binding: &'a FunctionCallBinding<Variable>,
         arguments: Vec<VariableVertexId>,
@@ -346,16 +355,16 @@ impl<'a> FunctionCallPlanner<'a> {
         Self { call_binding, arguments, assigned, cost }
     }
 
-    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+    pub(crate) fn variable_vertex_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
         self.arguments.iter().chain(self.assigned.iter()).copied()
     }
 
-    fn is_valid(&self, vertex_plan: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, vertex_plan: &[VertexId]) -> bool {
         self.arguments.iter().all(|&arg| vertex_plan.contains(&VertexId::Variable(arg)))
     }
 }
 
-impl Costed for FunctionCallPlanner<'_> {
+impl Costed for FunctionCallVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -367,13 +376,13 @@ impl Costed for FunctionCallPlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct IsPlanner<'a> {
+pub(super) struct IsVertex<'a> {
     is: &'a Is<Variable>,
     pub lhs: VariableVertexId,
     pub rhs: VariableVertexId,
 }
 
-impl<'a> IsPlanner<'a> {
+impl<'a> IsVertex<'a> {
     pub(crate) fn from_constraint(
         is: &'a Is<Variable>,
         variable_index: &HashMap<Variable, VariableVertexId>,
@@ -385,11 +394,11 @@ impl<'a> IsPlanner<'a> {
         Self { is, lhs: variable_index[&lhs], rhs: variable_index[&rhs] }
     }
 
-    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId]) -> bool {
         ordered.contains(&VertexId::Variable(self.lhs)) || ordered.contains(&VertexId::Variable(self.rhs))
     }
 
-    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+    pub(crate) fn variable_vertex_ids(&self) -> impl Iterator<Item = VariableVertexId> {
         [self.lhs, self.rhs].into_iter()
     }
 
@@ -398,7 +407,7 @@ impl<'a> IsPlanner<'a> {
     }
 }
 
-impl Costed for IsPlanner<'_> {
+impl Costed for IsVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -409,7 +418,7 @@ impl Costed for IsPlanner<'_> {
     }
 }
 #[derive(Clone, Debug)]
-pub(super) struct LinksDeduplicationPlanner<'a> {
+pub(super) struct LinksDeduplicationVertex<'a> {
     links_deduplication: &'a LinksDeduplication<Variable>,
     pub role1: VariableVertexId,
     pub player1: VariableVertexId,
@@ -417,7 +426,7 @@ pub(super) struct LinksDeduplicationPlanner<'a> {
     pub player2: VariableVertexId,
 }
 
-impl<'a> LinksDeduplicationPlanner<'a> {
+impl<'a> LinksDeduplicationVertex<'a> {
     pub(crate) fn from_constraint(
         links_deduplication: &'a LinksDeduplication<Variable>,
         variable_index: &HashMap<Variable, VariableVertexId>,
@@ -437,11 +446,11 @@ impl<'a> LinksDeduplicationPlanner<'a> {
         }
     }
 
-    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
-        self.variables().all(|v| ordered.contains(&VertexId::Variable(v)))
+    fn is_valid(&self, ordered: &[VertexId]) -> bool {
+        self.variable_vertex_ids().all(|v| ordered.contains(&VertexId::Variable(v)))
     }
 
-    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+    pub(crate) fn variable_vertex_ids(&self) -> impl Iterator<Item = VariableVertexId> {
         [self.role1, self.player1, self.role2, self.player2].into_iter()
     }
 
@@ -450,7 +459,7 @@ impl<'a> LinksDeduplicationPlanner<'a> {
     }
 }
 
-impl Costed for LinksDeduplicationPlanner<'_> {
+impl Costed for LinksDeduplicationVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -462,13 +471,13 @@ impl Costed for LinksDeduplicationPlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct ComparisonPlanner<'a> {
+pub(super) struct ComparisonVertex<'a> {
     comparison: &'a Comparison<Variable>,
     pub lhs: Input,
     pub rhs: Input,
 }
 
-impl<'a> ComparisonPlanner<'a> {
+impl<'a> ComparisonVertex<'a> {
     pub(crate) fn from_constraint(
         comparison: &'a Comparison<Variable>,
         variable_index: &HashMap<Variable, VariableVertexId>,
@@ -482,7 +491,7 @@ impl<'a> ComparisonPlanner<'a> {
         }
     }
 
-    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId]) -> bool {
         if let Input::Variable(lhs) = self.lhs {
             if !ordered.contains(&VertexId::Variable(lhs)) {
                 return false;
@@ -496,7 +505,7 @@ impl<'a> ComparisonPlanner<'a> {
         true
     }
 
-    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+    pub(crate) fn variable_vertex_ids(&self) -> impl Iterator<Item = VariableVertexId> {
         [self.lhs.as_variable(), self.rhs.as_variable()].into_iter().flatten()
     }
 
@@ -505,7 +514,7 @@ impl<'a> ComparisonPlanner<'a> {
     }
 }
 
-impl Costed for ComparisonPlanner<'_> {
+impl Costed for ComparisonVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -517,11 +526,11 @@ impl Costed for ComparisonPlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct UnsatisfiablePlanner<'a> {
+pub(super) struct UnsatisfiableVertex<'a> {
     _unsatisfiable: &'a Unsatisfiable,
 }
 
-impl<'a> UnsatisfiablePlanner<'a> {
+impl<'a> UnsatisfiableVertex<'a> {
     pub(crate) fn from_constraint(
         _unsatisfiable: &'a Unsatisfiable,
         _variable_index: &HashMap<Variable, VariableVertexId>,
@@ -531,16 +540,16 @@ impl<'a> UnsatisfiablePlanner<'a> {
         Self { _unsatisfiable }
     }
 
-    fn is_valid(&self, _ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, _ordered: &[VertexId]) -> bool {
         true
     }
 
-    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+    fn variable_vertex_ids(&self) -> impl Iterator<Item = VariableVertexId> {
         iter::empty()
     }
 }
 
-impl Costed for UnsatisfiablePlanner<'_> {
+impl Costed for UnsatisfiableVertex<'_> {
     fn cost_and_metadata(
         &self,
         _: &[VertexId],
@@ -552,23 +561,27 @@ impl Costed for UnsatisfiablePlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct NegationPlanner<'a> {
+pub(super) struct NegationVertex<'a> {
     plan: ConjunctionPlan<'a>,
-    shared_variables: Vec<VariableVertexId>,
+    referenced_parent_vertex_ids: HashSet<VariableVertexId>,
 }
 
-impl<'a> NegationPlanner<'a> {
-    pub(super) fn new(plan: ConjunctionPlan<'a>, variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
-        let shared_variables = plan.shared_variables().iter().map(|v| variable_index[v]).collect();
-        Self { plan, shared_variables }
+impl<'a> NegationVertex<'a> {
+    pub(super) fn new(
+        negation_plan: ConjunctionPlan<'a>,
+        parent_variable_index: &HashMap<Variable, VariableVertexId>,
+    ) -> Self {
+        let referenced_parent_vertex_ids =
+            negation_plan.referenced_input_variables().map(|v| parent_variable_index[&v]).collect();
+        Self { plan: negation_plan, referenced_parent_vertex_ids }
     }
 
-    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
-        self.variables().all(|var| ordered.contains(&VertexId::Variable(var)))
+    fn is_valid(&self, ordered: &[VertexId]) -> bool {
+        self.referenced_parent_vertex_ids.iter().all(|var| ordered.contains(&VertexId::Variable(*var)))
     }
 
-    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
-        self.shared_variables.iter().copied()
+    pub(crate) fn variable_vertex_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+        self.referenced_parent_vertex_ids.iter().copied()
     }
 
     pub(super) fn plan(&self) -> &ConjunctionPlan<'a> {
@@ -576,7 +589,7 @@ impl<'a> NegationPlanner<'a> {
     }
 }
 
-impl Costed for NegationPlanner<'_> {
+impl Costed for NegationVertex<'_> {
     fn cost_and_metadata(
         &self,
         _vertex_ordering: &[VertexId],
@@ -588,37 +601,96 @@ impl Costed for NegationPlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct DisjunctionPlanner<'a> {
-    input_variables: Vec<VariableVertexId>,
-    shared_variables: HashSet<VariableVertexId>,
+pub(super) struct OptionalVertex<'a> {
+    pub(super) plan: OptionalPlan<'a>,
+    pub(super) referenced_parent_vertex_ids: HashSet<VariableVertexId>,
+    pub(super) optional_vertex_ids: HashSet<VariableVertexId>,
+}
+
+impl<'a> OptionalVertex<'a> {
+    pub(super) fn new(plan: OptionalPlan<'a>, parent_variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
+        let referenced_parent_vertex_ids: HashSet<_> =
+            plan.referenced_input_variables().map(|v| parent_variable_index[&v]).collect();
+        let optional_vertex_ids = plan.optional_variables().map(|v| parent_variable_index[&v]).collect();
+        Self { plan, referenced_parent_vertex_ids, optional_vertex_ids }
+    }
+
+    fn is_valid(&self, ordered: &[VertexId]) -> bool {
+        self.referenced_parent_vertex_ids.iter().all(|var| ordered.contains(&VertexId::Variable(*var)))
+    }
+
+    pub(crate) fn variable_vertex_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+        chain!(self.referenced_parent_vertex_ids.iter(), self.optional_vertex_ids.iter()).copied()
+    }
+
+    pub(super) fn plan(&self) -> &OptionalPlan<'a> {
+        &self.plan
+    }
+}
+
+impl Costed for OptionalVertex<'_> {
+    fn cost_and_metadata(
+        &self,
+        _vertex_ordering: &[VertexId],
+        _fix_dir: Option<Direction>,
+        _graph: &Graph<'_>,
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        Ok((self.plan.plan().planner_statistics.query_cost, CostMetaData::None))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct DisjunctionVertex<'a> {
+    referenced_parent_vertex_ids: HashSet<VariableVertexId>,
+    required_parent_vertex_ids: HashSet<VariableVertexId>,
     builder: DisjunctionPlanBuilder<'a>,
 }
 
-impl<'a> DisjunctionPlanner<'a> {
+impl<'a> DisjunctionVertex<'a> {
     pub(super) fn from_builder(
         builder: DisjunctionPlanBuilder<'a>,
-        variable_index: &HashMap<Variable, VariableVertexId>,
+        parent_variable_index: &HashMap<Variable, VariableVertexId>,
     ) -> Self {
-        let shared_variables: HashSet<_> =
-            builder.branches().iter().flat_map(|pb| pb.shared_variables()).map(|v| variable_index[v]).collect();
-        let input_variables = builder.required_inputs().iter().map(|v| variable_index[v]).collect();
-        Self { input_variables, shared_variables, builder }
+        // note: not every referenced variable is in the parent index & mapped
+        let referenced_parent_vertex_ids = builder
+            .branches()
+            .iter()
+            .flat_map(|branch| branch.referenced_variables().filter_map(|v| parent_variable_index.get(&v).copied()))
+            .collect();
+        let required_parent_vertex_ids = builder
+            .branches()
+            .iter()
+            .flat_map(|branch| branch.required_input_variables())
+            .map(|v| parent_variable_index[&v])
+            .collect();
+        Self { referenced_parent_vertex_ids, required_parent_vertex_ids, builder }
     }
 
-    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
-        self.input_variables.iter().all(|&var| ordered.contains(&VertexId::Variable(var)))
+    fn is_valid(&self, ordered: &[VertexId]) -> bool {
+        self.required_parent_vertex_ids.iter().all(|&var| ordered.contains(&VertexId::Variable(var)))
     }
 
-    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
-        chain!(&self.input_variables, &self.shared_variables).copied()
+    pub(crate) fn variable_vertex_ids(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+        self.referenced_parent_vertex_ids.iter().copied()
     }
 
-    pub(super) fn builder(&self) -> &DisjunctionPlanBuilder<'a> {
-        &self.builder
+    pub(crate) fn plan(
+        &self,
+        input_variables: impl Iterator<Item = Variable> + Clone,
+    ) -> Result<DisjunctionPlan<'a>, QueryPlanningError> {
+        // TODO: would be nice if we can do this without cloning
+        //  however, we do need to manipulate each branch's graph based on the available input
+        let DisjunctionPlanBuilder { branch_ids, branches, .. } = self.builder.clone();
+        let branches = branches
+            .into_iter()
+            .map(|branch| branch.set_to_input(input_variables.clone()).plan())
+            .collect::<Result<Vec<_>, _>>()?;
+        let cost = branches.iter().map(ConjunctionPlan::cost).fold(Cost::EMPTY, Cost::combine_parallel);
+        Ok(DisjunctionPlan::new(branch_ids, branches, cost))
     }
 }
 
-impl Costed for DisjunctionPlanner<'_> {
+impl Costed for DisjunctionVertex<'_> {
     fn cost_and_metadata(
         &self,
         vertex_ordering: &[VertexId],
@@ -628,10 +700,10 @@ impl Costed for DisjunctionPlanner<'_> {
         let input_variables =
             vertex_ordering.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
         let cost = self
-            .builder()
+            .builder
             .branches()
             .iter()
-            .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().map(|plan| plan.cost()))
+            .map(|branch| branch.clone().set_to_input(input_variables.clone()).plan().map(|plan| plan.cost()))
             .collect::<Result<Vec<_>, _>>()
             .map(|costs| costs.into_iter().fold(Cost::EMPTY, |acc_cost, cost| acc_cost.combine_parallel(cost)))?;
         Ok((cost, CostMetaData::None))

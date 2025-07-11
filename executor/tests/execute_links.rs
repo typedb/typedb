@@ -38,8 +38,8 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    conjunction_executor::ConjunctionExecutor, error::ReadExecutionError, pipeline::stage::ExecutionContext,
-    row::MaybeOwnedRow, ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use ir::{
     pattern::constraint::IsaKind,
@@ -332,7 +332,7 @@ fn traverse_links_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -430,7 +430,7 @@ fn traverse_links_unbounded_sorted_to() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -545,7 +545,7 @@ fn traverse_links_bounded_relation() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -677,7 +677,7 @@ fn traverse_links_bounded_relation_player() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -776,7 +776,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -876,7 +876,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -991,7 +991,7 @@ fn traverse_links_reverse_bounded_player() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,
@@ -1123,7 +1123,7 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = ConjunctionExecutor::new(
+    let executor = MatchExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,

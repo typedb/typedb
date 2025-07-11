@@ -149,6 +149,10 @@ impl InputPlanner {
     pub(crate) fn from_variable(variable: Variable) -> Self {
         Self { variable }
     }
+
+    pub(crate) fn variable(&self) -> Variable {
+        self.variable
+    }
 }
 
 #[derive(Clone)]
