@@ -12,7 +12,7 @@ use concurrency::IntervalRunner;
 use database::{
     database::DatabaseCreateError,
     database_manager::DatabaseManager,
-    transaction::{TransactionError, TransactionRead, TransactionSchema},
+    transaction::{TransactionError, TransactionRead},
     Database, DatabaseDeleteError,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
@@ -51,6 +51,10 @@ pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
 #[async_trait]
 pub trait ServerState: Debug {
     async fn distribution_info(&self) -> DistributionInfo;
+
+    async fn grpc_address(&self) -> SocketAddr;
+
+    async fn http_address(&self) -> Option<SocketAddr>;
 
     async fn server_status(&self) -> BoxServerStatus;
 
@@ -136,6 +140,8 @@ typedb_error! {
 #[derive(Debug)]
 pub struct LocalServerState {
     distribution_info: DistributionInfo,
+    grpc_address: SocketAddr,
+    http_address: Option<SocketAddr>,
     server_status: LocalServerStatus,
     database_manager: Arc<DatabaseManager>,
     user_manager: Option<Arc<UserManager>>,
@@ -183,7 +189,9 @@ impl LocalServerState {
 
         Ok(Self {
             distribution_info,
-            server_status: LocalServerStatus::new(grpc_address, http_address),
+            server_status: LocalServerStatus::from_addresses(grpc_address, http_address),
+            grpc_address,
+            http_address,
             database_manager: database_manager.clone(),
             user_manager: None,
             credential_verifier: None,
@@ -280,9 +288,9 @@ impl LocalServerState {
             .get_types_syntax(transaction.snapshot())
             .map_err(|err| ServerStateError::ConceptReadError { typedb_source: err })
     }
-    
+
     pub fn local_server_status(&self) -> LocalServerStatus {
-        self.server_status
+        self.server_status.clone()
     }
 
     fn get_user_manager(&self) -> Result<Arc<UserManager>, ServerStateError> {
@@ -325,12 +333,20 @@ impl ServerState for LocalServerState {
         self.distribution_info
     }
 
+    async fn grpc_address(&self) -> SocketAddr {
+        self.grpc_address
+    }
+
+    async fn http_address(&self) -> Option<SocketAddr> {
+        self.http_address
+    }
+
     async fn server_status(&self) -> BoxServerStatus {
-        Box::new(self.server_status)
+        Box::new(self.server_status.clone())
     }
 
     async fn servers_statuses(&self) -> Vec<BoxServerStatus> {
-        vec![Box::new(self.server_status)]
+        vec![self.server_status().await]
     }
 
     async fn servers_register(&self, _clustering_id: u64, _clustering_address: String) -> Result<(), ServerStateError> {

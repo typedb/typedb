@@ -23,7 +23,6 @@ use resource::{
     distribution_info::DistributionInfo,
 };
 use tokio::{
-    net::lookup_host,
     sync::watch::{channel, Receiver, Sender},
 };
 
@@ -163,20 +162,20 @@ impl Server {
 
         Self::install_default_encryption_provider()?;
 
-        let server_status = self.server_state.server_status().await;
+        let server_state = self.server_state;
 
         let grpc_server = Self::serve_grpc(
-            server_status.grpc_address(),
+            server_state.grpc_address().await,
             &self.config.server.encryption,
-            self.server_state.clone(),
+            server_state.clone(),
             self.shutdown_receiver.clone(),
         );
-        let http_server = if let Some(http_address) = server_status.http_address() {
+        let http_server = if let Some(http_address) = server_state.http_address().await {
             let server = Self::serve_http(
                 self.distribution_info,
                 http_address,
                 &self.config.server.encryption,
-                self.server_state.clone(),
+                server_state.clone(),
                 self.shutdown_receiver,
             );
             Some(server)
@@ -184,7 +183,7 @@ impl Server {
             None
         };
 
-        Self::print_serving_information(server_status);
+        Self::print_serving_information(server_state.server_status().await);
 
         Self::spawn_shutdown_handler(self.shutdown_sender);
         if let Some(http_server) = http_server {
