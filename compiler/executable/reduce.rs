@@ -54,7 +54,6 @@ pub enum ReduceInstruction<ID: IrID> {
     MedianDouble(ID),
     StdInteger(ID),
     StdDouble(ID),
-    // New variants for date/datetime/datetimetz min/max
     MaxDate(ID),
     MinDate(ID),
     MaxDateTime(ID),

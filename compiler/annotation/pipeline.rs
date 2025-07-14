@@ -673,10 +673,9 @@ pub fn resolve_reduce_instruction_by_value_type(
                 })
             }
         },
-        // Add support for min/max on DateTime
         ValueTypeCategory::DateTime => match reducer {
-            Reducer::Max(var) => Ok(ReduceInstruction::MaxDateTime(var)), // <-- Add this variant
-            Reducer::Min(var) => Ok(ReduceInstruction::MinDateTime(var)), // <-- Add this variant
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxDateTime(var)),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinDateTime(var)),
             _ => {
                 let variable_name = variable_registry.variable_names()[&match reducer {
                     Reducer::Count => unreachable!(),
@@ -697,10 +696,9 @@ pub fn resolve_reduce_instruction_by_value_type(
                 })
             }
         },
-        // Add support for min/max on DateTimeTZ
         ValueTypeCategory::DateTimeTZ => match reducer {
-            Reducer::Max(var) => Ok(ReduceInstruction::MaxDateTimeTZ(var)), // <-- Add this variant
-            Reducer::Min(var) => Ok(ReduceInstruction::MinDateTimeTZ(var)), // <-- Add this variant
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxDateTimeTZ(var)), 
+            Reducer::Min(var) => Ok(ReduceInstruction::MinDateTimeTZ(var)),
             _ => {
                 let variable_name = variable_registry.variable_names()[&match reducer {
                     Reducer::Count => unreachable!(),

@@ -719,7 +719,6 @@ impl ReducerAPI for StdDoubleExecutor {
     }
 }
 
-// --- Date min/max executors ---
 #[derive(Debug, Clone)]
 struct MaxDateExecutor {
     max: Option<chrono::NaiveDate>,
