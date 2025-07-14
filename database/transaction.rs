@@ -200,7 +200,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 }
 
-// TODO: when we use typedb_error!, how do we pring stack trace? If we use the stack trace of each of these, we'll end up with a tree!
+// TODO: when we use typedb_error!, how do we print stack trace? If we use the stack trace of each of these, we'll end up with a tree!
 //       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?
 
 typedb_error! {
