@@ -389,6 +389,25 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 }
 
+// TODO: Same issue with ConceptWriteErrors vs ErrorsFirst as for DataCommitError
+typedb_error! {
+    pub SchemaCommitError(component = "Schema commit", prefix = "SCT") {
+        ConceptWriteErrors(1, "Schema commit error.", write_errors: Vec<ConceptWriteError>),
+        ConceptWriteErrorsFirst(2, "Schema commit error.", typedb_source: Box<ConceptWriteError>),
+        TypeCacheUpdateError(3, "TypeCache update error.", typedb_source: TypeCacheCreateError),
+        StatisticsError(4, "Statistics error.", typedb_source: StatisticsError),
+        FunctionError(5, "Function error.", typedb_source: FunctionError),
+        SnapshotError(6, "Snapshot error.", typedb_source: SnapshotError),
+    }
+}
+
+typedb_error! {
+    pub TransactionError(component = "Transaction", prefix = "TXN") {
+        Timeout(1, "Transaction timeout.", source: RecvTimeoutError),
+        WriteExclusivityTimeout(2, "Transaction timeout due to an exclusive write access requested by this or a concurrent transaction."),
+    }
+}
+
 #[macro_export]
 macro_rules! with_transaction_parts {
     (
@@ -462,24 +481,5 @@ impl<D> Drop for DatabaseDropGuard<D> {
 impl<D> std::fmt::Debug for DatabaseDropGuard<D> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.database)
-    }
-}
-
-// TODO: Same issue with ConceptWriteErrors vs ErrorsFirst as for DataCommitError
-typedb_error! {
-    pub SchemaCommitError(component = "Schema commit", prefix = "SCT") {
-        ConceptWriteErrors(1, "Schema commit error.", write_errors: Vec<ConceptWriteError>),
-        ConceptWriteErrorsFirst(2, "Schema commit error.", typedb_source: Box<ConceptWriteError>),
-        TypeCacheUpdateError(3, "TypeCache update error.", typedb_source: TypeCacheCreateError),
-        StatisticsError(4, "Statistics error.", typedb_source: StatisticsError),
-        FunctionError(5, "Function error.", typedb_source: FunctionError),
-        SnapshotError(6, "Snapshot error.", typedb_source: SnapshotError),
-    }
-}
-
-typedb_error! {
-    pub TransactionError(component = "Transaction", prefix = "TXN") {
-        Timeout(1, "Transaction timeout.", source: RecvTimeoutError),
-        WriteExclusivityTimeout(2, "Transaction timeout due to an exclusive write access requested by this or a concurrent transaction."),
     }
 }
