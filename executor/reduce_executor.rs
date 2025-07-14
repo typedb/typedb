@@ -140,6 +140,13 @@ enum ReducerExecutor {
     MedianDouble(MedianDoubleExecutor),
     StdInteger(StdIntegerExecutor),
     StdDouble(StdDoubleExecutor),
+    // New for date/datetime/datetimetz
+    MaxDate(MaxDateExecutor),
+    MinDate(MinDateExecutor),
+    MaxDateTime(MaxDateTimeExecutor),
+    MinDateTime(MinDateTimeExecutor),
+    MaxDateTimeTZ(MaxDateTimeTZExecutor),
+    MinDateTimeTZ(MinDateTimeTZExecutor),
 }
 
 impl ReducerExecutor {
@@ -162,6 +169,12 @@ impl ReducerExecutor {
             ReducerExecutor::MedianDouble(reducer) => reducer.accept(row, context, storage_counters),
             ReducerExecutor::StdInteger(reducer) => reducer.accept(row, context, storage_counters),
             ReducerExecutor::StdDouble(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MaxDate(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MinDate(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MaxDateTime(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MinDateTime(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MaxDateTimeTZ(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MinDateTimeTZ(reducer) => reducer.accept(row, context, storage_counters),
         }
     }
 
@@ -181,6 +194,12 @@ impl ReducerExecutor {
             ReducerExecutor::MedianDouble(reducer) => reducer.finalise(),
             ReducerExecutor::StdInteger(reducer) => reducer.finalise(),
             ReducerExecutor::StdDouble(reducer) => reducer.finalise(),
+            ReducerExecutor::MaxDate(reducer) => reducer.finalise(),
+            ReducerExecutor::MinDate(reducer) => reducer.finalise(),
+            ReducerExecutor::MaxDateTime(reducer) => reducer.finalise(),
+            ReducerExecutor::MinDateTime(reducer) => reducer.finalise(),
+            ReducerExecutor::MaxDateTimeTZ(reducer) => reducer.finalise(),
+            ReducerExecutor::MinDateTimeTZ(reducer) => reducer.finalise(),
         }
     }
 }
@@ -202,6 +221,12 @@ impl ReducerExecutor {
             ReduceInstruction::MedianDouble(pos) => ReducerExecutor::MedianDouble(MedianDoubleExecutor::new(pos)),
             ReduceInstruction::StdInteger(pos) => ReducerExecutor::StdInteger(StdIntegerExecutor::new(pos)),
             ReduceInstruction::StdDouble(pos) => ReducerExecutor::StdDouble(StdDoubleExecutor::new(pos)),
+            ReduceInstruction::MaxDate(pos) => ReducerExecutor::MaxDate(MaxDateExecutor::new(pos)),
+            ReduceInstruction::MinDate(pos) => ReducerExecutor::MinDate(MinDateExecutor::new(pos)),
+            ReduceInstruction::MaxDateTime(pos) => ReducerExecutor::MaxDateTime(MaxDateTimeExecutor::new(pos)),
+            ReduceInstruction::MinDateTime(pos) => ReducerExecutor::MinDateTime(MinDateTimeExecutor::new(pos)),
+            ReduceInstruction::MaxDateTimeTZ(pos) => ReducerExecutor::MaxDateTimeTZ(MaxDateTimeTZExecutor::new(pos)),
+            ReduceInstruction::MinDateTimeTZ(pos) => ReducerExecutor::MinDateTimeTZ(MinDateTimeTZExecutor::new(pos)),
         }
     }
 }
@@ -691,5 +716,200 @@ impl ReducerAPI for StdDoubleExecutor {
         } else {
             None
         }
+    }
+}
+
+// --- Date min/max executors ---
+#[derive(Debug, Clone)]
+struct MaxDateExecutor {
+    max: Option<chrono::NaiveDate>,
+    target: VariablePosition,
+}
+impl MaxDateExecutor {
+    fn new(target: VariablePosition) -> Self {
+        Self { max: None, target }
+    }
+}
+impl ReducerAPI for MaxDateExecutor {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_date()) {
+            if let Some(current) = self.max.as_ref() {
+                if value > *current {
+                    self.max = Some(value)
+                }
+            } else {
+                self.max = Some(value);
+            }
+        }
+    }
+    fn finalise(self) -> Option<VariableValue<'static>> {
+        self.max.map(|v| VariableValue::Value(Value::Date(v)))
+    }
+}
+
+#[derive(Debug, Clone)]
+struct MinDateExecutor {
+    min: Option<chrono::NaiveDate>,
+    target: VariablePosition,
+}
+impl MinDateExecutor {
+    fn new(target: VariablePosition) -> Self {
+        Self { min: None, target }
+    }
+}
+impl ReducerAPI for MinDateExecutor {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_date()) {
+            if let Some(current) = self.min.as_ref() {
+                if value < *current {
+                    self.min = Some(value)
+                }
+            } else {
+                self.min = Some(value);
+            }
+        }
+    }
+    fn finalise(self) -> Option<VariableValue<'static>> {
+        self.min.map(|v| VariableValue::Value(Value::Date(v)))
+    }
+}
+
+// --- DateTime min/max executors ---
+#[derive(Debug, Clone)]
+struct MaxDateTimeExecutor {
+    max: Option<chrono::NaiveDateTime>,
+    target: VariablePosition,
+}
+impl MaxDateTimeExecutor {
+    fn new(target: VariablePosition) -> Self {
+        Self { max: None, target }
+    }
+}
+impl ReducerAPI for MaxDateTimeExecutor {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_date_time()) {
+            if let Some(current) = self.max.as_ref() {
+                if value > *current {
+                    self.max = Some(value)
+                }
+            } else {
+                self.max = Some(value);
+            }
+        }
+    }
+    fn finalise(self) -> Option<VariableValue<'static>> {
+        self.max.map(|v| VariableValue::Value(Value::Datetime(v)))
+    }
+}
+
+#[derive(Debug, Clone)]
+struct MinDateTimeExecutor {
+    min: Option<chrono::NaiveDateTime>,
+    target: VariablePosition,
+}
+impl MinDateTimeExecutor {
+    fn new(target: VariablePosition) -> Self {
+        Self { min: None, target }
+    }
+}
+impl ReducerAPI for MinDateTimeExecutor {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_date_time()) {
+            if let Some(current) = self.min.as_ref() {
+                if value < *current {
+                    self.min = Some(value)
+                }
+            } else {
+                self.min = Some(value);
+            }
+        }
+    }
+    fn finalise(self) -> Option<VariableValue<'static>> {
+        self.min.map(|v| VariableValue::Value(Value::Datetime(v)))
+    }
+}
+
+// --- DateTimeTZ min/max executors ---
+#[derive(Debug, Clone)]
+struct MaxDateTimeTZExecutor {
+    max: Option<chrono::DateTime<encoding::value::timezone::TimeZone>>,
+    target: VariablePosition,
+}
+impl MaxDateTimeTZExecutor {
+    fn new(target: VariablePosition) -> Self {
+        Self { max: None, target }
+    }
+}
+impl ReducerAPI for MaxDateTimeTZExecutor {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_date_time_tz()) {
+            if let Some(current) = self.max.as_ref() {
+                if value > *current {
+                    self.max = Some(value)
+                }
+            } else {
+                self.max = Some(value);
+            }
+        }
+    }
+    fn finalise(self) -> Option<VariableValue<'static>> {
+        self.max.map(|v| VariableValue::Value(Value::DatetimeTz(v)))
+    }
+}
+
+#[derive(Debug, Clone)]
+struct MinDateTimeTZExecutor {
+    min: Option<chrono::DateTime<encoding::value::timezone::TimeZone>>,
+    target: VariablePosition,
+}
+impl MinDateTimeTZExecutor {
+    fn new(target: VariablePosition) -> Self {
+        Self { min: None, target }
+    }
+}
+impl ReducerAPI for MinDateTimeTZExecutor {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_date_time_tz()) {
+            if let Some(current) = self.min.as_ref() {
+                if value < *current {
+                    self.min = Some(value)
+                }
+            } else {
+                self.min = Some(value);
+            }
+        }
+    }
+    fn finalise(self) -> Option<VariableValue<'static>> {
+        self.min.map(|v| VariableValue::Value(Value::DatetimeTz(v)))
     }
 }

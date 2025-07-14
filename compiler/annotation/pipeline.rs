@@ -650,6 +650,77 @@ pub fn resolve_reduce_instruction_by_value_type(
             Reducer::Median(var) => Ok(ReduceInstruction::MedianDouble(var)),
             Reducer::Std(var) => Ok(ReduceInstruction::StdDouble(var)),
         },
+        ValueTypeCategory::Date => match reducer {
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxDate(var)),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinDate(var)), 
+            _ => {
+                let variable_name = variable_registry.variable_names()[&match reducer {
+                    Reducer::Count => unreachable!(),
+                    Reducer::CountVar(var)
+                    | Reducer::Sum(var)
+                    | Reducer::Max(var)
+                    | Reducer::Mean(var)
+                    | Reducer::Median(var)
+                    | Reducer::Min(var)
+                    | Reducer::Std(var) => var,
+                }].clone();
+                let reducer_name = reducer.name();
+                Err(AnnotationError::UnsupportedValueTypeForReducer {
+                    reducer: reducer_name,
+                    variable: variable_name,
+                    value_type: value_type.category(),
+                    source_span,
+                })
+            }
+        },
+        // Add support for min/max on DateTime
+        ValueTypeCategory::DateTime => match reducer {
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxDateTime(var)), // <-- Add this variant
+            Reducer::Min(var) => Ok(ReduceInstruction::MinDateTime(var)), // <-- Add this variant
+            _ => {
+                let variable_name = variable_registry.variable_names()[&match reducer {
+                    Reducer::Count => unreachable!(),
+                    Reducer::CountVar(var)
+                    | Reducer::Sum(var)
+                    | Reducer::Max(var)
+                    | Reducer::Mean(var)
+                    | Reducer::Median(var)
+                    | Reducer::Min(var)
+                    | Reducer::Std(var) => var,
+                }].clone();
+                let reducer_name = reducer.name();
+                Err(AnnotationError::UnsupportedValueTypeForReducer {
+                    reducer: reducer_name,
+                    variable: variable_name,
+                    value_type: value_type.category(),
+                    source_span,
+                })
+            }
+        },
+        // Add support for min/max on DateTimeTZ
+        ValueTypeCategory::DateTimeTZ => match reducer {
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxDateTimeTZ(var)), // <-- Add this variant
+            Reducer::Min(var) => Ok(ReduceInstruction::MinDateTimeTZ(var)), // <-- Add this variant
+            _ => {
+                let variable_name = variable_registry.variable_names()[&match reducer {
+                    Reducer::Count => unreachable!(),
+                    Reducer::CountVar(var)
+                    | Reducer::Sum(var)
+                    | Reducer::Max(var)
+                    | Reducer::Mean(var)
+                    | Reducer::Median(var)
+                    | Reducer::Min(var)
+                    | Reducer::Std(var) => var,
+                }].clone();
+                let reducer_name = reducer.name();
+                Err(AnnotationError::UnsupportedValueTypeForReducer {
+                    reducer: reducer_name,
+                    variable: variable_name,
+                    value_type: value_type.category(),
+                    source_span,
+                })
+            }
+        },
         _ => {
             let var = match reducer {
                 Reducer::Count => unreachable!(),
