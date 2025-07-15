@@ -185,9 +185,24 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         };
         commit_profile.things_finalised();
         drop(self.type_manager);
-        match snapshot.commit(commit_profile) {
-            Ok(_) => (profile, Ok(())),
-            Err(err) => (profile, Err(DataCommitError::SnapshotError { typedb_source: err })),
+        
+        let commit_record_opt = match snapshot.into_commit_record(commit_profile) {
+            Ok(commit_record_opt) => commit_record_opt,
+            Err(error) => return (profile, Err(DataCommitError::SnapshotError { typedb_source: error }))
+        };
+        
+        match commit_record_opt {
+            Some(commit_record) => {
+                let commit_result = self.database.storage.commit(commit_record, commit_profile);
+                match commit_result {
+                    Ok(_) => (profile, Ok(())),
+                    Err(error) => {
+                        let error = DataCommitError::SnapshotError { typedb_source: SnapshotError::Commit { typedb_source: error } };
+                        (profile, Err(error))
+                    },
+                }
+            },
+            None => (profile, Ok(()))
         }
     }
 
@@ -340,9 +355,25 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
         commit_profile.schema_update_statistics_durably_written();
 
-        let sequence_number = match snapshot.commit(commit_profile) {
-            Ok(sequence_number) => sequence_number,
-            Err(typedb_source) => return (profile, Err(SnapshotError { typedb_source })),
+        let commit_record_opt = match snapshot.into_commit_record(commit_profile) {
+            Ok(commit_record_opt) => commit_record_opt,
+            Err(error) => return (profile, Err(SnapshotError { typedb_source: error }))
+        };
+
+        let sequence_number = match commit_record_opt {
+            Some(commit_record) => {
+                let commit_result = self.database.storage.commit(commit_record, commit_profile);
+                match commit_result {
+                    Ok(sequence_number) => Some(sequence_number),
+                    Err(error) => {
+                        let error = SnapshotError {
+                            typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error }
+                        };
+                        return (profile, Err(error));
+                    }
+                }
+            }
+            None => None
         };
 
         // `None` means empty commit

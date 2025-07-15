@@ -216,7 +216,7 @@ impl<Durability> MVCCStorage<Durability> {
         watermark
     }
 
-    fn commit(
+    pub fn commit(
         &self,
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,

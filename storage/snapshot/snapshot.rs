@@ -210,9 +210,10 @@ pub trait CommittableSnapshot<D>: WritableSnapshot
 where
     D: DurabilityClient,
 {
+    // TODO: update the tests and remove it
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
 
-    fn into_commit_record(self) -> CommitRecord;
+    fn into_commit_record(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError>;
 
     fn set_initial_put_status(
         &self,
@@ -252,6 +253,10 @@ where
             }
         }
         Ok(())
+    }
+
+    fn not_committable(&self) -> bool {
+        self.operations().is_writes_empty() && self.operations().locks_empty()
     }
 }
 
@@ -489,26 +494,37 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
 }
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
+    // TODO: update the tests and remove it
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
-        if self.operations.is_writes_empty() && self.operations.locks_empty() {
+        let storage = self.storage.clone();
+        match self.into_commit_record(commit_profile) {
+            Ok(commit_record_opt) => {
+                match commit_record_opt {
+                    Some(commit_record) => {
+                        match storage.clone().commit(commit_record, commit_profile) {
+                            Ok(sequence_number) => Ok(Some(sequence_number)),
+                            Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
+                        }
+                    }
+                    None => Ok(None),
+                }
+            },
+            Err(error) => Err(error),
+        }
+    }
+
+    fn into_commit_record(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError> {
+        if self.not_committable() {
             Ok(None)
         } else {
             self.set_initial_put_status(self.storage.clone(), commit_profile.storage_counters())
                 .map_err(|error| SnapshotError::Commit {
-                    typedb_source: MVCCRead { name: self.storage.name.clone(), source: error } 
+                    typedb_source: MVCCRead { name: self.storage.name.clone(), source: error }
                 })?;
             commit_profile.snapshot_put_statuses_checked();
-            let storage = self.storage.clone();
-            let commit_record = self.into_commit_record();
-            match storage.clone().commit(commit_record, commit_profile) {
-                Ok(sequence_number) => Ok(Some(sequence_number)),
-                Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
-            }
+            let commit_record = CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Data);
+            Ok(Some(commit_record))
         }
-    }
-
-    fn into_commit_record(self) -> CommitRecord {
-        CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Data)
     }
 }
 
@@ -655,8 +671,27 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     // TODO: extract these two methods into separate trait
+    // TODO: update the tests and remove it
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
-        if self.operations.is_writes_empty() && self.operations.locks_empty() {
+        let storage = self.storage.clone();
+        match self.into_commit_record(commit_profile) {
+            Ok(commit_record_opt) => {
+                match commit_record_opt {
+                    Some(commit_record) => {
+                        match storage.commit(commit_record, commit_profile) {
+                            Ok(sequence_number) => Ok(Some(sequence_number)),
+                            Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
+                        }
+                    }
+                    None => Ok(None),
+                }
+            },
+            Err(error) => Err(error),
+        }
+    }
+
+    fn into_commit_record(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError> {
+        if self.not_committable() {
             Ok(None)
         } else {
             self.set_initial_put_status(self.storage.clone(), commit_profile.storage_counters())
@@ -664,17 +699,8 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
                     typedb_source: MVCCRead { name: self.storage.name.clone(), source: error }
                 })?;
             commit_profile.snapshot_put_statuses_checked();
-            let storage = self.storage.clone();
-            let commit_record = self.into_commit_record();
-            match storage.commit(commit_record, commit_profile) {
-                Ok(sequence_number) => Ok(Some(sequence_number)),
-                Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
-            }
+            Ok(Some(CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Schema)))
         }
-    }
-
-    fn into_commit_record(self) -> CommitRecord {
-        CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Schema)
     }
 }
 
