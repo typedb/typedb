@@ -216,9 +216,9 @@ impl<Durability> MVCCStorage<Durability> {
         watermark
     }
 
-    fn snapshot_commit(
+    fn commit(
         &self,
-        snapshot: impl CommittableSnapshot<Durability>,
+        commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<SequenceNumber, StorageCommitError>
     where
@@ -226,11 +226,6 @@ impl<Durability> MVCCStorage<Durability> {
     {
         use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
 
-        self.set_initial_put_status(&snapshot, commit_profile.storage_counters())
-            .map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
-        commit_profile.snapshot_put_statuses_checked();
-
-        let commit_record = snapshot.into_commit_record();
         commit_profile.snapshot_commit_record_created();
 
         commit_profile.commit_size(commit_record.operations().len());
@@ -285,49 +280,7 @@ impl<Durability> MVCCStorage<Durability> {
             }
         }
     }
-
-    fn set_initial_put_status(
-        &self,
-        snapshot: &impl CommittableSnapshot<Durability>,
-        storage_counters: StorageCounters,
-    ) -> Result<(), MVCCReadError>
-    where
-        Durability: DurabilityClient,
-    {
-        for buffer in snapshot.operations() {
-            let writes = buffer.writes();
-            let puts = writes.iter().filter_map(|(key, write)| match write {
-                Write::Put { value, reinsert, known_to_exist } => Some((key, value, reinsert, *known_to_exist)),
-                _ => None,
-            });
-            for (key, value, reinsert, known_to_exist) in puts {
-                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key);
-                if known_to_exist {
-                    debug_assert!(self
-                        .get::<0>(
-                            snapshot.iterator_pool(),
-                            wrapped,
-                            snapshot.open_sequence_number(),
-                            storage_counters.clone()
-                        )
-                        .is_ok_and(|opt| opt.is_some()));
-                    reinsert.store(false, Ordering::Release);
-                } else {
-                    let existing_stored = self
-                        .get::<BUFFER_VALUE_INLINE>(
-                            snapshot.iterator_pool(),
-                            wrapped,
-                            snapshot.open_sequence_number(),
-                            storage_counters.clone(),
-                        )?
-                        .is_some_and(|reference| &reference == value);
-                    reinsert.store(!existing_stored, Ordering::Release);
-                }
-            }
-        }
-        Ok(())
-    }
-
+    
     fn persist_commit_status(
         did_apply: bool,
         commit_sequence_number: SequenceNumber,
