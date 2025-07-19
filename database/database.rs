@@ -68,6 +68,11 @@ pub(super) struct Schema {
 
 type SchemaWriteTransactionState = (bool, usize, VecDeque<TransactionReservationRequest>);
 
+enum TransactionReservationRequest {
+    Write(SyncSender<()>),
+    Schema(SyncSender<()>),
+}
+
 pub struct Database<D> {
     name: String,
     pub(super) path: PathBuf,
@@ -81,11 +86,6 @@ pub struct Database<D> {
     schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
     _statistics_updater: IntervalRunner,
     _checkpointer: IntervalRunner,
-}
-
-enum TransactionReservationRequest {
-    Write(SyncSender<()>),
-    Schema(SyncSender<()>),
 }
 
 impl<D> fmt::Debug for Database<D> {
