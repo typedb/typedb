@@ -305,9 +305,11 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         use SchemaCommitError::{
             ConceptWriteErrorsFirst, FunctionError, SnapshotError, StatisticsError, TypeCacheUpdateError,
         };
+        
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
         let mut snapshot = self.snapshot.into_inner();
+        
         if let Err(errs) = self.type_manager.validate(&snapshot) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
@@ -342,19 +344,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         // transaction may open until the commit completes.
         let mut schema_commit_guard = self.database.schema.write().unwrap();
         let mut schema = (*schema_commit_guard).clone();
-
-        let mut thing_statistics = (*schema.thing_statistics).clone();
-
-        // 1. synchronise statistics
-        if let Err(typedb_source) = thing_statistics.may_synchronise(&self.database.storage) {
-            return (profile, Err(StatisticsError { typedb_source }));
-        }
-        // 2. flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
-        if let Err(typedb_source) = thing_statistics.durably_write(self.database.storage.durability()) {
-            return (profile, Err(StatisticsError { typedb_source }));
-        }
-        commit_profile.schema_update_statistics_durably_written();
-
+        
         let commit_record_opt = match snapshot.into_commit_record(commit_profile) {
             Ok(commit_record_opt) => commit_record_opt,
             Err(error) => return (profile, Err(SnapshotError { typedb_source: error }))
@@ -399,6 +389,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
 
         // replace statistics
+        let mut thing_statistics = (*schema.thing_statistics).clone();
+        
         if let Err(typedb_source) = thing_statistics.may_synchronise(&self.database.storage) {
             return (profile, Err(StatisticsError { typedb_source }));
         }
