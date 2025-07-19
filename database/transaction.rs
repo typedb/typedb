@@ -165,18 +165,14 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
     pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
         self.profile.commit_profile().start();
-        let (mut profile, result) = self.try_commit();
-        profile.commit_profile().end();
-        (profile, result)
-    }
-
-    pub fn try_commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
+        
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
         let mut snapshot = match self.snapshot.try_into_inner() {
             None => return (profile, Err(DataCommitError::SnapshotInUse {})),
             Some(snapshot) => snapshot,
         };
+        
         if let Err(errs) = self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
@@ -186,10 +182,12 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         commit_profile.things_finalised();
         drop(self.type_manager);
         
-        let commit_result = self.database.data_commit(snapshot, commit_profile);
-        (profile, commit_result)
+        let result = self.database.data_commit(snapshot, commit_profile);
+        
+        profile.commit_profile().end();
+        (profile, result)
     }
-
+    
     pub fn rollback(&mut self) {
         self.snapshot.as_mut().expect("Expected owning snapshot on rollback").clear()
     }
