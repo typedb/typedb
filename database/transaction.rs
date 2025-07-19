@@ -293,7 +293,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             profile,
         }
     }
-
+    
     pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
         self.profile.commit_profile().start();
         let (mut profile, result) = self.try_commit(); // TODO include
@@ -340,67 +340,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         drop(type_manager);
 
-        // Schema commits must wait for all other data operations to finish. No new read or write
-        // transaction may open until the commit completes.
-        let mut schema_commit_guard = self.database.schema.write().unwrap();
-        let mut schema = (*schema_commit_guard).clone();
-        
-        let commit_record_opt = match snapshot.into_commit_record(commit_profile) {
-            Ok(commit_record_opt) => commit_record_opt,
-            Err(error) => return (profile, Err(SnapshotError { typedb_source: error }))
-        };
-
-        let sequence_number = match commit_record_opt {
-            Some(commit_record) => {
-                let commit_result = self.database.storage.commit(commit_record, commit_profile);
-                match commit_result {
-                    Ok(sequence_number) => Some(sequence_number),
-                    Err(error) => {
-                        let error = SnapshotError {
-                            typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error }
-                        };
-                        return (profile, Err(error));
-                    }
-                }
-            }
-            None => None
-        };
-
-        // `None` means empty commit
-        if let Some(sequence_number) = sequence_number {
-            let type_cache = match TypeCache::new(self.database.storage.clone(), sequence_number) {
-                Ok(type_cache) => type_cache,
-                Err(typedb_source) => return (profile, Err(TypeCacheUpdateError { typedb_source })),
-            };
-            // replace Schema cache
-            schema.type_cache = Arc::new(type_cache);
-            let type_manager = TypeManager::new(
-                self.database.definition_key_generator.clone(),
-                self.database.type_vertex_generator.clone(),
-                Some(schema.type_cache.clone()),
-            );
-            let function_cache = match FunctionCache::new(self.database.storage.clone(), &type_manager, sequence_number)
-            {
-                Ok(function_cache) => function_cache,
-                Err(typedb_source) => return (profile, Err(SchemaCommitError::FunctionError { typedb_source })),
-            };
-            schema.function_cache = Arc::new(function_cache);
-            commit_profile.schema_update_caches_updated();
-        }
-
-        // replace statistics
-        let mut thing_statistics = (*schema.thing_statistics).clone();
-        
-        if let Err(typedb_source) = thing_statistics.may_synchronise(&self.database.storage) {
-            return (profile, Err(StatisticsError { typedb_source }));
-        }
-        commit_profile.schema_update_statistics_keys_updated();
-
-        schema.thing_statistics = Arc::new(thing_statistics);
-        self.database.query_cache.force_reset(&schema.thing_statistics);
-
-        *schema_commit_guard = schema;
-        (profile, Ok(()))
+        let commit_result = self.database.schema_commit(snapshot, commit_profile);
+        (profile, commit_result)
     }
 
     pub fn rollback(&mut self) {
