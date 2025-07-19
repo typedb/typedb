@@ -236,6 +236,27 @@ impl<D> Database<D> {
 }
 
 impl<D: DurabilityClient> Database<D> {
+    pub fn data_commit(&self, snapshot: WriteSnapshot<D>, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
+        let commit_record_opt = match snapshot.into_commit_record(commit_profile) {
+            Ok(commit_record_opt) => commit_record_opt,
+            Err(error) => return Err(DataCommitError::SnapshotError { typedb_source: error })
+        };
+
+        match commit_record_opt {
+            Some(commit_record) => {
+                let commit_result = self.storage.commit(commit_record, commit_profile);
+                match commit_result {
+                    Ok(_) => Ok(()),
+                    Err(error) => {
+                        let error = DataCommitError::SnapshotError { typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error } };
+                        Err(error)
+                    },
+                }
+            },
+            None => Ok(())
+        }
+    }
+
     pub fn schema_commit(&self, snapshot: SchemaSnapshot<D>, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
         // Schema commits must wait for all other data operations to finish. No new read or write
         // transaction may open until the commit completes.
@@ -299,10 +320,6 @@ impl<D: DurabilityClient> Database<D> {
         *schema_commit_guard = schema;
 
         Ok(())
-    }
-
-    pub fn data_commit(self, snapshot: WriteSnapshot<D>) -> Result<(), DataCommitError> {
-        todo!()
     }
 }
 

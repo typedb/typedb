@@ -186,24 +186,8 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         commit_profile.things_finalised();
         drop(self.type_manager);
         
-        let commit_record_opt = match snapshot.into_commit_record(commit_profile) {
-            Ok(commit_record_opt) => commit_record_opt,
-            Err(error) => return (profile, Err(DataCommitError::SnapshotError { typedb_source: error }))
-        };
-        
-        match commit_record_opt {
-            Some(commit_record) => {
-                let commit_result = self.database.storage.commit(commit_record, commit_profile);
-                match commit_result {
-                    Ok(_) => (profile, Ok(())),
-                    Err(error) => {
-                        let error = DataCommitError::SnapshotError { typedb_source: SnapshotError::Commit { typedb_source: error } };
-                        (profile, Err(error))
-                    },
-                }
-            },
-            None => (profile, Ok(()))
-        }
+        let commit_result = self.database.data_commit(snapshot, commit_profile);
+        (profile, commit_result)
     }
 
     pub fn rollback(&mut self) {
