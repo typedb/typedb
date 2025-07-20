@@ -187,7 +187,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         self.profile.commit_profile().start();
         
         let (mut profile, (database, snapshot)) = match self.finalise_snapshot() {
-            (profile, Ok(snapshot)) => (profile, snapshot),
+            (profile, Ok((database, snapshot))) => (profile, (database, snapshot)),
             (profile, Err(error)) => return (profile, Err(error))
         };
         let result = database.data_commit(snapshot, profile.commit_profile());
@@ -283,23 +283,16 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             profile,
         }
     }
-    
-    pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
-        self.profile.commit_profile().start();
-        let (mut profile, result) = self.try_commit(); // TODO include
-        profile.commit_profile().end();
-        (profile, result)
-    }
 
-    fn try_commit(self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
+    pub fn finalise_snapshot(self) -> (TransactionProfile, Result<(DatabaseDropGuard<D>, SchemaSnapshot<D>), SchemaCommitError>) {
         use SchemaCommitError::{
             ConceptWriteErrorsFirst, FunctionError, SnapshotError, StatisticsError, TypeCacheUpdateError,
         };
-        
+
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
         let mut snapshot = self.snapshot.into_inner();
-        
+
         if let Err(errs) = self.type_manager.validate(&snapshot) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
@@ -329,9 +322,20 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         drop(type_manager);
+        (profile, Ok((self.database, snapshot)))
+    }
+    
+    pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
+        self.profile.commit_profile().start();
 
-        let commit_result = self.database.schema_commit(snapshot, commit_profile);
-        (profile, commit_result)
+        let (mut profile, (database, snapshot)) = match self.finalise_snapshot() {
+            (profile, Ok((database, snapshot))) => (profile, (database, snapshot)),
+            (profile, Err(error)) => return (profile, Err(error))
+        };
+        let result = database.schema_commit(snapshot, profile.commit_profile());
+        
+        profile.commit_profile().end();
+        (profile, result)
     }
 
     pub fn rollback(&mut self) {
