@@ -464,7 +464,16 @@ impl TransactionService {
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
                 );
-                let (profile, commit_result) = transaction.commit();
+                let (profile, commit_result) = match transaction.finalise_snapshot() {
+                    (mut profile, Ok((database, snapshot))) => {
+                        let commit_result = server_state.database_data_commit(
+                            database.name(), snapshot, profile.commit_profile()
+                        ).await;
+                        (profile, commit_result)
+                    }
+                    (profile, Err(error)) => (profile, Err(ServerStateError::DatabaseDataCommitFailed { typedb_source: error }))
+                };
+
                 if profile.is_enabled() {
                     event!(Level::INFO, "commit done.\n{}", profile);
                 }
