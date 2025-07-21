@@ -7,7 +7,7 @@
 use std::{
     fmt,
     num::ParseIntError,
-    ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
     str::FromStr,
 };
 
@@ -261,6 +261,15 @@ where
 {
     fn mul_assign(&mut self, rhs: T) {
         *self = *self * rhs
+    }
+}
+
+impl<T> DivAssign<T> for Decimal
+where
+    Self: Div<T, Output = Self>,
+{
+    fn div_assign(&mut self, rhs: T) {
+        *self = *self / rhs
     }
 }
 
