@@ -46,9 +46,9 @@ pub enum ReduceInstruction<ID: IrID> {
     SumDouble(ID), MaxDouble(ID), MinDouble(ID), MeanDouble(ID), MedianDouble(ID), StdDouble(ID),
     SumDecimal(ID), MaxDecimal(ID), MinDecimal(ID), MeanDecimal(ID), MedianDecimal(ID), StdDecimal(ID),
     MaxString(ID), MinString(ID),
-    MaxDate(ID), MinDate(ID), // MeanDate(ID), MedianDate(ID), StdDate(ID),
-    MaxDateTime(ID), MinDateTime(ID), // MeanDateTime(ID), MedianDateTime(ID), StdDateTime(ID),
-    MaxDateTimeTZ(ID), MinDateTimeTZ(ID), // MeanDateTimeTZ(ID), MedianDateTimeTZ(ID), StdDateTimeTZ(ID),
+    MaxDate(ID), MinDate(ID),
+    MaxDateTime(ID), MinDateTime(ID),
+    MaxDateTimeTZ(ID), MinDateTimeTZ(ID),
 }
 
 impl<ID: IrID> ReduceInstruction<ID> {

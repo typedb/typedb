@@ -689,9 +689,6 @@ pub fn resolve_reduce_instruction_by_value_type(
             Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
             Reducer::Max(var) => Ok(ReduceInstruction::MaxDate(var)),
             Reducer::Min(var) => Ok(ReduceInstruction::MinDate(var)),
-            // Reducer::Mean(var) => Ok(ReduceInstruction::MeanDate(var)),
-            // Reducer::Median(var) => Ok(ReduceInstruction::MedianDate(var)),
-            // Reducer::Std(var) => Ok(ReduceInstruction::StdDate(var)),
             _ => err(),
         },
 
@@ -700,9 +697,6 @@ pub fn resolve_reduce_instruction_by_value_type(
             Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
             Reducer::Max(var) => Ok(ReduceInstruction::MaxDateTime(var)),
             Reducer::Min(var) => Ok(ReduceInstruction::MinDateTime(var)),
-            // Reducer::Mean(var) => Ok(ReduceInstruction::MeanDateTime(var)),
-            // Reducer::Median(var) => Ok(ReduceInstruction::MedianDateTime(var)),
-            // Reducer::Std(var) => Ok(ReduceInstruction::StdDateTime(var)),
             _ => err(),
         },
 
@@ -711,9 +705,6 @@ pub fn resolve_reduce_instruction_by_value_type(
             Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
             Reducer::Max(var) => Ok(ReduceInstruction::MaxDateTimeTZ(var)),
             Reducer::Min(var) => Ok(ReduceInstruction::MinDateTimeTZ(var)),
-            // Reducer::Mean(var) => Ok(ReduceInstruction::MeanDateTimeTZ(var)),
-            // Reducer::Median(var) => Ok(ReduceInstruction::MedianDateTimeTZ(var)),
-            // Reducer::Std(var) => Ok(ReduceInstruction::StdDateTimeTZ(var)),
             _ => err(),
         },
 
