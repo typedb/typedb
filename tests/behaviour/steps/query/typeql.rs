@@ -306,9 +306,9 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
         for row in iter_table_map(step) {
             let mut num_matches = 0;
             for answer_row in query_answer {
-                let is_a_match =
+                let table_row_within_answer =
                     row.iter().all(|(&var, &spec)| does_var_in_row_match_spec(context, answer_row, var, spec));
-                if is_a_match {
+                if table_row_within_answer && row.len() == answer_row.len() {
                     num_matches += 1;
                 }
             }
