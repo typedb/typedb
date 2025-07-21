@@ -36,6 +36,9 @@ use system::{
     initialise_system_database,
 };
 use tokio::sync::watch::Receiver;
+use database::transaction::{DataCommitError, SchemaCommitError};
+use resource::profile::CommitProfile;
+use storage::snapshot::{SchemaSnapshot, WriteSnapshot};
 use user::{
     errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError},
     initialise_default_user,
@@ -71,6 +74,20 @@ pub trait ServerState: Debug {
     async fn database_schema(&self, name: String) -> Result<String, ServerStateError>;
 
     async fn database_type_schema(&self, name: String) -> Result<String, ServerStateError>;
+
+    async fn database_schema_commit(
+        &self,
+        name: &str,
+        snapshot: SchemaSnapshot<WALClient>,
+        commit_profile: &mut CommitProfile
+    ) -> Result<(), ServerStateError>;
+
+    async fn database_data_commit(
+        &self,
+        name: &str,
+        snapshot: WriteSnapshot<WALClient>,
+        commit_profile: &mut CommitProfile
+    ) -> Result<(), ServerStateError>;
 
     async fn database_delete(&self, name: &str) -> Result<(), ServerStateError>;
 
@@ -115,6 +132,8 @@ typedb_error! {
         OperationFailedNonPrimaryReplica(13, "Unable to execute as this server is not the primary replica"),
         OperationNotPermitted(2, "The user is not permitted to execute the operation"),
         DatabaseNotFound(3, "Database '{name}' not found.", name: String),
+        DatabaseSchemaCommitFailed(19, "Schema commit to database '{name}' failed.", name: String, typedb_source: SchemaCommitError),
+        DatabaseDataCommitFailed(20, "Data commit to database '{name}' failed.", name: String, typedb_source: DataCommitError),
         DatabaseCannotBeCreated(14, "Unable to create database", typedb_source: DatabaseCreateError),
         DatabaseCannotBeDeleted(15, "Unable to delete database", typedb_source: DatabaseDeleteError),
         UserNotFound(4, "User not found."),
@@ -330,6 +349,34 @@ impl ServerState for LocalServerState {
                 Err(err) => Err(err),
             },
         }
+    }
+
+    async fn database_schema_commit(
+        &self,
+        name: &str,
+        snapshot: SchemaSnapshot<WALClient>,
+        commit_profile: &mut CommitProfile
+    ) -> Result<(), ServerStateError> {
+        let Some(database) = self.databases_get(name).await else {
+            return Err(ServerStateError::DatabaseNotFound { name: name.to_string() })
+        };
+        database.schema_commit(snapshot, commit_profile).map_err(|error|
+            ServerStateError::DatabaseSchemaCommitFailed { name: name.to_string(), typedb_source: error }
+        )
+    }
+
+    async fn database_data_commit(
+        &self,
+        name: &str,
+        snapshot: WriteSnapshot<WALClient>,
+        commit_profile: &mut CommitProfile
+    ) -> Result<(), ServerStateError> {
+        let Some(database) = self.databases_get(name).await else {
+            return Err(ServerStateError::DatabaseNotFound { name: name.to_string() })
+        };
+        database.data_commit(snapshot, commit_profile).map_err(|error|
+            ServerStateError::DatabaseDataCommitFailed { name: name.to_string(), typedb_source: error }
+        )
     }
 
     async fn database_delete(&self, name: &str) -> Result<(), ServerStateError> {
