@@ -41,8 +41,8 @@ pub enum Value<'a> {
     Double(f64),
     Decimal(Decimal),
     Date(NaiveDate),
-    Datetime(NaiveDateTime),
-    DatetimeTz(DateTime<TimeZone>),
+    DateTime(NaiveDateTime),
+    DateTimeTZ(DateTime<TimeZone>),
     Duration(Duration),
     String(Cow<'a, str>),
     Struct(Cow<'a, StructValue<'static>>),
@@ -63,10 +63,10 @@ impl PartialOrd for Value<'_> {
             (Self::Double(self_double), Self::Double(other_double)) => self_double.partial_cmp(other_double),
             (Self::Decimal(self_decimal), Self::Decimal(other_decimal)) => self_decimal.partial_cmp(other_decimal),
             (Self::Date(self_date), Self::Date(other_date)) => self_date.partial_cmp(other_date),
-            (Self::Datetime(self_date_time), Self::Datetime(other_date_time)) => {
+            (Self::DateTime(self_date_time), Self::DateTime(other_date_time)) => {
                 self_date_time.partial_cmp(other_date_time)
             }
-            (Self::DatetimeTz(self_date_time_tz), Self::DatetimeTz(other_date_time_tz)) => {
+            (Self::DateTimeTZ(self_date_time_tz), Self::DateTimeTZ(other_date_time_tz)) => {
                 self_date_time_tz.partial_cmp(other_date_time_tz)
             }
             (Self::String(self_string), Self::String(other_string)) => self_string.partial_cmp(other_string),
@@ -106,8 +106,8 @@ impl Hash for Value<'_> {
             Value::Double(_value) => Hash::hash(&self.encode_double(), state), // same bitwise representation as storage of values
             Value::Decimal(value) => Hash::hash(value, state),
             Value::Date(value) => Hash::hash(value, state),
-            Value::Datetime(value) => Hash::hash(value, state),
-            Value::DatetimeTz(value) => Hash::hash(value, state),
+            Value::DateTime(value) => Hash::hash(value, state),
+            Value::DateTimeTZ(value) => Hash::hash(value, state),
             Value::Duration(value) => Hash::hash(value, state),
             Value::String(value) => Hash::hash(value, state),
             Value::Struct(value) => Hash::hash(value, state),
@@ -123,8 +123,8 @@ impl<'a> Value<'a> {
             Value::Double(double) => Value::Double(double),
             Value::Decimal(decimal) => Value::Decimal(decimal),
             Value::Date(date) => Value::Date(date),
-            Value::Datetime(date_time) => Value::Datetime(date_time),
-            Value::DatetimeTz(date_time_tz) => Value::DatetimeTz(date_time_tz),
+            Value::DateTime(date_time) => Value::DateTime(date_time),
+            Value::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
             Value::Duration(duration) => Value::Duration(duration),
             Value::String(ref string) => Value::String(Cow::Borrowed(string.as_ref())),
             Value::Struct(ref struct_) => Value::Struct(Cow::Borrowed(struct_.as_ref())),
@@ -168,14 +168,14 @@ impl<'a> Value<'a> {
 
     pub fn unwrap_date_time(self) -> NaiveDateTime {
         match self {
-            Self::Datetime(date_time) => date_time,
+            Self::DateTime(date_time) => date_time,
             _ => panic!("Cannot unwrap DateTime if not a datetime value."),
         }
     }
 
     pub fn unwrap_date_time_tz(self) -> DateTime<TimeZone> {
         match self {
-            Self::DatetimeTz(date_time_tz) => date_time_tz,
+            Self::DateTimeTZ(date_time_tz) => date_time_tz,
             _ => panic!("Cannot unwrap DateTimeTZ if not a datetime-tz value."),
         }
     }
@@ -215,8 +215,8 @@ impl<'a> Value<'a> {
             Self::Double(double) => Value::Double(double),
             Self::Decimal(decimal) => Value::Decimal(decimal),
             Self::Date(date) => Value::Date(date),
-            Self::Datetime(date_time) => Value::Datetime(date_time),
-            Self::DatetimeTz(date_time_tz) => Value::DatetimeTz(date_time_tz),
+            Self::DateTime(date_time) => Value::DateTime(date_time),
+            Self::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
             Self::Duration(duration) => Value::Duration(duration),
             Self::String(string) => Value::String(Cow::Owned(string.into_owned())),
             Self::Struct(struct_) => Value::Struct(Cow::Owned(struct_.into_owned())),
@@ -245,7 +245,7 @@ impl<'a> Value<'a> {
             }
             Value::Date(date) => {
                 debug_assert!(matches!(value_type_category, ValueTypeCategory::DateTime));
-                Some(Value::Datetime(date.and_time(NaiveTime::default())))
+                Some(Value::DateTime(date.and_time(NaiveTime::default())))
             }
             _ => unreachable!(),
         }
@@ -359,8 +359,8 @@ impl ValueEncodable for Value<'_> {
             Value::Double(_) => ValueType::Double,
             Value::Decimal(_) => ValueType::Decimal,
             Value::Date(_) => ValueType::Date,
-            Value::Datetime(_) => ValueType::DateTime,
-            Value::DatetimeTz(_) => ValueType::DateTimeTZ,
+            Value::DateTime(_) => ValueType::DateTime,
+            Value::DateTimeTZ(_) => ValueType::DateTimeTZ,
             Value::Duration(_) => ValueType::Duration,
             Value::String(_) => ValueType::String,
             Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().clone()),
@@ -404,14 +404,14 @@ impl ValueEncodable for Value<'_> {
 
     fn encode_date_time(&self) -> DateTimeBytes {
         match self {
-            Self::Datetime(date_time) => DateTimeBytes::build(*date_time),
+            Self::DateTime(date_time) => DateTimeBytes::build(*date_time),
             _ => panic!("Cannot encode non-datetime as DateTimeBytes"),
         }
     }
 
     fn encode_date_time_tz(&self) -> DateTimeTZBytes {
         match self {
-            &Self::DatetimeTz(date_time_tz) => DateTimeTZBytes::build(date_time_tz),
+            &Self::DateTimeTZ(date_time_tz) => DateTimeTZBytes::build(date_time_tz),
             _ => panic!("Cannot encoded non-datetime as DateTimeBytes"),
         }
     }
@@ -444,8 +444,8 @@ impl ValueEncodable for Value<'_> {
             Value::Double(_) => ByteArray::copy(&self.encode_double().bytes()),
             Value::Decimal(_) => ByteArray::copy(&self.encode_decimal().bytes()),
             Value::Date(_) => ByteArray::copy(&self.encode_date().bytes()),
-            Value::Datetime(_) => ByteArray::copy(&self.encode_date_time().bytes()),
-            Value::DatetimeTz(_) => ByteArray::copy(&self.encode_date_time_tz().bytes()),
+            Value::DateTime(_) => ByteArray::copy(&self.encode_date_time().bytes()),
+            Value::DateTimeTZ(_) => ByteArray::copy(&self.encode_date_time_tz().bytes()),
             Value::Duration(_) => ByteArray::copy(&self.encode_duration().bytes()),
             Value::String(_) => ByteArray::copy(self.encode_string::<INLINE_LENGTH>().bytes()),
             Value::Struct(_) => ByteArray::copy(self.encode_struct::<INLINE_LENGTH>().bytes()),
@@ -467,8 +467,8 @@ impl fmt::Display for Value<'_> {
             }
             Value::Decimal(decimal) => write!(f, "{decimal}"),
             Value::Date(date) => write!(f, "{date}"),
-            Value::Datetime(datetime) => write!(f, "{}", datetime.format("%FT%T%.9f")),
-            Value::DatetimeTz(datetime_tz) => match datetime_tz.timezone() {
+            Value::DateTime(datetime) => write!(f, "{}", datetime.format("%FT%T%.9f")),
+            Value::DateTimeTZ(datetime_tz) => match datetime_tz.timezone() {
                 TimeZone::IANA(tz) => write!(f, "{} {}", datetime_tz.format("%FT%T%.9f"), tz.name()),
                 TimeZone::Fixed(_) => write!(f, "{}", datetime_tz.format("%FT%T%.9f%:z")),
             },
@@ -584,13 +584,13 @@ impl NativeValueConvertible for NaiveDateTime {
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
-            Value::Datetime(value) => Ok(value),
+            Value::DateTime(value) => Ok(value),
             _ => Err(()),
         }
     }
 
     fn to_db_value(self) -> Value<'static> {
-        Value::Datetime(self)
+        Value::DateTime(self)
     }
 }
 
@@ -599,13 +599,13 @@ impl NativeValueConvertible for DateTime<TimeZone> {
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
-            Value::DatetimeTz(value) => Ok(value),
+            Value::DateTimeTZ(value) => Ok(value),
             _ => Err(()),
         }
     }
 
     fn to_db_value(self) -> Value<'static> {
-        Value::DatetimeTz(self)
+        Value::DateTimeTZ(self)
     }
 }
 

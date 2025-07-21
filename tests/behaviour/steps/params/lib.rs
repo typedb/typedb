@@ -597,7 +597,7 @@ impl Value {
                     self.raw_value,
                     datetime
                 );
-                TypeDBValue::Datetime(datetime)
+                TypeDBValue::DateTime(datetime)
             }
             TypeDBValueType::DateTimeTZ => {
                 let (datetime, timezone) = Self::parse_date_time_and_remainder(self.raw_value.as_str());
@@ -605,13 +605,13 @@ impl Value {
                 assert!(!timezone.is_empty(), "No timezone when parsing {:?}", self.raw_value);
 
                 if timezone.ends_with('Z') {
-                    TypeDBValue::DatetimeTz(datetime.and_local_timezone(TimeZone::Fixed(Utc.fix())).unwrap())
+                    TypeDBValue::DateTimeTZ(datetime.and_local_timezone(TimeZone::Fixed(Utc.fix())).unwrap())
                 } else if timezone.starts_with(['+', '-']) {
-                    TypeDBValue::DatetimeTz(
+                    TypeDBValue::DateTimeTZ(
                         datetime.and_local_timezone(TimeZone::Fixed(timezone.parse().unwrap())).unwrap(),
                     )
                 } else {
-                    TypeDBValue::DatetimeTz(
+                    TypeDBValue::DateTimeTZ(
                         datetime.and_local_timezone(TimeZone::IANA(timezone.parse().unwrap())).unwrap(),
                     )
                 }
