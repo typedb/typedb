@@ -458,7 +458,7 @@ impl TransactionService {
                 self.transaction = Some(Transaction::Read(transaction));
                 Err(TransactionServiceError::CannotCommitReadTransaction {}.into_error_message().into_status())
             }
-            Transaction::Write(transaction) => spawn_blocking(move || {
+            Transaction::Write(transaction) => spawn(async move {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
