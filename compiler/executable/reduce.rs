@@ -38,22 +38,17 @@ pub struct ReduceRowsExecutable {
     pub input_group_positions: Vec<VariablePosition>,
 }
 
+#[rustfmt::skip]
 #[derive(Debug, Clone)]
 pub enum ReduceInstruction<ID: IrID> {
-    Count,
-    CountVar(ID),
-    SumInteger(ID),
-    SumDouble(ID),
-    MaxInteger(ID),
-    MaxDouble(ID),
-    MinInteger(ID),
-    MinDouble(ID),
-    MeanInteger(ID),
-    MeanDouble(ID),
-    MedianInteger(ID),
-    MedianDouble(ID),
-    StdInteger(ID),
-    StdDouble(ID),
+    Count, CountVar(ID),
+    SumInteger(ID), MaxInteger(ID), MinInteger(ID), MeanInteger(ID), MedianInteger(ID), StdInteger(ID),
+    SumDouble(ID), MaxDouble(ID), MinDouble(ID), MeanDouble(ID), MedianDouble(ID), StdDouble(ID),
+    SumDecimal(ID), MaxDecimal(ID), MinDecimal(ID), MeanDecimal(ID), MedianDecimal(ID), StdDecimal(ID),
+    MaxString(ID), MinString(ID),
+    MaxDate(ID), MinDate(ID), // MeanDate(ID), MedianDate(ID), StdDate(ID),
+    MaxDateTime(ID), MinDateTime(ID), // MeanDateTime(ID), MedianDateTime(ID), StdDateTime(ID),
+    MaxDateTimeTZ(ID), MinDateTimeTZ(ID), // MeanDateTimeTZ(ID), MedianDateTimeTZ(ID), StdDateTimeTZ(ID),
 }
 
 impl<ID: IrID> ReduceInstruction<ID> {
@@ -61,19 +56,33 @@ impl<ID: IrID> ReduceInstruction<ID> {
         match *self {
             Self::Count => None,
 
-            Self::CountVar(id)
-            | Self::SumInteger(id)
-            | Self::SumDouble(id)
-            | Self::MaxInteger(id)
-            | Self::MaxDouble(id)
-            | Self::MinInteger(id)
-            | Self::MinDouble(id)
-            | Self::MeanInteger(id)
-            | Self::MeanDouble(id)
-            | Self::MedianInteger(id)
-            | Self::MedianDouble(id)
-            | Self::StdInteger(id)
-            | Self::StdDouble(id) => Some(id),
+            | ReduceInstruction::CountVar(id)
+            | ReduceInstruction::SumInteger(id)
+            | ReduceInstruction::MaxInteger(id)
+            | ReduceInstruction::MinInteger(id)
+            | ReduceInstruction::MeanInteger(id)
+            | ReduceInstruction::MedianInteger(id)
+            | ReduceInstruction::StdInteger(id)
+            | ReduceInstruction::SumDouble(id)
+            | ReduceInstruction::MaxDouble(id)
+            | ReduceInstruction::MinDouble(id)
+            | ReduceInstruction::MeanDouble(id)
+            | ReduceInstruction::MedianDouble(id)
+            | ReduceInstruction::StdDouble(id)
+            | ReduceInstruction::SumDecimal(id)
+            | ReduceInstruction::MaxDecimal(id)
+            | ReduceInstruction::MinDecimal(id)
+            | ReduceInstruction::MeanDecimal(id)
+            | ReduceInstruction::MedianDecimal(id)
+            | ReduceInstruction::StdDecimal(id)
+            | ReduceInstruction::MaxString(id)
+            | ReduceInstruction::MinString(id)
+            | ReduceInstruction::MaxDate(id)
+            | ReduceInstruction::MinDate(id)
+            | ReduceInstruction::MaxDateTime(id)
+            | ReduceInstruction::MinDateTime(id)
+            | ReduceInstruction::MaxDateTimeTZ(id)
+            | ReduceInstruction::MinDateTimeTZ(id) => Some(id),
         }
     }
 
@@ -81,18 +90,39 @@ impl<ID: IrID> ReduceInstruction<ID> {
         match self {
             Self::Count => ValueType::Integer,
             Self::CountVar(_) => ValueType::Integer,
+
             Self::SumInteger(_) => ValueType::Integer,
-            Self::SumDouble(_) => ValueType::Double,
             Self::MaxInteger(_) => ValueType::Integer,
-            Self::MaxDouble(_) => ValueType::Double,
             Self::MinInteger(_) => ValueType::Integer,
-            Self::MinDouble(_) => ValueType::Double,
             Self::MeanInteger(_) => ValueType::Double,
-            Self::MeanDouble(_) => ValueType::Double,
             Self::MedianInteger(_) => ValueType::Double,
-            Self::MedianDouble(_) => ValueType::Double,
             Self::StdInteger(_) => ValueType::Double,
+
+            Self::SumDouble(_) => ValueType::Double,
+            Self::MaxDouble(_) => ValueType::Double,
+            Self::MinDouble(_) => ValueType::Double,
+            Self::MeanDouble(_) => ValueType::Double,
+            Self::MedianDouble(_) => ValueType::Double,
             Self::StdDouble(_) => ValueType::Double,
+
+            Self::SumDecimal(_) => ValueType::Decimal,
+            Self::MaxDecimal(_) => ValueType::Decimal,
+            Self::MinDecimal(_) => ValueType::Decimal,
+            Self::MeanDecimal(_) => ValueType::Double,
+            Self::MedianDecimal(_) => ValueType::Double,
+            Self::StdDecimal(_) => ValueType::Double,
+
+            Self::MaxString(_) => ValueType::String,
+            Self::MinString(_) => ValueType::String,
+
+            Self::MaxDate(_) => ValueType::Date,
+            Self::MinDate(_) => ValueType::Date,
+
+            Self::MaxDateTime(_) => ValueType::DateTime,
+            Self::MinDateTime(_) => ValueType::DateTime,
+
+            Self::MaxDateTimeTZ(_) => ValueType::DateTimeTZ,
+            Self::MinDateTimeTZ(_) => ValueType::DateTimeTZ,
         }
     }
 
@@ -101,17 +131,31 @@ impl<ID: IrID> ReduceInstruction<ID> {
             ReduceInstruction::Count => ReduceInstruction::Count,
             ReduceInstruction::CountVar(id) => ReduceInstruction::CountVar(mapping[&id]),
             ReduceInstruction::SumInteger(id) => ReduceInstruction::SumInteger(mapping[&id]),
-            ReduceInstruction::SumDouble(id) => ReduceInstruction::SumDouble(mapping[&id]),
             ReduceInstruction::MaxInteger(id) => ReduceInstruction::MaxInteger(mapping[&id]),
-            ReduceInstruction::MaxDouble(id) => ReduceInstruction::MaxDouble(mapping[&id]),
             ReduceInstruction::MinInteger(id) => ReduceInstruction::MinInteger(mapping[&id]),
-            ReduceInstruction::MinDouble(id) => ReduceInstruction::MinDouble(mapping[&id]),
             ReduceInstruction::MeanInteger(id) => ReduceInstruction::MeanInteger(mapping[&id]),
-            ReduceInstruction::MeanDouble(id) => ReduceInstruction::MeanDouble(mapping[&id]),
             ReduceInstruction::MedianInteger(id) => ReduceInstruction::MedianInteger(mapping[&id]),
-            ReduceInstruction::MedianDouble(id) => ReduceInstruction::MedianDouble(mapping[&id]),
             ReduceInstruction::StdInteger(id) => ReduceInstruction::StdInteger(mapping[&id]),
+            ReduceInstruction::SumDouble(id) => ReduceInstruction::SumDouble(mapping[&id]),
+            ReduceInstruction::MaxDouble(id) => ReduceInstruction::MaxDouble(mapping[&id]),
+            ReduceInstruction::MinDouble(id) => ReduceInstruction::MinDouble(mapping[&id]),
+            ReduceInstruction::MeanDouble(id) => ReduceInstruction::MeanDouble(mapping[&id]),
+            ReduceInstruction::MedianDouble(id) => ReduceInstruction::MedianDouble(mapping[&id]),
             ReduceInstruction::StdDouble(id) => ReduceInstruction::StdDouble(mapping[&id]),
+            ReduceInstruction::SumDecimal(id) => ReduceInstruction::SumDecimal(mapping[&id]),
+            ReduceInstruction::MaxDecimal(id) => ReduceInstruction::MaxDecimal(mapping[&id]),
+            ReduceInstruction::MinDecimal(id) => ReduceInstruction::MinDecimal(mapping[&id]),
+            ReduceInstruction::MeanDecimal(id) => ReduceInstruction::MeanDecimal(mapping[&id]),
+            ReduceInstruction::MedianDecimal(id) => ReduceInstruction::MedianDecimal(mapping[&id]),
+            ReduceInstruction::StdDecimal(id) => ReduceInstruction::StdDecimal(mapping[&id]),
+            ReduceInstruction::MaxString(id) => ReduceInstruction::MaxString(mapping[&id]),
+            ReduceInstruction::MinString(id) => ReduceInstruction::MinString(mapping[&id]),
+            ReduceInstruction::MaxDate(id) => ReduceInstruction::MaxDate(mapping[&id]),
+            ReduceInstruction::MinDate(id) => ReduceInstruction::MinDate(mapping[&id]),
+            ReduceInstruction::MaxDateTime(id) => ReduceInstruction::MaxDateTime(mapping[&id]),
+            ReduceInstruction::MinDateTime(id) => ReduceInstruction::MinDateTime(mapping[&id]),
+            ReduceInstruction::MaxDateTimeTZ(id) => ReduceInstruction::MaxDateTimeTZ(mapping[&id]),
+            ReduceInstruction::MinDateTimeTZ(id) => ReduceInstruction::MinDateTimeTZ(mapping[&id]),
         }
     }
 }

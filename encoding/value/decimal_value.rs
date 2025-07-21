@@ -7,7 +7,7 @@
 use std::{
     fmt,
     num::ParseIntError,
-    ops::{Add, Mul, Neg, Sub},
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
     str::FromStr,
 };
 
@@ -136,6 +136,18 @@ impl Mul for Decimal {
     }
 }
 
+macro_rules! impl_from_integer {
+    ($($int:ty),+ $(,)?) => {$(
+        impl From<$int> for Decimal {
+            fn from(value: $int) -> Self {
+                Decimal::new(value.into(), 0)
+            }
+        }
+    )+};
+}
+
+impl_from_integer! { u8, u16, u32, i8, i16, i32, i64 }
+
 macro_rules! impl_integer_ops {
     (
         $($optrait:ident::$opname:ident),+ $(,)?
@@ -183,7 +195,7 @@ macro_rules! impl_integer_ops {
 impl_integer_ops! {
     Add::add, Sub::sub, Mul::mul
     for
-    { u8, u16, u32, u64, i8, i16, i32, i64 }
+    { u8, u16, u32, u64, usize, i8, i16, i32, i64, isize }
 }
 
 macro_rules! impl_ref_ops {
@@ -213,6 +225,33 @@ macro_rules! impl_ref_ops {
 }
 
 impl_ref_ops! { Add::add, Sub::sub, Mul::mul }
+
+impl<T> AddAssign<T> for Decimal
+where
+    Self: Add<T, Output = Self>,
+{
+    fn add_assign(&mut self, rhs: T) {
+        *self = *self + rhs
+    }
+}
+
+impl<T> SubAssign<T> for Decimal
+where
+    Self: Sub<T, Output = Self>,
+{
+    fn sub_assign(&mut self, rhs: T) {
+        *self = *self - rhs
+    }
+}
+
+impl<T> MulAssign<T> for Decimal
+where
+    Self: Mul<T, Output = Self>,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        *self = *self * rhs
+    }
+}
 
 impl FromStr for Decimal {
     type Err = ParseIntError;
