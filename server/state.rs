@@ -52,6 +52,7 @@ pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
 pub trait ServerState: Debug {
     async fn distribution_info(&self) -> DistributionInfo;
 
+    // TODO: grpc_address and http_address don't really suit "ServerState"
     async fn grpc_address(&self) -> SocketAddr;
 
     async fn http_address(&self) -> Option<SocketAddr>;
