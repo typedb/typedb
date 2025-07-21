@@ -230,19 +230,10 @@ impl Div<u64> for Decimal {
     type Output = Self;
 
     fn div(self, rhs: u64) -> Self::Output {
-        let i = self.integer as i128;
-        let f = self.fractional as u128;
-        let d = rhs as i128;
-        let rem = i.rem_euclid(d) as u128;
-
-        let mut int = i.div_euclid(d) as i64;
-        let mut frac = (rem * FRACTIONAL_PART_DENOMINATOR as u128 + f) / d as u128;
-        if frac >= FRACTIONAL_PART_DENOMINATOR as u128 {
-            int += (frac / FRACTIONAL_PART_DENOMINATOR as u128) as i64;
-            frac %= FRACTIONAL_PART_DENOMINATOR as u128;
-        }
-
-        Decimal::new(int, frac as u64)
+        let i128 = (self.integer as i128 * FRACTIONAL_PART_DENOMINATOR as i128 + self.fractional as i128) / rhs as i128;
+        let int = i128.div_euclid(FRACTIONAL_PART_DENOMINATOR as i128) as i64;
+        let frac = i128.rem_euclid(FRACTIONAL_PART_DENOMINATOR as i128) as u64;
+        Decimal::new(int, frac)
     }
 }
 
