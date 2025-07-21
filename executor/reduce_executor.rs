@@ -526,7 +526,7 @@ impl ReducerAPI for MeanDecimalExecutor {
 
     fn finalise(self) -> Option<VariableValue<'static>> {
         if self.count > 0 {
-            Some(VariableValue::Value(Value::Double(self.sum.to_f64() / self.count as f64)))
+            Some(VariableValue::Value(Value::Decimal(self.sum / self.count)))
         } else {
             None
         }
@@ -615,7 +615,7 @@ impl ReducerAPI for MedianDoubleExecutor {
 
 #[derive(Debug, Clone)]
 struct MedianDecimalExecutor {
-    values: Vec<i64>,
+    values: Vec<Decimal>,
     target: VariablePosition,
 }
 
@@ -633,7 +633,7 @@ impl ReducerAPI for MedianDecimalExecutor {
         storage_counters: StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters) {
-            self.values.push(value.unwrap_integer())
+            self.values.push(value.unwrap_decimal())
         }
     }
 
@@ -644,12 +644,12 @@ impl ReducerAPI for MedianDecimalExecutor {
             None
         } else if values.len() % 2 == 0 {
             let pos = values.len() / 2;
-            Some((values[pos - 1] + values[pos]) as f64 / 2.0)
+            Some((values[pos - 1] + values[pos]) / 2)
         } else {
             let pos = values.len() / 2;
-            Some(values[pos] as f64)
+            Some(values[pos])
         }
-        .map(|v| VariableValue::Value(Value::Double(v)))
+        .map(|v| VariableValue::Value(Value::Decimal(v)))
     }
 }
 
@@ -741,15 +741,15 @@ impl ReducerAPI for StdDoubleExecutor {
 
 #[derive(Debug, Clone)]
 struct StdDecimalExecutor {
-    sum: i64,
-    sum_squares: i128,
+    sum: Decimal,
+    sum_squares: Decimal,
     count: u64,
     target: VariablePosition,
 }
 
 impl StdDecimalExecutor {
     fn new(target: VariablePosition) -> Self {
-        Self { sum: 0, sum_squares: 0, count: 0, target }
+        Self { sum: Decimal::default(), sum_squares: Decimal::default(), count: 0, target }
     }
 }
 
@@ -761,21 +761,21 @@ impl ReducerAPI for StdDecimalExecutor {
         storage_counters: StorageCounters,
     ) {
         if let Some(value) = extract_value(row, self.target, context, storage_counters) {
-            let unwrapped = value.unwrap_integer();
-            self.sum_squares += (unwrapped as i128 * unwrapped as i128) * row.multiplicity() as i128;
-            self.sum += unwrapped * row.multiplicity() as i64;
+            let unwrapped = value.unwrap_decimal();
+            self.sum_squares += (unwrapped * unwrapped) * row.multiplicity();
+            self.sum += unwrapped * row.multiplicity();
             self.count += row.multiplicity();
         }
     }
 
     fn finalise(self) -> Option<VariableValue<'static>> {
         if self.count > 1 {
-            let sum = self.sum as f64;
-            let sum_squares = self.sum_squares as f64;
-            let n = self.count as f64;
+            let sum = self.sum;
+            let sum_squares = self.sum_squares;
+            let n = self.count;
             let mean = sum / n;
-            let sample_variance: f64 = (sum_squares + n * mean * mean - 2.0 * sum * mean) / (n - 1.0);
-            Some(VariableValue::Value(Value::Double(sample_variance.sqrt())))
+            let sample_variance: Decimal = (sum_squares + n * mean * mean - 2 * sum * mean) / (n - 1);
+            Some(VariableValue::Value(Value::Double(sample_variance.to_f64().sqrt())))
         } else {
             None
         }

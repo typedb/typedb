@@ -7,7 +7,7 @@
 use std::{
     fmt,
     num::ParseIntError,
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign},
     str::FromStr,
 };
 
@@ -226,6 +226,26 @@ macro_rules! impl_ref_ops {
 
 impl_ref_ops! { Add::add, Sub::sub, Mul::mul }
 
+impl Div<u64> for Decimal {
+    type Output = Self;
+
+    fn div(self, rhs: u64) -> Self::Output {
+        let i = self.integer as i128;
+        let f = self.fractional as u128;
+        let d = rhs as i128;
+        let rem = i.rem_euclid(d) as u128;
+
+        let mut int = i.div_euclid(d) as i64;
+        let mut frac = (rem * FRACTIONAL_PART_DENOMINATOR as u128 + f) / d as u128;
+        if frac >= FRACTIONAL_PART_DENOMINATOR as u128 {
+            int += (frac / FRACTIONAL_PART_DENOMINATOR as u128) as i64;
+            frac %= FRACTIONAL_PART_DENOMINATOR as u128;
+        }
+
+        Decimal::new(int, frac as u64)
+    }
+}
+
 impl<T> AddAssign<T> for Decimal
 where
     Self: Add<T, Output = Self>,
@@ -348,6 +368,12 @@ mod tests {
     }
 
     #[test]
+    fn div() {
+        let three_sevenths = (FRACTIONAL_PART_DENOMINATOR as u128 * 3 / 7) as u64;
+        assert_eq!(Decimal::new(10, 0) / 7, Decimal::new(1, three_sevenths))
+    }
+
+    #[test]
     fn randomized_tests() {
         const fn as_i128(lhs: Decimal) -> i128 {
             lhs.integer as i128 * FRACTIONAL_PART_DENOMINATOR as i128 + lhs.fractional as i128
@@ -390,6 +416,19 @@ mod tests {
                         + mul[2] as i128 * FRACTIONAL_PART_DENOMINATOR as i128);
 
                 assert_eq!(as_i128(lhs * rhs), bigint_mul_result, "{:?} * {:?} != {:?}", lhs, rhs, lhs * rhs);
+            }
+
+            // can only divide by u64
+            let rhs = rng.gen_range(1..=FRACTIONAL_PART_DENOMINATOR);
+            if as_i128(lhs).checked_div(rhs as i128).is_some_and(|res| range.contains(&res)) {
+                assert_eq!(
+                    as_i128(lhs / rhs),
+                    as_i128(lhs).div_euclid(rhs as i128),
+                    "{:?} / {:?} != {:?}",
+                    lhs,
+                    rhs,
+                    lhs / rhs
+                );
             }
         }
     }

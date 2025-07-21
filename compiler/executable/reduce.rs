@@ -108,8 +108,8 @@ impl<ID: IrID> ReduceInstruction<ID> {
             Self::SumDecimal(_) => ValueType::Decimal,
             Self::MaxDecimal(_) => ValueType::Decimal,
             Self::MinDecimal(_) => ValueType::Decimal,
-            Self::MeanDecimal(_) => ValueType::Double,
-            Self::MedianDecimal(_) => ValueType::Double,
+            Self::MeanDecimal(_) => ValueType::Decimal,
+            Self::MedianDecimal(_) => ValueType::Decimal,
             Self::StdDecimal(_) => ValueType::Double,
 
             Self::MaxString(_) => ValueType::String,
