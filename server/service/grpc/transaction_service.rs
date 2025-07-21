@@ -81,6 +81,7 @@ use crate::service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
     },
 };
+use crate::state::BoxServerState;
 
 macro_rules! unwrap_or_execute_and_return {
     ($match_: expr, |$err:pat_param| $err_mapper: block) => {{
@@ -117,14 +118,12 @@ macro_rules! send_ok_message_else_return_break {
 
 #[derive(Debug)]
 pub(crate) struct TransactionService {
-    database_manager: Arc<DatabaseManager>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
+    server_state: Arc<BoxServerState>,
 
     request_stream: Streaming<typedb_protocol::transaction::Client>,
     response_sender: Sender<Result<ProtocolServer, Status>>,
     query_interrupt_sender: broadcast::Sender<InterruptType>,
     query_interrupt_receiver: ExecutionInterrupt,
-    shutdown_receiver: watch::Receiver<()>,
 
     timeout_at: Instant,
     schema_lock_acquire_timeout_millis: Option<u64>,
@@ -139,23 +138,19 @@ pub(crate) struct TransactionService {
 
 impl TransactionService {
     pub(crate) fn new(
-        database_manager: Arc<DatabaseManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
+        server_state: Arc<BoxServerState>,
         request_stream: Streaming<typedb_protocol::transaction::Client>,
-        response_sender: Sender<Result<ProtocolServer, Status>>,
-        shutdown_receiver: watch::Receiver<()>,
+        response_sender: Sender<Result<ProtocolServer, Status>>
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
 
         Self {
-            database_manager,
-            diagnostics_manager,
+            server_state,
 
             request_stream,
             response_sender,
             query_interrupt_sender,
             query_interrupt_receiver: ExecutionInterrupt::new(query_interrupt_receiver),
-            shutdown_receiver,
 
             timeout_at: init_transaction_timeout(None),
             schema_lock_acquire_timeout_millis: None,
@@ -171,9 +166,10 @@ impl TransactionService {
 
     pub(crate) async fn listen(&mut self) {
         loop {
+            let mut shutdown_receiver = self.server_state.shutdown_receiver().await;
             let result = if let Some((req_id, write_query_worker)) = &mut self.running_write_query {
                 tokio::select! { biased;
-                    _ = self.shutdown_receiver.changed() => {
+                    _ = shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
                         self.do_close().await;
                         return;
@@ -201,7 +197,7 @@ impl TransactionService {
                 }
             } else {
                 tokio::select! { biased;
-                    _ = self.shutdown_receiver.changed() => {
+                    _ = shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
                         self.do_close().await;
                         return;
@@ -280,7 +276,7 @@ impl TransactionService {
         match (self.is_open, req) {
             (false, typedb_protocol::transaction::req::Req::OpenReq(open_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     Some(open_req.database.clone()),
                     ActionKind::TransactionOpen,
                     || async {
@@ -300,7 +296,7 @@ impl TransactionService {
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     self.get_database_name().map(|name| name.to_owned()),
                     ActionKind::TransactionQuery,
                     || async { self.handle_query(request_id, query_req).await },
@@ -317,7 +313,7 @@ impl TransactionService {
             }
             (true, typedb_protocol::transaction::req::Req::CommitReq(commit_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     self.get_database_name().map(|name| name.to_owned()),
                     ActionKind::TransactionCommit,
                     || async {
@@ -330,7 +326,7 @@ impl TransactionService {
             }
             (true, typedb_protocol::transaction::req::Req::RollbackReq(rollback_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     self.get_database_name().map(|name| name.to_owned()),
                     ActionKind::TransactionRollback,
                     || async { self.handle_rollback(request_id, rollback_req).await },
@@ -339,7 +335,7 @@ impl TransactionService {
             }
             (true, typedb_protocol::transaction::req::Req::CloseReq(close_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     self.get_database_name().map(|name| name.to_owned()),
                     ActionKind::TransactionClose,
                     || async {
@@ -390,7 +386,7 @@ impl TransactionService {
             .map_err(|_| ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status())?;
 
         let database_name = open_req.database;
-        let database = self.database_manager.database(database_name.as_ref()).ok_or_else(|| {
+        let database = self.server_state.databases_get(database_name.as_ref()).await.ok_or_else(|| {
             TransactionServiceError::DatabaseNotFound { name: database_name.clone() }.into_error_message().into_status()
         })?;
 
@@ -426,7 +422,7 @@ impl TransactionService {
                 Transaction::Schema(transaction)
             }
         };
-        self.diagnostics_manager.increment_load_count(ClientEndpoint::Grpc, &database_name, transaction.load_kind());
+        self.server_state.diagnostics_manager().await.increment_load_count(ClientEndpoint::Grpc, &database_name, transaction.load_kind());
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
         self.is_open = true;
@@ -459,7 +455,7 @@ impl TransactionService {
         // finish executing any remaining writes so they make it into the commit
         self.finish_queued_write_queries(InterruptType::TransactionCommitted).await?;
 
-        let diagnostics_manager = self.diagnostics_manager.clone();
+        let diagnostics_manager = self.server_state.diagnostics_manager().await.clone();
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
@@ -560,7 +556,7 @@ impl TransactionService {
         match self.transaction.take() {
             None => (),
             Some(Transaction::Read(transaction)) => {
-                self.diagnostics_manager.decrement_load_count(
+                self.server_state.diagnostics_manager().await.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
                     LoadKind::ReadTransactions,
@@ -568,7 +564,7 @@ impl TransactionService {
                 transaction.close()
             }
             Some(Transaction::Write(transaction)) => {
-                self.diagnostics_manager.decrement_load_count(
+                self.server_state.diagnostics_manager().await.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
@@ -576,7 +572,7 @@ impl TransactionService {
                 transaction.close()
             }
             Some(Transaction::Schema(transaction)) => {
-                self.diagnostics_manager.decrement_load_count(
+                self.server_state.diagnostics_manager().await.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,
