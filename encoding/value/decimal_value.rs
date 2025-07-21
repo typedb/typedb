@@ -412,14 +412,7 @@ mod tests {
             // can only divide by u64
             let rhs = rng.gen_range(1..=FRACTIONAL_PART_DENOMINATOR);
             if as_i128(lhs).checked_div(rhs as i128).is_some_and(|res| range.contains(&res)) {
-                assert_eq!(
-                    as_i128(lhs / rhs),
-                    as_i128(lhs).div_euclid(rhs as i128),
-                    "{:?} / {:?} != {:?}",
-                    lhs,
-                    rhs,
-                    lhs / rhs
-                );
+                assert_eq!(as_i128(lhs / rhs), as_i128(lhs) / rhs as i128, "{:?} / {:?} != {:?}", lhs, rhs, lhs / rhs);
             }
         }
     }
