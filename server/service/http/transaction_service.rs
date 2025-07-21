@@ -412,7 +412,7 @@ impl TransactionService {
                 unwrap_or_execute_else_respond_error_and_return_break!(
                     transaction.commit().1,
                     responder,
-                    |typedb_source| { TransactionServiceError::SchemaCommitFailed { typedb_source } }
+                    |typedb_source| { TransactionServiceError::SchemaCommitFailed { typedb_source: todo!() } }
                 );
                 respond_else_return_break!(responder, TransactionServiceResponse::Ok);
                 Break(())

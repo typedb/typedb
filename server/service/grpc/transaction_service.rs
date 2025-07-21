@@ -41,15 +41,11 @@ use options::QueryOptions;
 use query::error::QueryError;
 use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
-use tokio::{
-    sync::{
-        broadcast,
-        mpsc::{channel, Receiver, Sender},
-        watch,
-    },
-    task::{spawn_blocking, JoinHandle},
-    time::{timeout, Instant},
-};
+use tokio::{spawn, sync::{
+    broadcast,
+    mpsc::{channel, Receiver, Sender},
+    watch,
+}, task::{spawn_blocking, JoinHandle}, time::{timeout, Instant}};
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
@@ -81,7 +77,7 @@ use crate::service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
     },
 };
-use crate::state::BoxServerState;
+use crate::state::{BoxServerState, ServerStateError};
 
 macro_rules! unwrap_or_execute_and_return {
     ($match_: expr, |$err:pat_param| $err_mapper: block) => {{
@@ -456,6 +452,7 @@ impl TransactionService {
         self.finish_queued_write_queries(InterruptType::TransactionCommitted).await?;
 
         let diagnostics_manager = self.server_state.diagnostics_manager().await.clone();
+        let server_state = self.server_state.clone();
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
@@ -477,13 +474,21 @@ impl TransactionService {
             })
                 .await
                 .expect("Expected write transaction commit completion"),
-            Transaction::Schema(transaction) => spawn_blocking(move || {
+            Transaction::Schema(transaction) => spawn(async move {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,
                 );
-                let (profile, commit_result) = transaction.commit();
+                let (profile, commit_result) = match transaction.finalise_snapshot() {
+                    (mut profile, Ok((database, snapshot))) => {
+                        let commit_result = server_state.database_schema_commit(
+                            database.name(), snapshot, profile.commit_profile()
+                        ).await;
+                        (profile, commit_result)
+                    }
+                    (profile, Err(error)) => (profile, Err(ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error }))
+                };
                 if profile.is_enabled() {
                     event!(Level::INFO, "commit done.\n{}", profile);
                 }

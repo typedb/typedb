@@ -132,8 +132,8 @@ typedb_error! {
         OperationFailedNonPrimaryReplica(13, "Unable to execute as this server is not the primary replica"),
         OperationNotPermitted(2, "The user is not permitted to execute the operation"),
         DatabaseNotFound(3, "Database '{name}' not found.", name: String),
-        DatabaseSchemaCommitFailed(19, "Schema commit to database '{name}' failed.", name: String, typedb_source: SchemaCommitError),
-        DatabaseDataCommitFailed(20, "Data commit to database '{name}' failed.", name: String, typedb_source: DataCommitError),
+        DatabaseSchemaCommitFailed(19, "Schema commit failed.", typedb_source: SchemaCommitError),
+        DatabaseDataCommitFailed(20, "Data commit failed.", typedb_source: DataCommitError),
         DatabaseCannotBeCreated(14, "Unable to create database", typedb_source: DatabaseCreateError),
         DatabaseCannotBeDeleted(15, "Unable to delete database", typedb_source: DatabaseDeleteError),
         UserNotFound(4, "User not found."),
@@ -361,7 +361,7 @@ impl ServerState for LocalServerState {
             return Err(ServerStateError::DatabaseNotFound { name: name.to_string() })
         };
         database.schema_commit(snapshot, commit_profile).map_err(|error|
-            ServerStateError::DatabaseSchemaCommitFailed { name: name.to_string(), typedb_source: error }
+            ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error }
         )
     }
 
@@ -375,7 +375,7 @@ impl ServerState for LocalServerState {
             return Err(ServerStateError::DatabaseNotFound { name: name.to_string() })
         };
         database.data_commit(snapshot, commit_profile).map_err(|error|
-            ServerStateError::DatabaseDataCommitFailed { name: name.to_string(), typedb_source: error }
+            ServerStateError::DatabaseDataCommitFailed { typedb_source: error }
         )
     }
 
