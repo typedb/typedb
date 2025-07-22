@@ -57,6 +57,7 @@ pub trait ServerState: Debug {
 
     async fn http_address(&self) -> Option<SocketAddr>;
 
+    // TODO: server_status might not be needed in the trait.
     async fn server_status(&self) -> Result<BoxServerStatus, ServerStateError>;
 
     async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, ServerStateError>;
