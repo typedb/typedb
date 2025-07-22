@@ -393,8 +393,8 @@ impl ThingManager {
             AttributeID::Double(id) => Ok(Value::Double(id.read().as_f64())),
             AttributeID::Decimal(id) => Ok(Value::Decimal(id.read().as_decimal())),
             AttributeID::Date(id) => Ok(Value::Date(id.read().as_naive_date())),
-            AttributeID::DateTime(id) => Ok(Value::Datetime(id.read().as_naive_date_time())),
-            AttributeID::DateTimeTZ(id) => Ok(Value::DatetimeTz(id.read().as_date_time())),
+            AttributeID::DateTime(id) => Ok(Value::DateTime(id.read().as_naive_date_time())),
+            AttributeID::DateTimeTZ(id) => Ok(Value::DateTimeTZ(id.read().as_date_time())),
             AttributeID::Duration(id) => Ok(Value::Duration(id.read().as_duration())),
             AttributeID::String(id) => {
                 let string = if id.is_inline() {
@@ -2803,7 +2803,7 @@ impl ThingManager {
                 let encoded_date = DateBytes::build(date);
                 self.vertex_generator.create_attribute_date(attribute_type.vertex().type_id_(), encoded_date, snapshot)
             }
-            Value::Datetime(date_time) => {
+            Value::DateTime(date_time) => {
                 let encoded_date_time = DateTimeBytes::build(date_time);
                 self.vertex_generator.create_attribute_date_time(
                     attribute_type.vertex().type_id_(),
@@ -2811,7 +2811,7 @@ impl ThingManager {
                     snapshot,
                 )
             }
-            Value::DatetimeTz(date_time_tz) => {
+            Value::DateTimeTZ(date_time_tz) => {
                 let encoded_date_time_tz = DateTimeTZBytes::build(date_time_tz);
                 self.vertex_generator.create_attribute_date_time_tz(
                     attribute_type.vertex().type_id_(),

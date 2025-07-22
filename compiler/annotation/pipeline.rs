@@ -629,6 +629,19 @@ pub fn resolve_reduce_instruction_by_value_type(
 ) -> Result<ReduceInstruction<Variable>, AnnotationError> {
     // Will have been handled earlier since it doesn't need a value type.
     debug_assert!(!matches!(reducer, Reducer::Count) && !matches!(reducer, Reducer::CountVar(_)));
+
+    let err = || {
+        let var = reducer.variable().unwrap();
+        let reducer_name = reducer.name();
+        let variable_name = variable_registry.variable_names()[&var].clone();
+        Err(AnnotationError::UnsupportedValueTypeForReducer {
+            reducer: reducer_name,
+            variable: variable_name,
+            value_type: value_type.category(),
+            source_span,
+        })
+    };
+
     match value_type.category() {
         ValueTypeCategory::Integer => match reducer {
             Reducer::Count => Ok(ReduceInstruction::Count),
@@ -640,6 +653,7 @@ pub fn resolve_reduce_instruction_by_value_type(
             Reducer::Median(var) => Ok(ReduceInstruction::MedianInteger(var)),
             Reducer::Std(var) => Ok(ReduceInstruction::StdInteger(var)),
         },
+
         ValueTypeCategory::Double => match reducer {
             Reducer::Count => Ok(ReduceInstruction::Count),
             Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
@@ -650,26 +664,51 @@ pub fn resolve_reduce_instruction_by_value_type(
             Reducer::Median(var) => Ok(ReduceInstruction::MedianDouble(var)),
             Reducer::Std(var) => Ok(ReduceInstruction::StdDouble(var)),
         },
-        _ => {
-            let var = match reducer {
-                Reducer::Count => unreachable!(),
-                Reducer::CountVar(var)
-                | Reducer::Sum(var)
-                | Reducer::Max(var)
-                | Reducer::Mean(var)
-                | Reducer::Median(var)
-                | Reducer::Min(var)
-                | Reducer::Std(var) => var,
-            };
-            let reducer_name = reducer.name();
-            let variable_name = variable_registry.variable_names()[&var].clone();
-            Err(AnnotationError::UnsupportedValueTypeForReducer {
-                reducer: reducer_name,
-                variable: variable_name,
-                value_type: value_type.category(),
-                source_span,
-            })
-        }
+
+        ValueTypeCategory::Decimal => match reducer {
+            Reducer::Count => Ok(ReduceInstruction::Count),
+            Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
+            Reducer::Sum(var) => Ok(ReduceInstruction::SumDecimal(var)),
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxDecimal(var)),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinDecimal(var)),
+            Reducer::Mean(var) => Ok(ReduceInstruction::MeanDecimal(var)),
+            Reducer::Median(var) => Ok(ReduceInstruction::MedianDecimal(var)),
+            Reducer::Std(var) => Ok(ReduceInstruction::StdDecimal(var)),
+        },
+
+        ValueTypeCategory::String => match reducer {
+            Reducer::Count => Ok(ReduceInstruction::Count),
+            Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxString(var)),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinString(var)),
+            _ => err(),
+        },
+
+        ValueTypeCategory::Date => match reducer {
+            Reducer::Count => Ok(ReduceInstruction::Count),
+            Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxDate(var)),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinDate(var)),
+            _ => err(),
+        },
+
+        ValueTypeCategory::DateTime => match reducer {
+            Reducer::Count => Ok(ReduceInstruction::Count),
+            Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxDateTime(var)),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinDateTime(var)),
+            _ => err(),
+        },
+
+        ValueTypeCategory::DateTimeTZ => match reducer {
+            Reducer::Count => Ok(ReduceInstruction::Count),
+            Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxDateTimeTZ(var)),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinDateTimeTZ(var)),
+            _ => err(),
+        },
+
+        ValueTypeCategory::Boolean | ValueTypeCategory::Duration | ValueTypeCategory::Struct => err(),
     }
 }
 

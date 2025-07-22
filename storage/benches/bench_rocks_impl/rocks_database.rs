@@ -166,5 +166,9 @@ mod typedb_database {
         fn name(&self) -> &'static str {
             TypeDBSnapshot::KEYSPACE_NAMES[self.id as usize]
         }
+
+        fn prefix_length(&self) -> Option<usize> {
+            None
+        }
     }
 }
