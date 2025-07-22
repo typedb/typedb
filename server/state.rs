@@ -57,9 +57,9 @@ pub trait ServerState: Debug {
 
     async fn http_address(&self) -> Option<SocketAddr>;
 
-    async fn server_status(&self) -> BoxServerStatus;
+    async fn server_status(&self) -> Result<BoxServerStatus, ServerStateError>;
 
-    async fn servers_statuses(&self) -> Vec<BoxServerStatus>;
+    async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, ServerStateError>;
 
     async fn servers_register(&self, clustering_id: u64, clustering_address: String) -> Result<(), ServerStateError>;
 
@@ -342,12 +342,12 @@ impl ServerState for LocalServerState {
         self.http_address
     }
 
-    async fn server_status(&self) -> BoxServerStatus {
-        Box::new(self.server_status.clone())
+    async fn server_status(&self) -> Result<BoxServerStatus, ServerStateError> {
+        Ok(Box::new(self.server_status.clone()))
     }
 
-    async fn servers_statuses(&self) -> Vec<BoxServerStatus> {
-        vec![self.server_status().await]
+    async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, ServerStateError> {
+        self.server_status().await.map(|status| vec![status])
     }
 
     async fn servers_register(&self, _clustering_id: u64, _clustering_address: String) -> Result<(), ServerStateError> {

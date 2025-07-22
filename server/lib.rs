@@ -22,9 +22,7 @@ use resource::{
     },
     distribution_info::DistributionInfo,
 };
-use tokio::{
-    sync::watch::{channel, Receiver, Sender},
-};
+use tokio::sync::watch::{channel, Receiver, Sender};
 
 use crate::{
     error::ServerOpenError,
@@ -183,7 +181,12 @@ impl Server {
             None
         };
 
-        Self::print_serving_information(server_state.server_status().await);
+        Self::print_serving_information(
+            server_state
+                .server_status()
+                .await
+                .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source: Box::new(typedb_source) })?,
+        );
 
         Self::spawn_shutdown_handler(self.shutdown_sender);
         if let Some(http_server) = http_server {

@@ -62,8 +62,13 @@ impl TypeDBService {
         Self { address, server_state }
     }
 
-    async fn servers_statuses(&self) -> Vec<typedb_protocol::Server> {
-        self.server_state.servers_statuses().await.into_iter().map(|status| status.to_proto()).collect()
+    async fn servers_statuses(&self) -> Result<Vec<typedb_protocol::Server>, Status> {
+        let statuses = self
+            .server_state
+            .servers_statuses()
+            .await
+            .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+        Ok(statuses.into_iter().map(|status| status.to_proto()).collect())
     }
 }
 
@@ -120,7 +125,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     Ok(Response::new(connection_open_res(
                         generate_connection_id(),
                         receive_time,
-                        servers_all_res(self.servers_statuses().await),
+                        servers_all_res(self.servers_statuses().await?),
                         token_create_res(token),
                     )))
                 }
@@ -178,7 +183,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             self.server_state.diagnostics_manager().await,
             None::<&str>,
             ActionKind::ServersAll,
-            || async { Ok(Response::new(servers_all_res(self.servers_statuses().await))) },
+            || async { Ok(Response::new(servers_all_res(self.servers_statuses().await?))) },
         )
         .await
     }
