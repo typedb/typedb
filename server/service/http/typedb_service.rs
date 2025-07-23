@@ -30,6 +30,7 @@ use uuid::Uuid;
 
 use crate::{
     authentication::Accessor,
+    http::diagnostics::run_with_diagnostics,
     service::{
         http::{
             diagnostics::run_with_diagnostics_async,
