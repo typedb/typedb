@@ -12,7 +12,7 @@ use std::{
 };
 
 use macro_rules_attribute::apply;
-use resource::server_info::ServerInfo;
+use resource::distribution_info::DistributionInfo;
 use server::{parameters::config::ConfigBuilder, Server, ServerBuilder};
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::sync::OnceCell;
@@ -23,7 +23,8 @@ mod database;
 mod transaction;
 
 const ADDRESS: &str = "0.0.0.0:1729";
-const SERVER_INFO: ServerInfo = ServerInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
+const DISTRIBUTION_INFO: DistributionInfo =
+    DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
 static TYPEDB: OnceCell<(TempDir, Arc<Mutex<Server>>)> = OnceCell::const_new();
 
 fn config_path() -> PathBuf {
@@ -46,7 +47,7 @@ pub async fn typedb_starts(context: &mut Context) {
                 .build()
                 .unwrap();
             let server = ServerBuilder::default()
-                .server_info(SERVER_INFO)
+                .distribution_info(DISTRIBUTION_INFO)
                 .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
                 .build(config)
                 .await

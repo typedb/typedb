@@ -39,7 +39,7 @@ impl IntoResponse for HttpServiceError {
                 ServerStateError::OperationFailedDueToReplicaUnavailability { .. } => StatusCode::INTERNAL_SERVER_ERROR,
                 ServerStateError::OperationFailedNonPrimaryReplica { .. } => StatusCode::INTERNAL_SERVER_ERROR,
                 ServerStateError::DatabaseCannotBeCreated { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::DatabaseCannotBeDeleted { .. }  => StatusCode::BAD_REQUEST,
+                ServerStateError::DatabaseCannotBeDeleted { .. } => StatusCode::BAD_REQUEST,
                 ServerStateError::DatabaseNotFound { .. } => StatusCode::NOT_FOUND,
                 ServerStateError::UserNotFound { .. } => StatusCode::NOT_FOUND,
                 ServerStateError::UserCannotBeCreated { .. } => StatusCode::BAD_REQUEST,

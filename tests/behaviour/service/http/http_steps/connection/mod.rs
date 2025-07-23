@@ -8,7 +8,7 @@ use std::{collections::HashMap, path::PathBuf};
 use itertools::Either;
 use macro_rules_attribute::apply;
 use params::check_boolean;
-use resource::server_info::ServerInfo;
+use resource::distribution_info::DistributionInfo;
 use server::{
     error::ServerOpenError,
     parameters::config::{AuthenticationConfig, ConfigBuilder},
@@ -28,7 +28,8 @@ mod user;
 
 const GRPC_ADDRESS: &str = "0.0.0.0:1729";
 const HTTP_ADDRESS: &str = "0.0.0.0:8000";
-const SERVER_INFO: ServerInfo = ServerInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
+const DISTRIBUTION_INFO: DistributionInfo =
+    DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
 
 fn config_path() -> PathBuf {
     return std::env::current_dir().unwrap().join("server/config.yml");
@@ -53,7 +54,7 @@ pub(crate) async fn start_typedb(
 
         let server_future = async {
             let server = ServerBuilder::default()
-                .server_info(SERVER_INFO)
+                .distribution_info(DISTRIBUTION_INFO)
                 .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
                 .build(config)
                 .await
