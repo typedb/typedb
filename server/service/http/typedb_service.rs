@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::http::diagnostics::run_with_diagnostics;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{
@@ -17,7 +16,7 @@ use concurrency::TokioIntervalRunner;
 use diagnostics::metrics::ActionKind;
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
-use resource::{constants::common::SECONDS_IN_MINUTE, server_info::ServerInfo};
+use resource::{constants::common::SECONDS_IN_MINUTE, distribution_info::DistributionInfo};
 use system::concepts::{Credential, User};
 use tokio::{
     sync::{
@@ -31,6 +30,7 @@ use uuid::Uuid;
 
 use crate::{
     authentication::Accessor,
+    http::diagnostics::run_with_diagnostics,
     service::{
         http::{
             diagnostics::run_with_diagnostics_async,
@@ -67,7 +67,7 @@ struct TransactionInfo {
 
 #[derive(Clone, Debug)]
 pub(crate) struct TypeDBService {
-    server_info: ServerInfo,
+    distribution_info: DistributionInfo,
     address: SocketAddr,
     server_state: Arc<BoxServerState>,
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
@@ -78,7 +78,11 @@ impl TypeDBService {
     const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
     const QUERY_ENDPOINT_COMMIT_DEFAULT: bool = true;
 
-    pub(crate) fn new(server_info: ServerInfo, address: SocketAddr, server_state: Arc<BoxServerState>) -> Self {
+    pub(crate) fn new(
+        distribution_info: DistributionInfo,
+        address: SocketAddr,
+        server_state: Arc<BoxServerState>,
+    ) -> Self {
         let transaction_request_senders = Arc::new(RwLock::new(HashMap::new()));
 
         let controlled_transactions = transaction_request_senders.clone();
@@ -95,7 +99,7 @@ impl TypeDBService {
         ));
 
         Self {
-            server_info,
+            distribution_info,
             address,
             server_state,
             transaction_services: transaction_request_senders,
@@ -244,11 +248,12 @@ impl TypeDBService {
             ActionKind::ServerVersion,
             || async {
                 Ok::<_, HttpServiceError>(JsonBody(encode_server_version(
-                    service.server_info.distribution.to_string(),
-                    service.server_info.version.to_string(),
+                    service.distribution_info.distribution.to_string(),
+                    service.distribution_info.version.to_string(),
                 )))
             },
-        ).await
+        )
+        .await
     }
 
     async fn redirect_to_version(version: ProtocolVersion) -> impl IntoResponse {
@@ -286,11 +291,15 @@ impl TypeDBService {
             None::<&str>,
             ActionKind::DatabasesAll,
             || async {
-                service.server_state.databases_all().await
+                service
+                    .server_state
+                    .databases_all()
+                    .await
                     .map(|dbs| JsonBody(encode_databases(dbs)))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
-        ).await
+        )
+        .await
     }
 
     async fn databases_get(
@@ -312,7 +321,8 @@ impl TypeDBService {
                     .to_string();
                 Ok(JsonBody(encode_database(database_name)))
             },
-        ).await
+        )
+        .await
     }
 
     async fn databases_create(
@@ -331,7 +341,8 @@ impl TypeDBService {
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
-        ).await
+        )
+        .await
     }
 
     async fn databases_delete(
@@ -350,7 +361,8 @@ impl TypeDBService {
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
-        ).await
+        )
+        .await
     }
 
     async fn databases_schema(
@@ -370,7 +382,8 @@ impl TypeDBService {
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
-        ).await
+        )
+        .await
     }
 
     async fn databases_type_schema(
@@ -390,7 +403,8 @@ impl TypeDBService {
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
-        ).await
+        )
+        .await
     }
 
     async fn users(
@@ -398,14 +412,20 @@ impl TypeDBService {
         State(service): State<Arc<TypeDBService>>,
         accessor: Accessor,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(service.server_state.diagnostics_manager().await, None::<&str>, ActionKind::UsersAll, || async {
-            service
-                .server_state
-                .users_all(accessor)
-                .await
-                .map(|users| JsonBody(encode_users(users)))
-                .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-        }).await
+        run_with_diagnostics_async(
+            service.server_state.diagnostics_manager().await,
+            None::<&str>,
+            ActionKind::UsersAll,
+            || async {
+                service
+                    .server_state
+                    .users_all(accessor)
+                    .await
+                    .map(|users| JsonBody(encode_users(users)))
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
+            },
+        )
+        .await
     }
 
     async fn users_get(
@@ -414,14 +434,20 @@ impl TypeDBService {
         accessor: Accessor,
         user_path: UserPath,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(service.server_state.diagnostics_manager().await, None::<&str>, ActionKind::UsersGet, || async {
-            service
-                .server_state
-                .users_get(&user_path.username, accessor)
-                .await
-                .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-                .map(|user| JsonBody(encode_user(&user)))
-        }).await
+        run_with_diagnostics_async(
+            service.server_state.diagnostics_manager().await,
+            None::<&str>,
+            ActionKind::UsersGet,
+            || async {
+                service
+                    .server_state
+                    .users_get(&user_path.username, accessor)
+                    .await
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
+                    .map(|user| JsonBody(encode_user(&user)))
+            },
+        )
+        .await
     }
 
     async fn users_create(
@@ -431,15 +457,21 @@ impl TypeDBService {
         user_path: UserPath,
         JsonBody(payload): JsonBody<CreateUserPayload>,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(service.server_state.diagnostics_manager().await, None::<&str>, ActionKind::UsersCreate, || async {
-            let user = User { name: user_path.username };
-            let credential = Credential::new_password(payload.password.as_str());
-            service
-                .server_state
-                .users_create(&user, &credential, accessor)
-                .await
-                .map_err(|typedb_source| HttpServiceError::State { typedb_source })
-        }).await
+        run_with_diagnostics_async(
+            service.server_state.diagnostics_manager().await,
+            None::<&str>,
+            ActionKind::UsersCreate,
+            || async {
+                let user = User { name: user_path.username };
+                let credential = Credential::new_password(payload.password.as_str());
+                service
+                    .server_state
+                    .users_create(&user, &credential, accessor)
+                    .await
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
+            },
+        )
+        .await
     }
 
     async fn users_update(

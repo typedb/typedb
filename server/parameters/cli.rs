@@ -7,12 +7,12 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use resource::constants::server::SERVER_INFO;
+use resource::constants::server::DISTRIBUTION_INFO;
 
 /// TypeDB CE usage
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
-#[clap(version = SERVER_INFO.version)]
+#[clap(version = DISTRIBUTION_INFO.version)]
 pub struct CLIArgs {
     /// Path to config file
     #[arg(long = "config")]
