@@ -5,7 +5,7 @@
  */
 
 #[derive(Clone, Copy, Debug)]
-pub struct ServerInfo {
+pub struct DistributionInfo {
     pub logo: &'static str,
     pub distribution: &'static str,
     pub version: &'static str,
