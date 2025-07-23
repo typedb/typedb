@@ -25,13 +25,14 @@ pub mod server {
 
     use crate::{
         constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE, SECONDS_IN_YEAR},
-        server_info::ServerInfo,
+        distribution_info::DistributionInfo,
     };
 
     const DISTRIBUTION: &str = "TypeDB CE";
     const VERSION: &str = include_str!("../VERSION");
     const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
-    pub const SERVER_INFO: ServerInfo = ServerInfo { logo: ASCII_LOGO, distribution: DISTRIBUTION, version: VERSION };
+    pub const DISTRIBUTION_INFO: DistributionInfo =
+        DistributionInfo { logo: ASCII_LOGO, distribution: DISTRIBUTION, version: VERSION };
     pub const DEFAULT_CONFIG_PATH: &str = "config.yml";
 
     #[macro_export]

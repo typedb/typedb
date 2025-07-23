@@ -5,6 +5,6 @@
  */
 
 pub mod constants;
+pub mod distribution_info;
 pub mod perf_counters;
 pub mod profile;
-pub mod server_info;

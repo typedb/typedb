@@ -32,22 +32,18 @@ pub(crate) mod authentication {
 }
 
 pub(crate) mod server_manager {
-    use std::net::SocketAddr;
-
-    pub(crate) fn servers_all_res(address: &SocketAddr) -> typedb_protocol::server_manager::all::Res {
-        typedb_protocol::server_manager::all::Res {
-            servers: vec![typedb_protocol::Server { address: address.to_string(), replica_status: None }],
-        }
+    pub(crate) fn servers_all_res(servers: Vec<typedb_protocol::Server>) -> typedb_protocol::server_manager::all::Res {
+        typedb_protocol::server_manager::all::Res { servers }
     }
 }
 
 pub(crate) mod server {
-    use resource::server_info::ServerInfo;
+    use resource::distribution_info::DistributionInfo;
 
-    pub(crate) fn server_version_res(server_info: ServerInfo) -> typedb_protocol::server::version::Res {
+    pub(crate) fn server_version_res(distribution_info: DistributionInfo) -> typedb_protocol::server::version::Res {
         typedb_protocol::server::version::Res {
-            distribution: server_info.distribution.to_string(),
-            version: server_info.version.to_string(), // todo
+            distribution: distribution_info.distribution.to_string(),
+            version: distribution_info.version.to_string(), // todo
         }
     }
 
