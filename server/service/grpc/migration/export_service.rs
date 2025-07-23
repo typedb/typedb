@@ -11,7 +11,7 @@ use std::{
 
 use database::{migration::Checksums, transaction::TransactionRead, Database};
 use options::TransactionOptions;
-use resource::{constants::common::SECONDS_IN_DAY, profile::StorageCounters, server_info::ServerInfo};
+use resource::{constants::common::SECONDS_IN_DAY, distribution_info::DistributionInfo, profile::StorageCounters};
 use storage::durability_client::WALClient;
 use tokio::sync::{mpsc::Sender, watch};
 use tonic::Status;
@@ -74,7 +74,7 @@ type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 
 #[derive(Debug)]
 pub(crate) struct DatabaseExportService {
-    server_info: ServerInfo,
+    distribution_info: DistributionInfo,
     database: Arc<Database<WALClient>>,
     response_sender: ResponseSender,
     checksums: Checksums,
@@ -91,13 +91,13 @@ impl DatabaseExportService {
     const OPTIONS_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(1 * SECONDS_IN_DAY).as_millis() as u64;
 
     pub(crate) fn new(
-        server_info: ServerInfo,
+        distribution_info: DistributionInfo,
         database: Arc<Database<WALClient>>,
         response_sender: ResponseSender,
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
         Self {
-            server_info,
+            distribution_info,
             database,
             response_sender,
             checksums: Checksums::new(),
@@ -108,7 +108,7 @@ impl DatabaseExportService {
 
     pub(crate) async fn export(mut self) {
         let start = Instant::now();
-        event!(Level::INFO, "Exporting '{}' from TypeDB {}.", self.database.name(), self.server_info.version);
+        event!(Level::INFO, "Exporting '{}' from TypeDB {}.", self.database.name(), self.distribution_info.version);
         let Some(transaction) = self.open_transaction().await else {
             return;
         };
@@ -134,7 +134,7 @@ impl DatabaseExportService {
             Level::INFO,
             "Export '{}' from TypeDB {} finished successfully. {} items exported in {} seconds.",
             self.database.name(),
-            self.server_info.version,
+            self.distribution_info.version,
             self.total_item_count,
             start.elapsed().as_secs()
         );
@@ -217,7 +217,7 @@ impl DatabaseExportService {
     async fn export_header(&mut self, buffer: &mut Vec<MigrationItemProto>) -> Result<(), DatabaseExportError> {
         self.buffer_push(
             buffer,
-            encode_header_item(self.server_info.version.to_string(), self.database.name().to_string()),
+            encode_header_item(self.distribution_info.version.to_string(), self.database.name().to_string()),
         );
         Ok(())
     }

@@ -6,7 +6,9 @@
 
 use error::{typedb_error, TypeDBError};
 
-use crate::{authentication::AuthenticationError, service::transaction_service::TransactionServiceError, state::ServerStateError};
+use crate::{
+    authentication::AuthenticationError, service::transaction_service::TransactionServiceError, state::ServerStateError,
+};
 
 typedb_error!(
     pub HttpServiceError(component = "HTTP Service", prefix = "HSR") {
