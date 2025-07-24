@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, sync::Arc};
+use std::collections::{BTreeSet, HashMap};
 
 use compiler::{
     annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
@@ -30,9 +31,15 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
 use compiler::annotation::fetch::AnnotatedFetchObject;
+use compiler::annotation::pipeline::AnnotatedStage;
 use compiler::query_structure::{ParametrisedQueryStructure, QueryStructure};
+use concept::error::ConceptReadError;
+use concept::type_::{OwnerAPI, TypeAPI};
+use encoding::value::value_type::ValueType;
 use executor::document::ConceptDocument;
+use ir::pattern::Vertex;
 use ir::pipeline::VariableRegistry;
+use serde::{Deserialize, Serialize};
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 
@@ -447,7 +454,7 @@ impl QueryManager {
                 QueryError::FunctionDefinition { source_query: source_query.to_string(), typedb_source: err }
             })?;
 
-        let mut annotated_pipeline = annotate_preamble_and_pipeline(
+        let annotated_pipeline = annotate_preamble_and_pipeline(
             snapshot.as_ref(),
             type_manager,
             annotated_schema_functions.clone(),
@@ -460,25 +467,82 @@ impl QueryManager {
             .map_err(|err| QueryError::Annotation { source_query: source_query.to_string(), typedb_source: err })?;
         compile_profile.annotation_finished();
 
-        Ok(AnalysedQuery::build(&variable_registry, source_query, annotated_pipeline))
+        AnalysedQuery::build(snapshot.as_ref(), type_manager, &variable_registry, source_query, annotated_pipeline).map_err(|source| {
+            Box::new(QueryError::QueryAnalysisFailed { source_query: source_query.to_owned(), typedb_source: source } )
+        })
     }
 }
 
-#[derive(Debug)]
+
+pub type AnalysedValueType = String;
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged, rename_all = "camelCase")]
+pub enum AnalysedFetchObject {
+    Leaf(Vec<AnalysedValueType>),
+    Inner(HashMap<String, AnalysedFetchObject>)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AnalysedQuery {
-    fetch: Option<ConceptDocument>,
+    pub fetch: Option<HashMap<String, AnalysedFetchObject>>,
 }
 
 impl AnalysedQuery {
-    fn build(variable_registry: &VariableRegistry, source_query: &str, annotated_pipeline: AnnotatedPipeline) -> Self {
+    pub fn build<Snapshot: ReadableSnapshot>(
+        snapshot: &Snapshot,
+        type_manager: &TypeManager,
+        variable_registry: &VariableRegistry,
+        source_query: &str,
+        annotated_pipeline: AnnotatedPipeline
+    ) -> Result<Self, Box<ConceptReadError>> {
         // TODO: Consider adding query structure and so on
-        let fetch = annotated_pipeline.annotated_fetch.as_ref().map(|fetch| {
-            match fetch.object {
-                AnnotatedFetchObject::Entries(_) => {}
-                AnnotatedFetchObject::Attributes(_) => {}
+        let stage_annotations = annotated_pipeline.annotated_stages.iter().enumerate().filter_map(|(i,stage)| {
+            match stage {
+                AnnotatedStage::Match { block_annotations, block, .. }
+                | AnnotatedStage::Put { match_annotations: block_annotations, block, .. } => {
+                    Some((i, block_annotations.type_annotations_of(block.conjunction()).unwrap()))
+                }
+                AnnotatedStage::Insert { annotations, .. } | AnnotatedStage::Update { annotations, .. } => {
+                    Some((i, annotations))
+                }
+                AnnotatedStage::Delete { .. }
+                | AnnotatedStage::Select(_)
+                | AnnotatedStage::Sort(_)
+                | AnnotatedStage::Offset(_)
+                | AnnotatedStage::Limit(_)
+                | AnnotatedStage::Require(_)
+                | AnnotatedStage::Distinct(_)
+                | AnnotatedStage::Reduce(_, _) => None,
             }
-            todo!()
-        });
-        Self { fetch }
+        }).collect::<Vec<_>>();
+        let last_stage_annotations = &stage_annotations.last().expect("Expected pipeline to have a last stage").1;
+        let fetch = if let Some(fetch) = annotated_pipeline.annotated_fetch.as_ref() {
+            let value_types = match fetch.object {
+                AnnotatedFetchObject::Entries(_) => todo!(),
+                AnnotatedFetchObject::Attributes(variable) => {
+                    let mut value_types = HashMap::new();
+                    let owner_types = last_stage_annotations.vertex_annotations_of(&Vertex::Variable(variable))
+                        .expect("Expected annotations to be available");
+                    owner_types.iter().filter(|owner_type| owner_type.is_entity_type() || owner_type.is_relation_type())
+                        .try_for_each(|owner_type| {
+                            let attribute_types = owner_type.as_object_type().get_owned_attribute_types(snapshot, type_manager)?;
+                            attribute_types.iter()
+                                .filter_map(|attribute_type| attribute_type.get_value_type(snapshot, type_manager).transpose())
+                                .try_for_each(|value_attribute_type_res| {
+                                    let (value_type, attribute_type) = value_attribute_type_res?;
+                                    let label: String = attribute_type.get_label(snapshot, type_manager)?.scoped_name.as_str().to_owned();
+                                    value_types.insert(label, AnalysedFetchObject::Leaf(vec![value_type.to_string()]));
+                                    Ok::<(), Box<ConceptReadError>>(())
+                                })
+                        })?;
+                    value_types
+                }
+            };
+            Some(value_types)
+        } else {
+            None
+        };
+        Ok(Self { fetch })
     }
 }

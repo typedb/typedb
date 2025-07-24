@@ -10,6 +10,7 @@ use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use crate::service::{
     http::{
@@ -135,21 +136,19 @@ impl IntoResponse for QueryAnswer {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnalysedQueryResponse {} // TODO
-fn encode_analysed_query() -> AnalysedQueryResponse {
-    AnalysedQueryResponse {}
+fn encode_analysed_query(analysed_query: AnalysedQuery) -> serde_json::Value {
+    json!(analysed_query)
 }
 
 #[derive(Debug)]
 pub(crate) struct AnalysedQueryAnswer  {
     pub(crate) inner: AnalysedQuery,
 }
+
 impl IntoResponse for AnalysedQueryAnswer {
     fn into_response(self) -> Response {
         let code = StatusCode::OK;
-        let body = JsonBody(encode_analysed_query());
+        let body = JsonBody(encode_analysed_query(self.inner));
         (code, body).into_response()
     }
 }
