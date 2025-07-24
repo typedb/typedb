@@ -41,6 +41,7 @@ use ir::pattern::{ParameterID, Vertex};
 use ir::pipeline::{ParameterRegistry, VariableRegistry};
 use serde::{Deserialize, Serialize};
 use answer::variable::Variable;
+use compiler::annotation::function::FunctionParameterAnnotation;
 use compiler::annotation::type_annotations::TypeAnnotations;
 use concept::type_::attribute_type::AttributeType;
 
@@ -599,24 +600,39 @@ fn encode_analysed_fetch_entries<Snapshot: ReadableSnapshot>(
                     });
                 AnalysedFetchObject::Leaf(encode_leaf(snapshot, type_manager, attribute_types)?)
             }
-            AnnotatedFetchSome::SingleAttribute(var, attribute_type) => {
+            AnnotatedFetchSome::ListAttributesAsList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
+            | AnnotatedFetchSome::ListAttributesFromList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
+            | AnnotatedFetchSome::SingleAttribute(var, attribute_type) => {
                 // TODO: Refine based on variable
                 let attribute_types = attribute_type.get_subtypes(snapshot, type_manager)?;
                 AnalysedFetchObject::Leaf(encode_leaf(snapshot, type_manager, attribute_types.iter().copied())?)
             }
-            // AnnotatedFetchSome::SingleFunction(_) => {}
             AnnotatedFetchSome::Object(inner) => {
                 AnalysedFetchObject::Inner(encode_analysed_fetch_object(snapshot, type_manager, parameters, last_stage_annotations, inner)?)
             }
-            // AnnotatedFetchSome::ListFunction(_) => {}
             AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
                 let built = AnalysedQuery::build_impl(snapshot, type_manager, &sub_fetch.variable_registry, parameters, &sub_fetch.stages, Some(&sub_fetch.fetch))?;
                 AnalysedFetchObject::Inner(built.fetch.unwrap())
             }
-            // TODO: How are these different from SingleAttribute?
-            // AnnotatedFetchSome::ListAttributesAsList(var, attribute_type)
-            // AnnotatedFetchSome::ListAttributesFromList(_, _) => {}
-            _ => todo!(),
+            AnnotatedFetchSome::ListFunction(function)
+            | AnnotatedFetchSome::SingleFunction(function) => {
+                debug_assert!(function.annotated_signature.returned.len() == 1);
+                match &function.annotated_signature.returned[0] {
+                    FunctionParameterAnnotation::Concept(types) => {
+                        debug_assert!(types.iter().all(|type_| type_.is_attribute_type()));
+                        AnalysedFetchObject::Leaf(
+                            encode_leaf(
+                                snapshot,
+                                type_manager,
+                                types.iter().copied().filter_map(|type_| type_.is_attribute_type().then(|| type_.as_attribute_type()))
+                            )?
+                        )
+                    }
+                    FunctionParameterAnnotation::Value(value_type) => {
+                        AnalysedFetchObject::Leaf(vec![value_type.to_string()])
+                    }
+                }
+            }
         };
         Ok((key, analysed_object))
     }).collect::<Result<HashMap<_, _>, _>>()
