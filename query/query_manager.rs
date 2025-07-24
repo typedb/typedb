@@ -30,16 +30,19 @@ use resource::{
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
-use compiler::annotation::fetch::AnnotatedFetchObject;
+use compiler::annotation::fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome};
 use compiler::annotation::pipeline::AnnotatedStage;
 use compiler::query_structure::{ParametrisedQueryStructure, QueryStructure};
 use concept::error::ConceptReadError;
 use concept::type_::{OwnerAPI, TypeAPI};
 use encoding::value::value_type::ValueType;
 use executor::document::ConceptDocument;
-use ir::pattern::Vertex;
-use ir::pipeline::VariableRegistry;
+use ir::pattern::{ParameterID, Vertex};
+use ir::pipeline::{ParameterRegistry, VariableRegistry};
 use serde::{Deserialize, Serialize};
+use answer::variable::Variable;
+use compiler::annotation::type_annotations::TypeAnnotations;
+use concept::type_::attribute_type::AttributeType;
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 
@@ -467,7 +470,7 @@ impl QueryManager {
             .map_err(|err| QueryError::Annotation { source_query: source_query.to_string(), typedb_source: err })?;
         compile_profile.annotation_finished();
 
-        AnalysedQuery::build(snapshot.as_ref(), type_manager, &variable_registry, source_query, annotated_pipeline).map_err(|source| {
+        AnalysedQuery::build(snapshot.as_ref(), type_manager, &variable_registry, &parameters, source_query, annotated_pipeline).map_err(|source| {
             Box::new(QueryError::QueryAnalysisFailed { source_query: source_query.to_owned(), typedb_source: source } )
         })
     }
@@ -492,12 +495,24 @@ impl AnalysedQuery {
     pub fn build<Snapshot: ReadableSnapshot>(
         snapshot: &Snapshot,
         type_manager: &TypeManager,
-        variable_registry: &VariableRegistry,
+        _variable_registry: &VariableRegistry,
+        parameters: &ParameterRegistry,
         source_query: &str,
         annotated_pipeline: AnnotatedPipeline
     ) -> Result<Self, Box<ConceptReadError>> {
+        Self::build_impl(snapshot, type_manager, _variable_registry, parameters, &annotated_pipeline.annotated_stages, annotated_pipeline.annotated_fetch.as_ref())
+    }
+
+    fn build_impl(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        _variable_registry: &VariableRegistry,
+        parameters: &ParameterRegistry,
+        stages: &[AnnotatedStage],
+        fetch: Option<&AnnotatedFetch>
+    ) -> Result<Self, Box<ConceptReadError>> {
         // TODO: Consider adding query structure and so on
-        let stage_annotations = annotated_pipeline.annotated_stages.iter().enumerate().filter_map(|(i,stage)| {
+        let stage_annotations = stages.iter().enumerate().filter_map(|(i,stage)| {
             match stage {
                 AnnotatedStage::Match { block_annotations, block, .. }
                 | AnnotatedStage::Put { match_annotations: block_annotations, block, .. } => {
@@ -517,32 +532,105 @@ impl AnalysedQuery {
             }
         }).collect::<Vec<_>>();
         let last_stage_annotations = &stage_annotations.last().expect("Expected pipeline to have a last stage").1;
-        let fetch = if let Some(fetch) = annotated_pipeline.annotated_fetch.as_ref() {
-            let value_types = match fetch.object {
-                AnnotatedFetchObject::Entries(_) => todo!(),
-                AnnotatedFetchObject::Attributes(variable) => {
-                    let mut value_types = HashMap::new();
-                    let owner_types = last_stage_annotations.vertex_annotations_of(&Vertex::Variable(variable))
-                        .expect("Expected annotations to be available");
-                    owner_types.iter().filter(|owner_type| owner_type.is_entity_type() || owner_type.is_relation_type())
-                        .try_for_each(|owner_type| {
-                            let attribute_types = owner_type.as_object_type().get_owned_attribute_types(snapshot, type_manager)?;
-                            attribute_types.iter()
-                                .filter_map(|attribute_type| attribute_type.get_value_type(snapshot, type_manager).transpose())
-                                .try_for_each(|value_attribute_type_res| {
-                                    let (value_type, attribute_type) = value_attribute_type_res?;
-                                    let label: String = attribute_type.get_label(snapshot, type_manager)?.scoped_name.as_str().to_owned();
-                                    value_types.insert(label, AnalysedFetchObject::Leaf(vec![value_type.to_string()]));
-                                    Ok::<(), Box<ConceptReadError>>(())
-                                })
-                        })?;
-                    value_types
-                }
-            };
-            Some(value_types)
-        } else {
-            None
-        };
+        let fetch = fetch.map(|fetch| {
+            encode_analysed_fetch_object(snapshot, type_manager, parameters, last_stage_annotations, &fetch.object)
+        }).transpose()?;
         Ok(Self { fetch })
     }
+}
+
+fn encode_analysed_fetch_object(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    parameters: &ParameterRegistry,
+    last_stage_annotations: &TypeAnnotations,
+    object: &AnnotatedFetchObject,
+) -> Result<HashMap<String, AnalysedFetchObject>, Box<ConceptReadError>> {
+    match object {
+        AnnotatedFetchObject::Entries(entries) => {
+            encode_analysed_fetch_entries(snapshot, type_manager, parameters, last_stage_annotations, entries)
+        },
+        AnnotatedFetchObject::Attributes(variable) => {
+            encode_analysed_fetch_attributes(snapshot, type_manager, last_stage_annotations, *variable)
+        }
+    }
+}
+
+fn encode_analysed_fetch_attributes(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    last_stage_annotations: &TypeAnnotations,
+    variable: Variable,
+) -> Result<HashMap<String, AnalysedFetchObject>, Box<ConceptReadError>> {
+    let mut fetch_value_types = HashMap::new();
+    let owner_types = last_stage_annotations.vertex_annotations_of(&Vertex::Variable(variable))
+        .expect("Expected annotations to be available");
+    owner_types.iter().filter(|owner_type| owner_type.is_entity_type() || owner_type.is_relation_type())
+        .try_for_each(|owner_type| {
+            let attribute_types = owner_type.as_object_type().get_owned_attribute_types(snapshot, type_manager)?;
+            attribute_types.iter()
+                .try_for_each(|attribute_type| {
+                    let value_types = encode_leaf(snapshot, type_manager, [*attribute_type].into_iter())?;
+                    if !value_types.is_empty() {
+                        let label: String = attribute_type.get_label(snapshot, type_manager)?.scoped_name.as_str().to_owned();
+                        fetch_value_types.insert(label, AnalysedFetchObject::Leaf(value_types));
+                    }
+                    Ok::<(), Box<ConceptReadError>>(())
+                })
+        })?;
+    Ok(fetch_value_types)
+}
+
+fn encode_analysed_fetch_entries<Snapshot: ReadableSnapshot>(
+    snapshot: &Snapshot,
+    type_manager: &TypeManager,
+    parameters: &ParameterRegistry,
+    last_stage_annotations: &TypeAnnotations,
+    entries: &HashMap<ParameterID, AnnotatedFetchSome>
+) -> Result<HashMap<String, AnalysedFetchObject>, Box<ConceptReadError>> {
+    entries.iter().map(|(parameter_id, fetch_object)| {
+        let key = parameters.fetch_key(*parameter_id).expect("Expected fetch key to be present").to_owned();
+        let analysed_object = match fetch_object {
+            AnnotatedFetchSome::SingleVar(var) => {
+                let attribute_types = last_stage_annotations.vertex_annotations_of(&Vertex::Variable(*var))
+                    .expect("Expected annotations to be present").iter()
+                    .filter_map(|attribute_type| {
+                        attribute_type.is_attribute_type().then(|| attribute_type.as_attribute_type())
+                    });
+                AnalysedFetchObject::Leaf(encode_leaf(snapshot, type_manager, attribute_types)?)
+            }
+            AnnotatedFetchSome::SingleAttribute(var, attribute_type) => {
+                // TODO: Refine based on variable
+                let attribute_types = attribute_type.get_subtypes(snapshot, type_manager)?;
+                AnalysedFetchObject::Leaf(encode_leaf(snapshot, type_manager, attribute_types.iter().copied())?)
+            }
+            // AnnotatedFetchSome::SingleFunction(_) => {}
+            AnnotatedFetchSome::Object(inner) => {
+                AnalysedFetchObject::Inner(encode_analysed_fetch_object(snapshot, type_manager, parameters, last_stage_annotations, inner)?)
+            }
+            // AnnotatedFetchSome::ListFunction(_) => {}
+            AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
+                let built = AnalysedQuery::build_impl(snapshot, type_manager, &sub_fetch.variable_registry, parameters, &sub_fetch.stages, Some(&sub_fetch.fetch))?;
+                AnalysedFetchObject::Inner(built.fetch.unwrap())
+            }
+            // TODO: How are these different from SingleAttribute?
+            // AnnotatedFetchSome::ListAttributesAsList(var, attribute_type)
+            // AnnotatedFetchSome::ListAttributesFromList(_, _) => {}
+            _ => todo!(),
+        };
+        Ok((key, analysed_object))
+    }).collect::<Result<HashMap<_, _>, _>>()
+}
+
+fn encode_leaf(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    attribute_types: impl Iterator<Item = AttributeType>,
+) -> Result<Vec<AnalysedValueType>, Box<ConceptReadError>> {
+    attribute_types
+        .filter_map(|attribute_type| {
+            attribute_type.get_value_type(snapshot, type_manager)
+                .map(|ok| ok.map(|(value_type, _)| value_type.to_string()))
+                .transpose()
+        }).collect::<Result<Vec<_>,_>>()
 }
