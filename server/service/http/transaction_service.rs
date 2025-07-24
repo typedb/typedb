@@ -14,7 +14,7 @@ use std::{
     sync::Arc,
 };
 
-use compiler::query_structure::QueryStructure;
+use compiler::{executable::ExecutableCompilationError, query_structure::QueryStructure};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
@@ -31,36 +31,35 @@ use diagnostics::{
 use executor::{
     batch::Batch,
     document::ConceptDocument,
-    ExecutionInterrupt,
-    InterruptType, pipeline::{pipeline::Pipeline, PipelineExecutionError, stage::ReadPipelineStage},
+    pipeline::{pipeline::Pipeline, stage::ReadPipelineStage, PipelineExecutionError},
+    ExecutionInterrupt, InterruptType,
 };
 use http::StatusCode;
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
-use query::error::QueryError;
+use query::{error::QueryError, query_manager::AnalysedQuery};
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
     sync::{broadcast, mpsc::Receiver, oneshot, watch},
-    task::{JoinHandle, spawn_blocking},
+    task::{spawn_blocking, JoinHandle},
     time::Instant,
 };
 use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
-use compiler::executable::ExecutableCompilationError;
-use query::query_manager::AnalysedQuery;
 
 use super::message::query::query_structure::encode_query_structure;
 use crate::service::{
-    http::message::query::{document::encode_document, query_structure::QueryStructureResponse, row::encode_row},
-    QueryType,
+    http::message::query::{
+        document::encode_document, query_structure::QueryStructureResponse, row::encode_row, AnalysedQueryAnswer,
+    },
     transaction_service::{
-        init_transaction_timeout, is_write_pipeline, Transaction, TransactionServiceError, with_readable_transaction,
-    }, TransactionType,
+        init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
+    },
+    QueryType, TransactionType,
 };
-use crate::service::http::message::query::AnalysedQueryAnswer;
 
 macro_rules! respond_error_and_return_break {
     ($responder:ident, $error:expr) => {{
@@ -1159,10 +1158,7 @@ impl TransactionService {
             }
         };
         let typeql::query::QueryStructure::Pipeline(pipeline) = parsed.into_structure() else {
-            respond_error_and_return_break!(
-                responder,
-                TransactionServiceError::AnalyseQueryExpectsPipeline { }
-            );
+            respond_error_and_return_break!(responder, TransactionServiceError::AnalyseQueryExpectsPipeline {});
         };
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
         let timeout_at = self.timeout_at;
@@ -1182,15 +1178,19 @@ impl TransactionService {
                     &pipeline,
                     &query,
                 );
-                let analysed = unwrap_or_execute_else_respond_error_and_return_break!(analyse_result, responder, |typedb_source| {
-                    TransactionServiceError::AnalyseQueryFailed { typedb_source: *typedb_source }
-                });
+                let analysed = unwrap_or_execute_else_respond_error_and_return_break!(
+                    analyse_result,
+                    responder,
+                    |typedb_source| { TransactionServiceError::AnalyseQueryFailed { typedb_source: *typedb_source } }
+                );
                 respond_else_return_break!(
                     responder,
                     TransactionServiceResponse::QueryAnalyse(AnalysedQueryAnswer { inner: analysed })
                 );
                 Continue(())
-        })}).await
+            })
+        })
+        .await
         .expect("Expected read query completion")
     }
 }

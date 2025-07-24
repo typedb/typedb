@@ -6,6 +6,7 @@
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use options::QueryOptions;
+use query::query_manager::AnalysedQuery;
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
 };
@@ -21,7 +22,6 @@ use crate::service::{
     },
     AnswerType, QueryType,
 };
-use query::query_manager::AnalysedQuery;
 
 pub mod concept;
 pub mod document;
@@ -141,7 +141,7 @@ fn encode_analysed_query(analysed_query: AnalysedQuery) -> serde_json::Value {
 }
 
 #[derive(Debug)]
-pub(crate) struct AnalysedQueryAnswer  {
+pub(crate) struct AnalysedQueryAnswer {
     pub(crate) inner: AnalysedQuery,
 }
 

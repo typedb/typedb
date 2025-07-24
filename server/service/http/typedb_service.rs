@@ -16,6 +16,7 @@ use concurrency::TokioIntervalRunner;
 use diagnostics::metrics::ActionKind;
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
+use query::query_manager::AnalysedQuery;
 use resource::{constants::common::SECONDS_IN_MINUTE, server_info::ServerInfo};
 use system::concepts::{Credential, User};
 use tokio::{
@@ -38,7 +39,7 @@ use crate::{
                 authentication::{encode_token, SigninPayload},
                 body::{JsonBody, PlainTextBody},
                 database::{encode_database, encode_databases, DatabasePath},
-                query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
+                query::{AnalysedQueryAnswer, QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},
                 user::{encode_user, encode_users, CreateUserPayload, UpdateUserPayload, UserPath},
                 version::{encode_server_version, ProtocolVersion, PROTOCOL_VERSION_LATEST},
@@ -52,8 +53,6 @@ use crate::{
     },
     state::BoxServerState,
 };
-use query::query_manager::AnalysedQuery;
-use crate::service::http::message::query::AnalysedQueryAnswer;
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 
@@ -161,7 +160,10 @@ impl TypeDBService {
             Err(_) => Err(HttpServiceError::transaction_timeout()),
         }
     }
-    fn build_analyse_query_request(query_options_payload: Option<QueryOptionsPayload>, query: String) -> TransactionRequest {
+    fn build_analyse_query_request(
+        query_options_payload: Option<QueryOptionsPayload>,
+        query: String,
+    ) -> TransactionRequest {
         let query_options =
             query_options_payload.map(|options| options.into()).unwrap_or_else(|| QueryOptions::default_http());
         TransactionRequest::AnalyseQuery(query_options, query)
@@ -179,8 +181,7 @@ impl TypeDBService {
         match transaction_response {
             TransactionServiceResponse::Query(query_response) => Ok(query_response),
             TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),
-            TransactionServiceResponse::QueryAnalyse(_)
-            | TransactionServiceResponse::Ok => {
+            TransactionServiceResponse::QueryAnalyse(_) | TransactionServiceResponse::Ok => {
                 Err(HttpServiceError::Internal { details: "unexpected transaction response".to_string() })
             }
         }
@@ -192,8 +193,7 @@ impl TypeDBService {
         match transaction_response {
             TransactionServiceResponse::QueryAnalyse(query_response) => Ok(query_response),
             TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),
-            TransactionServiceResponse::Query(_)
-            | TransactionServiceResponse::Ok => {
+            TransactionServiceResponse::Query(_) | TransactionServiceResponse::Ok => {
                 Err(HttpServiceError::Internal { details: "unexpected transaction response".to_string() })
             }
         }
@@ -592,10 +592,10 @@ impl TypeDBService {
                     Self::build_analyse_query_request(payload.query_options, payload.query),
                     true,
                 )
-                    .await
+                .await
             },
         )
-            .await
+        .await
     }
 
     async fn transactions_query(
