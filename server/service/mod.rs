@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use serde::{Deserialize, Serialize};
+pub use grpc::{IntoGrpcStatus, IntoProtocolErrorMessage};
 
 pub(crate) mod export_service;
 pub(crate) mod grpc;
