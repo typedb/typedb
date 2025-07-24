@@ -6,6 +6,7 @@
 
 use std::{collections::HashSet, sync::Arc};
 use std::collections::{BTreeSet, HashMap};
+use itertools::chain;
 
 use compiler::{
     annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
@@ -482,7 +483,7 @@ pub type AnalysedValueType = String;
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged, rename_all = "camelCase")]
 pub enum AnalysedFetchObject {
-    Leaf(Vec<AnalysedValueType>),
+    Leaf(BTreeSet<AnalysedValueType>),
     Inner(HashMap<String, AnalysedFetchObject>)
 }
 
@@ -498,7 +499,7 @@ impl AnalysedQuery {
         type_manager: &TypeManager,
         _variable_registry: &VariableRegistry,
         parameters: &ParameterRegistry,
-        source_query: &str,
+        _source_query: &str,
         annotated_pipeline: AnnotatedPipeline
     ) -> Result<Self, Box<ConceptReadError>> {
         Self::build_impl(snapshot, type_manager, _variable_registry, parameters, &annotated_pipeline.annotated_stages, annotated_pipeline.annotated_fetch.as_ref())
@@ -603,9 +604,10 @@ fn encode_analysed_fetch_entries<Snapshot: ReadableSnapshot>(
             AnnotatedFetchSome::ListAttributesAsList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
             | AnnotatedFetchSome::ListAttributesFromList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
             | AnnotatedFetchSome::SingleAttribute(var, attribute_type) => {
-                // TODO: Refine based on variable
-                let attribute_types = attribute_type.get_subtypes(snapshot, type_manager)?;
-                AnalysedFetchObject::Leaf(encode_leaf(snapshot, type_manager, attribute_types.iter().copied())?)
+                // TODO: Refine based on owner?
+                let subtypes = attribute_type.get_subtypes(snapshot, type_manager)?;
+                let attribute_types = chain!([*attribute_type].into_iter(), subtypes.iter().copied());
+                AnalysedFetchObject::Leaf(encode_leaf(snapshot, type_manager, attribute_types)?)
             }
             AnnotatedFetchSome::Object(inner) => {
                 AnalysedFetchObject::Inner(encode_analysed_fetch_object(snapshot, type_manager, parameters, last_stage_annotations, inner)?)
@@ -629,7 +631,7 @@ fn encode_analysed_fetch_entries<Snapshot: ReadableSnapshot>(
                         )
                     }
                     FunctionParameterAnnotation::Value(value_type) => {
-                        AnalysedFetchObject::Leaf(vec![value_type.to_string()])
+                        AnalysedFetchObject::Leaf(BTreeSet::from([value_type.to_string()]))
                     }
                 }
             }
@@ -642,11 +644,11 @@ fn encode_leaf(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     attribute_types: impl Iterator<Item = AttributeType>,
-) -> Result<Vec<AnalysedValueType>, Box<ConceptReadError>> {
+) -> Result<BTreeSet<AnalysedValueType>, Box<ConceptReadError>> {
     attribute_types
         .filter_map(|attribute_type| {
             attribute_type.get_value_type(snapshot, type_manager)
                 .map(|ok| ok.map(|(value_type, _)| value_type.to_string()))
                 .transpose()
-        }).collect::<Result<Vec<_>,_>>()
+        }).collect::<Result<BTreeSet<_>,_>>()
 }

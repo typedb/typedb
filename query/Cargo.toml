@@ -54,15 +54,9 @@ features = {}
 		features = []
 		default-features = false
 
-	[dev-dependencies.itertools]
-		features = ["default", "use_alloc", "use_std"]
-		version = "0.10.5"
-		default-features = false
-
 [dependencies]
-serde = { version = "1.0.219", features = ["derive"] }
 
-[dependencies.tokio]
+	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
 		version = "1.45.0"
 		default-features = false
@@ -70,6 +64,11 @@ serde = { version = "1.0.219", features = ["derive"] }
 	[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
 		version = "0.1.41"
+		default-features = false
+
+	[dependencies.serde]
+		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
+		version = "1.0.219"
 		default-features = false
 
 	[dependencies.resource]
@@ -110,6 +109,11 @@ serde = { version = "1.0.219", features = ["derive"] }
 	[dependencies.error]
 		path = "../common/error"
 		features = []
+		default-features = false
+
+	[dependencies.itertools]
+		features = ["default", "use_alloc", "use_std"]
+		version = "0.10.5"
 		default-features = false
 
 	[dependencies.answer]
