@@ -23,9 +23,10 @@ use server::service::http::message::{
     },
     transaction::{TransactionOptionsPayload, TransactionResponse},
     user::{UserResponse, UsersResponse},
+    version::ServerVersionResponse,
 };
 use url::form_urlencoded;
-use server::service::http::message::version::ServerVersionResponse;
+
 use crate::{Context, HttpBehaviourTestError};
 
 async fn send_request(
@@ -134,9 +135,7 @@ pub async fn authenticate(
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 
-pub async fn version(
-    http_client: &Client<HttpConnector>
-) -> Result<ServerVersionResponse, HttpBehaviourTestError> {
+pub async fn version(http_client: &Client<HttpConnector>) -> Result<ServerVersionResponse, HttpBehaviourTestError> {
     let url = format!("{}/version", Context::default_versioned_endpoint());
     let response = send_request(http_client, None::<&str>, Method::GET, &url, None).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
