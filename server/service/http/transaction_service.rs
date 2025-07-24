@@ -31,8 +31,8 @@ use diagnostics::{
 use executor::{
     batch::Batch,
     document::ConceptDocument,
-    pipeline::{pipeline::Pipeline, stage::ReadPipelineStage, PipelineExecutionError},
-    ExecutionInterrupt, InterruptType,
+    ExecutionInterrupt,
+    InterruptType, pipeline::{pipeline::Pipeline, PipelineExecutionError, stage::ReadPipelineStage},
 };
 use http::StatusCode;
 use ir::pipeline::ParameterRegistry;
@@ -44,21 +44,23 @@ use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
     sync::{broadcast, mpsc::Receiver, oneshot, watch},
-    task::{spawn_blocking, JoinHandle},
+    task::{JoinHandle, spawn_blocking},
     time::Instant,
 };
 use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 use compiler::executable::ExecutableCompilationError;
+use query::query_manager::AnalysedQuery;
 
 use super::message::query::query_structure::encode_query_structure;
 use crate::service::{
     http::message::query::{document::encode_document, query_structure::QueryStructureResponse, row::encode_row},
+    QueryType,
     transaction_service::{
-        init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
-    },
-    QueryType, TransactionType,
+        init_transaction_timeout, is_write_pipeline, Transaction, TransactionServiceError, with_readable_transaction,
+    }, TransactionType,
 };
+use crate::service::http::message::query::AnalysedQueryAnswer;
 
 macro_rules! respond_error_and_return_break {
     ($responder:ident, $error:expr) => {{
@@ -158,7 +160,7 @@ pub(crate) struct TransactionService {
 pub(crate) enum TransactionServiceResponse {
     Ok,
     Query(QueryAnswer),
-    QueryAnalyse(AnalysedQuery),
+    QueryAnalyse(AnalysedQueryAnswer),
     Err(TransactionServiceError),
 }
 
@@ -216,9 +218,6 @@ impl fmt::Display for QueryAnswerWarning {
         }
     }
 }
-
-#[derive(Debug)]
-pub struct AnalysedQuery {}
 
 impl TransactionService {
     pub(crate) fn new(
@@ -1149,13 +1148,49 @@ impl TransactionService {
         query: String,
         responder: TransactionResponder,
     ) -> ControlFlow<(), ()> {
-        unwrap_or_execute_else_respond_error_and_return_break!(Ok::<(),ExecutableCompilationError>(()), responder, |typedb_source| {
-            TransactionServiceError::AnalyseQueryFailed { typedb_source: typedb_source }
-        });
-        respond_else_return_break!(
-            responder,
-            TransactionServiceResponse::QueryAnalyse(AnalysedQuery {})
-        );
-        Continue(())
+        let parsed = match parse_query(&query) {
+            Ok(parsed) => parsed,
+            Err(err) => {
+                let _ = respond_transaction_response(
+                    responder,
+                    TransactionServiceResponse::Err(TransactionServiceError::QueryParseFailed { typedb_source: err }),
+                );
+                return Continue(());
+            }
+        };
+        let typeql::query::QueryStructure::Pipeline(pipeline) = parsed.into_structure() else {
+            respond_error_and_return_break!(
+                responder,
+                TransactionServiceError::AnalyseQueryExpectsPipeline { }
+            );
+        };
+        debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
+        let timeout_at = self.timeout_at;
+        let interrupt = self.query_interrupt_receiver.clone();
+        with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
+            let snapshot = transaction.snapshot.clone_inner();
+            let type_manager = transaction.type_manager.clone();
+            let thing_manager = transaction.thing_manager.clone();
+            let function_manager = transaction.function_manager.clone();
+            let query_manager = transaction.query_manager.clone();
+            spawn_blocking(move || {
+                let analyse_result = query_manager.analyse_query(
+                    snapshot.clone(),
+                    &type_manager,
+                    thing_manager.clone(),
+                    &function_manager,
+                    &pipeline,
+                    &query,
+                );
+                let analysed = unwrap_or_execute_else_respond_error_and_return_break!(analyse_result, responder, |typedb_source| {
+                    TransactionServiceError::AnalyseQueryFailed { typedb_source: *typedb_source }
+                });
+                respond_else_return_break!(
+                    responder,
+                    TransactionServiceResponse::QueryAnalyse(AnalysedQueryAnswer { inner: analysed })
+                );
+                Continue(())
+        })}).await
+        .expect("Expected read query completion")
     }
 }

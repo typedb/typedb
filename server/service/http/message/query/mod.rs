@@ -20,7 +20,7 @@ use crate::service::{
     },
     AnswerType, QueryType,
 };
-use crate::service::http::transaction_service::AnalysedQuery;
+use query::query_manager::AnalysedQuery;
 
 pub mod concept;
 pub mod document;
@@ -142,7 +142,11 @@ fn encode_analysed_query() -> AnalysedQueryResponse {
     AnalysedQueryResponse {}
 }
 
-impl IntoResponse for AnalysedQuery {
+#[derive(Debug)]
+pub(crate) struct AnalysedQueryAnswer  {
+    pub(crate) inner: AnalysedQuery,
+}
+impl IntoResponse for AnalysedQueryAnswer {
     fn into_response(self) -> Response {
         let code = StatusCode::OK;
         let body = JsonBody(encode_analysed_query());

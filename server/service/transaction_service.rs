@@ -18,7 +18,6 @@ use storage::durability_client::WALClient;
 use tokio::time::Instant;
 use typeql::query::stage::Stage;
 use uuid::Uuid;
-use compiler::executable::ExecutableCompilationError;
 
 pub(crate) const TRANSACTION_REQUEST_BUFFER_SIZE: usize = 10;
 
@@ -95,6 +94,7 @@ typedb_error! {
         PipelineExecution(16, "Pipeline execution failed.", typedb_source: PipelineExecutionError),
         TransactionTimeout(17, "Operation failed: transaction timeout."),
         InvalidPrefetchSize(18, "Invalid query option: prefetch size should be >= 1, got {value} instead.", value: usize),
-        AnalyseQueryFailed(19, "Analysing the query failed.", typedb_source: ExecutableCompilationError),
+        AnalyseQueryExpectsPipeline(19, "Query analyse received a schema query.Only query pipeline can be analysed."),
+        AnalyseQueryFailed(20, "Analysing the query failed.", typedb_source: QueryError),
     }
 }

@@ -52,7 +52,8 @@ use crate::{
     },
     state::BoxServerState,
 };
-use crate::service::http::transaction_service::AnalysedQuery;
+use query::query_manager::AnalysedQuery;
+use crate::service::http::message::query::AnalysedQueryAnswer;
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 
@@ -187,7 +188,7 @@ impl TypeDBService {
 
     fn try_get_query_analyse_response(
         transaction_response: TransactionServiceResponse,
-    ) -> Result<AnalysedQuery, HttpServiceError> {
+    ) -> Result<AnalysedQueryAnswer, HttpServiceError> {
         match transaction_response {
             TransactionServiceResponse::QueryAnalyse(query_response) => Ok(query_response),
             TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),

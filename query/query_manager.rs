@@ -17,7 +17,7 @@ use executor::pipeline::{
     pipeline::Pipeline,
     stage::{ReadPipelineStage, WritePipelineStage},
 };
-use function::function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex};
+use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, validate_no_cycles};
 use ir::{
     pipeline::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     translation::pipeline::{translate_pipeline, TranslatedPipeline},
@@ -29,6 +29,10 @@ use resource::{
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
+use compiler::annotation::fetch::AnnotatedFetchObject;
+use compiler::query_structure::{ParametrisedQueryStructure, QueryStructure};
+use executor::document::ConceptDocument;
+use ir::pipeline::VariableRegistry;
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 
@@ -398,5 +402,83 @@ impl QueryManager {
         translate_pipeline(snapshot, &all_function_signatures, query).map_err(|err| {
             Box::new(QueryError::Representation { source_query: source_query.to_string(), typedb_source: err })
         })
+    }
+
+    pub fn analyse_query<Snapshot: ReadableSnapshot + 'static>(
+        &self,
+        snapshot: Arc<Snapshot>,
+        type_manager: &TypeManager,
+        _thing_manager: Arc<ThingManager>,
+        function_manager: &FunctionManager,
+        query: &typeql::query::Pipeline,
+        source_query: &str,
+    ) -> Result<AnalysedQuery, Box<QueryError>> {
+        event!(Level::TRACE, "Running analyse query:\n{}", query);
+        let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let compile_profile = query_profile.compilation_profile();
+        compile_profile.start();
+        // 1: Translate
+        let TranslatedPipeline {
+            translated_preamble,
+            translated_stages,
+            translated_fetch,
+            mut variable_registry,
+            value_parameters: parameters,
+        } = self.translate_pipeline(snapshot.as_ref(), function_manager, query, source_query)?;
+        compile_profile.translation_finished();
+        let arced_preamble = Arc::new(translated_preamble);
+        let arced_stages = Arc::new(translated_stages);
+        let arced_fetch = Arc::new(translated_fetch);
+
+        match validate_no_cycles(&arced_preamble.iter().enumerate().collect()) {
+            Ok(_) => {}
+            Err(typedb_source) => {
+                return Err(Box::new(QueryError::FunctionDefinition {
+                    source_query: source_query.to_string(),
+                    typedb_source,
+                }))
+            }
+        }
+        compile_profile.validation_finished();
+
+        // 2: Annotate
+        let annotated_schema_functions =
+            function_manager.get_annotated_functions(snapshot.as_ref(), type_manager).map_err(|err| {
+                QueryError::FunctionDefinition { source_query: source_query.to_string(), typedb_source: err }
+            })?;
+
+        let mut annotated_pipeline = annotate_preamble_and_pipeline(
+            snapshot.as_ref(),
+            type_manager,
+            annotated_schema_functions.clone(),
+            &mut variable_registry,
+            &parameters,
+            (*arced_preamble).clone(),
+            (*arced_stages).clone(),
+            (*arced_fetch).clone(),
+        )
+            .map_err(|err| QueryError::Annotation { source_query: source_query.to_string(), typedb_source: err })?;
+        compile_profile.annotation_finished();
+
+        Ok(AnalysedQuery::build(&variable_registry, source_query, annotated_pipeline))
+    }
+}
+
+#[derive(Debug)]
+pub struct AnalysedQuery {
+    fetch: Option<ConceptDocument>,
+}
+
+impl AnalysedQuery {
+    fn build(variable_registry: &VariableRegistry, source_query: &str, annotated_pipeline: AnnotatedPipeline) -> Self {
+        // TODO: Consider adding query structure and so on
+        let fetch = annotated_pipeline.annotated_fetch.as_ref().map(|fetch| {
+            match fetch.object {
+                AnnotatedFetchObject::Entries(_) => {}
+                AnnotatedFetchObject::Attributes(_) => {}
+            }
+            todo!()
+        });
+        Self { fetch }
     }
 }
