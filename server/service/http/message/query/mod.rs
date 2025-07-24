@@ -3,15 +3,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::collections::HashMap;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use options::QueryOptions;
-use query::query_manager::AnalysedQuery;
+use query::query_manager::{AnalysedFetchObject, AnalysedQuery};
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tracing::Value;
+use ::concept::error::ConceptReadError;
+use ::concept::type_::type_manager::TypeManager;
+use compiler::annotation::function::{AnnotatedFunctionSignature, FunctionParameterAnnotation};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::service::{
     http::{
@@ -22,6 +28,8 @@ use crate::service::{
     },
     AnswerType, QueryType,
 };
+use crate::service::http::message::query::concept::{encode_type_concept, encode_value_type};
+use crate::service::http::message::query::query_structure::encode_query_structure;
 
 pub mod concept;
 pub mod document;
@@ -136,19 +144,87 @@ impl IntoResponse for QueryAnswer {
     }
 }
 
-fn encode_analysed_query(analysed_query: AnalysedQuery) -> serde_json::Value {
-    json!(analysed_query)
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+enum TypeAnnotationResponse {
+    Concept { annotations: Vec<serde_json::Value> },
+    Value { value_types: Vec<serde_json::Value> },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FunctionSignatureResponse {
+    arguments: Vec<TypeAnnotationResponse>,
+    returned: Vec<TypeAnnotationResponse>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+enum AnalysedFetchObjectResponse {
+    Leaf(TypeAnnotationResponse),
+    Object(HashMap<String, AnalysedFetchObjectResponse>),
+    Pipeline(AnalysedQueryAnswer)
+}
+
+fn encode_type_annotations(
+    snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, annotation: FunctionParameterAnnotation
+) -> Result<TypeAnnotationResponse, Box<ConceptReadError>> {
+    Ok(match annotation {
+        FunctionParameterAnnotation::Concept(types) => {
+            TypeAnnotationResponse::Concept {
+                annotations: types.into_iter().map(|type_| encode_type_concept(&type_, snapshot, type_manager)).collect::<Result<Vec<_>,_>>()?
+            }
+        }
+        FunctionParameterAnnotation::Value(v) => {
+            TypeAnnotationResponse::Value { value_types: vec![json!(encode_value_type(v, snapshot, type_manager)?)] }
+        },
+    })
+}
+
+pub(crate) fn encode_analysed_query(
+    snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, analysed_query: AnalysedQuery
+) -> Result<AnalysedQueryAnswer, Box<ConceptReadError>> {
+    let AnalysedQuery { pipeline, signature, fetch } = analysed_query;
+    let signature = signature.map(|sig| {
+        Ok::<_, Box<ConceptReadError>>(FunctionSignatureResponse {
+            arguments: sig.arguments.into_iter().map(|arg| encode_type_annotations(snapshot, type_manager, arg)).collect::<Result<Vec<_>, _>>()?,
+            returned: sig.returned.into_iter().map(|arg| encode_type_annotations(snapshot, type_manager, arg)).collect::<Result<Vec<_>, _>>()?,
+        })
+    }).transpose()?;
+    let pipeline = pipeline.map(|query_structure| encode_query_structure(snapshot, type_manager, &query_structure)).transpose()?;
+    let fetch = fetch.map(|fetch| encode_analysed_fetch(snapshot, type_manager, fetch)).transpose()?;
+    Ok(AnalysedQueryAnswer { signature, pipeline, fetch })
+}
+
+fn encode_analysed_fetch(
+    snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, analysed_fetch_object: HashMap<String, AnalysedFetchObject>
+) -> Result<HashMap<String, AnalysedFetchObjectResponse>, Box<ConceptReadError>> {
+    analysed_fetch_object.into_iter().map(|(key, object)| {
+        let encoded = match object {
+            AnalysedFetchObject::Leaf(leaf) => {
+                let value_types = leaf.into_iter().map(|v| json!(v.to_string())).collect();
+                AnalysedFetchObjectResponse::Leaf(TypeAnnotationResponse::Value { value_types })
+            },
+            AnalysedFetchObject::Object(object) => AnalysedFetchObjectResponse::Object(encode_analysed_fetch(snapshot, type_manager, object)?),
+            AnalysedFetchObject::Pipeline(pipeline) => AnalysedFetchObjectResponse::Pipeline(encode_analysed_query(snapshot, type_manager, pipeline)?),
+        };
+        Ok((key, encoded))
+    }).collect::<Result<HashMap<_, _>, _>>()
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct AnalysedQueryAnswer {
-    pub(crate) inner: AnalysedQuery,
+    signature: Option<FunctionSignatureResponse>,
+    pipeline: Option<QueryStructureResponse>,
+    fetch: Option<HashMap<String, AnalysedFetchObjectResponse>>,
 }
 
 impl IntoResponse for AnalysedQueryAnswer {
     fn into_response(self) -> Response {
         let code = StatusCode::OK;
-        let body = JsonBody(encode_analysed_query(self.inner));
+        let body = JsonBody(self);
         (code, body).into_response()
     }
 }

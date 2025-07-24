@@ -10,17 +10,12 @@ use std::{
 };
 
 use answer::variable::Variable;
-use compiler::{
-    annotation::{
-        fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
-        function::FunctionParameterAnnotation,
-        pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline, AnnotatedStage},
-        type_annotations::TypeAnnotations,
-    },
-    executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
-    query_structure::{extract_query_structure_from, ParametrisedQueryStructure, QueryStructure},
-    transformation::transform::apply_transformations,
-};
+use compiler::{annotation::{
+    fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
+    function::FunctionParameterAnnotation,
+    pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline, AnnotatedStage},
+    type_annotations::TypeAnnotations,
+}, executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline}, query_structure::{extract_query_structure_from, ParametrisedQueryStructure, QueryStructure}, transformation::transform::apply_transformations, VariablePosition};
 use concept::{
     error::ConceptReadError,
     thing::thing_manager::ThingManager,
@@ -52,6 +47,7 @@ use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
+use compiler::annotation::function::AnnotatedFunctionSignature;
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 
@@ -483,7 +479,7 @@ impl QueryManager {
             snapshot.as_ref(),
             type_manager,
             &variable_registry,
-            &parameters,
+            Arc::new(parameters),
             source_query,
             annotated_pipeline,
         )
@@ -493,17 +489,18 @@ impl QueryManager {
     }
 }
 
-pub type AnalysedValueType = String;
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(untagged, rename_all = "camelCase")]
+pub type AnalysedValueType = ValueType;
+#[derive(Debug)]
 pub enum AnalysedFetchObject {
-    Leaf(BTreeSet<AnalysedValueType>),
-    Inner(HashMap<String, AnalysedFetchObject>),
+    Leaf(BTreeSet<ValueType>),
+    Object(HashMap<String, AnalysedFetchObject>),
+    Pipeline(AnalysedQuery)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug)]
 pub struct AnalysedQuery {
+    pub signature: Option<AnnotatedFunctionSignature>,
+    pub pipeline: Option<QueryStructure>,
     pub fetch: Option<HashMap<String, AnalysedFetchObject>>,
 }
 
@@ -511,17 +508,19 @@ impl AnalysedQuery {
     pub fn build<Snapshot: ReadableSnapshot>(
         snapshot: &Snapshot,
         type_manager: &TypeManager,
-        _variable_registry: &VariableRegistry,
-        parameters: &ParameterRegistry,
-        _source_query: &str,
+        variable_registry: &VariableRegistry,
+        parameters: Arc<ParameterRegistry>,
+        source_query: &str,
         annotated_pipeline: AnnotatedPipeline,
     ) -> Result<Self, Box<ConceptReadError>> {
         Self::build_impl(
             snapshot,
             type_manager,
-            _variable_registry,
+            variable_registry,
             parameters,
-            &annotated_pipeline.annotated_stages,
+            source_query,
+            annotated_pipeline.annotated_stages.as_slice(),
+            None,
             annotated_pipeline.annotated_fetch.as_ref(),
         )
     }
@@ -529,12 +528,21 @@ impl AnalysedQuery {
     fn build_impl(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        _variable_registry: &VariableRegistry,
-        parameters: &ParameterRegistry,
+        variable_registry: &VariableRegistry,
+        parameters: Arc<ParameterRegistry>,
+        source_query: &str,
         stages: &[AnnotatedStage],
+        signature: Option<AnnotatedFunctionSignature>,
         fetch: Option<&AnnotatedFetch>,
     ) -> Result<Self, Box<ConceptReadError>> {
         // TODO: Consider adding query structure and so on
+        // We don't have output positions. Fake it.
+        let output_positions = variable_registry.variable_names().keys().enumerate().map(|(i, var)| {
+            (*var, VariablePosition::new(i as u32))
+        }).collect();
+        let query_structure = extract_query_structure_from(variable_registry, stages, source_query).map(|qs| {
+            Arc::new(qs).with_parameters(parameters.clone(), variable_registry.variable_names(), &output_positions)
+        });
         let stage_annotations = stages
             .iter()
             .enumerate()
@@ -559,23 +567,24 @@ impl AnalysedQuery {
         let last_stage_annotations = &stage_annotations.last().expect("Expected pipeline to have a last stage").1;
         let fetch = fetch
             .map(|fetch| {
-                encode_analysed_fetch_object(snapshot, type_manager, parameters, last_stage_annotations, &fetch.object)
+                encode_analysed_fetch_object(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, &fetch.object)
             })
             .transpose()?;
-        Ok(Self { fetch })
+        Ok(Self { pipeline: query_structure, fetch, signature })
     }
 }
 
 fn encode_analysed_fetch_object(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    parameters: &ParameterRegistry,
+    parameters: Arc<ParameterRegistry>,
+    source_query: &str,
     last_stage_annotations: &TypeAnnotations,
     object: &AnnotatedFetchObject,
 ) -> Result<HashMap<String, AnalysedFetchObject>, Box<ConceptReadError>> {
     match object {
         AnnotatedFetchObject::Entries(entries) => {
-            encode_analysed_fetch_entries(snapshot, type_manager, parameters, last_stage_annotations, entries)
+            encode_analysed_fetch_entries(snapshot, type_manager, parameters, source_query, last_stage_annotations, entries)
         }
         AnnotatedFetchObject::Attributes(variable) => {
             encode_analysed_fetch_attributes(snapshot, type_manager, last_stage_annotations, *variable)
@@ -613,7 +622,8 @@ fn encode_analysed_fetch_attributes(
 fn encode_analysed_fetch_entries<Snapshot: ReadableSnapshot>(
     snapshot: &Snapshot,
     type_manager: &TypeManager,
-    parameters: &ParameterRegistry,
+    parameters: Arc<ParameterRegistry>,
+    source_query: &str,
     last_stage_annotations: &TypeAnnotations,
     entries: &HashMap<ParameterID, AnnotatedFetchSome>,
 ) -> Result<HashMap<String, AnalysedFetchObject>, Box<ConceptReadError>> {
@@ -637,11 +647,11 @@ fn encode_analysed_fetch_entries<Snapshot: ReadableSnapshot>(
                 AnalysedFetchObject::Leaf(encode_leaf(snapshot, type_manager, attribute_types)?)
             }
             AnnotatedFetchSome::Object(inner) => {
-                AnalysedFetchObject::Inner(encode_analysed_fetch_object(snapshot, type_manager, parameters, last_stage_annotations, inner)?)
+                AnalysedFetchObject::Object(encode_analysed_fetch_object(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, inner)?)
             }
             AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
-                let built = AnalysedQuery::build_impl(snapshot, type_manager, &sub_fetch.variable_registry, parameters, &sub_fetch.stages, Some(&sub_fetch.fetch))?;
-                AnalysedFetchObject::Inner(built.fetch.unwrap())
+                let built = AnalysedQuery::build_impl(snapshot, type_manager, &sub_fetch.variable_registry, parameters.clone(), source_query,&sub_fetch.stages, None, Some(&sub_fetch.fetch))?;
+                AnalysedFetchObject::Object(built.fetch.unwrap())
             }
             AnnotatedFetchSome::ListFunction(function)
             | AnnotatedFetchSome::SingleFunction(function) => {
@@ -658,7 +668,7 @@ fn encode_analysed_fetch_entries<Snapshot: ReadableSnapshot>(
                         )
                     }
                     FunctionParameterAnnotation::Value(value_type) => {
-                        AnalysedFetchObject::Leaf(BTreeSet::from([value_type.to_string()]))
+                        AnalysedFetchObject::Leaf(BTreeSet::from([value_type.clone()]))
                     }
                 }
             }
@@ -676,7 +686,7 @@ fn encode_leaf(
         .filter_map(|attribute_type| {
             attribute_type
                 .get_value_type(snapshot, type_manager)
-                .map(|ok| ok.map(|(value_type, _)| value_type.to_string()))
+                .map(|ok| ok.map(|(value_type, _)| value_type))
                 .transpose()
         })
         .collect::<Result<BTreeSet<_>, _>>()

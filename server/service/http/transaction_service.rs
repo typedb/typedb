@@ -60,6 +60,7 @@ use crate::service::{
     },
     QueryType, TransactionType,
 };
+use crate::service::http::message::query::encode_analysed_query;
 
 macro_rules! respond_error_and_return_break {
     ($responder:ident, $error:expr) => {{
@@ -1183,9 +1184,16 @@ impl TransactionService {
                     responder,
                     |typedb_source| { TransactionServiceError::AnalyseQueryFailed { typedb_source: *typedb_source } }
                 );
+                let encoded_analysed = unwrap_or_execute_else_respond_error_and_return_break!(
+                    encode_analysed_query(snapshot.as_ref(), &type_manager, analysed),
+                    responder,
+                    |typedb_source| { TransactionServiceError::AnalyseQueryFailed {
+                        typedb_source: QueryError::QueryAnalysisFailed { source_query: query, typedb_source } }
+                    }
+                );
                 respond_else_return_break!(
                     responder,
-                    TransactionServiceResponse::QueryAnalyse(AnalysedQueryAnswer { inner: analysed })
+                    TransactionServiceResponse::QueryAnalyse(encoded_analysed)
                 );
                 Continue(())
             })
