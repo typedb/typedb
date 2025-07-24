@@ -160,7 +160,7 @@ async fn connection_opens_with_a_wrong_port(context: &mut Context, may_error: pa
 
 #[apply(generic_step)]
 #[step(expr = r"connection contains distribution{may_error}")]
-async fn connection_has_distribution(context: &mut Context, may_error: params::MayError) {
+async fn connection_contains_distribution(context: &mut Context, may_error: params::MayError) {
     if let Either::Left(server_version) = may_error.check(version(context.http_client()).await) {
         assert!(!server_version.distribution.is_empty());
     }
@@ -168,7 +168,7 @@ async fn connection_has_distribution(context: &mut Context, may_error: params::M
 
 #[apply(generic_step)]
 #[step(expr = r"connection contains version{may_error}")]
-async fn connection_has_version(context: &mut Context, may_error: params::MayError) {
+async fn connection_contains_version(context: &mut Context, may_error: params::MayError) {
     if let Either::Left(server_version) = may_error.check(version(context.http_client()).await) {
         assert!(!server_version.version.is_empty());
     }
