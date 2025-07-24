@@ -49,6 +49,7 @@ use tokio::{
 };
 use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
+use compiler::executable::ExecutableCompilationError;
 
 use super::message::query::query_structure::encode_query_structure;
 use crate::service::{
@@ -103,6 +104,7 @@ macro_rules! unwrap_or_execute_else_respond_error_and_return_break {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) enum TransactionRequest {
     Query(QueryOptions, String),
+    AnalyseQuery(QueryOptions, String),
     Commit,
     Rollback,
     Close,
@@ -156,6 +158,7 @@ pub(crate) struct TransactionService {
 pub(crate) enum TransactionServiceResponse {
     Ok,
     Query(QueryAnswer),
+    QueryAnalyse(AnalysedQuery),
     Err(TransactionServiceError),
 }
 
@@ -213,6 +216,9 @@ impl fmt::Display for QueryAnswerWarning {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct AnalysedQuery {}
 
 impl TransactionService {
     pub(crate) fn new(
@@ -354,6 +360,9 @@ impl TransactionService {
             Some((request, response_sender)) => match request {
                 TransactionRequest::Query(query_options, query) => {
                     self.handle_query(query_options, query, response_sender).await
+                }
+                TransactionRequest::AnalyseQuery(query_options, query) => {
+                    self.handle_analyse_query(query_options, query, response_sender).await
                 }
                 TransactionRequest::Commit => self.handle_commit(response_sender).await,
                 TransactionRequest::Rollback => self.handle_rollback(response_sender).await,
@@ -1131,6 +1140,22 @@ impl TransactionService {
         if query_profile.is_enabled() {
             event!(Level::INFO, "Read query done (including network request time).\n{}", query_profile);
         }
+        Continue(())
+    }
+
+    async fn handle_analyse_query(
+        &mut self,
+        query_options: QueryOptions,
+        query: String,
+        responder: TransactionResponder,
+    ) -> ControlFlow<(), ()> {
+        unwrap_or_execute_else_respond_error_and_return_break!(Ok::<(),ExecutableCompilationError>(()), responder, |typedb_source| {
+            TransactionServiceError::AnalyseQueryFailed { typedb_source: typedb_source }
+        });
+        respond_else_return_break!(
+            responder,
+            TransactionServiceResponse::QueryAnalyse(AnalysedQuery {})
+        );
         Continue(())
     }
 }

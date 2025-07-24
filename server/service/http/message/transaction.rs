@@ -76,6 +76,7 @@ impl IntoResponse for TransactionServiceResponse {
         match self {
             TransactionServiceResponse::Ok => StatusCode::OK.into_response(),
             TransactionServiceResponse::Query(query) => query.into_response(),
+            TransactionServiceResponse::QueryAnalyse(query) => query.into_response(),
             TransactionServiceResponse::Err(typedb_source) => {
                 HttpServiceError::Transaction { typedb_source }.into_response()
             }

@@ -543,6 +543,7 @@ impl fmt::Display for ActionKind {
             ActionKind::TransactionCommit => write!(f, "TRANSACTION_COMMIT"),
             ActionKind::TransactionRollback => write!(f, "TRANSACTION_ROLLBACK"),
             ActionKind::TransactionQuery => write!(f, "TRANSACTION_QUERY"),
+            ActionKind::TransactionAnalyse => write!(f, "TRANSACTION_ANALYSE"),
             ActionKind::OneshotQuery => write!(f, "ONESHOT_QUERY"),
         }
     }
@@ -768,6 +769,7 @@ pub enum ActionKind {
     TransactionClose,
     TransactionCommit,
     TransactionRollback,
+    TransactionAnalyse,
     TransactionQuery,
     OneshotQuery,
     // ATTENTION: When adding new Kinds, update all_empty_counts_map()!
@@ -800,6 +802,7 @@ impl ActionKind {
             (Self::TransactionCommit, ActionInfo::default()),
             (Self::TransactionRollback, ActionInfo::default()),
             (Self::TransactionQuery, ActionInfo::default()),
+            (Self::TransactionAnalyse, ActionInfo::default()),
             (Self::OneshotQuery, ActionInfo::default()),
         ])
     }
@@ -830,6 +833,7 @@ impl ActionKind {
             ActionKind::TransactionCommit => "transaction_commits",
             ActionKind::TransactionRollback => "transaction_rollbacks",
             ActionKind::TransactionQuery => "transaction_queries",
+            ActionKind::TransactionAnalyse => "transaction_analyses",
             ActionKind::OneshotQuery => "oneshot_queries",
         }
     }

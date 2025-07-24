@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use axum::response::{IntoResponse, Response};
+use http::StatusCode;
 use options::QueryOptions;
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
@@ -19,6 +20,7 @@ use crate::service::{
     },
     AnswerType, QueryType,
 };
+use crate::service::http::transaction_service::AnalysedQuery;
 
 pub mod concept;
 pub mod document;
@@ -129,6 +131,21 @@ impl IntoResponse for QueryAnswer {
                 warning.map(|warning| warning.to_string()),
             )),
         };
+        (code, body).into_response()
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnalysedQueryResponse {} // TODO
+fn encode_analysed_query() -> AnalysedQueryResponse {
+    AnalysedQueryResponse {}
+}
+
+impl IntoResponse for AnalysedQuery {
+    fn into_response(self) -> Response {
+        let code = StatusCode::OK;
+        let body = JsonBody(encode_analysed_query());
         (code, body).into_response()
     }
 }
