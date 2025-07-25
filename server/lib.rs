@@ -124,7 +124,7 @@ impl Server {
             None
         };
 
-        Self::print_serving_information(grpc_address, http_address_opt);
+        Self::print_serving_information(grpc_address, http_address_opt, &self.config.server.encryption);
 
         Self::spawn_shutdown_handler(self.shutdown_sender);
         if let Some(http_server) = http_server {
@@ -227,11 +227,22 @@ impl Server {
         }
     }
 
-    fn print_serving_information(grpc_address: SocketAddr, http_address: Option<SocketAddr>) {
-        print!("Serving gRPC on {grpc_address}");
-        if let Some(http_address) = http_address {
-            print!(" and HTTP on {http_address}");
+    fn print_serving_information(grpc_address: SocketAddr, http_address: Option<SocketAddr>, encryption_config: &EncryptionConfig) {
+        if encryption_config.enabled {
+            print!("Serving gRPC on {grpc_address}");
+            if let Some(http_address) = http_address {
+                print!(" and HTTP on {http_address}, with TLS enabled. You may need to use 'https://' prefixed connection URLs.");
+            }
+            println!("**To allow driver connections, drivers must be configured to *enable* TLS.**")
+        } else {
+            print!("Serving gRPC on {grpc_address} without TLS.");
+            if let Some(http_address) = http_address {
+                print!(" and HTTP on {http_address} without TLS.");
+            }
+            println!("WARNING: TLS NOT ENABLED. This means connections are insecure and transmit username/password credentials unencrypted over the network.");
+            println!("**To allow driver connections, drivers must be configured to *disable* TLS**")
         }
+
         println!(".\nReady!");
     }
 
