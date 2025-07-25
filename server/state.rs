@@ -38,6 +38,7 @@ use system::{
 use tokio::sync::watch::Receiver;
 use database::transaction::{DataCommitError, SchemaCommitError};
 use resource::profile::CommitProfile;
+use storage::isolation_manager::CommitRecord;
 use storage::snapshot::{SchemaSnapshot, WriteSnapshot};
 use user::{
     errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError},
@@ -78,7 +79,7 @@ pub trait ServerState: Debug {
     async fn database_schema_commit(
         &self,
         name: &str,
-        snapshot: SchemaSnapshot<WALClient>,
+        commit_record: CommitRecord,
         commit_profile: &mut CommitProfile
     ) -> Result<(), ServerStateError>;
 
@@ -354,13 +355,13 @@ impl ServerState for LocalServerState {
     async fn database_schema_commit(
         &self,
         name: &str,
-        snapshot: SchemaSnapshot<WALClient>,
+        commit_record: CommitRecord,
         commit_profile: &mut CommitProfile
     ) -> Result<(), ServerStateError> {
         let Some(database) = self.databases_get(name).await else {
             return Err(ServerStateError::DatabaseNotFound { name: name.to_string() })
         };
-        database.schema_commit(snapshot, commit_profile).map_err(|error|
+        database.schema_commit(commit_record, commit_profile).map_err(|error|
             ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error }
         )
     }

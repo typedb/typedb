@@ -40,7 +40,7 @@ use lending_iterator::LendingIterator;
 use options::QueryOptions;
 use query::error::QueryError;
 use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
-use storage::snapshot::ReadableSnapshot;
+use storage::snapshot::{CommittableSnapshot, ReadableSnapshot};
 use tokio::{spawn, sync::{
     broadcast,
     mpsc::{channel, Receiver, Sender},
@@ -55,7 +55,8 @@ use typedb_protocol::{
 };
 use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
-
+use database::transaction::DataCommitError::SnapshotError;
+use database::transaction::SchemaCommitError;
 use crate::service::{
     grpc::{
         diagnostics::run_with_diagnostics_async,
@@ -489,15 +490,27 @@ impl TransactionService {
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,
                 );
-                let (profile, commit_result) = match transaction.finalise_snapshot() {
+                let (mut profile, into_commit_record_result) = match transaction.finalise_snapshot() {
                     (mut profile, Ok((database, snapshot))) => {
+                        let into_commit_record_result = snapshot.into_commit_record(profile.commit_profile())
+                            .map(|commit_record_opt| (database, commit_record_opt))
+                            .map_err(|error| SchemaCommitError::SnapshotError { typedb_source: error });
+                        (profile, into_commit_record_result)
+                    }
+                    (profile, Err(error)) => (profile, Err(error))
+                };
+
+                let (profile, commit_result) = match into_commit_record_result {
+                    Ok((database, Some(commit_record))) => {
                         let commit_result = server_state.database_schema_commit(
-                            database.name(), snapshot, profile.commit_profile()
+                            database.name(), commit_record, profile.commit_profile()
                         ).await;
                         (profile, commit_result)
-                    }
-                    (profile, Err(error)) => (profile, Err(ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error }))
+                    },
+                    Ok((_, None)) => (profile, Ok(())),
+                    Err(error) => (profile, Err(ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error }))
                 };
+
                 if profile.is_enabled() {
                     event!(Level::INFO, "commit done.\n{}", profile);
                 }

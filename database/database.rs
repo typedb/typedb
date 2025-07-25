@@ -50,6 +50,7 @@ use storage::{
 };
 use tracing::{event, Level};
 use resource::profile::CommitProfile;
+use storage::isolation_manager::CommitRecord;
 use storage::snapshot::{CommittableSnapshot, SchemaSnapshot, WriteSnapshot};
 use crate::{
     transaction::TransactionError,
@@ -257,31 +258,20 @@ impl<D: DurabilityClient> Database<D> {
         }
     }
 
-    pub fn schema_commit(&self, snapshot: SchemaSnapshot<D>, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
+    pub fn schema_commit(&self, commit_record: CommitRecord, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
         // Schema commits must wait for all other data operations to finish. No new read or write
         // transaction may open until the commit completes.
         let mut schema_commit_guard = self.schema.write().unwrap();
         let mut schema = (*schema_commit_guard).clone();
-
-        let commit_record_opt = match snapshot.into_commit_record(commit_profile) {
-            Ok(commit_record_opt) => commit_record_opt,
-            Err(error) => return Err(SnapshotError { typedb_source: error })
-        };
-
-        let sequence_number = match commit_record_opt {
-            Some(commit_record) => {
-                let commit_result = self.storage.commit(commit_record, commit_profile);
-                match commit_result {
-                    Ok(sequence_number) => Some(sequence_number),
-                    Err(error) => {
-                        let error = SnapshotError {
-                            typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error }
-                        };
-                        return Err(error);
-                    }
-                }
+        
+        let sequence_number = match self.storage.commit(commit_record, commit_profile) {
+            Ok(sequence_number) => Some(sequence_number),
+            Err(error) => {
+                let error = SnapshotError {
+                    typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error }
+                };
+                return Err(error);
             }
-            None => None
         };
 
         // `None` means empty commit
