@@ -190,7 +190,11 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             (profile, Ok((database, snapshot))) => (profile, (database, snapshot)),
             (profile, Err(error)) => return (profile, Err(error))
         };
-        let result = database.data_commit(snapshot, profile.commit_profile());
+        let result = match snapshot.into_commit_record(profile.commit_profile()) {
+            Ok(Some(commit_record)) => database.data_commit(commit_record, profile.commit_profile()),
+            Ok(None) => Ok(()),
+            Err(error) => Err(DataCommitError::SnapshotError { typedb_source: error })
+        };
 
         profile.commit_profile().end();
         (profile, result)

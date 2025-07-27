@@ -56,7 +56,7 @@ use typedb_protocol::{
 use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 use database::transaction::DataCommitError::SnapshotError;
-use database::transaction::SchemaCommitError;
+use database::transaction::{DataCommitError, SchemaCommitError};
 use crate::service::{
     grpc::{
         diagnostics::run_with_diagnostics_async,
@@ -465,14 +465,25 @@ impl TransactionService {
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
                 );
-                let (profile, commit_result) = match transaction.finalise_snapshot() {
+                let (mut profile, into_commit_record_result) = match transaction.finalise_snapshot() {
                     (mut profile, Ok((database, snapshot))) => {
+                        let into_commit_record_result = snapshot.into_commit_record(profile.commit_profile())
+                            .map(|commit_record_opt| (database, commit_record_opt))
+                            .map_err(|error| DataCommitError::SnapshotError { typedb_source: error });
+                        (profile, into_commit_record_result)
+                    }
+                    (profile, Err(error)) => (profile, Err(error))
+                };
+
+                let (profile, commit_result) = match into_commit_record_result {
+                    Ok((database, Some(commit_record))) => {
                         let commit_result = server_state.database_data_commit(
-                            database.name(), snapshot, profile.commit_profile()
+                            database.name(), commit_record, profile.commit_profile()
                         ).await;
                         (profile, commit_result)
-                    }
-                    (profile, Err(error)) => (profile, Err(ServerStateError::DatabaseDataCommitFailed { typedb_source: error }))
+                    },
+                    Ok((_, None)) => (profile, Ok(())),
+                    Err(error) => (profile, Err(ServerStateError::DatabaseDataCommitFailed { typedb_source: error }))
                 };
 
                 if profile.is_enabled() {

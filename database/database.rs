@@ -237,24 +237,14 @@ impl<D> Database<D> {
 }
 
 impl<D: DurabilityClient> Database<D> {
-    pub fn data_commit(&self, snapshot: WriteSnapshot<D>, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
-        let commit_record_opt = match snapshot.into_commit_record(commit_profile) {
-            Ok(commit_record_opt) => commit_record_opt,
-            Err(error) => return Err(DataCommitError::SnapshotError { typedb_source: error })
-        };
-
-        match commit_record_opt {
-            Some(commit_record) => {
-                let commit_result = self.storage.commit(commit_record, commit_profile);
-                match commit_result {
-                    Ok(_) => Ok(()),
-                    Err(error) => {
-                        let error = DataCommitError::SnapshotError { typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error } };
-                        Err(error)
-                    },
-                }
+    pub fn data_commit(&self, commit_record: CommitRecord, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
+        let commit_result = self.storage.commit(commit_record, commit_profile);
+        match commit_result {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                let error = DataCommitError::SnapshotError { typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error } };
+                Err(error)
             },
-            None => Ok(())
         }
     }
 

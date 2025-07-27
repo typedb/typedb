@@ -86,7 +86,7 @@ pub trait ServerState: Debug {
     async fn database_data_commit(
         &self,
         name: &str,
-        snapshot: WriteSnapshot<WALClient>,
+        commit_record: CommitRecord,
         commit_profile: &mut CommitProfile
     ) -> Result<(), ServerStateError>;
 
@@ -369,13 +369,13 @@ impl ServerState for LocalServerState {
     async fn database_data_commit(
         &self,
         name: &str,
-        snapshot: WriteSnapshot<WALClient>,
+        commit_record: CommitRecord,
         commit_profile: &mut CommitProfile
     ) -> Result<(), ServerStateError> {
         let Some(database) = self.databases_get(name).await else {
             return Err(ServerStateError::DatabaseNotFound { name: name.to_string() })
         };
-        database.data_commit(snapshot, commit_profile).map_err(|error|
+        database.data_commit(commit_record, commit_profile).map_err(|error|
             ServerStateError::DatabaseDataCommitFailed { typedb_source: error }
         )
     }
