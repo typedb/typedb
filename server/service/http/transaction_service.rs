@@ -53,7 +53,7 @@ use typeql::{parse_query, query::SchemaQuery};
 use super::message::query::query_structure::encode_query_structure;
 use crate::service::{
     http::message::query::{
-        document::encode_document, query_structure::QueryStructureResponse, row::encode_row, AnalysedQueryAnswer,
+        document::encode_document, query_structure::QueryStructureResponse, row::encode_row, AnalysedQueryResponse,
     },
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
@@ -160,7 +160,7 @@ pub(crate) struct TransactionService {
 pub(crate) enum TransactionServiceResponse {
     Ok,
     Query(QueryAnswer),
-    QueryAnalyse(AnalysedQueryAnswer),
+    QueryAnalyse(AnalysedQueryResponse),
     Err(TransactionServiceError),
 }
 

@@ -8,6 +8,7 @@ use std::{
     collections::{BTreeSet, HashMap, HashSet},
     sync::Arc,
 };
+use std::collections::BTreeMap;
 
 use answer::variable::Variable;
 use compiler::{annotation::{
@@ -48,6 +49,8 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
 use compiler::annotation::function::AnnotatedFunctionSignature;
+use compiler::annotation::type_annotations::BlockAnnotations;
+use compiler::query_structure::{QueryStructureAnnotations, QueryStructureBlockID, StructureVariableId};
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 
@@ -186,6 +189,7 @@ impl QueryManager {
                     &variable_registry,
                     &annotated_pipeline.annotated_stages,
                     source_query,
+                    false,
                 )
                 .map(Arc::new);
 
@@ -336,6 +340,7 @@ impl QueryManager {
                     &variable_registry,
                     &annotated_pipeline.annotated_stages,
                     source_query,
+                    false,
                 )
                 .map(Arc::new);
 
@@ -489,18 +494,26 @@ impl QueryManager {
     }
 }
 
-pub type AnalysedValueType = ValueType;
+pub type AnalysedPipeline = QueryStructureAnnotations;
+
 #[derive(Debug)]
 pub enum AnalysedFetchObject {
     Leaf(BTreeSet<ValueType>),
     Object(HashMap<String, AnalysedFetchObject>),
-    Pipeline(AnalysedQuery)
+    SubFetch { pipeline: Option<AnalysedPipeline>, fetch: HashMap<String, AnalysedFetchObject> },
+    Function { pipeline: Option<AnalysedPipeline>, returned: BTreeSet<ValueType> }
+}
+
+#[derive(Debug)]
+pub struct AnalysedFunction {
+    pub signature: AnnotatedFunctionSignature,
+    pub pipeline: Option<AnalysedPipeline>,
 }
 
 #[derive(Debug)]
 pub struct AnalysedQuery {
-    pub signature: Option<AnnotatedFunctionSignature>,
-    pub pipeline: Option<QueryStructure>,
+    pub preamble: Vec<AnalysedFunction>,
+    pub pipeline: Option<AnalysedPipeline>,
     pub fetch: Option<HashMap<String, AnalysedFetchObject>>,
 }
 
@@ -513,65 +526,61 @@ impl AnalysedQuery {
         source_query: &str,
         annotated_pipeline: AnnotatedPipeline,
     ) -> Result<Self, Box<ConceptReadError>> {
-        Self::build_impl(
-            snapshot,
-            type_manager,
+        let pipeline = Self::build_pipeline(
             variable_registry,
-            parameters,
+            parameters.clone(),
             source_query,
-            annotated_pipeline.annotated_stages.as_slice(),
-            None,
-            annotated_pipeline.annotated_fetch.as_ref(),
-        )
+            annotated_pipeline.annotated_stages.as_slice()
+        );
+        let last_stage_annotations = get_last_stage_annotations(annotated_pipeline.annotated_stages.as_slice());
+        let fetch = annotated_pipeline.annotated_fetch
+            .map(|fetch| {
+                encode_analysed_fetch_object(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, &fetch.object)
+            })
+            .transpose()?;
+        let preamble = Vec::new(); // TODO
+
+        Ok(Self { preamble, pipeline, fetch })
     }
 
-    fn build_impl(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
+    fn build_pipeline(
         variable_registry: &VariableRegistry,
         parameters: Arc<ParameterRegistry>,
         source_query: &str,
         stages: &[AnnotatedStage],
-        signature: Option<AnnotatedFunctionSignature>,
-        fetch: Option<&AnnotatedFetch>,
-    ) -> Result<Self, Box<ConceptReadError>> {
+    ) -> Option<QueryStructureAnnotations> {
         // TODO: Consider adding query structure and so on
         // We don't have output positions. Fake it.
         let output_positions = variable_registry.variable_names().keys().enumerate().map(|(i, var)| {
             (*var, VariablePosition::new(i as u32))
         }).collect();
-        let query_structure = extract_query_structure_from(variable_registry, stages, source_query).map(|qs| {
+        let query_structure = extract_query_structure_from(variable_registry, stages, source_query, true).map(|qs| {
             Arc::new(qs).with_parameters(parameters.clone(), variable_registry.variable_names(), &output_positions)
         });
-        let stage_annotations = stages
-            .iter()
-            .enumerate()
-            .filter_map(|(i, stage)| match stage {
-                AnnotatedStage::Match { block_annotations, block, .. }
-                | AnnotatedStage::Put { match_annotations: block_annotations, block, .. } => {
-                    Some((i, block_annotations.type_annotations_of(block.conjunction()).unwrap()))
-                }
-                AnnotatedStage::Insert { annotations, .. } | AnnotatedStage::Update { annotations, .. } => {
-                    Some((i, annotations))
-                }
-                AnnotatedStage::Delete { .. }
-                | AnnotatedStage::Select(_)
-                | AnnotatedStage::Sort(_)
-                | AnnotatedStage::Offset(_)
-                | AnnotatedStage::Limit(_)
-                | AnnotatedStage::Require(_)
-                | AnnotatedStage::Distinct(_)
-                | AnnotatedStage::Reduce(_, _) => None,
-            })
-            .collect::<Vec<_>>();
-        let last_stage_annotations = &stage_annotations.last().expect("Expected pipeline to have a last stage").1;
-        let fetch = fetch
-            .map(|fetch| {
-                encode_analysed_fetch_object(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, &fetch.object)
-            })
-            .transpose()?;
-        Ok(Self { pipeline: query_structure, fetch, signature })
+        query_structure.and_then(|qs| qs.parametrised_structure.variable_annotations.clone())
     }
+}
+
+fn get_last_stage_annotations(stages: &[AnnotatedStage]) -> &TypeAnnotations {
+    stages.iter()
+        .filter_map(|stage| match stage {
+            AnnotatedStage::Match { block_annotations, block, .. }
+            | AnnotatedStage::Put { match_annotations: block_annotations, block, .. } => {
+                Some(block_annotations.type_annotations_of(block.conjunction()).unwrap())
+            }
+            AnnotatedStage::Insert { annotations, .. } | AnnotatedStage::Update { annotations, .. } => {
+                Some(annotations)
+            }
+            AnnotatedStage::Delete { .. }
+            | AnnotatedStage::Select(_)
+            | AnnotatedStage::Sort(_)
+            | AnnotatedStage::Offset(_)
+            | AnnotatedStage::Limit(_)
+            | AnnotatedStage::Require(_)
+            | AnnotatedStage::Distinct(_)
+            | AnnotatedStage::Reduce(_, _) => None,
+        })
+        .last().expect("Expected pipeline to have a last stage")
 }
 
 fn encode_analysed_fetch_object(
@@ -650,8 +659,10 @@ fn encode_analysed_fetch_entries<Snapshot: ReadableSnapshot>(
                 AnalysedFetchObject::Object(encode_analysed_fetch_object(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, inner)?)
             }
             AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
-                let built = AnalysedQuery::build_impl(snapshot, type_manager, &sub_fetch.variable_registry, parameters.clone(), source_query,&sub_fetch.stages, None, Some(&sub_fetch.fetch))?;
-                AnalysedFetchObject::Object(built.fetch.unwrap())
+                let pipeline = AnalysedQuery::build_pipeline(&sub_fetch.variable_registry, parameters.clone(), source_query, &sub_fetch.stages);
+                let last_stage_annotations = get_last_stage_annotations(sub_fetch.stages.as_slice());
+                let fetch = encode_analysed_fetch_object(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, &sub_fetch.fetch.object)?;
+                AnalysedFetchObject::SubFetch { pipeline , fetch }
             }
             AnnotatedFetchSome::ListFunction(function)
             | AnnotatedFetchSome::SingleFunction(function) => {
@@ -681,7 +692,7 @@ fn encode_leaf(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     attribute_types: impl Iterator<Item = AttributeType>,
-) -> Result<BTreeSet<AnalysedValueType>, Box<ConceptReadError>> {
+) -> Result<BTreeSet<ValueType>, Box<ConceptReadError>> {
     attribute_types
         .filter_map(|attribute_type| {
             attribute_type

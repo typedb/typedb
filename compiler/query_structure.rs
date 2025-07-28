@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashMap, marker::PhantomData, str::FromStr, sync::Arc};
+use std::collections::BTreeMap;
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
@@ -26,6 +27,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::annotation::function::FunctionParameterAnnotation;
 
 #[derive(Debug, Clone)]
 pub struct QueryStructure {
@@ -39,10 +41,11 @@ pub fn extract_query_structure_from(
     variable_registry: &VariableRegistry,
     annotated_stages: &[AnnotatedStage],
     source_query: &str,
+    collect_annotations: bool,
 ) -> Option<ParametrisedQueryStructure> {
     let branch_ids_allocated = variable_registry.branch_ids_allocated();
     if branch_ids_allocated < 64 {
-        let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
+        let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated, collect_annotations);
         annotated_stages.into_iter().for_each(|stage| builder.add_stage(stage));
         Some(builder.query_structure)
     } else {
@@ -50,12 +53,14 @@ pub fn extract_query_structure_from(
     }
 }
 
+pub type QueryStructureAnnotations = BTreeMap<QueryStructureBlockID, BTreeMap<StructureVariableId, FunctionParameterAnnotation>>;
 #[derive(Debug, Clone)]
 pub struct ParametrisedQueryStructure {
     pub stages: Vec<QueryStructureStage>,
     pub blocks: Vec<QueryStructureBlock>,
     pub resolved_labels: HashMap<Label, answer::Type>,
     pub calls_syntax: HashMap<Constraint<Variable>, String>,
+    pub variable_annotations: Option<QueryStructureAnnotations>
 }
 
 impl ParametrisedQueryStructure {
@@ -79,7 +84,7 @@ impl ParametrisedQueryStructure {
         self.stages
             .iter()
             .filter_map(|stage| match stage {
-                QueryStructureStage::Match(QueryStructureConjunction { conjunction }) => match conjunction.first() {
+                QueryStructureStage::Match { block: QueryStructureConjunction { conjunction } } => match conjunction.first() {
                     Some(QueryStructurePattern::Block { index }) => Some(index),
                     Some(_) | None => {
                         debug_assert!(!conjunction.iter().any(|c| matches!(c, QueryStructurePattern::Block { .. })));
@@ -107,7 +112,7 @@ impl ParametrisedQueryStructure {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum QueryStructureStage {
-    Match(QueryStructureConjunction),
+    Match { block: QueryStructureConjunction },
     Insert { block: QueryStructureBlockID },
     Delete { block: QueryStructureBlockID, deleted_variables: Vec<StructureVariableId> },
     Put { block: QueryStructureBlockID },
@@ -143,7 +148,7 @@ pub struct QueryStructureBlock {
     pub constraints: Vec<Constraint<Variable>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct QueryStructureBlockID(pub u16);
 
 #[derive(Debug, Clone)]
@@ -153,7 +158,7 @@ pub struct ParametrisedQueryStructureBuilder<'a> {
 }
 
 impl<'a> ParametrisedQueryStructureBuilder<'a> {
-    fn new(source_query: &'a str, branch_ids_allocated: u16) -> Self {
+    fn new(source_query: &'a str, branch_ids_allocated: u16, collect_annotations: bool) -> Self {
         // Pre-allocated for query branches that have already been allocated branch ids
         let blocks = vec![QueryStructureBlock { constraints: Vec::new() }; branch_ids_allocated as usize];
         Self {
@@ -163,6 +168,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 blocks,
                 resolved_labels: HashMap::new(),
                 calls_syntax: HashMap::new(),
+                variable_annotations: collect_annotations.then(|| BTreeMap::new()),
             },
         }
     }
@@ -171,7 +177,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
         match stage {
             AnnotatedStage::Match { block, block_annotations, .. } => {
                 let conjunction = self.add_block(None, block.conjunction(), &block_annotations);
-                self.query_structure.stages.push(QueryStructureStage::Match(conjunction));
+                self.query_structure.stages.push(QueryStructureStage::Match { block: conjunction });
             }
             AnnotatedStage::Insert { block, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
@@ -270,6 +276,14 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             self.query_structure.blocks.push(QueryStructureBlock { constraints: Vec::from(constraints) });
             QueryStructureBlockID(self.query_structure.blocks.len() as u16 - 1)
         };
+        if let Some(variable_annotations) = self.query_structure.variable_annotations.as_mut() {
+            let annos = annotations.vertex_annotations().iter().filter_map(|(vertex, annos)| {
+                vertex.as_variable().map(|variable| {
+                    (StructureVariableId::from(variable), FunctionParameterAnnotation::Concept((&**annos).clone()))
+                })
+            }).collect();
+            variable_annotations.insert(block_id.clone(), annos);
+        }
         block_id
     }
 

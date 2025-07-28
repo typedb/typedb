@@ -39,7 +39,7 @@ use crate::{
                 authentication::{encode_token, SigninPayload},
                 body::{JsonBody, PlainTextBody},
                 database::{encode_database, encode_databases, DatabasePath},
-                query::{AnalysedQueryAnswer, QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
+                query::{AnalysedQueryResponse, QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},
                 user::{encode_user, encode_users, CreateUserPayload, UpdateUserPayload, UserPath},
                 version::{encode_server_version, ProtocolVersion, PROTOCOL_VERSION_LATEST},
@@ -189,7 +189,7 @@ impl TypeDBService {
 
     fn try_get_query_analyse_response(
         transaction_response: TransactionServiceResponse,
-    ) -> Result<AnalysedQueryAnswer, HttpServiceError> {
+    ) -> Result<AnalysedQueryResponse, HttpServiceError> {
         match transaction_response {
             TransactionServiceResponse::QueryAnalyse(query_response) => Ok(query_response),
             TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),
