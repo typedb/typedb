@@ -30,7 +30,6 @@ use crate::service::{
     AnswerType, QueryType,
 };
 use crate::service::http::message::query::concept::{encode_type_concept, encode_value_type};
-use crate::service::http::message::query::query_structure::encode_pipeline_structure;
 
 pub mod concept;
 pub mod document;
@@ -180,6 +179,15 @@ enum AnalysedFetchObjectResponse {
     Object(HashMap<String, AnalysedFetchObjectResponse>),
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct AnalysedQueryAnnotationsResponse {
+    #[serde(skip_serializing)] // TODO: Include when we sort out the function structure
+    preamble: Vec<AnalysedFunctionResponse>,
+
+    pipeline: Option<AnalysedPipelineResponse>,
+    fetch: Option<HashMap<String, AnalysedFetchObjectResponse>>,
+}
+
 fn encode_type_annotations(
     snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, annotation: FunctionParameterAnnotation
 ) -> Result<TypeAnnotationResponse, Box<ConceptReadError>> {
@@ -196,7 +204,9 @@ fn encode_type_annotations(
 }
 
 pub(crate) fn encode_analysed_query(
-    snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, analysed_query: AnalysedQueryAnnotations
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    analysed_query: AnalysedQueryAnnotations
 ) -> Result<AnalysedQueryResponse, Box<ConceptReadError>> {
     let AnalysedQueryAnnotations { pipeline, preamble, fetch } = analysed_query;
     let preamble = preamble.into_iter().map(|function| {
@@ -206,7 +216,8 @@ pub(crate) fn encode_analysed_query(
         encode_analysed_pipeline(snapshot, type_manager, pipeline_annotations)
     }).transpose()?;
     let fetch = fetch.map(|fetch| encode_analysed_fetch(snapshot, type_manager, fetch)).transpose()?;
-    Ok(AnalysedQueryResponse { preamble, pipeline, fetch })
+    let annotations = AnalysedQueryAnnotationsResponse { preamble, pipeline, fetch };
+    Ok(AnalysedQueryResponse {  annotations })
 }
 
 fn encode_analysed_pipeline(snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, pipeline: AnalysedPipelineAnnotations) -> Result<AnalysedPipelineResponse, Box<ConceptReadError>> {
@@ -262,9 +273,8 @@ fn encode_analysed_fetch(
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct AnalysedQueryResponse {
-    pipeline: Option<AnalysedPipelineResponse>,
-    fetch: Option<HashMap<String, AnalysedFetchObjectResponse>>,
-    preamble: Vec<AnalysedFunctionResponse>,
+    // structure: QueryStructureResponse, // TODO:
+    annotations: AnalysedQueryAnnotationsResponse,
 }
 
 impl IntoResponse for AnalysedQueryResponse {

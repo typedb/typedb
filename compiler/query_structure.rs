@@ -31,6 +31,11 @@ use crate::{
 use crate::annotation::function::FunctionParameterAnnotation;
 
 #[derive(Debug, Clone)]
+pub struct QueryStructure {
+    pipeline: PipelineStructure,
+}
+
+#[derive(Debug, Clone)]
 pub struct PipelineStructure {
     pub parametrised_structure: Arc<ParametrisedPipelineStructure>,
     pub variable_names: HashMap<StructureVariableId, String>,
