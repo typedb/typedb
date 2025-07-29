@@ -19,6 +19,7 @@ use ir::{
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize, Serializer};
+use ir::pattern::{Scope, ScopeId};
 
 use crate::{
     annotation::{
@@ -41,11 +42,10 @@ pub fn extract_query_structure_from(
     variable_registry: &VariableRegistry,
     annotated_stages: &[AnnotatedStage],
     source_query: &str,
-    collect_annotations: bool,
 ) -> Option<ParametrisedQueryStructure> {
     let branch_ids_allocated = variable_registry.branch_ids_allocated();
     if branch_ids_allocated < 64 {
-        let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated, collect_annotations);
+        let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
         annotated_stages.into_iter().for_each(|stage| builder.add_stage(stage));
         Some(builder.query_structure)
     } else {
@@ -60,7 +60,7 @@ pub struct ParametrisedQueryStructure {
     pub blocks: Vec<QueryStructureBlock>,
     pub resolved_labels: HashMap<Label, answer::Type>,
     pub calls_syntax: HashMap<Constraint<Variable>, String>,
-    pub variable_annotations: Option<QueryStructureAnnotations>
+    pub scope_to_block: HashMap<ScopeId, QueryStructureBlockID>,
 }
 
 impl ParametrisedQueryStructure {
@@ -158,7 +158,7 @@ pub struct ParametrisedQueryStructureBuilder<'a> {
 }
 
 impl<'a> ParametrisedQueryStructureBuilder<'a> {
-    fn new(source_query: &'a str, branch_ids_allocated: u16, collect_annotations: bool) -> Self {
+    fn new(source_query: &'a str, branch_ids_allocated: u16) -> Self {
         // Pre-allocated for query branches that have already been allocated branch ids
         let blocks = vec![QueryStructureBlock { constraints: Vec::new() }; branch_ids_allocated as usize];
         Self {
@@ -168,7 +168,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 blocks,
                 resolved_labels: HashMap::new(),
                 calls_syntax: HashMap::new(),
-                variable_annotations: collect_annotations.then(|| BTreeMap::new()),
+                scope_to_block: HashMap::new(),
             },
         }
     }
@@ -181,22 +181,22 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             }
             AnnotatedStage::Insert { block, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
+                let block = self.add_block_impl(block.conjunction().scope_id(), None, block.conjunction().constraints(), &annotations);
                 self.query_structure.stages.push(QueryStructureStage::Insert { block });
             }
             AnnotatedStage::Put { block, insert_annotations: annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
+                let block = self.add_block_impl(block.conjunction().scope_id(), None, block.conjunction().constraints(), &annotations);
                 self.query_structure.stages.push(QueryStructureStage::Put { block });
             }
             AnnotatedStage::Update { block, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
+                let block = self.add_block_impl(block.conjunction().scope_id(), None, block.conjunction().constraints(), &annotations);
                 self.query_structure.stages.push(QueryStructureStage::Update { block });
             }
             AnnotatedStage::Delete { block, deleted_variables, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
+                let block = self.add_block_impl(block.conjunction().scope_id(), None, block.conjunction().constraints(), &annotations);
                 self.query_structure
                     .stages
                     .push(QueryStructureStage::Delete { block, deleted_variables: vec_from(deleted_variables.iter()) });
@@ -235,6 +235,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
     ) -> QueryStructureConjunction {
         let mut conjuncts = Vec::new();
         let block_id = self.add_block_impl(
+            conjunction.scope_id(),
             existing_branch_id,
             conjunction.constraints(),
             block_annotations.type_annotations_of(conjunction).unwrap(),
@@ -262,6 +263,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
 
     fn add_block_impl(
         &mut self,
+        scope_id: ScopeId,
         existing_branch_id: Option<BranchID>,
         constraints: &[Constraint<Variable>],
         annotations: &TypeAnnotations,
@@ -276,14 +278,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             self.query_structure.blocks.push(QueryStructureBlock { constraints: Vec::from(constraints) });
             QueryStructureBlockID(self.query_structure.blocks.len() as u16 - 1)
         };
-        if let Some(variable_annotations) = self.query_structure.variable_annotations.as_mut() {
-            let annos = annotations.vertex_annotations().iter().filter_map(|(vertex, annos)| {
-                vertex.as_variable().map(|variable| {
-                    (StructureVariableId::from(variable), FunctionParameterAnnotation::Concept((&**annos).clone()))
-                })
-            }).collect();
-            variable_annotations.insert(block_id.clone(), annos);
-        }
+        self.query_structure.scope_to_block.insert(scope_id, block_id.clone());
         block_id
     }
 
@@ -387,7 +382,7 @@ fn deserialize_using_from_string<'de, D: serde::de::Deserializer<'de>, T: FromSt
     // `ActualData` encoded as json within a string
     struct Visitor<T> {
         phantom: PhantomData<T>,
-    };
+    }
 
     impl<'de, T1: FromStr> serde::de::Visitor<'de> for Visitor<T1> {
         type Value = T1;

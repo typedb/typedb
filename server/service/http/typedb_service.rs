@@ -16,7 +16,7 @@ use concurrency::TokioIntervalRunner;
 use diagnostics::metrics::ActionKind;
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
-use query::query_manager::AnalysedQuery;
+use query::query_manager::AnalysedQueryAnnotations;
 use resource::{constants::common::SECONDS_IN_MINUTE, server_info::ServerInfo};
 use system::concepts::{Credential, User};
 use tokio::{

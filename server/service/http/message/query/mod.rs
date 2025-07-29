@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use options::QueryOptions;
-use query::query_manager::{AnalysedFetchObject, AnalysedFunction, AnalysedPipeline, AnalysedQuery};
+use query::query_manager::{AnalysedFetchAnnotations, AnalysedFetchObjectAnnotations, AnalysedFunctionAnnotations, AnalysedPipelineAnnotations, AnalysedQueryAnnotations};
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
 };
@@ -192,9 +192,9 @@ fn encode_type_annotations(
 }
 
 pub(crate) fn encode_analysed_query(
-    snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, analysed_query: AnalysedQuery
+    snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, analysed_query: AnalysedQueryAnnotations
 ) -> Result<AnalysedQueryResponse, Box<ConceptReadError>> {
-    let AnalysedQuery { pipeline, preamble, fetch } = analysed_query;
+    let AnalysedQueryAnnotations { pipeline, preamble, fetch } = analysed_query;
     let preamble = preamble.into_iter().map(|function| {
         encode_analysed_function(snapshot, type_manager, function)
     }).collect::<Result<Vec<_>,_>>()?;
@@ -205,7 +205,7 @@ pub(crate) fn encode_analysed_query(
     Ok(AnalysedQueryResponse { preamble, pipeline, fetch })
 }
 
-fn encode_analysed_pipeline(snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, pipeline: AnalysedPipeline) -> Result<AnalysedPipelineResponse, Box<ConceptReadError>> {
+fn encode_analysed_pipeline(snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, pipeline: AnalysedPipelineAnnotations) -> Result<AnalysedPipelineResponse, Box<ConceptReadError>> {
     let mut annotations_by_block = Vec::new();
     pipeline.iter().try_for_each(|(block_id, var_annotations)| {
         let block_id = block_id.0 as usize;
@@ -221,9 +221,9 @@ fn encode_analysed_pipeline(snapshot: &impl ReadableSnapshot, type_manager: &Typ
 }
 
 pub(crate) fn encode_analysed_function(
-    snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, analysed_function: AnalysedFunction
+    snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, analysed_function: AnalysedFunctionAnnotations
 ) -> Result<AnalysedFunctionResponse, Box<ConceptReadError>> {
-    let AnalysedFunction { pipeline, signature: sig } = analysed_function;
+    let AnalysedFunctionAnnotations { pipeline, signature: sig } = analysed_function;
     let arguments = sig.arguments.into_iter().map(|arg| encode_type_annotations(snapshot, type_manager, arg)).collect::<Result<Vec<_>, _>>()?;
     let returned = sig.returned.into_iter().map(|arg| encode_type_annotations(snapshot, type_manager, arg)).collect::<Result<Vec<_>, _>>()?;
     let pipeline = pipeline.map(|pipeline_annotations| encode_analysed_pipeline(snapshot, type_manager, pipeline_annotations)).transpose()?;
@@ -231,18 +231,18 @@ pub(crate) fn encode_analysed_function(
 }
 
 fn encode_analysed_fetch(
-    snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, analysed_fetch_object: HashMap<String, AnalysedFetchObject>
+    snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, analysed_fetch_object: AnalysedFetchAnnotations
 ) -> Result<HashMap<String, AnalysedFetchObjectResponse>, Box<ConceptReadError>> {
     analysed_fetch_object.into_iter().map(|(key, object)| {
         // TODO: We don't encode the pipeline anywhere
         let encoded = match object {
-            AnalysedFetchObject::Function { pipeline: _, returned: leaf }
-            | AnalysedFetchObject::Leaf(leaf) => {
+            AnalysedFetchObjectAnnotations::Function { pipeline: _, returned: leaf }
+            | AnalysedFetchObjectAnnotations::Leaf(leaf) => {
                 let value_types = leaf.into_iter().map(|v| json!(v.to_string())).collect();
                 AnalysedFetchObjectResponse::Leaf(TypeAnnotationResponse::Value { value_types })
             },
-            AnalysedFetchObject::SubFetch { pipeline: _, fetch: object }
-            | AnalysedFetchObject::Object(object) => {
+            AnalysedFetchObjectAnnotations::SubFetch { pipeline: _, fetch: object }
+            | AnalysedFetchObjectAnnotations::Object(object) => {
                 AnalysedFetchObjectResponse::Object(encode_analysed_fetch(snapshot, type_manager, object)?)
             },
         };

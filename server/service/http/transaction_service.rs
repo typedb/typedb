@@ -39,7 +39,7 @@ use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
-use query::{error::QueryError, query_manager::AnalysedQuery};
+use query::{error::QueryError, query_manager::AnalysedQueryAnnotations};
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
