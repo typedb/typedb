@@ -12,7 +12,7 @@ pub mod error;
 pub mod query;
 pub mod transaction;
 pub mod user;
-pub(crate) mod version;
+pub mod version;
 
 macro_rules! stringify_kebab_case {
     ($t:tt) => {
