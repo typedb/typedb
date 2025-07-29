@@ -85,7 +85,7 @@ impl IntoGrpcStatus for ProtocolError {
     }
 }
 
-pub(crate) trait IntoProtocolErrorMessage {
+pub trait IntoProtocolErrorMessage {
     fn into_error_message(self) -> typedb_protocol::Error;
 }
 
@@ -100,7 +100,7 @@ impl<T: TypeDBError + Sync> IntoProtocolErrorMessage for T {
     }
 }
 
-pub(crate) trait IntoGrpcStatus {
+pub trait IntoGrpcStatus {
     fn into_status(self) -> Status;
 }
 
