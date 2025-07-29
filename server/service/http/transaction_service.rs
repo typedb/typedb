@@ -106,7 +106,7 @@ macro_rules! unwrap_or_execute_else_respond_error_and_return_break {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) enum TransactionRequest {
     Query(QueryOptions, String),
-    AnalyseQuery(QueryOptions, String),
+    AnalyseQuery(String),
     Commit,
     Rollback,
     Close,
@@ -360,9 +360,7 @@ impl TransactionService {
                 TransactionRequest::Query(query_options, query) => {
                     self.handle_query(query_options, query, response_sender).await
                 }
-                TransactionRequest::AnalyseQuery(query_options, query) => {
-                    self.handle_analyse_query(query_options, query, response_sender).await
-                }
+                TransactionRequest::AnalyseQuery(query) => self.handle_analyse_query(query, response_sender).await,
                 TransactionRequest::Commit => self.handle_commit(response_sender).await,
                 TransactionRequest::Rollback => self.handle_rollback(response_sender).await,
                 TransactionRequest::Close => self.handle_close(response_sender).await,
@@ -1144,12 +1142,7 @@ impl TransactionService {
         Continue(())
     }
 
-    async fn handle_analyse_query(
-        &mut self,
-        query_options: QueryOptions,
-        query: String,
-        responder: TransactionResponder,
-    ) -> ControlFlow<(), ()> {
+    async fn handle_analyse_query(&mut self, query: String, responder: TransactionResponder) -> ControlFlow<(), ()> {
         let parsed = match parse_query(&query) {
             Ok(parsed) => parsed,
             Err(err) => {
@@ -1164,8 +1157,6 @@ impl TransactionService {
             respond_error_and_return_break!(responder, TransactionServiceError::AnalyseQueryExpectsPipeline {});
         };
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
-        let timeout_at = self.timeout_at;
-        let interrupt = self.query_interrupt_receiver.clone();
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone_inner();
             let type_manager = transaction.type_manager.clone();

@@ -16,7 +16,6 @@ use concurrency::TokioIntervalRunner;
 use diagnostics::metrics::ActionKind;
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
-use query::query_manager::AnalysedQueryAnnotations;
 use resource::{constants::common::SECONDS_IN_MINUTE, server_info::ServerInfo};
 use system::concepts::{Credential, User};
 use tokio::{
@@ -160,13 +159,8 @@ impl TypeDBService {
             Err(_) => Err(HttpServiceError::transaction_timeout()),
         }
     }
-    fn build_analyse_query_request(
-        query_options_payload: Option<QueryOptionsPayload>,
-        query: String,
-    ) -> TransactionRequest {
-        let query_options =
-            query_options_payload.map(|options| options.into()).unwrap_or_else(|| QueryOptions::default_http());
-        TransactionRequest::AnalyseQuery(query_options, query)
+    fn build_analyse_query_request(query: String) -> TransactionRequest {
+        TransactionRequest::AnalyseQuery(query)
     }
 
     fn build_query_request(query_options_payload: Option<QueryOptionsPayload>, query: String) -> TransactionRequest {
@@ -587,12 +581,7 @@ impl TypeDBService {
                 if accessor != transaction.owner {
                     return Err(HttpServiceError::operation_not_permitted());
                 }
-                Self::transaction_request(
-                    &transaction,
-                    Self::build_analyse_query_request(payload.query_options, payload.query),
-                    true,
-                )
-                .await
+                Self::transaction_request(&transaction, Self::build_analyse_query_request(payload.query), true).await
             },
         )
         .await
