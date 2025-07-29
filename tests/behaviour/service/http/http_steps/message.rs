@@ -23,6 +23,7 @@ use server::service::http::message::{
     },
     transaction::{TransactionOptionsPayload, TransactionResponse},
     user::{UserResponse, UsersResponse},
+    version::ServerVersionResponse,
 };
 use url::form_urlencoded;
 
@@ -131,6 +132,12 @@ pub async fn authenticate(
     });
     let response =
         send_request(http_client, None::<&str>, Method::POST, &url, Some(json_body.to_string().as_str())).await?;
+    Ok(serde_json::from_str(&response).expect("Expected a json body"))
+}
+
+pub async fn version(http_client: &Client<HttpConnector>) -> Result<ServerVersionResponse, HttpBehaviourTestError> {
+    let url = format!("{}/version", Context::default_versioned_endpoint());
+    let response = send_request(http_client, None::<&str>, Method::GET, &url, None).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 
