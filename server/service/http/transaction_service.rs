@@ -14,7 +14,7 @@ use std::{
     sync::Arc,
 };
 
-use compiler::{executable::ExecutableCompilationError, query_structure::QueryStructure};
+use compiler::{executable::ExecutableCompilationError, query_structure::PipelineStructure};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
@@ -50,10 +50,10 @@ use tokio::{
 use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 
-use super::message::query::query_structure::encode_query_structure;
+use super::message::query::query_structure::encode_pipeline_structure;
 use crate::service::{
     http::message::query::{
-        document::encode_document, query_structure::QueryStructureResponse, row::encode_row, AnalysedQueryResponse,
+        document::encode_document, query_structure::PipelineStructureResponse, row::encode_row, AnalysedQueryResponse,
     },
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
@@ -167,7 +167,7 @@ pub(crate) enum TransactionServiceResponse {
 #[derive(Debug)]
 pub(crate) enum QueryAnswer {
     ResOk(QueryType),
-    ResRows((QueryType, Vec<serde_json::Value>, Option<QueryStructureResponse>, Option<QueryAnswerWarning>)),
+    ResRows((QueryType, Vec<serde_json::Value>, Option<PipelineStructureResponse>, Option<QueryAnswerWarning>)),
     ResDocuments((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
 }
 
@@ -743,14 +743,14 @@ impl TransactionService {
             let interrupt = self.query_interrupt_receiver.clone();
             tokio::spawn(async move {
                 match answer.answer {
-                    Either::Left((output_descriptor, batch, query_structure)) => {
+                    Either::Left((output_descriptor, batch, pipeline_structure)) => {
                         Self::submit_write_query_batch_answer(
                             snapshot,
                             type_manager,
                             thing_manager,
                             answer.query_options,
                             output_descriptor,
-                            query_structure,
+                            pipeline_structure,
                             batch,
                             responder,
                             timeout_at,
@@ -815,7 +815,7 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         query_options: QueryOptions,
         output_descriptor: StreamQueryOutputDescriptor,
-        query_structure: Option<QueryStructure>,
+        pipeline_structure: Option<PipelineStructure>,
         batch: Batch,
         responder: TransactionResponder,
         timeout_at: Instant,
@@ -825,10 +825,10 @@ impl TransactionService {
         let mut result = vec![];
         let mut batch_iterator = batch.into_iterator();
         let mut warning = None;
-        let encode_query_structure_result =
-            query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
-        let always_taken_blocks = query_structure.map(|qs| qs.parametrised_structure.always_taken_blocks());
-        let query_structure_response = match encode_query_structure_result {
+        let encode_pipeline_structure_result =
+            pipeline_structure.as_ref().map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs)).transpose();
+        let always_taken_blocks = pipeline_structure.map(|qs| qs.parametrised_structure.always_taken_blocks());
+        let pipeline_structure_response = match encode_pipeline_structure_result {
             Ok(structure_opt) => structure_opt,
             Err(typedb_source) => {
                 respond_error_and_return_break!(
@@ -874,7 +874,7 @@ impl TransactionService {
         }
         match respond_query_response(
             responder,
-            QueryAnswer::ResRows((QueryType::Write, result, query_structure_response, warning)),
+            QueryAnswer::ResRows((QueryType::Write, result, pipeline_structure_response, warning)),
         ) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),
@@ -1058,11 +1058,11 @@ impl TransactionService {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
 
-            let encode_query_structure_result =
-                pipeline.query_structure().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+            let encode_pipeline_structure_result =
+                pipeline.pipeline_structure().map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs)).transpose();
             let always_taken_blocks =
-                pipeline.query_structure().map(|qs| qs.parametrised_structure.always_taken_blocks());
-            let query_structure_response = match encode_query_structure_result {
+                pipeline.pipeline_structure().map(|qs| qs.parametrised_structure.always_taken_blocks());
+            let pipeline_structure_response = match encode_pipeline_structure_result {
                 Ok(structure_opt) => structure_opt,
                 Err(typedb_source) => {
                     respond_error_and_return_break!(
@@ -1130,7 +1130,7 @@ impl TransactionService {
                 TransactionServiceResponse::Query(QueryAnswer::ResRows((
                     QueryType::Read,
                     result,
-                    query_structure_response,
+                    pipeline_structure_response,
                     warning
                 )))
             );

@@ -9,7 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use answer::variable::Variable;
 use compiler::{
     executable::{fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage},
-    query_structure::{ParametrisedQueryStructure, QueryStructure},
+    query_structure::{ParametrisedPipelineStructure, PipelineStructure},
     VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
@@ -43,14 +43,14 @@ use crate::{
 pub struct Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
     last_stage: Nonterminals,
     named_outputs: HashMap<String, VariablePosition>,
-    query_structure: Option<QueryStructure>,
+    pipeline_structure: Option<PipelineStructure>,
     fetch: Option<FetchStageExecutor<Snapshot>>,
 }
 
 impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pipeline<Snapshot, Nonterminals> {
     fn build_with_fetch(
         variable_names: &HashMap<Variable, String>,
-        query_structure: Option<QueryStructure>,
+        pipeline_structure: Option<PipelineStructure>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         last_stage: Nonterminals,
         last_stage_output_positions: HashMap<Variable, VariablePosition>,
@@ -61,7 +61,7 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
             .filter_map(|(variable, &position)| variable_names.get(variable).map(|name| (name.clone(), position)))
             .collect::<HashMap<_, _>>();
         let fetch = executable_fetch.map(|executable| FetchStageExecutor::new(executable, executable_functions));
-        Self { named_outputs, last_stage, fetch, query_structure }
+        Self { named_outputs, last_stage, fetch, pipeline_structure }
     }
 
     pub fn has_fetch(&self) -> bool {
@@ -75,8 +75,8 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         }
     }
 
-    pub fn query_structure(&self) -> Option<&QueryStructure> {
-        self.query_structure.as_ref()
+    pub fn pipeline_structure(&self) -> Option<&PipelineStructure> {
+        self.pipeline_structure.as_ref()
     }
 
     pub fn into_rows_iterator(
@@ -120,7 +120,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
         variable_names: &HashMap<Variable, String>,
-        query_structure: Option<Arc<ParametrisedQueryStructure>>,
+        pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_stages: &[ExecutableStage],
         executable_fetch: Option<Arc<ExecutableFetch>>,
@@ -189,7 +189,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         }
         Ok(Pipeline::build_with_fetch(
             variable_names,
-            query_structure.map(|qs| qs.with_parameters(parameters, &variable_names, &output_variable_positions)),
+            pipeline_structure.map(|qs| qs.with_parameters(parameters, &variable_names, &output_variable_positions)),
             executable_functions.clone(),
             last_stage,
             output_variable_positions,
@@ -202,7 +202,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
     pub fn build_write_pipeline(
         snapshot: Snapshot,
         variable_names: &HashMap<Variable, String>,
-        query_structure: Option<Arc<ParametrisedQueryStructure>>,
+        pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
         thing_manager: Arc<ThingManager>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_stages: Vec<ExecutableStage>,
@@ -269,7 +269,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         }
         Pipeline::build_with_fetch(
             variable_names,
-            query_structure.map(|qs| qs.with_parameters(parameters, &variable_names, &output_variable_positions)),
+            pipeline_structure.map(|qs| qs.with_parameters(parameters, &variable_names, &output_variable_positions)),
             executable_functions.clone(),
             last_stage,
             output_variable_positions,

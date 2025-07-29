@@ -23,14 +23,14 @@ use storage::snapshot::ReadableSnapshot;
 use crate::service::{
     http::{
         message::{
-            body::JsonBody, query::query_structure::QueryStructureResponse, transaction::TransactionOpenPayload,
+            body::JsonBody, query::query_structure::PipelineStructureResponse, transaction::TransactionOpenPayload,
         },
         transaction_service::QueryAnswer,
     },
     AnswerType, QueryType,
 };
 use crate::service::http::message::query::concept::{encode_type_concept, encode_value_type};
-use crate::service::http::message::query::query_structure::encode_query_structure;
+use crate::service::http::message::query::query_structure::encode_pipeline_structure;
 
 pub mod concept;
 pub mod document;
@@ -87,7 +87,7 @@ pub struct QueryAnswerResponse {
     pub query_type: QueryType,
     pub answer_type: AnswerType,
     pub answers: Option<Vec<serde_json::Value>>,
-    pub query: Option<QueryStructureResponse>,
+    pub query: Option<PipelineStructureResponse>,
     pub warning: Option<String>,
 }
 
@@ -98,14 +98,14 @@ pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerRespon
 pub(crate) fn encode_query_rows_answer(
     query_type: QueryType,
     rows: Vec<serde_json::Value>,
-    query_structure: Option<QueryStructureResponse>,
+    pipeline_structure: Option<PipelineStructureResponse>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
     QueryAnswerResponse {
         answer_type: AnswerType::ConceptRows,
         query_type,
         answers: Some(rows),
-        query: query_structure,
+        query: pipeline_structure,
         warning,
     }
 }
@@ -129,10 +129,10 @@ impl IntoResponse for QueryAnswer {
         let code = self.status_code();
         let body = match self {
             QueryAnswer::ResOk(query_type) => JsonBody(encode_query_ok_answer(query_type)),
-            QueryAnswer::ResRows((query_type, rows, query_structure, warning)) => JsonBody(encode_query_rows_answer(
+            QueryAnswer::ResRows((query_type, rows, pipeline_structure, warning)) => JsonBody(encode_query_rows_answer(
                 query_type,
                 rows,
-                query_structure,
+                pipeline_structure,
                 warning.map(|warning| warning.to_string()),
             )),
             QueryAnswer::ResDocuments((query_type, documents, warning)) => JsonBody(encode_query_documents_answer(

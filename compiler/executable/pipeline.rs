@@ -37,7 +37,7 @@ use crate::{
         update::executable::UpdateExecutable,
         ExecutableCompilationError,
     },
-    query_structure::ParametrisedQueryStructure,
+    query_structure::ParametrisedPipelineStructure,
     VariablePosition,
 };
 
@@ -78,7 +78,7 @@ pub struct ExecutablePipeline {
     pub executable_functions: ExecutableFunctionRegistry,
     pub executable_stages: Vec<ExecutableStage>,
     pub executable_fetch: Option<Arc<ExecutableFetch>>,
-    pub query_structure: Option<Arc<ParametrisedQueryStructure>>,
+    pub pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
     pub type_populations: TypePopulations,
 }
 
@@ -147,7 +147,7 @@ pub fn compile_pipeline_and_functions(
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
-    query_structure: Option<Arc<ParametrisedQueryStructure>>,
+    pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     // TODO: we could cache compiled schema functions so we dont have to re-compile with every query here
     let referenced_functions = find_referenced_functions(
@@ -186,7 +186,7 @@ pub fn compile_pipeline_and_functions(
     )?;
     debug_assert!(!executable_stages.is_empty());
     Ok(ExecutablePipeline {
-        query_structure,
+        pipeline_structure,
         executable_functions: schema_and_preamble_functions,
         executable_stages,
         executable_fetch,

@@ -16,7 +16,7 @@ use compiler::{annotation::{
     function::FunctionParameterAnnotation,
     pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline, AnnotatedStage},
     type_annotations::TypeAnnotations,
-}, executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline}, query_structure::{extract_query_structure_from, ParametrisedQueryStructure, QueryStructure}, transformation::transform::apply_transformations, VariablePosition};
+}, executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline}, query_structure::{extract_pipeline_structure_from, ParametrisedPipelineStructure, PipelineStructure}, transformation::transform::apply_transformations, VariablePosition};
 use concept::{
     error::ConceptReadError,
     thing::thing_manager::ThingManager,
@@ -186,7 +186,7 @@ impl QueryManager {
                 )
                 .map_err(|err| QueryError::Annotation { source_query: source_query.to_string(), typedb_source: err })?;
                 compile_profile.annotation_finished();
-                let query_structure = extract_query_structure_from(
+                let pipeline_structure = extract_pipeline_structure_from(
                     &variable_registry,
                     &annotated_pipeline.annotated_stages,
                     source_query,
@@ -207,7 +207,7 @@ impl QueryManager {
                     annotated_stages,
                     annotated_fetch,
                     &HashSet::with_capacity(0),
-                    query_structure,
+                    pipeline_structure,
                 )
                 .map_err(|err| QueryError::ExecutableCompilation {
                     source_query: source_query.to_string(),
@@ -222,7 +222,7 @@ impl QueryManager {
             }
         };
 
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure, .. } =
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, pipeline_structure, .. } =
             executable_pipeline;
 
         // 4: Executor
@@ -230,7 +230,7 @@ impl QueryManager {
             snapshot,
             thing_manager,
             variable_registry.variable_names(),
-            query_structure,
+            pipeline_structure,
             Arc::new(executable_functions),
             &executable_stages,
             executable_fetch,
@@ -336,7 +336,7 @@ impl QueryManager {
                 };
                 compile_profile.annotation_finished();
 
-                let query_structure = extract_query_structure_from(
+                let pipeline_structure = extract_pipeline_structure_from(
                     &variable_registry,
                     &annotated_pipeline.annotated_stages,
                     source_query,
@@ -367,7 +367,7 @@ impl QueryManager {
                     annotated_stages,
                     annotated_fetch,
                     &HashSet::with_capacity(0),
-                    query_structure,
+                    pipeline_structure,
                 ) {
                     Ok(executable) => executable,
                     Err(err) => {
@@ -389,14 +389,14 @@ impl QueryManager {
             }
         };
 
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure, .. } =
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, pipeline_structure, .. } =
             executable_pipeline;
 
         // 4: Executor
         Ok(Pipeline::build_write_pipeline(
             snapshot,
             variable_registry.variable_names(),
-            query_structure,
+            pipeline_structure,
             thing_manager,
             Arc::new(executable_functions),
             executable_stages,
@@ -561,23 +561,23 @@ impl AnalysedQueryAnnotations {
         let output_positions = variable_registry.variable_names().keys().enumerate().map(|(i, var)| {
             (*var, VariablePosition::new(i as u32))
         }).collect();
-        let query_structure = extract_query_structure_from(variable_registry, stages, source_query).map(|qs| {
+        let pipeline_structure = extract_pipeline_structure_from(variable_registry, stages, source_query).map(|qs| {
             Arc::new(qs).with_parameters(parameters.clone(), variable_registry.variable_names(), &output_positions)
         });
-        query_structure.map(|qs| {
+        pipeline_structure.map(|structure| {
             let mut variable_annotations = BTreeMap::new();
             stages.iter().for_each(|stage| {
                 match stage {
                     AnnotatedStage::Put { match_annotations: block_annotations, .. }
                     | AnnotatedStage::Match { block_annotations, .. } => {
                         block_annotations.type_annotations().iter().for_each(|(scope_id, annotations)| {
-                            let block_id = qs.parametrised_structure.scope_to_block.get(scope_id).unwrap().clone();
+                            let block_id = structure.parametrised_structure.scope_to_block.get(scope_id).unwrap().clone();
                             insert_variable_annotations(&mut variable_annotations, block_id, annotations);
                         })
                     }
                     AnnotatedStage::Insert { block, annotations, .. }
                     | AnnotatedStage::Update { block, annotations, .. } => {
-                        let block_id = qs.parametrised_structure.scope_to_block.get(&block.conjunction().scope_id()).unwrap().clone();
+                        let block_id = structure.parametrised_structure.scope_to_block.get(&block.conjunction().scope_id()).unwrap().clone();
                         insert_variable_annotations(&mut variable_annotations, block_id, annotations);
                     }
                     AnnotatedStage::Delete { .. }
