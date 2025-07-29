@@ -39,7 +39,7 @@ use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
-use query::{error::QueryError, query_manager::AnalysedQueryAnnotations};
+use query::error::QueryError;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
@@ -53,8 +53,8 @@ use typeql::{parse_query, query::SchemaQuery};
 use super::message::query::query_structure::encode_pipeline_structure;
 use crate::service::{
     http::message::query::{
-        document::encode_document, encode_analysed_query, query_structure::PipelineStructureResponse, row::encode_row,
-        AnalysedQueryResponse,
+        document::encode_document, encode_query_structure_annotations, query_structure::PipelineStructureResponse,
+        row::encode_row, AnalysedQueryResponse,
     },
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
@@ -1178,7 +1178,7 @@ impl TransactionService {
                     |typedb_source| { TransactionServiceError::AnalyseQueryFailed { typedb_source: *typedb_source } }
                 );
                 let encoded_analysed = unwrap_or_execute_else_respond_error_and_return_break!(
-                    encode_analysed_query(snapshot.as_ref(), &type_manager, analysed),
+                    encode_query_structure_annotations(snapshot.as_ref(), &type_manager, analysed),
                     responder,
                     |typedb_source| {
                         TransactionServiceError::AnalyseQueryFailed {

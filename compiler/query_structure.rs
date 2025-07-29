@@ -63,7 +63,7 @@ pub fn extract_pipeline_structure_from(
     }
 }
 
-pub type QueryStructureAnnotations =
+pub type PipelineStructureAnnotations =
     BTreeMap<QueryStructureBlockID, BTreeMap<StructureVariableId, FunctionParameterAnnotation>>;
 #[derive(Debug, Clone)]
 pub struct ParametrisedPipelineStructure {
