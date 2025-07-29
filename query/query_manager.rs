@@ -590,8 +590,7 @@ fn build_pipeline_annotations(
             .collect();
         variable_annotations.insert(block_id, annotations);
     }
-    // TODO: Consider adding query structure and so on
-    // We don't have output positions. Fake it.
+    // We don't have output positions till we compile. Use anything
     let output_positions = variable_registry
         .variable_names()
         .keys()
