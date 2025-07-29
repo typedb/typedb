@@ -14,7 +14,8 @@ use compiler::{
 use http::StatusCode;
 use options::QueryOptions;
 use query::query_manager::{
-    FetchObjectStructureAnnotations, FetchStructureAnnotations, FunctionStructureAnnotations, QueryStructureAnnotations,
+    AnalysedQuery, FetchObjectStructureAnnotations, FetchStructureAnnotations, FunctionStructureAnnotations,
+    QueryStructureAnnotations,
 };
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
@@ -30,7 +31,7 @@ use crate::service::{
             body::JsonBody,
             query::{
                 concept::{encode_type_concept, encode_value_type},
-                query_structure::PipelineStructureResponse,
+                query_structure::{encode_query_structure, PipelineStructureResponse, QueryStructureResponse},
             },
             transaction::TransactionOpenPayload,
         },
@@ -218,9 +219,10 @@ fn encode_type_annotations(
 pub(crate) fn encode_query_structure_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    query_structure_annotations: QueryStructureAnnotations,
+    analysed_query: AnalysedQuery,
 ) -> Result<AnalysedQueryResponse, Box<ConceptReadError>> {
-    let QueryStructureAnnotations { pipeline, preamble, fetch } = query_structure_annotations;
+    let AnalysedQuery { structure, annotations: analysed_query_annotations } = analysed_query;
+    let QueryStructureAnnotations { pipeline, preamble, fetch } = analysed_query_annotations;
     let preamble = preamble
         .into_iter()
         .map(|function| encode_function_structure_annotations(snapshot, type_manager, function))
@@ -228,9 +230,10 @@ pub(crate) fn encode_query_structure_annotations(
     let pipeline = pipeline
         .map(|pipeline_annotations| encode_pipeline_structure_annotations(snapshot, type_manager, pipeline_annotations))
         .transpose()?;
-    let fetch = fetch.map(|fetch| encode_fetch_strucure_annotations(snapshot, type_manager, fetch)).transpose()?;
+    let fetch = fetch.map(|fetch| encode_fetch_structure_annotations(snapshot, type_manager, fetch)).transpose()?;
     let annotations = QueryStructureAnnotationsResponse { preamble, pipeline, fetch };
-    Ok(AnalysedQueryResponse { annotations })
+    let structure = encode_query_structure(snapshot, type_manager, structure)?;
+    Ok(AnalysedQueryResponse { structure, annotations })
 }
 
 fn encode_pipeline_structure_annotations(
@@ -283,7 +286,7 @@ pub(crate) fn encode_function_structure_annotations(
     Ok(FunctionStructureAnnotationsResponse { arguments, returned, pipeline })
 }
 
-fn encode_fetch_strucure_annotations(
+fn encode_fetch_structure_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     fetch_structure_annotations: FetchStructureAnnotations,
@@ -293,17 +296,15 @@ fn encode_fetch_strucure_annotations(
         .map(|(key, object)| {
             // TODO: We don't encode the pipeline anywhere
             let encoded = match object {
-                FetchObjectStructureAnnotations::Function { pipeline: _, returned: leaf }
-                | FetchObjectStructureAnnotations::Leaf(leaf) => {
+                FetchObjectStructureAnnotations::Leaf(leaf) => {
                     let value_types = leaf
                         .into_iter()
                         .map(|v| encode_value_type(v, snapshot, type_manager))
                         .collect::<Result<Vec<_>, _>>()?;
                     FetchStructureAnnotationsResponse::Leaf(value_types)
                 }
-                FetchObjectStructureAnnotations::SubFetch { pipeline: _, fetch: object }
-                | FetchObjectStructureAnnotations::Object(object) => FetchStructureAnnotationsResponse::Object(
-                    encode_fetch_strucure_annotations(snapshot, type_manager, object)?,
+                FetchObjectStructureAnnotations::Object(object) => FetchStructureAnnotationsResponse::Object(
+                    encode_fetch_structure_annotations(snapshot, type_manager, object)?,
                 ),
             };
             Ok((key, encoded))
@@ -314,7 +315,7 @@ fn encode_fetch_strucure_annotations(
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct AnalysedQueryResponse {
-    // structure: QueryStructureResponse, // TODO:
+    structure: QueryStructureResponse,
     annotations: QueryStructureAnnotationsResponse,
 }
 

@@ -6,6 +6,7 @@
 
 use std::{
     collections::{BTreeMap, HashMap},
+    fmt::Formatter,
     marker::PhantomData,
     str::FromStr,
     sync::Arc,
@@ -15,7 +16,7 @@ use answer::variable::Variable;
 use encoding::value::label::Label;
 use ir::{
     pattern::{
-        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, Scope, ScopeId,
+        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, IrID, Scope, ScopeId,
     },
     pipeline::{
         modifier::SortVariable,
@@ -28,8 +29,8 @@ use serde::{Deserialize, Serialize, Serializer};
 
 use crate::{
     annotation::{
-        function::FunctionParameterAnnotation,
-        pipeline::AnnotatedStage,
+        function::{AnnotatedFunction, FunctionParameterAnnotation},
+        pipeline::{AnnotatedPipeline, AnnotatedStage},
         type_annotations::{BlockAnnotations, TypeAnnotations},
     },
     VariablePosition,
@@ -37,7 +38,15 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct QueryStructure {
-    pipeline: PipelineStructure,
+    pub preamble: Vec<FunctionStructure>,
+    pub pipeline: Option<PipelineStructure>,
+    // fetch: Option<FetchStructure>, // TODO?
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionStructure {
+    pub pipeline: Option<PipelineStructure>,
+    // TODO: arguments, returned
 }
 
 #[derive(Debug, Clone)]
@@ -46,6 +55,56 @@ pub struct PipelineStructure {
     pub variable_names: HashMap<StructureVariableId, String>,
     pub available_variables: Vec<StructureVariableId>,
     pub parameters: Arc<ParameterRegistry>,
+}
+
+pub fn extract_query_structure_from(
+    variable_registry: &VariableRegistry,
+    parameters: Arc<ParameterRegistry>,
+    annotated_pipeline: &AnnotatedPipeline,
+    source_query: &str,
+) -> QueryStructure {
+    let parametrised_pipeline = extract_pipeline_structure_from(
+        variable_registry,
+        annotated_pipeline.annotated_stages.as_slice(),
+        source_query,
+    );
+    // We don't compile, so positions don't exist. Assign arbitrarily
+    let output_positions = annotated_pipeline
+        .annotated_stages
+        .last()
+        .unwrap()
+        .named_referenced_variables(variable_registry)
+        .enumerate()
+        .map(|(i, var)| (var, VariablePosition::new(i as u32)))
+        .collect();
+
+    let pipeline = parametrised_pipeline
+        .map(|pp| Arc::new(pp).with_parameters(parameters, variable_registry.variable_names(), &output_positions));
+    let preamble = annotated_pipeline
+        .annotated_preamble
+        .iter()
+        .map(|function| extract_function_structure_from(function, source_query))
+        .collect();
+    QueryStructure { pipeline, preamble }
+}
+
+pub fn extract_function_structure_from(function: &AnnotatedFunction, source_query: &str) -> FunctionStructure {
+    let parametrised_pipeline =
+        extract_pipeline_structure_from(&function.variable_registry, function.stages.as_slice(), source_query);
+    let pipeline = parametrised_pipeline.map(|pp| {
+        Arc::new(pp).with_parameters(
+            Arc::new(function.parameter_registry.clone()),
+            function.variable_registry.variable_names(),
+            &function
+                .return_
+                .referenced_variables()
+                .iter()
+                .enumerate()
+                .map(|(i, var)| (*var, VariablePosition::new(i as u32)))
+                .collect(),
+        )
+    });
+    FunctionStructure { pipeline }
 }
 
 pub fn extract_pipeline_structure_from(
@@ -343,6 +402,14 @@ pub struct StructureVariableId(
     #[serde(deserialize_with = "deserialize_using_from_string")]
     u16,
 );
+
+impl std::fmt::Display for StructureVariableId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "StructureVariable({})", self.0)
+    }
+}
+
+impl IrID for StructureVariableId {}
 
 impl From<&Variable> for StructureVariableId {
     fn from(value: &Variable) -> Self {

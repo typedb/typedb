@@ -9,7 +9,7 @@ use std::{collections::HashMap, str::FromStr};
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
 use compiler::query_structure::{
-    ParametrisedPipelineStructure, PipelineStructure, QueryStructureStage, StructureVariableId,
+    ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureStage, StructureVariableId,
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
@@ -64,6 +64,20 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
             self.variables.insert(variable, info);
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct FunctionStructureResponse {
+    pipeline: Option<PipelineStructureResponse>,
+    // TODO: arguments, returned,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct QueryStructureResponse {
+    pipeline: Option<PipelineStructureResponse>,
+    preamble: Vec<FunctionStructureResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -193,6 +207,28 @@ enum StructureVertex {
     Variable { id: StructureVariableId },
     Label { r#type: serde_json::Value },
     Value(ValueResponse),
+}
+
+pub(crate) fn encode_query_structure(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    query_structure: QueryStructure,
+) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
+    let QueryStructure { preamble, pipeline } = query_structure;
+    let pipeline =
+        pipeline.as_ref().map(|pipeline| encode_pipeline_structure(snapshot, type_manager, &pipeline)).transpose()?;
+    let preamble = preamble
+        .into_iter()
+        .map(|function| {
+            let pipeline = function
+                .pipeline
+                .as_ref()
+                .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, pipeline))
+                .transpose()?;
+            Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse { pipeline })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(QueryStructureResponse { pipeline, preamble })
 }
 
 pub(crate) fn encode_pipeline_structure(
