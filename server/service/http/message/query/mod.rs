@@ -147,7 +147,7 @@ impl IntoResponse for QueryAnswer {
 
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", tag = "tag")]
 enum TypeAnnotationResponse {
     Concept { annotations: Vec<serde_json::Value> },
     Value { value_types: Vec<serde_json::Value> },
@@ -155,8 +155,14 @@ enum TypeAnnotationResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct VariableAnnotationsByBlockResponse {
+    variable_annotations: HashMap<StructureVariableId, TypeAnnotationResponse>
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct AnalysedPipelineResponse {
-    annotations: Vec<HashMap<StructureVariableId, TypeAnnotationResponse>>,
+    annotations_by_block: Vec<VariableAnnotationsByBlockResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -168,12 +174,10 @@ struct AnalysedFunctionResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", untagged)]
 enum AnalysedFetchObjectResponse {
-    Leaf(TypeAnnotationResponse),
-    Function(TypeAnnotationResponse, AnalysedQueryResponse),
+    Leaf(Vec<String>), // Value types encoded as string
     Object(HashMap<String, AnalysedFetchObjectResponse>),
-    Pipeline(AnalysedQueryResponse)
 }
 
 fn encode_type_annotations(
@@ -210,14 +214,17 @@ fn encode_analysed_pipeline(snapshot: &impl ReadableSnapshot, type_manager: &Typ
     pipeline.iter().try_for_each(|(block_id, var_annotations)| {
         let block_id = block_id.0 as usize;
         if annotations_by_block.len() <= block_id {
-            annotations_by_block.resize_with(block_id + 1, || HashMap::new());
+            annotations_by_block.resize_with(block_id + 1, || {
+                VariableAnnotationsByBlockResponse { variable_annotations : HashMap::new() }
+            });
         }
-        annotations_by_block[block_id] = var_annotations.into_iter().map(|(var_id, annotations)| {
+        let variable_annotations = var_annotations.into_iter().map(|(var_id, annotations)| {
             Ok::<_, Box<ConceptReadError>>((var_id.clone(), encode_type_annotations(snapshot, type_manager, annotations.clone())?))
         }).collect::<Result<HashMap<_,_>, _>>()?;
+        annotations_by_block[block_id] = VariableAnnotationsByBlockResponse { variable_annotations };
         Ok::<_, Box<ConceptReadError>>(())
     })?;
-    Ok( AnalysedPipelineResponse { annotations: annotations_by_block })
+    Ok( AnalysedPipelineResponse { annotations_by_block })
 }
 
 pub(crate) fn encode_analysed_function(
@@ -238,8 +245,10 @@ fn encode_analysed_fetch(
         let encoded = match object {
             AnalysedFetchObjectAnnotations::Function { pipeline: _, returned: leaf }
             | AnalysedFetchObjectAnnotations::Leaf(leaf) => {
-                let value_types = leaf.into_iter().map(|v| json!(v.to_string())).collect();
-                AnalysedFetchObjectResponse::Leaf(TypeAnnotationResponse::Value { value_types })
+                let value_types = leaf.into_iter().map(|v| {
+                    encode_value_type(v, snapshot, type_manager)
+                }).collect::<Result<Vec<_>,_>>()?;
+                AnalysedFetchObjectResponse::Leaf( value_types )
             },
             AnalysedFetchObjectAnnotations::SubFetch { pipeline: _, fetch: object }
             | AnalysedFetchObjectAnnotations::Object(object) => {
