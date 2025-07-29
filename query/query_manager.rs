@@ -5,18 +5,26 @@
  */
 
 use std::{
-    collections::{BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync::Arc,
 };
-use std::collections::BTreeMap;
 
 use answer::variable::Variable;
-use compiler::{annotation::{
-    fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
-    function::FunctionParameterAnnotation,
-    pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline, AnnotatedStage},
-    type_annotations::TypeAnnotations,
-}, executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline}, query_structure::{extract_pipeline_structure_from, ParametrisedPipelineStructure, PipelineStructure}, transformation::transform::apply_transformations, VariablePosition};
+use compiler::{
+    annotation::{
+        fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
+        function::{AnnotatedFunctionSignature, FunctionParameterAnnotation},
+        pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline, AnnotatedStage},
+        type_annotations::{BlockAnnotations, TypeAnnotations},
+    },
+    executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
+    query_structure::{
+        extract_pipeline_structure_from, ParametrisedPipelineStructure, PipelineStructure, QueryStructureAnnotations,
+        QueryStructureBlockID, StructureVariableId,
+    },
+    transformation::transform::apply_transformations,
+    VariablePosition,
+};
 use concept::{
     error::ConceptReadError,
     thing::thing_manager::ThingManager,
@@ -32,7 +40,7 @@ use executor::{
 };
 use function::function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
-    pattern::{ParameterID, Vertex},
+    pattern::{ParameterID, Scope, Vertex},
     pipeline::{
         function_signature::{FunctionID, HashMapFunctionSignatureIndex},
         ParameterRegistry, VariableRegistry,
@@ -48,10 +56,6 @@ use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
-use compiler::annotation::function::AnnotatedFunctionSignature;
-use compiler::annotation::type_annotations::BlockAnnotations;
-use compiler::query_structure::{QueryStructureAnnotations, QueryStructureBlockID, StructureVariableId};
-use ir::pattern::Scope;
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 
@@ -222,8 +226,9 @@ impl QueryManager {
             }
         };
 
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, pipeline_structure, .. } =
-            executable_pipeline;
+        let ExecutablePipeline {
+            executable_functions, executable_stages, executable_fetch, pipeline_structure, ..
+        } = executable_pipeline;
 
         // 4: Executor
         Pipeline::build_read_pipeline(
@@ -389,8 +394,9 @@ impl QueryManager {
             }
         };
 
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, pipeline_structure, .. } =
-            executable_pipeline;
+        let ExecutablePipeline {
+            executable_functions, executable_stages, executable_fetch, pipeline_structure, ..
+        } = executable_pipeline;
 
         // 4: Executor
         Ok(Pipeline::build_write_pipeline(
@@ -500,7 +506,7 @@ pub enum AnalysedFetchObjectAnnotations {
     Leaf(BTreeSet<ValueType>),
     Object(AnalysedFetchAnnotations),
     SubFetch { pipeline: Option<AnalysedPipelineAnnotations>, fetch: AnalysedFetchAnnotations },
-    Function { pipeline: Option<AnalysedPipelineAnnotations>, returned: BTreeSet<ValueType> }
+    Function { pipeline: Option<AnalysedPipelineAnnotations>, returned: BTreeSet<ValueType> },
 }
 
 #[derive(Debug)]
@@ -525,24 +531,35 @@ impl AnalysedQueryAnnotations {
         source_query: &str,
         annotated_pipeline: AnnotatedPipeline,
     ) -> Result<Self, Box<ConceptReadError>> {
-        let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch} = annotated_pipeline;
-        let pipeline = Self::build_pipeline(
-            variable_registry,
-            parameters.clone(),
-            source_query,
-            annotated_stages.as_slice()
-        );
+        let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotated_pipeline;
+        let pipeline =
+            Self::build_pipeline(variable_registry, parameters.clone(), source_query, annotated_stages.as_slice());
         let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());
         let fetch = annotated_fetch
             .map(|fetch| {
-                build_analysed_fetch_object(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, &fetch.object)
+                build_analysed_fetch_object(
+                    snapshot,
+                    type_manager,
+                    parameters.clone(),
+                    source_query,
+                    last_stage_annotations,
+                    &fetch.object,
+                )
             })
             .transpose()?;
-        let preamble = annotated_preamble.into_iter().map(|function| {
-            let signature = function.annotated_signature;
-            let pipeline = Self::build_pipeline(&function.variable_registry, Arc::new(function.parameter_registry), source_query, function.stages.as_slice());
-            AnalysedFunctionAnnotations { signature, pipeline}
-        }).collect();
+        let preamble = annotated_preamble
+            .into_iter()
+            .map(|function| {
+                let signature = function.annotated_signature;
+                let pipeline = Self::build_pipeline(
+                    &function.variable_registry,
+                    Arc::new(function.parameter_registry),
+                    source_query,
+                    function.stages.as_slice(),
+                );
+                AnalysedFunctionAnnotations { signature, pipeline }
+            })
+            .collect();
 
         Ok(Self { preamble, pipeline, fetch })
     }
@@ -553,47 +570,61 @@ impl AnalysedQueryAnnotations {
         source_query: &str,
         stages: &[AnnotatedStage],
     ) -> Option<QueryStructureAnnotations> {
-        fn insert_variable_annotations(variable_annotations: &mut QueryStructureAnnotations, block_id: QueryStructureBlockID, annotations_for_block: &TypeAnnotations) {
-            let annotations = annotations_for_block.vertex_annotations().iter().filter_map(|(vertex, annos)| {
-                vertex.as_variable().map(|variable| {
-                    (StructureVariableId::from(variable), FunctionParameterAnnotation::Concept((&**annos).clone()))
+        fn insert_variable_annotations(
+            variable_annotations: &mut QueryStructureAnnotations,
+            block_id: QueryStructureBlockID,
+            annotations_for_block: &TypeAnnotations,
+        ) {
+            let annotations = annotations_for_block
+                .vertex_annotations()
+                .iter()
+                .filter_map(|(vertex, annos)| {
+                    vertex.as_variable().map(|variable| {
+                        (StructureVariableId::from(variable), FunctionParameterAnnotation::Concept((&**annos).clone()))
+                    })
                 })
-            }).collect();
+                .collect();
             variable_annotations.insert(block_id, annotations);
         }
         // TODO: Consider adding query structure and so on
         // We don't have output positions. Fake it.
-        let output_positions = variable_registry.variable_names().keys().enumerate().map(|(i, var)| {
-            (*var, VariablePosition::new(i as u32))
-        }).collect();
+        let output_positions = variable_registry
+            .variable_names()
+            .keys()
+            .enumerate()
+            .map(|(i, var)| (*var, VariablePosition::new(i as u32)))
+            .collect();
         let pipeline_structure = extract_pipeline_structure_from(variable_registry, stages, source_query).map(|qs| {
             Arc::new(qs).with_parameters(parameters.clone(), variable_registry.variable_names(), &output_positions)
         });
         pipeline_structure.map(|structure| {
             let mut variable_annotations = BTreeMap::new();
-            stages.iter().for_each(|stage| {
-                match stage {
-                    AnnotatedStage::Put { match_annotations: block_annotations, .. }
-                    | AnnotatedStage::Match { block_annotations, .. } => {
-                        block_annotations.type_annotations().iter().for_each(|(scope_id, annotations)| {
-                            let block_id = structure.parametrised_structure.scope_to_block.get(scope_id).unwrap().clone();
-                            insert_variable_annotations(&mut variable_annotations, block_id, annotations);
-                        })
-                    }
-                    AnnotatedStage::Insert { block, annotations, .. }
-                    | AnnotatedStage::Update { block, annotations, .. } => {
-                        let block_id = structure.parametrised_structure.scope_to_block.get(&block.conjunction().scope_id()).unwrap().clone();
+            stages.iter().for_each(|stage| match stage {
+                AnnotatedStage::Put { match_annotations: block_annotations, .. }
+                | AnnotatedStage::Match { block_annotations, .. } => {
+                    block_annotations.type_annotations().iter().for_each(|(scope_id, annotations)| {
+                        let block_id = structure.parametrised_structure.scope_to_block.get(scope_id).unwrap().clone();
                         insert_variable_annotations(&mut variable_annotations, block_id, annotations);
-                    }
-                    AnnotatedStage::Delete { .. }
-                    | AnnotatedStage::Select(_)
-                    | AnnotatedStage::Sort(_)
-                    | AnnotatedStage::Offset(_)
-                    | AnnotatedStage::Limit(_)
-                    | AnnotatedStage::Require(_)
-                    | AnnotatedStage::Distinct(_)
-                    | AnnotatedStage::Reduce(_, _) => {}
+                    })
                 }
+                AnnotatedStage::Insert { block, annotations, .. }
+                | AnnotatedStage::Update { block, annotations, .. } => {
+                    let block_id = structure
+                        .parametrised_structure
+                        .scope_to_block
+                        .get(&block.conjunction().scope_id())
+                        .unwrap()
+                        .clone();
+                    insert_variable_annotations(&mut variable_annotations, block_id, annotations);
+                }
+                AnnotatedStage::Delete { .. }
+                | AnnotatedStage::Select(_)
+                | AnnotatedStage::Sort(_)
+                | AnnotatedStage::Offset(_)
+                | AnnotatedStage::Limit(_)
+                | AnnotatedStage::Require(_)
+                | AnnotatedStage::Distinct(_)
+                | AnnotatedStage::Reduce(_, _) => {}
             });
             variable_annotations
         })
@@ -601,7 +632,8 @@ impl AnalysedQueryAnnotations {
 }
 
 fn get_last_stage_annotations(stages: &[AnnotatedStage]) -> &TypeAnnotations {
-    stages.iter()
+    stages
+        .iter()
         .filter_map(|stage| match stage {
             AnnotatedStage::Match { block_annotations, block, .. }
             | AnnotatedStage::Put { match_annotations: block_annotations, block, .. } => {
@@ -619,7 +651,8 @@ fn get_last_stage_annotations(stages: &[AnnotatedStage]) -> &TypeAnnotations {
             | AnnotatedStage::Distinct(_)
             | AnnotatedStage::Reduce(_, _) => None,
         })
-        .last().expect("Expected pipeline to have a last stage")
+        .last()
+        .expect("Expected pipeline to have a last stage")
 }
 
 fn build_analysed_fetch_object(
@@ -631,9 +664,14 @@ fn build_analysed_fetch_object(
     object: &AnnotatedFetchObject,
 ) -> Result<AnalysedFetchAnnotations, Box<ConceptReadError>> {
     match object {
-        AnnotatedFetchObject::Entries(entries) => {
-            build_analysed_fetch_entries(snapshot, type_manager, parameters, source_query, last_stage_annotations, entries)
-        }
+        AnnotatedFetchObject::Entries(entries) => build_analysed_fetch_entries(
+            snapshot,
+            type_manager,
+            parameters,
+            source_query,
+            last_stage_annotations,
+            entries,
+        ),
         AnnotatedFetchObject::Attributes(variable) => {
             build_analysed_fetch_attributes(snapshot, type_manager, last_stage_annotations, *variable)
         }

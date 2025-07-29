@@ -53,14 +53,14 @@ use typeql::{parse_query, query::SchemaQuery};
 use super::message::query::query_structure::encode_pipeline_structure;
 use crate::service::{
     http::message::query::{
-        document::encode_document, query_structure::PipelineStructureResponse, row::encode_row, AnalysedQueryResponse,
+        document::encode_document, encode_analysed_query, query_structure::PipelineStructureResponse, row::encode_row,
+        AnalysedQueryResponse,
     },
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
     },
     QueryType, TransactionType,
 };
-use crate::service::http::message::query::encode_analysed_query;
 
 macro_rules! respond_error_and_return_break {
     ($responder:ident, $error:expr) => {{
@@ -1058,8 +1058,10 @@ impl TransactionService {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
 
-            let encode_pipeline_structure_result =
-                pipeline.pipeline_structure().map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs)).transpose();
+            let encode_pipeline_structure_result = pipeline
+                .pipeline_structure()
+                .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs))
+                .transpose();
             let always_taken_blocks =
                 pipeline.pipeline_structure().map(|qs| qs.parametrised_structure.always_taken_blocks());
             let pipeline_structure_response = match encode_pipeline_structure_result {
@@ -1187,14 +1189,13 @@ impl TransactionService {
                 let encoded_analysed = unwrap_or_execute_else_respond_error_and_return_break!(
                     encode_analysed_query(snapshot.as_ref(), &type_manager, analysed),
                     responder,
-                    |typedb_source| { TransactionServiceError::AnalyseQueryFailed {
-                        typedb_source: QueryError::QueryAnalysisFailed { source_query: query, typedb_source } }
+                    |typedb_source| {
+                        TransactionServiceError::AnalyseQueryFailed {
+                            typedb_source: QueryError::QueryAnalysisFailed { source_query: query, typedb_source },
+                        }
                     }
                 );
-                respond_else_return_break!(
-                    responder,
-                    TransactionServiceResponse::QueryAnalyse(encoded_analysed)
-                );
+                respond_else_return_break!(responder, TransactionServiceResponse::QueryAnalyse(encoded_analysed));
                 Continue(())
             })
         })

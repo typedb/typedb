@@ -8,7 +8,9 @@ use std::{collections::HashMap, str::FromStr};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
-use compiler::query_structure::{ParametrisedPipelineStructure, PipelineStructure, QueryStructureStage, StructureVariableId};
+use compiler::query_structure::{
+    ParametrisedPipelineStructure, PipelineStructure, QueryStructureStage, StructureVariableId,
+};
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
 use ir::pattern::{

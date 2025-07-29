@@ -4,13 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, marker::PhantomData, str::FromStr, sync::Arc};
-use std::collections::BTreeMap;
+use std::{
+    collections::{BTreeMap, HashMap},
+    marker::PhantomData,
+    str::FromStr,
+    sync::Arc,
+};
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
 use ir::{
-    pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID},
+    pattern::{
+        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, Scope, ScopeId,
+    },
     pipeline::{
         modifier::SortVariable,
         reduce::{AssignedReduction, Reducer},
@@ -19,16 +25,15 @@ use ir::{
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize, Serializer};
-use ir::pattern::{Scope, ScopeId};
 
 use crate::{
     annotation::{
+        function::FunctionParameterAnnotation,
         pipeline::AnnotatedStage,
         type_annotations::{BlockAnnotations, TypeAnnotations},
     },
     VariablePosition,
 };
-use crate::annotation::function::FunctionParameterAnnotation;
 
 #[derive(Debug, Clone)]
 pub struct QueryStructure {
@@ -58,7 +63,8 @@ pub fn extract_pipeline_structure_from(
     }
 }
 
-pub type QueryStructureAnnotations = BTreeMap<QueryStructureBlockID, BTreeMap<StructureVariableId, FunctionParameterAnnotation>>;
+pub type QueryStructureAnnotations =
+    BTreeMap<QueryStructureBlockID, BTreeMap<StructureVariableId, FunctionParameterAnnotation>>;
 #[derive(Debug, Clone)]
 pub struct ParametrisedPipelineStructure {
     pub stages: Vec<QueryStructureStage>,
@@ -186,22 +192,42 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             }
             AnnotatedStage::Insert { block, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(block.conjunction().scope_id(), None, block.conjunction().constraints(), &annotations);
+                let block = self.add_block_impl(
+                    block.conjunction().scope_id(),
+                    None,
+                    block.conjunction().constraints(),
+                    &annotations,
+                );
                 self.pipeline_structure.stages.push(QueryStructureStage::Insert { block });
             }
             AnnotatedStage::Put { block, insert_annotations: annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(block.conjunction().scope_id(), None, block.conjunction().constraints(), &annotations);
+                let block = self.add_block_impl(
+                    block.conjunction().scope_id(),
+                    None,
+                    block.conjunction().constraints(),
+                    &annotations,
+                );
                 self.pipeline_structure.stages.push(QueryStructureStage::Put { block });
             }
             AnnotatedStage::Update { block, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(block.conjunction().scope_id(), None, block.conjunction().constraints(), &annotations);
+                let block = self.add_block_impl(
+                    block.conjunction().scope_id(),
+                    None,
+                    block.conjunction().constraints(),
+                    &annotations,
+                );
                 self.pipeline_structure.stages.push(QueryStructureStage::Update { block });
             }
             AnnotatedStage::Delete { block, deleted_variables, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(block.conjunction().scope_id(), None, block.conjunction().constraints(), &annotations);
+                let block = self.add_block_impl(
+                    block.conjunction().scope_id(),
+                    None,
+                    block.conjunction().constraints(),
+                    &annotations,
+                );
                 self.pipeline_structure
                     .stages
                     .push(QueryStructureStage::Delete { block, deleted_variables: vec_from(deleted_variables.iter()) });
