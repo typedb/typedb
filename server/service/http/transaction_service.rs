@@ -53,8 +53,8 @@ use typeql::{parse_query, query::SchemaQuery};
 use super::message::query::query_structure::encode_pipeline_structure;
 use crate::service::{
     http::message::query::{
-        document::encode_document, encode_query_structure_annotations, query_structure::PipelineStructureResponse,
-        row::encode_row, AnalysedQueryResponse,
+        annotations::encode_query_structure_annotations, document::encode_document,
+        query_structure::PipelineStructureResponse, row::encode_row, AnalysedQueryResponse,
     },
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,

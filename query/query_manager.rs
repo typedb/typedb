@@ -549,10 +549,7 @@ impl QueryStructureAnnotations {
         let (pipeline, fetch) = match query_structure.pipeline.as_ref() {
             None => (None, None),
             Some(pipeline_structure) => {
-                let pipeline = build_pipeline_annotations(
-                    annotated_stages.as_slice(),
-                    pipeline_structure,
-                );
+                let pipeline = build_pipeline_annotations(annotated_stages.as_slice(), pipeline_structure);
                 let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());
                 let fetch = annotated_fetch
                     .as_ref()
@@ -577,10 +574,7 @@ impl QueryStructureAnnotations {
             .map(|(annotated_function, structure)| {
                 let signature = annotated_function.annotated_signature.clone();
                 let pipeline = structure.pipeline.as_ref().map(|pipeline_structure| {
-                    build_pipeline_annotations(
-                        annotated_function.stages.as_slice(),
-                        pipeline_structure,
-                    )
+                    build_pipeline_annotations(annotated_function.stages.as_slice(), pipeline_structure)
                 });
                 FunctionStructureAnnotations { signature, pipeline }
             })
