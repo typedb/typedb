@@ -526,13 +526,13 @@ pub enum FetchObjectStructureAnnotations {
 #[derive(Debug)]
 pub struct FunctionStructureAnnotations {
     pub signature: AnnotatedFunctionSignature,
-    pub pipeline: Option<PipelineStructureAnnotations>,
+    pub body: Option<PipelineStructureAnnotations>,
 }
 
 #[derive(Debug)]
 pub struct QueryStructureAnnotations {
     pub preamble: Vec<FunctionStructureAnnotations>,
-    pub pipeline: Option<PipelineStructureAnnotations>,
+    pub query: Option<PipelineStructureAnnotations>,
     pub fetch: Option<FetchStructureAnnotations>,
 }
 
@@ -546,7 +546,7 @@ impl QueryStructureAnnotations {
         query_structure: &QueryStructure,
     ) -> Result<Self, Box<ConceptReadError>> {
         let AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble } = &annotated_pipeline;
-        let (pipeline, fetch) = match query_structure.pipeline.as_ref() {
+        let (pipeline, fetch) = match query_structure.query.as_ref() {
             None => (None, None),
             Some(pipeline_structure) => {
                 let pipeline = build_pipeline_annotations(annotated_stages.as_slice(), pipeline_structure);
@@ -576,11 +576,11 @@ impl QueryStructureAnnotations {
                 let pipeline = structure.pipeline.as_ref().map(|pipeline_structure| {
                     build_pipeline_annotations(annotated_function.stages.as_slice(), pipeline_structure)
                 });
-                FunctionStructureAnnotations { signature, pipeline }
+                FunctionStructureAnnotations { signature, body: pipeline }
             })
             .collect();
 
-        Ok(Self { preamble, pipeline, fetch })
+        Ok(Self { preamble, query: pipeline, fetch })
     }
 }
 

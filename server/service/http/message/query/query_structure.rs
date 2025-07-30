@@ -69,14 +69,14 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct FunctionStructureResponse {
-    pipeline: Option<PipelineStructureResponse>,
+    body: Option<PipelineStructureResponse>,
     // TODO: arguments, returned,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct QueryStructureResponse {
-    pipeline: Option<PipelineStructureResponse>,
+    query: Option<PipelineStructureResponse>,
     preamble: Vec<FunctionStructureResponse>,
 }
 
@@ -84,7 +84,7 @@ pub(crate) struct QueryStructureResponse {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PipelineStructureResponse {
     blocks: Vec<StructureBlock>,
-    stages: Vec<QueryStructureStage>,
+    pipeline: Vec<QueryStructureStage>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
     outputs: Vec<StructureVariableId>,
 }
@@ -214,7 +214,7 @@ pub(crate) fn encode_query_structure(
     type_manager: &TypeManager,
     query_structure: QueryStructure,
 ) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
-    let QueryStructure { preamble, pipeline } = query_structure;
+    let QueryStructure { preamble, query: pipeline } = query_structure;
     let pipeline =
         pipeline.as_ref().map(|pipeline| encode_pipeline_structure(snapshot, type_manager, &pipeline)).transpose()?;
     let preamble = preamble
@@ -225,10 +225,10 @@ pub(crate) fn encode_query_structure(
                 .as_ref()
                 .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, pipeline))
                 .transpose()?;
-            Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse { pipeline })
+            Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse { body: pipeline })
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(QueryStructureResponse { pipeline, preamble })
+    Ok(QueryStructureResponse { query: pipeline, preamble })
 }
 
 pub(crate) fn encode_pipeline_structure(
@@ -253,7 +253,7 @@ pub(crate) fn encode_pipeline_structure(
     // Ensure reduced variables are added to variables
     record_reducer_variables(snapshot, type_manager, pipeline_structure, &mut variables);
     let outputs = pipeline_structure.available_variables.clone();
-    Ok(PipelineStructureResponse { blocks, outputs, variables, stages: stages.clone() })
+    Ok(PipelineStructureResponse { blocks, outputs, variables, pipeline: stages.clone() })
 }
 
 fn record_reducer_variables(

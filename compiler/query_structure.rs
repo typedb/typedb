@@ -39,7 +39,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct QueryStructure {
     pub preamble: Vec<FunctionStructure>,
-    pub pipeline: Option<PipelineStructure>,
+    pub query: Option<PipelineStructure>,
     // fetch: Option<FetchStructure>, // TODO?
 }
 
@@ -85,7 +85,7 @@ pub fn extract_query_structure_from(
         .iter()
         .map(|function| extract_function_structure_from(function, source_query))
         .collect();
-    QueryStructure { pipeline, preamble }
+    QueryStructure { query: pipeline, preamble }
 }
 
 pub fn extract_function_structure_from(function: &AnnotatedFunction, source_query: &str) -> FunctionStructure {

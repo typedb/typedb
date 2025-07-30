@@ -90,7 +90,7 @@ pub(crate) fn encode_query_structure_annotations(
     analysed_query: AnalysedQuery,
 ) -> Result<AnalysedQueryResponse, Box<ConceptReadError>> {
     let AnalysedQuery { structure, annotations: analysed_query_annotations } = analysed_query;
-    let QueryStructureAnnotations { pipeline, preamble, fetch } = analysed_query_annotations;
+    let QueryStructureAnnotations { query: pipeline, preamble, fetch } = analysed_query_annotations;
     let preamble = preamble
         .into_iter()
         .map(|function| encode_function_structure_annotations(snapshot, type_manager, function))
@@ -137,7 +137,7 @@ pub(crate) fn encode_function_structure_annotations(
     type_manager: &TypeManager,
     function_structure_annotations: FunctionStructureAnnotations,
 ) -> Result<FunctionStructureAnnotationsResponse, Box<ConceptReadError>> {
-    let FunctionStructureAnnotations { pipeline, signature: sig } = function_structure_annotations;
+    let FunctionStructureAnnotations { body: pipeline, signature: sig } = function_structure_annotations;
     let arguments = sig
         .arguments
         .into_iter()
