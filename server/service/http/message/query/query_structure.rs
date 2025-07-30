@@ -84,7 +84,7 @@ pub(crate) struct QueryStructureResponse {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PipelineStructureResponse {
     blocks: Vec<StructureBlock>,
-    pipeline: Vec<QueryStructureStage>,
+    stages: Vec<QueryStructureStage>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
     outputs: Vec<StructureVariableId>,
 }
@@ -253,7 +253,7 @@ pub(crate) fn encode_pipeline_structure(
     // Ensure reduced variables are added to variables
     record_reducer_variables(snapshot, type_manager, pipeline_structure, &mut variables);
     let outputs = pipeline_structure.available_variables.clone();
-    Ok(PipelineStructureResponse { blocks, outputs, variables, pipeline: stages.clone() })
+    Ok(PipelineStructureResponse { blocks, outputs, variables, stages: stages.clone() })
 }
 
 fn record_reducer_variables(

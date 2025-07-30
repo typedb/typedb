@@ -61,9 +61,7 @@ enum FetchStructureAnnotationsResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryStructureAnnotationsResponse {
-    #[serde(skip_serializing)] // TODO: Include when we sort out the function structure
     preamble: Vec<FunctionStructureAnnotationsResponse>,
-
     pipeline: Option<PipelineStructureAnnotationsResponse>,
     fetch: Option<HashMap<String, FetchStructureAnnotationsResponse>>,
 }
