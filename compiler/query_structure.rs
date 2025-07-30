@@ -180,7 +180,7 @@ impl ParametrisedPipelineStructure {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", tag = "tag")]
 pub enum QueryStructureStage {
     Match { block: QueryStructureConjunction },
     Insert { block: QueryStructureBlockID },
