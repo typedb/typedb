@@ -49,7 +49,7 @@ struct PipelineStructureAnnotationsResponse {
 struct FunctionStructureAnnotationsResponse {
     arguments: Vec<TypeAnnotationResponse>,
     returned: Vec<TypeAnnotationResponse>,
-    pipeline: Option<PipelineStructureAnnotationsResponse>,
+    body: Option<PipelineStructureAnnotationsResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -62,7 +62,7 @@ enum FetchStructureAnnotationsResponse {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryStructureAnnotationsResponse {
     preamble: Vec<FunctionStructureAnnotationsResponse>,
-    pipeline: Option<PipelineStructureAnnotationsResponse>,
+    query: Option<PipelineStructureAnnotationsResponse>,
     fetch: Option<HashMap<String, FetchStructureAnnotationsResponse>>,
 }
 
@@ -99,7 +99,7 @@ pub(crate) fn encode_query_structure_annotations(
         .map(|pipeline_annotations| encode_pipeline_structure_annotations(snapshot, type_manager, pipeline_annotations))
         .transpose()?;
     let fetch = fetch.map(|fetch| encode_fetch_structure_annotations(snapshot, type_manager, fetch)).transpose()?;
-    let annotations = QueryStructureAnnotationsResponse { preamble, pipeline, fetch };
+    let annotations = QueryStructureAnnotationsResponse { preamble, query: pipeline, fetch };
     let structure = encode_query_structure(snapshot, type_manager, structure)?;
     Ok(AnalysedQueryResponse { structure, annotations })
 }
@@ -151,7 +151,7 @@ pub(crate) fn encode_function_structure_annotations(
     let pipeline = pipeline
         .map(|pipeline_annotations| encode_pipeline_structure_annotations(snapshot, type_manager, pipeline_annotations))
         .transpose()?;
-    Ok(FunctionStructureAnnotationsResponse { arguments, returned, pipeline })
+    Ok(FunctionStructureAnnotationsResponse { arguments, returned, body: pipeline })
 }
 
 fn encode_fetch_structure_annotations(
