@@ -605,7 +605,9 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
     }
 
     fn decrement_readers(&self) -> u64 {
-        self.readers.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
+        let current = self.readers.fetch_sub(1, Ordering::Relaxed);
+        println!("=== decrement_readers - current = {}", current);
+        current - 1 // Return the resulting number of readers
     }
 }
 
