@@ -202,7 +202,7 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        SchemaSnapshot::new(self, open_sequence_number)
+        SchemaSnapshot::new_with_open_sequence_number(self, open_sequence_number)
     }
 
     fn wait_for_watermark(&self, target: SequenceNumber) -> SequenceNumber {

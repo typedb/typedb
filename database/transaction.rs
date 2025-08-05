@@ -331,12 +331,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             (profile, Ok((database, snapshot))) => (profile, (database, snapshot)),
             (profile, Err(error)) => return (profile, Err(error))
         };
-        let result = match snapshot.into_commit_record(profile.commit_profile()) {
-            Ok(Some(commit_record)) => database.schema_commit(commit_record, profile.commit_profile()),
-            Ok(None) => Ok(()),
-            Err(error) => Err(SchemaCommitError::SnapshotError { typedb_source: error })
-        };
-        
+        let result = database.schema_commit_with_snapshot(snapshot, profile.commit_profile());
         profile.commit_profile().end();
         (profile, result)
     }

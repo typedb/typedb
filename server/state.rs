@@ -361,7 +361,7 @@ impl ServerState for LocalServerState {
         let Some(database) = self.databases_get(name).await else {
             return Err(ServerStateError::DatabaseNotFound { name: name.to_string() })
         };
-        database.schema_commit(commit_record, commit_profile).map_err(|error|
+        database.schema_commit_with_commit_record(commit_record, commit_profile).map_err(|error|
             ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error }
         )
     }

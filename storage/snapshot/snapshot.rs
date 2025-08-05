@@ -551,22 +551,31 @@ impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
 }
 
 impl<D> SchemaSnapshot<D> {
-    pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
-        storage.isolation_manager.opened_for_read(open_sequence_number);
-        SchemaSnapshot {
-            storage,
-            operations: OperationsBuffer::new(),
-            open_sequence_number,
-            iterator_pool: IteratorPool::new(),
-        }
+    pub(crate) fn new_with_open_sequence_number(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
+        Self::new(storage, OperationsBuffer::new(), open_sequence_number)
+    }
+
+    pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
+        let open_sequence_number = commit_record.open_sequence_number();
+        Self::new(storage, commit_record.into_operations(), open_sequence_number)
     }
 
     pub fn new_with_operations(
         storage: Arc<MVCCStorage<D>>,
-        open_sequence_number: SequenceNumber,
         operations: OperationsBuffer,
+        open_sequence_number: SequenceNumber,
     ) -> impl ReadableSnapshot {
-        SchemaSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new() }
+        Self::new(storage, operations, open_sequence_number)
+    }
+    
+    fn new(storage: Arc<MVCCStorage<D>>,
+           operations: OperationsBuffer,
+           open_sequence_number: SequenceNumber,
+    ) -> Self {
+        storage.isolation_manager.opened_for_read(open_sequence_number);
+        SchemaSnapshot {
+            storage, operations, open_sequence_number, iterator_pool: IteratorPool::new()
+        }
     }
 }
 
