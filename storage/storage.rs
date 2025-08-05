@@ -177,13 +177,13 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        WriteSnapshot::new(self, open_sequence_number)
+        WriteSnapshot::new_with_open_sequence_number(self, open_sequence_number)
     }
 
     pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability> {
         // guarantee external consistency: await this sequence number to be behind the watermark
         self.wait_for_watermark(sequence_number);
-        WriteSnapshot::new(self, sequence_number)
+        WriteSnapshot::new_with_open_sequence_number(self, sequence_number)
     }
 
     pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability> {

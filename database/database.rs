@@ -237,14 +237,28 @@ impl<D> Database<D> {
 }
 
 impl<D: DurabilityClient> Database<D> {
-    pub fn data_commit(&self, commit_record: CommitRecord, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
-        let commit_result = self.storage.commit(commit_record, commit_profile);
-        match commit_result {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                let error = DataCommitError::SnapshotError { typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error } };
-                Err(error)
-            },
+    pub fn data_commit_with_commit_record(&self, commit_record: CommitRecord, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
+        let snapshot = WriteSnapshot::new_with_commit_record(self.storage.clone(), commit_record);
+        self.data_commit_with_snapshot(snapshot, commit_profile)
+    }
+    
+    pub fn data_commit_with_snapshot(&self, snapshot: WriteSnapshot<D>, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
+        let commit_record_opt = snapshot.into_commit_record(commit_profile)
+            .map_err(|error| DataCommitError::SnapshotError { typedb_source: error })?;
+
+        if let Some(commit_record) = commit_record_opt {
+            let commit_result = self.storage.commit(commit_record, commit_profile);
+            match commit_result {
+                Ok(_) => Ok(()),
+                Err(error) => {
+                    let error = DataCommitError::SnapshotError {
+                        typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error }
+                    };
+                    Err(error)
+                },
+            }
+        } else {
+            Ok(())
         }
     }
 
