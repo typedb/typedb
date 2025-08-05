@@ -9,6 +9,7 @@ use compiler::{
     executable::{ExecutableCompilationError, WriteCompilationError},
     transformation::StaticOptimiserError,
 };
+use concept::error::ConceptReadError;
 use error::typedb_error;
 use executor::pipeline::{pipeline::PipelineError, PipelineExecutionError};
 use function::FunctionError;
@@ -33,5 +34,6 @@ typedb_error! {
         WritePipelineExecution(14, "Error while execution write pipeline.", source_query: String, typedb_source: Box<PipelineExecutionError>),
         ReadPipelineExecution(15, "Error while executing read pipeline.",  source_query: String, typedb_source: Box<PipelineExecutionError>),
         QueryExecutionClosedEarly(16, "Query execution was closed before it finished, possibly due to transaction close, rollback, commit, or a server-side error (these should be visible in the server logs)."),
+        QueryAnalysisFailed(17, "Error while analysing the query.", source_query: String, typedb_source: Box<ConceptReadError>),
     }
 }

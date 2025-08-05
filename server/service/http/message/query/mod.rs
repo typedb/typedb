@@ -3,23 +3,31 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
+use annotations::QueryStructureAnnotationsResponse;
 use axum::response::{IntoResponse, Response};
+use http::StatusCode;
 use options::QueryOptions;
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
 };
 use serde::{Deserialize, Serialize};
+use storage::snapshot::ReadableSnapshot;
+use tracing::Value;
 
 use crate::service::{
     http::{
         message::{
-            body::JsonBody, query::query_structure::QueryStructureResponse, transaction::TransactionOpenPayload,
+            body::JsonBody,
+            query::query_structure::{PipelineStructureResponse, QueryStructureResponse},
+            transaction::TransactionOpenPayload,
         },
         transaction_service::QueryAnswer,
     },
     AnswerType, QueryType,
 };
 
+pub mod annotations;
 pub mod concept;
 pub mod document;
 pub mod query_structure;
@@ -75,7 +83,7 @@ pub struct QueryAnswerResponse {
     pub query_type: QueryType,
     pub answer_type: AnswerType,
     pub answers: Option<Vec<serde_json::Value>>,
-    pub query: Option<QueryStructureResponse>,
+    pub query: Option<PipelineStructureResponse>,
     pub warning: Option<String>,
 }
 
@@ -86,14 +94,14 @@ pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerRespon
 pub(crate) fn encode_query_rows_answer(
     query_type: QueryType,
     rows: Vec<serde_json::Value>,
-    query_structure: Option<QueryStructureResponse>,
+    pipeline_structure: Option<PipelineStructureResponse>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
     QueryAnswerResponse {
         answer_type: AnswerType::ConceptRows,
         query_type,
         answers: Some(rows),
-        query: query_structure,
+        query: pipeline_structure,
         warning,
     }
 }
@@ -117,18 +125,35 @@ impl IntoResponse for QueryAnswer {
         let code = self.status_code();
         let body = match self {
             QueryAnswer::ResOk(query_type) => JsonBody(encode_query_ok_answer(query_type)),
-            QueryAnswer::ResRows((query_type, rows, query_structure, warning)) => JsonBody(encode_query_rows_answer(
-                query_type,
-                rows,
-                query_structure,
-                warning.map(|warning| warning.to_string()),
-            )),
+            QueryAnswer::ResRows((query_type, rows, pipeline_structure, warning)) => {
+                JsonBody(encode_query_rows_answer(
+                    query_type,
+                    rows,
+                    pipeline_structure,
+                    warning.map(|warning| warning.to_string()),
+                ))
+            }
             QueryAnswer::ResDocuments((query_type, documents, warning)) => JsonBody(encode_query_documents_answer(
                 query_type,
                 documents,
                 warning.map(|warning| warning.to_string()),
             )),
         };
+        (code, body).into_response()
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct AnalysedQueryResponse {
+    structure: QueryStructureResponse,
+    annotations: QueryStructureAnnotationsResponse,
+}
+
+impl IntoResponse for AnalysedQueryResponse {
+    fn into_response(self) -> Response {
+        let code = StatusCode::OK;
+        let body = JsonBody(self);
         (code, body).into_response()
     }
 }

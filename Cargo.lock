@@ -3480,6 +3480,7 @@ dependencies = [
  "pprof",
  "rand 0.8.5",
  "resource",
+ "serde",
  "storage",
  "structural_equality",
  "test_utils",

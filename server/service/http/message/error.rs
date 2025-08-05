@@ -62,6 +62,8 @@ impl IntoResponse for HttpServiceError {
                 TransactionServiceError::WriteQueryRequiresSchemaOrWriteTransaction { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::TxnAbortSchemaQueryFailed { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::QueryFailed { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::AnalyseQueryFailed { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::AnalyseQueryExpectsPipeline { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::NoOpenTransaction { .. } => StatusCode::NOT_FOUND,
                 TransactionServiceError::QueryInterrupted { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::QueryStreamNotFound { .. } => StatusCode::NOT_FOUND,

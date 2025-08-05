@@ -22,7 +22,7 @@ impl BlockAnnotations {
         Self { scope_annotations: by_scope }
     }
 
-    pub(crate) fn type_annotations(&self) -> &HashMap<ScopeId, TypeAnnotations> {
+    pub fn type_annotations(&self) -> &HashMap<ScopeId, TypeAnnotations> {
         &self.scope_annotations
     }
 

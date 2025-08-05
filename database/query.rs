@@ -5,7 +5,7 @@
  */
 use std::{sync::Arc, time::Instant};
 
-use compiler::{query_structure::QueryStructure, VariablePosition};
+use compiler::{query_structure::PipelineStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::{
     batch::Batch,
@@ -28,7 +28,7 @@ use crate::{
 };
 
 pub type StreamQueryOutputDescriptor = Vec<(String, VariablePosition)>;
-pub type WriteQueryBatchAnswer = (StreamQueryOutputDescriptor, Batch, Option<QueryStructure>);
+pub type WriteQueryBatchAnswer = (StreamQueryOutputDescriptor, Batch, Option<PipelineStructure>);
 pub type WriteQueryDocumentsAnswer = (Arc<ParameterRegistry>, Vec<ConceptDocument>);
 pub type WriteQueryResult = Result<WriteQueryAnswer, Box<QueryError>>;
 
@@ -228,7 +228,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         )
     } else {
         let named_outputs = pipeline.rows_positions().unwrap();
-        let query_structure = pipeline.query_structure().cloned();
+        let pipeline_structure = pipeline.pipeline_structure().cloned();
         let query_output_descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
         let (iterator, snapshot, query_profile) = match pipeline.into_rows_iterator(interrupt) {
             Ok((iterator, ExecutionContext { snapshot, profile, .. })) => (iterator, snapshot, profile),
@@ -246,7 +246,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         let result = match iterator.collect_owned() {
             Ok(batch) => (
                 Arc::into_inner(snapshot).unwrap(),
-                Ok(WriteQueryAnswer::new_batch(query_options, (query_output_descriptor, batch, query_structure))),
+                Ok(WriteQueryAnswer::new_batch(query_options, (query_output_descriptor, batch, pipeline_structure))),
             ),
             Err(err) => (
                 Arc::into_inner(snapshot).unwrap(),
