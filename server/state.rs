@@ -131,7 +131,7 @@ pub trait ServerState: Debug {
 
     async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager>;
 
-    async fn shutdown_receiver(&self) -> Receiver<()>;
+    fn shutdown_receiver(&self) -> Receiver<()>;
 }
 
 typedb_error! {
@@ -572,7 +572,7 @@ impl ServerState for LocalServerState {
         self.diagnostics_manager.clone()
     }
 
-    async fn shutdown_receiver(&self) -> Receiver<()> {
+    fn shutdown_receiver(&self) -> Receiver<()> {
         self.shutdown_receiver.clone()
     }
 }
