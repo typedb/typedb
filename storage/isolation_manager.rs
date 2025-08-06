@@ -439,23 +439,17 @@ impl Timeline {
     }
 
     fn record_reader(&self, sequence_number: SequenceNumber) {
-        println!("=== record_reader");
         if let Some(window) = self.try_get_window(sequence_number) {
             window.increment_readers();
-        } else {
-            println!("=== record_reader - else branch");
         }
     }
 
     fn remove_reader(&self, sequence_number: SequenceNumber) {
-        println!("=== remove_reader");
         if let Some(window) = self.try_get_window(sequence_number) {
             if window.decrement_readers() == 0 {
                 drop(window);
                 self.may_free_windows();
             }
-        } else {
-            println!("=== remove_reader - else branch");
         };
     }
 
@@ -611,9 +605,7 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
     }
 
     fn decrement_readers(&self) -> u64 {
-        let current = self.readers.fetch_sub(1, Ordering::Relaxed);
-        println!("=== decrement_readers - current = {}", current);
-        current - 1 // Return the resulting number of readers
+        self.readers.fetch_sub(1, Ordering::Relaxed) - 1 // Return the resulting number of readers
     }
 }
 
