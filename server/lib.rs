@@ -9,44 +9,45 @@ pub mod error;
 pub mod parameters;
 pub mod service;
 pub mod state;
+pub mod status;
+
+use std::{fs, future::Future, net::SocketAddr, path::Path, pin::Pin, sync::Arc};
+
+use axum_server::{tls_rustls::RustlsConfig, Handle};
+use database::database_manager::DatabaseManager;
+use rand::prelude::SliceRandom;
+use resource::{
+    constants::server::{
+        DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
+    },
+    distribution_info::DistributionInfo,
+};
+use tokio::sync::watch::{channel, Receiver, Sender};
 
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
     service::{grpc, http},
-    state::{BoxServerState, LocalServerState},
+    state::{BoxServerState, BoxServerStatus, LocalServerState},
 };
-use axum_server::{tls_rustls::RustlsConfig, Handle};
-use database::database_manager::DatabaseManager;
-use rand::prelude::SliceRandom;
-use resource::constants::server::{SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH};
-use resource::{
-    constants::server::{GRPC_CONNECTION_KEEPALIVE, SERVER_INFO},
-    server_info::ServerInfo,
-};
-use std::path::Path;
-use std::{fs, net::SocketAddr, sync::Arc};
-use std::future::Future;
-use tokio::{
-    net::lookup_host,
-    sync::watch::{channel, Receiver, Sender},
-};
-use std::pin::Pin;
 
 #[derive(Default)]
 pub struct ServerBuilder {
-    server_info: Option<ServerInfo>,
+    distribution_info: Option<DistributionInfo>,
     server_state_builder: Option<Box<dyn FnOnce(String) -> Pin<Box<dyn Future<Output = BoxServerState>>>>>,
     shutdown_channel: Option<(Sender<()>, Receiver<()>)>,
 }
 
 impl ServerBuilder {
-    pub fn server_info(mut self, server_info: ServerInfo) -> Self {
-        self.server_info = Some(server_info);
+    pub fn distribution_info(mut self, distribution_info: DistributionInfo) -> Self {
+        self.distribution_info = Some(distribution_info);
         self
     }
 
-    pub fn server_state_builder(mut self, server_state_builder: Option<Box<dyn FnOnce(String) -> Pin<Box<dyn Future<Output = BoxServerState>>>>>) -> Self {
+    pub fn server_state_builder(
+        mut self,
+        server_state_builder: Option<Box<dyn FnOnce(String) -> Pin<Box<dyn Future<Output = BoxServerState>>>>>,
+    ) -> Self {
         self.server_state_builder = server_state_builder;
         self
     }
@@ -59,19 +60,26 @@ impl ServerBuilder {
     pub async fn build(self, config: Config) -> Result<Server, ServerOpenError> {
         Self::may_initialise_storage_directory(&config.storage.data_directory)?;
         let server_id = Self::may_initialise_server_id(&config.storage.data_directory)?;
-        let server_info = self.server_info.unwrap_or(SERVER_INFO);
+        let distribution_info = self.distribution_info.unwrap_or(DISTRIBUTION_INFO);
+
         let (shutdown_sender, shutdown_receiver) = self.shutdown_channel.unwrap_or_else(|| channel(()));
         let server_state = match self.server_state_builder {
             Some(builder) => builder(server_id).await,
             None => {
                 let mut server_state = LocalServerState::new(
-                    SERVER_INFO, config.clone(), server_id, None, shutdown_receiver.clone()
-                ).await?;
+                    DISTRIBUTION_INFO,
+                    config.clone(),
+                    server_id,
+                    None,
+                    shutdown_receiver.clone(),
+                )
+                .await?;
                 server_state.initialise();
                 Box::new(server_state)
             }
         };
-        Ok(Server::new(server_info, config, Arc::new(server_state), shutdown_sender, shutdown_receiver))
+
+        Ok(Server::new(distribution_info, config, Arc::new(server_state), shutdown_sender, shutdown_receiver))
     }
 
     fn may_initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
@@ -129,7 +137,7 @@ impl ServerBuilder {
 
 #[derive(Debug)]
 pub struct Server {
-    server_info: ServerInfo,
+    distribution_info: DistributionInfo,
     config: Config,
     server_state: Arc<BoxServerState>,
     shutdown_sender: Sender<()>,
@@ -138,42 +146,34 @@ pub struct Server {
 
 impl Server {
     pub fn new(
-        server_info: ServerInfo,
+        distribution_info: DistributionInfo,
         config: Config,
         server_state: Arc<BoxServerState>,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
     ) -> Self {
-        Self { server_info, config, server_state, shutdown_sender, shutdown_receiver }
+        Self { distribution_info, config, server_state, shutdown_sender, shutdown_receiver }
     }
 
     pub async fn serve(self) -> Result<(), ServerOpenError> {
-        Self::print_hello(self.server_info, self.config.development_mode.enabled);
+        Self::print_hello(self.distribution_info, self.config.development_mode.enabled);
 
         Self::install_default_encryption_provider()?;
 
-        let grpc_address = Self::resolve_address(self.config.server.address).await;
-        let http_address_opt = if self.config.server.http.enabled {
-            Some(
-                Self::validate_and_resolve_http_address(self.config.server.http.address.clone(), grpc_address.clone())
-                    .await?,
-            )
-        } else {
-            None
-        };
+        let server_state = self.server_state;
 
         let grpc_server = Self::serve_grpc(
-            grpc_address,
+            server_state.grpc_address().await,
             &self.config.server.encryption,
-            self.server_state.clone(),
+            server_state.clone(),
             self.shutdown_receiver.clone(),
         );
-        let http_server = if let Some(http_address) = http_address_opt {
+        let http_server = if let Some(http_address) = server_state.http_address().await {
             let server = Self::serve_http(
-                self.server_info,
+                self.distribution_info,
                 http_address,
                 &self.config.server.encryption,
-                self.server_state.clone(),
+                server_state.clone(),
                 self.shutdown_receiver,
             );
             Some(server)
@@ -181,7 +181,12 @@ impl Server {
             None
         };
 
-        Self::print_serving_information(grpc_address, http_address_opt);
+        Self::print_serving_information(
+            server_state
+                .server_status()
+                .await
+                .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source: Box::new(typedb_source) })?,
+        );
 
         Self::spawn_shutdown_handler(self.shutdown_sender);
         if let Some(http_server) = http_server {
@@ -221,14 +226,14 @@ impl Server {
     }
 
     async fn serve_http(
-        server_info: ServerInfo,
+        distribution_info: DistributionInfo,
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
         server_state: Arc<BoxServerState>,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());
-        let service = http::typedb_service::TypeDBService::new(server_info, address, server_state.clone());
+        let service = http::typedb_service::TypeDBService::new(distribution_info, address, server_state.clone());
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);
         let router_service = http::typedb_service::TypeDBService::create_protected_router(http_service.clone())
@@ -253,40 +258,21 @@ impl Server {
             }
             None => axum_server::bind(address).handle(shutdown_handle).serve(router_service).await,
         }
-            .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
+        .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
     }
 
-    async fn validate_and_resolve_http_address(
-        http_address: String,
-        grpc_address: SocketAddr,
-    ) -> Result<SocketAddr, ServerOpenError> {
-        let http_address = Self::resolve_address(http_address).await;
-        if grpc_address == http_address {
-            return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
-        }
-        Ok(http_address)
-    }
-
-    pub async fn resolve_address(address: String) -> SocketAddr {
-        lookup_host(address.clone())
-            .await
-            .unwrap()
-            .next()
-            .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
-    }
-
-    fn print_hello(server_info: ServerInfo, is_development_mode_enabled: bool) {
-        println!("{}", server_info.logo); // very important
+    fn print_hello(distribution_info: DistributionInfo, is_development_mode_enabled: bool) {
+        println!("{}", distribution_info.logo); // very important
         if is_development_mode_enabled {
-            println!("Running {} {} in development mode.", server_info.distribution, server_info.version);
+            println!("Running {} {} in development mode.", distribution_info.distribution, distribution_info.version);
         } else {
-            println!("Running {} {}.", server_info.distribution, server_info.version);
+            println!("Running {} {}.", distribution_info.distribution, distribution_info.version);
         }
     }
 
-    fn print_serving_information(grpc_address: SocketAddr, http_address: Option<SocketAddr>) {
-        print!("Serving gRPC on {grpc_address}");
-        if let Some(http_address) = http_address {
+    fn print_serving_information(server_status: BoxServerStatus) {
+        print!("Serving gRPC on {}", server_status.grpc_address());
+        if let Some(http_address) = server_status.http_address() {
             print!(" and HTTP on {http_address}");
         }
         println!(".\nReady!");

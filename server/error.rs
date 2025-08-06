@@ -12,7 +12,7 @@ use tokio_rustls::rustls::{
     pki_types::pem::Error as RustlsCertError, server::VerifierBuilderError as RustlsVerifierError,
 };
 
-use crate::authentication::token_manager::TokenManagerError;
+use crate::{authentication::token_manager::TokenManagerError, state::ServerStateError};
 
 typedb_error! {
     pub ServerOpenError(component = "Server open", prefix = "SRO") {
@@ -40,5 +40,6 @@ typedb_error! {
         HttpTlsFailedConfiguration(22, "Failed to configure TLS for the HTTP server.", source: Arc<tokio_rustls::rustls::Error>),
         HttpTlsUnsetDefaultCryptoProvider(23, "Failed to install default crypto provider for the HTTP server TLS configuration."),
         HttpTlsPemFileError(24, "Invalid PEM file specified for the HTTP server.", source: Arc<tokio_rustls::rustls::pki_types::pem::Error>),
+        ServerState(25, "Invalid server state.", typedb_source: Box<ServerStateError>),
     }
 }

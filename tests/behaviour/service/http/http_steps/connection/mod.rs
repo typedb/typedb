@@ -8,7 +8,7 @@ use std::{collections::HashMap, path::PathBuf};
 use itertools::Either;
 use macro_rules_attribute::apply;
 use params::check_boolean;
-use resource::server_info::ServerInfo;
+use resource::distribution_info::DistributionInfo;
 use server::{
     error::ServerOpenError,
     parameters::config::{AuthenticationConfig, ConfigBuilder},
@@ -18,7 +18,7 @@ use test_utils::create_tmp_dir;
 
 use crate::{
     generic_step,
-    message::{authenticate, authenticate_default, check_health, databases, send_get_request, users},
+    message::{authenticate, authenticate_default, check_health, databases, send_get_request, users, version},
     Context, HttpBehaviourTestError, TEST_TOKEN_EXPIRATION,
 };
 
@@ -28,7 +28,8 @@ mod user;
 
 const GRPC_ADDRESS: &str = "0.0.0.0:1729";
 const HTTP_ADDRESS: &str = "0.0.0.0:8000";
-const SERVER_INFO: ServerInfo = ServerInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
+const DISTRIBUTION_INFO: DistributionInfo =
+    DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
 
 fn config_path() -> PathBuf {
     return std::env::current_dir().unwrap().join("server/config.yml");
@@ -53,7 +54,7 @@ pub(crate) async fn start_typedb(
 
         let server_future = async {
             let server = ServerBuilder::default()
-                .server_info(SERVER_INFO)
+                .distribution_info(DISTRIBUTION_INFO)
                 .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
                 .build(config)
                 .await
@@ -155,6 +156,22 @@ async fn connection_opens_with_a_wrong_port(context: &mut Context, may_error: pa
         )
         .await,
     );
+}
+
+#[apply(generic_step)]
+#[step(expr = r"connection contains distribution{may_error}")]
+async fn connection_contains_distribution(context: &mut Context, may_error: params::MayError) {
+    if let Either::Left(server_version) = may_error.check(version(context.http_client()).await) {
+        assert!(!server_version.distribution.is_empty());
+    }
+}
+
+#[apply(generic_step)]
+#[step(expr = r"connection contains version{may_error}")]
+async fn connection_contains_version(context: &mut Context, may_error: params::MayError) {
+    if let Either::Left(server_version) = may_error.check(version(context.http_client()).await) {
+        assert!(!server_version.version.is_empty());
+    }
 }
 
 #[apply(generic_step)]
