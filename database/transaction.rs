@@ -204,18 +204,6 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 }
 
-// TODO: when we use typedb_error!, how do we print stack trace? If we use the stack trace of each of these, we'll end up with a tree!
-//       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?
-
-typedb_error! {
-    pub DataCommitError(component = "Data commit", prefix = "DCT") {
-        SnapshotInUse(1, "Failed to commit since the transaction snapshot is still in use."),
-        ConceptWriteErrors(2, "Data commit error.", write_errors: Vec<ConceptWriteError>),
-        ConceptWriteErrorsFirst(3, "Data commit error.", typedb_source: Box<ConceptWriteError>),
-        SnapshotError(4, "Snapshot error.", typedb_source: SnapshotError),
-    }
-}
-
 #[derive(Debug)]
 pub struct TransactionSchema<D> {
     pub snapshot: SnapshotDropGuard<SchemaSnapshot<D>>,
@@ -345,25 +333,6 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 }
 
-// TODO: Same issue with ConceptWriteErrors vs ErrorsFirst as for DataCommitError
-typedb_error! {
-    pub SchemaCommitError(component = "Schema commit", prefix = "SCT") {
-        ConceptWriteErrors(1, "Schema commit error.", write_errors: Vec<ConceptWriteError>),
-        ConceptWriteErrorsFirst(2, "Schema commit error.", typedb_source: Box<ConceptWriteError>),
-        TypeCacheUpdateError(3, "TypeCache update error.", typedb_source: TypeCacheCreateError),
-        StatisticsError(4, "Statistics error.", typedb_source: StatisticsError),
-        FunctionError(5, "Function error.", typedb_source: FunctionError),
-        SnapshotError(6, "Snapshot error.", typedb_source: SnapshotError),
-    }
-}
-
-typedb_error! {
-    pub TransactionError(component = "Transaction", prefix = "TXN") {
-        Timeout(1, "Transaction timeout.", source: RecvTimeoutError),
-        WriteExclusivityTimeout(2, "Transaction timeout due to an exclusive write access requested by this or a concurrent transaction."),
-    }
-}
-
 #[macro_export]
 macro_rules! with_transaction_parts {
     (
@@ -437,5 +406,36 @@ impl<D> Drop for DatabaseDropGuard<D> {
 impl<D> std::fmt::Debug for DatabaseDropGuard<D> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.database)
+    }
+}
+
+// TODO: when we use typedb_error!, how do we print stack trace? If we use the stack trace of each of these, we'll end up with a tree!
+//       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?
+
+typedb_error! {
+    pub DataCommitError(component = "Data commit", prefix = "DCT") {
+        SnapshotInUse(1, "Failed to commit since the transaction snapshot is still in use."),
+        ConceptWriteErrors(2, "Data commit error.", write_errors: Vec<ConceptWriteError>),
+        ConceptWriteErrorsFirst(3, "Data commit error.", typedb_source: Box<ConceptWriteError>),
+        SnapshotError(4, "Snapshot error.", typedb_source: SnapshotError),
+    }
+}
+
+// TODO: Same issue with ConceptWriteErrors vs ErrorsFirst as for DataCommitError
+typedb_error! {
+    pub SchemaCommitError(component = "Schema commit", prefix = "SCT") {
+        ConceptWriteErrors(1, "Schema commit error.", write_errors: Vec<ConceptWriteError>),
+        ConceptWriteErrorsFirst(2, "Schema commit error.", typedb_source: Box<ConceptWriteError>),
+        TypeCacheUpdateError(3, "TypeCache update error.", typedb_source: TypeCacheCreateError),
+        StatisticsError(4, "Statistics error.", typedb_source: StatisticsError),
+        FunctionError(5, "Function error.", typedb_source: FunctionError),
+        SnapshotError(6, "Snapshot error.", typedb_source: SnapshotError),
+    }
+}
+
+typedb_error! {
+    pub TransactionError(component = "Transaction", prefix = "TXN") {
+        Timeout(1, "Transaction timeout.", source: RecvTimeoutError),
+        WriteExclusivityTimeout(2, "Transaction timeout due to an exclusive write access requested by this or a concurrent transaction."),
     }
 }
