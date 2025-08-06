@@ -213,7 +213,7 @@ where
     // TODO: update the tests and remove it
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
 
-    fn into_commit_record(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError>;
+    fn finalise(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError>;
 
     fn set_initial_put_status(
         &self,
@@ -506,7 +506,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
     // TODO: update the tests and remove it
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         let storage = self.storage.clone();
-        match self.into_commit_record(commit_profile)? {
+        match self.finalise(commit_profile)? {
             Some(commit_record) => {
                 match storage.clone().commit(commit_record, commit_profile) {
                     Ok(sequence_number) => Ok(Some(sequence_number)),
@@ -517,7 +517,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
         }
     }
 
-    fn into_commit_record(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError> {
+    fn finalise(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError> {
         if self.not_committable() {
             Ok(None)
         } else {
@@ -687,7 +687,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     // TODO: update the tests and remove it
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         let storage = self.storage.clone();
-        match self.into_commit_record(commit_profile)? {
+        match self.finalise(commit_profile)? {
             Some(commit_record) => {
                 match storage.commit(commit_record, commit_profile) {
                     Ok(sequence_number) => Ok(Some(sequence_number)),
@@ -698,7 +698,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
         }
     }
 
-    fn into_commit_record(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError> {
+    fn finalise(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError> {
         if self.not_committable() {
             Ok(None)
         } else {

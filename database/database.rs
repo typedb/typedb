@@ -243,7 +243,7 @@ impl<D: DurabilityClient> Database<D> {
     }
     
     pub fn data_commit_with_snapshot(&self, snapshot: WriteSnapshot<D>, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
-        let commit_record_opt = snapshot.into_commit_record(commit_profile)
+        let commit_record_opt = snapshot.finalise(commit_profile)
             .map_err(|error| DataCommitError::SnapshotError { typedb_source: error })?;
 
         if let Some(commit_record) = commit_record_opt {
@@ -273,7 +273,7 @@ impl<D: DurabilityClient> Database<D> {
         let mut schema_commit_guard = self.schema.write().unwrap();
         let mut schema = (*schema_commit_guard).clone();
 
-        let commit_record_opt = snapshot.into_commit_record(commit_profile)
+        let commit_record_opt = snapshot.finalise(commit_profile)
             .map_err(|error| SchemaCommitError::SnapshotError { typedb_source: error })?;
 
         if let Some(commit_record) = commit_record_opt {

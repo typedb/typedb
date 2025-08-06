@@ -467,7 +467,7 @@ impl TransactionService {
                 );
                 let (mut profile, into_commit_record_result) = match transaction.finalise() {
                     (mut profile, Ok((database, snapshot))) => {
-                        let into_commit_record_result = snapshot.into_commit_record(profile.commit_profile())
+                        let into_commit_record_result = snapshot.finalise(profile.commit_profile())
                             .map(|commit_record_opt| (database, commit_record_opt))
                             .map_err(|error| DataCommitError::SnapshotError { typedb_source: error });
                         (profile, into_commit_record_result)
@@ -503,7 +503,7 @@ impl TransactionService {
                 );
                 let (mut profile, into_commit_record_result) = match transaction.finalise() {
                     (mut profile, Ok((database, snapshot))) => {
-                        let into_commit_record_result = snapshot.into_commit_record(profile.commit_profile())
+                        let into_commit_record_result = snapshot.finalise(profile.commit_profile())
                             .map(|commit_record_opt| (database, commit_record_opt))
                             .map_err(|error| SchemaCommitError::SnapshotError { typedb_source: error });
                         (profile, into_commit_record_result)
