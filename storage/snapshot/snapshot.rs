@@ -506,19 +506,14 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
     // TODO: update the tests and remove it
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         let storage = self.storage.clone();
-        match self.into_commit_record(commit_profile) {
-            Ok(commit_record_opt) => {
-                match commit_record_opt {
-                    Some(commit_record) => {
-                        match storage.clone().commit(commit_record, commit_profile) {
-                            Ok(sequence_number) => Ok(Some(sequence_number)),
-                            Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
-                        }
-                    }
-                    None => Ok(None),
+        match self.into_commit_record(commit_profile)? {
+            Some(commit_record) => {
+                match storage.clone().commit(commit_record, commit_profile) {
+                    Ok(sequence_number) => Ok(Some(sequence_number)),
+                    Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
                 }
-            },
-            Err(error) => Err(error),
+            }
+            None => Ok(None),
         }
     }
 
@@ -692,19 +687,14 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     // TODO: update the tests and remove it
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         let storage = self.storage.clone();
-        match self.into_commit_record(commit_profile) {
-            Ok(commit_record_opt) => {
-                match commit_record_opt {
-                    Some(commit_record) => {
-                        match storage.commit(commit_record, commit_profile) {
-                            Ok(sequence_number) => Ok(Some(sequence_number)),
-                            Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
-                        }
-                    }
-                    None => Ok(None),
+        match self.into_commit_record(commit_profile)? {
+            Some(commit_record) => {
+                match storage.commit(commit_record, commit_profile) {
+                    Ok(sequence_number) => Ok(Some(sequence_number)),
+                    Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
                 }
-            },
-            Err(error) => Err(error),
+            }
+            None => Ok(None),
         }
     }
 
