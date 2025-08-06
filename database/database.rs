@@ -8,7 +8,6 @@ use std::{
     collections::VecDeque,
     ffi::OsString,
     fmt, fs,
-    fs::OpenOptions,
     io,
     io::Write,
     path::{Path, PathBuf},
@@ -19,7 +18,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use cache::CACHE_DB_NAME_PREFIX;
 use concept::{
     thing::statistics::{Statistics, StatisticsError},
     type_::type_manager::{

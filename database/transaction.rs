@@ -13,15 +13,15 @@ use concept::{
     error::ConceptWriteError,
     thing::{statistics::StatisticsError, thing_manager::ThingManager},
     type_::type_manager::{
-        type_cache::{TypeCache, TypeCacheCreateError},
+        type_cache::TypeCacheCreateError,
         TypeManager,
     },
 };
 use error::typedb_error;
-use function::{function_cache::FunctionCache, function_manager::FunctionManager, FunctionError};
+use function::{function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
-use resource::profile::{CommitProfile, TransactionProfile};
+use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{
@@ -274,7 +274,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
     pub fn finalise(self) -> (TransactionProfile, Result<(DatabaseDropGuard<D>, SchemaSnapshot<D>), SchemaCommitError>) {
         use SchemaCommitError::{
-            ConceptWriteErrorsFirst, FunctionError, SnapshotError, StatisticsError, TypeCacheUpdateError,
+            ConceptWriteErrorsFirst, FunctionError,
         };
 
         let mut profile = self.profile;

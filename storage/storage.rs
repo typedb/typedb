@@ -12,7 +12,7 @@ use std::{
     error::Error,
     fs, io,
     path::{Path, PathBuf},
-    sync::{atomic::Ordering, Arc},
+    sync::Arc,
     thread::sleep,
     time::Duration,
 };
@@ -46,7 +46,7 @@ use crate::{
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
-    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::{ReadSnapshot, SchemaSnapshot, WriteSnapshot},
 };
 
 pub mod durability_client;
@@ -224,7 +224,7 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityClient,
     {
-        use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
+        use StorageCommitError::{Durability, Internal, Keyspace};
 
         commit_profile.snapshot_commit_record_created();
 

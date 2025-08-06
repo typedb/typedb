@@ -8,11 +8,7 @@ pub(crate) use keyspace::{Keyspace, KeyspaceCheckpointError, KeyspaceError, Keys
 pub use keyspace::{KeyspaceDeleteError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError};
 use rocksdb::{DBRawIterator, DB};
 
-use crate::{
-    key_range::{KeyRange, RangeEnd},
-    key_value::StorageKey,
-    snapshot::pool::{PoolRecycleGuard, Poolable, SinglePool},
-};
+use crate::snapshot::pool::{PoolRecycleGuard, Poolable, SinglePool};
 
 mod constants;
 pub mod iterator;
