@@ -183,6 +183,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         (profile, Ok((self.database, snapshot)))
     }
 
+    // TODO: remove this method and update the test accordingly
     pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
         self.profile.commit_profile().start();
         
@@ -311,7 +312,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         drop(type_manager);
         (profile, Ok((self.database, snapshot)))
     }
-    
+
+    // TODO: remove this method and update the test accordingly
     pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
         self.profile.commit_profile().start();
 
