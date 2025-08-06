@@ -465,7 +465,7 @@ impl TransactionService {
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
                 );
-                let (mut profile, into_commit_record_result) = match transaction.finalise_snapshot() {
+                let (mut profile, into_commit_record_result) = match transaction.finalise() {
                     (mut profile, Ok((database, snapshot))) => {
                         let into_commit_record_result = snapshot.into_commit_record(profile.commit_profile())
                             .map(|commit_record_opt| (database, commit_record_opt))
@@ -501,7 +501,7 @@ impl TransactionService {
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,
                 );
-                let (mut profile, into_commit_record_result) = match transaction.finalise_snapshot() {
+                let (mut profile, into_commit_record_result) = match transaction.finalise() {
                     (mut profile, Ok((database, snapshot))) => {
                         let into_commit_record_result = snapshot.into_commit_record(profile.commit_profile())
                             .map(|commit_record_opt| (database, commit_record_opt))

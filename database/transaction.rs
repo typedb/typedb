@@ -163,7 +163,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         }
     }
 
-    pub fn finalise_snapshot(self) -> (TransactionProfile, Result<(DatabaseDropGuard<D>, WriteSnapshot<D>), DataCommitError>) {
+    pub fn finalise(self) -> (TransactionProfile, Result<(DatabaseDropGuard<D>, WriteSnapshot<D>), DataCommitError>) {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
 
@@ -187,7 +187,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
         self.profile.commit_profile().start();
         
-        let (mut profile, (database, snapshot)) = match self.finalise_snapshot() {
+        let (mut profile, (database, snapshot)) = match self.finalise() {
             (profile, Ok((database, snapshot))) => (profile, (database, snapshot)),
             (profile, Err(error)) => return (profile, Err(error))
         };
@@ -272,7 +272,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
     }
 
-    pub fn finalise_snapshot(self) -> (TransactionProfile, Result<(DatabaseDropGuard<D>, SchemaSnapshot<D>), SchemaCommitError>) {
+    pub fn finalise(self) -> (TransactionProfile, Result<(DatabaseDropGuard<D>, SchemaSnapshot<D>), SchemaCommitError>) {
         use SchemaCommitError::{
             ConceptWriteErrorsFirst, FunctionError, SnapshotError, StatisticsError, TypeCacheUpdateError,
         };
@@ -317,7 +317,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
         self.profile.commit_profile().start();
 
-        let (mut profile, (database, snapshot)) = match self.finalise_snapshot() {
+        let (mut profile, (database, snapshot)) = match self.finalise() {
             (profile, Ok((database, snapshot))) => (profile, (database, snapshot)),
             (profile, Err(error)) => return (profile, Err(error))
         };
