@@ -129,7 +129,7 @@ impl TypeDBService {
             service.server_state.database_manager().await,
             service.server_state.diagnostics_manager().await,
             request_stream,
-            service.server_state.shutdown_receiver(),
+            service.server_state.shutdown_receiver().await,
         );
 
         let database_name = payload.database_name;
