@@ -85,7 +85,7 @@ impl StreamModifierExecutor {
                 StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width))
             }
             Self::Last { .. } => StreamModifierResultMapper::Last(LastMapper::new()),
-            Self::Check { inner, .. } => StreamModifierResultMapper::Check(CheckMapper::new()),
+            Self::Check {  .. } => StreamModifierResultMapper::Check(CheckMapper::new()),
         }
     }
 

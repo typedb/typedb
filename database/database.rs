@@ -8,7 +8,6 @@ use std::{
     collections::VecDeque,
     ffi::OsString,
     fmt, fs,
-    fs::OpenOptions,
     io,
     io::Write,
     path::{Path, PathBuf},
@@ -19,7 +18,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use cache::CACHE_DB_NAME_PREFIX;
 use concept::{
     thing::statistics::{Statistics, StatisticsError},
     type_::type_manager::{
@@ -49,7 +47,9 @@ use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 use tracing::{event, Level};
-
+use resource::profile::CommitProfile;
+use storage::isolation_manager::CommitRecord;
+use storage::snapshot::{CommittableSnapshot, SchemaSnapshot, WriteSnapshot};
 use crate::{
     transaction::TransactionError,
     DatabaseOpenError::FunctionCacheInitialise,
@@ -58,6 +58,8 @@ use crate::{
         CorruptionPartialResetTypeVertexGeneratorInUse,
     },
 };
+use crate::transaction::{DataCommitError, SchemaCommitError};
+use crate::transaction::SchemaCommitError::{SnapshotError, TypeCacheUpdateError};
 
 #[derive(Debug, Clone)]
 pub(super) struct Schema {
@@ -67,6 +69,11 @@ pub(super) struct Schema {
 }
 
 type SchemaWriteTransactionState = (bool, usize, VecDeque<TransactionReservationRequest>);
+
+enum TransactionReservationRequest {
+    Write(SyncSender<()>),
+    Schema(SyncSender<()>),
+}
 
 pub struct Database<D> {
     name: String,
@@ -81,11 +88,6 @@ pub struct Database<D> {
     schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
     _statistics_updater: IntervalRunner,
     _checkpointer: IntervalRunner,
-}
-
-enum TransactionReservationRequest {
-    Write(SyncSender<()>),
-    Schema(SyncSender<()>),
 }
 
 impl<D> fmt::Debug for Database<D> {
@@ -228,6 +230,100 @@ impl<D> Database<D> {
             } else {
                 break;
             }
+        }
+    }
+}
+
+impl<D: DurabilityClient> Database<D> {
+    pub fn data_commit_with_commit_record(&self, commit_record: CommitRecord, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
+        let snapshot = WriteSnapshot::new_with_commit_record(self.storage.clone(), commit_record);
+        self.data_commit_with_snapshot(snapshot, commit_profile)
+    }
+    
+    pub fn data_commit_with_snapshot(&self, snapshot: WriteSnapshot<D>, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
+        let commit_record_opt = snapshot.finalise(commit_profile)
+            .map_err(|error| DataCommitError::SnapshotError { typedb_source: error })?;
+
+        if let Some(commit_record) = commit_record_opt {
+            let commit_result = self.storage.commit(commit_record, commit_profile);
+            match commit_result {
+                Ok(_) => Ok(()),
+                Err(error) => {
+                    let error = DataCommitError::SnapshotError {
+                        typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error }
+                    };
+                    Err(error)
+                },
+            }
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn schema_commit_with_commit_record(&self, commit_record: CommitRecord, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
+        let snapshot = SchemaSnapshot::new_with_commit_record(self.storage.clone(), commit_record);
+        self.schema_commit_with_snapshot(snapshot, commit_profile)
+    }
+    
+    pub fn schema_commit_with_snapshot(&self, snapshot: SchemaSnapshot<D>, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
+        // Schema commits must wait for all other data operations to finish. No new read or write
+        // transaction may open until the commit completes.
+        let mut schema_commit_guard = self.schema.write().unwrap();
+        let mut schema = (*schema_commit_guard).clone();
+
+        let commit_record_opt = snapshot.finalise(commit_profile)
+            .map_err(|error| SchemaCommitError::SnapshotError { typedb_source: error })?;
+
+        if let Some(commit_record) = commit_record_opt {
+            let sequence_number = match self.storage.commit(commit_record, commit_profile) {
+                Ok(sequence_number) => Some(sequence_number),
+                Err(error) => {
+                    let error = SnapshotError {
+                        typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error }
+                    };
+                    return Err(error);
+                }
+            };
+
+            // `None` means empty commit
+            if let Some(sequence_number) = sequence_number {
+                let type_cache = match TypeCache::new(self.storage.clone(), sequence_number) {
+                    Ok(type_cache) => type_cache,
+                    Err(typedb_source) => return Err(TypeCacheUpdateError { typedb_source }),
+                };
+                // replace Schema cache
+                schema.type_cache = Arc::new(type_cache);
+                let type_manager = TypeManager::new(
+                    self.definition_key_generator.clone(),
+                    self.type_vertex_generator.clone(),
+                    Some(schema.type_cache.clone()),
+                );
+                let function_cache = match FunctionCache::new(self.storage.clone(), &type_manager, sequence_number)
+                {
+                    Ok(function_cache) => function_cache,
+                    Err(typedb_source) => return Err(SchemaCommitError::FunctionError { typedb_source }),
+                };
+                schema.function_cache = Arc::new(function_cache);
+                commit_profile.schema_update_caches_updated();
+            }
+
+            // replace statistics
+            let mut thing_statistics = (*schema.thing_statistics).clone();
+
+            if let Err(typedb_source) = thing_statistics.may_synchronise(&self.storage) {
+                return Err(crate::transaction::SchemaCommitError::StatisticsError { typedb_source });
+            }
+            commit_profile.schema_update_statistics_keys_updated();
+
+            schema.thing_statistics = Arc::new(thing_statistics);
+            self.query_cache.force_reset(&schema.thing_statistics);
+
+            *schema_commit_guard = schema;
+
+            Ok(())
+        }
+        else {
+            Ok(())
         }
     }
 }

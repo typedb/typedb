@@ -12,7 +12,7 @@ use std::{
     error::Error,
     fs, io,
     path::{Path, PathBuf},
-    sync::{atomic::Ordering, Arc},
+    sync::Arc,
     thread::sleep,
     time::Duration,
 };
@@ -46,7 +46,7 @@ use crate::{
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
-    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::{ReadSnapshot, SchemaSnapshot, WriteSnapshot},
 };
 
 pub mod durability_client;
@@ -177,13 +177,13 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        WriteSnapshot::new(self, open_sequence_number)
+        WriteSnapshot::new_with_open_sequence_number(self, open_sequence_number)
     }
 
     pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability> {
         // guarantee external consistency: await this sequence number to be behind the watermark
         self.wait_for_watermark(sequence_number);
-        WriteSnapshot::new(self, sequence_number)
+        WriteSnapshot::new_with_open_sequence_number(self, sequence_number)
     }
 
     pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability> {
@@ -202,7 +202,7 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        SchemaSnapshot::new(self, open_sequence_number)
+        SchemaSnapshot::new_with_open_sequence_number(self, open_sequence_number)
     }
 
     fn wait_for_watermark(&self, target: SequenceNumber) -> SequenceNumber {
@@ -216,21 +216,16 @@ impl<Durability> MVCCStorage<Durability> {
         watermark
     }
 
-    fn snapshot_commit(
+    pub fn commit(
         &self,
-        snapshot: impl CommittableSnapshot<Durability>,
+        commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<SequenceNumber, StorageCommitError>
     where
         Durability: DurabilityClient,
     {
-        use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
+        use StorageCommitError::{Durability, Internal, Keyspace};
 
-        self.set_initial_put_status(&snapshot, commit_profile.storage_counters())
-            .map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
-        commit_profile.snapshot_put_statuses_checked();
-
-        let commit_record = snapshot.into_commit_record();
         commit_profile.snapshot_commit_record_created();
 
         commit_profile.commit_size(commit_record.operations().len());
@@ -285,49 +280,7 @@ impl<Durability> MVCCStorage<Durability> {
             }
         }
     }
-
-    fn set_initial_put_status(
-        &self,
-        snapshot: &impl CommittableSnapshot<Durability>,
-        storage_counters: StorageCounters,
-    ) -> Result<(), MVCCReadError>
-    where
-        Durability: DurabilityClient,
-    {
-        for buffer in snapshot.operations() {
-            let writes = buffer.writes();
-            let puts = writes.iter().filter_map(|(key, write)| match write {
-                Write::Put { value, reinsert, known_to_exist } => Some((key, value, reinsert, *known_to_exist)),
-                _ => None,
-            });
-            for (key, value, reinsert, known_to_exist) in puts {
-                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key);
-                if known_to_exist {
-                    debug_assert!(self
-                        .get::<0>(
-                            snapshot.iterator_pool(),
-                            wrapped,
-                            snapshot.open_sequence_number(),
-                            storage_counters.clone()
-                        )
-                        .is_ok_and(|opt| opt.is_some()));
-                    reinsert.store(false, Ordering::Release);
-                } else {
-                    let existing_stored = self
-                        .get::<BUFFER_VALUE_INLINE>(
-                            snapshot.iterator_pool(),
-                            wrapped,
-                            snapshot.open_sequence_number(),
-                            storage_counters.clone(),
-                        )?
-                        .is_some_and(|reference| &reference == value);
-                    reinsert.store(!existing_stored, Ordering::Release);
-                }
-            }
-        }
-        Ok(())
-    }
-
+    
     fn persist_commit_status(
         did_apply: bool,
         commit_sequence_number: SequenceNumber,

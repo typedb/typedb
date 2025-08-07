@@ -5,21 +5,20 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     fs,
     path::{Path, PathBuf},
-    sync::{Arc, LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
 use cache::CACHE_DB_NAME_PREFIX;
 use itertools::Itertools;
-use logger::debug;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
 use tracing::{event, Level};
 
 use crate::{
-    database::DatabaseCreateError, migration::database_importer::DatabaseImporter, Database, DatabaseDeleteError,
+    database::DatabaseCreateError, Database, DatabaseDeleteError,
     DatabaseOpenError, DatabaseResetError,
 };
 

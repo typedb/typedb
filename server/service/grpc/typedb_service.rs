@@ -322,7 +322,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             self.server_state.diagnostics_manager().await,
             request_stream,
             response_sender,
-            self.server_state.shutdown_receiver().await,
+            self.server_state.shutdown_receiver(),
         );
         tokio::spawn(async move { service.listen().await });
         let stream: ReceiverStream<Result<DatabasesImportServerProto, Status>> = ReceiverStream::new(response_receiver);
@@ -395,7 +395,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                             self.server_state.distribution_info().await,
                             database,
                             response_sender,
-                            self.server_state.shutdown_receiver().await,
+                            self.server_state.shutdown_receiver(),
                         );
                         tokio::spawn(async move { service.export().await });
                         let stream: ReceiverStream<Result<DatabaseExportServerProto, Status>> =
@@ -569,11 +569,9 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
         let mut service = TransactionService::new(
-            self.server_state.database_manager().await,
-            self.server_state.diagnostics_manager().await,
+            self.server_state.clone(),
             request_stream,
             response_sender,
-            self.server_state.shutdown_receiver().await,
         );
         tokio::spawn(async move { service.listen().await });
         let stream: ReceiverStream<Result<TransactionServerProto, Status>> = ReceiverStream::new(response_receiver);
