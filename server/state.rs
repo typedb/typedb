@@ -33,6 +33,10 @@ use system::{
     initialise_system_database,
 };
 use tokio::{net::lookup_host, sync::watch::Receiver};
+use database::transaction::{DataCommitError, SchemaCommitError};
+use resource::profile::CommitProfile;
+use storage::isolation_manager::CommitRecord;
+use storage::snapshot::{SchemaSnapshot, WriteSnapshot};
 use user::{
     errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError},
     initialise_default_user,
@@ -134,7 +138,7 @@ pub trait ServerState: Debug {
 
     async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager>;
 
-    async fn shutdown_receiver(&self) -> Receiver<()>;
+    fn shutdown_receiver(&self) -> Receiver<()>;
 }
 
 typedb_error! {
@@ -577,7 +581,7 @@ impl ServerState for LocalServerState {
         self.diagnostics_manager.clone()
     }
 
-    async fn shutdown_receiver(&self) -> Receiver<()> {
+    fn shutdown_receiver(&self) -> Receiver<()> {
         self.shutdown_receiver.clone()
     }
 }

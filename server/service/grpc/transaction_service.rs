@@ -145,9 +145,9 @@ pub(crate) struct TransactionService {
 
 impl TransactionService {
     pub(crate) fn new(
-        server_state: ArcServerState,
+        server_state: Arc<BoxServerState>,
         request_stream: Streaming<typedb_protocol::transaction::Client>,
-        response_sender: Sender<Result<ProtocolServer, Status>>,
+        response_sender: Sender<Result<ProtocolServer, Status>>
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
 
@@ -261,7 +261,7 @@ impl TransactionService {
                                 name: "req",
                                 description: "Transaction message must contain a request.",
                             }
-                            .into_status());
+                                .into_status());
                         }
                         Some(req) => match self.handle_request(request_id, req).await {
                             Err(err) => return Err(err),
@@ -296,7 +296,7 @@ impl TransactionService {
                         result
                     },
                 )
-                .await
+                    .await
             }
             (true, typedb_protocol::transaction::req::Req::OpenReq(_)) => {
                 Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
@@ -308,7 +308,7 @@ impl TransactionService {
                     ActionKind::TransactionQuery,
                     || async { self.handle_query(request_id, query_req).await },
                 )
-                .await
+                    .await
             }
             (true, typedb_protocol::transaction::req::Req::StreamReq(stream_req)) => {
                 match self.handle_stream_continue(request_id, stream_req).await {
@@ -329,7 +329,7 @@ impl TransactionService {
                         Ok(Break(()))
                     },
                 )
-                .await
+                    .await
             }
             (true, typedb_protocol::transaction::req::Req::RollbackReq(rollback_req)) => {
                 run_with_diagnostics_async(
@@ -338,7 +338,7 @@ impl TransactionService {
                     ActionKind::TransactionRollback,
                     || async { self.handle_rollback(request_id, rollback_req).await },
                 )
-                .await
+                    .await
             }
             (true, typedb_protocol::transaction::req::Req::CloseReq(close_req)) => {
                 run_with_diagnostics_async(
@@ -350,7 +350,7 @@ impl TransactionService {
                         Ok(Break(()))
                     },
                 )
-                .await
+                    .await
             }
             (false, _) => Err(ProtocolError::TransactionClosed {}.into_status()),
         }
@@ -404,8 +404,8 @@ impl TransactionService {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
                     })
                 })
-                .await
-                .unwrap()?;
+                    .await
+                    .unwrap()?;
                 Transaction::Read(transaction)
             }
             typedb_protocol::transaction::Type::Write => {
@@ -414,8 +414,8 @@ impl TransactionService {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
                     })
                 })
-                .await
-                .unwrap()?;
+                    .await
+                    .unwrap()?;
                 Transaction::Write(transaction)
             }
             typedb_protocol::transaction::Type::Schema => {
@@ -424,8 +424,8 @@ impl TransactionService {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
                     })
                 })
-                .await
-                .unwrap()?;
+                    .await
+                    .unwrap()?;
                 Transaction::Schema(transaction)
             }
         };
@@ -547,8 +547,8 @@ impl TransactionService {
                     TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
                 })
             })
-            .await
-            .expect("Expected schema transaction commit completion"),
+                .await
+                .expect("Expected schema transaction commit completion"),
         }?;
 
         send_ok_message!(
@@ -665,7 +665,7 @@ impl TransactionService {
                         TransactionServiceError::QueryInterrupted { interrupt }.into_error_message(),
                     ),
                 )
-                .await?;
+                    .await?;
             }
         }
 
@@ -690,7 +690,7 @@ impl TransactionService {
                     TransactionServiceError::QueryInterrupted { interrupt }.into_error_message(),
                 ),
             )
-            .await
+                .await
             {
                 Continue(_) => Ok(()),
                 Break(_) => Err(ProtocolError::FailedQueryResponse {}.into_status()),
@@ -724,7 +724,7 @@ impl TransactionService {
                         TransactionServiceError::QueryInterrupted { interrupt }.into_error_message(),
                     ),
                 )
-                .await?;
+                    .await?;
             } else {
                 read_queries.push_back((req_id, query_options, pipeline, source_query));
             }
@@ -868,7 +868,7 @@ impl TransactionService {
                     req_id,
                     ImmediateQueryResponse::non_fatal_err(err),
                 )
-                .await;
+                    .await;
                 return;
             }
         };
@@ -1009,7 +1009,7 @@ impl TransactionService {
                     &sender,
                     StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
                 )
-                .await;
+                    .await;
                 return;
             }
             if Instant::now() >= timeout_at {
@@ -1017,7 +1017,7 @@ impl TransactionService {
                     &sender,
                     StreamQueryResponse::done_err(TransactionServiceError::TransactionTimeout {}),
                 )
-                .await;
+                    .await;
                 return;
             }
 
@@ -1039,7 +1039,7 @@ impl TransactionService {
                         &sender,
                         StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                     )
-                    .await;
+                        .await;
                     return;
                 }
             }
@@ -1066,7 +1066,7 @@ impl TransactionService {
                     &sender,
                     StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
                 )
-                .await;
+                    .await;
                 return;
             }
             if Instant::now() >= timeout_at {
@@ -1074,7 +1074,7 @@ impl TransactionService {
                     &sender,
                     StreamQueryResponse::done_err(TransactionServiceError::TransactionTimeout {}),
                 )
-                .await;
+                    .await;
                 return;
             }
 
@@ -1095,7 +1095,7 @@ impl TransactionService {
                         &sender,
                         StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                     )
-                    .await;
+                        .await;
                     return;
                 }
             }

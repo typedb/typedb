@@ -51,7 +51,6 @@ use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 use tracing::{event, Level};
-
 use crate::{
     transaction::{
         DataCommitError, SchemaCommitError,
@@ -64,6 +63,8 @@ use crate::{
         CorruptionPartialResetTypeVertexGeneratorInUse,
     },
 };
+use crate::transaction::{DataCommitError, SchemaCommitError};
+use crate::transaction::SchemaCommitError::{SnapshotError, TypeCacheUpdateError};
 
 #[derive(Debug, Clone)]
 pub(super) struct Schema {
