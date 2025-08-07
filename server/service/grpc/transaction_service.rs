@@ -180,7 +180,7 @@ impl TransactionService {
 
     pub(crate) async fn listen(&mut self) {
         loop {
-            let mut shutdown_receiver = self.server_state.shutdown_receiver();
+            let mut shutdown_receiver = self.server_state.shutdown_receiver().await;
             let result = if let Some((req_id, write_query_worker)) = &mut self.running_write_query {
                 tokio::select! { biased;
                     _ = shutdown_receiver.changed() => {
