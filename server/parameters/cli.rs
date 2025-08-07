@@ -33,7 +33,7 @@ pub struct CLIArgs {
     /// The amount of seconds generated authentication tokens will remain valid, specified in seconds.
     /// Use smaller values for better security and bigger values for better authentication performance and convenience
     /// (min: 1 second, max: 1 year).
-    #[arg(long = "server.authentication.token_ttl_seconds")]
+    #[arg(long = "server.authentication.token-expiration-seconds")]
     pub server_authentication_token_ttl_seconds: Option<u64>,
 
     /// Enable/disable in-flight encryption. Specify to enable, or leave out to disable
