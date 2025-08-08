@@ -12,10 +12,7 @@ use std::{
 use concept::{
     error::ConceptWriteError,
     thing::{statistics::StatisticsError, thing_manager::ThingManager},
-    type_::type_manager::{
-        type_cache::TypeCacheCreateError,
-        TypeManager,
-    },
+    type_::type_manager::{type_cache::TypeCacheCreateError, TypeManager},
 };
 use error::typedb_error;
 use function::{function_manager::FunctionManager, FunctionError};
@@ -186,10 +183,10 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     // TODO: remove this method and update the test accordingly
     pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
         self.profile.commit_profile().start();
-        
+
         let (mut profile, (database, snapshot)) = match self.finalise() {
             (profile, Ok((database, snapshot))) => (profile, (database, snapshot)),
-            (profile, Err(error)) => return (profile, Err(error))
+            (profile, Err(error)) => return (profile, Err(error)),
         };
         let result = database.data_commit_with_snapshot(snapshot, profile.commit_profile());
         profile.commit_profile().end();
@@ -272,10 +269,10 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
     }
 
-    pub fn finalise(self) -> (TransactionProfile, Result<(DatabaseDropGuard<D>, SchemaSnapshot<D>), SchemaCommitError>) {
-        use SchemaCommitError::{
-            ConceptWriteErrorsFirst, FunctionError,
-        };
+    pub fn finalise(
+        self,
+    ) -> (TransactionProfile, Result<(DatabaseDropGuard<D>, SchemaSnapshot<D>), SchemaCommitError>) {
+        use SchemaCommitError::{ConceptWriteErrorsFirst, FunctionError};
 
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
@@ -319,7 +316,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
         let (mut profile, (database, snapshot)) = match self.finalise() {
             (profile, Ok((database, snapshot))) => (profile, (database, snapshot)),
-            (profile, Err(error)) => return (profile, Err(error))
+            (profile, Err(error)) => return (profile, Err(error)),
         };
         let result = database.schema_commit_with_snapshot(snapshot, profile.commit_profile());
         profile.commit_profile().end();
