@@ -2461,6 +2461,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "iri-string"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbc5ebe9c3a1a7a5127f920a418f7585e9e758e911d0466ed004f393b0e380b2"
+dependencies = [
+ "memchr",
+ "serde",
+]
+
+[[package]]
 name = "is-terminal"
 version = "0.4.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5114,8 +5124,12 @@ checksum = "adc82fd73de2a9722ac5da747f12383d2bfdb93591ee6c58486e0097890f05f2"
 dependencies = [
  "bitflags 2.9.1",
  "bytes 1.10.1",
+ "futures-util",
  "http 1.3.1",
+ "http-body 1.0.1",
+ "iri-string",
  "pin-project-lite",
+ "tower 0.5.2",
  "tower-layer",
  "tower-service",
 ]
@@ -5244,7 +5258,7 @@ dependencies = [
 [[package]]
 name = "typedb-protocol"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-protocol?rev=3d1aeec8c097b1a007771251f640e6cd79a27601#3d1aeec8c097b1a007771251f640e6cd79a27601"
+source = "git+https://github.com/typedb/typedb-protocol?rev=bc6d7c9c7af7c9e9b95477b0eb21385a1a7d0698#bc6d7c9c7af7c9e9b95477b0eb21385a1a7d0698"
 dependencies = [
  "prost",
  "tonic",
