@@ -12,7 +12,7 @@ use concurrency::IntervalRunner;
 use database::{
     database::DatabaseCreateError,
     database_manager::DatabaseManager,
-    transaction::{TransactionError, TransactionRead},
+    transaction::{DataCommitError, SchemaCommitError, TransactionError, TransactionRead},
     Database, DatabaseDeleteError,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
@@ -21,17 +21,19 @@ use futures::{StreamExt, TryFutureExt};
 use ir::pipeline::FunctionReadError;
 use itertools::Itertools;
 use options::TransactionOptions;
-use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo};
-use storage::durability_client::{DurabilityClient, WALClient};
+use resource::{
+    constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo, profile::CommitProfile,
+};
+use storage::{
+    durability_client::{DurabilityClient, WALClient},
+    isolation_manager::CommitRecord,
+    snapshot::{SchemaSnapshot, WriteSnapshot},
+};
 use system::{
     concepts::{Credential, User},
     initialise_system_database,
 };
 use tokio::{net::lookup_host, sync::watch::Receiver};
-use database::transaction::{DataCommitError, SchemaCommitError};
-use resource::profile::CommitProfile;
-use storage::isolation_manager::CommitRecord;
-use storage::snapshot::{SchemaSnapshot, WriteSnapshot};
 use user::{
     errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError},
     initialise_default_user,
@@ -61,7 +63,7 @@ pub trait ServerState: Debug {
 
     async fn http_address(&self) -> Option<SocketAddr>;
 
-    // TODO: server_status might not be needed in the trait.
+    // TODO: Name server_status -> servers_get and servers_statuses -> servers_all like in GRPC?
     async fn server_status(&self) -> Result<BoxServerStatus, ServerStateError>;
 
     async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, ServerStateError>;
@@ -86,14 +88,14 @@ pub trait ServerState: Debug {
         &self,
         name: &str,
         commit_record: CommitRecord,
-        commit_profile: &mut CommitProfile
+        commit_profile: &mut CommitProfile,
     ) -> Result<(), ServerStateError>;
 
     async fn database_data_commit(
         &self,
         name: &str,
         commit_record: CommitRecord,
-        commit_profile: &mut CommitProfile
+        commit_profile: &mut CommitProfile,
     ) -> Result<(), ServerStateError>;
 
     async fn database_delete(&self, name: &str) -> Result<(), ServerStateError>;
@@ -420,28 +422,28 @@ impl ServerState for LocalServerState {
         &self,
         name: &str,
         commit_record: CommitRecord,
-        commit_profile: &mut CommitProfile
+        commit_profile: &mut CommitProfile,
     ) -> Result<(), ServerStateError> {
         let Some(database) = self.databases_get(name).await else {
-            return Err(ServerStateError::DatabaseNotFound { name: name.to_string() })
+            return Err(ServerStateError::DatabaseNotFound { name: name.to_string() });
         };
-        database.schema_commit_with_commit_record(commit_record, commit_profile).map_err(|error|
-            ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error }
-        )
+        database
+            .schema_commit_with_commit_record(commit_record, commit_profile)
+            .map_err(|error| ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })
     }
 
     async fn database_data_commit(
         &self,
         name: &str,
         commit_record: CommitRecord,
-        commit_profile: &mut CommitProfile
+        commit_profile: &mut CommitProfile,
     ) -> Result<(), ServerStateError> {
         let Some(database) = self.databases_get(name).await else {
-            return Err(ServerStateError::DatabaseNotFound { name: name.to_string() })
+            return Err(ServerStateError::DatabaseNotFound { name: name.to_string() });
         };
-        database.data_commit_with_commit_record(commit_record, commit_profile).map_err(|typedb_source|
-            ServerStateError::DatabaseDataCommitFailed { typedb_source }
-        )
+        database
+            .data_commit_with_commit_record(commit_record, commit_profile)
+            .map_err(|typedb_source| ServerStateError::DatabaseDataCommitFailed { typedb_source })
     }
 
     async fn database_delete(&self, name: &str) -> Result<(), ServerStateError> {

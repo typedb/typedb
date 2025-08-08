@@ -7,8 +7,7 @@
 use std::{
     collections::VecDeque,
     ffi::OsString,
-    fmt, fs,
-    io,
+    fmt, fs, io,
     io::Write,
     path::{Path, PathBuf},
     sync::{
@@ -39,27 +38,32 @@ use encoding::{
 use error::typedb_error;
 use function::{function_cache::FunctionCache, FunctionError};
 use query::query_cache::QueryCache;
-use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
+use resource::{
+    constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL},
+    profile::CommitProfile,
+};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
+    isolation_manager::CommitRecord,
     recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
     sequence_number::SequenceNumber,
+    snapshot::{CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 use tracing::{event, Level};
-use resource::profile::CommitProfile;
-use storage::isolation_manager::CommitRecord;
-use storage::snapshot::{CommittableSnapshot, SchemaSnapshot, WriteSnapshot};
+
 use crate::{
-    transaction::TransactionError,
+    transaction::{
+        DataCommitError, SchemaCommitError,
+        SchemaCommitError::{SnapshotError, TypeCacheUpdateError},
+        TransactionError,
+    },
     DatabaseOpenError::FunctionCacheInitialise,
     DatabaseResetError::{
         CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,
         CorruptionPartialResetTypeVertexGeneratorInUse,
     },
 };
-use crate::transaction::{DataCommitError, SchemaCommitError};
-use crate::transaction::SchemaCommitError::{SnapshotError, TypeCacheUpdateError};
 
 #[derive(Debug, Clone)]
 pub(super) struct Schema {
@@ -235,13 +239,22 @@ impl<D> Database<D> {
 }
 
 impl<D: DurabilityClient> Database<D> {
-    pub fn data_commit_with_commit_record(&self, commit_record: CommitRecord, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
+    pub fn data_commit_with_commit_record(
+        &self,
+        commit_record: CommitRecord,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<(), DataCommitError> {
         let snapshot = WriteSnapshot::new_with_commit_record(self.storage.clone(), commit_record);
         self.data_commit_with_snapshot(snapshot, commit_profile)
     }
-    
-    pub fn data_commit_with_snapshot(&self, snapshot: WriteSnapshot<D>, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
-        let commit_record_opt = snapshot.finalise(commit_profile)
+
+    pub fn data_commit_with_snapshot(
+        &self,
+        snapshot: WriteSnapshot<D>,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<(), DataCommitError> {
+        let commit_record_opt = snapshot
+            .finalise(commit_profile)
             .map_err(|error| DataCommitError::SnapshotError { typedb_source: error })?;
 
         if let Some(commit_record) = commit_record_opt {
@@ -250,28 +263,37 @@ impl<D: DurabilityClient> Database<D> {
                 Ok(_) => Ok(()),
                 Err(error) => {
                     let error = DataCommitError::SnapshotError {
-                        typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error }
+                        typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error },
                     };
                     Err(error)
-                },
+                }
             }
         } else {
             Ok(())
         }
     }
 
-    pub fn schema_commit_with_commit_record(&self, commit_record: CommitRecord, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
+    pub fn schema_commit_with_commit_record(
+        &self,
+        commit_record: CommitRecord,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<(), SchemaCommitError> {
         let snapshot = SchemaSnapshot::new_with_commit_record(self.storage.clone(), commit_record);
         self.schema_commit_with_snapshot(snapshot, commit_profile)
     }
-    
-    pub fn schema_commit_with_snapshot(&self, snapshot: SchemaSnapshot<D>, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
+
+    pub fn schema_commit_with_snapshot(
+        &self,
+        snapshot: SchemaSnapshot<D>,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<(), SchemaCommitError> {
         // Schema commits must wait for all other data operations to finish. No new read or write
         // transaction may open until the commit completes.
         let mut schema_commit_guard = self.schema.write().unwrap();
         let mut schema = (*schema_commit_guard).clone();
 
-        let commit_record_opt = snapshot.finalise(commit_profile)
+        let commit_record_opt = snapshot
+            .finalise(commit_profile)
             .map_err(|error| SchemaCommitError::SnapshotError { typedb_source: error })?;
 
         if let Some(commit_record) = commit_record_opt {
@@ -279,7 +301,7 @@ impl<D: DurabilityClient> Database<D> {
                 Ok(sequence_number) => Some(sequence_number),
                 Err(error) => {
                     let error = SnapshotError {
-                        typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error }
+                        typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error },
                     };
                     return Err(error);
                 }
@@ -298,8 +320,7 @@ impl<D: DurabilityClient> Database<D> {
                     self.type_vertex_generator.clone(),
                     Some(schema.type_cache.clone()),
                 );
-                let function_cache = match FunctionCache::new(self.storage.clone(), &type_manager, sequence_number)
-                {
+                let function_cache = match FunctionCache::new(self.storage.clone(), &type_manager, sequence_number) {
                     Ok(function_cache) => function_cache,
                     Err(typedb_source) => return Err(SchemaCommitError::FunctionError { typedb_source }),
                 };
@@ -321,8 +342,7 @@ impl<D: DurabilityClient> Database<D> {
             *schema_commit_guard = schema;
 
             Ok(())
-        }
-        else {
+        } else {
             Ok(())
         }
     }

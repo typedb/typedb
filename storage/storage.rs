@@ -280,7 +280,7 @@ impl<Durability> MVCCStorage<Durability> {
             }
         }
     }
-    
+
     fn persist_commit_status(
         did_apply: bool,
         commit_sequence_number: SequenceNumber,

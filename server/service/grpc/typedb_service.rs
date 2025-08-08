@@ -37,7 +37,7 @@ use crate::{
                 database::{database_delete_res, database_schema_res, database_type_schema_res},
                 database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
                 server::{server_version_res, servers_deregister_res, servers_register_res},
-                server_manager::servers_all_res,
+                server_manager::{servers_all_res, servers_get_res},
                 user_manager::{
                     user_create_res, user_update_res, users_all_res, users_contains_res, users_delete_res,
                     users_get_res,
@@ -184,6 +184,26 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             None::<&str>,
             ActionKind::ServersAll,
             || async { Ok(Response::new(servers_all_res(self.servers_statuses().await?))) },
+        )
+        .await
+    }
+
+    async fn servers_get(
+        &self,
+        _request: Request<typedb_protocol::server_manager::get::Req>,
+    ) -> Result<Response<typedb_protocol::server_manager::get::Res>, Status> {
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager().await,
+            None::<&str>,
+            ActionKind::ServersGet,
+            || async {
+                let status = self
+                    .server_state
+                    .server_status()
+                    .await
+                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+                Ok(Response::new(servers_get_res(status.to_proto())))
+            },
         )
         .await
     }
@@ -568,11 +588,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
     ) -> Result<Response<Self::transactionStream>, Status> {
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
-        let mut service = TransactionService::new(
-            self.server_state.clone(),
-            request_stream,
-            response_sender,
-        );
+        let mut service = TransactionService::new(self.server_state.clone(), request_stream, response_sender);
         tokio::spawn(async move { service.listen().await });
         let stream: ReceiverStream<Result<TransactionServerProto, Status>> = ReceiverStream::new(response_receiver);
         Ok(Response::new(Box::pin(stream)))
