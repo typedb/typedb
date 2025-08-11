@@ -142,6 +142,8 @@ typedb_error! {
         Unimplemented(1, "Not implemented: {description}", description: String),
         OperationFailedDueToReplicaUnavailability(12, "Unable to execute as one or more servers could not respond in time"),
         OperationFailedNonPrimaryReplica(13, "Unable to execute as this server is not the primary replica"),
+        ReplicaRegistrationNoConnection(14, "Unable to register replica '{id}' as there is no connection to '{address}'. Make sure that a correct clustering address (different from client connection address) is provided.", id: u64, address: String),
+        ReplicaNotFound(15, "Unable to execute as the replica is not found."),
         OperationNotPermitted(2, "The user is not permitted to execute the operation"),
         DatabaseNotFound(3, "Database '{name}' not found.", name: String),
         DatabaseSchemaCommitFailed(19, "Schema commit failed.", typedb_source: SchemaCommitError),
