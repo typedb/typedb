@@ -221,8 +221,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
                 let typedb_protocol::server_manager::register::Req { address, replica_id } = request else {
                     return Err(ProtocolError::MissingField {
-                        name: "authentication",
-                        description: "Connection message must contain authentication information.",
+                        name: "req",
+                        description: "No server information provided.",
                     }
                     .into_status());
                 };
