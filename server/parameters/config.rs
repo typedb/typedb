@@ -179,7 +179,7 @@ impl ConfigBuilder {
             server_address,
             server_http_enabled,
             server_http_address,
-            server_authentication_token_ttl_seconds,
+            server_authentication_token_expiration_seconds: server_authentication_token_ttl_seconds,
             server_encryption_enabled,
             server_encryption_certificate,
             server_encryption_certificate_key,
