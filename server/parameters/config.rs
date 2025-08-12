@@ -84,7 +84,7 @@ impl Default for EncryptionConfig {
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct StorageConfig {
+pub struct StorageConfig {
     pub data_directory: PathBuf,
 }
 

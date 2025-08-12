@@ -28,13 +28,13 @@ use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig, StorageConfig},
     service::{grpc, http},
-    state::{BoxServerState, BoxServerStatus, LocalServerState},
+    state::{ArcServerState, BoxServerStatus, LocalServerState},
 };
 
 #[derive(Debug)]
 pub struct ServerBuilder {
     distribution_info: Option<DistributionInfo>,
-    server_state: Option<Arc<BoxServerState>>,
+    server_state: Option<ArcServerState>,
     shutdown_channel: Option<(Sender<()>, Receiver<()>)>,
     storage_server_id: Option<String>,
 }
@@ -55,7 +55,7 @@ impl ServerBuilder {
         self
     }
 
-    pub fn server_state(mut self, server_state: Arc<BoxServerState>) -> Self {
+    pub fn server_state(mut self, server_state: ArcServerState) -> Self {
         self.server_state = Some(server_state);
         self
     }
@@ -82,7 +82,7 @@ impl ServerBuilder {
                 )
                 .await?;
                 server_state.initialise();
-                Arc::new(Box::new(server_state) as BoxServerState)
+                Arc::new(server_state)
             }
         };
 
@@ -154,7 +154,7 @@ impl ServerBuilder {
 pub struct Server {
     distribution_info: DistributionInfo,
     config: Config,
-    server_state: Arc<BoxServerState>,
+    server_state: ArcServerState,
     shutdown_sender: Sender<()>,
     shutdown_receiver: Receiver<()>,
 }
@@ -163,7 +163,7 @@ impl Server {
     pub fn new(
         distribution_info: DistributionInfo,
         config: Config,
-        server_state: Arc<BoxServerState>,
+        server_state: ArcServerState,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
     ) -> Self {
@@ -217,7 +217,7 @@ impl Server {
     async fn serve_grpc(
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<BoxServerState>,
+        server_state: ArcServerState,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
@@ -244,7 +244,7 @@ impl Server {
         distribution_info: DistributionInfo,
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<BoxServerState>,
+        server_state: ArcServerState,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());

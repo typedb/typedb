@@ -87,7 +87,7 @@ use crate::{
             TransactionServiceError,
         },
     },
-    state::{BoxServerState, ServerStateError},
+    state::{ArcServerState, ServerStateError},
 };
 
 macro_rules! unwrap_or_execute_and_return {
@@ -125,7 +125,7 @@ macro_rules! send_ok_message_else_return_break {
 
 #[derive(Debug)]
 pub(crate) struct TransactionService {
-    server_state: Arc<BoxServerState>,
+    server_state: ArcServerState,
 
     request_stream: Streaming<typedb_protocol::transaction::Client>,
     response_sender: Sender<Result<ProtocolServer, Status>>,
@@ -145,7 +145,7 @@ pub(crate) struct TransactionService {
 
 impl TransactionService {
     pub(crate) fn new(
-        server_state: Arc<BoxServerState>,
+        server_state: ArcServerState,
         request_stream: Streaming<typedb_protocol::transaction::Client>,
         response_sender: Sender<Result<ProtocolServer, Status>>,
     ) -> Self {

@@ -50,7 +50,9 @@ use crate::{
     status::{LocalServerStatus, ServerStatus},
 };
 
-pub type BoxServerState = Box<dyn ServerState + Send + Sync>;
+pub type DynServerState = dyn ServerState + Send + Sync;
+pub type ArcServerState = Arc<DynServerState>;
+
 pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
 
 #[async_trait]

@@ -48,17 +48,17 @@ use crate::{
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
     },
-    state::{BoxServerState, ServerStateError},
+    state::{ArcServerState, ServerStateError},
 };
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
     address: SocketAddr,
-    server_state: Arc<BoxServerState>,
+    server_state: ArcServerState,
 }
 
 impl TypeDBService {
-    pub(crate) fn new(address: SocketAddr, server_state: Arc<BoxServerState>) -> Self {
+    pub(crate) fn new(address: SocketAddr, server_state: ArcServerState) -> Self {
         Self { address, server_state }
     }
 
