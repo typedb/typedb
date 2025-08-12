@@ -9,7 +9,8 @@ use std::{collections::HashMap, str::FromStr};
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
 use compiler::query_structure::{
-    ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureStage, StructureVariableId,
+    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureStage,
+    StructureVariableId,
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
@@ -70,7 +71,9 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct FunctionStructureResponse {
     body: Option<PipelineStructureResponse>,
-    // TODO: arguments, returned,
+    arguments: Vec<StructureVariableId>,
+    #[serde(rename = "return")]
+    return_: FunctionReturnStructure,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -225,7 +228,11 @@ pub(crate) fn encode_query_structure(
                 .as_ref()
                 .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, pipeline))
                 .transpose()?;
-            Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse { body: pipeline })
+            Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse {
+                body: pipeline,
+                arguments: function.arguments,
+                return_: function.return_,
+            })
         })
         .collect::<Result<Vec<_>, _>>()?;
     Ok(QueryStructureResponse { query: pipeline, preamble })

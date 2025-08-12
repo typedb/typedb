@@ -28,7 +28,7 @@ use compiler::{
 use concept::{
     error::ConceptReadError,
     thing::thing_manager::ThingManager,
-    type_::{attribute_type::AttributeType, OwnerAPI, type_manager::TypeManager, TypeAPI},
+    type_::{attribute_type::AttributeType, type_manager::TypeManager, OwnerAPI, TypeAPI},
 };
 use encoding::value::value_type::ValueType;
 use executor::{
@@ -38,31 +38,35 @@ use executor::{
         stage::{ReadPipelineStage, WritePipelineStage},
     },
 };
-use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, validate_no_cycles};
+use function::function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
     pattern::{ParameterID, Scope, Vertex},
     pipeline::{
+        fetch::FetchObject,
+        function::Function,
         function_signature::{FunctionID, HashMapFunctionSignatureIndex},
         ParameterRegistry, VariableRegistry,
     },
-    translation::pipeline::TranslatedPipeline,
+    translation::pipeline::{TranslatedPipeline, TranslatedStage},
 };
 use itertools::chain;
 use resource::{
     perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
-    profile::QueryProfile,
+    profile::{CompileProfile, QueryProfile},
 };
 use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
-use ir::pipeline::fetch::FetchObject;
-use ir::pipeline::function::Function;
-use ir::translation::pipeline::TranslatedStage;
-use resource::profile::CompileProfile;
 
-use crate::{analyse, define, error::QueryError, query_cache::QueryCache, redefine, undefine};
-use crate::analyse::{AnalysedQuery, FetchStructureAnnotations, FunctionStructureAnnotations, QueryStructureAnnotations};
+use crate::{
+    analyse,
+    analyse::{AnalysedQuery, FetchStructureAnnotations, FunctionStructureAnnotations, QueryStructureAnnotations},
+    define,
+    error::QueryError,
+    query_cache::QueryCache,
+    redefine, undefine,
+};
 
 #[derive(Debug, Clone)]
 pub struct QueryManager {
@@ -167,9 +171,17 @@ impl QueryManager {
             }
             None => {
                 let executable_pipeline = annotate_and_compile_query(
-                    snapshot.as_ref(), source_query, type_manager, thing_manager.clone(), function_manager, compile_profile,
-                    &mut variable_registry, arced_parameters.clone(),
-                    arced_preamble.clone(), arced_stages.clone(), arced_fetch.clone(),
+                    snapshot.as_ref(),
+                    source_query,
+                    type_manager,
+                    thing_manager.clone(),
+                    function_manager,
+                    compile_profile,
+                    &mut variable_registry,
+                    arced_parameters.clone(),
+                    arced_preamble.clone(),
+                    arced_stages.clone(),
+                    arced_fetch.clone(),
                 )?;
                 if let Some(cache) = self.cache.as_ref() {
                     cache.insert(arced_preamble, arced_stages, arced_fetch, executable_pipeline.clone())
@@ -221,7 +233,7 @@ impl QueryManager {
             translated_fetch,
             mut variable_registry,
             value_parameters,
-        }  = match translate_pipeline(&snapshot, function_manager, query, source_query) {
+        } = match translate_pipeline(&snapshot, function_manager, query, source_query) {
             Ok(translated) => translated,
             Err(err) => return Err((snapshot, err)),
         };
@@ -242,9 +254,17 @@ impl QueryManager {
             }
             None => {
                 let executable_pipeline_result = annotate_and_compile_query(
-                    &snapshot, source_query, type_manager, thing_manager.clone(), function_manager, compile_profile,
-                    &mut variable_registry, arced_parameters.clone(),
-                    arced_preamble.clone(), arced_stages.clone(), arced_fetch.clone(),
+                    &snapshot,
+                    source_query,
+                    type_manager,
+                    thing_manager.clone(),
+                    function_manager,
+                    compile_profile,
+                    &mut variable_registry,
+                    arced_parameters.clone(),
+                    arced_preamble.clone(),
+                    arced_stages.clone(),
+                    arced_fetch.clone(),
                 );
                 match executable_pipeline_result {
                     Ok(executable_pipeline) => {
@@ -392,25 +412,21 @@ fn annotate_and_compile_query(
         Ok(_) => {}
         Err(typedb_source) => {
             return Err(Box::new(QueryError::FunctionDefinition {
-                    source_query: source_query.to_string(),
-                    typedb_source,
-                })
-            )
+                source_query: source_query.to_string(),
+                typedb_source,
+            }))
         }
     }
     compile_profile.validation_finished();
 
     // 2: Annotate
-    let annotated_schema_functions = match function_manager.get_annotated_functions(snapshot, type_manager)
-    {
+    let annotated_schema_functions = match function_manager.get_annotated_functions(snapshot, type_manager) {
         Ok(functions) => functions,
         Err(err) => {
-            return Err(
-                Box::new(QueryError::FunctionDefinition {
-                    source_query: source_query.to_string(),
-                    typedb_source: err,
-                }),
-            )
+            return Err(Box::new(QueryError::FunctionDefinition {
+                source_query: source_query.to_string(),
+                typedb_source: err,
+            }))
         }
     };
 
@@ -428,32 +444,22 @@ fn annotate_and_compile_query(
     let mut annotated_pipeline = match annotated_pipeline {
         Ok(annotated_pipeline) => annotated_pipeline,
         Err(err) => {
-            return Err(
-                Box::new(QueryError::Annotation {
-                    source_query: source_query.to_string(),
-                    typedb_source: err,
-                })
-            )
+            return Err(Box::new(QueryError::Annotation { source_query: source_query.to_string(), typedb_source: err }))
         }
     };
     compile_profile.annotation_finished();
 
-    let pipeline_structure = extract_pipeline_structure_from(
-        &variable_registry,
-        &annotated_pipeline.annotated_stages,
-        source_query,
-    )
-        .map(Arc::new);
+    let pipeline_structure =
+        extract_pipeline_structure_from(&variable_registry, &annotated_pipeline.annotated_stages, source_query)
+            .map(Arc::new);
 
     match apply_transformations(snapshot, type_manager, &mut annotated_pipeline) {
         Ok(_) => {}
         Err(err) => {
-            return Err(
-                Box::new(QueryError::Transformation {
-                    source_query: source_query.to_string(),
-                    typedb_source: err,
-                })
-            )
+            return Err(Box::new(QueryError::Transformation {
+                source_query: source_query.to_string(),
+                typedb_source: err,
+            }))
         }
     };
 
@@ -472,12 +478,10 @@ fn annotate_and_compile_query(
     ) {
         Ok(executable) => executable,
         Err(err) => {
-            return Err(
-                Box::new(QueryError::ExecutableCompilation {
-                    source_query: source_query.to_string(),
-                    typedb_source: err,
-                })
-            )
+            return Err(Box::new(QueryError::ExecutableCompilation {
+                source_query: source_query.to_string(),
+                typedb_source: err,
+            }))
         }
     };
     compile_profile.compilation_finished();

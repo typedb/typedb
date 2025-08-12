@@ -11,16 +11,18 @@ use compiler::{
     query_structure::{PipelineStructureAnnotations, StructureVariableId},
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
-use query::analyse::QueryStructureAnnotations;
+use query::analyse::{
+    AnalysedQuery, FetchObjectStructureAnnotations, FetchStructureAnnotations, FunctionStructureAnnotations,
+    QueryStructureAnnotations,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use query::analyse::{AnalysedQuery, FetchObjectStructureAnnotations, FetchStructureAnnotations, FunctionStructureAnnotations};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::{
-    AnalysedQueryResponse,
     concept::{encode_type_concept, encode_value_type},
     query_structure::encode_query_structure,
+    AnalysedQueryResponse,
 };
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -8,7 +8,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use encoding::value::value_type::ValueType;
-use ir::pattern::IrID;
+use ir::{pattern::IrID, pipeline::reduce::Reducer};
 
 use crate::{executable::next_executable_id, VariablePosition};
 
@@ -112,6 +112,21 @@ impl<ID: IrID> ReduceInstruction<ID> {
             ReduceInstruction::MedianDouble(id) => ReduceInstruction::MedianDouble(mapping[&id]),
             ReduceInstruction::StdInteger(id) => ReduceInstruction::StdInteger(mapping[&id]),
             ReduceInstruction::StdDouble(id) => ReduceInstruction::StdDouble(mapping[&id]),
+        }
+    }
+}
+
+impl ReduceInstruction<Variable> {
+    pub fn unresolved(&self) -> Reducer {
+        match self.clone() {
+            Self::Count => Reducer::Count,
+            Self::CountVar(id) => Reducer::CountVar(id),
+            Self::SumInteger(id) | Self::SumDouble(id) => Reducer::Sum(id),
+            Self::MaxInteger(id) | Self::MaxDouble(id) => Reducer::Max(id),
+            Self::MinInteger(id) | Self::MinDouble(id) => Reducer::Min(id),
+            Self::MeanInteger(id) | Self::MeanDouble(id) => Reducer::Mean(id),
+            Self::MedianInteger(id) | Self::MedianDouble(id) => Reducer::Median(id),
+            Self::StdInteger(id) | Self::StdDouble(id) => Reducer::Std(id),
         }
     }
 }

@@ -4,22 +4,33 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::type_::type_manager::TypeManager;
-use std::sync::Arc;
-use compiler::annotation::fetch::{AnnotatedFetchObject, AnnotatedFetchSome};
-use compiler::annotation::type_annotations::TypeAnnotations;
-use concept::error::ConceptReadError;
-use ir::pipeline::ParameterRegistry;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::{
+    collections::{BTreeMap, BTreeSet, HashMap},
+    sync::Arc,
+};
+
 use answer::variable::Variable;
-use compiler::annotation::function::{AnnotatedFunctionSignature, FunctionParameterAnnotation};
-use compiler::annotation::pipeline::{AnnotatedPipeline, AnnotatedStage};
-use compiler::query_structure::{PipelineStructure, PipelineStructureAnnotations, QueryStructure, QueryStructureBlockID, StructureVariableId};
-use concept::type_::attribute_type::AttributeType;
+use compiler::{
+    annotation::{
+        fetch::{AnnotatedFetchObject, AnnotatedFetchSome},
+        function::{AnnotatedFunctionSignature, FunctionParameterAnnotation},
+        pipeline::{AnnotatedPipeline, AnnotatedStage},
+        type_annotations::TypeAnnotations,
+    },
+    query_structure::{
+        PipelineStructure, PipelineStructureAnnotations, QueryStructure, QueryStructureBlockID, StructureVariableId,
+    },
+};
+use concept::{
+    error::ConceptReadError,
+    type_::{attribute_type::AttributeType, type_manager::TypeManager, OwnerAPI, TypeAPI},
+};
 use encoding::value::value_type::ValueType;
-use ir::pattern::{ParameterID, Scope, Vertex};
+use ir::{
+    pattern::{ParameterID, Scope, Vertex},
+    pipeline::ParameterRegistry,
+};
 use itertools::chain;
-use concept::type_::{OwnerAPI, TypeAPI};
 use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug)]

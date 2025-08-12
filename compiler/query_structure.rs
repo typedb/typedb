@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize, Serializer};
 
 use crate::{
     annotation::{
-        function::{AnnotatedFunction, FunctionParameterAnnotation},
+        function::{AnnotatedFunction, AnnotatedFunctionReturn, FunctionParameterAnnotation},
         pipeline::{AnnotatedPipeline, AnnotatedStage},
         type_annotations::{BlockAnnotations, TypeAnnotations},
     },
@@ -44,17 +44,59 @@ pub struct QueryStructure {
 }
 
 #[derive(Debug, Clone)]
-pub struct FunctionStructure {
-    pub pipeline: Option<PipelineStructure>,
-    // TODO: arguments, returned
-}
-
-#[derive(Debug, Clone)]
 pub struct PipelineStructure {
     pub parametrised_structure: Arc<ParametrisedPipelineStructure>,
     pub variable_names: HashMap<StructureVariableId, String>,
     pub available_variables: Vec<StructureVariableId>,
     pub parameters: Arc<ParameterRegistry>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionStructure {
+    pub pipeline: Option<PipelineStructure>,
+    pub arguments: Vec<StructureVariableId>,
+    pub return_: FunctionReturnStructure,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FunctionReduceReturnStructure {
+    reducer: String,
+    variable: Option<StructureVariableId>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "tag")]
+pub enum FunctionReturnStructure {
+    Stream { variables: Vec<StructureVariableId> },
+    Single { selector: String, variables: Vec<StructureVariableId> },
+    ReduceCheck {},
+    Reduce { reducers: Vec<FunctionReduceReturnStructure> },
+}
+
+impl From<&AnnotatedFunctionReturn> for FunctionReturnStructure {
+    fn from(value: &AnnotatedFunctionReturn) -> Self {
+        match value {
+            AnnotatedFunctionReturn::Stream { variables } => {
+                Self::Stream { variables: variables.iter().map_into().collect() }
+            }
+            AnnotatedFunctionReturn::Single { variables, selector } => Self::Single {
+                selector: selector.to_string().to_owned(),
+                variables: variables.iter().map_into().collect(),
+            },
+            AnnotatedFunctionReturn::ReduceCheck {} => Self::ReduceCheck {},
+            AnnotatedFunctionReturn::ReduceReducer { instructions } => {
+                let reducers = instructions
+                    .iter()
+                    .map(|reducer| FunctionReduceReturnStructure {
+                        reducer: reducer.unresolved().name(),
+                        variable: reducer.id().map(|var| var.into()),
+                    })
+                    .collect();
+                Self::Reduce { reducers }
+            }
+        }
+    }
 }
 
 pub fn extract_query_structure_from(
@@ -104,7 +146,9 @@ pub fn extract_function_structure_from(function: &AnnotatedFunction, source_quer
                 .collect(),
         )
     });
-    FunctionStructure { pipeline }
+    let arguments = function.arguments.iter().map_into().collect();
+    let return_ = FunctionReturnStructure::from(&function.return_);
+    FunctionStructure { pipeline, arguments, return_ }
 }
 
 pub fn extract_pipeline_structure_from(
