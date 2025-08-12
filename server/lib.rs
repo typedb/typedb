@@ -304,6 +304,10 @@ impl Server {
             .map_err(|_| ServerOpenError::HttpTlsUnsetDefaultCryptoProvider {})
     }
 
+    pub fn server_state(&self) -> Arc<BoxServerState> {
+        self.server_state.clone()
+    }
+
     pub async fn database_manager(&self) -> Arc<DatabaseManager> {
         self.server_state.database_manager().await
     }
