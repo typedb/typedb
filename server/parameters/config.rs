@@ -21,7 +21,7 @@ use crate::parameters::{cli::CLIArgs, ConfigError};
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
     pub server: ServerConfig,
-    pub(crate) storage: StorageConfig,
+    pub storage: StorageConfig,
     #[serde(default)]
     pub diagnostics: DiagnosticsConfig,
     pub logging: LoggingConfig,
@@ -32,18 +32,18 @@ pub struct Config {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ServerConfig {
-    pub(crate) address: String,
-    pub(crate) http: HttpEndpointConfig,
-    pub(crate) authentication: AuthenticationConfig,
-    pub(crate) encryption: EncryptionConfig,
+    pub address: String,
+    pub http: HttpEndpointConfig,
+    pub authentication: AuthenticationConfig,
+    pub encryption: EncryptionConfig,
 }
 
 #[serde_as]
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct HttpEndpointConfig {
-    pub(crate) enabled: bool,
-    pub(crate) address: String,
+    pub enabled: bool,
+    pub address: String,
 }
 
 #[serde_as]
@@ -85,7 +85,7 @@ impl Default for EncryptionConfig {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct StorageConfig {
-    pub(crate) data_directory: PathBuf,
+    pub data_directory: PathBuf,
 }
 
 #[derive(Clone, Debug, Deserialize)]
