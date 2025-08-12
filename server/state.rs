@@ -27,7 +27,6 @@ use resource::{
 use storage::{
     durability_client::{DurabilityClient, WALClient},
     isolation_manager::CommitRecord,
-    snapshot::{SchemaSnapshot, WriteSnapshot},
 };
 use system::{
     concepts::{Credential, User},
