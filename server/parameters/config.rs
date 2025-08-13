@@ -11,7 +11,7 @@ use std::{
     time::Duration,
 };
 
-use resource::constants::server::{DEFAULT_AUTHENTICATION_TOKEN_TTL, MONITORING_DEFAULT_PORT};
+use resource::constants::server::{DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT};
 use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
 
@@ -57,7 +57,7 @@ pub struct AuthenticationConfig {
 
 impl Default for AuthenticationConfig {
     fn default() -> Self {
-        Self { token_expiration: DEFAULT_AUTHENTICATION_TOKEN_TTL }
+        Self { token_expiration: DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION }
     }
 }
 
@@ -179,7 +179,7 @@ impl ConfigBuilder {
             server_address,
             server_http_enabled,
             server_http_address,
-            server_authentication_token_ttl_seconds,
+            server_authentication_token_expiration_seconds,
             server_encryption_enabled,
             server_encryption_certificate,
             server_encryption_certificate_key,
@@ -197,7 +197,7 @@ impl ConfigBuilder {
             config.server.address => server_address;
             config.server.http.enabled => server_http_enabled;
             config.server.http.address => server_http_address;
-            config.server.authentication.token_expiration => server_authentication_token_ttl_seconds.map(|secs| Duration::new(secs, 0));
+            config.server.authentication.token_expiration => server_authentication_token_expiration_seconds.map(|secs| Duration::new(secs, 0));
 
             config.server.encryption.enabled => server_encryption_enabled;
             config.server.encryption.certificate => server_encryption_certificate.map(|cert| Some(cert.into()));
