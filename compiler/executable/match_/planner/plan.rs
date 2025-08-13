@@ -686,6 +686,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         const INDENT: &str = "";
         const BEAM_REDUCTION_CYCLE: usize = 2;
         const EXTENSION_REDUCTION_CYCLE: usize = 2;
+
         let num_patterns = graph.pattern_to_variable.len();
         let mut beam_width = (num_patterns * 2).clamp(2, MAX_BEAM_WIDTH);
         let mut extension_width = (num_patterns / 2) + 5; // ensure this is larger than (num_patterns / 2) or change narrowing logic (note, join options means patterns may appear twice as extensions)
@@ -1248,7 +1249,10 @@ impl PartialOrd for StepExtension {
 
 impl Ord for StepExtension {
     fn cmp(&self, other: &Self) -> Ordering {
-        (self.heuristic.cost.partial_cmp(&other.heuristic.cost).unwrap_or(Ordering::Equal))
+        self.heuristic
+            .cost
+            .partial_cmp(&other.heuristic.cost)
+            .unwrap_or(Ordering::Equal)
             .then_with(|| self.pattern_id.cmp(&other.pattern_id))
     }
 }
@@ -2299,5 +2303,231 @@ impl<'a> Graph<'a> {
                     self.pattern_to_variable[pattern_index].iter().map(|index| self.index_to_variable[index])
                 }
             })
+    }
+}
+
+pub mod test {
+    use std::collections::{BTreeMap, HashMap, HashSet};
+
+    use answer::variable::Variable;
+    use concept::thing::statistics::Statistics;
+    use ir::{
+        pattern::constraint::ExpressionBinding,
+        pipeline::{block::Block, VariableRegistry},
+    };
+    use itertools::Itertools;
+    use rand::RngCore;
+    use tracing::{event, Level};
+
+    use crate::{
+        annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::BlockAnnotations},
+        executable::{
+            function::ExecutableFunctionRegistry,
+            match_::planner::{
+                conjunction_executable::{ExecutionStep, ConjunctionExecutable},
+                plan::{make_builder, CompleteCostPlan, Graph, PartialCostPlan, QueryPlanningError, VertexId},
+                vertex::{Cost, CostMetaData, Costed},
+            },
+        },
+    };
+
+    #[derive(Debug)]
+    pub struct SampledConjunctionPlan {
+        pub executable: ConjunctionExecutable,
+        pub total_cost: Cost,
+        pub per_step_estimated_cost: Vec<Cost>,
+    }
+
+    pub fn get_multiple_plans_for_simple_conjunction_with<'a>(
+        block: &'a Block,
+        annotations: &'a BlockAnnotations,
+        variable_registry: &VariableRegistry,
+        expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
+        statistics: &'a Statistics,
+        n_plans: usize,
+    ) -> Result<Vec<SampledConjunctionPlan>, QueryPlanningError> {
+        let builder = make_builder(
+            block.conjunction(),
+            block.block_context(),
+            &HashMap::new(),
+            annotations,
+            variable_registry,
+            expressions,
+            statistics,
+            &ExecutableFunctionRegistry::empty(),
+        )?;
+        let search_patterns: HashSet<_> = builder.graph.pattern_to_variable.keys().copied().collect();
+        let input_variables =
+            builder.graph.variable_index.values().copied().filter(|&v| {
+                builder.graph.elements[&VertexId::Variable(v)].as_variable().is_some_and(|v| v.is_input())
+            });
+        let initial_empty_plan =
+            PartialCostPlan::new(builder.graph.elements.len(), search_patterns.clone(), input_variables);
+
+        plan_sampler(&builder.graph, initial_empty_plan.clone(), n_plans)?
+            .into_iter()
+            .map(|complete_plan| {
+                let conjunction_plan = builder.clone().build_conjunction_plan(complete_plan.vertex_ordering.clone(), complete_plan.pattern_metadata.clone(), complete_plan.cumulative_cost.clone())?;
+                let executable = conjunction_plan
+                    .lower(
+                        &BTreeMap::new(),
+                        [].into_iter(),
+                        block.block_variables().collect::<HashSet<_>>(),
+                        &HashMap::new(),
+                        variable_registry,
+                        None,
+                    )?
+                    .finish(variable_registry);
+                let per_step_estimated_cost =
+                    recreate_step_costs_from_complete_plan(&builder.graph, &complete_plan, &executable);
+                Ok(SampledConjunctionPlan {
+                    executable,
+                    total_cost: complete_plan.cumulative_cost,
+                    per_step_estimated_cost,
+                })
+            })
+            .collect::<Result<_, _>>()
+    }
+
+    fn plan_sampler(
+        graph: &Graph<'_>,
+        initial_empty_plan: PartialCostPlan,
+        n_samples: usize,
+    ) -> Result<Vec<CompleteCostPlan>, QueryPlanningError> {
+        let num_patterns = graph.pattern_to_variable.len();
+        let mut best_partial_plans = Vec::new();
+        best_partial_plans.push(initial_empty_plan);
+        let mut rng = rand::thread_rng();
+        for _i in 0..num_patterns {
+            let mut new_plans = Vec::new();
+            let mut candidates = Vec::new();
+            for plan in best_partial_plans {
+                for extension in plan.extensions_iter(graph) {
+                    let extension = extension?;
+                    if extension.is_trivial(graph) {
+                        let mut plan = plan.clone();
+                        plan.add_to_stash(extension.pattern_id, graph);
+                        new_plans.push(plan);
+                        break;
+                    }
+                    let new_plan = if !extension.is_constraint(graph) {
+                        plan.clone_and_extend_with_new_step(extension, graph)
+                    } else if extension.step_join_var.is_some()
+                        && (plan.ongoing_step_join_var.is_none()
+                            || plan.ongoing_step_join_var == extension.step_join_var)
+                    {
+                        plan.clone_and_extend_with_continued_step(extension, graph)
+                    } else {
+                        plan.clone_and_extend_with_new_step(extension, graph)
+                    };
+                    candidates.push(new_plan);
+                }
+            }
+            candidates.sort();
+            let selection_probability = 0.25; // 1.0 / (candidates.len() as f64).sqrt();
+            new_plans.extend(
+                candidates
+                    .into_iter()
+                    .filter(|c| (rng.next_u64() as f64 / u64::MAX as f64) < selection_probability)
+                    .take(n_samples),
+            );
+            new_plans.sort();
+            best_partial_plans = new_plans;
+        }
+        Ok(best_partial_plans.into_iter().take(n_samples).map(|plan| plan.into_complete_plan(graph)).collect())
+    }
+
+    fn recreate_step_costs_from_complete_plan(
+        graph: &Graph<'_>,
+        plan: &CompleteCostPlan,
+        lowered: &ConjunctionExecutable,
+    ) -> Vec<Cost> {
+        let mut lowered_step_costs = Vec::with_capacity(lowered.steps.len());
+        let mut plan_index = 0;
+        for lowered_step in &lowered.steps {
+            while matches!(plan.vertex_ordering[plan_index], VertexId::Variable(_)) {
+                plan_index += 1;
+            }
+            match lowered_step {
+                ExecutionStep::Intersection(_intersection) => {
+                    // Assumption: Since an intersection always produces a variable, all patterns up until the variable are part of this
+                    let mut join_cost_opt: Option<Cost> = None;
+                    let mut check_cost = Cost::NOOP;
+                    let mut _join_indices = Vec::new();
+                    let mut _check_indices = Vec::new();
+                    while plan.vertex_ordering[plan_index].as_variable_id().is_none() {
+                        let pattern_index = plan.vertex_ordering[plan_index];
+                        let planner = &graph.elements[&pattern_index];
+                        let vertex_ordering_prefix = &plan.vertex_ordering[0..plan_index];
+                        match plan.pattern_metadata[&pattern_index.as_pattern_id().unwrap()] {
+                            CostMetaData::Direction(direction, join_var_opt) => {
+                                let constraint_cost = planner
+                                    .cost_and_metadata(vertex_ordering_prefix, Some(direction), graph)
+                                    .unwrap()
+                                    .0;
+                                if let Some(join_var) = join_var_opt {
+                                    _join_indices.push(pattern_index);
+                                    let join_size = graph.elements[&VertexId::Variable(join_var)]
+                                        .as_variable()
+                                        .unwrap()
+                                        .restricted_expected_output_size(&vertex_ordering_prefix);
+                                    join_cost_opt =
+                                        Some(join_cost_opt.map_or_else(
+                                            || constraint_cost,
+                                            |cost| cost.join(constraint_cost, join_size),
+                                        ));
+                                } else {
+                                    _check_indices.push(pattern_index);
+                                    check_cost = check_cost.chain(constraint_cost);
+                                }
+                            }
+                            CostMetaData::None => {
+                                _check_indices.push(pattern_index);
+                                let constraint_cost =
+                                    planner.cost_and_metadata(vertex_ordering_prefix, None, graph).unwrap().0;
+                                check_cost = check_cost.chain(constraint_cost);
+                            }
+                        }
+                        plan_index += 1;
+                    }
+                    event!(
+                        Level::TRACE,
+                        "---\n{:?}\n\tv/s\n[\n Joins: {:?};\n Checks: {:?}\n]\n===\n",
+                        _intersection.instructions.iter().map(|c| &c.0).collect::<Vec<_>>(),
+                        _join_indices.iter().map(|p| &graph.elements[p]).collect::<Vec<_>>(),
+                        _check_indices.iter().map(|p| &graph.elements[p]).collect::<Vec<_>>(),
+                    );
+                    lowered_step_costs.push(join_cost_opt.unwrap_or(Cost::NOOP).chain(check_cost));
+                }
+                ExecutionStep::UnsortedJoin(_) => todo!(),
+                ExecutionStep::Check(check) => {
+                    let mut cost = Cost::NOOP;
+                    for _instruction in &check.check_instructions {
+                        let pattern_index = plan.vertex_ordering[plan_index];
+                        let planner = &graph.elements[&pattern_index];
+                        let vertex_ordering_prefix = &plan.vertex_ordering[0..plan_index];
+                        cost.chain(planner.cost_and_metadata(vertex_ordering_prefix, None, graph).unwrap().0);
+                        plan_index += 1;
+                    }
+                    lowered_step_costs.push(cost);
+                }
+                ExecutionStep::Assignment(_)
+                | ExecutionStep::Disjunction(_)
+                | ExecutionStep::Negation(_)
+                | ExecutionStep::Optional(_)
+                | ExecutionStep::FunctionCall(_) => {
+                    let pattern_index = plan.vertex_ordering[plan_index];
+                    let planner = &graph.elements[&pattern_index];
+                    lowered_step_costs
+                        .push(planner.cost_and_metadata(&plan.vertex_ordering[0..plan_index], None, graph).unwrap().0);
+                    plan_index += 1;
+                }
+            }
+        }
+        let _cumulative_cost = lowered_step_costs.iter().fold(Cost::NOOP, |running, step| running.chain(*step));
+        let _cumulative_cost_relative_err =
+            (plan.cumulative_cost.cost - _cumulative_cost.cost) / plan.cumulative_cost.cost;
+        // debug_assert!(_cumulative_cost_relative_err.abs() < 0.01, "Relative err was: {_cumulative_cost_relative_err} = relerr({},{})", _cumulative_cost.cost, plan.cumulative_cost.cost);
+        lowered_step_costs
     }
 }
