@@ -2406,21 +2406,11 @@ pub mod test {
                     let extension = extension?;
                     if extension.is_trivial(graph) {
                         let mut plan = plan.clone();
-                        plan.add_to_stash(extension.pattern_id, graph);
+                        plan.extend_with(graph, extension);
                         new_plans.push(plan);
                         break;
                     }
-                    let new_plan = if !extension.is_constraint(graph) {
-                        plan.clone_and_extend_with_new_step(extension, graph)
-                    } else if extension.step_join_var.is_some()
-                        && (plan.ongoing_step_join_var.is_none()
-                            || plan.ongoing_step_join_var == extension.step_join_var)
-                    {
-                        plan.clone_and_extend_with_continued_step(extension, graph)
-                    } else {
-                        plan.clone_and_extend_with_new_step(extension, graph)
-                    };
-                    candidates.push(new_plan);
+                    candidates.push(plan.extend_with(graph, extension));
                 }
             }
             candidates.sort();

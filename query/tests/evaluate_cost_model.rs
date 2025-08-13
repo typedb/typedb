@@ -22,7 +22,7 @@ use compiler::{
     executable::{
         function::ExecutableFunctionRegistry,
         match_::planner::{
-            match_executable::MatchExecutable,
+            conjunction_executable::ConjunctionExecutable,
             plan::test::{get_multiple_plans_for_simple_conjunction_with, SampledConjunctionPlan},
             vertex::{test::cost_of, Cost},
         },
@@ -62,7 +62,7 @@ fn open_database(path: &PathBuf) -> Database<WALClient> {
 fn run_plan(
     database: Arc<Database<WALClient>>,
     parameters: Arc<ParameterRegistry>,
-    executable: Arc<MatchExecutable>,
+    executable: Arc<ConjunctionExecutable>,
     // expected_answer_count: usize,
 ) -> QueryProfile {
     const CHECK_FINISHED_EVERY: Duration = Duration::from_millis(100);
@@ -163,9 +163,10 @@ struct CostComparison {
     plan_cumulative_cost: Cost,
     plan_per_step_estimated_cost: Vec<Cost>, // zip with steps in profile
     executed_per_step_counters: Vec<StorageCounterCopy>,
-    executable: MatchExecutable,
+    executable: ConjunctionExecutable,
 }
 
+// TODO: Make this more
 #[test]
 fn foo() {
     let q = "match $d isa DISTRICT, has D_ID 11; $o links (customer: $c, district: $d), isa ORDER, has O_ID $o_id, has O_NEW_ORDER true; $c isa CUSTOMER, has C_ID $c_id;";
