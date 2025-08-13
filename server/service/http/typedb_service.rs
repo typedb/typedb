@@ -210,7 +210,7 @@ impl TypeDBService {
             .route("/:version/transactions/:transaction-id/commit", post(Self::transactions_commit))
             .route("/:version/transactions/:transaction-id/close", post(Self::transactions_close))
             .route("/:version/transactions/:transaction-id/rollback", post(Self::transactions_rollback))
-            .route("/:version/transactions/:transaction-id/analyse", post(Self::transactions_analyse_query))
+            .route("/:version/transactions/:transaction-id/analyze", post(Self::transactions_analyse_query))
             .route("/:version/transactions/:transaction-id/query", post(Self::transactions_query))
             .route("/:version/query", post(Self::query))
             .with_state(service)
