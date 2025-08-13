@@ -40,7 +40,6 @@ use crate::{
 pub struct QueryStructure {
     pub preamble: Vec<FunctionStructure>,
     pub query: Option<PipelineStructure>,
-    // fetch: Option<FetchStructure>, // TODO?
 }
 
 #[derive(Debug, Clone)]
