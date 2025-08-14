@@ -52,7 +52,7 @@ use crate::{
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
         QueryType,
     },
-    state::BoxServerState,
+    state::ArcServerState,
 };
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
@@ -69,7 +69,7 @@ struct TransactionInfo {
 pub(crate) struct TypeDBService {
     distribution_info: DistributionInfo,
     address: SocketAddr,
-    server_state: Arc<BoxServerState>,
+    server_state: ArcServerState,
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
     _transaction_cleanup_job: Arc<TokioIntervalRunner>,
 }
@@ -78,11 +78,7 @@ impl TypeDBService {
     const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
     const QUERY_ENDPOINT_COMMIT_DEFAULT: bool = true;
 
-    pub(crate) fn new(
-        distribution_info: DistributionInfo,
-        address: SocketAddr,
-        server_state: Arc<BoxServerState>,
-    ) -> Self {
+    pub(crate) fn new(distribution_info: DistributionInfo, address: SocketAddr, server_state: ArcServerState) -> Self {
         let transaction_request_senders = Arc::new(RwLock::new(HashMap::new()));
 
         let controlled_transactions = transaction_request_senders.clone();
