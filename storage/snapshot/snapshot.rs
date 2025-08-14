@@ -37,7 +37,6 @@ use crate::{
     MVCCStorage, StorageCommitError,
     StorageCommitError::MVCCRead,
 };
-use crate::StorageCommitError::MVCCRead;
 
 macro_rules! get_mapped_method {
     ($method_name:ident, $get_func:ident) => {
@@ -437,7 +436,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
             self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
- 
+
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {
         let buffered = self
             .operations

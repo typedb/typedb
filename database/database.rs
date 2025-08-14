@@ -63,8 +63,6 @@ use crate::{
         CorruptionPartialResetTypeVertexGeneratorInUse,
     },
 };
-use crate::transaction::{DataCommitError, SchemaCommitError};
-use crate::transaction::SchemaCommitError::{SnapshotError, TypeCacheUpdateError};
 
 #[derive(Debug, Clone)]
 pub(super) struct Schema {
