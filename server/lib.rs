@@ -43,9 +43,9 @@ use tokio::sync::watch::{channel, Receiver, Sender};
 
 use crate::{
     error::ServerOpenError,
-    parameters::config::{Config, EncryptionConfig},
+    parameters::config::{Config, EncryptionConfig, StorageConfig},
     service::{grpc, http},
-    state::{BoxServerState, BoxServerStatus, LocalServerState},
+    state::{ArcServerState, BoxServerStatus, LocalServerState},
 };
 
 pub mod authentication;
@@ -55,24 +55,32 @@ pub mod service;
 pub mod state;
 pub mod status;
 
-#[derive(Default)]
+#[derive(Debug)]
 pub struct ServerBuilder {
     distribution_info: Option<DistributionInfo>,
-    server_state_builder: Option<Box<dyn FnOnce(String) -> Pin<Box<dyn Future<Output = BoxServerState>>>>>,
+    server_state: Option<ArcServerState>,
     shutdown_channel: Option<(Sender<()>, Receiver<()>)>,
+    storage_server_id: Option<String>,
+}
+
+impl Default for ServerBuilder {
+    fn default() -> Self {
+        Self { distribution_info: None, server_state: None, shutdown_channel: None, storage_server_id: None }
+    }
 }
 
 impl ServerBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn distribution_info(mut self, distribution_info: DistributionInfo) -> Self {
         self.distribution_info = Some(distribution_info);
         self
     }
 
-    pub fn server_state_builder(
-        mut self,
-        server_state_builder: Option<Box<dyn FnOnce(String) -> Pin<Box<dyn Future<Output = BoxServerState>>>>>,
-    ) -> Self {
-        self.server_state_builder = server_state_builder;
+    pub fn server_state(mut self, server_state: ArcServerState) -> Self {
+        self.server_state = Some(server_state);
         self
     }
 
@@ -81,17 +89,16 @@ impl ServerBuilder {
         self
     }
 
-    pub async fn build(self, config: Config) -> Result<Server, ServerOpenError> {
-        Self::may_initialise_storage_directory(&config.storage.data_directory)?;
-        let server_id = Self::may_initialise_server_id(&config.storage.data_directory)?;
+    pub async fn build(mut self, config: Config) -> Result<Server, ServerOpenError> {
+        let server_id = self.initialise_storage(&config.storage)?.to_string();
         let distribution_info = self.distribution_info.unwrap_or(DISTRIBUTION_INFO);
-
         let (shutdown_sender, shutdown_receiver) = self.shutdown_channel.unwrap_or_else(|| channel(()));
-        let server_state = match self.server_state_builder {
-            Some(builder) => builder(server_id).await,
+
+        let server_state = match self.server_state {
+            Some(server_state) => server_state,
             None => {
                 let mut server_state = LocalServerState::new(
-                    DISTRIBUTION_INFO,
+                    distribution_info,
                     config.clone(),
                     server_id,
                     None,
@@ -99,11 +106,19 @@ impl ServerBuilder {
                 )
                 .await?;
                 server_state.initialise();
-                Box::new(server_state)
+                Arc::new(server_state)
             }
         };
 
-        Ok(Server::new(distribution_info, config, Arc::new(server_state), shutdown_sender, shutdown_receiver))
+        Ok(Server::new(distribution_info, config, server_state, shutdown_sender, shutdown_receiver))
+    }
+
+    pub fn initialise_storage(&mut self, storage_config: &StorageConfig) -> Result<&str, ServerOpenError> {
+        if self.storage_server_id.is_none() {
+            Self::may_initialise_storage_directory(&storage_config.data_directory)?;
+            self.storage_server_id = Some(Self::may_initialise_server_id(&storage_config.data_directory)?);
+        }
+        Ok(self.storage_server_id.as_ref().unwrap())
     }
 
     fn may_initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
@@ -163,7 +178,7 @@ impl ServerBuilder {
 pub struct Server {
     distribution_info: DistributionInfo,
     config: Config,
-    server_state: Arc<BoxServerState>,
+    server_state: ArcServerState,
     shutdown_sender: Sender<()>,
     shutdown_receiver: Receiver<()>,
 }
@@ -172,7 +187,7 @@ impl Server {
     pub fn new(
         distribution_info: DistributionInfo,
         config: Config,
-        server_state: Arc<BoxServerState>,
+        server_state: ArcServerState,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
     ) -> Self {
@@ -227,7 +242,7 @@ impl Server {
     async fn serve_grpc(
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<BoxServerState>,
+        server_state: ArcServerState,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
@@ -254,7 +269,7 @@ impl Server {
         distribution_info: DistributionInfo,
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<BoxServerState>,
+        server_state: ArcServerState,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());

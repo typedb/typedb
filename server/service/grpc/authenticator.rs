@@ -17,16 +17,16 @@ use crate::{
         diagnostics::run_with_diagnostics_async,
         error::{IntoGrpcStatus, IntoProtocolErrorMessage},
     },
-    state::BoxServerState,
+    state::ArcServerState,
 };
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
-    server_state: Arc<BoxServerState>,
+    server_state: ArcServerState,
 }
 
 impl Authenticator {
-    pub(crate) fn new(server_state: Arc<BoxServerState>) -> Self {
+    pub(crate) fn new(server_state: ArcServerState) -> Self {
         Self { server_state }
     }
 }

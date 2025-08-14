@@ -46,7 +46,7 @@ pub async fn typedb_starts(context: &mut Context) {
                 .development_mode(true)
                 .build()
                 .unwrap();
-            let server = ServerBuilder::default()
+            let server = ServerBuilder::new()
                 .distribution_info(DISTRIBUTION_INFO)
                 .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
                 .build(config)
