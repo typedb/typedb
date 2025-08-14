@@ -120,12 +120,7 @@ impl TypeDBService {
         let options =
             payload.transaction_options.map(|options| options.into()).unwrap_or_else(|| TransactionOptions::default());
         let transaction_timeout_millis = options.transaction_timeout_millis;
-        let mut transaction_service = TransactionService::new(
-            service.server_state.database_manager().await,
-            service.server_state.diagnostics_manager().await,
-            request_stream,
-            service.server_state.shutdown_receiver().await,
-        );
+        let mut transaction_service = TransactionService::new(service.server_state.clone(), request_stream);
 
         let database_name = payload.database_name;
 
