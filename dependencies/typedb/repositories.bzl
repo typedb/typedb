@@ -12,10 +12,11 @@ def typedb_bazel_distribution():
     )
 
 def typedb_dependencies():
+    # TODO: Return ref after merge to master, currently points to 'raft-dependencies-addition'
     git_repository(
         name = "typedb_dependencies",
         remote = "https://github.com/typedb/typedb-dependencies",
-        commit = "fac1121c903b0c9e5924d391a883e4a0749a82a2",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
+        commit = "a7f714591ac8da4e8a281ebd1542190346a56da1",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
     )
 
 def typeql():
@@ -30,7 +31,7 @@ def typedb_protocol():
     git_repository(
         name = "typedb_protocol",
         remote = "https://github.com/typedb/typedb-protocol",
-        commit = "d5b41223533feb485be7723ab961bb8c89b2fe9c",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_protocol
+        commit = "55ed1423598425fa5ad56c7b7ca417a05d05dac3",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_protocol
     )
 
 def typedb_behaviour():

@@ -53,7 +53,7 @@ pub(crate) async fn start_typedb(
             .unwrap();
 
         let server_future = async {
-            let server = ServerBuilder::default()
+            let server = ServerBuilder::new()
                 .distribution_info(DISTRIBUTION_INFO)
                 .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
                 .build(config)

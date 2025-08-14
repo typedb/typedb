@@ -40,6 +40,7 @@ macro_rules! with_readable_transaction {
     }}
 }
 pub(crate) use with_readable_transaction;
+
 use crate::state::ServerStateError;
 
 impl Transaction {
