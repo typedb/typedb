@@ -51,14 +51,17 @@ use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 
 use super::message::query::query_structure::encode_query_structure;
-use crate::service::{
-    http::message::query::{document::encode_document, query_structure::QueryStructureResponse, row::encode_row},
-    transaction_service::{
-        init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
+use crate::{
+    service::{
+        http::message::query::{document::encode_document, query_structure::QueryStructureResponse, row::encode_row},
+        transaction_service::{
+            init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction,
+            TransactionServiceError,
+        },
+        QueryType, TransactionType,
     },
-    QueryType, TransactionType,
+    state::{BoxServerState, ServerStateError},
 };
-use crate::state::{BoxServerState, ServerStateError};
 
 macro_rules! respond_error_and_return_break {
     ($responder:ident, $error:expr) => {{
