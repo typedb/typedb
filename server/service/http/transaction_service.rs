@@ -60,7 +60,7 @@ use crate::{
         },
         QueryType, TransactionType,
     },
-    state::{BoxServerState, ServerStateError},
+    state::{ArcServerState, ServerStateError},
 };
 
 macro_rules! respond_error_and_return_break {
@@ -140,7 +140,7 @@ fn respond_transaction_response(
 
 #[derive(Debug)]
 pub(crate) struct TransactionService {
-    server_state: Arc<BoxServerState>,
+    server_state: ArcServerState,
 
     request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
     query_interrupt_sender: broadcast::Sender<InterruptType>,
@@ -218,7 +218,7 @@ impl fmt::Display for QueryAnswerWarning {
 
 impl TransactionService {
     pub(crate) fn new(
-        server_state: Arc<BoxServerState>,
+        server_state: ArcServerState,
         request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
