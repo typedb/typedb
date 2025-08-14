@@ -14,7 +14,7 @@ use std::{
     time::Duration,
 };
 
-use compiler::query_structure::QueryStructure;
+use compiler::query_structure::PipelineStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
@@ -976,14 +976,14 @@ impl TransactionService {
             tokio::spawn(async move {
                 let encoding_profile = EncodingProfile::new(tracing::enabled!(Level::TRACE));
                 match answer.answer {
-                    Either::Left((output_descriptor, batch, query_structure)) => {
+                    Either::Left((output_descriptor, batch, pipeline_structure)) => {
                         Self::submit_write_query_batch_answer(
                             snapshot,
                             type_manager,
                             thing_manager,
                             output_descriptor,
                             answer.query_options,
-                            query_structure,
+                            pipeline_structure,
                             batch,
                             sender,
                             timeout_at,
@@ -1017,7 +1017,7 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         output_descriptor: StreamQueryOutputDescriptor,
         query_options: QueryOptions,
-        _query_structure: Option<QueryStructure>,
+        _pipeline_structure: Option<PipelineStructure>,
         batch: Batch,
         sender: Sender<StreamQueryResponse>,
         timeout_at: Instant,

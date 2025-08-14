@@ -94,5 +94,7 @@ typedb_error! {
         PipelineExecution(16, "Pipeline execution failed.", typedb_source: PipelineExecutionError),
         TransactionTimeout(17, "Operation failed: transaction timeout."),
         InvalidPrefetchSize(18, "Invalid query option: prefetch size should be >= 1, got {value} instead.", value: usize),
+        AnalyseQueryExpectsPipeline(19, "Query analyse received a schema query.Only query pipeline can be analysed."),
+        AnalyseQueryFailed(20, "Analysing the query failed.", typedb_source: QueryError),
     }
 }

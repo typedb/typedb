@@ -28,6 +28,8 @@ rust_library(
 
         "@typeql//rust:typeql",
 
+        "@crates//:itertools",
+        "@crates//:serde",
         "@crates//:tracing",
         "@crates//:tokio",
         "@crates//:moka",

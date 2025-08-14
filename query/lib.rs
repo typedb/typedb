@@ -7,6 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
+pub mod analyse;
 mod definable_resolution;
 mod definable_status;
 mod define;
