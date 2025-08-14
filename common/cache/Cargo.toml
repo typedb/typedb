@@ -41,6 +41,6 @@ features = {}
 
 	[dependencies.uuid]
 		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-		version = "1.16.0"
+		version = "1.17.0"
 		default-features = false
 

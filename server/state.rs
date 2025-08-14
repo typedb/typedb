@@ -27,7 +27,6 @@ use resource::{
 use storage::{
     durability_client::{DurabilityClient, WALClient},
     isolation_manager::CommitRecord,
-    snapshot::{SchemaSnapshot, WriteSnapshot},
 };
 use system::{
     concepts::{Credential, User},
@@ -51,7 +50,9 @@ use crate::{
     status::{LocalServerStatus, ServerStatus},
 };
 
-pub type BoxServerState = Box<dyn ServerState + Send + Sync>;
+pub type DynServerState = dyn ServerState + Send + Sync;
+pub type ArcServerState = Arc<DynServerState>;
+
 pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
 
 #[async_trait]
@@ -63,7 +64,7 @@ pub trait ServerState: Debug {
 
     async fn http_address(&self) -> Option<SocketAddr>;
 
-    // TODO: server_status might not be needed in the trait.
+    // TODO: Name server_status -> servers_get and servers_statuses -> servers_all like in GRPC?
     async fn server_status(&self) -> Result<BoxServerStatus, ServerStateError>;
 
     async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, ServerStateError>;
@@ -142,6 +143,8 @@ typedb_error! {
         Unimplemented(1, "Not implemented: {description}", description: String),
         OperationFailedDueToReplicaUnavailability(12, "Unable to execute as one or more servers could not respond in time"),
         OperationFailedNonPrimaryReplica(13, "Unable to execute as this server is not the primary replica"),
+        ReplicaRegistrationNoConnection(21, "Unable to register replica '{id}' as there is no connection to '{address}'. Make sure that a correct clustering address (different from client connection address) is provided.", id: u64, address: String),
+        ReplicaNotFound(22, "Unable to execute as the replica is not found."),
         OperationNotPermitted(2, "The user is not permitted to execute the operation"),
         DatabaseNotFound(3, "Database '{name}' not found.", name: String),
         DatabaseSchemaCommitFailed(19, "Schema commit failed.", typedb_source: SchemaCommitError),

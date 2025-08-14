@@ -14,7 +14,7 @@ use error::typedb_error;
 use http::Extensions;
 use tonic::metadata::MetadataMap;
 
-use crate::state::BoxServerState;
+use crate::state::ArcServerState;
 
 pub(crate) mod credential_verifier;
 pub(crate) mod token_manager;
@@ -48,7 +48,7 @@ pub(crate) fn extract_metadata_accessor(metadata: &MetadataMap) -> Option<String
 }
 
 pub(crate) async fn authenticate<T>(
-    server_state: Arc<BoxServerState>,
+    server_state: ArcServerState,
     request: http::Request<T>,
 ) -> Result<http::Request<T>, AuthenticationError> {
     let (mut parts, body) = request.into_parts();

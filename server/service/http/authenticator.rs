@@ -14,16 +14,16 @@ use tower::{Layer, Service};
 use crate::{
     authentication::authenticate,
     service::http::{diagnostics::run_with_diagnostics_async, error::HttpServiceError},
-    state::BoxServerState,
+    state::ArcServerState,
 };
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
-    server_state: Arc<BoxServerState>,
+    server_state: ArcServerState,
 }
 
 impl Authenticator {
-    pub(crate) fn new(server_state: Arc<BoxServerState>) -> Self {
+    pub(crate) fn new(server_state: ArcServerState) -> Self {
         Self { server_state }
     }
 }
