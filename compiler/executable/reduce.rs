@@ -165,12 +165,24 @@ impl ReduceInstruction<Variable> {
         match self.clone() {
             Self::Count => Reducer::Count,
             Self::CountVar(id) => Reducer::CountVar(id),
-            Self::SumInteger(id) | Self::SumDouble(id) => Reducer::Sum(id),
-            Self::MaxInteger(id) | Self::MaxDouble(id) => Reducer::Max(id),
-            Self::MinInteger(id) | Self::MinDouble(id) => Reducer::Min(id),
-            Self::MeanInteger(id) | Self::MeanDouble(id) => Reducer::Mean(id),
-            Self::MedianInteger(id) | Self::MedianDouble(id) => Reducer::Median(id),
-            Self::StdInteger(id) | Self::StdDouble(id) => Reducer::Std(id),
+            Self::SumInteger(id) | Self::SumDouble(id) | Self::SumDecimal(id) => Reducer::Sum(id),
+            Self::MaxInteger(id)
+            | Self::MaxDouble(id)
+            | Self::MaxDecimal(id)
+            | Self::MaxString(id)
+            | Self::MaxDate(id)
+            | Self::MaxDateTime(id)
+            | Self::MaxDateTimeTZ(id) => Reducer::Max(id),
+            Self::MinInteger(id)
+            | Self::MinDouble(id)
+            | Self::MinDecimal(id)
+            | Self::MinString(id)
+            | Self::MinDate(id)
+            | Self::MinDateTime(id)
+            | Self::MinDateTimeTZ(id) => Reducer::Min(id),
+            Self::MeanInteger(id) | Self::MeanDouble(id) | Self::MeanDecimal(id) => Reducer::Mean(id),
+            Self::MedianInteger(id) | Self::MedianDouble(id) | Self::MedianDecimal(id) => Reducer::Median(id),
+            Self::StdInteger(id) | Self::StdDouble(id) | Self::StdDecimal(id) => Reducer::Std(id),
         }
     }
 }
