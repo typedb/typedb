@@ -35,6 +35,10 @@ pub(crate) mod server_manager {
     pub(crate) fn servers_all_res(servers: Vec<typedb_protocol::Server>) -> typedb_protocol::server_manager::all::Res {
         typedb_protocol::server_manager::all::Res { servers }
     }
+
+    pub(crate) fn servers_get_res(server: typedb_protocol::Server) -> typedb_protocol::server_manager::get::Res {
+        typedb_protocol::server_manager::get::Res { server: Some(server) }
+    }
 }
 
 pub(crate) mod server {
