@@ -2414,12 +2414,18 @@ pub mod test {
                 }
             }
             candidates.sort();
-            let selection_probability = 0.25; // 1.0 / (candidates.len() as f64).sqrt();
+            let intermediate_n_samples = n_samples * 2;
+            let mut selection_probability = intermediate_n_samples as f64/candidates.len() as f64; // Just to avoid picking the best n_samples all the time.
+            if selection_probability < 0.25 {
+                selection_probability = 0.25;
+            } else if selection_probability > 1.0 {
+                selection_probability = 1.0;
+            }
             new_plans.extend(
                 candidates
                     .into_iter()
                     .filter(|c| (rng.next_u64() as f64 / u64::MAX as f64) < selection_probability)
-                    .take(n_samples),
+                    .take(2 * n_samples),
             );
             new_plans.sort();
             best_partial_plans = new_plans;

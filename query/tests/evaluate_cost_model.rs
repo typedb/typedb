@@ -166,13 +166,9 @@ struct CostComparison {
     executable: ConjunctionExecutable,
 }
 
-// TODO: Make this more
-#[test]
-fn foo() {
-    let q = "match $d isa DISTRICT, has D_ID 11; $o links (customer: $c, district: $d), isa ORDER, has O_ID $o_id, has O_NEW_ORDER true; $c isa CUSTOMER, has C_ID $c_id;";
-    let database = Arc::new(open_database(&PathBuf::from("../target/debug/data/tpcc")));
-    let n_plans = 10;
-    let (annotated, variable_registry, parameters) = translate_and_annotate(database.clone(), q);
+fn run_test(database_path: &PathBuf, query: &str, n_plans: usize) {
+    let database = Arc::new(open_database(database_path));
+    let (annotated, variable_registry, parameters) = translate_and_annotate(database.clone(), query);
     let parameters = Arc::new(parameters);
     let plans = sample_plans(database.clone(), &annotated.annotated_stages[0], &variable_registry, n_plans);
     let actual_n_plans = plans.len();
@@ -261,4 +257,13 @@ fn print_costs_for_comparison(costs_for_comparison: &Vec<CostComparison>) {
         }
         println!("===");
     }
+}
+
+
+#[test]
+fn run_tppc_test() {
+    // This is just a sample on how to use the tool. Don't expect it to run.
+    let query = "match $d isa DISTRICT, has D_ID 11; $o links (customer: $c, district: $d), isa ORDER, has O_ID $o_id, has O_NEW_ORDER true; $c isa CUSTOMER, has C_ID $c_id;";
+    let db_path = PathBuf::from("../target/debug/data/tpcc");
+    run_test(&db_path, query, 10);
 }
