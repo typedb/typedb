@@ -87,7 +87,7 @@ use crate::{
             TransactionServiceError,
         },
     },
-    state::{ArcServerState, ServerStateError},
+    state::{ArcServerState, LocalServerStateError},
 };
 
 macro_rules! unwrap_or_execute_and_return {
@@ -498,7 +498,9 @@ impl TransactionService {
                         (profile, commit_result)
                     }
                     Ok((_, None)) => (profile, Ok(())),
-                    Err(error) => (profile, Err(ServerStateError::DatabaseDataCommitFailed { typedb_source: error })),
+                    Err(error) => {
+                        (profile, Err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source: error }))
+                    }
                 };
 
                 if profile.is_enabled() {
@@ -536,7 +538,7 @@ impl TransactionService {
                     }
                     Ok((_, None)) => (profile, Ok(())),
                     Err(typedb_source) => {
-                        (profile, Err(ServerStateError::DatabaseSchemaCommitFailed { typedb_source }))
+                        (profile, Err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }))
                     }
                 };
 

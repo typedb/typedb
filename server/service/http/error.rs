@@ -7,7 +7,8 @@
 use error::{typedb_error, TypeDBError};
 
 use crate::{
-    authentication::AuthenticationError, service::transaction_service::TransactionServiceError, state::ServerStateError,
+    authentication::AuthenticationError, service::transaction_service::TransactionServiceError,
+    state::LocalServerStateError,
 };
 
 typedb_error!(
@@ -19,7 +20,7 @@ typedb_error!(
         UnknownVersion(5, "Unknown API version '{version}'.", version: String),
         MissingPathParameter(6, "Requested resource not found: missing path parameter {parameter}.", parameter: String),
         InvalidPathParameter(7, "Requested resource not found: invalid path parameter {parameter}.", parameter: String),
-        State(8, "State error.", typedb_source: ServerStateError),
+        State(8, "State error.", typedb_source: LocalServerStateError),
         Authentication(9, "Authentication error.", typedb_source: AuthenticationError),
         Transaction(16, "Transaction error.", typedb_source: TransactionServiceError),
         QueryClose(17, "Error while closing single-query transaction.", typedb_source: TransactionServiceError),
@@ -37,7 +38,7 @@ impl HttpServiceError {
     }
 
     pub(crate) fn operation_not_permitted() -> Self {
-        Self::State { typedb_source: ServerStateError::OperationNotPermitted {} }
+        Self::State { typedb_source: LocalServerStateError::OperationNotPermitted {} }
     }
 
     pub(crate) fn no_open_transaction() -> Self {

@@ -39,7 +39,7 @@ macro_rules! with_readable_transaction {
 }
 pub(crate) use with_readable_transaction;
 
-use crate::state::ServerStateError;
+use crate::state::LocalServerStateError;
 
 use crate::state::ServerStateError;
 
@@ -77,8 +77,8 @@ typedb_error! {
         CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
         CannotRollbackReadTransaction(3, "Read transactions cannot be rolled back, since they never contain writes."),
         TransactionFailed(4, "Transaction failed.", typedb_source: TransactionError),
-        DataCommitFailed(5, "Data transaction commit failed.", typedb_source: ServerStateError),
-        SchemaCommitFailed(6, "Schema transaction commit failed.", typedb_source: ServerStateError),
+        DataCommitFailed(5, "Data transaction commit failed.", typedb_source: LocalServerStateError),
+        SchemaCommitFailed(6, "Schema transaction commit failed.", typedb_source: LocalServerStateError),
         QueryParseFailed(7, "Query parsing failed.", typedb_source: typeql::Error),
         SchemaQueryRequiresSchemaTransaction(8, "Schema modification queries require schema transactions."),
         WriteQueryRequiresSchemaOrWriteTransaction(9, "Data modification queries require either write or schema transactions."),
