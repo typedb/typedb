@@ -87,13 +87,9 @@ use crate::{
             init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction,
             TransactionServiceError,
         },
-        row::encode_row,
+        may_encode_pipeline_structure,
+        IncludeInvolvedBlocks,
     },
-    may_encode_pipeline_structure,
-    transaction_service::{
-        init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
-    },
-    IncludeInvolvedBlocks,
     state::{ArcServerState, ServerStateError},
 };
 
@@ -150,7 +146,7 @@ pub(crate) struct TransactionService {
     running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
 }
 
-impl TransactionService {
+impl TransactionService {\
     pub(crate) fn new(
         server_state: ArcServerState,
         request_stream: Streaming<typedb_protocol::transaction::Client>,
@@ -565,7 +561,9 @@ impl TransactionService {
                         (profile, commit_result)
                     }
                     Ok((_, None)) => (profile, Ok(())),
-                    Err(error) => (profile, Err(ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })),
+                    Err(typedb_source) => {
+                        (profile, Err(ServerStateError::DatabaseSchemaCommitFailed { typedb_source }))
+                    }
                 };
 
                 if profile.is_enabled() {
@@ -846,10 +844,9 @@ impl TransactionService {
         let query = query_req.query;
         let parsed = match parse_query(&query) {
             Ok(parsed) => parsed,
-            Err(err) => {
-                let response = ImmediateQueryResponse::non_fatal_err(TransactionServiceError::QueryParseFailed {
-                    typedb_source: err,
-                });
+            Err(typedb_source) => {
+                let response =
+                    ImmediateQueryResponse::non_fatal_err(TransactionServiceError::QueryParseFailed { typedb_source });
                 return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
             }
         };
@@ -1151,10 +1148,10 @@ impl TransactionService {
                 Ok(encoded_row) => {
                     Self::submit_response_async(&sender, StreamQueryResponse::next_row(encoded_row)).await;
                 }
-                Err(err) => {
+                Err(typedb_source) => {
                     Self::submit_response_async(
                         &sender,
-                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
+                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                     )
                     .await;
                     return;
@@ -1207,10 +1204,10 @@ impl TransactionService {
                 Ok(encoded_document) => {
                     Self::submit_response_async(&sender, StreamQueryResponse::next_document(encoded_document)).await;
                 }
-                Err(err) => {
+                Err(typedb_source) => {
                     Self::submit_response_async(
                         &sender,
-                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
+                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                     )
                     .await;
                     return;
@@ -1329,10 +1326,10 @@ impl TransactionService {
                     Ok(encoded_document) => {
                         Self::submit_response_sync(sender, StreamQueryResponse::next_document(encoded_document))
                     }
-                    Err(err) => {
+                    Err(typedb_source) => {
                         Self::submit_response_sync(
                             sender,
-                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
+                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                         );
                         return;
                     }
@@ -1400,10 +1397,10 @@ impl TransactionService {
                 );
                 match encoded_row {
                     Ok(encoded_row) => Self::submit_response_sync(sender, StreamQueryResponse::next_row(encoded_row)),
-                    Err(err) => {
+                    Err(typedb_source) => {
                         Self::submit_response_sync(
                             sender,
-                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
+                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                         );
                         return;
                     }
