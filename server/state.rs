@@ -16,7 +16,7 @@ use database::{
     Database, DatabaseDeleteError,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use error::typedb_error;
+use error::{typedb_error, TypeDBError};
 use futures::{StreamExt, TryFutureExt};
 use ir::pipeline::FunctionReadError;
 use itertools::Itertools;
@@ -50,13 +50,15 @@ use crate::{
     status::{LocalServerStatus, ServerStatus},
 };
 
-pub type DynServerState = dyn ServerState + Send + Sync;
+pub type DynServerState = dyn ServerState<Error = ServerStateError> + Send + Sync;
 pub type ArcServerState = Arc<DynServerState>;
 
 pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
 
 #[async_trait]
 pub trait ServerState: Debug {
+    type Error: TypeDBError + Send + Sync + 'static;
+
     async fn distribution_info(&self) -> DistributionInfo;
 
     // TODO: grpc_address and http_address don't really suit "ServerState"
@@ -65,54 +67,49 @@ pub trait ServerState: Debug {
     async fn http_address(&self) -> Option<SocketAddr>;
 
     // TODO: Name server_status -> servers_get and servers_statuses -> servers_all like in GRPC?
-    async fn server_status(&self) -> Result<BoxServerStatus, ServerStateError>;
+    async fn server_status(&self) -> Result<BoxServerStatus, Self::Error>;
 
-    async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, ServerStateError>;
+    async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, Self::Error>;
 
-    async fn servers_register(&self, clustering_id: u64, clustering_address: String) -> Result<(), ServerStateError>;
+    async fn servers_register(&self, clustering_id: u64, clustering_address: String) -> Result<(), Self::Error>;
 
-    async fn servers_deregister(&self, clustering_id: u64) -> Result<(), ServerStateError>;
+    async fn servers_deregister(&self, clustering_id: u64) -> Result<(), Self::Error>;
 
-    async fn databases_all(&self) -> Result<Vec<String>, ServerStateError>;
+    async fn databases_all(&self) -> Result<Vec<String>, Self::Error>;
 
     async fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>>;
 
     async fn databases_contains(&self, name: &str) -> bool;
 
-    async fn databases_create(&self, name: &str) -> Result<(), ServerStateError>;
+    async fn databases_create(&self, name: &str) -> Result<(), Self::Error>;
 
-    async fn database_schema(&self, name: String) -> Result<String, ServerStateError>;
+    async fn database_schema(&self, name: String) -> Result<String, Self::Error>;
 
-    async fn database_type_schema(&self, name: String) -> Result<String, ServerStateError>;
+    async fn database_type_schema(&self, name: String) -> Result<String, Self::Error>;
 
     async fn database_schema_commit(
         &self,
         name: &str,
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
-    ) -> Result<(), ServerStateError>;
+    ) -> Result<(), Self::Error>;
 
     async fn database_data_commit(
         &self,
         name: &str,
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
-    ) -> Result<(), ServerStateError>;
+    ) -> Result<(), Self::Error>;
 
-    async fn database_delete(&self, name: &str) -> Result<(), ServerStateError>;
+    async fn database_delete(&self, name: &str) -> Result<(), Self::Error>;
 
-    async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ServerStateError>;
+    async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, Self::Error>;
 
-    async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ServerStateError>;
+    async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, Self::Error>;
 
-    async fn users_contains(&self, name: &str) -> Result<bool, ServerStateError>;
+    async fn users_contains(&self, name: &str) -> Result<bool, Self::Error>;
 
-    async fn users_create(
-        &self,
-        user: &User,
-        credential: &Credential,
-        accessor: Accessor,
-    ) -> Result<(), ServerStateError>;
+    async fn users_create(&self, user: &User, credential: &Credential, accessor: Accessor) -> Result<(), Self::Error>;
 
     async fn users_update(
         &self,
@@ -120,13 +117,13 @@ pub trait ServerState: Debug {
         user_update: Option<User>,
         credential_update: Option<Credential>,
         accessor: Accessor,
-    ) -> Result<(), ServerStateError>;
+    ) -> Result<(), Self::Error>;
 
-    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ServerStateError>;
+    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), Self::Error>;
 
-    async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ServerStateError>;
+    async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), Self::Error>;
 
-    async fn token_create(&self, username: String, password: String) -> Result<String, ServerStateError>;
+    async fn token_create(&self, username: String, password: String) -> Result<String, Self::Error>;
 
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 
@@ -356,6 +353,8 @@ impl LocalServerState {
 
 #[async_trait]
 impl ServerState for LocalServerState {
+    type Error = ServerStateError;
+
     async fn distribution_info(&self) -> DistributionInfo {
         self.distribution_info
     }
