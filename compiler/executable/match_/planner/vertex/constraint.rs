@@ -124,32 +124,42 @@ impl ConstraintVertex<'_> {
 
     pub(crate) fn direction_from_join_var(
         &self,
-        var: VariableVertexId,
-        include: &HashSet<VariableVertexId>,
-        exclude: &HashSet<VariableVertexId>,
-    ) -> Option<Direction> {
+        join_var: VariableVertexId,
+        _ongoing_step_produced: &HashSet<VariableVertexId>,
+        all_produced: &HashSet<VariableVertexId>,
+    ) -> Result<Direction, QueryPlanningError> {
+        debug_assert!({
+            let unbound_join_variables: Vec<VariableVertexId> = self
+                .variable_vertex_ids()
+                .filter(|&var| self.can_join_on(var) && (!all_produced.contains(&var) || _ongoing_step_produced.contains(&var)))
+                .collect();
+            unbound_join_variables.len() != 0
+        });
         // First check if we are in a bound case, in which case we don't care about directions
-        match self {
-            Self::Links(_) | Self::Has(_) | Self::IndexedRelation(_) => {
-                let unbound_join_variables: Vec<VariableVertexId> = self
-                    .variable_vertex_ids()
-                    .filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)))
-                    .collect();
-                if unbound_join_variables.len() < 2 {
-                    return None;
-                }
+        let (canonical_from, canonical_to) = match self {
+            Self::Links(links) => (links.relation, links.player),
+            Self::Has(has) => (has.owner, has.attribute),
+            Self::IndexedRelation(indexed) => (indexed.player_1, indexed.player_2),
+            _ => return Err(QueryPlanningError::UnimplementedJoinForConstraint {}),
+        };
+        // We can't do a join if two participating iterators produce the same non-join var.
+        let direction = if join_var == canonical_from {
+            debug_assert!(all_produced.contains(&canonical_to) || !_ongoing_step_produced.contains(&canonical_to));
+            if all_produced.contains(&canonical_to) {
+                Direction::Reverse
+            } else {
+                Direction::Canonical
             }
-            _ => {
-                return None;
+        } else {
+            debug_assert!(join_var == canonical_to);
+            debug_assert!(all_produced.contains(&canonical_from) || !_ongoing_step_produced.contains(&canonical_from));
+            if all_produced.contains(&canonical_from) {
+                Direction::Canonical
+            } else {
+                Direction::Reverse
             }
-        }
-        // If unbounded, we choose direction based on the provided join variable
-        match self {
-            Self::Links(inner) => Some(Direction::canonical_if(inner.relation == var)),
-            Self::Has(inner) => Some(Direction::canonical_if(inner.owner == var)),
-            Self::IndexedRelation(inner) => Some(Direction::canonical_if(inner.player_1 == var)),
-            _ => None,
-        }
+        };
+        Ok(direction)
     }
 }
 
@@ -326,7 +336,10 @@ impl Costed for TypeListPlanner<'_> {
         _fix_dir: Option<Direction>,
         _graph: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        Ok((Cost::in_mem_complex_with_ratio(self.types.len() as f64), CostMetaData::Direction(Direction::Canonical)))
+        Ok((
+            Cost::in_mem_complex_with_ratio(self.types.len() as f64),
+            CostMetaData::Direction(Direction::Canonical, None),
+        ))
     }
 }
 
@@ -482,7 +495,9 @@ impl Costed for IsaPlanner<'_> {
             false => OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size,
         };
         let io_ratio = scan_size;
-        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(Direction::Reverse)))
+        // TODO: Seeking on an isa iterator isn't implemented yet.
+        let join_var = None; // (!is_thing_bound).then(|| self.thing);
+        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(Direction::Reverse, join_var)))
     }
 }
 
@@ -695,7 +710,8 @@ impl Costed for HasPlanner<'_> {
         } else {
             OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse
         };
-        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction)))
+        let join_var = pick_join_var(direction, is_owner_bound, is_attribute_bound, self.owner, self.attribute);
+        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction, join_var)))
     }
 }
 
@@ -937,7 +953,8 @@ impl Costed for LinksPlanner<'_> {
         } else {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse;
         }
-        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction)))
+        let join_var = pick_join_var(direction, is_relation_bound, is_player_bound, self.relation, self.player);
+        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction, join_var)))
     }
 }
 
@@ -1154,7 +1171,8 @@ impl Costed for IndexedRelationPlanner<'_> {
         } else {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse;
         }
-        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction)))
+        let join_var = pick_join_var(direction, is_player1_bound, is_player2_bound, self.player_1, self.player_2);
+        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction, join_var)))
     }
 }
 
@@ -1194,7 +1212,8 @@ impl Costed for SubPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Reverse)))
+        // TODO: Seeking on type edge iterators isn't implemented yet.
+        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Reverse, None)))
     }
 }
 
@@ -1233,7 +1252,8 @@ impl Costed for OwnsPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical)))
+        // TODO: Seeking on type edge iterators isn't implemented yet.
+        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical, None)))
     }
 }
 
@@ -1272,7 +1292,8 @@ impl Costed for RelatesPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical)))
+        // TODO: Seeking on type edge iterators isn't implemented yet.
+        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical, None)))
     }
 }
 
@@ -1311,6 +1332,25 @@ impl Costed for PlaysPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical)))
+        // TODO: Seeking on type edge iterators isn't implemented yet.
+        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical, None)))
+    }
+}
+
+fn pick_join_var(
+    direction: Direction,
+    is_from_bound: bool,
+    is_to_bound: bool,
+    from_var: VariableVertexId,
+    to_var: VariableVertexId,
+) -> Option<VariableVertexId> {
+    if is_from_bound && is_to_bound {
+        return None;
+    }
+    match direction {
+        Direction::Canonical if is_from_bound => Some(to_var),
+        Direction::Canonical => Some(from_var),
+        Direction::Reverse if is_to_bound => Some(from_var),
+        Direction::Reverse => Some(to_var),
     }
 }
