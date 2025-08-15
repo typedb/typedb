@@ -804,6 +804,7 @@ impl TransactionService {
         debug_assert!(self.running_write_query.is_none());
         debug_assert!(self.transaction.is_some());
         let interrupt = self.query_interrupt_receiver.clone();
+        println!("Spawn blocking execute write query!");
         match self.transaction.take() {
             Some(Transaction::Schema(schema_transaction)) => Ok(spawn_blocking(move || {
                 let (transaction, result) =

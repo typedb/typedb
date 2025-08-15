@@ -535,7 +535,9 @@ impl TransactionService {
                         (profile, commit_result)
                     }
                     Ok((_, None)) => (profile, Ok(())),
-                    Err(error) => (profile, Err(ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })),
+                    Err(typedb_source) => {
+                        (profile, Err(ServerStateError::DatabaseSchemaCommitFailed { typedb_source }))
+                    }
                 };
 
                 if profile.is_enabled() {
