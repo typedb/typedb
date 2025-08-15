@@ -36,12 +36,6 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::State { typedb_source } => match typedb_source {
                 LocalServerStateError::Unimplemented { .. } => StatusCode::NOT_IMPLEMENTED,
                 LocalServerStateError::OperationNotPermitted { .. } => StatusCode::FORBIDDEN,
-                LocalServerStateError::OperationFailedDueToReplicaUnavailability { .. } => {
-                    StatusCode::INTERNAL_SERVER_ERROR
-                }
-                LocalServerStateError::OperationFailedNonPrimaryReplica { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-                LocalServerStateError::ReplicaRegistrationNoConnection { .. } => StatusCode::BAD_REQUEST,
-                LocalServerStateError::ReplicaNotFound { .. } => StatusCode::NOT_FOUND,
                 LocalServerStateError::DatabaseNotFound { .. } => StatusCode::NOT_FOUND,
                 LocalServerStateError::DatabaseSchemaCommitFailed { .. } => StatusCode::INTERNAL_SERVER_ERROR,
                 LocalServerStateError::DatabaseDataCommitFailed { .. } => StatusCode::INTERNAL_SERVER_ERROR,
