@@ -48,7 +48,7 @@ use crate::{
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
     },
-    state::{ArcServerState, ServerStateError},
+    state::{ArcServerState, LocalServerStateError},
 };
 
 #[derive(Debug)]
@@ -287,7 +287,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             || async {
                 match self.server_state.databases_get(&name).await {
                     Some(db) => Ok(Response::new(database_get_res(db.name().to_string()))),
-                    None => Err(ServerStateError::DatabaseNotFound { name }.into_error_message().into_status()),
+                    None => Err(LocalServerStateError::DatabaseNotFound { name }.into_error_message().into_status()),
                 }
             },
         )
@@ -406,7 +406,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             ActionKind::DatabaseExport,
             || async {
                 match self.server_state.database_manager().await.database(&database_name) {
-                    None => Err(ServerStateError::DatabaseNotFound { name: database_name }
+                    None => Err(LocalServerStateError::DatabaseNotFound { name: database_name }
                         .into_error_message()
                         .into_status()),
                     Some(database) => {
