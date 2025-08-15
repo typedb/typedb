@@ -2395,8 +2395,10 @@ pub mod test {
         n_samples: usize,
     ) -> Result<Vec<CompleteCostPlan>, QueryPlanningError> {
         let num_patterns = graph.pattern_to_variable.len();
+        debug_assert!(num_patterns == initial_empty_plan.remaining_patterns.len());
         let mut best_partial_plans = Vec::new();
-        best_partial_plans.push(initial_empty_plan);
+        let debug__plan_patterns = initial_empty_plan.remaining_patterns.clone();
+        best_partial_plans.push(initial_empty_plan.clone());
         let mut rng = rand::thread_rng();
         for _i in 0..num_patterns {
             let mut new_plans = Vec::new();
@@ -2405,9 +2407,7 @@ pub mod test {
                 for extension in plan.extensions_iter(graph) {
                     let extension = extension?;
                     if extension.is_trivial(graph) {
-                        let mut plan = plan.clone();
-                        plan.extend_with(graph, extension);
-                        new_plans.push(plan);
+                        new_plans.push(plan.extend_with(graph, extension));
                         break;
                     }
                     candidates.push(plan.extend_with(graph, extension));
@@ -2424,7 +2424,16 @@ pub mod test {
             new_plans.sort();
             best_partial_plans = new_plans;
         }
-        Ok(best_partial_plans.into_iter().take(n_samples).map(|plan| plan.into_complete_plan(graph)).collect())
+
+        let best_complete_plans = best_partial_plans.into_iter().take(n_samples).map(|plan| {
+            plan.into_complete_plan(graph)
+        }).collect::<Vec<_>>();
+        debug_assert!(best_complete_plans.iter().all(|plan| {
+            debug__plan_patterns.iter().all(|pattern| {
+                plan.vertex_ordering.contains(&VertexId::Pattern(*pattern))
+            })
+        }));
+        Ok(best_complete_plans)
     }
 
     fn recreate_step_costs_from_complete_plan(

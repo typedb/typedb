@@ -201,7 +201,7 @@ fn foo() {
 
 fn print_costs_for_comparison(costs_for_comparison: &Vec<CostComparison>) {
     // Summaries
-    println!("#\t| Plan\t\t| Executed\t| rel-err(%)\t|");
+    println!("{:4} | {:^12} | {:^12} | {:^12} |", "#", "Plan" , "Executed", "rel-err(%)");
     for (i, cost_comparison) in costs_for_comparison.iter().enumerate() {
         let CostComparison { plan_cumulative_cost, executed_per_step_counters, .. } = &cost_comparison;
         let total_cost_from_profile =
@@ -213,7 +213,7 @@ fn print_costs_for_comparison(costs_for_comparison: &Vec<CostComparison>) {
             last_stage_rows as f64,
         );
         println!(
-            "{i}\t|{:12.3}\t|{:12.3}\t|{:12.3}\t|",
+            "{i:4} | {:12.3} | {:12.3} | {:12.3} |",
             plan_cumulative_cost.cost,
             cost_from_execution.cost,
             100.0 * (cost_from_execution.cost / plan_cumulative_cost.cost - 1.0)
@@ -242,8 +242,9 @@ fn print_costs_for_comparison(costs_for_comparison: &Vec<CostComparison>) {
             executable.steps().iter().enumerate().map(|(i, e)| format!("{i}: {e}")).join("\n")
         );
 
-        println!("\n#\t|| p_cost\t| e_cost\t|| p_rows\t| e_rows\t|");
-
+        println!("{:4} || {:^27} || {:^27} |", "", "Cost", "Rows");
+        println!("{:4} || {:^12} | {:^12} || {:^12} | {:^12} |", "#", "plan", "actual", "plan", "actual");
+        println!("#----||--------------|--------------||--------------|--------------|");
         for (j, (planned, executed)) in
             plan_per_step_estimated_cost.iter().zip(executed_per_step_counters.iter()).enumerate()
         {
@@ -253,7 +254,7 @@ fn print_costs_for_comparison(costs_for_comparison: &Vec<CostComparison>) {
                 executed.rows as f64 / prev_stage_rows,
             );
             println!(
-                "{}\t||{:12.3}\t|{:12.3}\t||{:12.3}\t|{:12.3}\t|",
+                "{:4} || {:12.3} | {:12.3} || {:12.3} | {:12.3} |",
                 j, planned.cost, executed_cost.cost, planned.io_ratio, executed_cost.io_ratio
             );
             prev_stage_rows = executed.rows as f64;
