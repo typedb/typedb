@@ -122,6 +122,16 @@ fn make_builder<'a>(
     for pattern in conjunction.nested_patterns() {
         match pattern {
             NestedPattern::Disjunction(disjunction) => {
+                let disjunction_dependency_modes = disjunction.variable_binding_modes();
+                let required_inputs = disjunction_dependency_modes
+                    .iter()
+                    .filter(|(v, mode)| {
+                        (mode.is_locally_binding_in_child() || mode.is_require_prebound())
+                            && block_context.is_variable_available_in(conjunction.scope_id(), **v)
+                    })
+                    .map(|(v, _)| *v)
+                    .chain(disjunction.required_inputs(block_context))
+                    .collect::<Vec<_>>();
                 let planner = DisjunctionPlanBuilder::new(
                     disjunction.conjunctions_by_branch_id().map(|(id, _)| *id).collect(),
                     disjunction
@@ -140,6 +150,7 @@ fn make_builder<'a>(
                             )
                         })
                         .collect::<Result<Vec<_>, _>>()?,
+                    required_inputs,
                 );
                 disjunction_planners.push(planner)
             }
@@ -2023,11 +2034,16 @@ impl ConjunctionPlan<'_> {
 pub(super) struct DisjunctionPlanBuilder<'a> {
     pub(super) branch_ids: Vec<BranchID>,
     pub(super) branches: Vec<ConjunctionPlanBuilder<'a>>,
+    pub(super) required_inputs: Vec<Variable>,
 }
 
 impl<'a> DisjunctionPlanBuilder<'a> {
-    fn new(branch_ids: Vec<BranchID>, branches: Vec<ConjunctionPlanBuilder<'a>>) -> Self {
-        Self { branch_ids, branches }
+    fn new(
+        branch_ids: Vec<BranchID>,
+        branches: Vec<ConjunctionPlanBuilder<'a>>,
+        required_inputs: Vec<Variable>,
+    ) -> Self {
+        Self { branch_ids, branches, required_inputs }
     }
 
     pub(super) fn branches(&self) -> &[ConjunctionPlanBuilder<'a>] {

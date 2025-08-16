@@ -657,12 +657,7 @@ impl<'a> DisjunctionVertex<'a> {
             .iter()
             .flat_map(|branch| branch.referenced_variables().filter_map(|v| parent_variable_index.get(&v).copied()))
             .collect();
-        let required_parent_vertex_ids = builder
-            .branches()
-            .iter()
-            .flat_map(|branch| branch.required_input_variables())
-            .map(|v| parent_variable_index[&v])
-            .collect();
+        let required_parent_vertex_ids = builder.required_inputs.iter().map(|v| parent_variable_index[&v]).collect();
         Self { referenced_parent_vertex_ids, required_parent_vertex_ids, builder }
     }
 
