@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::{Arc, Mutex, RwLock},
 };
 
@@ -127,7 +127,11 @@ impl TabledFunctionState {
     ) -> Self {
         pattern_executor.prepare(FixedBatch::from(args.as_reference()));
         Self {
-            table: RwLock::new(AnswerTable { answers: Vec::new(), width: answer_width }),
+            table: RwLock::new(AnswerTable {
+                answers: Vec::new(),
+                answers_lookup: HashSet::new(),
+                width: answer_width,
+            }),
             executor_state: Mutex::new(TabledFunctionPatternExecutorState {
                 pattern_executor,
                 suspensions: QueryPatternSuspensions::new_tabled_call(scc_id),
@@ -155,6 +159,7 @@ impl TabledFunctionState {
 pub(crate) struct AnswerTable {
     // TODO: use a better data-structure. XSB has an "answer-trie" though a LinkedHashSet might do.
     answers: Vec<MaybeOwnedRow<'static>>,
+    answers_lookup: HashSet<MaybeOwnedRow<'static>>,
     width: u32,
     // TODO: We need to be able to record the fact that a table is DONE
 }
@@ -179,8 +184,9 @@ impl AnswerTable {
 
     fn try_add_row(&mut self, row: MaybeOwnedRow<'_>) -> bool {
         let row_data_only = MaybeOwnedRow::new_borrowed(row.row(), &1, &Provenance::INITIAL);
-        if !self.answers.contains(&row_data_only) {
+        if !self.answers_lookup.contains(&row_data_only) {
             self.answers.push(row_data_only.clone().into_owned());
+            self.answers_lookup.insert(row_data_only.clone().into_owned());
             true
         } else {
             false
