@@ -40,7 +40,7 @@ use crate::{
 
 pub mod conjunction_executable;
 pub mod plan;
-pub(crate) mod vertex;
+pub mod vertex;
 
 typedb_error! {
     pub ConjunctionCompilationError(component = "Match compiler", prefix = "MCP") {

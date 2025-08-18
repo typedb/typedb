@@ -51,6 +51,13 @@ rust_test(
     deps = deps,
 )
 
+rust_test(
+    name = "evaluate_cost_model",
+    crate_root = "evaluate_cost_model.rs",
+    srcs = ["evaluate_cost_model.rs"],
+    deps = deps + ["//database", "//common/options"],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

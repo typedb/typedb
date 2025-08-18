@@ -749,3 +749,52 @@ impl StorageCountersData {
         }
     }
 }
+
+pub mod test {
+    // TODO: Consider making the whole thing public so we can get finer step-wise comparisons
+    use std::sync::atomic::Ordering;
+
+    use crate::profile::StageProfile;
+
+    #[derive(Default)]
+    pub struct StorageCounterCopy {
+        // pub sum_rows_across_steps: u64,
+        // pub last_step_rows: u64
+        pub raw_advance: u64,
+        pub raw_seek: u64,
+        pub advance_mvcc_visible: u64,
+        pub advance_mvcc_invisible: u64,
+        pub advance_mvcc_deleted: u64,
+        pub rows: u64,
+    }
+    impl StorageCounterCopy {
+        pub fn from(stage_profile: &StageProfile) -> Vec<StorageCounterCopy> {
+            let step_profiles = stage_profile.step_profiles.read().unwrap();
+            step_profiles
+                .iter()
+                .map(|profile| {
+                    let step_counters = profile.storage_counters().counters.unwrap();
+                    StorageCounterCopy {
+                        raw_advance: step_counters.raw_advance.load(Ordering::Relaxed),
+                        raw_seek: step_counters.raw_seek.load(Ordering::Relaxed),
+                        advance_mvcc_visible: step_counters.advance_mvcc_visible.load(Ordering::Relaxed),
+                        advance_mvcc_invisible: step_counters.advance_mvcc_invisible.load(Ordering::Relaxed),
+                        advance_mvcc_deleted: step_counters.advance_mvcc_deleted.load(Ordering::Relaxed),
+                        rows: profile.data.as_ref().unwrap().rows.load(Ordering::Relaxed),
+                    }
+                })
+                .collect()
+        }
+
+        pub fn add(&self, second: &StorageCounterCopy) -> StorageCounterCopy {
+            StorageCounterCopy {
+                raw_advance: self.raw_advance + second.raw_advance,
+                raw_seek: self.raw_seek + second.raw_seek,
+                advance_mvcc_visible: self.advance_mvcc_visible + second.advance_mvcc_visible,
+                advance_mvcc_invisible: self.advance_mvcc_invisible + second.advance_mvcc_invisible,
+                advance_mvcc_deleted: self.advance_mvcc_deleted + second.advance_mvcc_deleted,
+                rows: self.rows + second.rows,
+            }
+        }
+    }
+}
