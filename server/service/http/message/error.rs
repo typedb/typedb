@@ -9,11 +9,11 @@ use http::StatusCode;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    error::LocalServerStateError,
     service::{
         http::{error::HttpServiceError, message::body::JsonBody},
         transaction_service::TransactionServiceError,
     },
-    state::LocalServerStateError,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,26 +33,19 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::UnknownVersion { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::MissingPathParameter { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::InvalidPathParameter { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::State { typedb_source } => match typedb_source {
-                LocalServerStateError::Unimplemented { .. } => StatusCode::NOT_IMPLEMENTED,
-                LocalServerStateError::OperationNotPermitted { .. } => StatusCode::FORBIDDEN,
-                LocalServerStateError::DatabaseNotFound { .. } => StatusCode::NOT_FOUND,
-                LocalServerStateError::DatabaseSchemaCommitFailed { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-                LocalServerStateError::DatabaseDataCommitFailed { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-                LocalServerStateError::DatabaseCannotBeCreated { .. } => StatusCode::BAD_REQUEST,
-                LocalServerStateError::DatabaseCannotBeDeleted { .. } => StatusCode::BAD_REQUEST,
-                LocalServerStateError::UserNotFound { .. } => StatusCode::NOT_FOUND,
-                LocalServerStateError::UserCannotBeCreated { .. } => StatusCode::BAD_REQUEST,
-                LocalServerStateError::UserCannotBeRetrieved { .. } => StatusCode::BAD_REQUEST,
-                LocalServerStateError::UserCannotBeUpdated { .. } => StatusCode::BAD_REQUEST,
-                LocalServerStateError::UserCannotBeDeleted { .. } => StatusCode::BAD_REQUEST,
-                LocalServerStateError::FailedToOpenPrerequisiteTransaction { .. } => StatusCode::BAD_REQUEST,
-                LocalServerStateError::ConceptReadError { .. } => StatusCode::BAD_REQUEST,
-                LocalServerStateError::FunctionReadError { .. } => StatusCode::BAD_REQUEST,
-                LocalServerStateError::NotInitialised { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-                LocalServerStateError::AuthenticationError { .. } => StatusCode::BAD_REQUEST,
-                LocalServerStateError::DatabaseExport { .. } => StatusCode::BAD_REQUEST,
-            },
+            HttpServiceError::State { typedb_source } => {
+                debug_assert!(
+                    typedb_source.code_prefix() == "LSS",
+                    "Expected only local server state errors. Override for "
+                );
+                match typedb_source.code_number() {
+                    1 => StatusCode::NOT_IMPLEMENTED,                  // Unimplemented
+                    2 => StatusCode::FORBIDDEN,                        // OperationNotPermitted
+                    3 | 4 => StatusCode::NOT_FOUND,                    // DatabaseNotFound | UserNotFound
+                    14 | 17 | 18 => StatusCode::INTERNAL_SERVER_ERROR, // NotInitialised | *CommitFailed
+                    _ => StatusCode::BAD_REQUEST,
+                }
+            }
             HttpServiceError::Authentication { .. } => StatusCode::UNAUTHORIZED,
             HttpServiceError::Transaction { typedb_source } => match typedb_source {
                 TransactionServiceError::DatabaseNotFound { .. } => StatusCode::NOT_FOUND,

@@ -22,6 +22,7 @@ use uuid::Uuid;
 
 use crate::{
     authentication::{Accessor, AuthenticationError},
+    error::LocalServerStateError,
     service::{
         grpc::{
             diagnostics::{run_with_diagnostics, run_with_diagnostics_async},
@@ -48,7 +49,7 @@ use crate::{
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
     },
-    state::{ArcServerState, LocalServerStateError},
+    state::ArcServerState,
 };
 
 #[derive(Debug)]

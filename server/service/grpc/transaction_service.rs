@@ -23,7 +23,7 @@ use database::{
         WriteQueryAnswer, WriteQueryResult,
     },
     transaction::{
-        DataCommitError, DataCommitError::SnapshotError, SchemaCommitError, TransactionRead, TransactionSchema,
+        DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema,
         TransactionWrite,
     },
 };
@@ -65,6 +65,7 @@ use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
 use crate::{
+    error::LocalServerStateError,
     service::{
         grpc::{
             diagnostics::run_with_diagnostics_async,
@@ -87,7 +88,7 @@ use crate::{
             TransactionServiceError,
         },
     },
-    state::{ArcServerState, LocalServerStateError},
+    state::ArcServerState,
 };
 
 macro_rules! unwrap_or_execute_and_return {
@@ -484,7 +485,7 @@ impl TransactionService {
                         let into_commit_record_result = snapshot
                             .finalise(profile.commit_profile())
                             .map(|commit_record_opt| (database, commit_record_opt))
-                            .map_err(|error| DataCommitError::SnapshotError { typedb_source: error });
+                            .map_err(|typedb_source| DataCommitError::SnapshotError { typedb_source });
                         (profile, into_commit_record_result)
                     }
                     (profile, Err(error)) => (profile, Err(error)),
@@ -499,7 +500,7 @@ impl TransactionService {
                     }
                     Ok((_, None)) => (profile, Ok(())),
                     Err(error) => {
-                        (profile, Err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source: error }))
+                        (profile, Err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source: error }.into()))
                     }
                 };
 
@@ -537,9 +538,10 @@ impl TransactionService {
                         (profile, commit_result)
                     }
                     Ok((_, None)) => (profile, Ok(())),
-                    Err(typedb_source) => {
-                        (profile, Err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }))
-                    }
+                    Err(typedb_source) => (
+                        profile,
+                        Err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }.into()),
+                    ),
                 };
 
                 if profile.is_enabled() {

@@ -3,12 +3,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::sync::Arc;
 
 use error::{typedb_error, TypeDBError};
 
 use crate::{
-    authentication::AuthenticationError, service::transaction_service::TransactionServiceError,
-    state::LocalServerStateError,
+    authentication::AuthenticationError,
+    error::{ArcServerStateError, LocalServerStateError},
+    service::transaction_service::TransactionServiceError,
 };
 
 typedb_error!(
@@ -20,7 +22,7 @@ typedb_error!(
         UnknownVersion(5, "Unknown API version '{version}'.", version: String),
         MissingPathParameter(6, "Requested resource not found: missing path parameter {parameter}.", parameter: String),
         InvalidPathParameter(7, "Requested resource not found: invalid path parameter {parameter}.", parameter: String),
-        State(8, "State error.", typedb_source: LocalServerStateError),
+        State(8, "State error.", typedb_source: ArcServerStateError),
         Authentication(9, "Authentication error.", typedb_source: AuthenticationError),
         Transaction(16, "Transaction error.", typedb_source: TransactionServiceError),
         QueryClose(17, "Error while closing single-query transaction.", typedb_source: TransactionServiceError),
@@ -38,7 +40,7 @@ impl HttpServiceError {
     }
 
     pub(crate) fn operation_not_permitted() -> Self {
-        Self::State { typedb_source: LocalServerStateError::OperationNotPermitted {} }
+        Self::State { typedb_source: Arc::new(LocalServerStateError::OperationNotPermitted {}) }
     }
 
     pub(crate) fn no_open_transaction() -> Self {
