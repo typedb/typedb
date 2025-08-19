@@ -24,7 +24,7 @@ dev-dependencies = {}
 
 	[dependencies.uuid]
 		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-		version = "1.16.0"
+		version = "1.18.0"
 		default-features = false
 
 	[dependencies.rand]
@@ -69,7 +69,7 @@ dev-dependencies = {}
 
 	[dependencies.serde_with]
 		features = ["alloc", "default", "macros", "std"]
-		version = "3.12.0"
+		version = "3.14.0"
 		default-features = false
 
 	[dependencies.typeql]
@@ -156,7 +156,7 @@ dev-dependencies = {}
 
 	[dependencies.yaml-rust2]
 		features = ["default", "encoding"]
-		version = "0.10.1"
+		version = "0.10.3"
 		default-features = false
 
 	[dependencies.concept]
@@ -206,7 +206,7 @@ dev-dependencies = {}
 
 	[dependencies.async-trait]
 		features = []
-		version = "0.1.88"
+		version = "0.1.89"
 		default-features = false
 
 	[dependencies.compiler]
@@ -221,12 +221,12 @@ dev-dependencies = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.45.0"
+		version = "1.47.1"
 		default-features = false
 
 	[dependencies.tower-http]
 		features = ["cors", "default"]
-		version = "0.6.4"
+		version = "0.6.6"
 		default-features = false
 
 	[dependencies.serde]
@@ -266,7 +266,7 @@ dev-dependencies = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.38"
+		version = "4.5.45"
 		default-features = false
 
 	[dependencies.bytes]
@@ -291,6 +291,6 @@ dev-dependencies = {}
 
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.140"
+		version = "1.0.143"
 		default-features = false
 
