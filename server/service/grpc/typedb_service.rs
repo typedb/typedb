@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use user::permission_manager::PermissionManager;
+use storage::snapshot::CommittableSnapshot;
 use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use diagnostics::metrics::ActionKind;
@@ -19,7 +21,9 @@ use typedb_protocol::{
     transaction::{Client as TransactionClientProto, Server as TransactionServerProto},
 };
 use uuid::Uuid;
-
+use database::transaction::DataCommitError;
+use resource::profile::CommitProfile;
+use user::errors::UserCreateError;
 use crate::{
     authentication::{Accessor, AuthenticationError},
     service::{
@@ -524,11 +528,48 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     .map_err(|err| err.into_error_message().into_status())?;
                 let (user, credential) =
                     users_create_req(request).map_err(|err| err.into_error_message().into_status())?;
-                self.server_state
-                    .users_create(&user, &credential, accessor)
-                    .await
-                    .map(|_| Response::new(user_create_res()))
-                    .map_err(|err| err.into_error_message().into_status())
+
+                if !PermissionManager::exec_user_create_permitted(accessor.0.as_str()) {
+                    return Err(ServerStateError::OperationNotPermitted {}.into_error_message().into_status());
+                }
+
+                let x = match self.server_state.user_manager().await {
+                    Some(user_manager) => {
+                        match user_manager.create2(&user, &credential) {
+                            (mut transaction_profile, Ok((database, snapshot))) => {
+                                let commit_profile = transaction_profile.commit_profile();
+                                let into_commit_record_result = snapshot
+                                    .finalise(commit_profile)
+                                    .map_err(|error|
+                                        ServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected { } }
+                                    );
+                                (transaction_profile, into_commit_record_result
+                                    .map(|commit_record| (database, commit_record)))
+                            }
+                            (transaction_profile, Err(error)) =>
+                                return Err(ServerStateError::UserCannotBeCreated { typedb_source: error }.into_error_message().into_status())
+                        }
+                    },
+                    None => return Err(ServerStateError::NotInitialised { }.into_error_message().into_status())
+                };
+
+                let x = match x {
+                    (mut transaction_profile, Ok((database, commit_record_opt))) => {
+                        let commit_profile = transaction_profile.commit_profile();
+                        if let Some(commit_record) = commit_record_opt {
+                            self.server_state.users_create2(commit_record, commit_profile).await.unwrap();
+                        }
+                        Ok(Response::new(user_create_res()))
+                    }
+                    (p, Err(err)) => return Err(err.into_error_message().into_status())
+                };
+
+                x
+                // self.server_state
+                //     .users_create(&user, &credential, accessor)
+                //     .await
+                //     .map(|_| Response::new(user_create_res()))
+                //     .map_err(|err| err.into_error_message().into_status())
             },
         )
         .await

@@ -7,8 +7,11 @@
 use std::sync::Arc;
 
 use database::Database;
+use database::transaction::{DatabaseDropGuard, TransactionWrite};
 use resource::constants::server::DEFAULT_USER_NAME;
+use resource::profile::{CommitProfile, TransactionProfile};
 use storage::durability_client::WALClient;
+use storage::snapshot::WriteSnapshot;
 use system::{
     concepts::{Credential, User},
     repositories::{user_repository, user_repository::SystemDBError},
@@ -20,11 +23,12 @@ use crate::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateEr
 #[derive(Debug)]
 pub struct UserManager {
     transaction_util: TransactionUtil,
+    system_db: Arc<Database<WALClient>>
 }
 
 impl UserManager {
     pub fn new(system_db: Arc<Database<WALClient>>) -> Self {
-        UserManager { transaction_util: TransactionUtil::new(system_db.clone()) }
+        UserManager { transaction_util: TransactionUtil::new(system_db.clone()), system_db }
     }
 
     pub fn all(&self) -> Vec<User> {
@@ -60,7 +64,7 @@ impl UserManager {
         }
         let create_result = self
             .transaction_util
-            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
+            .write_transaction_commit(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
                 user_repository::create(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, user, credential)
             })
             .1;
@@ -71,6 +75,20 @@ impl UserManager {
         }
     }
 
+    pub fn create2(&self, user: &User, credential: &Credential) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), UserCreateError>) {
+        let (p, create_result) = self
+            .transaction_util
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
+                user_repository::create(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, user, credential)
+            });
+        let x = match create_result {
+            Ok(tuple) => Ok(tuple),
+            Err(_query_error) => Err(UserCreateError::IllegalUsername {}),
+            Err(_commit_error) => Err(UserCreateError::Unexpected {}),
+        };
+        (p, x)
+    }
+
     pub fn update(
         &self,
         username: &str,
@@ -79,7 +97,7 @@ impl UserManager {
     ) -> Result<(), UserUpdateError> {
         let update_result = self
             .transaction_util
-            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
+            .write_transaction_commit(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::update(
                     snapshot,
                     &type_mgr,
@@ -118,7 +136,7 @@ impl UserManager {
         }
         let delete_result = self
             .transaction_util
-            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
+            .write_transaction_commit(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::delete(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, username)
             })
             .1;

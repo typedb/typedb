@@ -33,6 +33,7 @@ use system::{
     initialise_system_database,
 };
 use tokio::{net::lookup_host, sync::watch::Receiver};
+use storage::snapshot::CommittableSnapshot;
 use user::{
     errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError},
     initialise_default_user,
@@ -114,6 +115,12 @@ pub trait ServerState: Debug {
         accessor: Accessor,
     ) -> Result<(), ServerStateError>;
 
+    async fn users_create2(
+        &self,
+        commit_record: CommitRecord,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<(), ServerStateError>;
+
     async fn users_update(
         &self,
         name: &str,
@@ -131,6 +138,8 @@ pub trait ServerState: Debug {
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 
     async fn database_manager(&self) -> Arc<DatabaseManager>;
+
+    async fn user_manager(&self) -> Option<Arc<UserManager>>;
 
     async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager>;
 
@@ -441,7 +450,7 @@ impl ServerState for LocalServerState {
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ServerStateError> {
-        let Some(database) = self.databases_get(name).await else {
+        let Some(database) = self.database_manager.database_unrestricted(name) else {
             return Err(ServerStateError::DatabaseNotFound { name: name.to_string() });
         };
         database
@@ -499,16 +508,15 @@ impl ServerState for LocalServerState {
         credential: &Credential,
         accessor: Accessor,
     ) -> Result<(), ServerStateError> {
-        if !PermissionManager::exec_user_create_permitted(accessor.0.as_str()) {
-            return Err(ServerStateError::OperationNotPermitted {});
-        }
-        match self.get_user_manager() {
-            Ok(user_manager) => user_manager
-                .create(user, credential)
-                .map(|_user| ())
-                .map_err(|err| ServerStateError::UserCannotBeCreated { typedb_source: err }),
-            Err(err) => Err(err),
-        }
+        todo!()
+    }
+
+    async fn users_create2(
+        &self,
+        commit_record: CommitRecord,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<(), ServerStateError> {
+        self.database_data_commit("_system", commit_record, commit_profile).await
     }
 
     async fn users_update(
@@ -571,6 +579,10 @@ impl ServerState for LocalServerState {
 
     async fn database_manager(&self) -> Arc<DatabaseManager> {
         self.database_manager.clone()
+    }
+
+    async fn user_manager(&self) -> Option<Arc<UserManager>> {
+        self.user_manager.clone()
     }
 
     async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
