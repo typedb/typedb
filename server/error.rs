@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{io, net::SocketAddr, sync::Arc};
+use std::{fmt::Debug, io, net::SocketAddr, sync::Arc};
 
 use concept::error::ConceptReadError;
 use database::{
@@ -24,9 +24,9 @@ use crate::{
     service::export_service::DatabaseExportError,
 };
 
-pub trait ServerStateError: TypeDBError {}
+pub trait ServerStateError: TypeDBError + Send + Sync + Debug + 'static {}
 
-pub type ArcServerStateError = Arc<dyn ServerStateError + Send + Sync + 'static>;
+pub type ArcServerStateError = Arc<dyn ServerStateError>;
 
 typedb_error! {
     pub ServerOpenError(component = "Server open", prefix = "SRO") {
@@ -58,9 +58,8 @@ typedb_error! {
     }
 }
 
-// TODO: Leave the name as SRV (local server) and CSV (clustered server)?
 typedb_error! {
-    pub LocalServerStateError(component = "Local server state", prefix = "LSS") {
+    pub LocalServerStateError(component = "Server state", prefix = "SRV") {
         Unimplemented(1, "Not implemented: {description}", description: String),
         OperationNotPermitted(2, "The user is not permitted to execute the operation."),
         DatabaseNotFound(3, "Database '{name}' not found.", name: String),
