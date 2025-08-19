@@ -32,7 +32,7 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::InvalidPathParameter { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::State { typedb_source } => {
                 debug_assert!(
-                    typedb_source.code_prefix() == "LSS",
+                    typedb_source.code_prefix() == "SRV",
                     "Expected only local server state errors. Override for "
                 );
                 match typedb_source.code_number() {
