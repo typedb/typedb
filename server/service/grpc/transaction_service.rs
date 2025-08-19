@@ -17,17 +17,13 @@ use std::{
 use compiler::query_structure::PipelineStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
-    database_manager::DatabaseManager,
     query::{
         execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
         WriteQueryAnswer, WriteQueryResult,
     },
     transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
 };
-use diagnostics::{
-    diagnostics_manager::DiagnosticsManager,
-    metrics::{ActionKind, ClientEndpoint, LoadKind},
-};
+use diagnostics::metrics::{ActionKind, ClientEndpoint, LoadKind};
 use executor::{
     batch::Batch,
     document::ConceptDocument,
@@ -46,7 +42,6 @@ use tokio::{
     sync::{
         broadcast,
         mpsc::{channel, Receiver, Sender},
-        watch,
     },
     task::{spawn_blocking, JoinHandle},
     time::{timeout, Instant},
@@ -391,9 +386,16 @@ impl TransactionService {
             .map_err(|_| ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status())?;
 
         let database_name = open_req.database;
-        let database = self.server_state.databases_get(database_name.as_ref()).await.ok_or_else(|| {
-            TransactionServiceError::DatabaseNotFound { name: database_name.clone() }.into_error_message().into_status()
-        })?;
+        let database = self
+            .server_state
+            .databases_get(database_name.as_ref())
+            .await
+            .map_err(|typedb_source| typedb_source.into_error_message().into_status())?
+            .ok_or_else(|| {
+                TransactionServiceError::DatabaseNotFound { name: database_name.clone() }
+                    .into_error_message()
+                    .into_status()
+            })?;
 
         let transaction = match transaction_type {
             typedb_protocol::transaction::Type::Read => {

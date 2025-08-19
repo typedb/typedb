@@ -8,12 +8,9 @@ use error::TypeDBError;
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    error::LocalServerStateError,
-    service::{
-        http::{error::HttpServiceError, message::body::JsonBody},
-        transaction_service::TransactionServiceError,
-    },
+use crate::service::{
+    http::{error::HttpServiceError, message::body::JsonBody},
+    transaction_service::TransactionServiceError,
 };
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -6,9 +6,7 @@
 
 use std::time::Duration;
 
-use database::transaction::{
-    DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema, TransactionWrite,
-};
+use database::transaction::{TransactionError, TransactionRead, TransactionSchema, TransactionWrite};
 use diagnostics::metrics::LoadKind;
 use error::typedb_error;
 use executor::{pipeline::PipelineExecutionError, InterruptType};

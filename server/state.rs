@@ -10,8 +10,6 @@ use async_trait::async_trait;
 use concurrency::IntervalRunner;
 use database::{database_manager::DatabaseManager, transaction::TransactionRead, Database};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use error::TypeDBError;
-use futures::{StreamExt, TryFutureExt};
 use itertools::Itertools;
 use options::TransactionOptions;
 use resource::{
@@ -29,12 +27,10 @@ use tokio::{net::lookup_host, sync::watch::Receiver};
 use user::{initialise_default_user, permission_manager::PermissionManager, user_manager::UserManager};
 
 use crate::{
-    authentication::{
-        credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor, AuthenticationError,
-    },
+    authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
     error::{arc_server_state_err, ArcServerStateError, LocalServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
-    service::export_service::{get_transaction_schema, get_transaction_type_schema, DatabaseExportError},
+    service::export_service::{get_transaction_schema, get_transaction_type_schema},
     status::{LocalServerStatus, ServerStatus},
 };
 
@@ -64,9 +60,9 @@ pub trait ServerState: Debug {
 
     async fn databases_all(&self) -> Result<Vec<String>, ArcServerStateError>;
 
-    async fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>>;
+    async fn databases_get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
 
-    async fn databases_contains(&self, name: &str) -> bool;
+    async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
 
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError>;
 
@@ -364,12 +360,12 @@ impl ServerState for LocalServerState {
         Ok(self.database_manager.database_names())
     }
 
-    async fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
-        self.database_manager.database(name)
+    async fn databases_get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
+        Ok(self.database_manager.database(name))
     }
 
-    async fn databases_contains(&self, name: &str) -> bool {
-        self.database_manager.database(name).is_some()
+    async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError> {
+        Ok(self.database_manager.database(name).is_some())
     }
 
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError> {
@@ -402,7 +398,7 @@ impl ServerState for LocalServerState {
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError> {
-        let Some(database) = self.databases_get(name).await else {
+        let Some(database) = self.databases_get(name).await? else {
             return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
         };
         database.schema_commit_with_commit_record(commit_record, commit_profile).map_err(|error| {
@@ -416,7 +412,7 @@ impl ServerState for LocalServerState {
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError> {
-        let Some(database) = self.databases_get(name).await else {
+        let Some(database) = self.databases_get(name).await? else {
             return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
         };
         database.data_commit_with_commit_record(commit_record, commit_profile).map_err(|typedb_source| {
