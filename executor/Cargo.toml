@@ -121,6 +121,11 @@ features = {}
 		version = "1.11.1"
 		default-features = false
 
+	[dependencies.smallvec]
+		features = ["const_generics", "const_new"]
+		version = "1.15.1"
+		default-features = false
+
 	[dependencies.answer]
 		path = "../answer"
 		features = []
