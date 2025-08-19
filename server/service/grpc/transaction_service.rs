@@ -22,10 +22,7 @@ use database::{
         execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
         WriteQueryAnswer, WriteQueryResult,
     },
-    transaction::{
-        DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema,
-        TransactionWrite,
-    },
+    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::{
     diagnostics_manager::DiagnosticsManager,
@@ -538,10 +535,9 @@ impl TransactionService {
                         (profile, commit_result)
                     }
                     Ok((_, None)) => (profile, Ok(())),
-                    Err(typedb_source) => (
-                        profile,
-                        Err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }.into()),
-                    ),
+                    Err(typedb_source) => {
+                        (profile, Err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }.into()))
+                    }
                 };
 
                 if profile.is_enabled() {

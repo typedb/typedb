@@ -54,6 +54,7 @@ use super::message::query::query_structure::{
     encode_pipeline_structure, encode_query_structure, PipelineStructureResponse,
 };
 use crate::{
+    error::{LocalServerStateError, ServerStateError},
     service::{
         http::message::query::{
             annotations::encode_query_structure_annotations, document::encode_document,
@@ -65,7 +66,7 @@ use crate::{
         },
         QueryType, TransactionType,
     },
-    state::{ArcServerState, ServerStateError},
+    state::ArcServerState,
 };
 
 macro_rules! respond_error_and_return_break {
@@ -411,7 +412,7 @@ impl TransactionService {
                     responder,
                     |typedb_source| {
                         TransactionServiceError::DataCommitFailed {
-                            typedb_source: ServerStateError::DatabaseDataCommitFailed { typedb_source },
+                            typedb_source: LocalServerStateError::DatabaseDataCommitFailed { typedb_source }.into(),
                         }
                     }
                 );
@@ -432,7 +433,7 @@ impl TransactionService {
                     responder,
                     |typedb_source| {
                         TransactionServiceError::SchemaCommitFailed {
-                            typedb_source: ServerStateError::DatabaseSchemaCommitFailed { typedb_source },
+                            typedb_source: LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }.into(),
                         }
                     }
                 );
