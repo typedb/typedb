@@ -30,13 +30,10 @@ use storage::{
 };
 use system::{
     concepts::{Credential, User},
-    initialise_system_database,
 };
 use tokio::{net::lookup_host, sync::watch::Receiver};
-use storage::snapshot::CommittableSnapshot;
 use user::{
     errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError},
-    initialise_default_user,
     permission_manager::PermissionManager,
     user_manager::UserManager,
 };
@@ -50,6 +47,7 @@ use crate::{
     service::export_service::{get_transaction_schema, get_transaction_type_schema, DatabaseExportError},
     status::{LocalServerStatus, ServerStatus},
 };
+use crate::system_init::SYSTEM_DB;
 
 pub type DynServerState = dyn ServerState + Send + Sync;
 pub type ArcServerState = Arc<DynServerState>;
@@ -241,13 +239,22 @@ impl LocalServerState {
         })
     }
 
-    pub fn initialise(&mut self) {
-        let system_database = initialise_system_database(&self.database_manager);
+    pub async fn initialise(&mut self) -> Result<(), ServerStateError> {
+        let system_database = if let Some(system_database) =
+            self.database_manager().await.database_unrestricted(SYSTEM_DB) {
+            system_database
+        } else {
+            crate::system_init::initialise_system_database(self).await?
+        };
+
         let user_manager = Arc::new(UserManager::new(system_database));
-        initialise_default_user(&user_manager);
+        crate::system_init::initialise_default_user(&user_manager, self).await?;
+
         let credential_verifier = Some(Arc::new(CredentialVerifier::new(user_manager.clone())));
+
         self.user_manager = Some(user_manager);
         self.credential_verifier = credential_verifier;
+        Ok(())
     }
 
     async fn initialise_diagnostics(
@@ -400,28 +407,28 @@ impl ServerState for LocalServerState {
     }
 
     async fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
-        self.database_manager.database(name)
+        self.database_manager.database_unrestricted(name)
     }
 
     async fn databases_contains(&self, name: &str) -> bool {
-        self.database_manager.database(name).is_some()
+        self.database_manager.database_unrestricted(name).is_some()
     }
 
     async fn databases_create(&self, name: &str) -> Result<(), ServerStateError> {
         self.database_manager
-            .put_database(name)
+            .put_database_unrestricted(name)
             .map_err(|err| ServerStateError::DatabaseCannotBeCreated { typedb_source: err })
     }
 
     async fn database_schema(&self, name: String) -> Result<String, ServerStateError> {
-        match self.database_manager.database(&name) {
+        match self.database_manager.database_unrestricted(&name) {
             Some(db) => Self::get_database_schema(db),
             None => Err(ServerStateError::DatabaseNotFound { name }),
         }
     }
 
     async fn database_type_schema(&self, name: String) -> Result<String, ServerStateError> {
-        match self.database_manager.database(&name) {
+        match self.database_manager.database_unrestricted(&name) {
             None => Err(ServerStateError::DatabaseNotFound { name: name.clone() }),
             Some(database) => match Self::get_database_type_schema(database) {
                 Ok(type_schema) => Ok(type_schema),
@@ -450,7 +457,7 @@ impl ServerState for LocalServerState {
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ServerStateError> {
-        let Some(database) = self.database_manager.database_unrestricted(name) else {
+        let Some(database) = self.databases_get(name).await else {
             return Err(ServerStateError::DatabaseNotFound { name: name.to_string() });
         };
         database
@@ -516,7 +523,7 @@ impl ServerState for LocalServerState {
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ServerStateError> {
-        self.database_data_commit("_system", commit_record, commit_profile).await
+        self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await
     }
 
     async fn users_update(

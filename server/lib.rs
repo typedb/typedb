@@ -10,6 +10,7 @@ pub mod parameters;
 pub mod service;
 pub mod state;
 pub mod status;
+mod system_init;
 
 use std::{fs, future::Future, net::SocketAddr, path::Path, pin::Pin, sync::Arc};
 
@@ -81,7 +82,7 @@ impl ServerBuilder {
                     shutdown_receiver.clone(),
                 )
                 .await?;
-                server_state.initialise();
+                server_state.initialise().await.map_err(|error| ServerOpenError::ServerState { typedb_source: Box::new(error) })?;
                 Arc::new(server_state)
             }
         };
