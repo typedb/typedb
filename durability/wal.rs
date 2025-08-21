@@ -407,6 +407,15 @@ impl FileReader {
         Ok(Some(DurabilitySequenceNumber::from_be_bytes(&buf)))
     }
 
+    fn skip_one_record(&mut self) -> Result<(), DurabilityServiceError> {
+        if self.reader.stream_position()? == self.file.len {
+            return Ok(());
+        }
+        let RecordHeader { len, .. } = self.read_header()?;
+        self.reader.seek_relative(len as i64)?;
+        Ok(())
+    }
+
     fn read_one_record(&mut self) -> Result<Option<RawRecord<'static>>, DurabilityServiceError> {
         if self.reader.stream_position()? == self.file.len {
             return Ok(None);
@@ -473,7 +482,7 @@ impl<'a> RecordIterator<'a> {
                 Some(Ok(sequence_number)) if sequence_number == start => break,
                 Some(Ok(sequence_number)) => {
                     current_start = sequence_number;
-                    reader.read_one_record()?;
+                    reader.skip_one_record()?;
                 }
             }
         }
@@ -528,7 +537,7 @@ impl<'a> FileRecordIterator<'a> {
                 Some(Ok(sequence_number)) if sequence_number == start => break,
                 Some(Ok(sequence_number)) => {
                     current_start = sequence_number;
-                    reader.read_one_record()?;
+                    reader.skip_one_record()?;
                 }
             }
         }
