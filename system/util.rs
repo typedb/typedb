@@ -35,6 +35,36 @@ pub mod transaction_util {
         pub fn schema_transaction<T>(
             &self,
             fn_: impl Fn(&mut SchemaSnapshot<WALClient>, &TypeManager, &ThingManager, &FunctionManager, &QueryManager) -> T,
+        ) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, SchemaSnapshot<WALClient>), SchemaCommitError>) {
+            let TransactionSchema {
+                snapshot,
+                type_manager,
+                thing_manager,
+                function_manager,
+                query_manager,
+                database,
+                transaction_options,
+                profile,
+            } = TransactionSchema::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
+            let mut snapshot: SchemaSnapshot<WALClient> = snapshot.into_inner();
+            let result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
+            let tx = TransactionSchema::from_parts(
+                Arc::new(snapshot),
+                type_manager,
+                thing_manager,
+                function_manager,
+                query_manager,
+                database,
+                transaction_options,
+                profile,
+            );
+            let (profile, result) = tx.finalise();
+            (profile, result)
+        }
+        
+        pub fn schema_transaction_commit<T>(
+            &self,
+            fn_: impl Fn(&mut SchemaSnapshot<WALClient>, &TypeManager, &ThingManager, &FunctionManager, &QueryManager) -> T,
         ) -> (TransactionProfile, Result<T, SchemaCommitError>) {
             let TransactionSchema {
                 snapshot,

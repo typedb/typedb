@@ -30,7 +30,7 @@ pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Dat
                 .unwrap_or_else(|| panic!("The {} database could not be found.", SYSTEM_DB));
             let tx_util = TransactionUtil::new(db.clone());
             tx_util
-                .schema_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
+                .schema_transaction_commit(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
                     let query = typeql::parse_query(SCHEMA)
                         .unwrap_or_else(|_| {
                             panic!("Unexpected error occurred when parsing the schema for the {} database.", SYSTEM_DB)
