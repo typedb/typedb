@@ -13,28 +13,26 @@
 
 ## Getting started
 
-- [Deploy TypeDB](https://cloud.typedb.com) in the Cloud. Or, [download and install](https://typedb.com/docs/manual/install/CE) TypeDB Community Edition.
-- Explore the basics of TypeDB in our [Quickstart](https://typedb.com/docs/home/quickstart) and [Crash Course](https://typedb.com/docs/home/crash-course).
-- Master TypeDB with [TypeDB Academy](https://typedb.com/docs/academy/).
+- [Deploy TypeDB](https://cloud.typedb.com) in the Cloud. Or, [download and install](https://typedb.com/docs/home/install/ce) TypeDB Community Edition.
+- Explore the basics of TypeDB in our [Get Started Guide](https://typedb.com/docs/home/get-started/overview)
+- Master TypeDB concepts with the [TypeDB Concepts docs](https://typedb.com/docs/core-concepts/typedb/overview) and [TypeQL Concepts docs](https://typedb.com/docs/core-concepts/typeql/)
 - Discover more of TypeDB’s unique [Features](https://typedb.com/features).
 - Find further articles and lectures in our [Learning Center](https://typedb.com/learn).
 - Stay updated with the latest TypeDB news by [subscribing to the TypeDB newsletter](https://typedb.com/?dialog=newsletter).
 - Join our vibrant developer community over on our [Discord](https://typedb.com/discord) chat server.
-
-> **IMPORTANT NOTE:** As of version 3.0, TypeDB & TypeQL are now written in [Rust](https://www.rust-lang.org)! The first Rust release went live in December 2024. TypeDB is currently in a phase of rapid iteration, with new features and patches being launched regularly. You can browse the [roadmap blog post](https://typedb.com/blog/typedb-3-roadmap). TypeDB 3.0 comes with a new storage data structure and architecture that significantly boosts performance when compared against version 2.x. We’re aiming to release preliminary benchmarks of TypeDB 3.0 in 2025.
 
 ##  Why TypeDB?
 
 * TypeDB was crafted to natively express and combine diverse data features, allowing users to build advanced data models from a set of simple and intuitive building blocks.
 * TypeDB's type system provides safety and flexibility at the same time, which makes both prototyping and building performant, production-ready data applications fast, elegant, and _enjoyable_.
 * With TypeDB, and its query language TypeQL, we envision databases catching up with modern typed programming languages, allowing users to write clear, intuitive, and easy to maintain code.
-* TypeDB comes with a mature ecosystem including language drivers and a graphical user interface: **TypeDB Studio!**
+* TypeDB comes with a mature ecosystem including language drivers and a graphical user interface: **[TypeDB Studio!](studio.typedb.com)**
 
 ## Database Fundamentals
 
 ### The schema
 
-TypeDB schemas are based on a modern type system that natively supports inheritance and interfaces, and follows a [conceptual data modeling](https://typedb.com/features#conceptual-modeling) approach, in which user-defined types subtype (based on their function) three root types: [entities](https://typedb.com/features#conceptual-modeling), [relations](https://typedb.com/features#expressive-relations), and [attributes](https://typedb.com/features#intuitive-attributes).
+TypeDB schemas are based on a modern type system that natively supports inheritance and interfaces, and follows a [conceptual data modeling](https://typedb.com/docs/core-concepts/typeql/entities-relations-attributes) approach, in which user-defined types subtype (based on their function) three root types: entities, relations, and attributes.
 
 - *Entities* are independent objects,
 - *Relations* depend on their *role* interfaces played by either entities or relations,
@@ -45,10 +43,10 @@ Interface and inheritance for these types can be combined in many ways, resultin
 ```typeql
 define
 
-attribute full-name value string;
-attribute id value string;
-attribute email sub id;
-attribute employee-id sub id;
+attribute full-name, value string;
+attribute id, value string;
+attribute email, sub id;
+attribute employee-id, sub id;
 
 entity user,
     owns full-name,
@@ -65,7 +63,7 @@ relation mentorship,
 
 ### The query language
 
-The query language of TypeDB is [TypeQL](https://typedb.com/docs/typeql/overview). The syntax of TypeQL is fully variablizable and provides native support for polymorphic queries. The language is based on [fully declarative and composable](https://typedb.com/features#modern-language) patterns, mirroring the structure of natural language.
+The query language of TypeDB is [TypeQL](https://typedb.com/docs/core-concepts/typeql/). The syntax of TypeQL is fully variablizable and provides native support for polymorphic queries. The language is based on [fully declarative and composable](https://typedb.com/features#modern-language) patterns, mirroring the structure of natural language.
 
 ```typeql
 match $user isa user,
@@ -88,7 +86,7 @@ $user isa $user-type,
 
 ### Functions
 
-Functions, a new concept in TypeDB 3.0 and a cornerstone of TypeQL's query model, are like subqueries you can re-use and invoke whenever you want. You can learn more about them from the [TypeQL Functions Documentation](https://typedb.com/docs/typeql/functions/).
+Functions, a new concept in TypeDB 3.0 and a cornerstone of TypeQL's query model, are like modularizable subqueries you can re-use and invoke whenever you want. You can learn more about them from the [TypeQL Functions Documentation](https://typedb.com/docs/core-concepts/typeql/queries-as-functions).
 
 ## Effective database engineering
 
@@ -97,7 +95,6 @@ TypeDB breaks down the patchwork of existing database paradigms into three funda
 - Make use of full [object model parity](https://typedb.com/#solve-object-relational-mismatch-entirely-within-the-database) when working with OOP
 - Ensure [continuous extensibility](https://typedb.com/features#conceptual-modeling) of your data model
 - Work with high-level [logical abstractions](https://typedb.com/features#conceptual-modeling) eliminating the need for physical data modeling
-- Let TypeDB's inference engine guarantee [data-consistency](https://typedb.com/#avoid-data-redundancy-and-ensure-data-consistency-in-real-time) at all times
 - Write high-clarity code with TypeQL's [near-natural](https://typedb.com/features#modern-language) queries even for the most complex databases
 - Unleash the power of [fully declarative and composable](https://typedb.com/features#modern-language) patterns onto your data
 
@@ -115,7 +112,7 @@ For a comparison of all three editions, see the [Deploy](https://typedb.com/depl
 
 You can download TypeDB from the [GitHub Releases](https://github.com/typedb/typedb/releases). 
 
-Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) to get started.
+Or check our [Installation documentation](https://typedb.com/docs/home/install/ce).
 
 ### Compiling TypeDB CE from source using Bazel
 
@@ -123,8 +120,7 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
 > TypeDB CE"_ section above.
 
 1. Make sure you have the following dependencies installed on your machine:
-   - Java JDK 11 or higher
-   - [Bazel 6.2.0 or higher](https://bazel.build/install).
+   - [Bazel via Bazelisk](https://bazel.build/install).
 
 2. You can build TypeDB server with TypeDB Console included with this command:
 
@@ -142,7 +138,7 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
       $ bazel build //:assemble-all-windows-x86_64-zip
       ```
    
-   To build only TypeDB server, use:
+   To build only TypeDB server, use for your corresponding platform:
    
       ```sh
       $ bazel build //:assemble-server-mac-x86_64-zip
@@ -181,7 +177,7 @@ If you want to begin your journey with TypeDB, you can explore the following res
 
 * More on TypeDB's [features](https://typedb.com/features)
 * In-depth dive into TypeDB's [philosophy](https://typedb.com/philosophy)
-* [TypeDB Quickstart](https://typedb.com/docs/home/quickstart) and [Crash Course](https://typedb.com/docs/home/crash-course)
+* [TypeDB Get Started Guide](https://typedb.com/docs/home/get-started/overview) 
 * [TypeDB Academy](https://typedb.com/docs/academy)
 * **[TypeQL](https://github.com/typedb/typeql)**
 * **[TypeDB Studio](https://github.com/typedb/typedb-studio)**
@@ -208,7 +204,7 @@ In the past, TypeDB was enabled by various open-source products and communities 
 [Apache TinkerPop](http://tinkerpop.apache.org),
 [Caffeine](https://github.com/ben-manes/caffeine),
 [JanusGraph](http://janusgraph.org),
-and [SCIP](https://www.scipopt.org). 
+and [SCIP](https://www.scipopt.org).
 
 ### Package hosting
 Package repository hosting is graciously provided by [Cloudsmith](https://cloudsmith.com).
