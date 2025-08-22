@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},
     sync::{Arc, Mutex, RwLock},
 };
