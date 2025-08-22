@@ -849,6 +849,7 @@ impl fmt::Display for ActionKind {
             ActionKind::TransactionCommit => write!(f, "TRANSACTION_COMMIT"),
             ActionKind::TransactionRollback => write!(f, "TRANSACTION_ROLLBACK"),
             ActionKind::TransactionQuery => write!(f, "TRANSACTION_QUERY"),
+            ActionKind::TransactionAnalyse => write!(f, "TRANSACTION_ANALYSE"),
             ActionKind::OneshotQuery => write!(f, "ONESHOT_QUERY"),
         }
     }
