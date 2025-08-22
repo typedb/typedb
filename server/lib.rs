@@ -227,7 +227,11 @@ impl Server {
         }
     }
 
-    fn print_serving_information(grpc_address: SocketAddr, http_address: Option<SocketAddr>, encryption_config: &EncryptionConfig) {
+    fn print_serving_information(
+        grpc_address: SocketAddr,
+        http_address: Option<SocketAddr>,
+        encryption_config: &EncryptionConfig,
+    ) {
         if encryption_config.enabled {
             print!("Serving gRPC on {grpc_address}");
             if let Some(http_address) = http_address {
