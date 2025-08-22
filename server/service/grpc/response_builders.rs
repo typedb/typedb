@@ -47,7 +47,7 @@ pub(crate) mod server {
     pub(crate) fn server_version_res(distribution_info: DistributionInfo) -> typedb_protocol::server::version::Res {
         typedb_protocol::server::version::Res {
             distribution: distribution_info.distribution.to_string(),
-            version: distribution_info.version.to_string(), // todo
+            version: distribution_info.version.to_string(),
         }
     }
 
