@@ -30,7 +30,6 @@ use uuid::Uuid;
 
 use crate::{
     authentication::Accessor,
-    http::diagnostics::run_with_diagnostics,
     service::{
         http::{
             diagnostics::run_with_diagnostics_async,
@@ -617,7 +616,7 @@ impl TypeDBService {
         let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager(),
+            service.server_state.diagnostics_manager().await,
             Some(transaction.database_name.clone()),
             ActionKind::TransactionAnalyse,
             || async {
