@@ -200,7 +200,7 @@ impl Server {
             server_state
                 .server_status()
                 .await
-                .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source: Box::new(typedb_source) })?,
+                .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?,
             &self.config.server.encryption,
         );
 

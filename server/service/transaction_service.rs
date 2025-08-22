@@ -39,8 +39,6 @@ pub(crate) use with_readable_transaction;
 
 use crate::error::ArcServerStateError;
 
-use crate::state::ServerStateError;
-
 impl Transaction {
     pub fn load_kind(&self) -> LoadKind {
         match self {

@@ -119,7 +119,7 @@ pub trait ServerState: Debug {
 
     async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager>;
 
-    fn shutdown_receiver(&self) -> Receiver<()>;
+    async fn shutdown_receiver(&self) -> Receiver<()>;
 }
 
 #[derive(Debug)]
@@ -548,7 +548,7 @@ impl ServerState for LocalServerState {
         self.diagnostics_manager.clone()
     }
 
-    fn shutdown_receiver(&self) -> Receiver<()> {
+    async fn shutdown_receiver(&self) -> Receiver<()> {
         self.shutdown_receiver.clone()
     }
 }

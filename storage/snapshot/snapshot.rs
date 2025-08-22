@@ -12,6 +12,7 @@ use std::{
     ops::Deref,
     sync::{atomic::Ordering, Arc},
 };
+
 use bytes::byte_array::ByteArray;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
