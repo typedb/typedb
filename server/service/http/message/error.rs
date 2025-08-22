@@ -8,12 +8,9 @@ use error::TypeDBError;
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    service::{
-        http::{error::HttpServiceError, message::body::JsonBody},
-        transaction_service::TransactionServiceError,
-    },
-    state::ServerStateError,
+use crate::service::{
+    http::{error::HttpServiceError, message::body::JsonBody},
+    transaction_service::TransactionServiceError,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,30 +30,19 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::UnknownVersion { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::MissingPathParameter { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::InvalidPathParameter { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::State { typedb_source } => match typedb_source {
-                ServerStateError::Unimplemented { .. } => StatusCode::NOT_IMPLEMENTED,
-                ServerStateError::OperationNotPermitted { .. } => StatusCode::FORBIDDEN,
-                ServerStateError::OperationFailedDueToReplicaUnavailability { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-                ServerStateError::OperationFailedNonPrimaryReplica { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-                ServerStateError::ReplicaRegistrationNoConnection { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::ReplicaNotFound { .. } => StatusCode::NOT_FOUND,
-                ServerStateError::DatabaseNotFound { .. } => StatusCode::NOT_FOUND,
-                ServerStateError::DatabaseSchemaCommitFailed { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-                ServerStateError::DatabaseDataCommitFailed { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-                ServerStateError::DatabaseCannotBeCreated { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::DatabaseCannotBeDeleted { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::UserNotFound { .. } => StatusCode::NOT_FOUND,
-                ServerStateError::UserCannotBeCreated { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::UserCannotBeRetrieved { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::UserCannotBeUpdated { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::UserCannotBeDeleted { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::FailedToOpenPrerequisiteTransaction { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::ConceptReadError { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::FunctionReadError { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::NotInitialised { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-                ServerStateError::AuthenticationError { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::DatabaseExport { .. } => StatusCode::BAD_REQUEST,
-            },
+            HttpServiceError::State { typedb_source } => {
+                debug_assert!(
+                    typedb_source.code_prefix() == "SRV",
+                    "Expected only local server state errors. Override for "
+                );
+                match typedb_source.code_number() {
+                    1 => StatusCode::NOT_IMPLEMENTED,                  // Unimplemented
+                    2 => StatusCode::FORBIDDEN,                        // OperationNotPermitted
+                    3 | 4 => StatusCode::NOT_FOUND,                    // DatabaseNotFound | UserNotFound
+                    14 | 17 | 18 => StatusCode::INTERNAL_SERVER_ERROR, // NotInitialised | *CommitFailed
+                    _ => StatusCode::BAD_REQUEST,
+                }
+            }
             HttpServiceError::Authentication { .. } => StatusCode::UNAUTHORIZED,
             HttpServiceError::Transaction { typedb_source } => match typedb_source {
                 TransactionServiceError::DatabaseNotFound { .. } => StatusCode::NOT_FOUND,

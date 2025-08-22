@@ -17,17 +17,13 @@ use std::{
 use compiler::{executable::ExecutableCompilationError, query_structure::PipelineStructure};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
-    database_manager::DatabaseManager,
     query::{
         execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
         WriteQueryAnswer, WriteQueryResult,
     },
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
-use diagnostics::{
-    diagnostics_manager::DiagnosticsManager,
-    metrics::{ClientEndpoint, LoadKind},
-};
+use diagnostics::metrics::{ClientEndpoint, LoadKind};
 use executor::{
     batch::Batch,
     document::ConceptDocument,
@@ -43,7 +39,7 @@ use query::error::QueryError;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
-    sync::{broadcast, mpsc::Receiver, oneshot, watch},
+    sync::{broadcast, mpsc::Receiver, oneshot},
     task::{spawn_blocking, JoinHandle},
     time::Instant,
 };
@@ -55,6 +51,7 @@ use super::message::query::query_structure::{
     encode_pipeline_structure, encode_query_structure, PipelineStructureResponse,
 };
 use crate::{
+    error::{LocalServerStateError, ServerStateError},
     service::{
         http::message::{
             analyze::{
@@ -70,7 +67,7 @@ use crate::{
         },
         IncludeInvolvedBlocks, QueryType, TransactionType,
     },
-    state::{ArcServerState, ServerStateError},
+    state::ArcServerState,
 };
 
 macro_rules! respond_error_and_return_break {
@@ -416,7 +413,7 @@ impl TransactionService {
                     responder,
                     |typedb_source| {
                         TransactionServiceError::DataCommitFailed {
-                            typedb_source: ServerStateError::DatabaseDataCommitFailed { typedb_source },
+                            typedb_source: LocalServerStateError::DatabaseDataCommitFailed { typedb_source }.into(),
                         }
                     }
                 );
@@ -437,7 +434,7 @@ impl TransactionService {
                     responder,
                     |typedb_source| {
                         TransactionServiceError::SchemaCommitFailed {
-                            typedb_source: ServerStateError::DatabaseSchemaCommitFailed { typedb_source },
+                            typedb_source: LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }.into(),
                         }
                     }
                 );
