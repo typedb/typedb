@@ -16,7 +16,7 @@ features = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.45.0"
+		version = "1.47.1"
 		default-features = false
 
 	[dependencies.serde]
@@ -87,7 +87,7 @@ features = {}
 
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.140"
+		version = "1.0.143"
 		default-features = false
 
 	[dependencies.hyper-rustls]

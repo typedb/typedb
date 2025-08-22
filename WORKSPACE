@@ -60,24 +60,8 @@ load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_regi
 rules_rust_dependencies()
 load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
 rust_analyzer_dependencies()
-load("@rules_rust//rust:defs.bzl", "rust_common")
-rust_register_toolchains(
-    edition = "2021",
-    extra_target_triples = [
-        "aarch64-apple-darwin",
-        "aarch64-unknown-linux-gnu",
-        "x86_64-apple-darwin",
-        "x86_64-pc-windows-msvc",
-        "x86_64-unknown-linux-gnu",
-    ],
-    rust_analyzer_version = "1.81.0",
-    versions = ["1.81.0"],
-)
-
-rust_analyzer_toolchain_tools_repository(
-    name = "rust_analyzer_toolchain_tools",
-    version = "1.81.0"
-)
+load("@typedb_dependencies//builder/rust:versions.bzl", "rust_toolchain_versioned")
+rust_toolchain_versioned()
 
 load("@typedb_dependencies//library/crates:crates.bzl", "fetch_crates")
 fetch_crates()

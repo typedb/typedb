@@ -6,6 +6,7 @@
 
 use std::{
     collections::HashMap,
+    hash::{DefaultHasher, Hash, Hasher},
     sync::{Arc, Mutex, RwLock},
 };
 
@@ -13,6 +14,7 @@ use compiler::executable::function::{
     executable::ExecutableReturn, ExecutableFunctionRegistry, FunctionTablingType, StronglyConnectedComponentID,
 };
 use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
+use smallvec::SmallVec;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -127,7 +129,11 @@ impl TabledFunctionState {
     ) -> Self {
         pattern_executor.prepare(FixedBatch::from(args.as_reference()));
         Self {
-            table: RwLock::new(AnswerTable { answers: Vec::new(), width: answer_width }),
+            table: RwLock::new(AnswerTable {
+                answers: Vec::new(),
+                answers_lookup: HashMap::new(),
+                width: answer_width,
+            }),
             executor_state: Mutex::new(TabledFunctionPatternExecutorState {
                 pattern_executor,
                 suspensions: QueryPatternSuspensions::new_tabled_call(scc_id),
@@ -151,10 +157,10 @@ impl TabledFunctionState {
         }
     }
 }
-
 pub(crate) struct AnswerTable {
     // TODO: use a better data-structure. XSB has an "answer-trie" though a LinkedHashSet might do.
     answers: Vec<MaybeOwnedRow<'static>>,
+    answers_lookup: HashMap<u64, SmallVec<[usize; 1]>>,
     width: u32,
     // TODO: We need to be able to record the fact that a table is DONE
 }
@@ -179,8 +185,15 @@ impl AnswerTable {
 
     fn try_add_row(&mut self, row: MaybeOwnedRow<'_>) -> bool {
         let row_data_only = MaybeOwnedRow::new_borrowed(row.row(), &1, &Provenance::INITIAL);
-        if !self.answers.contains(&row_data_only) {
+        let mut hasher = DefaultHasher::new();
+        row_data_only.hash(&mut hasher);
+        let hash = hasher.finish();
+
+        let mut bucket = self.answers_lookup.entry(hash).or_default();
+        if !bucket.iter().any(|index| self.answers[*index] == row_data_only) {
+            let index = self.answers.len();
             self.answers.push(row_data_only.clone().into_owned());
+            bucket.push(index);
             true
         } else {
             false
