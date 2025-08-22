@@ -18,7 +18,7 @@ use ir::pattern::{
     constraint::{Constraint, IsaKind, SubKind},
     ParameterID, Vertex,
 };
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{

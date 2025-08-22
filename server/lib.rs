@@ -11,7 +11,7 @@ pub mod service;
 pub mod state;
 pub mod status;
 
-use std::{fs, future::Future, net::SocketAddr, path::Path, pin::Pin, sync::Arc};
+use std::{fs, net::SocketAddr, path::Path, sync::Arc};
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
 use database::database_manager::DatabaseManager;
@@ -200,7 +200,7 @@ impl Server {
             server_state
                 .server_status()
                 .await
-                .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source: Box::new(typedb_source) })?,
+                .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?,
             &self.config.server.encryption,
         );
 

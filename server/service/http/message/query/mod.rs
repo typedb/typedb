@@ -12,8 +12,6 @@ use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
 };
 use serde::{Deserialize, Serialize};
-use storage::snapshot::ReadableSnapshot;
-use tracing::Value;
 
 use crate::service::{
     http::{

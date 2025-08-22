@@ -305,6 +305,7 @@ impl TypeDBService {
                     .server_state
                     .databases_get(&database_path.database_name)
                     .await
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })?
                     .ok_or(HttpServiceError::NotFound {})?
                     .name()
                     .to_string();
