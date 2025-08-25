@@ -34,7 +34,6 @@ rust_test(
         "//durability/tests/crash/recoverer:recoverer"
     ],
     deps = [
-        "//durability/tests/common:durability_test_common",
         "@crates//:tempdir"
     ],
     use_libtest_harness = False,

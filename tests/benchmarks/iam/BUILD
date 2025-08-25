@@ -18,8 +18,6 @@ rust_test(
         "//query",
         "//storage",
 
-        "//concept/tests:test_utils_concept",
-        "//encoding/tests:test_utils_encoding",
         "//util/test:test_utils",
 
         "@typeql//rust:typeql",
