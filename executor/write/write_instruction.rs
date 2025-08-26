@@ -13,7 +13,7 @@ use encoding::value::value::Value;
 use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
 use resource::profile::StorageCounters;
-use storage::snapshot::WritableSnapshot;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{row::Row, write::WriteError};
 
@@ -39,10 +39,23 @@ fn get_thing<'a>(input: &'a Row<'a>, source: &ThingPosition) -> &'a answer::Thin
     input.get(*position).as_thing()
 }
 
-fn get_value<'a>(input: &'a Row<'_>, parameters: &'a ParameterRegistry, source: ValueSource) -> Value<'a> {
+fn get_value<'a>(
+    snapshot: &impl ReadableSnapshot,
+    thing_manager: &ThingManager,
+    storage_counters: StorageCounters,
+    input: &'a Row<'_>,
+    parameters: &'a ParameterRegistry,
+    source: ValueSource,
+) -> Result<Value<'a>, Box<WriteError>> {
     match source {
-        ValueSource::Variable(position) => input.get(position).as_value().as_reference(),
-        ValueSource::Parameter(id) => parameters.value_unchecked(id).as_reference(),
+        ValueSource::Variable(position) => match input.get(position) {
+            VariableValue::Thing(Thing::Attribute(attribute)) => attribute
+                .get_value(snapshot, thing_manager, storage_counters)
+                .map_err(|typedb_source| Box::new(WriteError::ConceptRead { typedb_source })),
+            VariableValue::Value(value) => Ok(value.as_reference()),
+            _ => unreachable!("Expected value or attribute"),
+        },
+        ValueSource::Parameter(id) => Ok(parameters.value_unchecked(id).as_reference()),
     }
 }
 
@@ -72,11 +85,15 @@ impl AsWriteInstruction for PutAttribute {
         thing_manager: &ThingManager,
         parameters: &ParameterRegistry,
         row: &mut Row<'_>,
-        _storage_counters: StorageCounters,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<WriteError>> {
         let attribute_type = try_unwrap_as!(answer::Type::Attribute: get_type(row, &self.type_)).unwrap();
         let inserted = thing_manager
-            .create_attribute(snapshot, attribute_type, get_value(row, parameters, self.value).clone())
+            .create_attribute(
+                snapshot,
+                attribute_type,
+                get_value(snapshot, thing_manager, storage_counters, row, parameters, self.value)?.clone(),
+            )
             .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
         let ThingPosition(write_to) = &self.write_to;
         row.set(*write_to, VariableValue::Thing(Thing::Attribute(inserted)));
