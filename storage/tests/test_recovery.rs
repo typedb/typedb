@@ -19,7 +19,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
     MVCCStorage,
 };
-use test_utils::{create_tmp_dir, init_logging};
+use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_storage::{checkpoint_storage, create_storage, load_storage, test_keyspace_set};
 
 #[test]
@@ -30,7 +30,7 @@ fn wal_and_checkpoint_ok() {
     let key_hello = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"hello"));
     let key_world = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"world"));
 
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let (checkpoint, watermark) = {
         let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
@@ -75,7 +75,7 @@ fn wal_and_no_checkpoint_ok() {
     let key_hello = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"hello"));
     let key_world = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"world"));
 
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let watermark = {
         let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
@@ -106,7 +106,7 @@ fn no_wal_and_checkpoint_illegal() {
     let key_hello = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"hello"));
     let key_world = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"world"));
 
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let (_checkpoint, directory) = {
         let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
@@ -135,7 +135,7 @@ fn no_wal_and_no_checkpoint_and_keyspaces_illegal() {
     let key_hello = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"hello"));
     let key_world = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"world"));
 
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     {
         let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
@@ -162,7 +162,7 @@ fn no_wal_and_no_checkpoint_and_no_keyspaces_illegal() {
     let key_hello = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"hello"));
     let key_world = StorageKeyArray::<BUFFER_KEY_INLINE>::from((TestKeyspaceSet::Keyspace, b"world"));
 
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     {
         let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 

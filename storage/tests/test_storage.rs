@@ -17,7 +17,7 @@ use storage::{
     keyspace::{IteratorPool, KeyspaceOpenError, KeyspaceValidationError},
     StorageOpenError,
 };
-use test_utils::{create_tmp_dir, init_logging};
+use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_storage::{checkpoint_storage, create_storage, load_storage, test_keyspace_set};
 
 #[test]
@@ -25,7 +25,7 @@ fn create_delete() {
     test_keyspace_set! {}
 
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage_result = create_storage::<TestKeyspaceSet>(&storage_path);
 
     assert!(storage_result.is_ok());
@@ -42,7 +42,7 @@ fn create_keyspaces() {
     }
 
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage_result = create_storage::<TestKeyspaceSet>(&storage_path);
 
     assert!(storage_result.is_ok(), "{storage_result:?}");
@@ -61,7 +61,7 @@ fn create_keyspaces_duplicate_name_error() {
     }
 
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage_result = create_storage::<TestKeyspaceSet>(&storage_path);
     assert!(
         matches!(
@@ -84,7 +84,7 @@ fn create_keyspaces_duplicate_id_error() {
     }
 
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage_result = create_storage::<TestKeyspaceSet>(&storage_path);
     assert!(
         matches!(
@@ -113,7 +113,7 @@ fn create_reopen() {
         .collect_vec();
 
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let checkpoint = {
         let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
         for key in &keys {
@@ -155,7 +155,7 @@ fn get_put_iterate() {
     }
 
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let keyspace_1_key_1 = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace1, [0x0, 0x0, 0x1]));
