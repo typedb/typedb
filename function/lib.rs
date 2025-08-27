@@ -29,6 +29,6 @@ typedb_error! {
         CreateFunctionEncoding(6, "Encoding error while trying to create function.", source: EncodingError),
         FunctionRetrieval(7, "Error retrieving function.", typedb_source: FunctionReadError),
         CommittedFunctionParseError(8, "Error while parsing committed function.", typedb_source: typeql::Error),
-        StratificationViolation(9, "Detected a recursive cycle through a negation or reduction: [{cycle_names}]", cycle_names: String),
+        StratificationViolation(9, "Detected a recursive cycle through a negation, reduction or single return: [{cycle_names}]", cycle_names: String),
     }
 }

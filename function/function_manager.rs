@@ -353,12 +353,16 @@ fn validate_no_cycles_impl<ID: FunctionIDAPI + Ord + Eq>(
                 | TranslatedStage::Reduce(_)
         )
     });
-    let has_aggregate_return = match function.function_body.return_operation {
-        ReturnOperation::Stream(_, _) | ReturnOperation::Single(_, _, _) => false,
+    let has_non_stream_return = match function.function_body.return_operation {
+        ReturnOperation::Stream(_, _) => false,
+        ReturnOperation::Single(_, _, _) => true,
         ReturnOperation::ReduceCheck(_) | ReturnOperation::ReduceReducer(_, _) => true,
     };
-    let unnegated_stratum =
-        if has_aggregate_stage || has_aggregate_return { current_stratum.add(1, 1) } else { current_stratum.add(0, 1) };
+    let unnegated_stratum = if has_aggregate_stage || has_non_stream_return {
+        current_stratum.add(1, 1)
+    } else {
+        current_stratum.add(0, 1)
+    };
     for called_id in unnegated_function_calls(function) {
         validate_no_cycles_impl(called_id, functions, active, complete, unnegated_stratum)?;
     }
