@@ -78,7 +78,8 @@ commands:
         type: string
     steps:
       - run: |
-          brew install python@3.9
+          # Plain brew install failed the postinstall step, but doing them separately works.
+          brew install --skip-post-install python@3.9  && brew postinstall python@3.9  
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
           sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
