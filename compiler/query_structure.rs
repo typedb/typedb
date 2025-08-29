@@ -197,14 +197,8 @@ impl ParametrisedPipelineStructure {
         self.stages
             .iter()
             .filter_map(|stage| match stage {
-                QueryStructureStage::Match { block: QueryStructureConjunction { conjunction } } => match conjunction.first() {
-                    Some(QueryStructurePattern::Block { index }) => Some(index),
-                    Some(_) | None => {
-                        debug_assert!(!conjunction.iter().any(|c| matches!(c, QueryStructurePattern::Block { .. })));
-                        None
-                    }
-                },
-                QueryStructureStage::Insert { block }
+                QueryStructureStage::Match { block }
+                | QueryStructureStage::Insert { block }
                 | QueryStructureStage::Put { block }
                 | QueryStructureStage::Update { block } => Some(block),
 
@@ -225,7 +219,7 @@ impl ParametrisedPipelineStructure {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum QueryStructureStage {
-    Match { block: QueryStructureConjunction },
+    Match { block: QueryStructureBlockID },
     Insert { block: QueryStructureBlockID },
     Delete { block: QueryStructureBlockID, deleted_variables: Vec<StructureVariableId> },
     Put { block: QueryStructureBlockID },
@@ -242,23 +236,17 @@ pub enum QueryStructureStage {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct QueryStructureConjunction {
-    conjunction: Vec<QueryStructurePattern>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-pub enum QueryStructurePattern {
-    Block { index: QueryStructureBlockID },
-    Or { branches: Vec<QueryStructureConjunction> },
-    Not(QueryStructureConjunction),
-    Try(QueryStructureConjunction),
+pub enum QueryStructureBlockNestedPattern {
+    Or { branches: Vec<QueryStructureBlockID> },
+    Not { block: QueryStructureBlockID },
+    Try { block: QueryStructureBlockID },
 }
 
 #[derive(Debug, Clone)]
 pub struct QueryStructureBlock {
     pub constraints: Vec<Constraint<Variable>>,
+    pub nested: Vec<QueryStructureBlockNestedPattern>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -273,7 +261,7 @@ pub struct ParametrisedQueryStructureBuilder<'a> {
 impl<'a> ParametrisedQueryStructureBuilder<'a> {
     fn new(source_query: &'a str, branch_ids_allocated: u16) -> Self {
         // Pre-allocated for query branches that have already been allocated branch ids
-        let blocks = vec![QueryStructureBlock { constraints: Vec::new() }; branch_ids_allocated as usize];
+        let blocks = vec![QueryStructureBlock { constraints: Vec::new(), nested: Vec::new() }; branch_ids_allocated as usize];
         Self {
             source_query,
             pipeline_structure: ParametrisedPipelineStructure {
@@ -297,7 +285,8 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 let block = self.add_block_impl(
                     block.conjunction().scope_id(),
                     None,
-                    block.conjunction().constraints(),
+                    Vec::from(block.conjunction().constraints()),
+                    Vec::new(),
                     &annotations,
                 );
                 self.pipeline_structure.stages.push(QueryStructureStage::Insert { block });
@@ -307,7 +296,8 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 let block = self.add_block_impl(
                     block.conjunction().scope_id(),
                     None,
-                    block.conjunction().constraints(),
+                    Vec::from(block.conjunction().constraints()),
+                    Vec::new(),
                     &annotations,
                 );
                 self.pipeline_structure.stages.push(QueryStructureStage::Put { block });
@@ -317,7 +307,8 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 let block = self.add_block_impl(
                     block.conjunction().scope_id(),
                     None,
-                    block.conjunction().constraints(),
+                    Vec::from(block.conjunction().constraints()),
+                    Vec::new(),
                     &annotations,
                 );
                 self.pipeline_structure.stages.push(QueryStructureStage::Update { block });
@@ -327,7 +318,8 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 let block = self.add_block_impl(
                     block.conjunction().scope_id(),
                     None,
-                    block.conjunction().constraints(),
+                    Vec::from(block.conjunction().constraints()),
+                    Vec::new(),
                     &annotations,
                 );
                 self.pipeline_structure
@@ -365,50 +357,50 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
         existing_branch_id: Option<BranchID>,
         conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
-    ) -> QueryStructureConjunction {
-        let mut conjuncts = Vec::new();
-        let block_id = self.add_block_impl(
-            conjunction.scope_id(),
-            existing_branch_id,
-            conjunction.constraints(),
-            block_annotations.type_annotations_of(conjunction).unwrap(),
-        );
-        conjuncts.push(QueryStructurePattern::Block { index: block_id });
+    ) -> QueryStructureBlockID {
+        let mut nested_patterns = Vec::new();
         conjunction.nested_patterns().iter().for_each(|nested| match nested {
             NestedPattern::Disjunction(disjunction) => {
                 let branches = disjunction
                     .conjunctions_by_branch_id()
                     .map(|(id, branch)| self.add_block(Some(*id), branch, block_annotations))
                     .collect::<Vec<_>>();
-                conjuncts.push(QueryStructurePattern::Or { branches });
+                nested_patterns.push(QueryStructureBlockNestedPattern::Or { branches });
             }
             NestedPattern::Negation(negation) => {
-                let inner = self.add_block(None, negation.conjunction(), block_annotations);
-                conjuncts.push(QueryStructurePattern::Not(inner));
+                let block = self.add_block(None, negation.conjunction(), block_annotations);
+                nested_patterns.push(QueryStructureBlockNestedPattern::Not { block });
             }
             NestedPattern::Optional(optional) => {
-                let inner = self.add_block(Some(optional.branch_id()), optional.conjunction(), block_annotations);
-                conjuncts.push(QueryStructurePattern::Try(inner));
+                let block = self.add_block(Some(optional.branch_id()), optional.conjunction(), block_annotations);
+                nested_patterns.push(QueryStructureBlockNestedPattern::Try { block });
             }
         });
-        QueryStructureConjunction { conjunction: conjuncts }
+        self.add_block_impl(
+            conjunction.scope_id(),
+            existing_branch_id,
+            Vec::from(conjunction.constraints()),
+            nested_patterns,
+            block_annotations.type_annotations_of(conjunction).unwrap(),
+        )
     }
 
     fn add_block_impl(
         &mut self,
         scope_id: ScopeId,
         existing_branch_id: Option<BranchID>,
-        constraints: &[Constraint<Variable>],
+        constraints: Vec<Constraint<Variable>>,
+        nested: Vec<QueryStructureBlockNestedPattern>,
         annotations: &TypeAnnotations,
     ) -> QueryStructureBlockID {
         self.extend_labels_from(annotations);
-        self.extend_function_calls_syntax_from(constraints);
+        self.extend_function_calls_syntax_from(&constraints);
         let block_id = if let Some(BranchID(id)) = existing_branch_id {
             debug_assert!((id as usize) < self.pipeline_structure.blocks.len());
-            self.pipeline_structure.blocks[id as usize] = QueryStructureBlock { constraints: Vec::from(constraints) };
+            self.pipeline_structure.blocks[id as usize] = QueryStructureBlock { constraints, nested };
             QueryStructureBlockID(id)
         } else {
-            self.pipeline_structure.blocks.push(QueryStructureBlock { constraints: Vec::from(constraints) });
+            self.pipeline_structure.blocks.push(QueryStructureBlock { constraints, nested });
             QueryStructureBlockID(self.pipeline_structure.blocks.len() as u16 - 1)
         };
         self.pipeline_structure.scope_to_block.insert(scope_id, block_id.clone());
