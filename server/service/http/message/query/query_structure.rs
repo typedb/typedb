@@ -8,10 +8,7 @@ use std::{collections::HashMap, str::FromStr};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
-use compiler::query_structure::{
-    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureStage,
-    StructureVariableId,
-};
+use compiler::query_structure::{FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureBlockID, QueryStructureBlockNestedPattern, QueryStructureStage, StructureVariableId};
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
 use ir::pattern::{
@@ -173,6 +170,11 @@ enum StructureConstraint {
         #[serde(rename = "valueType")]
         value_type: String,
     },
+
+    // Nested patterns are now constraints too
+    Or { branches: Vec<QueryStructureBlockID> },
+    Not { block: QueryStructureBlockID },
+    Try { block: QueryStructureBlockID },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -254,6 +256,7 @@ pub(crate) fn encode_pipeline_structure(
                 &pipeline_structure,
                 &mut variables,
                 block.constraints.as_slice(),
+                block.nested.as_slice(),
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
@@ -290,6 +293,7 @@ fn encode_structure_block(
     pipeline_structure: &PipelineStructure,
     variables: &mut HashMap<StructureVariableId, StructureVariableInfo>,
     block: &[Constraint<Variable>],
+    nested: &[QueryStructureBlockNestedPattern],
 ) -> Result<StructureBlock, Box<ConceptReadError>> {
     let mut constraints = Vec::new();
     let role_names = block
@@ -300,6 +304,9 @@ fn encode_structure_block(
     let mut context = PipelineStructureContext { pipeline_structure, snapshot, type_manager, role_names, variables };
     block.iter().enumerate().try_for_each(|(index, constraint)| {
         encode_structure_constraint(&mut context, constraint, &mut constraints, index)
+    })?;
+    nested.iter().try_for_each(|nested| {
+        encode_structure_nested_pattern(nested, &mut constraints)
     })?;
     Ok(StructureBlock { constraints })
 }
@@ -501,6 +508,19 @@ fn encode_structure_constraint(
         // Optimisations don't represent the structure
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
+    Ok(())
+}
+
+fn encode_structure_nested_pattern(
+    nested: &QueryStructureBlockNestedPattern,
+    constraints: &mut Vec<StructureConstraintWithSpan>,
+) -> Result<(), Box<ConceptReadError>> {
+    let constraint = match nested.clone() {
+        QueryStructureBlockNestedPattern::Or { branches } => StructureConstraint::Or { branches },
+        QueryStructureBlockNestedPattern::Not { block } => StructureConstraint::Not { block },
+        QueryStructureBlockNestedPattern::Try { block } => StructureConstraint::Try { block },
+    };
+    constraints.push( StructureConstraintWithSpan { constraint, text_span: None } );
     Ok(())
 }
 

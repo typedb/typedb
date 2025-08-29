@@ -235,8 +235,7 @@ pub enum QueryStructureStage {
     Reduce { reducers: Vec<StructureReducer>, groupby: Vec<StructureVariableId> },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", tag = "tag")]
+#[derive(Debug, Clone)]
 pub enum QueryStructureBlockNestedPattern {
     Or { branches: Vec<QueryStructureBlockID> },
     Not { block: QueryStructureBlockID },
