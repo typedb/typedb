@@ -34,14 +34,14 @@ enum TypeAnnotationResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct VariableAnnotationsByBlockResponse {
+pub struct VariableAnnotationsByConjunctionResponse {
     variable_annotations: HashMap<StructureVariableId, TypeAnnotationResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PipelineStructureAnnotationsResponse {
-    annotations_by_block: Vec<VariableAnnotationsByBlockResponse>,
+    annotations_by_conjunction: Vec<VariableAnnotationsByConjunctionResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -123,11 +123,11 @@ fn encode_pipeline_structure_annotations(
     type_manager: &TypeManager,
     pipeline_structure_annotations: PipelineStructureAnnotations,
 ) -> Result<PipelineStructureAnnotationsResponse, Box<ConceptReadError>> {
-    let mut annotations_by_block = Vec::new();
-    pipeline_structure_annotations.iter().try_for_each(|(block_id, var_annotations)| {
-        let block_id = block_id.0 as usize;
-        if annotations_by_block.len() <= block_id {
-            annotations_by_block.resize_with(block_id + 1, || VariableAnnotationsByBlockResponse {
+    let mut annotations_by_conjunction = Vec::new();
+    pipeline_structure_annotations.iter().try_for_each(|(conj_id, var_annotations)| {
+        let conj_id = conj_id.0 as usize;
+        if annotations_by_conjunction.len() <= conj_id {
+            annotations_by_conjunction.resize_with(conj_id + 1, || VariableAnnotationsByConjunctionResponse {
                 variable_annotations: HashMap::new(),
             });
         }
@@ -140,10 +140,10 @@ fn encode_pipeline_structure_annotations(
                 ))
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
-        annotations_by_block[block_id] = VariableAnnotationsByBlockResponse { variable_annotations };
+        annotations_by_conjunction[conj_id] = VariableAnnotationsByConjunctionResponse { variable_annotations };
         Ok::<_, Box<ConceptReadError>>(())
     })?;
-    Ok(PipelineStructureAnnotationsResponse { annotations_by_block })
+    Ok(PipelineStructureAnnotationsResponse { annotations_by_conjunction })
 }
 
 pub(crate) fn encode_function_structure_annotations(
