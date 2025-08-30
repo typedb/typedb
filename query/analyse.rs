@@ -18,7 +18,8 @@ use compiler::{
         type_annotations::TypeAnnotations,
     },
     query_structure::{
-        PipelineStructure, PipelineStructureAnnotations, QueryStructure, QueryStructureConjunctionID, StructureVariableId,
+        PipelineStructure, PipelineStructureAnnotations, QueryStructure, QueryStructureConjunctionID,
+        StructureVariableId,
     },
 };
 use concept::{
@@ -139,8 +140,12 @@ pub fn build_pipeline_annotations(
             })
         }
         AnnotatedStage::Insert { block, annotations, .. } | AnnotatedStage::Update { block, annotations, .. } => {
-            let block_id =
-                structure.parametrised_structure.scope_to_conjunction_id.get(&block.conjunction().scope_id()).unwrap().clone();
+            let block_id = structure
+                .parametrised_structure
+                .scope_to_conjunction_id
+                .get(&block.conjunction().scope_id())
+                .unwrap()
+                .clone();
             insert_variable_annotations(&mut variable_annotations, block_id, annotations);
         }
         AnnotatedStage::Delete { .. }

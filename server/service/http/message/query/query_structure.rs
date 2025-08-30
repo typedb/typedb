@@ -9,8 +9,8 @@ use std::{collections::HashMap, str::FromStr};
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
 use compiler::query_structure::{
-    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureConjunctionID,
-    QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
+    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure,
+    QueryStructureConjunctionID, QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};

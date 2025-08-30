@@ -19,14 +19,15 @@ use crate::service::{
     http::{
         message::{
             body::JsonBody,
-            query::query_structure::{PipelineStructureResponse, QueryStructureResponse},
+            query::query_structure::{
+                PipelineStructureResponse, PipelineStructureResponseForStudio, QueryStructureResponse,
+            },
             transaction::TransactionOpenPayload,
         },
         transaction_service::QueryAnswer,
     },
     AnswerType, QueryType,
 };
-use crate::service::http::message::query::query_structure::PipelineStructureResponseForStudio;
 
 pub mod annotations;
 pub mod concept;

@@ -260,8 +260,10 @@ pub struct ParametrisedQueryStructureBuilder<'a> {
 impl<'a> ParametrisedQueryStructureBuilder<'a> {
     fn new(source_query: &'a str, branch_ids_allocated: u16) -> Self {
         // Pre-allocated for query branches that have already been allocated branch ids
-        let conjunctions =
-            vec![QueryStructureConjunction { constraints: Vec::new(), nested: Vec::new() }; branch_ids_allocated as usize];
+        let conjunctions = vec![
+            QueryStructureConjunction { constraints: Vec::new(), nested: Vec::new() };
+            branch_ids_allocated as usize
+        ];
         Self {
             source_query,
             pipeline_structure: ParametrisedPipelineStructure {
