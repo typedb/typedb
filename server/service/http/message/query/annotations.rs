@@ -56,8 +56,16 @@ struct FunctionStructureAnnotationsResponse {
 #[serde(rename_all = "camelCase", tag = "tag")]
 enum FetchStructureAnnotationsResponse {
     Value { types: Vec<String> }, // Value types encoded as string
-    Object { fields: HashMap<String, FetchStructureAnnotationsResponse> },
+    Object { fields: Vec<FetchStructureFieldAnnotationsResponse> },
     List { elements: Box<FetchStructureAnnotationsResponse> },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FetchStructureFieldAnnotationsResponse {
+    key: String,
+    #[serde(flatten)]
+    value: FetchStructureAnnotationsResponse,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -164,14 +172,14 @@ fn encode_fetch_structure_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     fetch_structure_annotations: FetchStructureAnnotations,
-) -> Result<HashMap<String, FetchStructureAnnotationsResponse>, Box<ConceptReadError>> {
+) -> Result<Vec<FetchStructureFieldAnnotationsResponse>, Box<ConceptReadError>> {
     fetch_structure_annotations
         .into_iter()
         .map(|(key, object)| {
             encode_fetch_object_structure_annotations(snapshot, type_manager, object)
-                .map(|annotations| (key, annotations))
+                .map(|value| FetchStructureFieldAnnotationsResponse { key, value })
         })
-        .collect::<Result<HashMap<_, _>, _>>()
+        .collect::<Result<Vec<_>, _>>()
 }
 
 fn encode_fetch_object_structure_annotations(
