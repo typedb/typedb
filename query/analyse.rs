@@ -100,6 +100,7 @@ pub type FetchStructureAnnotations = HashMap<String, FetchObjectStructureAnnotat
 pub enum FetchObjectStructureAnnotations {
     Leaf(BTreeSet<ValueType>),
     Object(FetchStructureAnnotations),
+    List(Box<FetchObjectStructureAnnotations>)
 }
 
 #[derive(Debug)]
@@ -214,7 +215,7 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
 ) -> Result<FetchStructureAnnotations, Box<ConceptReadError>> {
     entries.iter().map(|(parameter_id, fetch_object)| {
         let key = parameters.fetch_key(*parameter_id).expect("Expected fetch key to be present").to_owned();
-        let fetch_object_annotations = match fetch_object {
+        let fetch_object_annotations_maybe_list = match fetch_object {
             AnnotatedFetchSome::SingleVar(var) => {
                 let attribute_types = last_stage_annotations.vertex_annotations_of(&Vertex::Variable(*var))
                     .expect("Expected annotations to be present").iter()
@@ -257,6 +258,18 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
                         FetchObjectStructureAnnotations::Leaf(BTreeSet::from([value_type.clone()]))
                     }
                 }
+            }
+        };
+        let fetch_object_annotations = match fetch_object {
+            AnnotatedFetchSome::SingleVar(_)
+            | AnnotatedFetchSome::SingleAttribute(_, _)
+            | AnnotatedFetchSome::SingleFunction(_)
+            | AnnotatedFetchSome::Object(_) => fetch_object_annotations_maybe_list,
+            AnnotatedFetchSome::ListFunction(_)
+            | AnnotatedFetchSome::ListSubFetch(_)
+            | AnnotatedFetchSome::ListAttributesAsList(_, _)
+            | AnnotatedFetchSome::ListAttributesFromList(_, _) => {
+                FetchObjectStructureAnnotations::List(Box::new(fetch_object_annotations_maybe_list))
             }
         };
         Ok((key, fetch_object_annotations))

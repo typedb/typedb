@@ -53,17 +53,18 @@ struct FunctionStructureAnnotationsResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", untagged)]
+#[serde(rename_all = "camelCase", tag = "tag")]
 enum FetchStructureAnnotationsResponse {
-    Leaf(Vec<String>), // Value types encoded as string
-    Object(HashMap<String, FetchStructureAnnotationsResponse>),
+    Value { types: Vec<String> }, // Value types encoded as string
+    Object{ fields: HashMap<String, FetchStructureAnnotationsResponse> },
+    List { elements: Box<FetchStructureAnnotationsResponse> },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryStructureAnnotationsResponse {
     preamble: Vec<FunctionStructureAnnotationsResponse>,
     query: Option<PipelineStructureAnnotationsResponse>,
-    fetch: Option<HashMap<String, FetchStructureAnnotationsResponse>>,
+    fetch: Option<FetchStructureAnnotationsResponse>, // Will always be the 'Object' variant
 }
 
 fn encode_type_annotations(
@@ -98,7 +99,10 @@ pub(crate) fn encode_query_structure_annotations(
     let pipeline = pipeline
         .map(|pipeline_annotations| encode_pipeline_structure_annotations(snapshot, type_manager, pipeline_annotations))
         .transpose()?;
-    let fetch = fetch.map(|fetch| encode_fetch_structure_annotations(snapshot, type_manager, fetch)).transpose()?;
+    let fetch = fetch.map(|fetch| {
+        encode_fetch_structure_annotations(snapshot, type_manager, fetch)
+            .map(|fields| FetchStructureAnnotationsResponse::Object { fields })
+    }).transpose()?;
     let annotations = QueryStructureAnnotationsResponse { preamble, query: pipeline, fetch };
     let structure = encode_query_structure(snapshot, type_manager, structure)?;
     Ok(AnalysedQueryResponse { structure, annotations })
@@ -162,20 +166,33 @@ fn encode_fetch_structure_annotations(
     fetch_structure_annotations
         .into_iter()
         .map(|(key, object)| {
-            // TODO: We don't encode the pipeline anywhere
-            let encoded = match object {
-                FetchObjectStructureAnnotations::Leaf(leaf) => {
-                    let value_types = leaf
-                        .into_iter()
-                        .map(|v| encode_value_type(v, snapshot, type_manager))
-                        .collect::<Result<Vec<_>, _>>()?;
-                    FetchStructureAnnotationsResponse::Leaf(value_types)
-                }
-                FetchObjectStructureAnnotations::Object(object) => FetchStructureAnnotationsResponse::Object(
-                    encode_fetch_structure_annotations(snapshot, type_manager, object)?,
-                ),
-            };
-            Ok((key, encoded))
+            encode_fetch_object_structure_annotations(snapshot, type_manager, object)
+                .map(|annotations| (key, annotations))
         })
         .collect::<Result<HashMap<_, _>, _>>()
+}
+
+fn encode_fetch_object_structure_annotations(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    fetch_object_structure_annotations: FetchObjectStructureAnnotations,
+) -> Result<FetchStructureAnnotationsResponse, Box<ConceptReadError>> {
+    // TODO: We don't encode the pipeline anywhere
+    let encoded = match fetch_object_structure_annotations {
+        FetchObjectStructureAnnotations::Leaf(leaf) => {
+            let types = leaf
+                .into_iter()
+                .map(|v| encode_value_type(v, snapshot, type_manager))
+                .collect::<Result<Vec<_>, _>>()?;
+            FetchStructureAnnotationsResponse::Value { types }
+        }
+        FetchObjectStructureAnnotations::Object(object) => FetchStructureAnnotationsResponse::Object {
+            fields: encode_fetch_structure_annotations(snapshot, type_manager, object)?,
+        },
+        FetchObjectStructureAnnotations::List(boxed_list_annotations) => {
+            let elements = encode_fetch_object_structure_annotations(snapshot, type_manager, *boxed_list_annotations)?;
+            FetchStructureAnnotationsResponse::List { elements: Box::new(elements) }
+        }
+    };
+    Ok(encoded)
 }
