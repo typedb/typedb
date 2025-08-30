@@ -9,8 +9,8 @@ use std::{collections::HashMap, str::FromStr};
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
 use compiler::query_structure::{
-    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureBlockID,
-    QueryStructureBlockNestedPattern, QueryStructureStage, StructureVariableId,
+    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureConjunctionID,
+    QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
@@ -86,12 +86,13 @@ pub(crate) struct QueryStructureResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PipelineStructureResponse {
-    blocks: Vec<Vec<StructureConstraintWithSpan>>,
+    conjunctions: Vec<Vec<StructureConstraintWithSpan>>,
     pipeline: Vec<QueryStructureStage>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
     outputs: Vec<StructureVariableId>,
 }
 
+// Kept for backwards compatibility
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PipelineStructureResponseForStudio {
@@ -102,7 +103,7 @@ pub(crate) struct PipelineStructureResponseForStudio {
 
 impl From<PipelineStructureResponse> for PipelineStructureResponseForStudio {
     fn from(value: PipelineStructureResponse) -> Self {
-        let PipelineStructureResponse { variables, outputs, blocks: conjunctions, .. } = value;
+        let PipelineStructureResponse { variables, outputs, conjunctions, .. } = value;
         let blocks = conjunctions.into_iter().map(|constraints| StructureBlockForStudio { constraints }).collect();
         PipelineStructureResponseForStudio { variables, outputs, blocks }
     }
@@ -192,13 +193,13 @@ enum StructureConstraint {
 
     // Nested patterns are now constraints too
     Or {
-        branches: Vec<QueryStructureBlockID>,
+        branches: Vec<QueryStructureConjunctionID>,
     },
     Not {
-        block: QueryStructureBlockID,
+        conjunction: QueryStructureConjunctionID,
     },
     Try {
-        block: QueryStructureBlockID,
+        conjunction: QueryStructureConjunctionID,
     },
 }
 
@@ -271,27 +272,27 @@ pub(crate) fn encode_pipeline_structure(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     pipeline_structure: &PipelineStructure,
-    include_nested_patterns_in_block: bool,
+    include_nested_patterns: bool,
 ) -> Result<PipelineStructureResponse, Box<ConceptReadError>> {
     let mut variables = HashMap::new();
-    let ParametrisedPipelineStructure { stages, blocks, .. } = &*pipeline_structure.parametrised_structure;
-    let blocks = blocks
+    let ParametrisedPipelineStructure { stages, conjunctions, .. } = &*pipeline_structure.parametrised_structure;
+    let encoded_conjunctions = conjunctions
         .iter()
-        .map(|block| {
-            encode_structure_block(
+        .map(|conj| {
+            encode_structure_conjunction(
                 snapshot,
                 type_manager,
                 &pipeline_structure,
                 &mut variables,
-                block.constraints.as_slice(),
-                if include_nested_patterns_in_block { block.nested.as_slice() } else { &[] },
+                conj.constraints.as_slice(),
+                if include_nested_patterns { conj.nested.as_slice() } else { &[] },
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
     // Ensure reduced variables are added to variables
     record_reducer_variables(snapshot, type_manager, pipeline_structure, &mut variables);
     let outputs = pipeline_structure.available_variables.clone();
-    Ok(PipelineStructureResponse { blocks, outputs, variables, pipeline: stages.clone() })
+    Ok(PipelineStructureResponse { conjunctions: encoded_conjunctions, outputs, variables, pipeline: stages.clone() })
 }
 
 fn record_reducer_variables(
@@ -315,22 +316,22 @@ fn record_reducer_variables(
         });
 }
 
-fn encode_structure_block(
+fn encode_structure_conjunction(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     pipeline_structure: &PipelineStructure,
     variables: &mut HashMap<StructureVariableId, StructureVariableInfo>,
-    block: &[Constraint<Variable>],
-    nested: &[QueryStructureBlockNestedPattern],
+    conjunction: &[Constraint<Variable>],
+    nested: &[QueryStructureNestedPattern],
 ) -> Result<Vec<StructureConstraintWithSpan>, Box<ConceptReadError>> {
     let mut constraints = Vec::new();
-    let role_names = block
+    let role_names = conjunction
         .iter()
         .filter_map(|constraint| constraint.as_role_name())
         .map(|rolename| (rolename.type_().as_variable().unwrap(), rolename.name().to_owned()))
         .collect();
     let mut context = PipelineStructureContext { pipeline_structure, snapshot, type_manager, role_names, variables };
-    block.iter().enumerate().try_for_each(|(index, constraint)| {
+    conjunction.iter().enumerate().try_for_each(|(index, constraint)| {
         encode_structure_constraint(&mut context, constraint, &mut constraints, index)
     })?;
     nested.iter().try_for_each(|nested| encode_structure_nested_pattern(nested, &mut constraints))?;
@@ -538,13 +539,13 @@ fn encode_structure_constraint(
 }
 
 fn encode_structure_nested_pattern(
-    nested: &QueryStructureBlockNestedPattern,
+    nested: &QueryStructureNestedPattern,
     constraints: &mut Vec<StructureConstraintWithSpan>,
 ) -> Result<(), Box<ConceptReadError>> {
     let constraint = match nested.clone() {
-        QueryStructureBlockNestedPattern::Or { branches } => StructureConstraint::Or { branches },
-        QueryStructureBlockNestedPattern::Not { block } => StructureConstraint::Not { block },
-        QueryStructureBlockNestedPattern::Try { block } => StructureConstraint::Try { block },
+        QueryStructureNestedPattern::Or { branches } => StructureConstraint::Or { branches },
+        QueryStructureNestedPattern::Not { conjunction } => StructureConstraint::Not { conjunction },
+        QueryStructureNestedPattern::Try { conjunction } => StructureConstraint::Try { conjunction },
     };
     constraints.push(StructureConstraintWithSpan { constraint, text_span: None });
     Ok(())

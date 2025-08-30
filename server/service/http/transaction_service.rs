@@ -827,7 +827,7 @@ impl TransactionService {
             .as_ref()
             .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs, false))
             .transpose();
-        let always_taken_blocks = pipeline_structure.map(|qs| qs.parametrised_structure.always_taken_blocks());
+        let always_taken_blocks = pipeline_structure.map(|qs| qs.parametrised_structure.must_have_been_satisfied_conjunctions());
         let pipeline_structure_response = match encode_pipeline_structure_result {
             Ok(structure_opt) => structure_opt,
             Err(typedb_source) => {
@@ -1062,8 +1062,8 @@ impl TransactionService {
                 .pipeline_structure()
                 .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs, false))
                 .transpose();
-            let always_taken_blocks =
-                pipeline.pipeline_structure().map(|qs| qs.parametrised_structure.always_taken_blocks());
+            let must_have_been_satisfied_conjunctions =
+                pipeline.pipeline_structure().map(|qs| qs.parametrised_structure.must_have_been_satisfied_conjunctions());
             let pipeline_structure_response = match encode_pipeline_structure_result {
                 Ok(structure_opt) => structure_opt,
                 Err(typedb_source) => {
@@ -1113,7 +1113,7 @@ impl TransactionService {
                     &thing_manager,
                     query_options.include_instance_types,
                     storage_counters.clone(),
-                    always_taken_blocks.as_ref(),
+                    must_have_been_satisfied_conjunctions.as_ref(),
                 );
                 match encoded_row {
                     Ok(encoded_row) => result.push(encoded_row),

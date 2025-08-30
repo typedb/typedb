@@ -18,7 +18,7 @@ use compiler::{
         type_annotations::TypeAnnotations,
     },
     query_structure::{
-        PipelineStructure, PipelineStructureAnnotations, QueryStructure, QueryStructureBlockID, StructureVariableId,
+        PipelineStructure, PipelineStructureAnnotations, QueryStructure, QueryStructureConjunctionID, StructureVariableId,
     },
 };
 use concept::{
@@ -115,7 +115,7 @@ pub fn build_pipeline_annotations(
 ) -> PipelineStructureAnnotations {
     fn insert_variable_annotations(
         variable_annotations: &mut PipelineStructureAnnotations,
-        block_id: QueryStructureBlockID,
+        block_id: QueryStructureConjunctionID,
         annotations_for_block: &TypeAnnotations,
     ) {
         let annotations = annotations_for_block
@@ -134,13 +134,13 @@ pub fn build_pipeline_annotations(
         AnnotatedStage::Put { match_annotations: block_annotations, .. }
         | AnnotatedStage::Match { block_annotations, .. } => {
             block_annotations.type_annotations().iter().for_each(|(scope_id, annotations)| {
-                let block_id = structure.parametrised_structure.scope_to_block.get(scope_id).unwrap().clone();
+                let block_id = structure.parametrised_structure.scope_to_conjunction_id.get(scope_id).unwrap().clone();
                 insert_variable_annotations(&mut variable_annotations, block_id, annotations);
             })
         }
         AnnotatedStage::Insert { block, annotations, .. } | AnnotatedStage::Update { block, annotations, .. } => {
             let block_id =
-                structure.parametrised_structure.scope_to_block.get(&block.conjunction().scope_id()).unwrap().clone();
+                structure.parametrised_structure.scope_to_conjunction_id.get(&block.conjunction().scope_id()).unwrap().clone();
             insert_variable_annotations(&mut variable_annotations, block_id, annotations);
         }
         AnnotatedStage::Delete { .. }
