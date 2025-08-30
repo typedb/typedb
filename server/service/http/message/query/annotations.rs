@@ -56,7 +56,7 @@ struct FunctionStructureAnnotationsResponse {
 #[serde(rename_all = "camelCase", tag = "tag")]
 enum FetchStructureAnnotationsResponse {
     Value { types: Vec<String> }, // Value types encoded as string
-    Object{ fields: HashMap<String, FetchStructureAnnotationsResponse> },
+    Object { fields: HashMap<String, FetchStructureAnnotationsResponse> },
     List { elements: Box<FetchStructureAnnotationsResponse> },
 }
 
@@ -99,10 +99,12 @@ pub(crate) fn encode_query_structure_annotations(
     let pipeline = pipeline
         .map(|pipeline_annotations| encode_pipeline_structure_annotations(snapshot, type_manager, pipeline_annotations))
         .transpose()?;
-    let fetch = fetch.map(|fetch| {
-        encode_fetch_structure_annotations(snapshot, type_manager, fetch)
-            .map(|fields| FetchStructureAnnotationsResponse::Object { fields })
-    }).transpose()?;
+    let fetch = fetch
+        .map(|fetch| {
+            encode_fetch_structure_annotations(snapshot, type_manager, fetch)
+                .map(|fields| FetchStructureAnnotationsResponse::Object { fields })
+        })
+        .transpose()?;
     let annotations = QueryStructureAnnotationsResponse { preamble, query: pipeline, fetch };
     let structure = encode_query_structure(snapshot, type_manager, structure)?;
     Ok(AnalysedQueryResponse { structure, annotations })

@@ -100,7 +100,7 @@ pub type FetchStructureAnnotations = HashMap<String, FetchObjectStructureAnnotat
 pub enum FetchObjectStructureAnnotations {
     Leaf(BTreeSet<ValueType>),
     Object(FetchStructureAnnotations),
-    List(Box<FetchObjectStructureAnnotations>)
+    List(Box<FetchObjectStructureAnnotations>),
 }
 
 #[derive(Debug)]

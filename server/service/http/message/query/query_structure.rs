@@ -8,7 +8,10 @@ use std::{collections::HashMap, str::FromStr};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
-use compiler::query_structure::{FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureBlockID, QueryStructureBlockNestedPattern, QueryStructureStage, StructureVariableId};
+use compiler::query_structure::{
+    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureBlockID,
+    QueryStructureBlockNestedPattern, QueryStructureStage, StructureVariableId,
+};
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
 use ir::pattern::{
@@ -172,9 +175,15 @@ enum StructureConstraint {
     },
 
     // Nested patterns are now constraints too
-    Or { branches: Vec<QueryStructureBlockID> },
-    Not { block: QueryStructureBlockID },
-    Try { block: QueryStructureBlockID },
+    Or {
+        branches: Vec<QueryStructureBlockID>,
+    },
+    Not {
+        block: QueryStructureBlockID,
+    },
+    Try {
+        block: QueryStructureBlockID,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -220,8 +229,10 @@ pub(crate) fn encode_query_structure(
     query_structure: QueryStructure,
 ) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
     let QueryStructure { preamble, query: pipeline } = query_structure;
-    let pipeline =
-        pipeline.as_ref().map(|pipeline| encode_pipeline_structure(snapshot, type_manager, &pipeline, true)).transpose()?;
+    let pipeline = pipeline
+        .as_ref()
+        .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, &pipeline, true))
+        .transpose()?;
     let preamble = preamble
         .into_iter()
         .map(|function| {
@@ -306,9 +317,7 @@ fn encode_structure_block(
     block.iter().enumerate().try_for_each(|(index, constraint)| {
         encode_structure_constraint(&mut context, constraint, &mut constraints, index)
     })?;
-    nested.iter().try_for_each(|nested| {
-        encode_structure_nested_pattern(nested, &mut constraints)
-    })?;
+    nested.iter().try_for_each(|nested| encode_structure_nested_pattern(nested, &mut constraints))?;
     Ok(StructureBlock { constraints })
 }
 
@@ -521,7 +530,7 @@ fn encode_structure_nested_pattern(
         QueryStructureBlockNestedPattern::Not { block } => StructureConstraint::Not { block },
         QueryStructureBlockNestedPattern::Try { block } => StructureConstraint::Try { block },
     };
-    constraints.push( StructureConstraintWithSpan { constraint, text_span: None } );
+    constraints.push(StructureConstraintWithSpan { constraint, text_span: None });
     Ok(())
 }
 
