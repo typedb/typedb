@@ -824,7 +824,7 @@ impl TransactionService {
         let mut batch_iterator = batch.into_iterator();
         let mut warning = None;
         let encode_pipeline_structure_result =
-            pipeline_structure.as_ref().map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs)).transpose();
+            pipeline_structure.as_ref().map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs, false)).transpose();
         let always_taken_blocks = pipeline_structure.map(|qs| qs.parametrised_structure.always_taken_blocks());
         let pipeline_structure_response = match encode_pipeline_structure_result {
             Ok(structure_opt) => structure_opt,
@@ -1058,7 +1058,7 @@ impl TransactionService {
 
             let encode_pipeline_structure_result = pipeline
                 .pipeline_structure()
-                .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs))
+                .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs, false))
                 .transpose();
             let always_taken_blocks =
                 pipeline.pipeline_structure().map(|qs| qs.parametrised_structure.always_taken_blocks());

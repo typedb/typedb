@@ -221,14 +221,14 @@ pub(crate) fn encode_query_structure(
 ) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
     let QueryStructure { preamble, query: pipeline } = query_structure;
     let pipeline =
-        pipeline.as_ref().map(|pipeline| encode_pipeline_structure(snapshot, type_manager, &pipeline)).transpose()?;
+        pipeline.as_ref().map(|pipeline| encode_pipeline_structure(snapshot, type_manager, &pipeline, true)).transpose()?;
     let preamble = preamble
         .into_iter()
         .map(|function| {
             let pipeline = function
                 .pipeline
                 .as_ref()
-                .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, pipeline))
+                .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, pipeline, true))
                 .transpose()?;
             Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse {
                 body: pipeline,
@@ -244,6 +244,7 @@ pub(crate) fn encode_pipeline_structure(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     pipeline_structure: &PipelineStructure,
+    include_nested_patterns_in_block: bool,
 ) -> Result<PipelineStructureResponse, Box<ConceptReadError>> {
     let mut variables = HashMap::new();
     let ParametrisedPipelineStructure { stages, blocks, .. } = &*pipeline_structure.parametrised_structure;
@@ -256,7 +257,7 @@ pub(crate) fn encode_pipeline_structure(
                 &pipeline_structure,
                 &mut variables,
                 block.constraints.as_slice(),
-                block.nested.as_slice(),
+                if include_nested_patterns_in_block { block.nested.as_slice() } else { &[] },
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
