@@ -26,6 +26,7 @@ use crate::service::{
     },
     AnswerType, QueryType,
 };
+use crate::service::http::message::query::query_structure::PipelineStructureResponseForStudio;
 
 pub mod annotations;
 pub mod concept;
@@ -83,7 +84,7 @@ pub struct QueryAnswerResponse {
     pub query_type: QueryType,
     pub answer_type: AnswerType,
     pub answers: Option<Vec<serde_json::Value>>,
-    pub query: Option<PipelineStructureResponse>,
+    pub query: Option<PipelineStructureResponseForStudio>,
     pub warning: Option<String>,
 }
 
@@ -101,7 +102,7 @@ pub(crate) fn encode_query_rows_answer(
         answer_type: AnswerType::ConceptRows,
         query_type,
         answers: Some(rows),
-        query: pipeline_structure,
+        query: pipeline_structure.map(|structure| structure.into()),
         warning,
     }
 }

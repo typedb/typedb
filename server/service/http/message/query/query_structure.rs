@@ -86,7 +86,7 @@ pub(crate) struct QueryStructureResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PipelineStructureResponse {
-    blocks: Vec<StructureBlock>,
+    blocks: Vec<Vec<StructureConstraintWithSpan>>,
     pipeline: Vec<QueryStructureStage>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
     outputs: Vec<StructureVariableId>,
@@ -94,14 +94,30 @@ pub(crate) struct PipelineStructureResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct StructureVariableInfo {
-    name: Option<String>,
+pub(crate) struct PipelineStructureResponseForStudio {
+    blocks: Vec<StructureBlockForStudio>,
+    variables: HashMap<StructureVariableId, StructureVariableInfo>,
+    outputs: Vec<StructureVariableId>,
+}
+
+impl From<PipelineStructureResponse> for PipelineStructureResponseForStudio {
+    fn from(value: PipelineStructureResponse) -> Self {
+        let PipelineStructureResponse { variables, outputs, blocks: conjunctions, .. } = value;
+        let blocks = conjunctions.into_iter().map(|constraints| StructureBlockForStudio { constraints }).collect();
+        PipelineStructureResponseForStudio { variables, outputs, blocks }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct StructureBlock {
+struct StructureBlockForStudio {
     constraints: Vec<StructureConstraintWithSpan>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StructureVariableInfo {
+    name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -306,7 +322,7 @@ fn encode_structure_block(
     variables: &mut HashMap<StructureVariableId, StructureVariableInfo>,
     block: &[Constraint<Variable>],
     nested: &[QueryStructureBlockNestedPattern],
-) -> Result<StructureBlock, Box<ConceptReadError>> {
+) -> Result<Vec<StructureConstraintWithSpan>, Box<ConceptReadError>> {
     let mut constraints = Vec::new();
     let role_names = block
         .iter()
@@ -318,7 +334,7 @@ fn encode_structure_block(
         encode_structure_constraint(&mut context, constraint, &mut constraints, index)
     })?;
     nested.iter().try_for_each(|nested| encode_structure_nested_pattern(nested, &mut constraints))?;
-    Ok(StructureBlock { constraints })
+    Ok(constraints)
 }
 
 fn encode_structure_constraint(

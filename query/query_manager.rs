@@ -448,7 +448,7 @@ fn annotate_and_compile_query(
         }
     };
     compile_profile.annotation_finished();
-
+    // TODO: We can avoid this for the regular query path when we break studio backwards compatibility
     let pipeline_structure =
         extract_pipeline_structure_from(&variable_registry, &annotated_pipeline.annotated_stages, source_query)
             .map(Arc::new);
