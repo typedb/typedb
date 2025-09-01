@@ -14,14 +14,14 @@ pub(crate) fn get_transaction_schema<D: DurabilityClient>(
 ) -> Result<String, DatabaseExportError> {
     let types_syntax = get_types_syntax(transaction)?;
     let functions_syntax = get_functions_syntax(transaction)?;
-    Ok(format!("{}\n{}{}\n", typeql::token::Clause::Define, types_syntax, functions_syntax))
+    Ok(format!("{}\n{}{}\n", typeql::token::Clause::Define, types_syntax, functions_syntax).trim().to_owned())
 }
 
 pub(crate) fn get_transaction_type_schema<D: DurabilityClient>(
     transaction: &TransactionRead<D>,
 ) -> Result<String, DatabaseExportError> {
     let types_syntax = get_types_syntax(transaction)?;
-    Ok(format!("{}\n{}\n", typeql::token::Clause::Define, types_syntax))
+    Ok(format!("{}\n{}\n", typeql::token::Clause::Define, types_syntax).trim().to_owned())
 }
 
 fn get_types_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, DatabaseExportError> {
