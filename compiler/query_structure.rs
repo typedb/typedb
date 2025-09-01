@@ -58,19 +58,12 @@ pub struct FunctionStructure {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FunctionReduceReturnStructure {
-    reducer: String,
-    variable: Option<StructureVariableId>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum FunctionReturnStructure {
     Stream { variables: Vec<StructureVariableId> },
     Single { selector: String, variables: Vec<StructureVariableId> },
-    ReduceCheck {},
-    Reduce { reducers: Vec<FunctionReduceReturnStructure> },
+    Check {},
+    Reduce { reducers: Vec<StructureReducer> },
 }
 
 impl From<&AnnotatedFunctionReturn> for FunctionReturnStructure {
@@ -83,13 +76,13 @@ impl From<&AnnotatedFunctionReturn> for FunctionReturnStructure {
                 selector: selector.to_string().to_owned(),
                 variables: variables.iter().map_into().collect(),
             },
-            AnnotatedFunctionReturn::ReduceCheck {} => Self::ReduceCheck {},
+            AnnotatedFunctionReturn::ReduceCheck {} => Self::Check {},
             AnnotatedFunctionReturn::ReduceReducer { instructions } => {
                 let reducers = instructions
                     .iter()
-                    .map(|reducer| FunctionReduceReturnStructure {
+                    .map(|reducer| StructureReducer {
                         reducer: reducer.unresolved().name(),
-                        variable: reducer.id().map(|var| var.into()),
+                        arguments: reducer.id().iter().map(|var| var.into()).collect(),
                     })
                     .collect();
                 Self::Reduce { reducers }
@@ -232,7 +225,7 @@ pub enum QueryStructureStage {
 
     Require { variables: Vec<StructureVariableId> },
     Distinct,
-    Reduce { reducers: Vec<StructureReducer>, groupby: Vec<StructureVariableId> },
+    Reduce { reducers: Vec<StructureReduceAssign>, groupby: Vec<StructureVariableId> },
 }
 
 #[derive(Debug, Clone)]
@@ -477,15 +470,21 @@ impl From<&SortVariable> for StructureSortVariable {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StructureReducer {
-    pub assigned: StructureVariableId,
-    pub reducer: String,
-    pub arguments: Vec<StructureVariableId>,
+    reducer: String,
+    arguments: Vec<StructureVariableId>,
 }
 
-impl From<&AssignedReduction> for StructureReducer {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StructureReduceAssign {
+    pub assigned: StructureVariableId,
+    pub reducer: StructureReducer,
+}
+
+impl From<&AssignedReduction> for StructureReduceAssign {
     fn from(value: &AssignedReduction) -> Self {
         let arguments = match value.reduction {
             Reducer::Count => vec![],
@@ -497,7 +496,8 @@ impl From<&AssignedReduction> for StructureReducer {
             | Reducer::Min(var)
             | Reducer::Std(var) => vec![var.into()],
         };
-        StructureReducer { assigned: value.assigned.into(), reducer: value.reduction.name(), arguments }
+        let reducer = StructureReducer { reducer: value.reduction.name(), arguments };
+        StructureReduceAssign { assigned: value.assigned.into(), reducer }
     }
 }
 
