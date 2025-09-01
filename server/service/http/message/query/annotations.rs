@@ -56,7 +56,8 @@ struct FunctionStructureAnnotationsResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 enum FetchStructureAnnotationsResponse {
-    Value { types: Vec<String> }, // Value types encoded as string
+    #[serde(rename_all = "camelCase")]
+    Value { value_types: Vec<String> }, // Value types encoded as string
     Object { fields: Vec<FetchStructureFieldAnnotationsResponse> },
     List { elements: Box<FetchStructureAnnotationsResponse> },
 }
@@ -191,11 +192,11 @@ fn encode_fetch_object_structure_annotations(
     // TODO: We don't encode the pipeline anywhere
     let encoded = match fetch_object_structure_annotations {
         FetchObjectStructureAnnotations::Leaf(leaf) => {
-            let types = leaf
+            let value_types = leaf
                 .into_iter()
                 .map(|v| encode_value_type(v, snapshot, type_manager))
                 .collect::<Result<Vec<_>, _>>()?;
-            FetchStructureAnnotationsResponse::Value { types }
+            FetchStructureAnnotationsResponse::Value { value_types }
         }
         FetchObjectStructureAnnotations::Object(object) => FetchStructureAnnotationsResponse::Object {
             fields: encode_fetch_structure_annotations(snapshot, type_manager, object)?,
