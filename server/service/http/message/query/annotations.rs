@@ -29,6 +29,7 @@ use crate::service::http::message::query::{
 #[serde(rename_all = "camelCase", tag = "tag")]
 enum TypeAnnotationResponse {
     Concept { annotations: Vec<serde_json::Value> },
+    #[serde(rename_all = "camelCase")]
     Value { value_types: Vec<serde_json::Value> },
 }
 

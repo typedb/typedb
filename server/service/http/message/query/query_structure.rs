@@ -73,7 +73,7 @@ pub(crate) struct FunctionStructureResponse {
     body: Option<PipelineStructureResponse>,
     arguments: Vec<StructureVariableId>,
     #[serde(rename = "return")]
-    return_: FunctionReturnStructure,
+    r#return: FunctionReturnStructure,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -261,7 +261,7 @@ pub(crate) fn encode_query_structure(
             Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse {
                 body: pipeline,
                 arguments: function.arguments,
-                return_: function.return_,
+                r#return: function.return_,
             })
         })
         .collect::<Result<Vec<_>, _>>()?;

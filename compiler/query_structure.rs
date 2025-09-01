@@ -214,6 +214,7 @@ impl ParametrisedPipelineStructure {
 pub enum QueryStructureStage {
     Match { block: QueryStructureConjunctionID },
     Insert { block: QueryStructureConjunctionID },
+    #[serde(rename_all = "camelCase")]
     Delete { block: QueryStructureConjunctionID, deleted_variables: Vec<StructureVariableId> },
     Put { block: QueryStructureConjunctionID },
     Update { block: QueryStructureConjunctionID },
