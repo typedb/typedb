@@ -13,7 +13,7 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use error::typedb_error;
 use ir::{
-    pattern::{constraint::ExpressionBinding, variable_category::VariableOptionality, BranchID, Vertex},
+    pattern::{constraint::ExpressionBinding, BranchID, Vertex},
     pipeline::{block::Block, function_signature::FunctionID, VariableRegistry},
 };
 use itertools::Itertools;

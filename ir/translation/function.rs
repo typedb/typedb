@@ -9,7 +9,7 @@ use error::{needs_update_when_feature_is_implemented, UnimplementedFeature};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
-    common::{Span, Spanned},
+    common::{Spanned},
     schema::definable::function::{
         FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },

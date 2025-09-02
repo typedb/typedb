@@ -7,7 +7,6 @@
 use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
-    io::Read,
     iter::{once, Map},
     ops::RangeBounds,
     sync::Arc,
@@ -2455,7 +2454,7 @@ impl ThingManager {
         modified_owns: &mut HashMap<ObjectType, HashSet<AttributeType>>,
         modified_plays: &mut HashMap<ObjectType, HashSet<RoleType>>,
         modified_relates: &mut HashMap<RelationType, HashSet<RoleType>>,
-        storage_counters: StorageCounters,
+        _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         // New / deleted capabilities
 
@@ -3011,8 +3010,8 @@ impl ThingManager {
             let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
             let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
 
-            owner.set_required(snapshot, self, storage_counters.clone())?;
-            attribute.set_required(snapshot, self, storage_counters.clone())?;
+            owner.set_required(snapshot, self, storage_counters.clone());
+            attribute.set_required(snapshot, self, storage_counters.clone());
             snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             Ok(())
@@ -3150,8 +3149,8 @@ impl ThingManager {
             let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
 
-            relation.set_required(snapshot, self, storage_counters.clone())?;
-            player.set_required(snapshot, self, storage_counters.clone())?;
+            relation.set_required(snapshot, self, storage_counters.clone());
+            player.set_required(snapshot, self, storage_counters.clone());
 
             snapshot.put_val(links.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));

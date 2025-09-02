@@ -7,7 +7,6 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt,
-    fmt::Write,
     sync::Arc,
 };
 

@@ -24,7 +24,7 @@ use encoding::{
         Typed,
     },
     layout::prefix::Prefix,
-    value::{value::Value, value_type::ValueType},
+    value::{value::Value},
     AsBytes, Keyable,
 };
 use iterator::State;
@@ -143,23 +143,12 @@ impl ThingAPI for Attribute {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         _storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptReadError>> {
-        match self.type_().get_value_type_without_source(snapshot, thing_manager.type_manager())? {
-            Some(value_type) => match value_type {
-                | ValueType::Boolean
-                | ValueType::Integer
-                | ValueType::Double
-                | ValueType::Decimal
-                | ValueType::Date
-                | ValueType::DateTime
-                | ValueType::DateTimeTZ
-                | ValueType::Duration => snapshot.put(self.vertex().into_storage_key().into_owned_array()),
-                // ValueTypes with expensive writes
-                | ValueType::String | ValueType::Struct(_) => thing_manager.lock_existing_attribute(snapshot, self),
-            },
-            None => panic!("Attribute instances must have a value type"),
-        }
-        Ok(())
+    ) {
+        // always lock the attribute, even if put in this snapshot since we don't know
+        // if it pre-existed or concurrently created/deleted, or even put again later in this transaction
+        // contrast this with entities/relations:
+        // those cannot be shared or concurrently created by other transactions unless pre-existing as Persisted
+        thing_manager.lock_existing_attribute(snapshot, self);
     }
 
     fn get_status(
@@ -254,7 +243,7 @@ where
         }
     }
 
-    pub fn seek(&mut self, target: &Attribute) {
+    pub fn seek(&mut self, _target: &Attribute) {
         todo!()
     }
 

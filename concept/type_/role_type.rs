@@ -199,9 +199,9 @@ impl KindAPI for RoleType {
 
     fn capabilities_syntax(
         &self,
-        f: &mut impl Write,
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
+        _f: &mut impl Write,
+        _snapshot: &impl ReadableSnapshot,
+        _type_manager: &TypeManager,
     ) -> Result<(), Box<ConceptReadError>> {
         Ok(())
     }

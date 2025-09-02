@@ -390,11 +390,10 @@ impl ThingAPI for Relation {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptReadError>> {
+    ) {
         if matches!(self.get_status(snapshot, thing_manager, storage_counters), ConceptStatus::Persisted) {
             thing_manager.lock_existing_object(snapshot, *self);
         }
-        Ok(())
     }
 
     fn get_status(
