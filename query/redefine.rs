@@ -84,6 +84,9 @@ pub(crate) fn execute(
     redefine: Redefine,
     storage_counters: StorageCounters,
 ) -> Result<(), RedefineError> {
+    if redefine.definables.is_empty() {
+        return Ok(());
+    }
     let redefined_structs = process_struct_redefinitions(snapshot, type_manager, thing_manager, &redefine.definables)?;
     let redefined_types =
         process_type_redefinitions(snapshot, type_manager, thing_manager, &redefine.definables, storage_counters)?;

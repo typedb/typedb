@@ -56,6 +56,7 @@ rust_binary(
 assemble_files = {
     "//:LICENSE": "LICENSE",
 }
+
 empty_directories = [
     "server/data",
 ]
