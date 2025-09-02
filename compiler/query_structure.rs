@@ -26,10 +26,11 @@ use ir::{
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize, Serializer};
+use encoding::value::value_type::ValueType;
 
 use crate::{
     annotation::{
-        function::{AnnotatedFunction, AnnotatedFunctionReturn, FunctionParameterAnnotation},
+        function::{AnnotatedFunction, AnnotatedFunctionReturn},
         pipeline::{AnnotatedPipeline, AnnotatedStage},
         type_annotations::{BlockAnnotations, TypeAnnotations},
     },
@@ -158,8 +159,15 @@ pub fn extract_pipeline_structure_from(
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum PipelineVariableAnnotation {
+    Thing(Vec<answer::Type>),
+    Type(Vec<answer::Type>),
+    Value(ValueType),
+}
+
 pub type PipelineStructureAnnotations =
-    BTreeMap<QueryStructureConjunctionID, BTreeMap<StructureVariableId, FunctionParameterAnnotation>>;
+    BTreeMap<QueryStructureConjunctionID, BTreeMap<StructureVariableId, PipelineVariableAnnotation>>;
 #[derive(Debug, Clone)]
 pub struct ParametrisedPipelineStructure {
     pub stages: Vec<QueryStructureStage>,

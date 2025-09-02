@@ -82,8 +82,9 @@ impl AnnotatedFunctionReturn {
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFunctionSignature {
+    pub is_stream: bool,
     pub arguments: Vec<FunctionParameterAnnotation>,
-    pub returned: Vec<FunctionParameterAnnotation>,
+    pub returns: Vec<FunctionParameterAnnotation>,
 }
 
 pub type AnnotatedPreambleFunctions = Vec<AnnotatedFunction>;
@@ -323,8 +324,9 @@ fn annotate_function_impl(
         &argument_concept_variable_types,
         &argument_value_variable_types,
     );
+    let is_stream = matches!(function.output, Some(Output::Stream(_)));
     let annotated_signature =
-        AnnotatedFunctionSignature { arguments: argument_annotations, returned: return_annotations };
+        AnnotatedFunctionSignature { is_stream, arguments: argument_annotations, returns: return_annotations };
     Ok(AnnotatedFunction {
         variable_registry: context.variable_registry.clone(),
         parameter_registry: parameters.clone(),
@@ -413,8 +415,8 @@ fn annotate_signature_based_on_labels(
         })
     })
     .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
-
-    Ok(AnnotatedFunctionSignature { arguments: argument_annotations, returned })
+    let is_stream = matches!(function.output, Some(Output::Stream(_)));
+    Ok(AnnotatedFunctionSignature { is_stream, arguments: argument_annotations, returns: returned })
 }
 
 fn resolve_return_operators(

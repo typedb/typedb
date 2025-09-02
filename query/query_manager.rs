@@ -367,6 +367,7 @@ impl QueryManager {
         let query_structure_annotations = QueryStructureAnnotations::build(
             snapshot.as_ref(),
             type_manager,
+            &variable_registry,
             arced_parameters,
             source_query,
             &annotated_pipeline,

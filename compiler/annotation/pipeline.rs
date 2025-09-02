@@ -729,7 +729,7 @@ fn collect_value_types_of_function_call_assignments(
             let return_ = &annotated_function_signatures
                 .get_annotated_signature(&binding.function_call().function_id())
                 .unwrap()
-                .returned;
+                .returns;
             zip(binding.assigned(), return_.iter()).try_for_each(|(var, annotation)| match &annotation {
                 FunctionParameterAnnotation::Value(value_type) => {
                     if value_type_annotations.contains_key(&var.as_variable().unwrap()) {

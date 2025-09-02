@@ -778,7 +778,7 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
             context.function_annotations.get_annotated_signature(&self.function_call().function_id())
         {
             for (assigned_variable, return_annotation) in
-                zip(self.assigned(), annotated_function_signature.returned.iter())
+                zip(self.assigned(), annotated_function_signature.returns.iter())
             {
                 if let FunctionParameterAnnotation::Concept(types) = return_annotation {
                     graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(types));
