@@ -82,7 +82,7 @@ impl ServerBuilder {
                     shutdown_receiver.clone(),
                 )
                 .await?;
-                server_state.initialise().await.map_err(|error| ServerOpenError::ServerState { typedb_source: Box::new(error) })?;
+                server_state.initialise_and_load().await.map_err(|error| ServerOpenError::ServerState { typedb_source: Box::new(error) })?;
                 Arc::new(server_state)
             }
         };

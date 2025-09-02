@@ -239,7 +239,7 @@ impl LocalServerState {
         })
     }
 
-    pub async fn initialise(&mut self) -> Result<(), ServerStateError> {
+    pub async fn initialise(&self) -> Result<(), ServerStateError> {
         let system_database = if let Some(system_database) =
             self.database_manager().await.database_unrestricted(SYSTEM_DB) {
             system_database
@@ -250,10 +250,26 @@ impl LocalServerState {
         let user_manager = Arc::new(UserManager::new(system_database));
         crate::system_init::initialise_default_user(&user_manager, self).await?;
 
-        let credential_verifier = Some(Arc::new(CredentialVerifier::new(user_manager.clone())));
+        Ok(())
+    }
 
+    pub async fn is_initialised(&self) -> bool {
+        self.database_manager().await.database_unrestricted(SYSTEM_DB).is_some()
+    }
+
+    pub async fn load(&mut self) {
+        let system_database = self.database_manager().await.database_unrestricted(SYSTEM_DB).unwrap();
+        let user_manager = Arc::new(UserManager::new(system_database));
+        let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
         self.user_manager = Some(user_manager);
-        self.credential_verifier = credential_verifier;
+        self.credential_verifier = Some(credential_verifier);
+    }
+
+    pub async fn initialise_and_load(&mut self) -> Result<(), ServerStateError> {
+        if !self.is_initialised().await {
+            self.initialise().await?;
+        }
+        self.load().await;
         Ok(())
     }
 
