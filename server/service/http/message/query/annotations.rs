@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use compiler::{
     annotation::function::FunctionParameterAnnotation,
-    query_structure::{PipelineStructureAnnotations, StructureVariableId},
+    query_structure::{PipelineStructureAnnotations, PipelineVariableAnnotation, StructureVariableId},
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use query::analyse::{
@@ -17,7 +17,6 @@ use query::analyse::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use compiler::query_structure::PipelineVariableAnnotation;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::{
@@ -29,10 +28,16 @@ use crate::service::http::message::query::{
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 enum TypeAnnotationResponse {
-    Thing { annotations: Vec<serde_json::Value> },
-    Type { annotations: Vec<serde_json::Value> },
+    Thing {
+        annotations: Vec<serde_json::Value>,
+    },
+    Type {
+        annotations: Vec<serde_json::Value>,
+    },
     #[serde(rename_all = "camelCase")]
-    Value { value_types: Vec<serde_json::Value> },
+    Value {
+        value_types: Vec<serde_json::Value>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -50,8 +55,8 @@ struct PipelineStructureAnnotationsResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 enum FunctionReturnAnnotationsResponse {
-    Single { annotations: Vec<TypeAnnotationResponse>},
-    Stream { annotations: Vec<TypeAnnotationResponse>}
+    Single { annotations: Vec<TypeAnnotationResponse> },
+    Stream { annotations: Vec<TypeAnnotationResponse> },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -66,9 +71,16 @@ struct FunctionStructureAnnotationsResponse {
 #[serde(rename_all = "camelCase", tag = "tag")]
 enum FetchStructureAnnotationsResponse {
     #[serde(rename_all = "camelCase")]
-    Value { value_types: Vec<String> }, // Value types encoded as string
-    Object { possible_fields: Vec<FetchStructureFieldAnnotationsResponse> },
-    List { elements: Box<FetchStructureAnnotationsResponse> },
+    Value {
+        value_types: Vec<String>,
+    }, // Value types encoded as string
+    #[serde(rename_all = "camelCase")]
+    Object {
+        possible_fields: Vec<FetchStructureFieldAnnotationsResponse>,
+    },
+    List {
+        elements: Box<FetchStructureAnnotationsResponse>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -128,7 +140,6 @@ fn encode_variable_type_annotations(
         }
     })
 }
-
 
 pub(crate) fn encode_query_structure_annotations(
     snapshot: &impl ReadableSnapshot,

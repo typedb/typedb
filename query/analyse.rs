@@ -18,8 +18,8 @@ use compiler::{
         type_annotations::TypeAnnotations,
     },
     query_structure::{
-        PipelineStructure, PipelineStructureAnnotations, QueryStructure, QueryStructureConjunctionID,
-        StructureVariableId,
+        PipelineStructure, PipelineStructureAnnotations, PipelineVariableAnnotation, QueryStructure,
+        QueryStructureConjunctionID, StructureVariableId,
     },
 };
 use concept::{
@@ -29,11 +29,9 @@ use concept::{
 use encoding::value::value_type::ValueType;
 use ir::{
     pattern::{ParameterID, Scope, Vertex},
-    pipeline::ParameterRegistry,
+    pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::chain;
-use compiler::query_structure::PipelineVariableAnnotation;
-use ir::pipeline::VariableRegistry;
 use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug)]
@@ -63,7 +61,8 @@ impl QueryStructureAnnotations {
         let (pipeline, fetch) = match query_structure.query.as_ref() {
             None => (None, None),
             Some(pipeline_structure) => {
-                let pipeline = build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), pipeline_structure);
+                let pipeline =
+                    build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), pipeline_structure);
                 let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());
                 let fetch = annotated_fetch
                     .as_ref()
@@ -88,7 +87,11 @@ impl QueryStructureAnnotations {
             .map(|(annotated_function, structure)| {
                 let signature = annotated_function.annotated_signature.clone();
                 let pipeline = structure.pipeline.as_ref().map(|pipeline_structure| {
-                    build_pipeline_annotations(variable_registry, annotated_function.stages.as_slice(), pipeline_structure)
+                    build_pipeline_annotations(
+                        &annotated_function.variable_registry,
+                        annotated_function.stages.as_slice(),
+                        pipeline_structure,
+                    )
                 });
                 FunctionStructureAnnotations { signature, body: pipeline }
             })

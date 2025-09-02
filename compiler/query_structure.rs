@@ -13,7 +13,7 @@ use std::{
 };
 
 use answer::variable::Variable;
-use encoding::value::label::Label;
+use encoding::value::{label::Label, value_type::ValueType};
 use ir::{
     pattern::{
         conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, IrID, Scope, ScopeId,
@@ -26,7 +26,6 @@ use ir::{
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize, Serializer};
-use encoding::value::value_type::ValueType;
 
 use crate::{
     annotation::{
@@ -220,21 +219,45 @@ impl ParametrisedPipelineStructure {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum QueryStructureStage {
-    Match { block: QueryStructureConjunctionID },
-    Insert { block: QueryStructureConjunctionID },
+    Match {
+        block: QueryStructureConjunctionID,
+    },
+    Insert {
+        block: QueryStructureConjunctionID,
+    },
     #[serde(rename_all = "camelCase")]
-    Delete { block: QueryStructureConjunctionID, deleted_variables: Vec<StructureVariableId> },
-    Put { block: QueryStructureConjunctionID },
-    Update { block: QueryStructureConjunctionID },
+    Delete {
+        block: QueryStructureConjunctionID,
+        deleted_variables: Vec<StructureVariableId>,
+    },
+    Put {
+        block: QueryStructureConjunctionID,
+    },
+    Update {
+        block: QueryStructureConjunctionID,
+    },
 
-    Select { variables: Vec<StructureVariableId> },
-    Sort { variables: Vec<StructureSortVariable> },
-    Offset { offset: u64 },
-    Limit { limit: u64 },
+    Select {
+        variables: Vec<StructureVariableId>,
+    },
+    Sort {
+        variables: Vec<StructureSortVariable>,
+    },
+    Offset {
+        offset: u64,
+    },
+    Limit {
+        limit: u64,
+    },
 
-    Require { variables: Vec<StructureVariableId> },
+    Require {
+        variables: Vec<StructureVariableId>,
+    },
     Distinct,
-    Reduce { reducers: Vec<StructureReduceAssign>, groupby: Vec<StructureVariableId> },
+    Reduce {
+        reducers: Vec<StructureReduceAssign>,
+        groupby: Vec<StructureVariableId>,
+    },
 }
 
 #[derive(Debug, Clone)]
