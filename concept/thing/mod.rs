@@ -17,12 +17,7 @@ use resource::{
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{
-    error::{ConceptReadError, ConceptWriteError},
-    thing::thing_manager::ThingManager,
-    type_::TypeAPI,
-    ConceptStatus,
-};
+use crate::{error::ConceptWriteError, thing::thing_manager::ThingManager, type_::TypeAPI, ConceptStatus};
 
 pub mod attribute;
 pub mod entity;
@@ -51,7 +46,7 @@ pub trait ThingAPI: Sized + Clone {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptReadError>>;
+    );
 
     // TODO: implementers could cache the status in a OnceCell if we do many operations on the same Thing at once
     fn get_status(

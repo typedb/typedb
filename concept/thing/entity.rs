@@ -22,7 +22,7 @@ use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters}
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    error::{ConceptReadError, ConceptWriteError},
+    error::ConceptWriteError,
     thing::{
         object::{Object, ObjectAPI},
         thing_manager::ThingManager,
@@ -80,11 +80,10 @@ impl ThingAPI for Entity {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptReadError>> {
+    ) {
         if matches!(self.get_status(snapshot, thing_manager, storage_counters), ConceptStatus::Persisted) {
             thing_manager.lock_existing_object(snapshot, *self);
         }
-        Ok(())
     }
 
     fn get_status(

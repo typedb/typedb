@@ -9,7 +9,7 @@ use std::{
     cmp::{Ordering, Reverse},
     collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet},
     fmt,
-    hash::{DefaultHasher, Hash},
+    hash::Hash,
     sync::Arc,
 };
 
@@ -52,7 +52,6 @@ use crate::{
                 CheckInstruction, CheckVertex, ConstraintInstruction, Inputs, IsInstruction,
             },
             planner::{
-                conjunction_executable::ExecutionStep,
                 vertex::{
                     constraint::{
                         ConstraintVertex, HasPlanner, IidPlanner, IndexedRelationPlanner, IsaPlanner, LinksPlanner,
@@ -63,7 +62,7 @@ use crate::{
                     FunctionCallVertex, Input, IsVertex, LinksDeduplicationVertex, NegationVertex, OptionalVertex,
                     PlannerVertex, UnsatisfiableVertex,
                 },
-                CheckBuilder, ConjunctionExecutableBuilder, DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder,
+                ConjunctionExecutableBuilder, DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder,
                 IntersectionBuilder, NegationBuilder, OptionalBuilder, StepBuilder, StepInstructionsBuilder,
             },
         },
@@ -2296,7 +2295,7 @@ impl<'a> Graph<'a> {
     pub(super) fn constraint_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.elements
             .iter()
-            .filter(|(vertex_id, planner_vertex)| {
+            .filter(|(_vertex_id, planner_vertex)| {
                 match planner_vertex {
                 PlannerVertex::Constraint(_)
                 | PlannerVertex::Is(_)
