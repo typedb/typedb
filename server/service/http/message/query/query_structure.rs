@@ -72,8 +72,7 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
 pub(crate) struct FunctionStructureResponse {
     body: Option<PipelineStructureResponse>,
     arguments: Vec<StructureVariableId>,
-    #[serde(rename = "return")]
-    r#return: FunctionReturnStructure,
+    returns: FunctionReturnStructure,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -261,7 +260,7 @@ pub(crate) fn encode_query_structure(
             Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse {
                 body: pipeline,
                 arguments: function.arguments,
-                r#return: function.return_,
+                returns: function.return_,
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
