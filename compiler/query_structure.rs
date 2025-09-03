@@ -13,7 +13,7 @@ use std::{
 };
 
 use answer::variable::Variable;
-use encoding::value::label::Label;
+use encoding::value::{label::Label, value_type::ValueType};
 use ir::{
     pattern::{
         conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, IrID, Scope, ScopeId,
@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize, Serializer};
 
 use crate::{
     annotation::{
-        function::{AnnotatedFunction, AnnotatedFunctionReturn, FunctionParameterAnnotation},
+        function::{AnnotatedFunction, AnnotatedFunctionReturn},
         pipeline::{AnnotatedPipeline, AnnotatedStage},
         type_annotations::{BlockAnnotations, TypeAnnotations},
     },
@@ -58,19 +58,12 @@ pub struct FunctionStructure {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FunctionReduceReturnStructure {
-    reducer: String,
-    variable: Option<StructureVariableId>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum FunctionReturnStructure {
     Stream { variables: Vec<StructureVariableId> },
     Single { selector: String, variables: Vec<StructureVariableId> },
-    ReduceCheck {},
-    Reduce { reducers: Vec<FunctionReduceReturnStructure> },
+    Check {},
+    Reduce { reducers: Vec<StructureReducer> },
 }
 
 impl From<&AnnotatedFunctionReturn> for FunctionReturnStructure {
@@ -83,13 +76,13 @@ impl From<&AnnotatedFunctionReturn> for FunctionReturnStructure {
                 selector: selector.to_string().to_owned(),
                 variables: variables.iter().map_into().collect(),
             },
-            AnnotatedFunctionReturn::ReduceCheck {} => Self::ReduceCheck {},
+            AnnotatedFunctionReturn::ReduceCheck {} => Self::Check {},
             AnnotatedFunctionReturn::ReduceReducer { instructions } => {
                 let reducers = instructions
                     .iter()
-                    .map(|reducer| FunctionReduceReturnStructure {
+                    .map(|reducer| StructureReducer {
                         reducer: reducer.unresolved().name(),
-                        variable: reducer.id().map(|var| var.into()),
+                        arguments: reducer.id().iter().map(|var| var.into()).collect(),
                     })
                     .collect();
                 Self::Reduce { reducers }
@@ -165,15 +158,22 @@ pub fn extract_pipeline_structure_from(
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum PipelineVariableAnnotation {
+    Thing(Vec<answer::Type>),
+    Type(Vec<answer::Type>),
+    Value(ValueType),
+}
+
 pub type PipelineStructureAnnotations =
-    BTreeMap<QueryStructureBlockID, BTreeMap<StructureVariableId, FunctionParameterAnnotation>>;
+    BTreeMap<QueryStructureConjunctionID, BTreeMap<StructureVariableId, PipelineVariableAnnotation>>;
 #[derive(Debug, Clone)]
 pub struct ParametrisedPipelineStructure {
     pub stages: Vec<QueryStructureStage>,
-    pub blocks: Vec<QueryStructureBlock>,
+    pub conjunctions: Vec<QueryStructureConjunction>,
     pub resolved_labels: HashMap<Label, answer::Type>,
     pub calls_syntax: HashMap<Constraint<Variable>, String>,
-    pub scope_to_block: HashMap<ScopeId, QueryStructureBlockID>,
+    pub scope_to_conjunction_id: HashMap<ScopeId, QueryStructureConjunctionID>,
 }
 
 impl ParametrisedPipelineStructure {
@@ -193,18 +193,12 @@ impl ParametrisedPipelineStructure {
         PipelineStructure { parametrised_structure: self, parameters, variable_names, available_variables }
     }
 
-    pub fn always_taken_blocks(&self) -> Vec<QueryStructureBlockID> {
+    pub fn must_have_been_satisfied_conjunctions(&self) -> Vec<QueryStructureConjunctionID> {
         self.stages
             .iter()
             .filter_map(|stage| match stage {
-                QueryStructureStage::Match { block: QueryStructureConjunction { conjunction } } => match conjunction.first() {
-                    Some(QueryStructurePattern::Block { index }) => Some(index),
-                    Some(_) | None => {
-                        debug_assert!(!conjunction.iter().any(|c| matches!(c, QueryStructurePattern::Block { .. })));
-                        None
-                    }
-                },
-                QueryStructureStage::Insert { block }
+                QueryStructureStage::Match { block }
+                | QueryStructureStage::Insert { block }
                 | QueryStructureStage::Put { block }
                 | QueryStructureStage::Update { block } => Some(block),
 
@@ -225,44 +219,62 @@ impl ParametrisedPipelineStructure {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum QueryStructureStage {
-    Match { block: QueryStructureConjunction },
-    Insert { block: QueryStructureBlockID },
-    Delete { block: QueryStructureBlockID, deleted_variables: Vec<StructureVariableId> },
-    Put { block: QueryStructureBlockID },
-    Update { block: QueryStructureBlockID },
+    Match {
+        block: QueryStructureConjunctionID,
+    },
+    Insert {
+        block: QueryStructureConjunctionID,
+    },
+    #[serde(rename_all = "camelCase")]
+    Delete {
+        block: QueryStructureConjunctionID,
+        deleted_variables: Vec<StructureVariableId>,
+    },
+    Put {
+        block: QueryStructureConjunctionID,
+    },
+    Update {
+        block: QueryStructureConjunctionID,
+    },
 
-    Select { variables: Vec<StructureVariableId> },
-    Sort { variables: Vec<StructureSortVariable> },
-    Offset { offset: u64 },
-    Limit { limit: u64 },
+    Select {
+        variables: Vec<StructureVariableId>,
+    },
+    Sort {
+        variables: Vec<StructureSortVariable>,
+    },
+    Offset {
+        offset: u64,
+    },
+    Limit {
+        limit: u64,
+    },
 
-    Require { variables: Vec<StructureVariableId> },
+    Require {
+        variables: Vec<StructureVariableId>,
+    },
     Distinct,
-    Reduce { reducers: Vec<StructureReducer>, groupby: Vec<StructureVariableId> },
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct QueryStructureConjunction {
-    conjunction: Vec<QueryStructurePattern>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", tag = "tag")]
-pub enum QueryStructurePattern {
-    Block { index: QueryStructureBlockID },
-    Or { branches: Vec<QueryStructureConjunction> },
-    Not(QueryStructureConjunction),
-    Try(QueryStructureConjunction),
+    Reduce {
+        reducers: Vec<StructureReduceAssign>,
+        groupby: Vec<StructureVariableId>,
+    },
 }
 
 #[derive(Debug, Clone)]
-pub struct QueryStructureBlock {
+pub struct QueryStructureConjunction {
     pub constraints: Vec<Constraint<Variable>>,
+    pub nested: Vec<QueryStructureNestedPattern>,
+}
+
+#[derive(Debug, Clone)]
+pub enum QueryStructureNestedPattern {
+    Or { branches: Vec<QueryStructureConjunctionID> },
+    Not { conjunction: QueryStructureConjunctionID },
+    Try { conjunction: QueryStructureConjunctionID },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct QueryStructureBlockID(pub u16);
+pub struct QueryStructureConjunctionID(pub u16);
 
 #[derive(Debug, Clone)]
 pub struct ParametrisedQueryStructureBuilder<'a> {
@@ -273,15 +285,18 @@ pub struct ParametrisedQueryStructureBuilder<'a> {
 impl<'a> ParametrisedQueryStructureBuilder<'a> {
     fn new(source_query: &'a str, branch_ids_allocated: u16) -> Self {
         // Pre-allocated for query branches that have already been allocated branch ids
-        let blocks = vec![QueryStructureBlock { constraints: Vec::new() }; branch_ids_allocated as usize];
+        let conjunctions = vec![
+            QueryStructureConjunction { constraints: Vec::new(), nested: Vec::new() };
+            branch_ids_allocated as usize
+        ];
         Self {
             source_query,
             pipeline_structure: ParametrisedPipelineStructure {
                 stages: Vec::new(),
-                blocks,
+                conjunctions,
                 resolved_labels: HashMap::new(),
                 calls_syntax: HashMap::new(),
-                scope_to_block: HashMap::new(),
+                scope_to_conjunction_id: HashMap::new(),
             },
         }
     }
@@ -289,45 +304,49 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
     pub fn add_stage(&mut self, stage: &AnnotatedStage) {
         match stage {
             AnnotatedStage::Match { block, block_annotations, .. } => {
-                let conjunction = self.add_block(None, block.conjunction(), &block_annotations);
+                let conjunction = self.add_conjunction(None, block.conjunction(), &block_annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Match { block: conjunction });
             }
             AnnotatedStage::Insert { block, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(
+                let block = self.add_conjunction_to_structure(
                     block.conjunction().scope_id(),
                     None,
-                    block.conjunction().constraints(),
+                    Vec::from(block.conjunction().constraints()),
+                    Vec::new(),
                     &annotations,
                 );
                 self.pipeline_structure.stages.push(QueryStructureStage::Insert { block });
             }
             AnnotatedStage::Put { block, insert_annotations: annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(
+                let block = self.add_conjunction_to_structure(
                     block.conjunction().scope_id(),
                     None,
-                    block.conjunction().constraints(),
+                    Vec::from(block.conjunction().constraints()),
+                    Vec::new(),
                     &annotations,
                 );
                 self.pipeline_structure.stages.push(QueryStructureStage::Put { block });
             }
             AnnotatedStage::Update { block, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(
+                let block = self.add_conjunction_to_structure(
                     block.conjunction().scope_id(),
                     None,
-                    block.conjunction().constraints(),
+                    Vec::from(block.conjunction().constraints()),
+                    Vec::new(),
                     &annotations,
                 );
                 self.pipeline_structure.stages.push(QueryStructureStage::Update { block });
             }
             AnnotatedStage::Delete { block, deleted_variables, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
-                let block = self.add_block_impl(
+                let block = self.add_conjunction_to_structure(
                     block.conjunction().scope_id(),
                     None,
-                    block.conjunction().constraints(),
+                    Vec::from(block.conjunction().constraints()),
+                    Vec::new(),
                     &annotations,
                 );
                 self.pipeline_structure
@@ -360,59 +379,59 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
         }
     }
 
-    fn add_block(
+    fn add_conjunction(
         &mut self,
         existing_branch_id: Option<BranchID>,
         conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
-    ) -> QueryStructureConjunction {
-        let mut conjuncts = Vec::new();
-        let block_id = self.add_block_impl(
-            conjunction.scope_id(),
-            existing_branch_id,
-            conjunction.constraints(),
-            block_annotations.type_annotations_of(conjunction).unwrap(),
-        );
-        conjuncts.push(QueryStructurePattern::Block { index: block_id });
+    ) -> QueryStructureConjunctionID {
+        let mut nested_patterns = Vec::new();
         conjunction.nested_patterns().iter().for_each(|nested| match nested {
             NestedPattern::Disjunction(disjunction) => {
                 let branches = disjunction
                     .conjunctions_by_branch_id()
-                    .map(|(id, branch)| self.add_block(Some(*id), branch, block_annotations))
+                    .map(|(id, branch)| self.add_conjunction(Some(*id), branch, block_annotations))
                     .collect::<Vec<_>>();
-                conjuncts.push(QueryStructurePattern::Or { branches });
+                nested_patterns.push(QueryStructureNestedPattern::Or { branches });
             }
             NestedPattern::Negation(negation) => {
-                let inner = self.add_block(None, negation.conjunction(), block_annotations);
-                conjuncts.push(QueryStructurePattern::Not(inner));
+                let conj = self.add_conjunction(None, negation.conjunction(), block_annotations);
+                nested_patterns.push(QueryStructureNestedPattern::Not { conjunction: conj });
             }
             NestedPattern::Optional(optional) => {
-                let inner = self.add_block(Some(optional.branch_id()), optional.conjunction(), block_annotations);
-                conjuncts.push(QueryStructurePattern::Try(inner));
+                let conj = self.add_conjunction(Some(optional.branch_id()), optional.conjunction(), block_annotations);
+                nested_patterns.push(QueryStructureNestedPattern::Try { conjunction: conj });
             }
         });
-        QueryStructureConjunction { conjunction: conjuncts }
+        self.add_conjunction_to_structure(
+            conjunction.scope_id(),
+            existing_branch_id,
+            Vec::from(conjunction.constraints()),
+            nested_patterns,
+            block_annotations.type_annotations_of(conjunction).unwrap(),
+        )
     }
 
-    fn add_block_impl(
+    fn add_conjunction_to_structure(
         &mut self,
         scope_id: ScopeId,
         existing_branch_id: Option<BranchID>,
-        constraints: &[Constraint<Variable>],
+        constraints: Vec<Constraint<Variable>>,
+        nested: Vec<QueryStructureNestedPattern>,
         annotations: &TypeAnnotations,
-    ) -> QueryStructureBlockID {
+    ) -> QueryStructureConjunctionID {
         self.extend_labels_from(annotations);
-        self.extend_function_calls_syntax_from(constraints);
-        let block_id = if let Some(BranchID(id)) = existing_branch_id {
-            debug_assert!((id as usize) < self.pipeline_structure.blocks.len());
-            self.pipeline_structure.blocks[id as usize] = QueryStructureBlock { constraints: Vec::from(constraints) };
-            QueryStructureBlockID(id)
+        self.extend_function_calls_syntax_from(&constraints);
+        let conj_id = if let Some(BranchID(id)) = existing_branch_id {
+            debug_assert!((id as usize) < self.pipeline_structure.conjunctions.len());
+            self.pipeline_structure.conjunctions[id as usize] = QueryStructureConjunction { constraints, nested };
+            QueryStructureConjunctionID(id)
         } else {
-            self.pipeline_structure.blocks.push(QueryStructureBlock { constraints: Vec::from(constraints) });
-            QueryStructureBlockID(self.pipeline_structure.blocks.len() as u16 - 1)
+            self.pipeline_structure.conjunctions.push(QueryStructureConjunction { constraints, nested });
+            QueryStructureConjunctionID(self.pipeline_structure.conjunctions.len() as u16 - 1)
         };
-        self.pipeline_structure.scope_to_block.insert(scope_id, block_id.clone());
-        block_id
+        self.pipeline_structure.scope_to_conjunction_id.insert(scope_id, conj_id.clone());
+        conj_id
     }
 
     fn extend_function_calls_syntax_from(&mut self, constraints: &[Constraint<Variable>]) {
@@ -483,15 +502,21 @@ impl From<&SortVariable> for StructureSortVariable {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StructureReducer {
-    pub assigned: StructureVariableId,
-    pub reducer: String,
-    pub arguments: Vec<StructureVariableId>,
+    reducer: String,
+    arguments: Vec<StructureVariableId>,
 }
 
-impl From<&AssignedReduction> for StructureReducer {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StructureReduceAssign {
+    pub assigned: StructureVariableId,
+    pub reducer: StructureReducer,
+}
+
+impl From<&AssignedReduction> for StructureReduceAssign {
     fn from(value: &AssignedReduction) -> Self {
         let arguments = match value.reduction {
             Reducer::Count => vec![],
@@ -503,7 +528,8 @@ impl From<&AssignedReduction> for StructureReducer {
             | Reducer::Min(var)
             | Reducer::Std(var) => vec![var.into()],
         };
-        StructureReducer { assigned: value.assigned.into(), reducer: value.reduction.name(), arguments }
+        let reducer = StructureReducer { reducer: value.reduction.name(), arguments };
+        StructureReduceAssign { assigned: value.assigned.into(), reducer }
     }
 }
 

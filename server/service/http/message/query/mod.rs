@@ -19,7 +19,9 @@ use crate::service::{
     http::{
         message::{
             body::JsonBody,
-            query::query_structure::{PipelineStructureResponse, QueryStructureResponse},
+            query::query_structure::{
+                PipelineStructureResponse, PipelineStructureResponseForStudio, QueryStructureResponse,
+            },
             transaction::TransactionOpenPayload,
         },
         transaction_service::QueryAnswer,
@@ -83,7 +85,7 @@ pub struct QueryAnswerResponse {
     pub query_type: QueryType,
     pub answer_type: AnswerType,
     pub answers: Option<Vec<serde_json::Value>>,
-    pub query: Option<PipelineStructureResponse>,
+    pub query: Option<PipelineStructureResponseForStudio>,
     pub warning: Option<String>,
 }
 
@@ -101,7 +103,7 @@ pub(crate) fn encode_query_rows_answer(
         answer_type: AnswerType::ConceptRows,
         query_type,
         answers: Some(rows),
-        query: pipeline_structure,
+        query: pipeline_structure.map(|structure| structure.into()),
         warning,
     }
 }

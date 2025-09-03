@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use compiler::{
     annotation::function::FunctionParameterAnnotation,
-    query_structure::{PipelineStructureAnnotations, StructureVariableId},
+    query_structure::{PipelineStructureAnnotations, PipelineVariableAnnotation, StructureVariableId},
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use query::analyse::{
@@ -28,51 +28,83 @@ use crate::service::http::message::query::{
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 enum TypeAnnotationResponse {
-    Concept { annotations: Vec<serde_json::Value> },
-    Value { value_types: Vec<serde_json::Value> },
+    Thing {
+        annotations: Vec<serde_json::Value>,
+    },
+    Type {
+        annotations: Vec<serde_json::Value>,
+    },
+    #[serde(rename_all = "camelCase")]
+    Value {
+        value_types: Vec<serde_json::Value>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct VariableAnnotationsByBlockResponse {
+pub struct VariableAnnotationsByConjunctionResponse {
     variable_annotations: HashMap<StructureVariableId, TypeAnnotationResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct PipelineStructureAnnotationsResponse {
-    annotations_by_block: Vec<VariableAnnotationsByBlockResponse>,
+    annotations_by_conjunction: Vec<VariableAnnotationsByConjunctionResponse>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "tag")]
+enum FunctionReturnAnnotationsResponse {
+    Single { annotations: Vec<TypeAnnotationResponse> },
+    Stream { annotations: Vec<TypeAnnotationResponse> },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct FunctionStructureAnnotationsResponse {
     arguments: Vec<TypeAnnotationResponse>,
-    returned: Vec<TypeAnnotationResponse>,
+    returns: FunctionReturnAnnotationsResponse,
     body: Option<PipelineStructureAnnotationsResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", untagged)]
+#[serde(rename_all = "camelCase", tag = "tag")]
 enum FetchStructureAnnotationsResponse {
-    Leaf(Vec<String>), // Value types encoded as string
-    Object(HashMap<String, FetchStructureAnnotationsResponse>),
+    #[serde(rename_all = "camelCase")]
+    Value {
+        value_types: Vec<String>,
+    }, // Value types encoded as string
+    #[serde(rename_all = "camelCase")]
+    Object {
+        possible_fields: Vec<FetchStructureFieldAnnotationsResponse>,
+    },
+    List {
+        elements: Box<FetchStructureAnnotationsResponse>,
+    },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FetchStructureFieldAnnotationsResponse {
+    key: String,
+    #[serde(flatten)]
+    value: FetchStructureAnnotationsResponse,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryStructureAnnotationsResponse {
     preamble: Vec<FunctionStructureAnnotationsResponse>,
     query: Option<PipelineStructureAnnotationsResponse>,
-    fetch: Option<HashMap<String, FetchStructureAnnotationsResponse>>,
+    fetch: Option<FetchStructureAnnotationsResponse>, // Will always be the 'Object' variant
 }
 
-fn encode_type_annotations(
+fn encode_function_parameter_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     annotation: FunctionParameterAnnotation,
 ) -> Result<TypeAnnotationResponse, Box<ConceptReadError>> {
     Ok(match annotation {
-        FunctionParameterAnnotation::Concept(types) => TypeAnnotationResponse::Concept {
+        FunctionParameterAnnotation::Concept(types) => TypeAnnotationResponse::Thing {
             annotations: types
                 .into_iter()
                 .map(|type_| encode_type_concept(&type_, snapshot, type_manager))
@@ -80,6 +112,31 @@ fn encode_type_annotations(
         },
         FunctionParameterAnnotation::Value(v) => {
             TypeAnnotationResponse::Value { value_types: vec![json!(encode_value_type(v, snapshot, type_manager)?)] }
+        }
+    })
+}
+
+fn encode_variable_type_annotations(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    annotation: &PipelineVariableAnnotation,
+) -> Result<TypeAnnotationResponse, Box<ConceptReadError>> {
+    Ok(match annotation {
+        PipelineVariableAnnotation::Type(types) => TypeAnnotationResponse::Type {
+            annotations: types
+                .into_iter()
+                .map(|type_| encode_type_concept(type_, snapshot, type_manager))
+                .collect::<Result<Vec<_>, _>>()?,
+        },
+        PipelineVariableAnnotation::Thing(types) => TypeAnnotationResponse::Thing {
+            annotations: types
+                .into_iter()
+                .map(|type_| encode_type_concept(type_, snapshot, type_manager))
+                .collect::<Result<Vec<_>, _>>()?,
+        },
+        PipelineVariableAnnotation::Value(v) => {
+            let value_types = vec![json!(encode_value_type(v.clone(), snapshot, type_manager)?)];
+            TypeAnnotationResponse::Value { value_types }
         }
     })
 }
@@ -98,7 +155,12 @@ pub(crate) fn encode_query_structure_annotations(
     let pipeline = pipeline
         .map(|pipeline_annotations| encode_pipeline_structure_annotations(snapshot, type_manager, pipeline_annotations))
         .transpose()?;
-    let fetch = fetch.map(|fetch| encode_fetch_structure_annotations(snapshot, type_manager, fetch)).transpose()?;
+    let fetch = fetch
+        .map(|fetch| {
+            encode_fetch_structure_annotations(snapshot, type_manager, fetch)
+                .map(|fields| FetchStructureAnnotationsResponse::Object { possible_fields: fields })
+        })
+        .transpose()?;
     let annotations = QueryStructureAnnotationsResponse { preamble, query: pipeline, fetch };
     let structure = encode_query_structure(snapshot, type_manager, structure)?;
     Ok(AnalysedQueryResponse { structure, annotations })
@@ -109,11 +171,11 @@ fn encode_pipeline_structure_annotations(
     type_manager: &TypeManager,
     pipeline_structure_annotations: PipelineStructureAnnotations,
 ) -> Result<PipelineStructureAnnotationsResponse, Box<ConceptReadError>> {
-    let mut annotations_by_block = Vec::new();
-    pipeline_structure_annotations.iter().try_for_each(|(block_id, var_annotations)| {
-        let block_id = block_id.0 as usize;
-        if annotations_by_block.len() <= block_id {
-            annotations_by_block.resize_with(block_id + 1, || VariableAnnotationsByBlockResponse {
+    let mut annotations_by_conjunction = Vec::new();
+    pipeline_structure_annotations.iter().try_for_each(|(conj_id, var_annotations)| {
+        let conj_id = conj_id.0 as usize;
+        if annotations_by_conjunction.len() <= conj_id {
+            annotations_by_conjunction.resize_with(conj_id + 1, || VariableAnnotationsByConjunctionResponse {
                 variable_annotations: HashMap::new(),
             });
         }
@@ -122,14 +184,14 @@ fn encode_pipeline_structure_annotations(
             .map(|(var_id, annotations)| {
                 Ok::<_, Box<ConceptReadError>>((
                     var_id.clone(),
-                    encode_type_annotations(snapshot, type_manager, annotations.clone())?,
+                    encode_variable_type_annotations(snapshot, type_manager, annotations)?,
                 ))
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
-        annotations_by_block[block_id] = VariableAnnotationsByBlockResponse { variable_annotations };
+        annotations_by_conjunction[conj_id] = VariableAnnotationsByConjunctionResponse { variable_annotations };
         Ok::<_, Box<ConceptReadError>>(())
     })?;
-    Ok(PipelineStructureAnnotationsResponse { annotations_by_block })
+    Ok(PipelineStructureAnnotationsResponse { annotations_by_conjunction })
 }
 
 pub(crate) fn encode_function_structure_annotations(
@@ -141,41 +203,58 @@ pub(crate) fn encode_function_structure_annotations(
     let arguments = sig
         .arguments
         .into_iter()
-        .map(|arg| encode_type_annotations(snapshot, type_manager, arg))
+        .map(|arg| encode_function_parameter_annotations(snapshot, type_manager, arg))
         .collect::<Result<Vec<_>, _>>()?;
-    let returned = sig
-        .returned
+    let return_types = sig
+        .returns
         .into_iter()
-        .map(|arg| encode_type_annotations(snapshot, type_manager, arg))
+        .map(|arg| encode_function_parameter_annotations(snapshot, type_manager, arg))
         .collect::<Result<Vec<_>, _>>()?;
     let pipeline = pipeline
         .map(|pipeline_annotations| encode_pipeline_structure_annotations(snapshot, type_manager, pipeline_annotations))
         .transpose()?;
-    Ok(FunctionStructureAnnotationsResponse { arguments, returned, body: pipeline })
+    let returns = match sig.is_stream {
+        true => FunctionReturnAnnotationsResponse::Stream { annotations: return_types },
+        false => FunctionReturnAnnotationsResponse::Single { annotations: return_types },
+    };
+    Ok(FunctionStructureAnnotationsResponse { arguments, returns, body: pipeline })
 }
 
 fn encode_fetch_structure_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     fetch_structure_annotations: FetchStructureAnnotations,
-) -> Result<HashMap<String, FetchStructureAnnotationsResponse>, Box<ConceptReadError>> {
+) -> Result<Vec<FetchStructureFieldAnnotationsResponse>, Box<ConceptReadError>> {
     fetch_structure_annotations
         .into_iter()
         .map(|(key, object)| {
-            // TODO: We don't encode the pipeline anywhere
-            let encoded = match object {
-                FetchObjectStructureAnnotations::Leaf(leaf) => {
-                    let value_types = leaf
-                        .into_iter()
-                        .map(|v| encode_value_type(v, snapshot, type_manager))
-                        .collect::<Result<Vec<_>, _>>()?;
-                    FetchStructureAnnotationsResponse::Leaf(value_types)
-                }
-                FetchObjectStructureAnnotations::Object(object) => FetchStructureAnnotationsResponse::Object(
-                    encode_fetch_structure_annotations(snapshot, type_manager, object)?,
-                ),
-            };
-            Ok((key, encoded))
+            encode_fetch_object_structure_annotations(snapshot, type_manager, object)
+                .map(|value| FetchStructureFieldAnnotationsResponse { key, value })
         })
-        .collect::<Result<HashMap<_, _>, _>>()
+        .collect::<Result<Vec<_>, _>>()
+}
+
+fn encode_fetch_object_structure_annotations(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    fetch_object_structure_annotations: FetchObjectStructureAnnotations,
+) -> Result<FetchStructureAnnotationsResponse, Box<ConceptReadError>> {
+    // TODO: We don't encode the pipeline anywhere
+    let encoded = match fetch_object_structure_annotations {
+        FetchObjectStructureAnnotations::Leaf(leaf) => {
+            let value_types = leaf
+                .into_iter()
+                .map(|v| encode_value_type(v, snapshot, type_manager))
+                .collect::<Result<Vec<_>, _>>()?;
+            FetchStructureAnnotationsResponse::Value { value_types }
+        }
+        FetchObjectStructureAnnotations::Object(object) => FetchStructureAnnotationsResponse::Object {
+            possible_fields: encode_fetch_structure_annotations(snapshot, type_manager, object)?,
+        },
+        FetchObjectStructureAnnotations::List(boxed_list_annotations) => {
+            let elements = encode_fetch_object_structure_annotations(snapshot, type_manager, *boxed_list_annotations)?;
+            FetchStructureAnnotationsResponse::List { elements: Box::new(elements) }
+        }
+    };
+    Ok(encoded)
 }

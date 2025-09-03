@@ -9,8 +9,8 @@ use std::{collections::HashMap, str::FromStr};
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
 use compiler::query_structure::{
-    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureStage,
-    StructureVariableId,
+    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure,
+    QueryStructureConjunctionID, QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
@@ -72,8 +72,7 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
 pub(crate) struct FunctionStructureResponse {
     body: Option<PipelineStructureResponse>,
     arguments: Vec<StructureVariableId>,
-    #[serde(rename = "return")]
-    return_: FunctionReturnStructure,
+    returns: FunctionReturnStructure,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -86,22 +85,39 @@ pub(crate) struct QueryStructureResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PipelineStructureResponse {
-    blocks: Vec<StructureBlock>,
+    conjunctions: Vec<Vec<StructureConstraintWithSpan>>,
     pipeline: Vec<QueryStructureStage>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
     outputs: Vec<StructureVariableId>,
+}
+
+// Kept for backwards compatibility
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PipelineStructureResponseForStudio {
+    blocks: Vec<StructureBlockForStudio>,
+    variables: HashMap<StructureVariableId, StructureVariableInfo>,
+    outputs: Vec<StructureVariableId>,
+}
+
+impl From<PipelineStructureResponse> for PipelineStructureResponseForStudio {
+    fn from(value: PipelineStructureResponse) -> Self {
+        let PipelineStructureResponse { variables, outputs, conjunctions, .. } = value;
+        let blocks = conjunctions.into_iter().map(|constraints| StructureBlockForStudio { constraints }).collect();
+        PipelineStructureResponseForStudio { variables, outputs, blocks }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StructureBlockForStudio {
+    constraints: Vec<StructureConstraintWithSpan>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StructureVariableInfo {
     name: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct StructureBlock {
-    constraints: Vec<StructureConstraintWithSpan>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -173,6 +189,17 @@ enum StructureConstraint {
         #[serde(rename = "valueType")]
         value_type: String,
     },
+
+    // Nested patterns are now constraints too
+    Or {
+        branches: Vec<QueryStructureConjunctionID>,
+    },
+    Not {
+        conjunction: QueryStructureConjunctionID,
+    },
+    Try {
+        conjunction: QueryStructureConjunctionID,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -218,20 +245,22 @@ pub(crate) fn encode_query_structure(
     query_structure: QueryStructure,
 ) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
     let QueryStructure { preamble, query: pipeline } = query_structure;
-    let pipeline =
-        pipeline.as_ref().map(|pipeline| encode_pipeline_structure(snapshot, type_manager, &pipeline)).transpose()?;
+    let pipeline = pipeline
+        .as_ref()
+        .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, &pipeline, true))
+        .transpose()?;
     let preamble = preamble
         .into_iter()
         .map(|function| {
             let pipeline = function
                 .pipeline
                 .as_ref()
-                .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, pipeline))
+                .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, pipeline, true))
                 .transpose()?;
             Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse {
                 body: pipeline,
                 arguments: function.arguments,
-                return_: function.return_,
+                returns: function.return_,
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
@@ -242,25 +271,27 @@ pub(crate) fn encode_pipeline_structure(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     pipeline_structure: &PipelineStructure,
+    include_nested_patterns: bool,
 ) -> Result<PipelineStructureResponse, Box<ConceptReadError>> {
     let mut variables = HashMap::new();
-    let ParametrisedPipelineStructure { stages, blocks, .. } = &*pipeline_structure.parametrised_structure;
-    let blocks = blocks
+    let ParametrisedPipelineStructure { stages, conjunctions, .. } = &*pipeline_structure.parametrised_structure;
+    let encoded_conjunctions = conjunctions
         .iter()
-        .map(|block| {
-            encode_structure_block(
+        .map(|conj| {
+            encode_structure_conjunction(
                 snapshot,
                 type_manager,
                 &pipeline_structure,
                 &mut variables,
-                block.constraints.as_slice(),
+                conj.constraints.as_slice(),
+                if include_nested_patterns { conj.nested.as_slice() } else { &[] },
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
     // Ensure reduced variables are added to variables
     record_reducer_variables(snapshot, type_manager, pipeline_structure, &mut variables);
     let outputs = pipeline_structure.available_variables.clone();
-    Ok(PipelineStructureResponse { blocks, outputs, variables, pipeline: stages.clone() })
+    Ok(PipelineStructureResponse { conjunctions: encoded_conjunctions, outputs, variables, pipeline: stages.clone() })
 }
 
 fn record_reducer_variables(
@@ -284,24 +315,26 @@ fn record_reducer_variables(
         });
 }
 
-fn encode_structure_block(
+fn encode_structure_conjunction(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     pipeline_structure: &PipelineStructure,
     variables: &mut HashMap<StructureVariableId, StructureVariableInfo>,
-    block: &[Constraint<Variable>],
-) -> Result<StructureBlock, Box<ConceptReadError>> {
+    conjunction: &[Constraint<Variable>],
+    nested: &[QueryStructureNestedPattern],
+) -> Result<Vec<StructureConstraintWithSpan>, Box<ConceptReadError>> {
     let mut constraints = Vec::new();
-    let role_names = block
+    let role_names = conjunction
         .iter()
         .filter_map(|constraint| constraint.as_role_name())
         .map(|rolename| (rolename.type_().as_variable().unwrap(), rolename.name().to_owned()))
         .collect();
     let mut context = PipelineStructureContext { pipeline_structure, snapshot, type_manager, role_names, variables };
-    block.iter().enumerate().try_for_each(|(index, constraint)| {
+    conjunction.iter().enumerate().try_for_each(|(index, constraint)| {
         encode_structure_constraint(&mut context, constraint, &mut constraints, index)
     })?;
-    Ok(StructureBlock { constraints })
+    nested.iter().try_for_each(|nested| encode_structure_nested_pattern(nested, &mut constraints))?;
+    Ok(constraints)
 }
 
 fn encode_structure_constraint(
@@ -501,6 +534,19 @@ fn encode_structure_constraint(
         // Optimisations don't represent the structure
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
+    Ok(())
+}
+
+fn encode_structure_nested_pattern(
+    nested: &QueryStructureNestedPattern,
+    constraints: &mut Vec<StructureConstraintWithSpan>,
+) -> Result<(), Box<ConceptReadError>> {
+    let constraint = match nested.clone() {
+        QueryStructureNestedPattern::Or { branches } => StructureConstraint::Or { branches },
+        QueryStructureNestedPattern::Not { conjunction } => StructureConstraint::Not { conjunction },
+        QueryStructureNestedPattern::Try { conjunction } => StructureConstraint::Try { conjunction },
+    };
+    constraints.push(StructureConstraintWithSpan { constraint, text_span: None });
     Ok(())
 }
 

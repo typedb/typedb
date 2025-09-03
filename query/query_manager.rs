@@ -20,7 +20,8 @@ use compiler::{
     executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
     query_structure::{
         extract_pipeline_structure_from, extract_query_structure_from, ParametrisedPipelineStructure,
-        PipelineStructure, PipelineStructureAnnotations, QueryStructure, QueryStructureBlockID, StructureVariableId,
+        PipelineStructure, PipelineStructureAnnotations, QueryStructure, QueryStructureConjunctionID,
+        StructureVariableId,
     },
     transformation::transform::apply_transformations,
     VariablePosition,
@@ -366,6 +367,7 @@ impl QueryManager {
         let query_structure_annotations = QueryStructureAnnotations::build(
             snapshot.as_ref(),
             type_manager,
+            &variable_registry,
             arced_parameters,
             source_query,
             &annotated_pipeline,
@@ -448,7 +450,7 @@ fn annotate_and_compile_query(
         }
     };
     compile_profile.annotation_finished();
-
+    // TODO: We can avoid this for the regular query path when we break studio backwards compatibility
     let pipeline_structure =
         extract_pipeline_structure_from(&variable_registry, &annotated_pipeline.annotated_stages, source_query)
             .map(Arc::new);
