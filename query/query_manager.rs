@@ -29,7 +29,7 @@ use compiler::{
 use concept::{
     error::ConceptReadError,
     thing::thing_manager::ThingManager,
-    type_::{attribute_type::AttributeType, type_manager::TypeManager, OwnerAPI, TypeAPI},
+    type_::{attribute_type::AttributeType, type_manager::TypeManager, OwnerAPI},
 };
 use encoding::value::value_type::ValueType;
 use executor::{

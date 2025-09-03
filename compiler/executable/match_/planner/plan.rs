@@ -9,7 +9,7 @@ use std::{
     cmp::{Ordering, Reverse},
     collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet},
     fmt,
-    hash::{Hash},
+    hash::Hash,
     sync::Arc,
 };
 

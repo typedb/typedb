@@ -6,7 +6,6 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    io::Read,
     marker::PhantomData,
     path::PathBuf,
     sync::Arc,

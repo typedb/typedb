@@ -52,7 +52,6 @@ use encoding::{
 };
 use iterator::minmax_or;
 use itertools::Itertools;
-use typeql::parser::Rule::thing_constraint;
 use lending_iterator::Peekable;
 use primitive::either::Either;
 use resource::{
@@ -3096,7 +3095,7 @@ impl ThingManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let count: u64 = 1;
         relation.set_required(snapshot, self, storage_counters.clone());
-        player.set_required(snapshot, self, storage_counters);
+        player.set_required(snapshot, self, storage_counters.clone());
 
         // must be idempotent, so no lock required -- cannot fail
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());

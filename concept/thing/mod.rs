@@ -17,12 +17,7 @@ use resource::{
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::{
-    error::{ConceptWriteError},
-    thing::thing_manager::ThingManager,
-    type_::TypeAPI,
-    ConceptStatus,
-};
+use crate::{error::ConceptWriteError, thing::thing_manager::ThingManager, type_::TypeAPI, ConceptStatus};
 
 pub mod attribute;
 pub mod entity;

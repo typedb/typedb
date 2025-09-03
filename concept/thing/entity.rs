@@ -22,7 +22,7 @@ use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters}
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    error::{ConceptWriteError},
+    error::ConceptWriteError,
     thing::{
         object::{Object, ObjectAPI},
         thing_manager::ThingManager,

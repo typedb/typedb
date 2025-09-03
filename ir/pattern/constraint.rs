@@ -27,9 +27,7 @@ use crate::{
         IrID, ParameterID, Pattern, ScopeId, ValueType, VariableBindingMode, Vertex,
     },
     pipeline::{
-        block::{BlockBuilderContext},
-        function_signature::FunctionSignature,
-        ParameterRegistry, VariableRegistry,
+        block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry, VariableRegistry,
     },
     LiteralParseError, RepresentationError,
 };

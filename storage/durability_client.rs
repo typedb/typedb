@@ -5,7 +5,6 @@
  */
 
 use std::{
-    borrow::Cow,
     io::{self, Read, Write},
     sync::{mpsc, Arc},
 };

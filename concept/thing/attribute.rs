@@ -24,7 +24,7 @@ use encoding::{
         Typed,
     },
     layout::prefix::Prefix,
-    value::{value::Value},
+    value::value::Value,
     AsBytes, Keyable,
 };
 use iterator::State;
