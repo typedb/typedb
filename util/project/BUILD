@@ -12,9 +12,7 @@ rust_library(
     srcs = glob([
         "*.rs",
     ]),
-    deps = [
-        "//common/logger",
-    ]
+    deps = []
 )
 
 checkstyle_test(

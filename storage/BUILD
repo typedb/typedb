@@ -18,13 +18,11 @@ rust_library(
     deps = [
         "//common/bytes",
         "//common/error",
-        "//common/iterator",
         "//common/lending_iterator",
         "//common/logger",
         "//common/primitive",
         "//durability",
         "//resource",
-        "//util/project",
 
         "@typeql//rust:typeql", # leaky but enables generic TypeDBError
 
