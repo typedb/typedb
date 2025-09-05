@@ -42,7 +42,7 @@ mod non_transactional_rocks {
     use std::iter::zip;
 
     use rocksdb::{Options, WriteBatch, WriteOptions, DB};
-    use test_utils::{create_tmp_dir, TempDir};
+    use test_utils::{create_tmp_storage_dir, TempDir};
 
     use crate::{RocksDatabase, RocksWriteBatch};
 
@@ -54,7 +54,7 @@ mod non_transactional_rocks {
 
     impl<const N_DATABASES: usize> NonTransactionalRocks<N_DATABASES> {
         pub(super) fn setup(options: Options, write_options: WriteOptions) -> Result<Self, rocksdb::Error> {
-            let path = create_tmp_dir();
+            let path = create_tmp_storage_dir();
             let databases = std::array::from_fn(|i| DB::open(&options, path.join(format!("db_{i}"))).unwrap());
 
             Ok(Self { _path: path, databases, write_options })
@@ -102,7 +102,7 @@ mod typedb_database {
         snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
         MVCCStorage, StorageOpenError,
     };
-    use test_utils::{create_tmp_dir, TempDir};
+    use test_utils::{create_tmp_storage_dir, TempDir};
 
     use crate::{RocksDatabase, RocksWriteBatch, KEY_SIZE};
 
@@ -114,7 +114,7 @@ mod typedb_database {
     impl<const N_DATABASES: usize> TypeDBDatabase<N_DATABASES> {
         pub(super) fn setup() -> Result<Self, StorageOpenError> {
             let name = "bench_rocks__typedb";
-            let path = create_tmp_dir();
+            let path = create_tmp_storage_dir();
             let wal = WAL::create(&path).unwrap();
             let storage =
                 Arc::new(MVCCStorage::<WALClient>::create::<BenchKeySpace>(name, &path, WALClient::new(wal))?);
