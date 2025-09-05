@@ -60,8 +60,7 @@ impl Checkpoint {
             .map_err(|error| KeyspaceCheckpoint { dir: self.directory.clone(), source: error })?;
 
         let metadata_file_path = self.directory.join(Self::STORAGE_METADATA_FILE_NAME);
-        let bytes = watermark.number().to_string().as_bytes();
-        write_file_content_safe(&metadata_file_path, &bytes)
+        write_file_content_safe(&metadata_file_path, &watermark.number().to_string().as_bytes())
             .map_err(|e| MetadataWrite { file_path: metadata_file_path, source: Arc::new(e) })?;
 
         Ok(())
