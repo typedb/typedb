@@ -331,7 +331,9 @@ pub enum IsolationConflict {
 impl fmt::Display for IsolationConflict {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            IsolationConflict::DeletingRequiredKey => write!(f, "Transaction data a concurrent commit requires."),
+            IsolationConflict::DeletingRequiredKey => {
+                write!(f, "Transaction deletes data a concurrent commit requires.")
+            }
             IsolationConflict::RequireDeletedKey => write!(f, "Transaction uses data a concurrent commit deletes."),
             IsolationConflict::ExclusiveLock => write!(f, "Transaction uses a lock held by a concurrent commit."),
         }
