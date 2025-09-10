@@ -25,7 +25,7 @@ pub struct Config {
     #[serde(default)]
     pub diagnostics: DiagnosticsConfig,
     pub logging: LoggingConfig,
-    #[serde(rename = "development-mode.enabled", default)]
+    #[serde(rename = "development-mode", default)]
     pub development_mode: DevelopmentModeConfig,
 }
 
