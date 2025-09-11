@@ -70,7 +70,7 @@ impl StreamModifierExecutor {
             | StreamModifierExecutor::Limit { inner, .. }
             | StreamModifierExecutor::Distinct { inner }
             | StreamModifierExecutor::Last { inner } => inner.output_width(),
-            StreamModifierExecutor::Check { .. } => 1 as u32,
+            StreamModifierExecutor::Check { .. } => 1u32,
         }
     }
 

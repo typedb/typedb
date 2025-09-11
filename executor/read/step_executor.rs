@@ -348,7 +348,7 @@ pub(super) fn create_executors_for_function_pipeline_stages(
     } else {
         vec![]
     };
-
+    // TODO: Do we need to remap according to the output_row_mapping? It's ignored currently
     match &executable_stages[at_index] {
         ExecutableStage::Match(conjunction_executable) => {
             let mut executors = create_executors_for_conjunction(
@@ -388,8 +388,7 @@ pub(super) fn create_executors_for_function_pipeline_stages(
         ExecutableStage::Require(_) => Err(Box::new(ConceptReadError::UnimplementedFunctionality {
             functionality: UnimplementedFeature::PipelineStageInFunction("require"),
         })),
-        ExecutableStage::Distinct(distinct_executable) => {
-            // Complete this sentence for
+        ExecutableStage::Distinct(_distinct_executable) => {
             let step = StreamModifierExecutor::new_distinct(
                 PatternExecutor::new(next_executable_id(), previous_stage_steps)
             );

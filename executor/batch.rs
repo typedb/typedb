@@ -120,6 +120,8 @@ impl<'a> From<MaybeOwnedRow<'a>> for FixedBatch {
 }
 
 impl IntoIterator for FixedBatch {
+    type Item = MaybeOwnedRow<'static>;
+
     type IntoIter = Map<
         Take<
             Zip<
@@ -132,8 +134,6 @@ impl IntoIterator for FixedBatch {
         >,
         fn((Vec<VariableValue<'static>>, (u64, Provenance))) -> MaybeOwnedRow<'static>,
     >;
-
-    type Item = MaybeOwnedRow<'static>;
 
     fn into_iter(self) -> Self::IntoIter {
         let rows = if self.width == 0 {
