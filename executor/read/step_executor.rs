@@ -254,9 +254,10 @@ pub(crate) fn create_executors_for_conjunction(
                 )
                 .into();
                 // Hack: wrap it in a distinct
-                let step = StepExecutors::StreamModifier(StreamModifierExecutor::new_distinct(
-                    PatternExecutor::new(next_executable_id(), vec![inner_step])
-                ));
+                let step = StepExecutors::StreamModifier(StreamModifierExecutor::new_distinct(PatternExecutor::new(
+                    next_executable_id(),
+                    vec![inner_step],
+                )));
                 steps.push(step);
             }
             ExecutionStep::Optional(step) => {
@@ -389,9 +390,8 @@ pub(super) fn create_executors_for_function_pipeline_stages(
             functionality: UnimplementedFeature::PipelineStageInFunction("require"),
         })),
         ExecutableStage::Distinct(_distinct_executable) => {
-            let step = StreamModifierExecutor::new_distinct(
-                PatternExecutor::new(next_executable_id(), previous_stage_steps)
-            );
+            let step =
+                StreamModifierExecutor::new_distinct(PatternExecutor::new(next_executable_id(), previous_stage_steps));
             Ok(vec![step.into()])
         }
         ExecutableStage::Sort(sort_executable) => {

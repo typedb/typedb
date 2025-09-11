@@ -48,8 +48,9 @@ impl CollectingStageExecutor {
 
     pub(crate) fn output_width(&self) -> u32 {
         match self {
-            CollectingStageExecutor::Reduce { pattern, .. }
-            | CollectingStageExecutor::Sort { pattern, .. } => pattern.output_width(),
+            CollectingStageExecutor::Reduce { pattern, .. } | CollectingStageExecutor::Sort { pattern, .. } => {
+                pattern.output_width()
+            }
         }
     }
 
@@ -81,7 +82,7 @@ impl CollectingStageExecutor {
             }
             CollectingStageExecutor::Sort { sort_on, pattern } => {
                 CollectorEnum::Sort(SortCollector::new(pattern.output_width(), sort_on.clone()))
-            },
+            }
         }
     }
 }
