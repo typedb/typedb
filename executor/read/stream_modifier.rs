@@ -22,7 +22,7 @@ pub(crate) enum StreamModifierExecutor {
     Select { inner: PatternExecutor, removed_positions: Vec<VariablePosition> },
     Offset { inner: PatternExecutor, offset: u64 },
     Limit { inner: PatternExecutor, limit: u64 },
-    Distinct { inner: PatternExecutor /*, output_width: u32*/ },
+    Distinct { inner: PatternExecutor },
     Last { inner: PatternExecutor },
     Check { inner: PatternExecutor },
 }
@@ -46,8 +46,8 @@ impl StreamModifierExecutor {
         Self::Limit { inner, limit }
     }
 
-    pub(crate) fn new_distinct(inner: PatternExecutor, output_width: u32) -> Self {
-        Self::Distinct { inner, output_width }
+    pub(crate) fn new_distinct(inner: PatternExecutor) -> Self {
+        Self::Distinct { inner }
     }
 
     pub(crate) fn new_first(inner: PatternExecutor) -> Self {
@@ -92,11 +92,9 @@ impl StreamModifierExecutor {
             }
             Self::Offset { offset, .. } => StreamModifierResultMapper::Offset(OffsetMapper::new(*offset)),
             Self::Limit { limit, .. } => StreamModifierResultMapper::Limit(LimitMapper::new(*limit)),
-            Self::Distinct { output_width, .. } => {
-                StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width))
-            }
+            Self::Distinct { .. } => StreamModifierResultMapper::Distinct(DistinctMapper::new()),
             Self::Last { .. } => StreamModifierResultMapper::Last(LastMapper::new()),
-            Self::Check { inner, .. } => StreamModifierResultMapper::Check(CheckMapper::new()),
+            Self::Check { .. } => StreamModifierResultMapper::Check(CheckMapper::new()),
         }
     }
 
@@ -237,12 +235,11 @@ impl StreamModifierResultMapperTrait for LimitMapper {
 #[derive(Debug)]
 pub(super) struct DistinctMapper {
     collector: HashSet<MaybeOwnedRow<'static>>,
-    output_width: u32,
 }
 
 impl DistinctMapper {
-    pub(crate) fn new(output_width: u32) -> Self {
-        Self { collector: HashSet::new(), output_width }
+    pub(crate) fn new() -> Self {
+        Self { collector: HashSet::new() }
     }
 }
 
