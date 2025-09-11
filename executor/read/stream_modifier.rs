@@ -22,7 +22,7 @@ pub(crate) enum StreamModifierExecutor {
     Select { inner: PatternExecutor, removed_positions: Vec<VariablePosition> },
     Offset { inner: PatternExecutor, offset: u64 },
     Limit { inner: PatternExecutor, limit: u64 },
-    Distinct { inner: PatternExecutor, output_width: u32 },
+    Distinct { inner: PatternExecutor /*, output_width: u32*/ },
     Last { inner: PatternExecutor },
     Check { inner: PatternExecutor },
 }
@@ -61,6 +61,17 @@ impl StreamModifierExecutor {
 
     pub(crate) fn new_check(inner: PatternExecutor) -> Self {
         Self::Check { inner }
+    }
+
+    pub(crate) fn output_width(&self) -> u32 {
+        match self {
+            StreamModifierExecutor::Select { inner, .. }
+            | StreamModifierExecutor::Offset { inner, .. }
+            | StreamModifierExecutor::Limit { inner, .. }
+            | StreamModifierExecutor::Distinct { inner }
+            | StreamModifierExecutor::Last { inner } => inner.output_width(),
+            StreamModifierExecutor::Check { .. } => 1 as u32,
+        }
     }
 
     pub(crate) fn inner(&mut self) -> &mut PatternExecutor {

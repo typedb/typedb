@@ -112,6 +112,15 @@ impl ImmediateExecutor {
         )))
     }
 
+    pub(crate) fn output_width(&self) -> u32 {
+        match self {
+            ImmediateExecutor::SortedJoin(inner) => inner.output_width,
+            ImmediateExecutor::UnsortedJoin(inner) => inner.output_width,
+            ImmediateExecutor::Check(inner) => inner.output_width,
+            ImmediateExecutor::Assignment(inner) => inner.output_width,
+        }
+    }
+
     pub(crate) fn reset(&mut self) {
         match self {
             ImmediateExecutor::SortedJoin(sorted) => sorted.reset(),

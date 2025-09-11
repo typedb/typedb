@@ -35,6 +35,10 @@ impl DisjunctionExecutor {
         Self { branches, branch_ids, selected_variables, output_width }
     }
 
+    pub(crate) fn output_width(&self) -> u32 {
+        self.output_width
+    }
+
     pub(crate) fn reset(&mut self) {
         self.branches.iter_mut().for_each(|branch| branch.reset())
     }
@@ -67,6 +71,10 @@ impl OptionalExecutor {
         output_width: u32,
     ) -> Self {
         Self { inner, branch_id, selected_variables, output_width }
+    }
+
+    pub(crate) fn output_width(&self) -> u32 {
+        self.output_width
     }
 
     pub(crate) fn reset(&mut self) {
@@ -105,6 +113,10 @@ impl NegationExecutor {
         Self { inner }
     }
 
+    pub(crate) fn output_width(&self) -> u32 {
+        self.inner.output_width()
+    }
+
     pub(crate) fn reset(&mut self) {
         self.inner.reset()
     }
@@ -132,6 +144,10 @@ impl InlinedCallExecutor {
             output_width: function_call.output_width,
             parameter_registry,
         }
+    }
+
+    pub(crate) fn output_width(&self) -> u32 {
+        self.output_width
     }
 
     pub(crate) fn reset(&mut self) {

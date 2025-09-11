@@ -9,6 +9,7 @@ use std::{fmt, iter::Peekable, sync::Arc};
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
+use resource::constants::traversal::BATCH_DEFAULT_CAPACITY;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -45,6 +46,13 @@ impl CollectingStageExecutor {
         Self::Sort { pattern: previous_stage, sort_on: Arc::new(sort_on) }
     }
 
+    pub(crate) fn output_width(&self) -> u32 {
+        match self {
+            CollectingStageExecutor::Reduce { pattern, .. }
+            | CollectingStageExecutor::Sort { pattern, .. } => pattern.output_width(),
+        }
+    }
+
     pub(super) fn pattern_mut(&mut self) -> &mut PatternExecutor {
         match self {
             CollectingStageExecutor::Reduce { pattern, .. } => pattern,
@@ -71,7 +79,9 @@ impl CollectingStageExecutor {
             CollectingStageExecutor::Reduce { reduce_rows_executable, .. } => {
                 CollectorEnum::Reduce(ReduceCollector::new(reduce_rows_executable.clone()))
             }
-            CollectingStageExecutor::Sort { sort_on, .. } => CollectorEnum::Sort(SortCollector::new(sort_on.clone())),
+            CollectingStageExecutor::Sort { sort_on, pattern } => {
+                CollectorEnum::Sort(SortCollector::new(pattern.output_width(), sort_on.clone()))
+            },
         }
     }
 }
@@ -191,34 +201,30 @@ impl CollectedStageIteratorTrait for ReduceStageIterator {
 #[derive(Debug)]
 pub(super) struct SortCollector {
     sort_on: Arc<Vec<(usize, bool)>>,
-    collector: Option<Batch>,
+    collector: Batch,
 }
 
 impl SortCollector {
-    fn new(sort_on: Arc<Vec<(usize, bool)>>) -> Self {
+    fn new(width: u32, sort_on: Arc<Vec<(usize, bool)>>) -> Self {
         // let output_width = sort_executable.output_width;  // TODO: Get this information into the sort_executable.
-        Self { sort_on, collector: None }
+        Self { sort_on, collector: Batch::new(width, BATCH_DEFAULT_CAPACITY) }
     }
 }
 
 impl CollectorTrait for SortCollector {
     fn accept(&mut self, _context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
         for row in batch {
-            if self.collector.is_none() {
-                self.collector = Some(Batch::new(row.len() as u32, 0usize))
-            }
-            self.collector.as_mut().unwrap().append_row(row);
+            self.collector.append_row(row);
         }
     }
 
     fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
         let Self { sort_on, collector } = self;
-        let unsorted = collector.unwrap_or_else(|| Batch::new(0, 0));
         let profile = context.profile.profile_stage(|| String::from("Sort"), 0); // TODO executable id
         let step_profile = profile.extend_or_get(0, || String::from("Sort execution"));
         let sorted_indices =
-            unsorted.indices_sorted_by(context, &sort_on, step_profile.storage_counters()).into_iter().peekable();
-        CollectedStageIterator::Sort(SortStageIterator { unsorted, sorted_indices })
+            collector.indices_sorted_by(context, &sort_on, step_profile.storage_counters()).into_iter().peekable();
+        CollectedStageIterator::Sort(SortStageIterator { unsorted: collector, sorted_indices })
     }
 }
 

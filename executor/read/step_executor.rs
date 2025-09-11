@@ -51,6 +51,20 @@ pub enum StepExecutors {
 }
 
 impl StepExecutors {
+    pub(crate) fn output_width(&self) -> u32 {
+        match self {
+            StepExecutors::Immediate(inner) => inner.output_width(),
+            StepExecutors::Disjunction(inner) => inner.output_width(),
+            StepExecutors::Optional(inner) => inner.output_width(),
+            StepExecutors::Negation(inner) => inner.output_width(),
+            StepExecutors::InlinedCall(inner) => inner.output_width(),
+            StepExecutors::TabledCall(inner) => inner.output_width(),
+            StepExecutors::StreamModifier(inner) => inner.output_width(),
+            StepExecutors::CollectingStage(inner) => inner.output_width(),
+            StepExecutors::ReshapeForReturn(inner) => inner.output_width(),
+        }
+    }
+
     pub(crate) fn unwrap_immediate(&mut self) -> &mut ImmediateExecutor {
         match self {
             StepExecutors::Immediate(step) => step,
@@ -119,6 +133,10 @@ impl StepExecutors {
 pub struct ReshapeForReturnExecutor(Vec<VariablePosition>);
 
 impl ReshapeForReturnExecutor {
+    pub(crate) fn output_width(&self) -> u32 {
+        self.0.len() as u32
+    }
+
     pub(super) fn map_output(&self, batch: FixedBatch) -> FixedBatch {
         let mut output_batch = FixedBatch::new(self.0.len() as u32);
         batch.into_iter().for_each(|row| output_batch.append(|mut out| out.copy_mapped(row, self.as_mapping())));
