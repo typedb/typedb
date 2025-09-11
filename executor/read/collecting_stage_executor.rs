@@ -126,7 +126,6 @@ pub(super) trait CollectedStageIteratorTrait {
 // Reduce
 pub(super) struct ReduceCollector {
     active_reducer: GroupedReducer,
-    output: Option<BatchRowIterator>,
     output_width: u32,
 }
 
@@ -139,7 +138,7 @@ impl fmt::Debug for ReduceCollector {
 impl ReduceCollector {
     fn new(reduce_executable: Arc<ReduceRowsExecutable>) -> Self {
         let output_width = (reduce_executable.input_group_positions.len() + reduce_executable.reductions.len()) as u32;
-        Self { active_reducer: GroupedReducer::new(reduce_executable), output: None, output_width }
+        Self { active_reducer: GroupedReducer::new(reduce_executable), output_width }
     }
 }
 
@@ -214,7 +213,7 @@ impl CollectorTrait for SortCollector {
 
     fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
         let Self { sort_on, collector } = self;
-        let unsorted = collector.unwrap();
+        let unsorted = collector.unwrap_or_else(|| Batch::new(0, 0));
         let profile = context.profile.profile_stage(|| String::from("Sort"), 0); // TODO executable id
         let step_profile = profile.extend_or_get(0, || String::from("Sort execution"));
         let sorted_indices =
