@@ -59,6 +59,10 @@ impl TabledCallExecutor {
         Self { function_id, argument_positions, assignment_positions, output_width, active_executor: None }
     }
 
+    pub(crate) fn output_width(&self) -> u32 {
+        self.output_width
+    }
+
     pub(crate) fn prepare(&mut self, input: MaybeOwnedRow<'static>) {
         self.prepare_impl(input, TableIndex(0))
     }

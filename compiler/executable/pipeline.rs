@@ -397,14 +397,6 @@ fn compile_stage(
             ExecutableStage::Offset(Arc::new(OffsetExecutable::new(offset.offset(), stage_input_positions.clone()))),
             BTreeSet::new(),
         )),
-        AnnotatedStage::Sort(sort) => Ok((
-            ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), stage_input_positions.clone()))),
-            BTreeSet::new(),
-        )),
-        AnnotatedStage::Offset(offset) => Ok((
-            ExecutableStage::Offset(Arc::new(OffsetExecutable::new(offset.offset(), stage_input_positions.clone()))),
-            BTreeSet::new(),
-        )),
         AnnotatedStage::Limit(limit) => Ok((
             ExecutableStage::Limit(Arc::new(LimitExecutable::new(limit.limit(), stage_input_positions.clone()))),
             BTreeSet::new(),

@@ -51,6 +51,20 @@ pub enum StepExecutors {
 }
 
 impl StepExecutors {
+    pub(crate) fn output_width(&self) -> u32 {
+        match self {
+            StepExecutors::Immediate(inner) => inner.output_width(),
+            StepExecutors::Disjunction(inner) => inner.output_width(),
+            StepExecutors::Optional(inner) => inner.output_width(),
+            StepExecutors::Negation(inner) => inner.output_width(),
+            StepExecutors::InlinedCall(inner) => inner.output_width(),
+            StepExecutors::TabledCall(inner) => inner.output_width(),
+            StepExecutors::StreamModifier(inner) => inner.output_width(),
+            StepExecutors::CollectingStage(inner) => inner.output_width(),
+            StepExecutors::ReshapeForReturn(inner) => inner.output_width(),
+        }
+    }
+
     pub(crate) fn unwrap_immediate(&mut self) -> &mut ImmediateExecutor {
         match self {
             StepExecutors::Immediate(step) => step,
@@ -119,6 +133,10 @@ impl StepExecutors {
 pub struct ReshapeForReturnExecutor(Vec<VariablePosition>);
 
 impl ReshapeForReturnExecutor {
+    pub(crate) fn output_width(&self) -> u32 {
+        self.0.len() as u32
+    }
+
     pub(super) fn map_output(&self, batch: FixedBatch) -> FixedBatch {
         let mut output_batch = FixedBatch::new(self.0.len() as u32);
         batch.into_iter().for_each(|row| output_batch.append(|mut out| out.copy_mapped(row, self.as_mapping())));
@@ -236,10 +254,10 @@ pub(crate) fn create_executors_for_conjunction(
                 )
                 .into();
                 // Hack: wrap it in a distinct
-                let step = StepExecutors::StreamModifier(StreamModifierExecutor::new_distinct(
-                    PatternExecutor::new(next_executable_id(), vec![inner_step]),
-                    step.output_width,
-                ));
+                let step = StepExecutors::StreamModifier(StreamModifierExecutor::new_distinct(PatternExecutor::new(
+                    next_executable_id(),
+                    vec![inner_step],
+                )));
                 steps.push(step);
             }
             ExecutionStep::Optional(step) => {
@@ -331,7 +349,7 @@ pub(super) fn create_executors_for_function_pipeline_stages(
     } else {
         vec![]
     };
-
+    // TODO: Do we need to remap according to the output_row_mapping? It's ignored currently
     match &executable_stages[at_index] {
         ExecutableStage::Match(conjunction_executable) => {
             let mut executors = create_executors_for_conjunction(
@@ -371,12 +389,9 @@ pub(super) fn create_executors_for_function_pipeline_stages(
         ExecutableStage::Require(_) => Err(Box::new(ConceptReadError::UnimplementedFunctionality {
             functionality: UnimplementedFeature::PipelineStageInFunction("require"),
         })),
-        ExecutableStage::Distinct(distinct_executable) => {
-            // Complete this sentence for
-            let step = StreamModifierExecutor::new_distinct(
-                PatternExecutor::new(next_executable_id(), previous_stage_steps),
-                distinct_executable.output_row_mapping.values().len() as u32,
-            );
+        ExecutableStage::Distinct(_distinct_executable) => {
+            let step =
+                StreamModifierExecutor::new_distinct(PatternExecutor::new(next_executable_id(), previous_stage_steps));
             Ok(vec![step.into()])
         }
         ExecutableStage::Sort(sort_executable) => {

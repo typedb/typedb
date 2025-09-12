@@ -42,6 +42,10 @@ impl PatternExecutor {
         PatternExecutor { executable_id, executors, control_stack: Vec::new() }
     }
 
+    pub(crate) fn output_width(&self) -> u32 {
+        self.executors.last().expect("Expected pattern executor to have some steps").output_width()
+    }
+
     pub(crate) fn has_empty_control_stack(&self) -> bool {
         self.control_stack.is_empty()
     }
