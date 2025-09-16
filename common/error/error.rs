@@ -83,6 +83,9 @@ pub trait TypeDBError {
             error = source;
             stack_trace.push(error.format_code_and_description());
         }
+        if let Some(source) = error.source_error() {
+            stack_trace.push(format!("{}", source));
+        }
         stack_trace.reverse();
         stack_trace
     }

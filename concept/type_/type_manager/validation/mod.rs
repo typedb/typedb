@@ -56,7 +56,7 @@ typedb_error!(
         CannotSetAnnotationToInterfaceBecauseItsConstraintIsNotNarrowedByItsCapabilityConstraint(28, "Cannot set annotation to interface '{interface}' because its constraint is not narrowed by its capability constraint.", interface: Label, typedb_source: Box<ConstraintError>),
         CannotSetAnnotationToCapabilityBecauseItsConstraintDoesNotNarrowItsInterfaceConstraint(29, "Cannot set annotation on capability '{cap}' of '{interface}' on type '{label}' because its constraint does not narrow its interface constraint.", cap: CapabilityKind, interface: Label, label: Label, typedb_source: Box<ConstraintError>),
         InvalidCardinalityArguments(30, "Invalid arguments for cardinality annotation '{card}'.", card: AnnotationCardinality),
-        InvalidRegexArguments(31, "Invalid arguments for regex annotation '{regex}'.", regex: AnnotationRegex),
+        InvalidRegexArguments(31, "Invalid arguments for regex annotation '{regex}'.", regex: AnnotationRegex, source: regex::Error),
         InvalidRangeArgumentsForValueType(32, "Invalid arguments for range annotation '{range}' for value type '{value_type:?}'.", range: AnnotationRange, value_type: Option<ValueType>),
         InvalidValuesArgumentsForValueType(33, "Invalid arguments for values annotation '{values}' for value type '{value_type:?}'.", values: AnnotationValues, value_type: Option<ValueType>),
         SubtypeConstraintDoesNotNarrowSupertypeConstraint(34, "Subtype constraint on '{subtype}' does not narrow supertype constraint on '{supertype}'.", subtype: Label, supertype: Label, typedb_source: Box<ConstraintError>),
