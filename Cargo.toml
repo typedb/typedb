@@ -16,31 +16,6 @@ features = {}
 		features = []
 		default-features = false
 
-	[dev-dependencies.test_utils_encoding]
-		path = "encoding/tests"
-		features = []
-		default-features = false
-
-	[dev-dependencies.query]
-		path = "query"
-		features = []
-		default-features = false
-
-	[dev-dependencies.test_utils_concept]
-		path = "concept/tests"
-		features = []
-		default-features = false
-
-	[dev-dependencies.storage]
-		path = "storage"
-		features = []
-		default-features = false
-
-	[dev-dependencies.steps]
-		path = "tests/behaviour/steps"
-		features = []
-		default-features = false
-
 	[dev-dependencies.http_steps]
 		path = "tests/behaviour/service/http/http_steps"
 		features = []
@@ -61,6 +36,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dev-dependencies.query]
+		path = "query"
+		features = []
+		default-features = false
+
 	[dev-dependencies.options]
 		path = "common/options"
 		features = []
@@ -69,7 +49,17 @@ features = {}
 	[dev-dependencies.typeql]
 		features = []
 		git = "https://github.com/typedb/typeql"
-		tag = "3.2.0"
+		tag = "3.5.0"
+		default-features = false
+
+	[dev-dependencies.storage]
+		path = "storage"
+		features = []
+		default-features = false
+
+	[dev-dependencies.steps]
+		path = "tests/behaviour/steps"
+		features = []
 		default-features = false
 
 	[dev-dependencies.lending_iterator]

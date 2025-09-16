@@ -1333,7 +1333,6 @@ dependencies = [
  "itertools 0.10.5",
  "logger",
  "lz4",
- "primitive",
  "rand 0.8.5",
  "resource",
  "serde",
@@ -3406,9 +3405,6 @@ dependencies = [
 [[package]]
 name = "project"
 version = "0.0.0"
-dependencies = [
- "logger",
-]
 
 [[package]]
 name = "prost"
@@ -4520,13 +4516,11 @@ dependencies = [
  "database",
  "durability",
  "error",
- "iterator",
  "itertools 0.10.5",
  "lending_iterator",
  "logger",
  "pprof",
  "primitive",
- "project",
  "rand 0.8.5",
  "rand_core 0.3.1",
  "resource",
@@ -5248,8 +5242,6 @@ dependencies = [
  "steps",
  "storage",
  "test_utils",
- "test_utils_concept",
- "test_utils_encoding",
  "tokio",
  "typeql",
 ]
@@ -5263,7 +5255,7 @@ checksum = "1dccffe3ce07af9386bfd29e80c0ab1a8205a2fc34e4bcd40364df902cfa8f3f"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?tag=3.2.0#b56ed8195ff25aca96f24e33180468f705072ab2"
+source = "git+https://github.com/typedb/typeql?tag=3.5.0#6dd83bd45775a061ddad76436caa18c385d11b2b"
 dependencies = [
  "chrono",
  "itertools 0.10.5",
