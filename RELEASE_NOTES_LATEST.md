@@ -1,10 +1,10 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.5.0-rc0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.5.0-rc0)
+[Distributions for 3.5.0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.5.0)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.5.0-rc0```
+```docker pull typedb/typedb:3.5.0```
 
 
 ## New Features
@@ -101,6 +101,14 @@
   
 
 ## Bugs Fixed
+- **Fix crash when functions sorts empty stream**
+  Fixes a crash when a functions tried to sort an empty stream.
+  
+  
+- **Fix development mode configuration in config file**
+  Fixes development mode configuration in config file
+  
+  
 - **Support inserting attributes from values of other attributes**
   Support inserting attributes from values of other attributes 
   
@@ -130,12 +138,8 @@
   
 - **Variables referenced in only some branches of a disjunction are required inputs**
   Updates the planner to treat variables which are referenced in "some but not all" branches of a disjunction as "required inputs". This means a pattern binding the variable must be bound before the disjunction can be scheduled.
-
   
-- **Lock attributes on updating connections**
-
-  We fix an Isolation bug that is exposed under concurrent update (adding an ownership) + concurrent delete transactions. This is a relatively uncommon conflict, and is fixed  by locking attributes that are edited in order to conflict with concurrent deletes of the same attribute. Under highly concurrent operations that include `delete`s, this change might manifest itself as more transaction conflicts `STC2` (Storage Commit 2) errors, which can be resolved with a retry.
-
+  
 
 ## Code Refactors
 - **Add cases for reduce enum variants**
@@ -157,8 +161,13 @@
   
   We've identified some redundant dependencies in bazel build scripts, which are harmful to incremental/parallel build. 
   We refactored them as part of a research project on dependency reduction.
-
-
+  
+  
+- **Lock attributes on updating connections**
+  
+  We fix an Isolation bug that is exposed under concurrent update (adding an ownership) + concurrent delete transactions. This is a relatively uncommon conflict, and is fixed  by locking attributes that are edited in order to conflict with concurrent deletes of the same attribute. Under highly concurrent operations that include `delete`s, this change might manifest itself as more transaction conflicts `STC2` (Storage Commit 2) errors, which can be resolved with a retry.
+  
+  
 - **Revise response format of the analyze endpoint**
   We revise the response format for the `analyze` endpoint of the HTTP API, to align it better with TypeDB's representation, and simplify parsing & reconstructing the structure.
   
