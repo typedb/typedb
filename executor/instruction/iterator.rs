@@ -488,11 +488,11 @@ impl<It: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekabl
                 None => Ok(None),
                 Some(Ok(peek)) => {
                     match peek.values()[first_unbound_index].partial_cmp(&target_tuple.values()[first_unbound_index]) {
-                        None => return Err(Box::new(ConceptReadError::InternalIncomparableTypes {})),
-                        Some(ordering) => return Ok(Some(ordering)),
+                        None => Err(Box::new(ConceptReadError::InternalIncomparableTypes {})),
+                        Some(ordering) => Ok(Some(ordering)),
                     }
                 }
-                Some(Err(err)) => return Err(err.clone()),
+                Some(Err(err)) => Err(err.clone()),
             }
         } else {
             Ok(Some(Ordering::Greater))

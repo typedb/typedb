@@ -795,7 +795,7 @@ where
         + for<'a> LendingIterator<Item<'a> = Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>>,
 {
     fn seek(&mut self, target: &Tuple<'_>) -> Result<(), Box<ConceptReadError>> {
-        let target = self.tuple_to_indexed(&target);
+        let target = self.tuple_to_indexed(target);
         lending_iterator::Seekable::seek(&mut self.inner, &Ok((target, 0)));
         Ok(())
     }
