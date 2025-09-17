@@ -118,7 +118,11 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
             self.find_next_state();
         }
         if let Some(next_iterator) = &mut self.next_iterator {
-            next_iterator.iter.seek(target)?;
+            if let Some(Ok(item)) = next_iterator.iter.peek() {
+                if item < target {
+                    next_iterator.iter.seek(target)?;
+                }
+            }
         }
         self.iterators = mem::take(&mut self.iterators)
             .drain()
