@@ -3,6 +3,7 @@
 # Do not modify this file.
 
 features = {}
+dependencies = {}
 
 [package]
 	name = "project"
@@ -11,11 +12,4 @@ features = {}
 
 [lib]
 	path = "project.rs"
-
-[dependencies]
-
-	[dependencies.logger]
-		path = "../../common/logger"
-		features = []
-		default-features = false
 

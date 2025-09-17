@@ -1,10 +1,10 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.5.0-rc0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.5.0-rc0)
+[Distributions for 3.5.0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.5.0)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.5.0-rc0```
+```docker pull typedb/typedb:3.5.0```
 
 
 ## New Features
@@ -101,6 +101,14 @@
   
 
 ## Bugs Fixed
+- **Fix crash when functions sorts empty stream**
+  Fixes a crash when a functions tried to sort an empty stream.
+  
+  
+- **Fix development mode configuration in config file**
+  Fixes development mode configuration in config file
+  
+  
 - **Support inserting attributes from values of other attributes**
   Support inserting attributes from values of other attributes 
   

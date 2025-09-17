@@ -46,11 +46,6 @@ features = {}
 		version = "0.1.41"
 		default-features = false
 
-	[dependencies.primitive]
-		path = "../common/primitive"
-		features = []
-		default-features = false
-
 	[dependencies.resource]
 		path = "../resource"
 		features = []
