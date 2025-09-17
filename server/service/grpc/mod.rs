@@ -12,6 +12,7 @@ pub(crate) mod encryption;
 mod error;
 mod migration;
 mod options;
+pub(crate) mod query_structure;
 mod request_parser;
 mod response_builders;
 mod row;
