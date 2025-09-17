@@ -1574,10 +1574,9 @@ impl OperationTimeValidation {
     }
 
     pub(crate) fn validate_regex_arguments(regex: AnnotationRegex) -> Result<(), Box<SchemaValidationError>> {
-        if regex.valid() {
-            Ok(())
-        } else {
-            Err(Box::new(SchemaValidationError::InvalidRegexArguments { regex }))
+        match regex.validate() {
+            Ok(_) => Ok(()),
+            Err(err) => Err(Box::new(SchemaValidationError::InvalidRegexArguments { regex, source: err})),
         }
     }
 
