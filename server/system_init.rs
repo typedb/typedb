@@ -51,7 +51,7 @@ async fn initialise_system_database_schema(db: Arc<Database<WALClient>>, server_
     Ok(())
 }
 
-pub async fn initialise_default_user(user_manager: &user::user_manager::UserManager, server_state: &dyn ServerState) -> Result<(), ServerStateError> {
+pub async fn get_default_user_commit_record(user_manager: &user::user_manager::UserManager) -> Result<(TransactionProfile, Option<CommitRecord>), ServerStateError> {
     let (mut transaction_profile, finalise_result) = user_manager.create2(
         &User::new(DEFAULT_USER_NAME.to_string()),
         &Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
@@ -60,9 +60,13 @@ pub async fn initialise_default_user(user_manager: &user::user_manager::UserMana
     let (_, snapshot) = finalise_result
         .map_err(|error| ServerStateError::UserCannotBeCreated { typedb_source: error })?;
     let commit_record_opt = snapshot.finalise(&mut commit_profile)
-        .map_err(|error| ServerStateError::DatabaseSchemaCommitFailed { typedb_source: SchemaCommitError::SnapshotError { typedb_source: error }})?;;
-    if let Some(commit_record) = commit_record_opt {
-        server_state.users_create2(commit_record, &mut commit_profile).await?;
+        .map_err(|error| ServerStateError::DatabaseSchemaCommitFailed { typedb_source: SchemaCommitError::SnapshotError { typedb_source: error }})?;
+    return Ok((transaction_profile, commit_record_opt));
+}
+
+pub async fn initialise_default_user(user_manager: &user::user_manager::UserManager, server_state: &dyn ServerState) -> Result<(), ServerStateError> {
+    if let (mut transaction_profile, Some(commit_record)) = get_default_user_commit_record(user_manager).await? {
+        server_state.users_create2(commit_record, &mut transaction_profile.commit_profile()).await?;
     }
     Ok(())
 }
