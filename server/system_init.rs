@@ -3,7 +3,9 @@ use std::sync::Arc;
 use database::transaction::SchemaCommitError;
 use resource::constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD};
 use resource::internal_database_prefix;
+use resource::profile::{CommitProfile, TransactionProfile};
 use storage::durability_client::WALClient;
+use storage::isolation_manager::CommitRecord;
 use storage::snapshot::CommittableSnapshot;
 use system::concepts::{Credential, PasswordHash, User};
 use system::repositories::SCHEMA;
@@ -19,7 +21,7 @@ pub async fn initialise_system_database(server_state: &dyn ServerState) -> Resul
     Ok(db)
 }
 
-async fn initialise_system_database_schema(db: Arc<Database<WALClient>>, server_state: &dyn ServerState) -> Result<(), ServerStateError> {
+pub async fn get_system_database_schema_commit_record(db: Arc<Database<WALClient>>) -> Result<(TransactionProfile, Option<CommitRecord>), ServerStateError> {
     let tx_util = TransactionUtil::new(db);
     let (mut transaction_profile, finalise_result) = tx_util.schema_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
         let query = typeql::parse_query(SCHEMA)
@@ -39,8 +41,12 @@ async fn initialise_system_database_schema(db: Arc<Database<WALClient>>, server_
         .map_err(|error| ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;
     let commit_record_opt = snapshot.finalise(&mut commit_profile)
         .map_err(|error| ServerStateError::DatabaseSchemaCommitFailed { typedb_source: SchemaCommitError::SnapshotError { typedb_source: error }})?;
-    if let Some(commit_record) = commit_record_opt {
-        server_state.database_schema_commit(SYSTEM_DB, commit_record, &mut commit_profile).await?;
+    return Ok((transaction_profile, commit_record_opt));
+}
+
+async fn initialise_system_database_schema(db: Arc<Database<WALClient>>, server_state: &dyn ServerState) -> Result<(), ServerStateError> {
+    if let (mut transaction_profile, Some(commit_record)) = get_system_database_schema_commit_record(db).await? {
+        server_state.database_schema_commit(SYSTEM_DB, commit_record, transaction_profile.commit_profile()).await?;
     }
     Ok(())
 }
