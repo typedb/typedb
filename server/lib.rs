@@ -10,7 +10,7 @@ pub mod parameters;
 pub mod service;
 pub mod state;
 pub mod status;
-mod system_init;
+pub mod system_init;
 
 use std::{fs, future::Future, net::SocketAddr, path::Path, pin::Pin, sync::Arc};
 
