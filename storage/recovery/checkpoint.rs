@@ -54,7 +54,7 @@ impl Checkpoint {
     }
 
     pub fn add_storage(&self, keyspaces: &Keyspaces, watermark: SequenceNumber) -> Result<(), CheckpointCreateError> {
-        use CheckpointCreateError::{KeyspaceCheckpoint, MetadataFileCreate, MetadataWrite};
+        use CheckpointCreateError::{KeyspaceCheckpoint, MetadataWrite};
         keyspaces
             .checkpoint(&self.directory)
             .map_err(|error| KeyspaceCheckpoint { dir: self.directory.clone(), source: error })?;
@@ -230,7 +230,7 @@ fn write_file_content_safe(path: &Path, bytes: &[u8]) -> io::Result<()> {
         tmp_file.write_all(bytes)?;
         tmp_file.sync_all()?;
     }
-    // The directory is not fsynced, so there is a chance that it won't be persisted.
+    // The directory is not fsynced, so there is a chance that the file won't be persisted after a crash.
     // However, if the file is found, it's correct and complete.
     fs::rename(&tmp, path)
 }
@@ -243,7 +243,7 @@ fn copy_file_content_safe(source: &Path, destination: &Path) -> io::Result<()> {
         std::io::copy(&mut source_file, &mut tmp_file)?;
         tmp_file.sync_all()?;
     }
-    // The directory is not fsynced, so there is a chance that it won't be persisted.
+    // The directory is not fsynced, so there is a chance that the copied file won't be persisted.
     // However, if the file is found, it's correct and complete.
     fs::rename(&tmp, destination)
 }

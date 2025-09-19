@@ -327,12 +327,13 @@ impl Files {
             return Ok(());
         };
 
-        let truncate_position = self.files[file_index]
-            .find_last_position_before(sequence_number)?
-            .expect("Expected existing position for the truncated sequence number. Do not do unnecessary truncations.");
+        let Some(truncate_position) = self.files[file_index].find_last_position_before(sequence_number)? else {
+            // Already does not have anything from this sequence number. Can be changed to an error.
+            return Ok(());
+        };
 
         while self.files.len() > file_index + 1 {
-            std::fs::remove_file(&self.files.pop().unwrap().path)?;
+            fs::remove_file(&self.files.pop().unwrap().path)?;
         }
 
         let last = &mut self.files[file_index];
@@ -343,12 +344,12 @@ impl Files {
 
     fn delete(self) -> Result<(), DurabilityServiceError> {
         drop(self.files);
-        std::fs::remove_dir_all(&self.directory).map_err(|source| source.into())
+        fs::remove_dir_all(&self.directory).map_err(|source| source.into())
     }
 
     fn reset(&mut self) -> Result<(), DurabilityServiceError> {
-        std::fs::remove_dir_all(&self.directory)?;
-        std::fs::create_dir(&self.directory)?;
+        fs::remove_dir_all(&self.directory)?;
+        fs::create_dir(&self.directory)?;
         self.files.clear();
         let (files, writer) = Self::init_files_writer(&self.directory)?;
         self.files = files;
@@ -692,7 +693,7 @@ mod test {
     use itertools::Itertools;
     use tempdir::TempDir;
 
-    use super::WAL;
+    use super::{MAX_WAL_FILE_SIZE, WAL};
     use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, RawRecord};
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     struct TestRecord {
@@ -902,5 +903,110 @@ mod test {
         assert_true!(
             matches!(found, RawRecord { bytes, record_type: UnsequencedTestRecord::RECORD_TYPE, .. } if bytes == unsequenced_2.bytes())
         );
+    }
+
+    #[test]
+    fn test_wal_truncate_from_middle_of_single_file_and_continue() {
+        let directory = TempDir::new("wal-test").unwrap();
+        let wal = create_wal(&directory);
+
+        let _s1 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"a000").unwrap();
+        let s2 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"b111").unwrap();
+        let _s3 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"c222").unwrap();
+
+        wal.truncate_from(s2).unwrap();
+
+        let read_records = wal
+            .iter_any_from(DurabilitySequenceNumber::MIN)
+            .unwrap()
+            .map(|res| res.unwrap().bytes.into_owned())
+            .collect::<Vec<_>>();
+
+        let mut expected_records = vec![b"a000".to_vec()];
+        assert_eq!(read_records, expected_records);
+        assert_eq!(wal.current(), s2);
+
+        let s4 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"d444").unwrap();
+
+        let read_records = wal
+            .iter_any_from(DurabilitySequenceNumber::MIN)
+            .unwrap()
+            .map(|res| res.unwrap().bytes.into_owned())
+            .collect::<Vec<_>>();
+
+        expected_records.push(b"d444".to_vec());
+        assert_eq!(read_records, expected_records);
+        assert_eq!(s4, s2);
+    }
+
+    #[test]
+    fn test_wal_truncate_from_across_multiple_files_deletes_newer_files() {
+        let directory = TempDir::new("wal-test").unwrap();
+        let wal = create_wal(&directory);
+
+        let mut seqs = Vec::new();
+        // Should be enough for 3 files
+        let records_num = MAX_WAL_FILE_SIZE.div_ceil(16) as usize;
+        for i in 0..records_num {
+            let payload = format!("r{:04}", i);
+            seqs.push(wal.sequenced_write(TestRecord::RECORD_TYPE, payload.as_bytes()).unwrap());
+        }
+
+        let cut = seqs[records_num.div_ceil(2)];
+        wal.truncate_from(cut).unwrap();
+
+        let read_records = wal
+            .iter_any_from(DurabilitySequenceNumber::MIN)
+            .unwrap()
+            .map(|r| r.unwrap().sequence_number)
+            .collect::<Vec<_>>();
+        assert!(!read_records.is_empty());
+        assert!(read_records.iter().all(|s| s.number() < cut.number()));
+        assert_eq!(wal.current(), cut);
+
+        drop(wal);
+        let wal = load_wal(&directory);
+        let read_records_after_reload = wal
+            .iter_any_from(DurabilitySequenceNumber::MIN)
+            .unwrap()
+            .map(|r| r.unwrap().sequence_number)
+            .collect::<Vec<_>>();
+        assert_eq!(read_records, read_records_after_reload);
+        assert_eq!(wal.current(), cut);
+    }
+
+    #[test]
+    fn test_wal_truncate_from_beginning_clears_everything() {
+        let directory = TempDir::new("wal-test").unwrap();
+        let wal = create_wal(&directory);
+
+        let s1 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"one!").unwrap();
+        let _s2 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"two!").unwrap();
+
+        wal.truncate_from(s1).unwrap();
+
+        let read_records = wal.iter_any_from(DurabilitySequenceNumber::MIN).unwrap().collect::<Vec<_>>();
+        assert!(read_records.is_empty(), "expected no records after truncate_from(first)");
+        assert_eq!(wal.current(), s1);
+    }
+
+    #[test]
+    fn test_wal_truncate_from_is_idempotent_for_same_cut() {
+        let directory = TempDir::new("wal-test").unwrap();
+        let wal = create_wal(&directory);
+
+        let _s1 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"one!").unwrap();
+        let s2 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"two!").unwrap();
+
+        wal.truncate_from(s2).unwrap();
+        wal.truncate_from(s2).unwrap();
+
+        let read_records = wal
+            .iter_any_from(DurabilitySequenceNumber::MIN)
+            .unwrap()
+            .map(|r| r.unwrap().bytes.into_owned())
+            .collect::<Vec<_>>();
+        assert_eq!(read_records, vec![b"one!".to_vec()]);
+        assert_eq!(wal.current(), s2);
     }
 }
