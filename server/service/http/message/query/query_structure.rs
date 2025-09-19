@@ -4,52 +4,55 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, marker::PhantomData, str::FromStr};
+use std::{collections::HashMap, str::FromStr};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
-use compiler::query_structure::{ParametrisedQueryStructure, QueryStructure, QueryStructureStage, StructureVariableId};
+use compiler::query_structure::{
+    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure, QueryStructureStage,
+    StructureVariableId,
+};
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
 use ir::pattern::{
     constraint::{Constraint, IsaKind, SubKind},
     ParameterID, Vertex,
 };
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
     encode_type_concept, encode_value, RoleTypeResponse, ValueResponse,
 };
 
-struct QueryStructureContext<'a, Snapshot: ReadableSnapshot> {
-    query_structure: &'a QueryStructure,
+struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
+    pipeline_structure: &'a PipelineStructure,
     snapshot: &'a Snapshot,
     type_manager: &'a TypeManager,
     role_names: HashMap<Variable, String>,
     variables: &'a mut HashMap<StructureVariableId, StructureVariableInfo>,
 }
 
-impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
+impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
     pub fn get_parameter_value(&self, param: &ParameterID) -> Option<Value<'static>> {
         debug_assert!(matches!(param, ParameterID::Value(_, _)));
-        self.query_structure.parameters.value(*param).cloned()
+        self.pipeline_structure.parameters.value(*param).cloned()
     }
 
     pub fn get_parameter_iid(&self, param: &ParameterID) -> Option<&[u8]> {
-        self.query_structure.parameters.iid(*param).map(|iid| iid.as_ref())
+        self.pipeline_structure.parameters.iid(*param).map(|iid| iid.as_ref())
     }
 
     pub fn get_variable_name(&self, variable: &StructureVariableId) -> Option<String> {
-        self.query_structure.variable_names.get(&variable).cloned()
+        self.pipeline_structure.variable_names.get(&variable).cloned()
     }
 
     pub fn get_type(&self, label: &Label) -> Option<answer::Type> {
-        self.query_structure.parametrised_structure.resolved_labels.get(label).cloned()
+        self.pipeline_structure.parametrised_structure.resolved_labels.get(label).cloned()
     }
 
     fn get_call_syntax(&self, constraint: &Constraint<Variable>) -> Option<&String> {
-        self.query_structure.parametrised_structure.calls_syntax.get(constraint)
+        self.pipeline_structure.parametrised_structure.calls_syntax.get(constraint)
     }
 
     fn get_role_type(&self, variable: &Variable) -> Option<&str> {
@@ -66,7 +69,23 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub(crate) struct FunctionStructureResponse {
+    body: Option<PipelineStructureResponse>,
+    arguments: Vec<StructureVariableId>,
+    #[serde(rename = "return")]
+    return_: FunctionReturnStructure,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct QueryStructureResponse {
+    query: Option<PipelineStructureResponse>,
+    preamble: Vec<FunctionStructureResponse>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PipelineStructureResponse {
     blocks: Vec<StructureBlock>,
     pipeline: Vec<QueryStructureStage>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
@@ -196,37 +215,63 @@ enum StructureVertex {
 pub(crate) fn encode_query_structure(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    query_structure: &QueryStructure,
+    query_structure: QueryStructure,
 ) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
+    let QueryStructure { preamble, query: pipeline } = query_structure;
+    let pipeline =
+        pipeline.as_ref().map(|pipeline| encode_pipeline_structure(snapshot, type_manager, &pipeline)).transpose()?;
+    let preamble = preamble
+        .into_iter()
+        .map(|function| {
+            let pipeline = function
+                .pipeline
+                .as_ref()
+                .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, pipeline))
+                .transpose()?;
+            Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse {
+                body: pipeline,
+                arguments: function.arguments,
+                return_: function.return_,
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(QueryStructureResponse { query: pipeline, preamble })
+}
+
+pub(crate) fn encode_pipeline_structure(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    pipeline_structure: &PipelineStructure,
+) -> Result<PipelineStructureResponse, Box<ConceptReadError>> {
     let mut variables = HashMap::new();
-    let ParametrisedQueryStructure { stages, blocks, .. } = &*query_structure.parametrised_structure;
+    let ParametrisedPipelineStructure { stages, blocks, .. } = &*pipeline_structure.parametrised_structure;
     let blocks = blocks
         .iter()
         .map(|block| {
             encode_structure_block(
                 snapshot,
                 type_manager,
-                &query_structure,
+                &pipeline_structure,
                 &mut variables,
                 block.constraints.as_slice(),
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
     // Ensure reduced variables are added to variables
-    record_reducer_variables(snapshot, type_manager, query_structure, &mut variables);
-    let outputs = query_structure.available_variables.clone();
-    Ok(QueryStructureResponse { blocks, outputs, variables, pipeline: stages.clone() })
+    record_reducer_variables(snapshot, type_manager, pipeline_structure, &mut variables);
+    let outputs = pipeline_structure.available_variables.clone();
+    Ok(PipelineStructureResponse { blocks, outputs, variables, pipeline: stages.clone() })
 }
 
 fn record_reducer_variables(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    query_structure: &QueryStructure,
+    pipeline_structure: &PipelineStructure,
     variables: &mut HashMap<StructureVariableId, StructureVariableInfo>,
 ) {
     let mut context =
-        QueryStructureContext { query_structure, snapshot, type_manager, role_names: HashMap::new(), variables };
-    query_structure
+        PipelineStructureContext { pipeline_structure, snapshot, type_manager, role_names: HashMap::new(), variables };
+    pipeline_structure
         .parametrised_structure
         .stages
         .iter()
@@ -242,7 +287,7 @@ fn record_reducer_variables(
 fn encode_structure_block(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    query_structure: &QueryStructure,
+    pipeline_structure: &PipelineStructure,
     variables: &mut HashMap<StructureVariableId, StructureVariableInfo>,
     block: &[Constraint<Variable>],
 ) -> Result<StructureBlock, Box<ConceptReadError>> {
@@ -252,7 +297,7 @@ fn encode_structure_block(
         .filter_map(|constraint| constraint.as_role_name())
         .map(|rolename| (rolename.type_().as_variable().unwrap(), rolename.name().to_owned()))
         .collect();
-    let mut context = QueryStructureContext { query_structure, snapshot, type_manager, role_names, variables };
+    let mut context = PipelineStructureContext { pipeline_structure, snapshot, type_manager, role_names, variables };
     block.iter().enumerate().try_for_each(|(index, constraint)| {
         encode_structure_constraint(&mut context, constraint, &mut constraints, index)
     })?;
@@ -260,7 +305,7 @@ fn encode_structure_block(
 }
 
 fn encode_structure_constraint(
-    context: &mut QueryStructureContext<'_, impl ReadableSnapshot>,
+    context: &mut PipelineStructureContext<'_, impl ReadableSnapshot>,
     constraint: &Constraint<Variable>,
     constraints: &mut Vec<StructureConstraintWithSpan>,
     index: usize,
@@ -371,7 +416,7 @@ fn encode_structure_constraint(
                 .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
                 .collect::<Result<Vec<_>, _>>()?;
             let arguments = expr
-                .required_ids()
+                .expression_ids()
                 .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
                 .collect::<Result<Vec<_>, _>>()?;
             constraints.push(StructureConstraintWithSpan {
@@ -460,7 +505,7 @@ fn encode_structure_constraint(
 }
 
 fn encode_structure_vertex(
-    context: &mut QueryStructureContext<'_, impl ReadableSnapshot>,
+    context: &mut PipelineStructureContext<'_, impl ReadableSnapshot>,
     vertex: &Vertex<Variable>,
 ) -> Result<StructureVertex, Box<ConceptReadError>> {
     let vertex = match vertex {
@@ -483,7 +528,7 @@ fn encode_structure_vertex(
 }
 
 fn encode_role_type_as_vertex(
-    context: &mut QueryStructureContext<'_, impl ReadableSnapshot>,
+    context: &mut PipelineStructureContext<'_, impl ReadableSnapshot>,
     role_type: &Vertex<Variable>,
 ) -> Result<StructureVertex, Box<ConceptReadError>> {
     if let Some(label) = context.get_role_type(&role_type.as_variable().unwrap()) {

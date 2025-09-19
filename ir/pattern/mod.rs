@@ -19,7 +19,7 @@ use encoding::value::label::Label;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
-use crate::pipeline::VariableRegistry;
+use crate::pipeline::{block::BlockContext, VariableRegistry};
 
 pub mod conjunction;
 pub mod constraint;
@@ -67,6 +67,26 @@ pub trait IrID: Copy + fmt::Display + fmt::Debug + Hash + Eq + PartialEq + Ord +
 }
 
 impl IrID for Variable {}
+
+pub trait Pattern {
+    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
+
+    fn required_inputs<'a>(&'a self, _block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(v))
+    }
+
+    fn named_visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.visible_binding_variables(block_context).filter(Variable::is_named)
+    }
+
+    fn visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_binding_modes()
+            .into_iter()
+            .filter_map(|(v, mode)| (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v))
+    }
+
+    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>>;
+}
 
 // TODO: rename to 'Identifier' in lieu of a better name
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -353,19 +373,22 @@ impl fmt::Display for ValueType {
     }
 }
 
+// TODO: consider if this makes Scopes entirely redundant
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum BindingMode {
-    Required,
-    Producing,
-    Referencing,
+    RequirePrebound,
+    AlwaysBinding,
+    LocallyBindingInChild,
+    OptionallyBinding,
 }
 
 impl BitAndAssign for BindingMode {
     fn bitand_assign(&mut self, rhs: Self) {
         match (*self, rhs) {
-            (Self::Producing, _) | (_, Self::Producing) => *self = Self::Producing,
-            (Self::Required, _) | (_, Self::Required) => *self = Self::Required,
-            (Self::Referencing, Self::Referencing) => (),
+            (Self::AlwaysBinding, _) | (_, Self::AlwaysBinding) => *self = Self::AlwaysBinding,
+            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => *self = Self::RequirePrebound,
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::LocallyBindingInChild,
+            (Self::OptionallyBinding, Self::OptionallyBinding) => (),
         }
     }
 }
@@ -373,9 +396,10 @@ impl BitAndAssign for BindingMode {
 impl BitOrAssign for BindingMode {
     fn bitor_assign(&mut self, rhs: Self) {
         match (*self, rhs) {
-            (Self::Required, _) | (_, Self::Required) => *self = Self::Required,
-            (Self::Referencing, _) | (_, Self::Referencing) => *self = Self::Referencing,
-            (Self::Producing, Self::Producing) => (),
+            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => *self = Self::RequirePrebound,
+            (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => *self = Self::OptionallyBinding,
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::LocallyBindingInChild,
+            (Self::AlwaysBinding, Self::AlwaysBinding) => (),
         }
     }
 }
@@ -387,36 +411,40 @@ pub struct VariableBindingMode<'a> {
 }
 
 impl<'a> VariableBindingMode<'a> {
-    pub fn required(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: BindingMode::Required, referencing_constraints: vec![constraint] }
+    pub fn require_prebound(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: BindingMode::RequirePrebound, referencing_constraints: vec![constraint] }
     }
 
-    pub fn producing(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: BindingMode::Producing, referencing_constraints: vec![constraint] }
+    pub fn always_binding(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: BindingMode::AlwaysBinding, referencing_constraints: vec![constraint] }
     }
 
-    pub fn referencing(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: BindingMode::Referencing, referencing_constraints: vec![constraint] }
+    pub fn set_require_prebound(&mut self) {
+        self.mode = BindingMode::RequirePrebound;
     }
 
-    pub fn set_required(&mut self) {
-        self.mode = BindingMode::Required;
+    pub fn set_locally_binding_in_child(&mut self) {
+        self.mode = BindingMode::LocallyBindingInChild;
     }
 
-    pub fn set_referencing(&mut self) {
-        self.mode = BindingMode::Referencing;
+    pub fn set_optionally_binding(&mut self) {
+        self.mode = BindingMode::OptionallyBinding;
     }
 
-    pub fn is_required(&self) -> bool {
-        self.mode == BindingMode::Required
+    pub fn is_require_prebound(&self) -> bool {
+        self.mode == BindingMode::RequirePrebound
     }
 
-    pub fn is_producing(&self) -> bool {
-        self.mode == BindingMode::Producing
+    pub fn is_always_binding(&self) -> bool {
+        self.mode == BindingMode::AlwaysBinding
     }
 
-    pub fn is_referencing(&self) -> bool {
-        self.mode == BindingMode::Referencing
+    pub fn is_locally_binding_in_child(&self) -> bool {
+        self.mode == BindingMode::LocallyBindingInChild
+    }
+
+    pub fn is_optionally_binding(&self) -> bool {
+        self.mode == BindingMode::OptionallyBinding
     }
 
     pub fn referencing_constraints(&self) -> &[&Constraint<Variable>] {

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, sync::Arc};
 
 use ::typeql::common::Spannable;
 use resource::constants::common::{ERROR_QUERY_POINTER_LINES_AFTER, ERROR_QUERY_POINTER_LINES_BEFORE};
@@ -115,6 +115,48 @@ impl fmt::Display for dyn TypeDBError + '_ {
 }
 
 impl<T: TypeDBError> TypeDBError for Box<T> {
+    fn variant_name(&self) -> &'static str {
+        (**self).variant_name()
+    }
+
+    fn component(&self) -> &'static str {
+        (**self).component()
+    }
+
+    fn code(&self) -> &'static str {
+        (**self).code()
+    }
+
+    fn code_prefix(&self) -> &'static str {
+        (**self).code_prefix()
+    }
+
+    fn code_number(&self) -> usize {
+        (**self).code_number()
+    }
+
+    fn format_description(&self) -> String {
+        (**self).format_description()
+    }
+
+    fn source_error(&self) -> Option<&(dyn Error + Sync)> {
+        (**self).source_error()
+    }
+
+    fn source_typedb_error(&self) -> Option<&(dyn TypeDBError + Sync)> {
+        (**self).source_typedb_error()
+    }
+
+    fn source_query(&self) -> Option<&str> {
+        (**self).source_query()
+    }
+
+    fn source_span(&self) -> Option<::typeql::common::Span> {
+        (**self).source_span()
+    }
+}
+
+impl<T: TypeDBError + ?Sized> TypeDBError for Arc<T> {
     fn variant_name(&self) -> &'static str {
         (**self).variant_name()
     }
@@ -334,13 +376,13 @@ macro_rules! typedb_error {
 // Check for usages.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UnimplementedFeature {
-    Optionals,
     Lists,
     Structs,
 
     BuiltinFunction(String),
     LetInBuiltinCall,
     Subkey,
+    OptionalFunctions,
 
     UnsortedJoin,
 

@@ -204,7 +204,7 @@ fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
         }
         let mut return_types = HashSet::new();
         for (conjunction, assignment) in assignments_for_variable {
-            assignment.expression().variables().try_for_each(|var| {
+            assignment.expression().argument_ids().try_for_each(|var| {
                 resolve_type_for_variable(context, conjunction, var, expression_assignments, assignment.source_span())
                     .map(|_| ())
             })?;

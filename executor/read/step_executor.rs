@@ -19,7 +19,7 @@ use compiler::{
     VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use error::{unimplemented_feature, UnimplementedFeature};
+use error::UnimplementedFeature;
 use itertools::Itertools;
 use resource::profile::QueryProfile;
 use storage::snapshot::ReadableSnapshot;
@@ -30,7 +30,7 @@ use crate::{
     read::{
         collecting_stage_executor::CollectingStageExecutor,
         immediate_executor::ImmediateExecutor,
-        nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor},
+        nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor, OptionalExecutor},
         pattern_executor::PatternExecutor,
         stream_modifier::StreamModifierExecutor,
         tabled_call_executor::TabledCallExecutor,
@@ -41,6 +41,7 @@ use crate::{
 pub enum StepExecutors {
     Immediate(ImmediateExecutor),
     Disjunction(DisjunctionExecutor),
+    Optional(OptionalExecutor),
     Negation(NegationExecutor),
     InlinedCall(InlinedCallExecutor),
     TabledCall(TabledCallExecutor),
@@ -61,6 +62,13 @@ impl StepExecutors {
         match self {
             StepExecutors::Negation(step) => step,
             _ => panic!("bad unwrap. Expected Negation"),
+        }
+    }
+
+    pub(crate) fn unwrap_optional(&mut self) -> &mut OptionalExecutor {
+        match self {
+            StepExecutors::Optional(step) => step,
+            _ => panic!("bad unwrap. Expected Optional"),
         }
     }
 
@@ -234,7 +242,25 @@ pub(crate) fn create_executors_for_conjunction(
                 ));
                 steps.push(step);
             }
-            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
+            ExecutionStep::Optional(step) => {
+                // NOTE: still create the profile so each step has an entry in the profile, even if unused
+                let _step_profile = stage_profile.extend_or_get(index, || format!("{}", step));
+                let inner = create_executors_for_conjunction(
+                    snapshot,
+                    thing_manager,
+                    function_registry,
+                    query_profile,
+                    &step.optional,
+                )?;
+                let inner_executor = PatternExecutor::new(step.optional.executable_id(), inner);
+                let inner_step = OptionalExecutor::new(
+                    step.branch_id,
+                    inner_executor,
+                    step.selected_variables.clone(),
+                    step.output_width,
+                );
+                steps.push(inner_step.into())
+            }
         };
     }
     Ok(steps)

@@ -39,7 +39,7 @@ use crate::{
                 authentication::{encode_token, SigninPayload},
                 body::{JsonBody, PlainTextBody},
                 database::{encode_database, encode_databases, DatabasePath},
-                query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
+                query::{AnalysedQueryResponse, QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},
                 user::{encode_user, encode_users, CreateUserPayload, UpdateUserPayload, UserPath},
                 version::{encode_server_version, ProtocolVersion, PROTOCOL_VERSION_LATEST},
@@ -155,6 +155,9 @@ impl TypeDBService {
             Err(_) => Err(HttpServiceError::transaction_timeout()),
         }
     }
+    fn build_analyse_query_request(query: String) -> TransactionRequest {
+        TransactionRequest::AnalyseQuery(query)
+    }
 
     fn build_query_request(query_options_payload: Option<QueryOptionsPayload>, query: String) -> TransactionRequest {
         let query_options =
@@ -168,7 +171,19 @@ impl TypeDBService {
         match transaction_response {
             TransactionServiceResponse::Query(query_response) => Ok(query_response),
             TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),
-            TransactionServiceResponse::Ok => {
+            TransactionServiceResponse::QueryAnalyse(_) | TransactionServiceResponse::Ok => {
+                Err(HttpServiceError::Internal { details: "unexpected transaction response".to_string() })
+            }
+        }
+    }
+
+    fn try_get_query_analyse_response(
+        transaction_response: TransactionServiceResponse,
+    ) -> Result<AnalysedQueryResponse, HttpServiceError> {
+        match transaction_response {
+            TransactionServiceResponse::QueryAnalyse(query_response) => Ok(query_response),
+            TransactionServiceResponse::Err(typedb_source) => Err(HttpServiceError::Transaction { typedb_source }),
+            TransactionServiceResponse::Query(_) | TransactionServiceResponse::Ok => {
                 Err(HttpServiceError::Internal { details: "unexpected transaction response".to_string() })
             }
         }
@@ -191,6 +206,7 @@ impl TypeDBService {
             .route("/:version/transactions/:transaction-id/commit", post(Self::transactions_commit))
             .route("/:version/transactions/:transaction-id/close", post(Self::transactions_close))
             .route("/:version/transactions/:transaction-id/rollback", post(Self::transactions_rollback))
+            .route("/:version/transactions/:transaction-id/analyze", post(Self::transactions_analyse_query))
             .route("/:version/transactions/:transaction-id/query", post(Self::transactions_query))
             .route("/:version/query", post(Self::query))
             .with_state(service)
@@ -290,6 +306,7 @@ impl TypeDBService {
                     .server_state
                     .databases_get(&database_path.database_name)
                     .await
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })?
                     .ok_or(HttpServiceError::NotFound {})?
                     .name()
                     .to_string();
@@ -584,6 +601,31 @@ impl TypeDBService {
                     return Err(HttpServiceError::operation_not_permitted());
                 }
                 Self::transaction_request(&transaction, TransactionRequest::Rollback, true).await
+            },
+        )
+        .await
+    }
+
+    async fn transactions_analyse_query(
+        _version: ProtocolVersion,
+        State(service): State<Arc<TypeDBService>>,
+        Accessor(accessor): Accessor,
+        path: TransactionPath,
+        JsonBody(payload): JsonBody<TransactionQueryPayload>,
+    ) -> impl IntoResponse {
+        let uuid = path.transaction_id;
+        let senders = service.transaction_services.read().await;
+        let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
+
+        run_with_diagnostics_async(
+            service.server_state.diagnostics_manager().await,
+            Some(transaction.database_name.clone()),
+            ActionKind::TransactionAnalyse,
+            || async {
+                if accessor != transaction.owner {
+                    return Err(HttpServiceError::operation_not_permitted());
+                }
+                Self::transaction_request(&transaction, Self::build_analyse_query_request(payload.query), true).await
             },
         )
         .await

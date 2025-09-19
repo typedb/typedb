@@ -342,7 +342,7 @@ pub fn encode_value_value(value: Value<'_>) -> serde_json::Value {
             Cow::Borrowed(s) => s.to_string(),
             Cow::Owned(s) => s.clone(),
         }),
-        Value::Decimal(_) | Value::Date(_) | Value::Datetime(_) | Value::DatetimeTz(_) | Value::Duration(_) => {
+        Value::Decimal(_) | Value::Date(_) | Value::DateTime(_) | Value::DateTimeTZ(_) | Value::Duration(_) => {
             json!(value.to_string())
         }
         Value::Struct(_) => unimplemented_feature!(Structs),

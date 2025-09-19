@@ -17,20 +17,21 @@ use typeql::common::Span;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        BranchID, Scope, ScopeId, VariableBindingMode,
+        BranchID, Pattern, Scope, ScopeId, VariableBindingMode,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
+    pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
 };
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Disjunction {
     conjunctions: Vec<Conjunction>,
     branch_ids: Vec<BranchID>,
+    scope_id: ScopeId,
 }
 
 impl Disjunction {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(scope_id: ScopeId) -> Self {
+        Self { conjunctions: Vec::new(), branch_ids: Vec::new(), scope_id }
     }
 
     pub fn conjunctions_by_branch_id(&self) -> impl Iterator<Item = (&BranchID, &Conjunction)> {
@@ -45,16 +46,19 @@ impl Disjunction {
         &mut self.conjunctions
     }
 
-    pub fn named_producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.producible_variables(block_context).filter(Variable::is_named)
+    pub fn named_always_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.always_binding_variables(block_context).filter(Variable::is_named)
     }
 
-    fn producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_producing().then_some(v))
+    fn always_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_always_binding().then_some(v))
     }
 
-    pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
+    pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
+        for conjunction in &self.conjunctions {
+            conjunction.find_disjoint_variable(block_context)?;
+        }
+        ControlFlow::Continue(())
     }
 
     pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
@@ -67,49 +71,47 @@ impl Disjunction {
         self.branch_ids.retain(|branch_id| !unsatisfiable_branch_ids.contains(branch_id));
         self.conjunctions.retain(|conj| !unsatisfiable.contains(&conj.scope_id()))
     }
+}
 
-    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_required().then_some(v))
+impl Pattern for Disjunction {
+    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
     }
 
-    pub(crate) fn variable_dependency(
-        &self,
-        block_context: &BlockContext,
-    ) -> HashMap<Variable, VariableBindingMode<'_>> {
+    /// Returns: non_binding for any variable in any branch that is required as an argument/input
+    ///          locally_binding for any binding variable that is not binding in all branches
+    ///          binding for any variable that is bound in all branches
+    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
         }
-        let mut dependencies = self.conjunctions[0].variable_dependency(block_context);
+        let mut binding_modes = self.conjunctions[0].variable_binding_modes();
         for branch in &self.conjunctions[1..] {
-            let branch_dependencies = branch.variable_dependency(block_context);
-            for (var, dependency) in &mut dependencies {
-                if !branch_dependencies.contains_key(var) && dependency.is_producing() {
-                    dependency.set_referencing()
+            let branch_binding_modes = branch.variable_binding_modes();
+            for (var, mode) in &mut binding_modes {
+                // Not present in this branch: local to only 1 branch in the disjunction
+                if !branch_binding_modes.contains_key(var) && mode.is_always_binding() {
+                    mode.set_locally_binding_in_child()
                 }
             }
-            for (var, mut dependency) in branch_dependencies {
-                let entry = dependencies.entry(var);
+            for (var, mut mode) in branch_binding_modes {
+                let entry = binding_modes.entry(var);
                 match entry {
                     hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() |= dependency;
+                        // Eg. it's non-binding in one branch but binding in another, force it to non-binding (use weakest form)
+                        *entry.get_mut() |= mode;
                     }
                     hash_map::Entry::Vacant(entry) => {
-                        if dependency.is_producing() {
-                            dependency.set_referencing();
+                        // Not present in first and maybe later branches ("merged" modes), so local to this branch
+                        if mode.is_always_binding() {
+                            mode.set_locally_binding_in_child();
                         }
-                        entry.insert(dependency);
+                        entry.insert(mode);
                     }
                 }
             }
         }
-        dependencies
-    }
-
-    pub(crate) fn find_disjoint(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
-        for conjunction in &self.conjunctions {
-            conjunction.find_disjoint(block_context)?;
-        }
-        ControlFlow::Continue(())
+        binding_modes
     }
 }
 
@@ -150,7 +152,7 @@ impl<'cx, 'reg> DisjunctionBuilder<'cx, 'reg> {
     }
 
     pub fn add_conjunction(&mut self) -> ConjunctionBuilder<'_, 'reg> {
-        let conj_scope_id = self.context.create_child_scope(self.scope_id, ScopeTransparency::Transparent);
+        let conj_scope_id = self.context.create_child_scope(self.scope_id, ScopeType::Conjunction);
         self.disjunction.conjunctions.push(Conjunction::new(conj_scope_id));
         self.disjunction.branch_ids.push(self.context.next_branch_id());
         ConjunctionBuilder::new(self.context, self.disjunction.conjunctions.last_mut().unwrap())

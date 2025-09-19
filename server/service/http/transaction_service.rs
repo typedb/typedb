@@ -14,20 +14,16 @@ use std::{
     sync::Arc,
 };
 
-use compiler::query_structure::QueryStructure;
+use compiler::{executable::ExecutableCompilationError, query_structure::PipelineStructure};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
-    database_manager::DatabaseManager,
     query::{
         execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
         WriteQueryAnswer, WriteQueryResult,
     },
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
-use diagnostics::{
-    diagnostics_manager::DiagnosticsManager,
-    metrics::{ClientEndpoint, LoadKind},
-};
+use diagnostics::metrics::{ClientEndpoint, LoadKind};
 use executor::{
     batch::Batch,
     document::ConceptDocument,
@@ -43,24 +39,30 @@ use query::error::QueryError;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
-    sync::{broadcast, mpsc::Receiver, oneshot, watch},
+    sync::{broadcast, mpsc::Receiver, oneshot},
     task::{spawn_blocking, JoinHandle},
     time::Instant,
 };
 use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 
-use super::message::query::query_structure::encode_query_structure;
+use super::message::query::query_structure::{
+    encode_pipeline_structure, encode_query_structure, PipelineStructureResponse,
+};
 use crate::{
+    error::{LocalServerStateError, ServerStateError},
     service::{
-        http::message::query::{document::encode_document, query_structure::QueryStructureResponse, row::encode_row},
+        http::message::query::{
+            annotations::encode_query_structure_annotations, document::encode_document,
+            query_structure::QueryStructureResponse, row::encode_row, AnalysedQueryResponse,
+        },
         transaction_service::{
             init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction,
             TransactionServiceError,
         },
         QueryType, TransactionType,
     },
-    state::{ArcServerState, ServerStateError},
+    state::ArcServerState,
 };
 
 macro_rules! respond_error_and_return_break {
@@ -107,6 +109,7 @@ macro_rules! unwrap_or_execute_else_respond_error_and_return_break {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) enum TransactionRequest {
     Query(QueryOptions, String),
+    AnalyseQuery(String),
     Commit,
     Rollback,
     Close,
@@ -158,13 +161,14 @@ pub(crate) struct TransactionService {
 pub(crate) enum TransactionServiceResponse {
     Ok,
     Query(QueryAnswer),
+    QueryAnalyse(AnalysedQueryResponse),
     Err(TransactionServiceError),
 }
 
 #[derive(Debug)]
 pub(crate) enum QueryAnswer {
     ResOk(QueryType),
-    ResRows((QueryType, Vec<serde_json::Value>, Option<QueryStructureResponse>, Option<QueryAnswerWarning>)),
+    ResRows((QueryType, Vec<serde_json::Value>, Option<PipelineStructureResponse>, Option<QueryAnswerWarning>)),
     ResDocuments((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
 }
 
@@ -360,6 +364,7 @@ impl TransactionService {
                 TransactionRequest::Query(query_options, query) => {
                     self.handle_query(query_options, query, response_sender).await
                 }
+                TransactionRequest::AnalyseQuery(query) => self.handle_analyse_query(query, response_sender).await,
                 TransactionRequest::Commit => self.handle_commit(response_sender).await,
                 TransactionRequest::Rollback => self.handle_rollback(response_sender).await,
                 TransactionRequest::Close => self.handle_close(response_sender).await,
@@ -403,7 +408,7 @@ impl TransactionService {
                     responder,
                     |typedb_source| {
                         TransactionServiceError::DataCommitFailed {
-                            typedb_source: ServerStateError::DatabaseDataCommitFailed { typedb_source },
+                            typedb_source: LocalServerStateError::DatabaseDataCommitFailed { typedb_source }.into(),
                         }
                     }
                 );
@@ -424,7 +429,7 @@ impl TransactionService {
                     responder,
                     |typedb_source| {
                         TransactionServiceError::SchemaCommitFailed {
-                            typedb_source: ServerStateError::DatabaseSchemaCommitFailed { typedb_source },
+                            typedb_source: LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }.into(),
                         }
                     }
                 );
@@ -749,14 +754,14 @@ impl TransactionService {
             let interrupt = self.query_interrupt_receiver.clone();
             tokio::spawn(async move {
                 match answer.answer {
-                    Either::Left((output_descriptor, batch, query_structure)) => {
+                    Either::Left((output_descriptor, batch, pipeline_structure)) => {
                         Self::submit_write_query_batch_answer(
                             snapshot,
                             type_manager,
                             thing_manager,
                             answer.query_options,
                             output_descriptor,
-                            query_structure,
+                            pipeline_structure,
                             batch,
                             responder,
                             timeout_at,
@@ -822,7 +827,7 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         query_options: QueryOptions,
         output_descriptor: StreamQueryOutputDescriptor,
-        query_structure: Option<QueryStructure>,
+        pipeline_structure: Option<PipelineStructure>,
         batch: Batch,
         responder: TransactionResponder,
         timeout_at: Instant,
@@ -832,10 +837,10 @@ impl TransactionService {
         let mut result = vec![];
         let mut batch_iterator = batch.into_iterator();
         let mut warning = None;
-        let encode_query_structure_result =
-            query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
-        let always_taken_blocks = query_structure.map(|qs| qs.parametrised_structure.always_taken_blocks());
-        let query_structure_response = match encode_query_structure_result {
+        let encode_pipeline_structure_result =
+            pipeline_structure.as_ref().map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs)).transpose();
+        let always_taken_blocks = pipeline_structure.map(|qs| qs.parametrised_structure.always_taken_blocks());
+        let pipeline_structure_response = match encode_pipeline_structure_result {
             Ok(structure_opt) => structure_opt,
             Err(typedb_source) => {
                 respond_error_and_return_break!(
@@ -881,7 +886,7 @@ impl TransactionService {
         }
         match respond_query_response(
             responder,
-            QueryAnswer::ResRows((QueryType::Write, result, query_structure_response, warning)),
+            QueryAnswer::ResRows((QueryType::Write, result, pipeline_structure_response, warning)),
         ) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),
@@ -1065,11 +1070,13 @@ impl TransactionService {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
 
-            let encode_query_structure_result =
-                pipeline.query_structure().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+            let encode_pipeline_structure_result = pipeline
+                .pipeline_structure()
+                .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs))
+                .transpose();
             let always_taken_blocks =
-                pipeline.query_structure().map(|qs| qs.parametrised_structure.always_taken_blocks());
-            let query_structure_response = match encode_query_structure_result {
+                pipeline.pipeline_structure().map(|qs| qs.parametrised_structure.always_taken_blocks());
+            let pipeline_structure_response = match encode_pipeline_structure_result {
                 Ok(structure_opt) => structure_opt,
                 Err(typedb_source) => {
                     respond_error_and_return_break!(
@@ -1137,7 +1144,7 @@ impl TransactionService {
                 TransactionServiceResponse::Query(QueryAnswer::ResRows((
                     QueryType::Read,
                     result,
-                    query_structure_response,
+                    pipeline_structure_response,
                     warning
                 )))
             );
@@ -1147,5 +1154,57 @@ impl TransactionService {
             event!(Level::INFO, "Read query done (including network request time).\n{}", query_profile);
         }
         Continue(())
+    }
+
+    async fn handle_analyse_query(&mut self, query: String, responder: TransactionResponder) -> ControlFlow<(), ()> {
+        let parsed = match parse_query(&query) {
+            Ok(parsed) => parsed,
+            Err(err) => {
+                let _ = respond_transaction_response(
+                    responder,
+                    TransactionServiceResponse::Err(TransactionServiceError::QueryParseFailed { typedb_source: err }),
+                );
+                return Continue(());
+            }
+        };
+        let typeql::query::QueryStructure::Pipeline(pipeline) = parsed.into_structure() else {
+            respond_error_and_return_break!(responder, TransactionServiceError::AnalyseQueryExpectsPipeline {});
+        };
+        debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
+        with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
+            let snapshot = transaction.snapshot.clone_inner();
+            let type_manager = transaction.type_manager.clone();
+            let thing_manager = transaction.thing_manager.clone();
+            let function_manager = transaction.function_manager.clone();
+            let query_manager = transaction.query_manager.clone();
+            spawn_blocking(move || {
+                let analyse_result = query_manager.analyse_query(
+                    snapshot.clone(),
+                    &type_manager,
+                    thing_manager.clone(),
+                    &function_manager,
+                    &pipeline,
+                    &query,
+                );
+                let analysed = unwrap_or_execute_else_respond_error_and_return_break!(
+                    analyse_result,
+                    responder,
+                    |typedb_source| { TransactionServiceError::AnalyseQueryFailed { typedb_source: *typedb_source } }
+                );
+                let encoded_analysed = unwrap_or_execute_else_respond_error_and_return_break!(
+                    encode_query_structure_annotations(snapshot.as_ref(), &type_manager, analysed),
+                    responder,
+                    |typedb_source| {
+                        TransactionServiceError::AnalyseQueryFailed {
+                            typedb_source: QueryError::QueryAnalysisFailed { source_query: query, typedb_source },
+                        }
+                    }
+                );
+                respond_else_return_break!(responder, TransactionServiceResponse::QueryAnalyse(encoded_analysed));
+                Continue(())
+            })
+        })
+        .await
+        .expect("Expected read query completion")
     }
 }

@@ -7,7 +7,6 @@
 use std::{fmt::Debug, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
-use concept::error::ConceptReadError;
 use concurrency::IntervalRunner;
 use database::{
     database::DatabaseCreateError,
@@ -16,10 +15,10 @@ use database::{
     Database, DatabaseDeleteError,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
+use itertools::Itertools;
 use error::typedb_error;
 use futures::{StreamExt, TryFutureExt};
 use ir::pipeline::FunctionReadError;
-use itertools::Itertools;
 use options::TransactionOptions;
 use resource::{
     constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo, profile::CommitProfile,
@@ -39,12 +38,11 @@ use user::{
 };
 
 use crate::{
-    authentication::{
-        credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor, AuthenticationError,
-    },
-    error::ServerOpenError,
+    authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
+    error::{arc_server_state_err, ArcServerStateError, LocalServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
-    service::export_service::{get_transaction_schema, get_transaction_type_schema, DatabaseExportError},
+    service::export_service::{get_transaction_schema, get_transaction_type_schema},
+    status::{LocalServerStatus, ServerStatus},
     status::{LocalServerStatus, ServerStatus},
 };
 use crate::system_init::SYSTEM_DB;
@@ -64,60 +62,55 @@ pub trait ServerState: Debug {
     async fn http_address(&self) -> Option<SocketAddr>;
 
     // TODO: Name server_status -> servers_get and servers_statuses -> servers_all like in GRPC?
-    async fn server_status(&self) -> Result<BoxServerStatus, ServerStateError>;
+    async fn server_status(&self) -> Result<BoxServerStatus, ArcServerStateError>;
 
-    async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, ServerStateError>;
+    async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError>;
 
-    async fn servers_register(&self, clustering_id: u64, clustering_address: String) -> Result<(), ServerStateError>;
+    async fn servers_register(&self, clustering_id: u64, clustering_address: String)
+        -> Result<(), ArcServerStateError>;
 
-    async fn servers_deregister(&self, clustering_id: u64) -> Result<(), ServerStateError>;
+    async fn servers_deregister(&self, clustering_id: u64) -> Result<(), ArcServerStateError>;
 
-    async fn databases_all(&self) -> Result<Vec<String>, ServerStateError>;
+    async fn databases_all(&self) -> Result<Vec<String>, ArcServerStateError>;
 
-    async fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>>;
+    async fn databases_get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
 
-    async fn databases_contains(&self, name: &str) -> bool;
+    async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
 
-    async fn databases_create(&self, name: &str) -> Result<(), ServerStateError>;
+    async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError>;
 
-    async fn database_schema(&self, name: String) -> Result<String, ServerStateError>;
+    async fn database_schema(&self, name: String) -> Result<String, ArcServerStateError>;
 
-    async fn database_type_schema(&self, name: String) -> Result<String, ServerStateError>;
+    async fn database_type_schema(&self, name: String) -> Result<String, ArcServerStateError>;
 
     async fn database_schema_commit(
         &self,
         name: &str,
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
-    ) -> Result<(), ServerStateError>;
+    ) -> Result<(), ArcServerStateError>;
 
     async fn database_data_commit(
         &self,
         name: &str,
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
-    ) -> Result<(), ServerStateError>;
+    ) -> Result<(), ArcServerStateError>;
 
-    async fn database_delete(&self, name: &str) -> Result<(), ServerStateError>;
+    async fn database_delete(&self, name: &str) -> Result<(), ArcServerStateError>;
 
-    async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ServerStateError>;
+    async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ArcServerStateError>;
 
-    async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ServerStateError>;
+    async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError>;
 
-    async fn users_contains(&self, name: &str) -> Result<bool, ServerStateError>;
+    async fn users_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
 
     async fn users_create(
         &self,
         user: &User,
         credential: &Credential,
         accessor: Accessor,
-    ) -> Result<(), ServerStateError>;
-
-    async fn users_create2(
-        &self,
-        commit_record: CommitRecord,
-        commit_profile: &mut CommitProfile,
-    ) -> Result<(), ServerStateError>;
+    ) -> Result<(), ArcServerStateError>;
 
     async fn users_update(
         &self,
@@ -125,50 +118,21 @@ pub trait ServerState: Debug {
         user_update: Option<User>,
         credential_update: Option<Credential>,
         accessor: Accessor,
-    ) -> Result<(), ServerStateError>;
+    ) -> Result<(), ArcServerStateError>;
 
-    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ServerStateError>;
+    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ArcServerStateError>;
 
-    async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ServerStateError>;
+    async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError>;
 
-    async fn token_create(&self, username: String, password: String) -> Result<String, ServerStateError>;
+    async fn token_create(&self, username: String, password: String) -> Result<String, ArcServerStateError>;
 
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 
     async fn database_manager(&self) -> Arc<DatabaseManager>;
 
-    async fn user_manager(&self) -> Option<Arc<UserManager>>;
-
     async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager>;
 
     async fn shutdown_receiver(&self) -> Receiver<()>;
-}
-
-typedb_error! {
-    pub ServerStateError(component = "Server state", prefix = "SRV") {
-        NotInitialised(16, "Not yet initialised"),
-        Unimplemented(1, "Not implemented: {description}", description: String),
-        OperationFailedDueToReplicaUnavailability(12, "Unable to execute as one or more servers could not respond in time"),
-        OperationFailedNonPrimaryReplica(13, "Unable to execute as this server is not the primary replica"),
-        ReplicaRegistrationNoConnection(21, "Unable to register replica '{id}' as there is no connection to '{address}'. Make sure that a correct clustering address (different from client connection address) is provided.", id: u64, address: String),
-        ReplicaNotFound(22, "Unable to execute as the replica is not found."),
-        OperationNotPermitted(2, "The user is not permitted to execute the operation"),
-        DatabaseNotFound(3, "Database '{name}' not found.", name: String),
-        DatabaseSchemaCommitFailed(19, "Schema commit failed.", typedb_source: SchemaCommitError),
-        DatabaseDataCommitFailed(20, "Data commit failed.", typedb_source: DataCommitError),
-        DatabaseCannotBeCreated(14, "Unable to create database", typedb_source: DatabaseCreateError),
-        DatabaseCannotBeDeleted(15, "Unable to delete database", typedb_source: DatabaseDeleteError),
-        UserNotFound(4, "User not found."),
-        UserCannotBeRetrieved(8, "Unable to retrieve user", typedb_source: UserGetError),
-        UserCannotBeCreated(9, "Unable to create user", typedb_source: UserCreateError),
-        UserCannotBeUpdated(10, "Unable to update user", typedb_source: UserUpdateError),
-        UserCannotBeDeleted(11, "Unable to delete user", typedb_source: UserDeleteError),
-        FailedToOpenPrerequisiteTransaction(5, "Failed to open transaction, which is a prerequisite for the operation.", typedb_source: TransactionError),
-        ConceptReadError(6, "Error reading concepts", typedb_source: Box<ConceptReadError>),
-        FunctionReadError(7, "Error reading functions", typedb_source: FunctionReadError),
-        AuthenticationError(17, "Error when authenticating", typedb_source: AuthenticationError),
-        DatabaseExport(18, "Database export error", typedb_source: DatabaseExportError),
-    }
 }
 
 #[derive(Debug)]
@@ -315,55 +279,59 @@ impl LocalServerState {
         diagnostics_manager.submit_database_metrics(metrics);
     }
 
-    pub fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, ServerStateError> {
+    pub fn get_database_schema<D: DurabilityClient>(
+        database: Arc<Database<D>>,
+    ) -> Result<String, LocalServerStateError> {
         let transaction = TransactionRead::open(database, TransactionOptions::default())
-            .map_err(|typedb_source| ServerStateError::FailedToOpenPrerequisiteTransaction { typedb_source })?;
+            .map_err(|typedb_source| LocalServerStateError::FailedToOpenPrerequisiteTransaction { typedb_source })?;
         let schema = get_transaction_schema(&transaction)
-            .map_err(|typedb_source| ServerStateError::DatabaseExport { typedb_source })?;
+            .map_err(|typedb_source| LocalServerStateError::DatabaseExport { typedb_source })?;
         Ok(schema)
     }
 
     pub fn get_functions_syntax<D: DurabilityClient>(
         transaction: &TransactionRead<D>,
-    ) -> Result<String, ServerStateError> {
+    ) -> Result<String, LocalServerStateError> {
         transaction
             .function_manager
             .get_functions_syntax(transaction.snapshot())
-            .map_err(|err| ServerStateError::FunctionReadError { typedb_source: err })
+            .map_err(|err| LocalServerStateError::FunctionReadError { typedb_source: err })
     }
 
     pub(crate) fn get_database_type_schema<D: DurabilityClient>(
         database: Arc<Database<D>>,
-    ) -> Result<String, ServerStateError> {
+    ) -> Result<String, LocalServerStateError> {
         let transaction = TransactionRead::open(database, TransactionOptions::default())
-            .map_err(|typedb_source| ServerStateError::FailedToOpenPrerequisiteTransaction { typedb_source })?;
+            .map_err(|typedb_source| LocalServerStateError::FailedToOpenPrerequisiteTransaction { typedb_source })?;
         let type_schema = get_transaction_type_schema(&transaction)
-            .map_err(|typedb_source| ServerStateError::DatabaseExport { typedb_source })?;
+            .map_err(|typedb_source| LocalServerStateError::DatabaseExport { typedb_source })?;
         Ok(type_schema)
     }
 
-    pub fn get_types_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, ServerStateError> {
+    pub fn get_types_syntax<D: DurabilityClient>(
+        transaction: &TransactionRead<D>,
+    ) -> Result<String, LocalServerStateError> {
         transaction
             .type_manager
             .get_types_syntax(transaction.snapshot())
-            .map_err(|err| ServerStateError::ConceptReadError { typedb_source: err })
+            .map_err(|err| LocalServerStateError::ConceptReadError { typedb_source: err })
     }
 
     pub fn local_server_status(&self) -> LocalServerStatus {
         self.server_status.clone()
     }
 
-    fn get_user_manager(&self) -> Result<Arc<UserManager>, ServerStateError> {
+    fn get_user_manager(&self) -> Result<Arc<UserManager>, LocalServerStateError> {
         match self.user_manager.clone() {
             Some(user_manager) => Ok(user_manager),
-            None => Err(ServerStateError::NotInitialised {}),
+            None => Err(LocalServerStateError::NotInitialised {}),
         }
     }
 
-    fn get_credential_verifier(&self) -> Result<Arc<CredentialVerifier>, ServerStateError> {
+    fn get_credential_verifier(&self) -> Result<Arc<CredentialVerifier>, LocalServerStateError> {
         match self.credential_verifier.clone() {
             Some(credential_verifier) => Ok(credential_verifier),
-            None => Err(ServerStateError::NotInitialised {}),
+            None => Err(LocalServerStateError::NotInitialised {}),
         }
     }
 
@@ -401,55 +369,64 @@ impl ServerState for LocalServerState {
         self.http_address
     }
 
-    async fn server_status(&self) -> Result<BoxServerStatus, ServerStateError> {
+    async fn server_status(&self) -> Result<BoxServerStatus, ArcServerStateError> {
         Ok(Box::new(self.server_status.clone()))
     }
 
-    async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, ServerStateError> {
+    async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError> {
         self.server_status().await.map(|status| vec![status])
     }
 
-    async fn servers_register(&self, _clustering_id: u64, _clustering_address: String) -> Result<(), ServerStateError> {
+    async fn servers_register(
+        &self,
+        _clustering_id: u64,
+        _clustering_address: String,
+    ) -> Result<(), ArcServerStateError> {
         // todo: error message
-        Err(ServerStateError::Unimplemented { description: "This functionality is not available".to_string() })
+        Err(Arc::new(LocalServerStateError::Unimplemented {
+            description: "This functionality is not available".to_string(),
+        }))
     }
 
-    async fn servers_deregister(&self, _clustering_id: u64) -> Result<(), ServerStateError> {
+    async fn servers_deregister(&self, _clustering_id: u64) -> Result<(), ArcServerStateError> {
         // todo: error message
-        Err(ServerStateError::Unimplemented { description: "This functionality is not available".to_string() })
+        Err(Arc::new(LocalServerStateError::Unimplemented {
+            description: "This functionality is not available".to_string(),
+        }))
     }
 
-    async fn databases_all(&self) -> Result<Vec<String>, ServerStateError> {
+    async fn databases_all(&self) -> Result<Vec<String>, ArcServerStateError> {
         Ok(self.database_manager.database_names())
     }
 
-    async fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
-        self.database_manager.database_unrestricted(name)
+    async fn databases_get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
+        Ok(self.database_manager.database_unrestricted(name))
     }
 
-    async fn databases_contains(&self, name: &str) -> bool {
-        self.database_manager.database_unrestricted(name).is_some()
+    async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError> {
+        Ok(self.database_manager.database_unrestricted(name).is_some())
     }
 
-    async fn databases_create(&self, name: &str) -> Result<(), ServerStateError> {
+    async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager
             .put_database_unrestricted(name)
-            .map_err(|err| ServerStateError::DatabaseCannotBeCreated { typedb_source: err })
+            .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: err }))
     }
 
-    async fn database_schema(&self, name: String) -> Result<String, ServerStateError> {
-        match self.database_manager.database_unrestricted(&name) {
+    async fn database_schema(&self, name: String) -> Result<String, ArcServerStateError> {
+        match self.database_manager.database(&name) {
             Some(db) => Self::get_database_schema(db),
-            None => Err(ServerStateError::DatabaseNotFound { name }),
+            None => Err(LocalServerStateError::DatabaseNotFound { name }),
         }
+        .map_err(|err| arc_server_state_err(err))
     }
 
-    async fn database_type_schema(&self, name: String) -> Result<String, ServerStateError> {
-        match self.database_manager.database_unrestricted(&name) {
-            None => Err(ServerStateError::DatabaseNotFound { name: name.clone() }),
+    async fn database_type_schema(&self, name: String) -> Result<String, ArcServerStateError> {
+        match self.database_manager.database(&name) {
+            None => Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.clone() })),
             Some(database) => match Self::get_database_type_schema(database) {
                 Ok(type_schema) => Ok(type_schema),
-                Err(err) => Err(err),
+                Err(err) => Err(Arc::new(err)),
             },
         }
     }
@@ -459,13 +436,13 @@ impl ServerState for LocalServerState {
         name: &str,
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
-    ) -> Result<(), ServerStateError> {
-        let Some(database) = self.databases_get(name).await else {
-            return Err(ServerStateError::DatabaseNotFound { name: name.to_string() });
+    ) -> Result<(), ArcServerStateError> {
+        let Some(database) = self.databases_get(name).await? else {
+            return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
         };
-        database
-            .schema_commit_with_commit_record(commit_record, commit_profile)
-            .map_err(|error| ServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })
+        database.schema_commit_with_commit_record(commit_record, commit_profile).map_err(|error| {
+            arc_server_state_err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })
+        })
     }
 
     async fn database_data_commit(
@@ -473,56 +450,56 @@ impl ServerState for LocalServerState {
         name: &str,
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
-    ) -> Result<(), ServerStateError> {
-        let Some(database) = self.databases_get(name).await else {
-            return Err(ServerStateError::DatabaseNotFound { name: name.to_string() });
+    ) -> Result<(), ArcServerStateError> {
+        let Some(database) = self.databases_get(name).await? else {
+            return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
         };
-        database
-            .data_commit_with_commit_record(commit_record, commit_profile)
-            .map_err(|typedb_source| ServerStateError::DatabaseDataCommitFailed { typedb_source })
+        database.data_commit_with_commit_record(commit_record, commit_profile).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
+        })
     }
 
-    async fn database_delete(&self, name: &str) -> Result<(), ServerStateError> {
+    async fn database_delete(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager
             .delete_database(name)
-            .map_err(|err| ServerStateError::DatabaseCannotBeDeleted { typedb_source: err })
+            .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeDeleted { typedb_source: err }))
     }
 
-    async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ServerStateError> {
+    async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ArcServerStateError> {
         if !PermissionManager::exec_user_get_permitted(accessor.0.as_str(), name) {
-            return Err(ServerStateError::OperationNotPermitted {});
+            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
         match self.get_user_manager() {
             Ok(user_manager) => match user_manager.get(name) {
                 Ok(get) => match get {
                     Some((user, _)) => Ok(user),
-                    None => Err(ServerStateError::UserNotFound {}),
+                    None => Err(Arc::new(LocalServerStateError::UserNotFound {})),
                 },
-                Err(err) => Err(ServerStateError::UserCannotBeRetrieved { typedb_source: err }),
+                Err(err) => Err(Arc::new(LocalServerStateError::UserCannotBeRetrieved { typedb_source: err })),
             },
-            Err(err) => Err(err),
+            Err(err) => Err(Arc::new(err)),
         }
     }
 
-    async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ServerStateError> {
+    async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError> {
         if !PermissionManager::exec_user_all_permitted(accessor.0.as_str()) {
-            return Err(ServerStateError::OperationNotPermitted {});
+            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
         match self.get_user_manager() {
             Ok(user_manager) => Ok(user_manager.all()),
-            Err(err) => Err(err),
+            Err(err) => Err(Arc::new(err)),
         }
     }
 
-    async fn users_contains(&self, name: &str) -> Result<bool, ServerStateError> {
+    async fn users_contains(&self, name: &str) -> Result<bool, ArcServerStateError> {
         match self.get_user_manager() {
             Ok(user_manager) => match user_manager.contains(name) {
                 Ok(bool) => Ok(bool),
-                Err(err) => Err(ServerStateError::UserCannotBeRetrieved { typedb_source: err }),
+                Err(err) => Err(Arc::new(LocalServerStateError::UserCannotBeRetrieved { typedb_source: err })),
             },
-            Err(err) => Err(err),
+            Err(err) => Err(Arc::new(err)),
         }
     }
 
@@ -531,7 +508,7 @@ impl ServerState for LocalServerState {
         user: &User,
         credential: &Credential,
         accessor: Accessor,
-    ) -> Result<(), ServerStateError> {
+    ) -> Result<(), ArcServerStateError> {
         todo!()
     }
 
@@ -539,7 +516,7 @@ impl ServerState for LocalServerState {
         &self,
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
-    ) -> Result<(), ServerStateError> {
+    ) -> Result<(), ArcServerStateError> {
         self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await
     }
 
@@ -549,50 +526,50 @@ impl ServerState for LocalServerState {
         user_update: Option<User>,
         credential_update: Option<Credential>,
         accessor: Accessor,
-    ) -> Result<(), ServerStateError> {
+    ) -> Result<(), ArcServerStateError> {
         if !PermissionManager::exec_user_update_permitted(accessor.0.as_str(), name) {
-            return Err(ServerStateError::OperationNotPermitted {});
+            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
         match self.get_user_manager() {
             Ok(user_manager) => {
                 user_manager
                     .update(name, &user_update, &credential_update)
-                    .map_err(|err| ServerStateError::UserCannotBeUpdated { typedb_source: err })?;
+                    .map_err(|err| LocalServerStateError::UserCannotBeUpdated { typedb_source: err })?;
                 self.token_manager.invalidate_user(name).await;
                 Ok(())
             }
-            Err(err) => Err(err),
+            Err(err) => Err(Arc::new(err)),
         }
     }
 
-    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ServerStateError> {
+    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ArcServerStateError> {
         if !PermissionManager::exec_user_delete_allowed(accessor.0.as_str(), name) {
-            return Err(ServerStateError::OperationNotPermitted {});
+            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
         match self.get_user_manager() {
             Ok(user_manager) => {
                 user_manager
                     .delete(name)
-                    .map_err(|err| ServerStateError::UserCannotBeDeleted { typedb_source: err })?;
+                    .map_err(|err| LocalServerStateError::UserCannotBeDeleted { typedb_source: err })?;
                 self.token_manager.invalidate_user(name).await;
                 Ok(())
             }
-            Err(err) => Err(err),
+            Err(err) => Err(Arc::new(err)),
         }
     }
 
-    async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ServerStateError> {
+    async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError> {
         match self.get_credential_verifier() {
             Ok(credential_verifier) => match credential_verifier.verify_password(username, password) {
                 Ok(()) => Ok(()),
-                Err(err) => Err(ServerStateError::AuthenticationError { typedb_source: err }),
+                Err(err) => Err(Arc::new(LocalServerStateError::AuthenticationError { typedb_source: err })),
             },
-            Err(err) => Err(err),
+            Err(err) => Err(Arc::new(err)),
         }
     }
 
-    async fn token_create(&self, username: String, password: String) -> Result<String, ServerStateError> {
+    async fn token_create(&self, username: String, password: String) -> Result<String, ArcServerStateError> {
         self.user_verify_password(&username, &password).await?;
         Ok(self.token_manager.new_token(username).await)
     }

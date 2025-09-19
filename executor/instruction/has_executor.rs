@@ -34,6 +34,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         min_max_types,
         tuple::{
@@ -41,7 +42,7 @@ use crate::{
             tuple_owner_attribute_to_has_canonical, unsafe_compare_result_tuple, HasToTupleFn, Tuple, TupleOrderingFn,
             TuplePositions, TupleResult, TupleToHasFn,
         },
-        BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
+        BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

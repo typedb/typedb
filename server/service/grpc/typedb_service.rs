@@ -6,7 +6,7 @@
 
 use user::permission_manager::PermissionManager;
 use storage::snapshot::CommittableSnapshot;
-use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
+use std::{net::SocketAddr, pin::Pin, time::Instant};
 
 use diagnostics::metrics::ActionKind;
 use itertools::Itertools;
@@ -26,9 +26,10 @@ use resource::profile::CommitProfile;
 use user::errors::UserCreateError;
 use crate::{
     authentication::{Accessor, AuthenticationError},
+    error::LocalServerStateError,
     service::{
         grpc::{
-            diagnostics::{run_with_diagnostics, run_with_diagnostics_async},
+            diagnostics::run_with_diagnostics_async,
             error::{GrpcServiceError, IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
             migration::{
                 export_service::{DatabaseExportService, DATABASE_EXPORT_REQUEST_BUFFER_SIZE},
@@ -52,7 +53,7 @@ use crate::{
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
     },
-    state::{ArcServerState, ServerStateError},
+    state::ArcServerState,
 };
 
 #[derive(Debug)]
@@ -67,11 +68,8 @@ impl TypeDBService {
     }
 
     async fn servers_statuses(&self) -> Result<Vec<typedb_protocol::Server>, Status> {
-        let statuses = self
-            .server_state
-            .servers_statuses()
-            .await
-            .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+        let statuses =
+            self.server_state.servers_statuses().await.map_err(|err| err.into_error_message().into_status())?;
         Ok(statuses.into_iter().map(|status| status.to_proto()).collect())
     }
 }
@@ -118,7 +116,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                         .server_state
                         .token_create(password_credentials.username, password_credentials.password)
                         .await
-                        .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+                        .map_err(|err| err.into_error_message().into_status())?;
                     event!(
                         Level::TRACE,
                         "Successful connection_open from '{}' version '{}'",
@@ -160,7 +158,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     .token_create(password_credentials.username, password_credentials.password)
                     .await
                     .map(|result| Response::new(token_create_res(result)))
-                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+                    .map_err(|err| err.into_error_message().into_status())
             },
         )
         .await
@@ -201,11 +199,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             None::<&str>,
             ActionKind::ServersGet,
             || async {
-                let status = self
-                    .server_state
-                    .server_status()
-                    .await
-                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+                let status =
+                    self.server_state.server_status().await.map_err(|err| err.into_error_message().into_status())?;
                 Ok(Response::new(servers_get_res(status.to_proto())))
             },
         )
@@ -234,7 +229,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     .servers_register(replica_id, address)
                     .await
                     .map(|()| Response::new(servers_register_res()))
-                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+                    .map_err(|err| err.into_error_message().into_status())
             },
         )
         .await
@@ -254,7 +249,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     .servers_deregister(request.replica_id)
                     .await
                     .map(|()| Response::new(servers_deregister_res()))
-                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+                    .map_err(|err| err.into_error_message().into_status())
             },
         )
         .await
@@ -273,7 +268,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     .databases_all()
                     .await
                     .map(|dbs| Response::new(database_all_res(dbs)))
-                    .map_err(|e| e.into_error_message().into_status())
+                    .map_err(|err| err.into_error_message().into_status())
             },
         )
         .await
@@ -290,8 +285,11 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             ActionKind::DatabasesGet,
             || async {
                 match self.server_state.databases_get(&name).await {
-                    Some(db) => Ok(Response::new(database_get_res(db.name().to_string()))),
-                    None => Err(ServerStateError::DatabaseNotFound { name }.into_error_message().into_status()),
+                    Ok(Some(db)) => Ok(Response::new(database_get_res(db.name().to_string()))),
+                    Ok(None) => {
+                        Err(LocalServerStateError::DatabaseNotFound { name }.into_error_message().into_status())
+                    }
+                    Err(err) => Err(err.into_error_message().into_status()),
                 }
             },
         )
@@ -307,7 +305,14 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             self.server_state.diagnostics_manager().await,
             Some(name.clone()),
             ActionKind::DatabasesContains,
-            || async { Ok(Response::new(database_contains_res(self.server_state.databases_contains(&name).await))) },
+            || async {
+                let contains = self
+                    .server_state
+                    .databases_contains(&name)
+                    .await
+                    .map_err(|err| err.into_error_message().into_status())?;
+                Ok(Response::new(database_contains_res(contains)))
+            },
         )
         .await
     }
@@ -410,7 +415,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             ActionKind::DatabaseExport,
             || async {
                 match self.server_state.database_manager().await.database(&database_name) {
-                    None => Err(ServerStateError::DatabaseNotFound { name: database_name }
+                    None => Err(LocalServerStateError::DatabaseNotFound { name: database_name }
                         .into_error_message()
                         .into_status()),
                     Some(database) => {

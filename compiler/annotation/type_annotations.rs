@@ -22,7 +22,7 @@ impl BlockAnnotations {
         Self { scope_annotations: by_scope }
     }
 
-    pub(crate) fn type_annotations(&self) -> &HashMap<ScopeId, TypeAnnotations> {
+    pub fn type_annotations(&self) -> &HashMap<ScopeId, TypeAnnotations> {
         &self.scope_annotations
     }
 
@@ -63,6 +63,10 @@ impl TypeAnnotations {
 
     pub fn vertex_annotations_of(&self, vertex: &Vertex<Variable>) -> Option<&Arc<BTreeSet<Type>>> {
         self.vertex.get(vertex)
+    }
+
+    pub(super) fn vertex_annotations_mut(&mut self) -> &mut BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
+        &mut self.vertex
     }
 
     pub fn constraint_annotations(&self) -> &HashMap<Constraint<Variable>, ConstraintTypeAnnotations> {

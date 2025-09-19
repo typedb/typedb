@@ -306,9 +306,9 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
         for row in iter_table_map(step) {
             let mut num_matches = 0;
             for answer_row in query_answer {
-                let is_a_match =
+                let table_row_within_answer =
                     row.iter().all(|(&var, &spec)| does_var_in_row_match_spec(context, answer_row, var, spec));
-                if is_a_match {
+                if table_row_within_answer && row.len() == answer_row.len() {
                     num_matches += 1;
                 }
             }
@@ -342,7 +342,7 @@ fn does_var_in_row_match_spec(
 ) -> bool {
     let var_value =
         answer_row.get(var).unwrap_or_else(|| panic!("no answer found for {var} in one of the answer rows"));
-    if spec == "empty" {
+    if spec == "none" {
         var_value == &VariableValue::None
     } else {
         let (kind, id) = spec.split_once(':').expect("answer concept specifier must be of the form `<kind>:<id>`");
@@ -506,6 +506,12 @@ async fn answer_contains_document(context: &mut Context, contains_or_doesnt: par
             &format!("\nConcept documents: {:?}\nGiven document: {:?}", documents, expected_document),
         );
     });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"answers do not contain variable: {word}")]
+async fn answers_do_not_contain_variable(context: &mut Context, variable: String, step: &Step) {
+    context.query_answer.as_ref().unwrap().as_rows().iter().all(|row| !row.contains_key(&variable));
 }
 
 #[apply(generic_step)]

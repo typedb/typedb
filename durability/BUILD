@@ -32,6 +32,7 @@ rust_library(
         "//resource",
 
         "@crates//:itertools",
+        "@crates//:lz4",
         "@crates//:serde",
         "@crates//:tracing",
     ]

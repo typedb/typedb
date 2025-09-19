@@ -28,6 +28,7 @@ use storage::snapshot::ReadableSnapshot;
 use super::has_executor::{FixedHasBounds, HasFilterMapFn};
 use crate::{
     instruction::{
+        checker::Checker,
         has_executor::{HasFilterFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         iterator::{SortedTupleIterator, TupleIterator},
         min_max_types,
@@ -35,7 +36,7 @@ use crate::{
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, tuple_attribute_owner_to_has_reverse,
             tuple_owner_attribute_to_has_reverse, unsafe_compare_result_tuple, TupleOrderingFn, TuplePositions,
         },
-        BinaryIterateMode, Checker, VariableModes,
+        BinaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

@@ -6,9 +6,7 @@
 
 use std::time::Duration;
 
-use database::transaction::{
-    DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema, TransactionWrite,
-};
+use database::transaction::{TransactionError, TransactionRead, TransactionSchema, TransactionWrite};
 use diagnostics::metrics::LoadKind;
 use error::typedb_error;
 use executor::{pipeline::PipelineExecutionError, InterruptType};
@@ -18,8 +16,6 @@ use storage::durability_client::WALClient;
 use tokio::time::Instant;
 use typeql::query::stage::Stage;
 use uuid::Uuid;
-
-use crate::service::TransactionType;
 
 pub(crate) const TRANSACTION_REQUEST_BUFFER_SIZE: usize = 10;
 
@@ -41,7 +37,7 @@ macro_rules! with_readable_transaction {
 }
 pub(crate) use with_readable_transaction;
 
-use crate::state::ServerStateError;
+use crate::error::ArcServerStateError;
 
 impl Transaction {
     pub fn load_kind(&self) -> LoadKind {
@@ -77,8 +73,8 @@ typedb_error! {
         CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
         CannotRollbackReadTransaction(3, "Read transactions cannot be rolled back, since they never contain writes."),
         TransactionFailed(4, "Transaction failed.", typedb_source: TransactionError),
-        DataCommitFailed(5, "Data transaction commit failed.", typedb_source: ServerStateError),
-        SchemaCommitFailed(6, "Schema transaction commit failed.", typedb_source: ServerStateError),
+        DataCommitFailed(5, "Data transaction commit failed.", typedb_source: ArcServerStateError),
+        SchemaCommitFailed(6, "Schema transaction commit failed.", typedb_source: ArcServerStateError),
         QueryParseFailed(7, "Query parsing failed.", typedb_source: typeql::Error),
         SchemaQueryRequiresSchemaTransaction(8, "Schema modification queries require schema transactions."),
         WriteQueryRequiresSchemaOrWriteTransaction(9, "Data modification queries require either write or schema transactions."),
@@ -98,5 +94,7 @@ typedb_error! {
         PipelineExecution(16, "Pipeline execution failed.", typedb_source: PipelineExecutionError),
         TransactionTimeout(17, "Operation failed: transaction timeout."),
         InvalidPrefetchSize(18, "Invalid query option: prefetch size should be >= 1, got {value} instead.", value: usize),
+        AnalyseQueryExpectsPipeline(19, "Query analyse received a schema query.Only query pipeline can be analysed."),
+        AnalyseQueryFailed(20, "Analysing the query failed.", typedb_source: QueryError),
     }
 }

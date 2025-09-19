@@ -32,11 +32,15 @@ rust_library(
 
         "@typeql//rust:typeql",
 
+        "@crates//:chrono",
         "@crates//:itertools",
         "@crates//:regex",
         "@crates//:tracing",
         "@crates//:tokio",
         "@crates//:unicase",
+    ],
+    proc_macro_deps = [
+        "@crates//:paste",
     ],
 )
 

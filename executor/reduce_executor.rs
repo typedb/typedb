@@ -4,14 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
+use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use compiler::{
     executable::reduce::{ReduceInstruction, ReduceRowsExecutable},
     VariablePosition,
 };
-use encoding::value::value::Value;
+use encoding::value::{decimal_value::Decimal, timezone::TimeZone, value::Value};
+use paste::paste;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
@@ -124,86 +126,56 @@ fn extract_value<Snapshot: ReadableSnapshot>(
     }
 }
 
-#[derive(Debug, Clone)]
-enum ReducerExecutor {
-    Count(CountExecutor),
-    CountVar(CountVarExecutor),
-    SumInteger(SumIntegerExecutor),
-    SumDouble(SumDoubleExecutor),
-    MaxInteger(MaxIntegerExecutor),
-    MaxDouble(MaxDoubleExecutor),
-    MinInteger(MinIntegerExecutor),
-    MinDouble(MinDoubleExecutor),
-    MeanInteger(MeanIntegerExecutor),
-    MeanDouble(MeanDoubleExecutor),
-    MedianInteger(MedianIntegerExecutor),
-    MedianDouble(MedianDoubleExecutor),
-    StdInteger(StdIntegerExecutor),
-    StdDouble(StdDoubleExecutor),
+macro_rules! reducer_executor {
+    ($count:ident, $($variant:ident),* $(,)?) => {
+        paste! {
+            #[derive(Debug, Clone)]
+            enum ReducerExecutor {
+                $count([<$count Executor>]),
+                $($variant([<$variant Executor>])),*
+            }
+
+            impl ReducerExecutor {
+                fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
+                    let profile = context.profile.profile_stage(|| String::from("Reduce"), 0); // TODO executable id
+                    let step_profile = profile.extend_or_get(0, || String::from("Reduce execution"));
+                    let storage_counters = step_profile.storage_counters();
+                    match self {
+                        Self::$count(reducer) => reducer.accept(row, context, storage_counters),
+                        $(Self::$variant(reducer) => reducer.accept(row, context, storage_counters)),*
+                    }
+                }
+
+                fn finalise(self) -> Option<VariableValue<'static>> {
+                    match self {
+                        Self::$count(reducer) => reducer.finalise(),
+                        $(Self::$variant(reducer) => reducer.finalise()),*
+                    }
+                }
+            }
+
+            impl ReducerExecutor {
+                fn build(reduce_ir: &ReduceInstruction<VariablePosition>) -> Self {
+                    match *reduce_ir {
+                        ReduceInstruction::$count => ReducerExecutor::$count([<$count Executor>]::new()),
+                        $(ReduceInstruction::$variant(pos) => Self::$variant([<$variant Executor>]::new(pos))),*
+                    }
+                }
+            }
+        }
+    };
 }
 
-impl ReducerExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        let profile = context.profile.profile_stage(|| String::from("Reduce"), 0); // TODO executable id
-        let step_profile = profile.extend_or_get(0, || String::from("Reduce execution"));
-        let storage_counters = step_profile.storage_counters();
-        match self {
-            ReducerExecutor::Count(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::CountVar(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::SumInteger(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::SumDouble(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::MaxInteger(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::MaxDouble(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::MinInteger(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::MinDouble(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::MeanInteger(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::MeanDouble(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::MedianInteger(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::MedianDouble(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::StdInteger(reducer) => reducer.accept(row, context, storage_counters),
-            ReducerExecutor::StdDouble(reducer) => reducer.accept(row, context, storage_counters),
-        }
-    }
-
-    fn finalise(self) -> Option<VariableValue<'static>> {
-        match self {
-            ReducerExecutor::Count(reducer) => reducer.finalise(),
-            ReducerExecutor::CountVar(reducer) => reducer.finalise(),
-            ReducerExecutor::SumInteger(reducer) => reducer.finalise(),
-            ReducerExecutor::SumDouble(reducer) => reducer.finalise(),
-            ReducerExecutor::MaxInteger(reducer) => reducer.finalise(),
-            ReducerExecutor::MaxDouble(reducer) => reducer.finalise(),
-            ReducerExecutor::MinInteger(reducer) => reducer.finalise(),
-            ReducerExecutor::MinDouble(reducer) => reducer.finalise(),
-            ReducerExecutor::MeanInteger(reducer) => reducer.finalise(),
-            ReducerExecutor::MeanDouble(reducer) => reducer.finalise(),
-            ReducerExecutor::MedianInteger(reducer) => reducer.finalise(),
-            ReducerExecutor::MedianDouble(reducer) => reducer.finalise(),
-            ReducerExecutor::StdInteger(reducer) => reducer.finalise(),
-            ReducerExecutor::StdDouble(reducer) => reducer.finalise(),
-        }
-    }
-}
-
-impl ReducerExecutor {
-    fn build(reduce_ir: &ReduceInstruction<VariablePosition>) -> Self {
-        match *reduce_ir {
-            ReduceInstruction::Count => ReducerExecutor::Count(CountExecutor::new()),
-            ReduceInstruction::CountVar(pos) => ReducerExecutor::CountVar(CountVarExecutor::new(pos)),
-            ReduceInstruction::SumInteger(pos) => ReducerExecutor::SumInteger(SumIntegerExecutor::new(pos)),
-            ReduceInstruction::SumDouble(pos) => ReducerExecutor::SumDouble(SumDoubleExecutor::new(pos)),
-            ReduceInstruction::MaxInteger(pos) => ReducerExecutor::MaxInteger(MaxIntegerExecutor::new(pos)),
-            ReduceInstruction::MaxDouble(pos) => ReducerExecutor::MaxDouble(MaxDoubleExecutor::new(pos)),
-            ReduceInstruction::MinInteger(pos) => ReducerExecutor::MinInteger(MinIntegerExecutor::new(pos)),
-            ReduceInstruction::MinDouble(pos) => ReducerExecutor::MinDouble(MinDoubleExecutor::new(pos)),
-            ReduceInstruction::MeanInteger(pos) => ReducerExecutor::MeanInteger(MeanIntegerExecutor::new(pos)),
-            ReduceInstruction::MeanDouble(pos) => ReducerExecutor::MeanDouble(MeanDoubleExecutor::new(pos)),
-            ReduceInstruction::MedianInteger(pos) => ReducerExecutor::MedianInteger(MedianIntegerExecutor::new(pos)),
-            ReduceInstruction::MedianDouble(pos) => ReducerExecutor::MedianDouble(MedianDoubleExecutor::new(pos)),
-            ReduceInstruction::StdInteger(pos) => ReducerExecutor::StdInteger(StdIntegerExecutor::new(pos)),
-            ReduceInstruction::StdDouble(pos) => ReducerExecutor::StdDouble(StdDoubleExecutor::new(pos)),
-        }
-    }
+reducer_executor! {
+    Count,
+    CountVar,
+    SumInteger, MaxInteger, MinInteger, MeanInteger, MedianInteger, StdInteger,
+    SumDouble, MaxDouble, MinDouble, MeanDouble, MedianDouble, StdDouble,
+    SumDecimal, MaxDecimal, MinDecimal, MeanDecimal, MedianDecimal, StdDecimal,
+    MaxString, MinString,
+    MaxDate, MinDate,
+    MaxDateTime, MinDateTime,
+    MaxDateTimeTZ, MinDateTimeTZ,
 }
 
 #[derive(Debug, Clone)]
@@ -260,201 +232,199 @@ impl ReducerAPI for CountVarExecutor {
     }
 }
 
-#[derive(Debug, Clone)]
-struct SumIntegerExecutor {
-    sum: i64,
-    target: VariablePosition,
-}
+macro_rules! sum_reducer_executors {
+    ($($ty:ident($repr:ty) $u64_to_repr:expr),* $(,)?) => {$(
+        paste! {
+            #[derive(Debug, Clone)]
+            struct [< Sum $ty Executor >] {
+                sum: $repr,
+                target: VariablePosition,
+            }
 
-impl SumIntegerExecutor {
-    fn new(target: VariablePosition) -> Self {
-        Self { sum: 0, target }
-    }
-}
-
-impl ReducerAPI for SumIntegerExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(
-        &mut self,
-        row: &MaybeOwnedRow<'_>,
-        context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
-    ) {
-        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
-            self.sum += value.unwrap_integer() * row.multiplicity() as i64;
-        }
-    }
-
-    fn finalise(self) -> Option<VariableValue<'static>> {
-        Some(VariableValue::Value(Value::Integer(self.sum)))
-    }
-}
-
-#[derive(Debug, Clone)]
-struct SumDoubleExecutor {
-    sum: f64,
-    target: VariablePosition,
-}
-
-impl SumDoubleExecutor {
-    fn new(target: VariablePosition) -> Self {
-        Self { sum: 0.0, target }
-    }
-}
-
-impl ReducerAPI for SumDoubleExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(
-        &mut self,
-        row: &MaybeOwnedRow<'_>,
-        context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
-    ) {
-        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
-            self.sum += value.unwrap_double() * row.multiplicity() as f64;
-        }
-    }
-
-    fn finalise(self) -> Option<VariableValue<'static>> {
-        Some(VariableValue::Value(Value::Double(self.sum)))
-    }
-}
-
-#[derive(Debug, Clone)]
-struct MaxIntegerExecutor {
-    max: Option<i64>,
-    target: VariablePosition,
-}
-
-impl MaxIntegerExecutor {
-    fn new(target: VariablePosition) -> Self {
-        Self { max: None, target }
-    }
-}
-
-impl ReducerAPI for MaxIntegerExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(
-        &mut self,
-        row: &MaybeOwnedRow<'_>,
-        context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
-    ) {
-        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_integer()) {
-            if let Some(current) = self.max.as_ref() {
-                if value > *current {
-                    self.max = Some(value)
+            impl [< Sum $ty Executor >] {
+                fn new(target: VariablePosition) -> Self {
+                    Self { sum: $repr::default(), target }
                 }
-            } else {
-                self.max = Some(value);
+            }
+
+            impl ReducerAPI for [< Sum $ty Executor >] {
+                fn accept<Snapshot: ReadableSnapshot>(
+                    &mut self,
+                    row: &MaybeOwnedRow<'_>,
+                    context: &ExecutionContext<Snapshot>,
+                    storage_counters: StorageCounters,
+                ) {
+                    if let Some(value) = extract_value(row, self.target, context, storage_counters) {
+                        self.sum += value.[< unwrap_ $ty:lower >]() * $u64_to_repr(row.multiplicity());
+                    }
+                }
+
+                fn finalise(self) -> Option<VariableValue<'static>> {
+                    Some(VariableValue::Value(Value::$ty(self.sum)))
+                }
             }
         }
-    }
-
-    fn finalise(self) -> Option<VariableValue<'static>> {
-        self.max.map(|v| VariableValue::Value(Value::Integer(v)))
-    }
+    )*};
 }
 
-#[derive(Debug, Clone)]
-struct MaxDoubleExecutor {
-    max: Option<f64>,
-    target: VariablePosition,
+sum_reducer_executors! {
+    Integer(i64) (|x| x as i64),
+    Double(f64) (|x| x as f64),
+    Decimal(Decimal) (|x| x),
 }
 
-impl MaxDoubleExecutor {
-    fn new(target: VariablePosition) -> Self {
-        Self { max: None, target }
-    }
-}
+macro_rules! minmax_reducer_executors {
+    ($($ty:ident::$lower:ident($repr:ty)),* $(,)?) => {$(
+        paste! {
+            #[derive(Debug, Clone)]
+            struct [< Min $ty Executor >] {
+                min: Option<$repr>,
+                target: VariablePosition,
+            }
 
-impl ReducerAPI for MaxDoubleExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(
-        &mut self,
-        row: &MaybeOwnedRow<'_>,
-        context: &ExecutionContext<Snapshot>,
-        storage_counters: StorageCounters,
-    ) {
-        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_double()) {
-            if let Some(current) = self.max.as_ref() {
-                if value > *current {
-                    self.max = Some(value)
+            impl [< Min $ty Executor >] {
+                fn new(target: VariablePosition) -> Self {
+                    Self { min: None, target }
                 }
-            } else {
-                self.max = Some(value);
+            }
+
+            impl ReducerAPI for [< Min $ty Executor >] {
+                fn accept<Snapshot: ReadableSnapshot>(
+                    &mut self,
+                    row: &MaybeOwnedRow<'_>,
+                    context: &ExecutionContext<Snapshot>,
+                    storage_counters: StorageCounters,
+                ) {
+                    if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.[< unwrap_ $lower >]()) {
+                        if let Some(current) = self.min.as_ref() {
+                            if value < *current {
+                                self.min = Some(value)
+                            }
+                        } else {
+                            self.min = Some(value);
+                        }
+                    }
+                }
+
+                fn finalise(self) -> Option<VariableValue<'static>> {
+                    Some(VariableValue::Value(Value::$ty(self.min?)))
+                }
+            }
+
+            #[derive(Debug, Clone)]
+            struct [< Max $ty Executor >] {
+                max: Option<$repr>,
+                target: VariablePosition,
+            }
+
+            impl [< Max $ty Executor >] {
+                fn new(target: VariablePosition) -> Self {
+                    Self { max: None, target }
+                }
+            }
+
+            impl ReducerAPI for [< Max $ty Executor >] {
+                fn accept<Snapshot: ReadableSnapshot>(
+                    &mut self,
+                    row: &MaybeOwnedRow<'_>,
+                    context: &ExecutionContext<Snapshot>,
+                    storage_counters: StorageCounters,
+                ) {
+                    if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.[< unwrap_ $lower >]()) {
+                        if let Some(current) = self.max.as_ref() {
+                            if value > *current {
+                                self.max = Some(value)
+                            }
+                        } else {
+                            self.max = Some(value);
+                        }
+                    }
+                }
+
+                fn finalise(self) -> Option<VariableValue<'static>> {
+                    Some(VariableValue::Value(Value::$ty(self.max?)))
+                }
             }
         }
-    }
+    )*};
+}
 
-    fn finalise(self) -> Option<VariableValue<'static>> {
-        self.max.map(|v| VariableValue::Value(Value::Double(v)))
-    }
+minmax_reducer_executors! {
+    Integer::integer(i64),
+    Double::double(f64),
+    Decimal::decimal(Decimal),
+    Date::date(NaiveDate),
+    DateTime::date_time(NaiveDateTime),
+    DateTimeTZ::date_time_tz(DateTime<TimeZone>),
 }
 
 #[derive(Debug, Clone)]
-struct MinIntegerExecutor {
-    min: Option<i64>,
+struct MinStringExecutor {
+    min: Option<String>,
     target: VariablePosition,
 }
 
-impl MinIntegerExecutor {
+impl MinStringExecutor {
     fn new(target: VariablePosition) -> Self {
         Self { min: None, target }
     }
 }
 
-impl ReducerAPI for MinIntegerExecutor {
+impl ReducerAPI for MinStringExecutor {
     fn accept<Snapshot: ReadableSnapshot>(
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
         storage_counters: StorageCounters,
     ) {
-        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_integer()) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_string()) {
             if let Some(current) = self.min.as_ref() {
-                if value < *current {
-                    self.min = Some(value)
+                if *value < **current {
+                    self.min = Some(value.into_owned())
                 }
             } else {
-                self.min = Some(value);
+                self.min = Some(value.into_owned());
             }
         }
     }
 
     fn finalise(self) -> Option<VariableValue<'static>> {
-        self.min.map(|v| VariableValue::Value(Value::Integer(v)))
+        Some(VariableValue::Value(Value::String(Cow::Owned(self.min?))))
     }
 }
 
 #[derive(Debug, Clone)]
-struct MinDoubleExecutor {
-    min: Option<f64>,
+struct MaxStringExecutor {
+    max: Option<String>,
     target: VariablePosition,
 }
 
-impl MinDoubleExecutor {
+impl MaxStringExecutor {
     fn new(target: VariablePosition) -> Self {
-        Self { min: None, target }
+        Self { max: None, target }
     }
 }
 
-impl ReducerAPI for MinDoubleExecutor {
+impl ReducerAPI for MaxStringExecutor {
     fn accept<Snapshot: ReadableSnapshot>(
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
         storage_counters: StorageCounters,
     ) {
-        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_double()) {
-            if let Some(current) = self.min.as_ref() {
-                if value < *current {
-                    self.min = Some(value)
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_string()) {
+            if let Some(current) = self.max.as_ref() {
+                if *value > **current {
+                    self.max = Some(value.into_owned())
                 }
             } else {
-                self.min = Some(value);
+                self.max = Some(value.into_owned());
             }
         }
     }
 
     fn finalise(self) -> Option<VariableValue<'static>> {
-        self.min.map(|v| VariableValue::Value(Value::Double(v)))
+        Some(VariableValue::Value(Value::String(Cow::Owned(self.max?))))
     }
 }
 
@@ -522,6 +492,41 @@ impl ReducerAPI for MeanDoubleExecutor {
     fn finalise(self) -> Option<VariableValue<'static>> {
         if self.count > 0 {
             Some(VariableValue::Value(Value::Double(self.sum / self.count as f64)))
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct MeanDecimalExecutor {
+    sum: Decimal,
+    count: u64,
+    target: VariablePosition,
+}
+
+impl MeanDecimalExecutor {
+    fn new(target: VariablePosition) -> Self {
+        Self { sum: Decimal::default(), count: 0, target }
+    }
+}
+
+impl ReducerAPI for MeanDecimalExecutor {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
+            self.sum += value.unwrap_decimal() * row.multiplicity();
+            self.count += row.multiplicity();
+        }
+    }
+
+    fn finalise(self) -> Option<VariableValue<'static>> {
+        if self.count > 0 {
+            Some(VariableValue::Value(Value::Decimal(self.sum / self.count)))
         } else {
             None
         }
@@ -609,6 +614,46 @@ impl ReducerAPI for MedianDoubleExecutor {
 }
 
 #[derive(Debug, Clone)]
+struct MedianDecimalExecutor {
+    values: Vec<Decimal>,
+    target: VariablePosition,
+}
+
+impl MedianDecimalExecutor {
+    fn new(target: VariablePosition) -> Self {
+        Self { values: Vec::new(), target }
+    }
+}
+
+impl ReducerAPI for MedianDecimalExecutor {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
+            self.values.push(value.unwrap_decimal())
+        }
+    }
+
+    fn finalise(self) -> Option<VariableValue<'static>> {
+        let Self { mut values, .. } = self;
+        values.sort();
+        if values.is_empty() {
+            None
+        } else if values.len() % 2 == 0 {
+            let pos = values.len() / 2;
+            Some((values[pos - 1] + values[pos]) / 2)
+        } else {
+            let pos = values.len() / 2;
+            Some(values[pos])
+        }
+        .map(|v| VariableValue::Value(Value::Decimal(v)))
+    }
+}
+
+#[derive(Debug, Clone)]
 struct StdIntegerExecutor {
     sum: i64,
     sum_squares: i128,
@@ -688,6 +733,49 @@ impl ReducerAPI for StdDoubleExecutor {
             let mean = sum / n;
             let sample_variance: f64 = (sum_squares + n * mean * mean - 2.0 * sum * mean) / (n - 1.0);
             Some(VariableValue::Value(Value::Double(sample_variance.sqrt())))
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct StdDecimalExecutor {
+    sum: Decimal,
+    sum_squares: Decimal,
+    count: u64,
+    target: VariablePosition,
+}
+
+impl StdDecimalExecutor {
+    fn new(target: VariablePosition) -> Self {
+        Self { sum: Decimal::default(), sum_squares: Decimal::default(), count: 0, target }
+    }
+}
+
+impl ReducerAPI for StdDecimalExecutor {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
+            let unwrapped = value.unwrap_decimal();
+            self.sum_squares += (unwrapped * unwrapped) * row.multiplicity();
+            self.sum += unwrapped * row.multiplicity();
+            self.count += row.multiplicity();
+        }
+    }
+
+    fn finalise(self) -> Option<VariableValue<'static>> {
+        if self.count > 1 {
+            let sum = self.sum;
+            let sum_squares = self.sum_squares;
+            let n = self.count;
+            let mean = sum / n;
+            let sample_variance: Decimal = (sum_squares + n * mean * mean - 2 * sum * mean) / (n - 1);
+            Some(VariableValue::Value(Value::Double(sample_variance.to_f64().sqrt())))
         } else {
             None
         }

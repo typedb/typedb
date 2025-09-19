@@ -54,11 +54,6 @@ features = {}
 		features = []
 		default-features = false
 
-	[dev-dependencies.itertools]
-		features = ["default", "use_alloc", "use_std"]
-		version = "0.10.5"
-		default-features = false
-
 [dependencies]
 
 	[dependencies.tokio]
@@ -69,6 +64,11 @@ features = {}
 	[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
 		version = "0.1.41"
+		default-features = false
+
+	[dependencies.serde]
+		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
+		version = "1.0.219"
 		default-features = false
 
 	[dependencies.resource]
@@ -109,6 +109,11 @@ features = {}
 	[dependencies.error]
 		path = "../common/error"
 		features = []
+		default-features = false
+
+	[dependencies.itertools]
+		features = ["default", "use_alloc", "use_std"]
+		version = "0.10.5"
 		default-features = false
 
 	[dependencies.answer]

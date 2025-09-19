@@ -7,7 +7,7 @@
 use std::{
     fmt,
     num::ParseIntError,
-    ops::{Add, Mul, Neg, Sub},
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
     str::FromStr,
 };
 
@@ -136,6 +136,18 @@ impl Mul for Decimal {
     }
 }
 
+macro_rules! impl_from_integer {
+    ($($int:ty),+ $(,)?) => {$(
+        impl From<$int> for Decimal {
+            fn from(value: $int) -> Self {
+                Decimal::new(value.into(), 0)
+            }
+        }
+    )+};
+}
+
+impl_from_integer! { u8, u16, u32, i8, i16, i32, i64 }
+
 macro_rules! impl_integer_ops {
     (
         $($optrait:ident::$opname:ident),+ $(,)?
@@ -183,7 +195,7 @@ macro_rules! impl_integer_ops {
 impl_integer_ops! {
     Add::add, Sub::sub, Mul::mul
     for
-    { u8, u16, u32, u64, i8, i16, i32, i64 }
+    { u8, u16, u32, u64, usize, i8, i16, i32, i64, isize }
 }
 
 macro_rules! impl_ref_ops {
@@ -213,6 +225,53 @@ macro_rules! impl_ref_ops {
 }
 
 impl_ref_ops! { Add::add, Sub::sub, Mul::mul }
+
+impl Div<u64> for Decimal {
+    type Output = Self;
+
+    fn div(self, rhs: u64) -> Self::Output {
+        let i128 = (self.integer as i128 * FRACTIONAL_PART_DENOMINATOR as i128 + self.fractional as i128) / rhs as i128;
+        let int = i128.div_euclid(FRACTIONAL_PART_DENOMINATOR as i128) as i64;
+        let frac = i128.rem_euclid(FRACTIONAL_PART_DENOMINATOR as i128) as u64;
+        Decimal::new(int, frac)
+    }
+}
+
+impl<T> AddAssign<T> for Decimal
+where
+    Self: Add<T, Output = Self>,
+{
+    fn add_assign(&mut self, rhs: T) {
+        *self = *self + rhs
+    }
+}
+
+impl<T> SubAssign<T> for Decimal
+where
+    Self: Sub<T, Output = Self>,
+{
+    fn sub_assign(&mut self, rhs: T) {
+        *self = *self - rhs
+    }
+}
+
+impl<T> MulAssign<T> for Decimal
+where
+    Self: Mul<T, Output = Self>,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        *self = *self * rhs
+    }
+}
+
+impl<T> DivAssign<T> for Decimal
+where
+    Self: Div<T, Output = Self>,
+{
+    fn div_assign(&mut self, rhs: T) {
+        *self = *self / rhs
+    }
+}
 
 impl FromStr for Decimal {
     type Err = ParseIntError;
@@ -309,6 +368,12 @@ mod tests {
     }
 
     #[test]
+    fn div() {
+        let three_sevenths = (FRACTIONAL_PART_DENOMINATOR as u128 * 3 / 7) as u64;
+        assert_eq!(Decimal::new(10, 0) / 7, Decimal::new(1, three_sevenths))
+    }
+
+    #[test]
     fn randomized_tests() {
         const fn as_i128(lhs: Decimal) -> i128 {
             lhs.integer as i128 * FRACTIONAL_PART_DENOMINATOR as i128 + lhs.fractional as i128
@@ -351,6 +416,12 @@ mod tests {
                         + mul[2] as i128 * FRACTIONAL_PART_DENOMINATOR as i128);
 
                 assert_eq!(as_i128(lhs * rhs), bigint_mul_result, "{:?} * {:?} != {:?}", lhs, rhs, lhs * rhs);
+            }
+
+            // can only divide by u64
+            let rhs = rng.gen_range(1..=FRACTIONAL_PART_DENOMINATOR);
+            if as_i128(lhs).checked_div(rhs as i128).is_some_and(|res| range.contains(&res)) {
+                assert_eq!(as_i128(lhs / rhs), as_i128(lhs) / rhs as i128, "{:?} / {:?} != {:?}", lhs, rhs, lhs / rhs);
             }
         }
     }

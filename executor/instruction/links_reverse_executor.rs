@@ -31,6 +31,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         links_executor::{
             may_get_role, verify_role, FixedLinksBounds, LinksFilterFn, LinksFilterMapFn, LinksTupleIterator,
@@ -43,7 +44,7 @@ use crate::{
             tuple_relation_player_role_to_links_reverse, tuple_role_relation_player_to_links_reverse,
             unsafe_compare_result_tuple, TupleOrderingFn, TuplePositions,
         },
-        Checker, LinksIterateMode, VariableModes,
+        LinksIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

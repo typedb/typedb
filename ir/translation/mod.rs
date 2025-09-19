@@ -27,6 +27,8 @@ pub mod reduce;
 pub mod tokens;
 pub mod writes;
 
+use crate::pattern::variable_category::VariableOptionality;
+
 #[derive(Debug, Clone)]
 pub struct PipelineTranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
@@ -45,12 +47,12 @@ impl PipelineTranslationContext {
     }
 
     pub fn new_function_pipeline(
-        input_variables: Vec<(String, Option<Span>, VariableCategory)>,
+        input_variables: Vec<(String, Option<Span>, (VariableCategory, VariableOptionality))>,
     ) -> Result<(Self, Vec<Variable>), Box<RepresentationError>> {
         let mut last_stage_visible_variables = HashMap::new();
         let mut variable_registry = VariableRegistry::new();
         let mut variables = Vec::with_capacity(input_variables.len());
-        for (name, source_span, category) in input_variables {
+        for (name, source_span, (category, _optionality)) in input_variables {
             let variable = variable_registry.register_function_argument(name.as_str(), category, source_span)?;
             last_stage_visible_variables.insert(name.clone(), variable);
             variables.push(variable);

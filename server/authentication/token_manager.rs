@@ -13,7 +13,7 @@ use concurrency::TokioIntervalRunner;
 use error::typedb_error;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rand::{self, Rng};
-use resource::constants::server::{MAX_AUTHENTICATION_TOKEN_TTL, MIN_AUTHENTICATION_TOKEN_TTL};
+use resource::constants::server::{MAX_AUTHENTICATION_TOKEN_EXPIRATION, MIN_AUTHENTICATION_TOKEN_EXPIRATION};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
@@ -120,13 +120,13 @@ impl TokenManager {
     }
 
     fn validate_tokens_expiration_time(tokens_expiration_time: Duration) -> Result<(), TokenManagerError> {
-        if tokens_expiration_time < MIN_AUTHENTICATION_TOKEN_TTL
-            || tokens_expiration_time > MAX_AUTHENTICATION_TOKEN_TTL
+        if tokens_expiration_time < MIN_AUTHENTICATION_TOKEN_EXPIRATION
+            || tokens_expiration_time > MAX_AUTHENTICATION_TOKEN_EXPIRATION
         {
             Err(TokenManagerError::InvlaidTokensExpirationTime {
                 value: tokens_expiration_time.as_secs(),
-                min: MIN_AUTHENTICATION_TOKEN_TTL.as_secs(),
-                max: MAX_AUTHENTICATION_TOKEN_TTL.as_secs(),
+                min: MIN_AUTHENTICATION_TOKEN_EXPIRATION.as_secs(),
+                max: MAX_AUTHENTICATION_TOKEN_EXPIRATION.as_secs(),
             })
         } else {
             Ok(())

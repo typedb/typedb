@@ -51,11 +51,11 @@ pub(crate) enum ConstraintVertex<'a> {
 }
 
 impl ConstraintVertex<'_> {
-    pub(super) fn is_valid(&self, _: &[VertexId], _: &Graph<'_>) -> bool {
+    pub(super) fn is_valid(&self, _: &[VertexId]) -> bool {
         true // always valid
     }
 
-    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
+    pub(crate) fn variable_vertex_ids(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
         match self {
             Self::TypeList(inner) => Box::new(inner.variables()),
             Self::Iid(inner) => Box::new(inner.variables()),
@@ -91,7 +91,7 @@ impl ConstraintVertex<'_> {
         match self {
             Self::Links(_) | Self::Has(_) | Self::IndexedRelation(_) => {
                 let unbound_join_variables: Vec<VariableVertexId> = self
-                    .variables()
+                    .variable_vertex_ids()
                     .filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)))
                     .collect();
                 if unbound_join_variables.len() == 1 {
@@ -132,7 +132,7 @@ impl ConstraintVertex<'_> {
         match self {
             Self::Links(_) | Self::Has(_) | Self::IndexedRelation(_) => {
                 let unbound_join_variables: Vec<VariableVertexId> = self
-                    .variables()
+                    .variable_vertex_ids()
                     .filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)))
                     .collect();
                 if unbound_join_variables.len() < 2 {

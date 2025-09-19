@@ -86,6 +86,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.paste]
+		features = []
+		version = "1.0.15"
+		default-features = false
+
 	[dependencies.storage]
 		path = "../storage"
 		features = []
@@ -135,6 +140,11 @@ features = {}
 	[dependencies.compiler]
 		path = "../compiler"
 		features = []
+		default-features = false
+
+	[dependencies.chrono]
+		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
+		version = "0.4.41"
 		default-features = false
 
 	[dependencies.lending_iterator]

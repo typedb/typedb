@@ -201,7 +201,8 @@ impl Server {
             server_state
                 .server_status()
                 .await
-                .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source: Box::new(typedb_source) })?,
+                .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?,
+            &self.config.server.encryption,
         );
 
         Self::spawn_shutdown_handler(self.shutdown_sender);
@@ -286,12 +287,20 @@ impl Server {
         }
     }
 
-    fn print_serving_information(server_status: BoxServerStatus) {
+    fn print_serving_information(server_status: BoxServerStatus, encryption_config: &EncryptionConfig) {
         print!("Serving gRPC on {}", server_status.grpc_address());
         if let Some(http_address) = server_status.http_address() {
             print!(" and HTTP on {http_address}");
         }
-        println!(".\nReady!");
+        if encryption_config.enabled {
+            println!(" with TLS enabled.");
+            println!("**To allow driver connections, drivers must also be configured to use TLS.**")
+        } else {
+            println!(" without TLS.");
+            println!("WARNING: TLS NOT ENABLED. This means connections are insecure and transmit username/password credentials unencrypted over the network.");
+            println!("**To allow driver connections, drivers must also be configured to *not* use TLS**")
+        }
+        println!("\nReady!");
     }
 
     fn spawn_shutdown_handler(shutdown_sender: Sender<()>) {

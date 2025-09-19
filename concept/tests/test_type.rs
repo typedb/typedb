@@ -556,7 +556,7 @@ fn annotations_with_range_arguments() {
                 &mut snapshot,
                 &type_manager,
                 &thing_manager,
-                AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DatetimeTz(now)), None)),
+                AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None)),
                 StorageCounters::DISABLED,
             )
             .unwrap();
@@ -711,7 +711,7 @@ fn annotations_with_range_arguments() {
         assert!(schedule_type
             .get_annotations_declared(&snapshot, &type_manager)
             .unwrap()
-            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DatetimeTz(now)), None))));
+            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None))));
         assert!(!schedule_type
             .get_annotations_declared(&snapshot, &type_manager)
             .unwrap()
@@ -719,10 +719,10 @@ fn annotations_with_range_arguments() {
         assert!(!schedule_type
             .get_annotations_declared(&snapshot, &type_manager)
             .unwrap()
-            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::DatetimeTz(now))))));
+            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::DateTimeTZ(now))))));
         assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(
-                Some(Value::DatetimeTz(chrono::offset::Local::now().with_timezone(&tz))),
+                Some(Value::DateTimeTZ(chrono::offset::Local::now().with_timezone(&tz))),
                 None,
             ))
         ));
@@ -999,7 +999,7 @@ fn annotations_with_value_arguments() {
                 &mut snapshot,
                 &type_manager,
                 &thing_manager,
-                AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DatetimeTz(now)])),
+                AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)])),
                 StorageCounters::DISABLED,
             )
             .unwrap();
@@ -1146,15 +1146,15 @@ fn annotations_with_value_arguments() {
         assert!(schedule_type
             .get_annotations_declared(&snapshot, &type_manager)
             .unwrap()
-            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DatetimeTz(now)]))));
+            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)]))));
         assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
-                Value::DatetimeTz(now),
-                Value::DatetimeTz(now),
+                Value::DateTimeTZ(now),
+                Value::DateTimeTZ(now),
             ]))
         ));
         assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
-            &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DatetimeTz(
+            &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(
                 chrono::offset::Local::now().with_timezone(&tz)
             )]))
         ));

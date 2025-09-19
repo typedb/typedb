@@ -718,9 +718,9 @@ pub enum ActionKind {
     SignIn,
     ServersAll,
     ServersGet,
-    ServerVersion,
     ServersRegister,
     ServersDeregister,
+    ServerVersion,
     UsersContains,
     UsersCreate,
     UsersUpdate,
@@ -741,6 +741,7 @@ pub enum ActionKind {
     TransactionClose,
     TransactionCommit,
     TransactionRollback,
+    TransactionAnalyse,
     TransactionQuery,
     OneshotQuery,
 }
@@ -752,6 +753,8 @@ impl ActionKind {
             (Self::SignIn, ActionInfo::default()),
             (Self::ServersGet, ActionInfo::default()),
             (Self::ServersAll, ActionInfo::default()),
+            (Self::ServersRegister, ActionInfo::default()),
+            (Self::ServersDeregister, ActionInfo::default()),
             (Self::ServerVersion, ActionInfo::default()),
             (Self::ServersRegister, ActionInfo::default()),
             (Self::ServersDeregister, ActionInfo::default()),
@@ -776,6 +779,7 @@ impl ActionKind {
             (Self::TransactionCommit, ActionInfo::default()),
             (Self::TransactionRollback, ActionInfo::default()),
             (Self::TransactionQuery, ActionInfo::default()),
+            (Self::TransactionAnalyse, ActionInfo::default()),
             (Self::OneshotQuery, ActionInfo::default()),
         ])
     }
@@ -786,9 +790,9 @@ impl ActionKind {
             ActionKind::SignIn => "sign_ins",
             ActionKind::ServersAll => "server_alls",
             ActionKind::ServersGet => "server_gets",
-            ActionKind::ServerVersion => "server_versions",
             ActionKind::ServersRegister => "server_registers",
             ActionKind::ServersDeregister => "server_deregisters",
+            ActionKind::ServerVersion => "server_versions",
             ActionKind::UsersContains => "user_containses",
             ActionKind::UsersCreate => "user_creates",
             ActionKind::UsersUpdate => "user_updates",
@@ -810,6 +814,7 @@ impl ActionKind {
             ActionKind::TransactionCommit => "transaction_commits",
             ActionKind::TransactionRollback => "transaction_rollbacks",
             ActionKind::TransactionQuery => "transaction_queries",
+            ActionKind::TransactionAnalyse => "transaction_analyses",
             ActionKind::OneshotQuery => "oneshot_queries",
         }
     }
@@ -829,9 +834,9 @@ impl fmt::Display for ActionKind {
             ActionKind::SignIn => write!(f, "SIGN_IN"),
             ActionKind::ServersAll => write!(f, "SERVERS_ALL"),
             ActionKind::ServersGet => write!(f, "SERVERS_GET"),
-            ActionKind::ServerVersion => write!(f, "SERVER_VERSION"),
             ActionKind::ServersRegister => write!(f, "SERVER_REGISTER"),
             ActionKind::ServersDeregister => write!(f, "SERVER_DEREGISTER"),
+            ActionKind::ServerVersion => write!(f, "SERVER_VERSION"),
             ActionKind::UsersContains => write!(f, "USERS_CONTAINS"),
             ActionKind::UsersCreate => write!(f, "USERS_CREATE"),
             ActionKind::UsersUpdate => write!(f, "USERS_UPDATE"),
@@ -853,6 +858,7 @@ impl fmt::Display for ActionKind {
             ActionKind::TransactionCommit => write!(f, "TRANSACTION_COMMIT"),
             ActionKind::TransactionRollback => write!(f, "TRANSACTION_ROLLBACK"),
             ActionKind::TransactionQuery => write!(f, "TRANSACTION_QUERY"),
+            ActionKind::TransactionAnalyse => write!(f, "TRANSACTION_ANALYSE"),
             ActionKind::OneshotQuery => write!(f, "ONESHOT_QUERY"),
         }
     }

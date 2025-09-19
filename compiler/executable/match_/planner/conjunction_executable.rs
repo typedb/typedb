@@ -10,7 +10,6 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::unimplemented_feature;
 use ir::{pattern::BranchID, pipeline::function_signature::FunctionID};
 
 use crate::{
@@ -105,7 +104,7 @@ impl ExecutionStep {
             ExecutionStep::Check(step) => &step.selected_variables,
             ExecutionStep::Disjunction(step) => &step.selected_variables,
             ExecutionStep::Negation(step) => &step.selected_variables,
-            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
+            ExecutionStep::Optional(step) => &step.selected_variables,
             ExecutionStep::FunctionCall(step) => &step.selected_variables,
         }
     }
@@ -132,7 +131,7 @@ impl ExecutionStep {
             ExecutionStep::Check(step) => step.output_width(),
             ExecutionStep::Disjunction(step) => step.output_width(),
             ExecutionStep::Negation(step) => step.output_width(),
-            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
+            ExecutionStep::Optional(step) => step.output_width(),
             ExecutionStep::FunctionCall(step) => step.output_width(),
         }
     }
@@ -482,6 +481,24 @@ impl fmt::Display for NegationStep {
 #[derive(Clone, Debug)]
 pub struct OptionalStep {
     pub optional: ConjunctionExecutable,
+    pub selected_variables: Vec<VariablePosition>,
+    pub output_width: u32,
+    pub branch_id: BranchID,
+}
+
+impl OptionalStep {
+    pub fn new(
+        optional: ConjunctionExecutable,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+        branch_id: BranchID,
+    ) -> Self {
+        Self { optional, selected_variables, output_width, branch_id }
+    }
+
+    pub fn output_width(&self) -> u32 {
+        self.output_width
+    }
 }
 
 impl fmt::Display for OptionalStep {
