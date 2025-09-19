@@ -1,15 +1,16 @@
 use database::Database;
 use std::sync::Arc;
-use database::transaction::SchemaCommitError;
+use database::transaction::{DatabaseDropGuard, SchemaCommitError};
 use resource::constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD};
 use resource::internal_database_prefix;
 use resource::profile::{CommitProfile, TransactionProfile};
 use storage::durability_client::WALClient;
 use storage::isolation_manager::CommitRecord;
-use storage::snapshot::CommittableSnapshot;
+use storage::snapshot::{CommittableSnapshot, WriteSnapshot};
 use system::concepts::{Credential, PasswordHash, User};
-use system::repositories::SCHEMA;
+use system::repositories::{user_repository, SCHEMA};
 use system::util::transaction_util::TransactionUtil;
+use user::errors::UserCreateError;
 use crate::state::{ServerState, ServerStateError};
 
 pub const SYSTEM_DB: &str = concat!(internal_database_prefix!(), "system");
