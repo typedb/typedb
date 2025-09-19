@@ -43,7 +43,6 @@ use crate::{
     parameters::config::{Config, DiagnosticsConfig},
     service::export_service::{get_transaction_schema, get_transaction_type_schema},
     status::{LocalServerStatus, ServerStatus},
-    status::{LocalServerStatus, ServerStatus},
 };
 use crate::system_init::SYSTEM_DB;
 
@@ -112,6 +111,12 @@ pub trait ServerState: Debug {
         accessor: Accessor,
     ) -> Result<(), ArcServerStateError>;
 
+    async fn users_create2(
+        &self,
+        commit_record: CommitRecord,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<(), ArcServerStateError>;
+
     async fn users_update(
         &self,
         name: &str,
@@ -129,6 +134,8 @@ pub trait ServerState: Debug {
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 
     async fn database_manager(&self) -> Arc<DatabaseManager>;
+
+    async fn user_manager(&self) -> Option<Arc<UserManager>>;
 
     async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager>;
 
@@ -203,7 +210,7 @@ impl LocalServerState {
         })
     }
 
-    pub async fn initialise(&self) -> Result<(), ServerStateError> {
+    pub async fn initialise(&self) -> Result<(), ArcServerStateError> {
         let system_database = if let Some(system_database) =
             self.database_manager().await.database_unrestricted(SYSTEM_DB) {
             system_database
@@ -230,7 +237,7 @@ impl LocalServerState {
         self.credential_verifier = Some(credential_verifier);
     }
 
-    pub async fn initialise_and_load(&mut self) -> Result<(), ServerStateError> {
+    pub async fn initialise_and_load(&mut self) -> Result<(), ArcServerStateError> {
         if !self.is_initialised().await {
             self.initialise().await?;
         }

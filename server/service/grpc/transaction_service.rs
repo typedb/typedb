@@ -390,7 +390,7 @@ impl TransactionService {
             .server_state.databases_get(database_name.as_ref())
             .await
             .map_err(|typedb_source| typedb_source.into_error_message().into_status())?
-            .await.ok_or_else(|| {
+            .ok_or_else(|| {
                 TransactionServiceError::DatabaseNotFound { name: database_name.clone() }
                     .into_error_message()
                     .into_status()

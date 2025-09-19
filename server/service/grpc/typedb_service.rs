@@ -535,7 +535,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     users_create_req(request).map_err(|err| err.into_error_message().into_status())?;
 
                 if !PermissionManager::exec_user_create_permitted(accessor.0.as_str()) {
-                    return Err(ServerStateError::OperationNotPermitted {}.into_error_message().into_status());
+                    return Err(LocalServerStateError::OperationNotPermitted {}.into_error_message().into_status());
                 }
 
                 let x = match self.server_state.user_manager().await {
@@ -546,16 +546,16 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                                 let into_commit_record_result = snapshot
                                     .finalise(commit_profile)
                                     .map_err(|error|
-                                        ServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected { } }
+                                        LocalServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected { } }
                                     );
                                 (transaction_profile, into_commit_record_result
                                     .map(|commit_record| (database, commit_record)))
                             }
                             (transaction_profile, Err(error)) =>
-                                return Err(ServerStateError::UserCannotBeCreated { typedb_source: error }.into_error_message().into_status())
+                                return Err(LocalServerStateError::UserCannotBeCreated { typedb_source: error }.into_error_message().into_status())
                         }
                     },
-                    None => return Err(ServerStateError::NotInitialised { }.into_error_message().into_status())
+                    None => return Err(LocalServerStateError::NotInitialised { }.into_error_message().into_status())
                 };
 
                 let x = match x {
