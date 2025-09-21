@@ -79,6 +79,7 @@ pub const VARIABLE_PRODUCTION_ADVANTAGE: f64 = 0.05; // this is a percentage 0.0
 typedb_error! {
     pub QueryPlanningError(component = "Query Planner", prefix = "QPL") {
         ExpectedPlannableConjunction(1, "Planning failed as no valid pattern ordering was found by the query planner (this is a bug!)"),
+        UnimplementedJoinForConstraint(2, "The planner expected a join, but it is not supported for this constraint"),
     }
 }
 
@@ -983,7 +984,7 @@ impl PartialCostPlan {
         let &prev_pattern = self.ongoing_step.iter().next()?;
         // We only join constraint patterns, so let's extract constraints
         let prev_planner = &graph.elements[&VertexId::Pattern(prev_pattern)];
-        let PlannerVertex::Constraint(prev_constraint) = prev_planner else { return None };
+        let PlannerVertex::Constraint(_) = prev_planner else { return None };
         let planner = &graph.elements[&VertexId::Pattern(pattern)];
         let PlannerVertex::Constraint(constraint) = planner else { return None };
         // Determine whether there are any candidate join variables:
@@ -993,20 +994,16 @@ impl PartialCostPlan {
             .exactly_one()
             .ok()?;
         // Only direct-able patterns are join-able:
-        let Some(CostMetaData::Direction(prev_dir)) = self.pattern_metadata.get(&prev_pattern) else { return None };
+        let Some(CostMetaData::Direction(_, prev_step_join_var)) = self.pattern_metadata.get(&prev_pattern) else {
+            return None;
+        };
         // If no join var is set yet, only join when we are on the "non-inverted join var" of the previous constraint based on its direction
-        if (self.ongoing_step_join_var.is_none()
-            && Some(candidate_join_var)
-                == prev_constraint.join_from_direction_and_inputs(
-                    prev_dir,
-                    &self.ongoing_step_produced_vars,
-                    &self.all_produced_vars,
-                ))
-            || self.ongoing_step_join_var == Some(candidate_join_var)
-        {
+        debug_assert!(self.ongoing_step_join_var.is_none() || &self.ongoing_step_join_var == prev_step_join_var);
+        if &Some(candidate_join_var) == prev_step_join_var {
             return Some(candidate_join_var);
+        } else {
+            None
         }
-        None
     }
 
     fn compute_added_cost(
@@ -1028,9 +1025,9 @@ impl PartialCostPlan {
                         join_var,
                         &self.ongoing_step_produced_vars,
                         &self.all_produced_vars,
-                    ); // TODO: we only allow unbounded regular joins for now
+                    )?; // TODO: we only allow unbounded regular joins for now
                     let (constraint_cost, meta_data) =
-                        constraint.cost_and_metadata(input_vars, fixed_direction, graph)?;
+                        constraint.cost_and_metadata(input_vars, Some(fixed_direction), graph)?;
                     (self.ongoing_step_cost.join(constraint_cost, total_join_size), meta_data)
                 } else {
                     constraint.cost_and_metadata(input_vars, None, graph)?
@@ -1680,9 +1677,10 @@ impl ConjunctionPlan<'_> {
                 };
 
                 let direction = if matches!(inputs, Inputs::None([])) {
-                    let CostMetaData::Direction(unbound_direction) = metadata else {
+                    let CostMetaData::Direction(unbound_direction, _sort_var) = metadata else {
                         unreachable!("expected metadata for constraint")
                     };
+                    debug_assert!(sort_variable.is_none() || sort_variable.as_ref().map(|v| self.graph.variable_index[v]) == _sort_var);
                     unbound_direction
                 } else if rhs_var.is_some_and(|rhs| inputs.contains(rhs)) {
                     Direction::Reverse
@@ -1772,7 +1770,7 @@ impl ConjunctionPlan<'_> {
                 let array_inputs = Inputs::build_from(&inputs);
 
                 let direction = if !inputs.contains(&player_1) && !inputs.contains(&player_2) {
-                    let CostMetaData::Direction(unbound_direction) = metadata else {
+                    let CostMetaData::Direction(unbound_direction, _) = metadata else {
                         unreachable!("expected metadata for constraint")
                     };
                     unbound_direction
