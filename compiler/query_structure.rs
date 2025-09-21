@@ -276,6 +276,12 @@ pub enum QueryStructureNestedPattern {
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct QueryStructureConjunctionID(pub u16);
 
+impl QueryStructureConjunctionID {
+    pub fn as_u32(&self) -> u32 {
+        self.0 as u32
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ParametrisedQueryStructureBuilder<'a> {
     pipeline_structure: ParametrisedPipelineStructure,
@@ -471,6 +477,12 @@ impl std::fmt::Display for StructureVariableId {
     }
 }
 
+impl StructureVariableId {
+    pub fn as_u32(&self) -> u32 {
+        self.0 as u32
+    }
+}
+
 impl IrID for StructureVariableId {}
 
 impl From<&Variable> for StructureVariableId {
@@ -488,8 +500,8 @@ impl From<Variable> for StructureVariableId {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StructureSortVariable {
-    variable: StructureVariableId,
-    ascending: bool,
+    pub variable: StructureVariableId,
+    pub ascending: bool,
 }
 
 impl From<&SortVariable> for StructureSortVariable {
@@ -505,8 +517,8 @@ impl From<&SortVariable> for StructureSortVariable {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StructureReducer {
-    reducer: String,
-    arguments: Vec<StructureVariableId>,
+    pub reducer: String,
+    pub arguments: Vec<StructureVariableId>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
