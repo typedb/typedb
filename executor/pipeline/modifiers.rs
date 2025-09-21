@@ -24,7 +24,7 @@ use crate::{
         PipelineExecutionError, StageIterator,
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    ExecutionInterrupt, Provenance,
 };
 
 // Sort
@@ -429,8 +429,10 @@ where
             None => None,
             Some(Err(err)) => return Some(Err(err)),
             Some(Ok(row)) => {
-                if self.seen.insert(row.clone().into_owned()) {
-                    Some(Ok(row.clone().into_owned()))
+                let distinct_row = MaybeOwnedRow::new_borrowed(row.row(), &1, &Provenance::INITIAL);
+                if !self.seen.contains(&distinct_row) {
+                    self.seen.insert(distinct_row.clone().into_owned());
+                    Some(Ok(distinct_row.clone().into_owned()))
                 } else {
                     self.next()
                 }
