@@ -29,6 +29,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dev-dependencies.database]
+		path = "../database"
+		features = []
+		default-features = false
+
 	[dev-dependencies.criterion]
 		features = ["cargo_bench_support", "default", "plotters", "rayon"]
 		version = "0.5.1"
@@ -47,6 +52,11 @@ features = {}
 	[dev-dependencies.pprof]
 		features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
 		version = "0.13.0"
+		default-features = false
+
+	[dev-dependencies.options]
+		path = "../common/options"
+		features = []
 		default-features = false
 
 	[dev-dependencies.test_utils_concept]
@@ -162,6 +172,10 @@ features = {}
 [[test]]
 	path = "tests/unimplemented.rs"
 	name = "test_unimplemented"
+
+[[test]]
+	path = "tests/evaluate_cost_model.rs"
+	name = "evaluate_cost_model"
 
 [[test]]
 	path = "tests/define.rs"

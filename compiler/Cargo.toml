@@ -36,6 +36,11 @@ features = {}
 
 [dependencies]
 
+	[dependencies.rand]
+		features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
+		version = "0.8.5"
+		default-features = false
+
 	[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
 		version = "0.1.41"
