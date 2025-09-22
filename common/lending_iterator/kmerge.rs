@@ -99,7 +99,12 @@ where
             self.find_next_state();
         }
         if let Some(next_iterator) = &mut self.next_iterator {
-            next_iterator.iter.seek(key);
+            next_iterator.iter.peek();
+            if let Some(item) = next_iterator.iter.get_peeked() {
+                if next_iterator.iter.compare_key(item, key) == Ordering::Less {
+                    next_iterator.iter.seek(key);
+                }
+            }
         }
         self.iterators = mem::take(&mut self.iterators)
             .drain()

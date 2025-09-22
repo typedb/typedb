@@ -118,7 +118,11 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
             self.find_next_state();
         }
         if let Some(next_iterator) = &mut self.next_iterator {
-            next_iterator.iter.seek(target)?;
+            if let Some(Ok(item)) = next_iterator.iter.peek() {
+                if item < target {
+                    next_iterator.iter.seek(target)?;
+                }
+            }
         }
         self.iterators = mem::take(&mut self.iterators)
             .drain()
@@ -484,11 +488,11 @@ impl<It: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekabl
                 None => Ok(None),
                 Some(Ok(peek)) => {
                     match peek.values()[first_unbound_index].partial_cmp(&target_tuple.values()[first_unbound_index]) {
-                        None => return Err(Box::new(ConceptReadError::InternalIncomparableTypes {})),
-                        Some(ordering) => return Ok(Some(ordering)),
+                        None => Err(Box::new(ConceptReadError::InternalIncomparableTypes {})),
+                        Some(ordering) => Ok(Some(ordering)),
                     }
                 }
-                Some(Err(err)) => return Err(err.clone()),
+                Some(Err(err)) => Err(err.clone()),
             }
         } else {
             Ok(Some(Ordering::Greater))
