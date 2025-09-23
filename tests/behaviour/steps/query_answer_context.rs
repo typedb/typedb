@@ -14,7 +14,6 @@ use concept::{
 use encoding::{graph::type_::Kind, value::value::Value};
 use executor::document::{ConceptDocument, DocumentLeaf, DocumentMap, DocumentNode};
 use ir::pipeline::ParameterRegistry;
-use query::analyse::AnalysedQuery;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
