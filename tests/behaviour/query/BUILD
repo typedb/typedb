@@ -8,7 +8,7 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 rust_test(
     name = "test_query",
     crate_root = "main.rs",
-    srcs = glob(["main.rs", "language/*.rs", "functions/*.rs"]),
+    srcs = glob(["main.rs", "language/*.rs", "functions/*.rs", "analyze/*.rs"]),
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
@@ -38,6 +38,8 @@ rust_test(
         "@typedb_behaviour//query/language:reduce.feature",
         "@typedb_behaviour//query/language:undefine.feature",
         "@typedb_behaviour//query/language:update.feature",
+
+        "@typedb_behaviour//query/analyze:structure.feature",
 
         "//server:config.yml",
     ],

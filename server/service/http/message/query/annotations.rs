@@ -141,7 +141,7 @@ fn encode_variable_type_annotations(
     })
 }
 
-pub(crate) fn encode_query_structure_annotations(
+pub fn encode_query_structure_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     analysed_query: AnalysedQuery,
