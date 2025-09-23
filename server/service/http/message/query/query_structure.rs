@@ -574,6 +574,7 @@ fn encode_role_type_as_vertex(
     }
 }
 
+#[cfg(debug_assertions)]
 pub mod bdd {
     use compiler::query_structure::{
         FunctionReturnStructure, QueryStructureConjunctionID, QueryStructureStage, StructureReduceAssign,
