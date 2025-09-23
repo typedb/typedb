@@ -86,6 +86,14 @@ pub struct RoleTypeResponse {
     pub label: String,
 }
 
+serializable_response! {
+    pub struct TypeFailedInferenceResponse {
+        kind = "failedInference",
+        pub label: String => "label",
+    }
+}
+
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TypeDocument {
