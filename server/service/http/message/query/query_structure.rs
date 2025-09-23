@@ -70,7 +70,7 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct FunctionStructureResponse {
-    body: Option<PipelineStructureResponse>,
+    body: PipelineStructureResponse,
     arguments: Vec<StructureVariableId>,
     returns: FunctionReturnStructure,
 }
@@ -78,7 +78,7 @@ pub(crate) struct FunctionStructureResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryStructureResponse {
-    query: Option<PipelineStructureResponse>,
+    query: PipelineStructureResponse,
     preamble: Vec<FunctionStructureResponse>,
 }
 
@@ -244,18 +244,11 @@ pub(crate) fn encode_query_structure(
     query_structure: QueryStructure,
 ) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
     let QueryStructure { preamble, query: pipeline } = query_structure;
-    let pipeline = pipeline
-        .as_ref()
-        .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, &pipeline, true))
-        .transpose()?;
+    let pipeline = encode_pipeline_structure(snapshot, type_manager, &pipeline, true)?;
     let preamble = preamble
         .into_iter()
         .map(|function| {
-            let pipeline = function
-                .pipeline
-                .as_ref()
-                .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, pipeline, true))
-                .transpose()?;
+            let pipeline = encode_pipeline_structure(snapshot, type_manager, &function.body, true)?;
             Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse {
                 body: pipeline,
                 arguments: function.arguments,
@@ -289,7 +282,7 @@ pub(crate) fn encode_pipeline_structure(
         .collect::<Result<Vec<_>, _>>()?;
     // Ensure reduced variables are added to variables
     record_reducer_variables(snapshot, type_manager, pipeline_structure, &mut variables);
-    let outputs = pipeline_structure.available_variables.clone();
+    let outputs = pipeline_structure.parametrised_structure.output_variables.clone();
     Ok(PipelineStructureResponse { conjunctions: encoded_conjunctions, outputs, variables, pipeline: stages.clone() })
 }
 
@@ -757,7 +750,7 @@ pub mod bdd {
         PipelineStructureResponse => { let pipeline = &self.pipeline; functor_macros::encode_functor_impl!(self, Pipeline { pipeline, }) }
         FunctionStructureResponse => {
             let FunctionStructureResponse { arguments, returns, body } = self;
-            let context = body.as_ref().unwrap();
+            let context = body;
             functor_macros::encode_functor_impl!(context, Function { arguments, returns, body, })
         }
         StructureSortVariable => {
@@ -777,16 +770,9 @@ pub mod bdd {
     ]);
 
     pub fn encode_query_structure_as_functor(structure: &QueryStructureResponse) -> (String, Vec<String>) {
-        let pipeline = structure.query.as_ref().unwrap();
+        let pipeline = &structure.query;
         let query = pipeline.encode_as_functor(pipeline);
-        let preamble = structure
-            .preamble
-            .iter()
-            .map(|func| {
-                let pipeline = func.body.as_ref().unwrap();
-                func.encode_as_functor(pipeline)
-            })
-            .collect();
+        let preamble = structure.preamble.iter().map(|func| func.encode_as_functor(&func.body)).collect();
         (query, preamble)
     }
 

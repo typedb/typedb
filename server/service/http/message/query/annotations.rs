@@ -64,7 +64,7 @@ enum FunctionReturnAnnotationsResponse {
 struct FunctionStructureAnnotationsResponse {
     arguments: Vec<TypeAnnotationResponse>,
     returns: FunctionReturnAnnotationsResponse,
-    body: Option<PipelineStructureAnnotationsResponse>,
+    body: PipelineStructureAnnotationsResponse,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -94,7 +94,7 @@ pub struct FetchStructureFieldAnnotationsResponse {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryStructureAnnotationsResponse {
     preamble: Vec<FunctionStructureAnnotationsResponse>,
-    query: Option<PipelineStructureAnnotationsResponse>,
+    query: PipelineStructureAnnotationsResponse,
     fetch: Option<FetchStructureAnnotationsResponse>, // Will always be the 'Object' variant
 }
 
@@ -152,9 +152,7 @@ pub fn encode_query_structure_annotations(
         .into_iter()
         .map(|function| encode_function_structure_annotations(snapshot, type_manager, function))
         .collect::<Result<Vec<_>, _>>()?;
-    let pipeline = pipeline
-        .map(|pipeline_annotations| encode_pipeline_structure_annotations(snapshot, type_manager, pipeline_annotations))
-        .transpose()?;
+    let pipeline = encode_pipeline_structure_annotations(snapshot, type_manager, pipeline)?;
     let fetch = fetch
         .map(|fetch| {
             encode_fetch_structure_annotations(snapshot, type_manager, fetch)
@@ -210,14 +208,12 @@ pub(crate) fn encode_function_structure_annotations(
         .into_iter()
         .map(|arg| encode_function_parameter_annotations(snapshot, type_manager, arg))
         .collect::<Result<Vec<_>, _>>()?;
-    let pipeline = pipeline
-        .map(|pipeline_annotations| encode_pipeline_structure_annotations(snapshot, type_manager, pipeline_annotations))
-        .transpose()?;
+    let body = encode_pipeline_structure_annotations(snapshot, type_manager, pipeline)?;
     let returns = match sig.is_stream {
         true => FunctionReturnAnnotationsResponse::Stream { annotations: return_types },
         false => FunctionReturnAnnotationsResponse::Single { annotations: return_types },
     };
-    Ok(FunctionStructureAnnotationsResponse { arguments, returns, body: pipeline })
+    Ok(FunctionStructureAnnotationsResponse { arguments, returns, body })
 }
 
 fn encode_fetch_structure_annotations(
