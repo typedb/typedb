@@ -362,7 +362,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             AnnotatedStage::Select(select) => self
                 .pipeline_structure
                 .stages
-                .push(QueryStructureStage::Select { variables: vec_from(select.variables.iter()) }),
+                .push(QueryStructureStage::Select { variables: vec_from(select.variables.iter().sorted()) }),
             AnnotatedStage::Sort(sort) => self
                 .pipeline_structure
                 .stages
