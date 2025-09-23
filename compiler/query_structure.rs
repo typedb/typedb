@@ -27,32 +27,28 @@ use ir::{
 use itertools::Itertools;
 use serde::{Deserialize, Serialize, Serializer};
 
-use crate::{
-    annotation::{
-        function::{AnnotatedFunction, AnnotatedFunctionReturn},
-        pipeline::{AnnotatedPipeline, AnnotatedStage},
-        type_annotations::{BlockAnnotations, TypeAnnotations},
-    },
-    VariablePosition,
+use crate::annotation::{
+    function::{AnnotatedFunction, AnnotatedFunctionReturn},
+    pipeline::{AnnotatedPipeline, AnnotatedStage},
+    type_annotations::{BlockAnnotations, TypeAnnotations},
 };
 
 #[derive(Debug, Clone)]
 pub struct QueryStructure {
     pub preamble: Vec<FunctionStructure>,
-    pub query: Option<PipelineStructure>,
+    pub query: PipelineStructure,
 }
 
 #[derive(Debug, Clone)]
 pub struct PipelineStructure {
     pub parametrised_structure: Arc<ParametrisedPipelineStructure>,
     pub variable_names: HashMap<StructureVariableId, String>,
-    pub available_variables: Vec<StructureVariableId>,
     pub parameters: Arc<ParameterRegistry>,
 }
 
 #[derive(Debug, Clone)]
 pub struct FunctionStructure {
-    pub pipeline: Option<PipelineStructure>,
+    pub body: PipelineStructure,
     pub arguments: Vec<StructureVariableId>,
     pub return_: FunctionReturnStructure,
 }
@@ -103,17 +99,7 @@ pub fn extract_query_structure_from(
         source_query,
     );
     // We don't compile, so positions don't exist. Assign arbitrarily
-    let output_positions = annotated_pipeline
-        .annotated_stages
-        .last()
-        .unwrap()
-        .named_referenced_variables(variable_registry)
-        .enumerate()
-        .map(|(i, var)| (var, VariablePosition::new(i as u32)))
-        .collect();
-
-    let pipeline = parametrised_pipeline
-        .map(|pp| Arc::new(pp).with_parameters(parameters, variable_registry.variable_names(), &output_positions));
+    let pipeline = Arc::new(parametrised_pipeline).with_parameters(parameters, variable_registry.variable_names());
     let preamble = annotated_pipeline
         .annotated_preamble
         .iter()
@@ -125,37 +111,28 @@ pub fn extract_query_structure_from(
 pub fn extract_function_structure_from(function: &AnnotatedFunction, source_query: &str) -> FunctionStructure {
     let parametrised_pipeline =
         extract_pipeline_structure_from(&function.variable_registry, function.stages.as_slice(), source_query);
-    let pipeline = parametrised_pipeline.map(|pp| {
-        Arc::new(pp).with_parameters(
-            Arc::new(function.parameter_registry.clone()),
-            function.variable_registry.variable_names(),
-            &function
-                .return_
-                .referenced_variables()
-                .iter()
-                .enumerate()
-                .map(|(i, var)| (*var, VariablePosition::new(i as u32)))
-                .collect(),
-        )
-    });
+    let body = Arc::new(parametrised_pipeline)
+        .with_parameters(Arc::new(function.parameter_registry.clone()), function.variable_registry.variable_names());
     let arguments = function.arguments.iter().map_into().collect();
     let return_ = FunctionReturnStructure::from(&function.return_);
-    FunctionStructure { pipeline, arguments, return_ }
+    FunctionStructure { body, arguments, return_ }
 }
 
 pub fn extract_pipeline_structure_from(
     variable_registry: &VariableRegistry,
     annotated_stages: &[AnnotatedStage],
     source_query: &str,
-) -> Option<ParametrisedPipelineStructure> {
+) -> ParametrisedPipelineStructure {
     let branch_ids_allocated = variable_registry.branch_ids_allocated();
-    if branch_ids_allocated < 64 {
-        let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
-        annotated_stages.into_iter().for_each(|stage| builder.add_stage(stage));
-        Some(builder.pipeline_structure)
-    } else {
-        return None;
-    }
+    let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
+    annotated_stages.into_iter().for_each(|stage| builder.add_stage(stage));
+    let output_variables = annotated_stages
+        .last()
+        .unwrap()
+        .named_referenced_variables(variable_registry)
+        .map(|v| StructureVariableId::from(v))
+        .collect();
+    builder.finish(output_variables)
 }
 
 #[derive(Debug, Clone)]
@@ -171,6 +148,7 @@ pub type PipelineStructureAnnotations =
 pub struct ParametrisedPipelineStructure {
     pub stages: Vec<QueryStructureStage>,
     pub conjunctions: Vec<QueryStructureConjunction>,
+    pub output_variables: Vec<StructureVariableId>,
     pub resolved_labels: HashMap<Label, answer::Type>,
     pub calls_syntax: HashMap<Constraint<Variable>, String>,
     pub scope_to_conjunction_id: HashMap<ScopeId, QueryStructureConjunctionID>,
@@ -181,16 +159,9 @@ impl ParametrisedPipelineStructure {
         self: Arc<Self>,
         parameters: Arc<ParameterRegistry>,
         variable_names: &HashMap<Variable, String>,
-        output_variable_positions: &HashMap<Variable, VariablePosition>,
     ) -> PipelineStructure {
-        let mut available_variables = output_variable_positions
-            .keys()
-            .filter(|v| !v.is_anonymous())
-            .map(|v| StructureVariableId::from(v))
-            .collect::<Vec<_>>();
-        available_variables.sort();
         let variable_names = variable_names.iter().map(|(var, name)| (var.into(), name.clone())).collect();
-        PipelineStructure { parametrised_structure: self, parameters, variable_names, available_variables }
+        PipelineStructure { parametrised_structure: self, parameters, variable_names }
     }
 
     pub fn must_have_been_satisfied_conjunctions(&self) -> Vec<QueryStructureConjunctionID> {
@@ -300,6 +271,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             pipeline_structure: ParametrisedPipelineStructure {
                 stages: Vec::new(),
                 conjunctions,
+                output_variables: Vec::new(),
                 resolved_labels: HashMap::new(),
                 calls_syntax: HashMap::new(),
                 scope_to_conjunction_id: HashMap::new(),
@@ -461,6 +433,13 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 _ => None,
             },
         ));
+    }
+
+    pub fn finish(self, mut output_variables: Vec<StructureVariableId>) -> ParametrisedPipelineStructure {
+        let Self { mut pipeline_structure, .. } = self;
+        output_variables.sort();
+        pipeline_structure.output_variables = output_variables;
+        pipeline_structure
     }
 }
 

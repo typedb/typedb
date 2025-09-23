@@ -43,7 +43,7 @@ pub struct AnalysedQuery {
 #[derive(Debug)]
 pub struct QueryStructureAnnotations {
     pub preamble: Vec<FunctionStructureAnnotations>,
-    pub query: Option<PipelineStructureAnnotations>,
+    pub query: PipelineStructureAnnotations,
     pub fetch: Option<FetchStructureAnnotations>,
 }
 
@@ -58,42 +58,33 @@ impl QueryStructureAnnotations {
         query_structure: &QueryStructure,
     ) -> Result<Self, Box<ConceptReadError>> {
         let AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble } = &annotated_pipeline;
-        let (pipeline, fetch) = match query_structure.query.as_ref() {
-            None => (None, None),
-            Some(pipeline_structure) => {
-                let pipeline =
-                    build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), pipeline_structure);
-                let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());
-                let fetch = annotated_fetch
-                    .as_ref()
-                    .map(|fetch| {
-                        build_fetch_annotations(
-                            snapshot,
-                            type_manager,
-                            parameters.clone(),
-                            source_query,
-                            last_stage_annotations,
-                            &fetch.object,
-                        )
-                    })
-                    .transpose()?;
-                (Some(pipeline), fetch)
-            }
-        };
-
+        let pipeline =
+            build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), &query_structure.query);
+        let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());
+        let fetch = annotated_fetch
+            .as_ref()
+            .map(|fetch| {
+                build_fetch_annotations(
+                    snapshot,
+                    type_manager,
+                    parameters.clone(),
+                    source_query,
+                    last_stage_annotations,
+                    &fetch.object,
+                )
+            })
+            .transpose()?;
         let preamble = annotated_preamble
             .iter()
             .zip(query_structure.preamble.iter())
             .map(|(annotated_function, structure)| {
                 let signature = annotated_function.annotated_signature.clone();
-                let pipeline = structure.pipeline.as_ref().map(|pipeline_structure| {
-                    build_pipeline_annotations(
-                        &annotated_function.variable_registry,
-                        annotated_function.stages.as_slice(),
-                        pipeline_structure,
-                    )
-                });
-                FunctionStructureAnnotations { signature, body: pipeline }
+                let body = build_pipeline_annotations(
+                    &annotated_function.variable_registry,
+                    annotated_function.stages.as_slice(),
+                    &structure.body,
+                );
+                FunctionStructureAnnotations { signature, body }
             })
             .collect();
 
@@ -113,7 +104,7 @@ pub enum FetchObjectStructureAnnotations {
 #[derive(Debug)]
 pub struct FunctionStructureAnnotations {
     pub signature: AnnotatedFunctionSignature,
-    pub body: Option<PipelineStructureAnnotations>,
+    pub body: PipelineStructureAnnotations,
 }
 
 pub fn build_pipeline_annotations(
