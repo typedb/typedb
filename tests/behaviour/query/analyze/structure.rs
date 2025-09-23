@@ -14,10 +14,10 @@ async fn test_analyze_structure() {
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
     #[cfg(feature = "bazel")]
-        let path = "../typedb_behaviour/query/analyze/structure.feature";
+    let path = "../typedb_behaviour/query/analyze/structure.feature";
 
     #[cfg(not(feature = "bazel"))]
-        let path = "bazel-typedb/external/typedb_behaviour/query/analyze/structure.feature";
+    let path = "bazel-typedb/external/typedb_behaviour/query/analyze/structure.feature";
 
     assert!(Context::test(path, true).await);
 }
