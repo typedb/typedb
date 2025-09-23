@@ -47,7 +47,6 @@ use crate::{
     BehaviourTestExecutionError, Context,
 };
 use crate::json::JSON;
-use crate::util::jsons_equal_up_to_reorder;
 
 fn row_batch_result_to_answer(
     batch: Batch,

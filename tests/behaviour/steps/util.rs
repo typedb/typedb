@@ -50,7 +50,7 @@ pub(crate) fn parse_json(json: &str) -> JSON {
     }
 }
 
-pub(crate) fn jsons_equal_up_to_reorder(lhs: &JSON, rhs: &JSON) -> bool {
+fn jsons_equal_up_to_reorder(lhs: &JSON, rhs: &JSON) -> bool {
     match (lhs, rhs) {
         (JSON::Object(lhs), JSON::Object(rhs)) => {
             if lhs.len() != rhs.len() {
