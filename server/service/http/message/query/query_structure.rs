@@ -21,7 +21,9 @@ use ir::pattern::{
 use serde::{Deserialize, Serialize, Serializer};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::service::http::message::query::concept::{encode_type_concept, encode_value, RoleTypeResponse, TypeFailedInferenceResponse, ValueResponse};
+use crate::service::http::message::query::concept::{
+    encode_type_concept, encode_value, RoleTypeResponse, TypeFailedInferenceResponse, ValueResponse,
+};
 
 struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
     pipeline_structure: &'a PipelineStructure,
@@ -555,7 +557,7 @@ fn encode_structure_vertex(
         Vertex::Label(label) => {
             let r#type = match context.get_type(label) {
                 Some(type_) => encode_type_concept(&type_, context.snapshot, context.type_manager)?,
-                None => serde_json::json!(TypeFailedInferenceResponse { label: label.scoped_name.as_str().to_owned() })
+                None => serde_json::json!(TypeFailedInferenceResponse { label: label.scoped_name.as_str().to_owned() }),
             };
             StructureVertex::Label { r#type }
         }
@@ -580,11 +582,17 @@ fn encode_role_type_as_vertex(
 }
 
 pub mod bdd {
+    use compiler::query_structure::{
+        FunctionReturnStructure, QueryStructureConjunctionID, QueryStructureStage, StructureReduceAssign,
+        StructureReducer, StructureSortVariable, StructureVariableId,
+    };
     use itertools::Itertools;
     use serde_json::Value;
-    use compiler::query_structure::{FunctionReturnStructure, StructureSortVariable, QueryStructureConjunctionID, QueryStructureStage, StructureVariableId, StructureReduceAssign, StructureReducer};
-    use crate::service::http::message::query::query_structure::{FunctionStructureResponse, PipelineStructureResponse, QueryStructureResponse, StructureConstraint, StructureConstraintWithSpan, StructureVertex};
-    use crate::service::http::message::query::query_structure::bdd::functor_macros::{encode_functor, encode_functor_impl};
+
+    use crate::service::http::message::query::query_structure::{
+        FunctionStructureResponse, PipelineStructureResponse, QueryStructureResponse, StructureConstraint,
+        StructureConstraintWithSpan, StructureVertex,
+    };
 
     type FunctorContext = PipelineStructureResponse;
 
@@ -604,7 +612,7 @@ pub mod bdd {
         macro_rules! encode_functor_impl {
             ($context:ident, $func:ident $args:tt) => {
                 std::format!("{}({})", std::stringify!($func), functor_macros::encode_args!($context, $args))
-            }
+            };
         }
 
         macro_rules! add_ignored_fields {
@@ -632,11 +640,10 @@ pub mod bdd {
             };
         }
 
-
         macro_rules! impl_functor_for_impl {
             ($which:ident => |$self:ident, $context:ident| $block:block) => {
                 impl FunctorEncoded for $which {
-                    fn encode_as_functor($self:&Self, $context: &FunctorContext) -> String {
+                    fn encode_as_functor($self: &Self, $context: &FunctorContext) -> String {
                         $block
                     }
                 }
@@ -661,9 +668,12 @@ pub mod bdd {
                 functor_macros::impl_functor_for_impl!($primitive => |self, _context| { self.to_string() });
             };
         }
-        pub(crate) use {
-            impl_functor_for, impl_functor_for_impl, encode_functor, encode_functor_impl, encode_args, add_ignored_fields
-        };
+        pub(crate) use add_ignored_fields;
+        pub(crate) use encode_args;
+        pub(crate) use encode_functor;
+        pub(crate) use encode_functor_impl;
+        pub(crate) use impl_functor_for;
+        pub(crate) use impl_functor_for_impl;
     }
 
     functor_macros::impl_functor_for!(primitive String);
@@ -744,17 +754,17 @@ pub mod bdd {
         StructureVariableId =>  { format!("${}", context.variables[self].name.as_ref().map(|s| s.as_str()).unwrap_or("_")) }
         QueryStructureConjunctionID => { context.conjunctions[self.0 as usize].encode_as_functor(context) }
         StructureConstraintWithSpan => { self.constraint.encode_as_functor(context) }
-        PipelineStructureResponse => { let pipeline = &self.pipeline; encode_functor_impl!(self, Pipeline { pipeline, }) }
+        PipelineStructureResponse => { let pipeline = &self.pipeline; functor_macros::encode_functor_impl!(self, Pipeline { pipeline, }) }
         FunctionStructureResponse => {
             let FunctionStructureResponse { arguments, returns, body } = self;
             let context = body.as_ref().unwrap();
-            encode_functor_impl!(context, Function { arguments, returns, body, })
+            functor_macros::encode_functor_impl!(context, Function { arguments, returns, body, })
         }
         StructureSortVariable => {
             let Self { ascending, variable } = self;
             match ascending {
-                true => encode_functor_impl!(context, Asc { variable, }),
-                false => encode_functor_impl!(context, Desc { variable, }),
+                true => functor_macros::encode_functor_impl!(context, Asc { variable, }),
+                false => functor_macros::encode_functor_impl!(context, Desc { variable, }),
             }
         }
     ]);
@@ -766,26 +776,32 @@ pub mod bdd {
         Reduce {} |
     ]);
 
-
     pub fn encode_query_structure_as_functor(structure: &QueryStructureResponse) -> (String, Vec<String>) {
         let pipeline = structure.query.as_ref().unwrap();
         let query = pipeline.encode_as_functor(pipeline);
-        let preamble = structure.preamble.iter().map(|func| {
-            let pipeline = func.body.as_ref().unwrap();
-            func.encode_as_functor(pipeline)
-        }).collect();
+        let preamble = structure
+            .preamble
+            .iter()
+            .map(|func| {
+                let pipeline = func.body.as_ref().unwrap();
+                func.encode_as_functor(pipeline)
+            })
+            .collect();
         (query, preamble)
     }
 
     #[cfg(test)]
     pub mod test {
         use std::collections::HashMap;
+
         use itertools::Itertools;
+
         use super::{functor_macros, FunctorContext};
         use crate::service::http::message::query::query_structure::bdd::FunctorEncoded;
 
         fn print_encoded(x: impl FunctorEncoded) {
-            let dummy = FunctorContext{ conjunctions: vec![], pipeline: vec![], variables: HashMap::new(), outputs: vec![] };
+            let dummy =
+                FunctorContext { conjunctions: vec![], pipeline: vec![], variables: HashMap::new(), outputs: vec![] };
             println!("{}", x.encode_as_functor(&dummy));
         }
 
