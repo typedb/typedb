@@ -10,8 +10,9 @@ pub mod parameters;
 pub mod service;
 pub mod state;
 pub mod status;
+pub mod system_init;
 
-use std::{fs, net::SocketAddr, path::Path, sync::Arc};
+use std::{fs, future::Future, net::SocketAddr, path::Path, pin::Pin, sync::Arc};
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
 use database::database_manager::DatabaseManager;
@@ -81,7 +82,7 @@ impl ServerBuilder {
                     shutdown_receiver.clone(),
                 )
                 .await?;
-                server_state.initialise();
+                server_state.initialise_and_load().await.map_err(|error| ServerOpenError::ServerState { typedb_source: error })?;
                 Arc::new(server_state)
             }
         };
