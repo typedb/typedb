@@ -8,9 +8,17 @@ use std::{fmt::Debug, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 use concurrency::IntervalRunner;
-use database::{database_manager::DatabaseManager, transaction::TransactionRead, Database};
+use database::{
+    database::DatabaseCreateError,
+    database_manager::DatabaseManager,
+    transaction::{DataCommitError, SchemaCommitError, TransactionError, TransactionRead},
+    Database, DatabaseDeleteError,
+};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use itertools::Itertools;
+use error::typedb_error;
+use futures::{StreamExt, TryFutureExt};
+use ir::pipeline::FunctionReadError;
 use options::TransactionOptions;
 use resource::{
     constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo, profile::CommitProfile,
@@ -21,10 +29,13 @@ use storage::{
 };
 use system::{
     concepts::{Credential, User},
-    initialise_system_database,
 };
 use tokio::{net::lookup_host, sync::watch::Receiver};
-use user::{initialise_default_user, permission_manager::PermissionManager, user_manager::UserManager};
+use user::{
+    errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError},
+    permission_manager::PermissionManager,
+    user_manager::UserManager,
+};
 
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
@@ -33,6 +44,7 @@ use crate::{
     service::export_service::{get_transaction_schema, get_transaction_type_schema},
     status::{LocalServerStatus, ServerStatus},
 };
+use crate::system_init::SYSTEM_DB;
 
 pub type DynServerState = dyn ServerState + Send + Sync;
 pub type ArcServerState = Arc<DynServerState>;
@@ -91,14 +103,7 @@ pub trait ServerState: Debug {
     async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError>;
 
     async fn users_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
-
-    async fn users_create(
-        &self,
-        user: &User,
-        credential: &Credential,
-        accessor: Accessor,
-    ) -> Result<(), ArcServerStateError>;
-
+    
     async fn users_update(
         &self,
         name: &str,
@@ -116,6 +121,8 @@ pub trait ServerState: Debug {
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 
     async fn database_manager(&self) -> Arc<DatabaseManager>;
+
+    async fn user_manager(&self) -> Option<Arc<UserManager>>;
 
     async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager>;
 
@@ -190,13 +197,39 @@ impl LocalServerState {
         })
     }
 
-    pub fn initialise(&mut self) {
-        let system_database = initialise_system_database(&self.database_manager);
+    pub async fn initialise(&self) -> Result<(), ArcServerStateError> {
+        let system_database = if let Some(system_database) =
+            self.database_manager().await.database_unrestricted(SYSTEM_DB) {
+            system_database
+        } else {
+            crate::system_init::initialise_system_database(self).await?
+        };
+
         let user_manager = Arc::new(UserManager::new(system_database));
-        initialise_default_user(&user_manager);
-        let credential_verifier = Some(Arc::new(CredentialVerifier::new(user_manager.clone())));
+        crate::system_init::initialise_default_user(&user_manager, self).await?;
+
+        Ok(())
+    }
+
+    pub async fn is_initialised(&self) -> bool {
+        self.database_manager().await.database_unrestricted(SYSTEM_DB).is_some()
+    }
+
+    pub async fn load(&mut self) {
+        let system_database = self.database_manager().await.database_unrestricted(SYSTEM_DB).unwrap();
+        println!("load system db: {:?}", system_database);
+        let user_manager = Arc::new(UserManager::new(system_database));
+        let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
         self.user_manager = Some(user_manager);
-        self.credential_verifier = credential_verifier;
+        self.credential_verifier = Some(credential_verifier);
+    }
+
+    pub async fn initialise_and_load(&mut self) -> Result<(), ArcServerStateError> {
+        if !self.is_initialised().await {
+            self.initialise().await?;
+        }
+        self.load().await;
+        Ok(())
     }
 
     async fn initialise_diagnostics(
@@ -361,16 +394,16 @@ impl ServerState for LocalServerState {
     }
 
     async fn databases_get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
-        Ok(self.database_manager.database(name))
+        Ok(self.database_manager.database_unrestricted(name))
     }
 
     async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError> {
-        Ok(self.database_manager.database(name).is_some())
+        Ok(self.database_manager.database_unrestricted(name).is_some())
     }
 
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager
-            .put_database(name)
+            .put_database_unrestricted(name)
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: err }))
     }
 
@@ -464,24 +497,6 @@ impl ServerState for LocalServerState {
         }
     }
 
-    async fn users_create(
-        &self,
-        user: &User,
-        credential: &Credential,
-        accessor: Accessor,
-    ) -> Result<(), ArcServerStateError> {
-        if !PermissionManager::exec_user_create_permitted(accessor.0.as_str()) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
-        }
-        match self.get_user_manager() {
-            Ok(user_manager) => user_manager
-                .create(user, credential)
-                .map(|_user| ())
-                .map_err(|err| arc_server_state_err(LocalServerStateError::UserCannotBeCreated { typedb_source: err })),
-            Err(err) => Err(Arc::new(err)),
-        }
-    }
-
     async fn users_update(
         &self,
         name: &str,
@@ -542,6 +557,10 @@ impl ServerState for LocalServerState {
 
     async fn database_manager(&self) -> Arc<DatabaseManager> {
         self.database_manager.clone()
+    }
+
+    async fn user_manager(&self) -> Option<Arc<UserManager>> {
+        self.user_manager.clone()
     }
 
     async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
