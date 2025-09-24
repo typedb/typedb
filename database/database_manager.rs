@@ -74,9 +74,6 @@ impl DatabaseManager {
             }
 
             let database_name = entry_path.file_name().unwrap().to_string_lossy();
-            if Self::is_internal_database(&database_name) {
-                continue;
-            }
 
             let database = Database::<WALClient>::open(&entry_path)?;
             assert!(!databases.contains_key(database.name()));
