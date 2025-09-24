@@ -25,9 +25,10 @@ use tokio::{
     },
     time::timeout,
 };
+use tonic::Response;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
-
+use user::errors::UserCreateError;
 use crate::{
     authentication::Accessor,
     http::diagnostics::run_with_diagnostics,
@@ -53,6 +54,9 @@ use crate::{
     },
     state::ArcServerState,
 };
+use crate::error::LocalServerStateError;
+use crate::system_init::SYSTEM_DB;
+use storage::snapshot::CommittableSnapshot;
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 
@@ -455,11 +459,40 @@ impl TypeDBService {
             || async {
                 let user = User { name: user_path.username };
                 let credential = Credential::new_password(payload.password.as_str());
-                service
-                    .server_state
-                    .users_create(&user, &credential, accessor)
-                    .await
-                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
+                let (mut transaction_profile, create_result) = match service.server_state.user_manager().await {
+                    Some(user_manager) => {
+                        match user_manager.create(&user, &credential) {
+                            (mut transaction_profile, Ok((database, snapshot))) => {
+                                let commit_profile = transaction_profile.commit_profile();
+                                let into_commit_record_result = snapshot
+                                    .finalise(commit_profile)
+                                    .map_err(|error|
+                                        LocalServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected { } }
+                                    );
+                                (transaction_profile, into_commit_record_result
+                                    .map(|commit_record| (database, commit_record)))
+                            }
+                            (transaction_profile, Err(error)) =>
+                                return Err(
+                                    HttpServiceError::State { typedb_source: Arc::new(LocalServerStateError::UserCannotBeCreated { typedb_source: error }) }
+                                )
+                        }
+                    },
+                    None => return Err(HttpServiceError::State { typedb_source: Arc::new(LocalServerStateError::NotInitialised { })})
+                };
+
+                let create_result = match create_result {
+                    Ok((_, commit_record_opt)) => {
+                        let commit_profile = transaction_profile.commit_profile();
+                        if let Some(commit_record) = commit_record_opt {
+                            service.server_state.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await.unwrap();
+                        }
+                        Ok(())
+                    }
+                    Err(err) => return Err(HttpServiceError::State { typedb_source: Arc::new(err) })
+                };
+
+                create_result
             },
         )
         .await

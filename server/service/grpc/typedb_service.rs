@@ -55,6 +55,7 @@ use crate::{
     },
     state::ArcServerState,
 };
+use crate::system_init::SYSTEM_DB;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
@@ -562,7 +563,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     Ok((_, commit_record_opt)) => {
                         let commit_profile = transaction_profile.commit_profile();
                         if let Some(commit_record) = commit_record_opt {
-                            self.server_state.users_create2(commit_record, commit_profile).await.unwrap();
+                            self.server_state.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await.unwrap();
                         }
                         Ok(Response::new(user_create_res()))
                     }

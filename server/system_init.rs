@@ -69,7 +69,7 @@ pub async fn get_default_user_commit_record(user_manager: &user::user_manager::U
 
 pub async fn initialise_default_user(user_manager: &user::user_manager::UserManager, server_state: &dyn ServerState) -> Result<(), ArcServerStateError> {
     if let (mut transaction_profile, Some(commit_record)) = get_default_user_commit_record(user_manager).await? {
-        server_state.users_create2(commit_record, &mut transaction_profile.commit_profile()).await?;
+        server_state.database_data_commit(SYSTEM_DB, commit_record, &mut transaction_profile.commit_profile()).await?;
     }
     Ok(())
 }

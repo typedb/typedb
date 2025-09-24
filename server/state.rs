@@ -103,20 +103,7 @@ pub trait ServerState: Debug {
     async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError>;
 
     async fn users_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
-
-    async fn users_create(
-        &self,
-        user: &User,
-        credential: &Credential,
-        accessor: Accessor,
-    ) -> Result<(), ArcServerStateError>;
-
-    async fn users_create2(
-        &self,
-        commit_record: CommitRecord,
-        commit_profile: &mut CommitProfile,
-    ) -> Result<(), ArcServerStateError>;
-
+    
     async fn users_update(
         &self,
         name: &str,
@@ -508,23 +495,6 @@ impl ServerState for LocalServerState {
             },
             Err(err) => Err(Arc::new(err)),
         }
-    }
-
-    async fn users_create(
-        &self,
-        user: &User,
-        credential: &Credential,
-        accessor: Accessor,
-    ) -> Result<(), ArcServerStateError> {
-        todo!()
-    }
-
-    async fn users_create2(
-        &self,
-        commit_record: CommitRecord,
-        commit_profile: &mut CommitProfile,
-    ) -> Result<(), ArcServerStateError> {
-        self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await
     }
 
     async fn users_update(
