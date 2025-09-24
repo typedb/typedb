@@ -48,45 +48,17 @@ impl UserManager {
         self.get(username).map(|opt| opt.is_some())
     }
 
-    pub fn create(&self, user: &User, credential: &Credential) -> Result<(), UserCreateError> {
-        match self.contains(&user.name) {
-            Ok(contains) => {
-                if contains {
-                    return Err(UserCreateError::UserAlreadyExist {});
-                }
-            }
-            Err(user_get_err) => {
-                return match user_get_err {
-                    UserGetError::IllegalUsername { .. } => Err(UserCreateError::IllegalUsername {}),
-                    UserGetError::Unexpected { .. } => Err(UserCreateError::Unexpected {}),
-                }
-            }
-        }
-        let create_result = self
-            .transaction_util
-            .write_transaction_commit(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
-                user_repository::create(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, user, credential)
-            })
-            .1;
-        match create_result {
-            Ok(Ok(())) => Ok(()),
-            Ok(Err(_query_error)) => Err(UserCreateError::IllegalUsername {}),
-            Err(_commit_error) => Err(UserCreateError::Unexpected {}),
-        }
-    }
-
-    pub fn create2(&self, user: &User, credential: &Credential) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), UserCreateError>) {
-        let (p, create_result) = self
+    pub fn create(&self, user: &User, credential: &Credential) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), UserCreateError>) {
+        let (transaction_profile, create_result) = self
             .transaction_util
             .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
                 user_repository::create(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, user, credential)
             });
-        let x = match create_result {
+        let create_result = match create_result {
             Ok(tuple) => Ok(tuple),
             Err(_query_error) => Err(UserCreateError::IllegalUsername {}),
-            Err(_commit_error) => Err(UserCreateError::Unexpected {}),
         };
-        (p, x)
+        (transaction_profile, create_result)
     }
 
     pub fn update(

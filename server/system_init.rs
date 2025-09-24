@@ -55,7 +55,7 @@ async fn initialise_system_database_schema(db: Arc<Database<WALClient>>, server_
 }
 
 pub async fn get_default_user_commit_record(user_manager: &user::user_manager::UserManager) -> Result<(TransactionProfile, Option<CommitRecord>), LocalServerStateError> {
-    let (mut transaction_profile, finalise_result) = user_manager.create2(
+    let (mut transaction_profile, finalise_result) = user_manager.create(
         &User::new(DEFAULT_USER_NAME.to_string()),
         &Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
     );

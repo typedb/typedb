@@ -538,9 +538,9 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     return Err(LocalServerStateError::OperationNotPermitted {}.into_error_message().into_status());
                 }
 
-                let x = match self.server_state.user_manager().await {
+                let (mut transaction_profile, create_result) = match self.server_state.user_manager().await {
                     Some(user_manager) => {
-                        match user_manager.create2(&user, &credential) {
+                        match user_manager.create(&user, &credential) {
                             (mut transaction_profile, Ok((database, snapshot))) => {
                                 let commit_profile = transaction_profile.commit_profile();
                                 let into_commit_record_result = snapshot
@@ -558,23 +558,18 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     None => return Err(LocalServerStateError::NotInitialised { }.into_error_message().into_status())
                 };
 
-                let x = match x {
-                    (mut transaction_profile, Ok((database, commit_record_opt))) => {
+                let create_result = match create_result {
+                    Ok((_, commit_record_opt)) => {
                         let commit_profile = transaction_profile.commit_profile();
                         if let Some(commit_record) = commit_record_opt {
                             self.server_state.users_create2(commit_record, commit_profile).await.unwrap();
                         }
                         Ok(Response::new(user_create_res()))
                     }
-                    (p, Err(err)) => return Err(err.into_error_message().into_status())
+                    Err(err) => return Err(err.into_error_message().into_status())
                 };
 
-                x
-                // self.server_state
-                //     .users_create(&user, &credential, accessor)
-                //     .await
-                //     .map(|_| Response::new(user_create_res()))
-                //     .map_err(|err| err.into_error_message().into_status())
+                create_result
             },
         )
         .await
