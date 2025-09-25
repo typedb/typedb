@@ -108,11 +108,7 @@ pub(crate) fn add_inserted_concepts(
         let &Vertex::Variable(thing) = isa.thing() else { unreachable!() };
         if input_variables.contains_key(&thing) {
             return Err(Box::new(WriteCompilationError::InsertIsaStatementForInputVariable {
-                variable: variable_registry
-                    .variable_names()
-                    .get(&thing)
-                    .cloned()
-                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                variable: variable_registry.get_variable_name_or_unnamed(thing).to_owned(),
                 source_span: isa.source_span(),
             }));
         }
@@ -126,11 +122,7 @@ pub(crate) fn add_inserted_concepts(
                 }
                 _ => {
                     return Err(Box::new(WriteCompilationError::InsertVariableUnknownType {
-                        variable: variable_registry
-                            .variable_names()
-                            .get(&thing)
-                            .cloned()
-                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                        variable: variable_registry.get_variable_name_or_unnamed(thing).to_owned(),
                         source_span: isa.source_span(),
                     }))
                 }
@@ -144,11 +136,7 @@ pub(crate) fn add_inserted_concepts(
 
         if kinds.contains(&Kind::Role) {
             return Err(Box::new(WriteCompilationError::InsertIllegalRole {
-                variable: variable_registry
-                    .variable_names()
-                    .get(&thing)
-                    .cloned()
-                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                variable: variable_registry.get_variable_name_or_unnamed(thing).to_owned(),
                 source_span: isa.source_span(),
             }));
         }
@@ -156,20 +144,14 @@ pub(crate) fn add_inserted_concepts(
         if kinds.contains(&Kind::Relation) || kinds.contains(&Kind::Entity) {
             if kinds.contains(&Kind::Attribute) {
                 return Err(Box::new(WriteCompilationError::InsertVariableAmbiguousAttributeOrObject {
-                    variable: variable_registry
-                        .get_variable_name(thing)
-                        .cloned()
-                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                    variable: variable_registry.get_variable_name_or_unnamed(thing).to_owned(),
                     source_span: isa.source_span(),
                 }));
             }
             if let Some(exisiting) = concept_instructions.get(&thing) {
                 if exisiting.inserted_type() != &type_ {
                     return Err(Box::new(WriteCompilationError::ConflcitingTypesForInsertOfSameVariable {
-                        variable: variable_registry
-                            .get_variable_name(thing)
-                            .cloned()
-                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                        variable: variable_registry.get_variable_name_or_unnamed(thing).to_owned(),
                         first: exisiting.inserted_type().clone(),
                         second: type_,
                     }));
@@ -201,29 +183,20 @@ pub(crate) fn add_inserted_concepts(
                     ValueSource::Variable(position)
                 } else {
                     return Err(Box::new(WriteCompilationError::MissingExpectedInput {
-                        variable: variable_registry
-                            .get_variable_name(thing)
-                            .cloned()
-                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                        variable: variable_registry.get_variable_name_or_unnamed(thing).to_owned(),
                         source_span: isa.source_span(),
                     }));
                 }
             } else {
                 return Err(Box::new(WriteCompilationError::MissingExpectedInput {
-                    variable: variable_registry
-                        .get_variable_name(thing)
-                        .cloned()
-                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                    variable: variable_registry.get_variable_name_or_unnamed(thing).to_owned(),
                     source_span: isa.source_span(),
                 }));
             };
             if let Some(exisiting) = concept_instructions.get(&thing) {
                 if exisiting.inserted_type() != &type_ {
                     return Err(Box::new(WriteCompilationError::ConflcitingTypesForInsertOfSameVariable {
-                        variable: variable_registry
-                            .get_variable_name(thing)
-                            .cloned()
-                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                        variable: variable_registry.get_variable_name_or_unnamed(thing).to_owned(),
                         first: exisiting.inserted_type().clone(),
                         second: type_,
                     }));
@@ -305,10 +278,7 @@ pub(crate) fn get_thing_position(
     match input_variables.get(&variable) {
         Some(input) => Ok(ThingPosition(*input)),
         None => Err(Box::new(WriteCompilationError::MissingExpectedInput {
-            variable: variable_registry
-                .get_variable_name(variable)
-                .cloned()
-                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+            variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
             source_span,
         })),
     }
@@ -335,10 +305,7 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
         .map_err(|mut err| {
             debug_assert_eq!(err.next(), None);
             Box::new(WriteCompilationError::InsertAttributeMissingValue {
-                variable: variable_registry
-                    .get_variable_name(variable)
-                    .cloned()
-                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
                 // fallback span
                 source_span: stage_source_span,
             })
@@ -347,10 +314,7 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
         Ok(value_variable)
     } else {
         Err(Box::new(WriteCompilationError::InsertIllegalPredicate {
-            variable: variable_registry
-                .get_variable_name(variable)
-                .cloned()
-                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+            variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
             comparator,
             source_span,
         }))
@@ -452,9 +416,8 @@ pub(crate) fn resolve_links_roles(
                     Ok((role_type.clone(), TypeSource::Constant(*type_)))
                 } else {
                     let player_variable = variable_registry
-                        .get_variable_name(links.player().as_variable().unwrap())
-                        .cloned()
-                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+                        .get_variable_name_or_unnamed(links.player().as_variable().unwrap())
+                        .to_owned();
                     Err(Box::new(WriteCompilationError::InsertLinksAmbiguousRoleType {
                         player_variable,
                         role_types: annotations.iter().join(", "),
