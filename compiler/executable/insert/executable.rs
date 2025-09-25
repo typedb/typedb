@@ -202,8 +202,7 @@ pub(crate) fn add_inserted_concepts(
                 } else {
                     return Err(Box::new(WriteCompilationError::MissingExpectedInput {
                         variable: variable_registry
-                            .variable_names()
-                            .get(&thing)
+                            .get_variable_name(thing)
                             .cloned()
                             .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                         source_span: isa.source_span(),
@@ -212,8 +211,7 @@ pub(crate) fn add_inserted_concepts(
             } else {
                 return Err(Box::new(WriteCompilationError::MissingExpectedInput {
                     variable: variable_registry
-                        .variable_names()
-                        .get(&thing)
+                        .get_variable_name(thing)
                         .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                     source_span: isa.source_span(),
@@ -222,7 +220,10 @@ pub(crate) fn add_inserted_concepts(
             if let Some(exisiting) = concept_instructions.get(&thing) {
                 if exisiting.inserted_type() != &type_ {
                     return Err(Box::new(WriteCompilationError::ConflcitingTypesForInsertOfSameVariable {
-                        variable: variable_registry.get_variable_name(thing).unwrap().clone(),
+                        variable: variable_registry
+                            .get_variable_name(thing)
+                            .cloned()
+                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                         first: exisiting.inserted_type().clone(),
                         second: type_,
                     }));
@@ -305,8 +306,7 @@ pub(crate) fn get_thing_position(
         Some(input) => Ok(ThingPosition(*input)),
         None => Err(Box::new(WriteCompilationError::MissingExpectedInput {
             variable: variable_registry
-                .variable_names()
-                .get(&variable)
+                .get_variable_name(variable)
                 .cloned()
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
             source_span,
@@ -336,8 +336,7 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
             debug_assert_eq!(err.next(), None);
             Box::new(WriteCompilationError::InsertAttributeMissingValue {
                 variable: variable_registry
-                    .variable_names()
-                    .get(&variable)
+                    .get_variable_name(variable)
                     .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                 // fallback span
@@ -349,8 +348,7 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
     } else {
         Err(Box::new(WriteCompilationError::InsertIllegalPredicate {
             variable: variable_registry
-                .variable_names()
-                .get(&variable)
+                .get_variable_name(variable)
                 .cloned()
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
             comparator,
