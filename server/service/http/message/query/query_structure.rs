@@ -741,7 +741,7 @@ pub mod bdd {
         match self {
             StructureVertex::Variable { id } => { id.encode_as_functor(context) }
             StructureVertex::Label { r#type } => { r#type.as_object().unwrap()["label"].as_str().unwrap().to_owned() }
-            StructureVertex::FailedTypeInference { label } => { label }
+            StructureVertex::FailedTypeInference { label } => { label.encode_as_functor(context) }
             StructureVertex::Value(v) => {
                 match &v.value {
                     Value::String(s) => std::format!("\"{}\"", s.to_string()),
