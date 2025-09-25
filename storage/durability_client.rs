@@ -5,7 +5,6 @@
  */
 
 use std::{
-    borrow::Cow,
     io::{self, Read, Write},
     sync::{mpsc, Arc},
 };
@@ -95,6 +94,8 @@ pub trait DurabilityClient {
     fn find_last_unsequenced_type<Record: UnsequencedDurabilityRecord>(
         &self,
     ) -> Result<Option<Record>, DurabilityClientError>;
+
+    fn truncate_from(&self, sequence_number: SequenceNumber) -> Result<(), DurabilityClientError>;
 
     fn delete_durability(self) -> Result<(), DurabilityClientError>;
 
@@ -200,6 +201,10 @@ impl DurabilityClient for WALClient {
             Ok(None) => Ok(None),
             Err(err) => Err(DurabilityClientError::ServiceError { source: err }),
         }
+    }
+
+    fn truncate_from(&self, sequence_number: SequenceNumber) -> Result<(), DurabilityClientError> {
+        self.wal.truncate_from(sequence_number).map_err(|err| DurabilityClientError::ServiceError { source: err })
     }
 
     fn delete_durability(self) -> Result<(), DurabilityClientError> {

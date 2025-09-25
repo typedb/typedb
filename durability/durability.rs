@@ -48,6 +48,8 @@ pub trait DurabilityService {
         record_type: DurabilityRecordType,
     ) -> Result<Option<RawRecord<'static>>, DurabilityServiceError>;
 
+    fn truncate_from(&self, sequence_number: DurabilitySequenceNumber) -> Result<(), DurabilityServiceError>;
+
     fn delete_durability(self) -> Result<(), DurabilityServiceError>;
 
     fn reset(&mut self) -> Result<(), DurabilityServiceError>;

@@ -612,7 +612,7 @@ mod tests {
     use bytes::byte_array::ByteArray;
     use durability::wal::WAL;
     use resource::profile::StorageCounters;
-    use test_utils::{create_tmp_dir, init_logging};
+    use test_utils::{create_tmp_storage_dir, init_logging};
 
     use crate::{
         durability_client::{DurabilityClient, WALClient},
@@ -651,7 +651,7 @@ mod tests {
         }
 
         init_logging();
-        let storage_path = create_tmp_dir();
+        let storage_path = create_tmp_storage_dir();
         let key_1 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"hello"));
         let key_2 = StorageKeyArray::from((TestKeyspaceSet::FailedKeyspace, b"world"));
 

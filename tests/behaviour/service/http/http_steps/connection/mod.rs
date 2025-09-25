@@ -14,7 +14,7 @@ use server::{
     parameters::config::{AuthenticationConfig, ConfigBuilder},
     ServerBuilder,
 };
-use test_utils::create_tmp_dir;
+use test_utils::create_tmp_storage_dir;
 
 use crate::{
     generic_step,
@@ -41,7 +41,7 @@ pub(crate) async fn start_typedb(
     let shutdown_sender_clone = shutdown_sender.clone();
     let handle = std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
-        let server_dir = create_tmp_dir();
+        let server_dir = create_tmp_storage_dir();
         let config = ConfigBuilder::from_file(config_path())
             .expect("Failed to load config file")
             .server_address(GRPC_ADDRESS)
