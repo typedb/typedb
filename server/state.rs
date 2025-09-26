@@ -215,7 +215,6 @@ impl LocalServerState {
 
     pub async fn load(&mut self) {
         let system_database = self.database_manager().await.database_unrestricted(SYSTEM_DB).unwrap();
-        println!("load system db: {:?}", system_database);
         let user_manager = Arc::new(UserManager::new(system_database));
         let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
         self.user_manager = Some(user_manager);
