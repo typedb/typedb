@@ -253,6 +253,10 @@ impl VariableRegistry {
         self.variable_names.get(&variable)
     }
 
+    pub fn get_variable_name_or_unnamed(&self, variable: Variable) -> &str {
+        self.variable_names.get(&variable).map(|s| s.as_str()).unwrap_or(Self::UNNAMED_VARIABLE_DISPLAY_NAME)
+    }
+
     pub fn get_variable_category(&self, variable: Variable) -> Option<VariableCategory> {
         self.variable_categories.get(&variable).map(|(category, _constraint)| *category)
     }
