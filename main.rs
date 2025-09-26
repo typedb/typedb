@@ -33,16 +33,32 @@ fn main() {
     config_builder.override_with_cliargs(cli_args);
     let config = config_builder.build().expect("Error validating config file overridden with cli args");
     initialise_logging_global(&config.logging.directory);
-    // This guard sends Sentry reports when it's dropped. It has to be alive while the server is running.
-    // DO NOT delete!
-    let _guard = may_initialise_error_reporting(&config);
-    create_tokio_runtime().block_on(async {
-        let server = ServerBuilder::default().server_info(SERVER_INFO).build(config).await.unwrap();
-        match server.serve().await {
-            Ok(_) => println!("Exited."),
-            Err(err) => println!("Exited with error: {:?}", err),
-        }
-    });
+
+    ServerApplication::new(config).run()
+}
+
+struct ServerApplication {
+    runtime: Runtime,
+    config: Config,
+    // This guard sends Sentry reports when it's dropped. It has to be alive for the lifetime of the app.
+    _error_reporting_guard: Option<SentryGuard>,
+}
+
+impl ServerApplication {
+    fn new(config: Config) -> Self {
+        let error_reporting_guard = may_initialise_error_reporting(&config);
+        Self { config, runtime: create_tokio_runtime(), _error_reporting_guard: error_reporting_guard }
+    }
+
+    fn run(self) {
+        self.runtime.block_on(async {
+            let server = ServerBuilder::default().server_info(SERVER_INFO).build(self.config).await.unwrap();
+            match server.serve().await {
+                Ok(_) => println!("Exited."),
+                Err(err) => println!("Exited with error: {:?}", err),
+            }
+        })
+    }
 }
 
 fn initialise_abort_on_panic() {
