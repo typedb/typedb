@@ -23,7 +23,7 @@ use typedb_protocol::{
 use uuid::Uuid;
 use database::transaction::DataCommitError;
 use resource::profile::CommitProfile;
-use user::errors::UserCreateError;
+use user::errors::{UserCreateError, UserDeleteError, UserUpdateError};
 use crate::{
     authentication::{Accessor, AuthenticationError},
     error::LocalServerStateError,
@@ -589,12 +589,43 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     .map_err(|err| err.into_error_message().into_status())?;
                 let (username, user_update, credential_update) =
                     users_update_req(request).map_err(|err| err.into_error_message().into_status())?;
-                let username = username.as_str();
-                self.server_state
-                    .users_update(username, user_update, credential_update, accessor)
-                    .await
-                    .map(|_| Response::new(user_update_res()))
-                    .map_err(|err| err.into_error_message().into_status())
+
+                if !PermissionManager::exec_user_update_permitted(accessor.0.as_str(), &username) {
+                    return Err(LocalServerStateError::OperationNotPermitted {}.into_error_message().into_status());
+                }
+
+                let (mut transaction_profile, update_result) = match self.server_state.user_manager().await {
+                    Some(user_manager) => {
+                        match user_manager.update2(&username, &user_update, &credential_update) {
+                            (mut transaction_profile, Ok((database, snapshot))) => {
+                                let commit_profile = transaction_profile.commit_profile();
+                                let into_commit_record_result = snapshot
+                                    .finalise(commit_profile)
+                                    .map_err(|error|
+                                        LocalServerStateError::UserCannotBeUpdated { typedb_source: UserUpdateError::Unexpected { } }
+                                    );
+                                (transaction_profile, into_commit_record_result
+                                    .map(|commit_record| (database, commit_record)))
+                            }
+                            (transaction_profile, Err(error)) =>
+                                return Err(LocalServerStateError::UserCannotBeUpdated { typedb_source: error }.into_error_message().into_status())
+                        }
+                    },
+                    None => return Err(LocalServerStateError::NotInitialised { }.into_error_message().into_status())
+                };
+
+                let update_result = match update_result {
+                    Ok((_, commit_record_opt)) => {
+                        let commit_profile = transaction_profile.commit_profile();
+                        if let Some(commit_record) = commit_record_opt {
+                            self.server_state.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await.unwrap();
+                        }
+                        Ok(Response::new(user_update_res()))
+                    }
+                    Err(err) => return Err(err.into_error_message().into_status())
+                };
+
+                update_result
             },
         )
         .await
@@ -624,7 +655,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                                 let into_commit_record_result = snapshot
                                     .finalise(commit_profile)
                                     .map_err(|error|
-                                        LocalServerStateError::UserCannotBeDeleted { typedb_source: UserCreateError::Unexpected { } }
+                                        LocalServerStateError::UserCannotBeDeleted { typedb_source: UserDeleteError::Unexpected { } }
                                     );
                                 (transaction_profile, into_commit_record_result
                                     .map(|commit_record| (database, commit_record)))
