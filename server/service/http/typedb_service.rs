@@ -537,7 +537,7 @@ impl TypeDBService {
                 let username = user_path.username.as_str();
                 let (mut transaction_profile, delete_result) = match service.server_state.user_manager().await {
                     Some(user_manager) => {
-                        match user_manager.delete2(username) {
+                        match user_manager.delete(username) {
                             (Some(mut transaction_profile), Ok((database, snapshot))) => {
                                 let commit_profile = transaction_profile.commit_profile();
                                 let into_commit_record_result = snapshot

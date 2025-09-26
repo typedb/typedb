@@ -618,7 +618,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
                 let (mut transaction_profile, delete_result) = match self.server_state.user_manager().await {
                     Some(user_manager) => {
-                        match user_manager.delete2(&name) {
+                        match user_manager.delete(&name) {
                             (Some(mut transaction_profile), Ok((database, snapshot))) => {
                                 let commit_profile = transaction_profile.commit_profile();
                                 let into_commit_record_result = snapshot
