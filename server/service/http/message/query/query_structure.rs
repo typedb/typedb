@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
-    encode_type_concept, encode_value, RoleTypeResponse, TypeFailedInferenceResponse, ValueResponse,
+    encode_type_concept, encode_value, RoleTypeResponse, ValueResponse,
 };
 
 struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {

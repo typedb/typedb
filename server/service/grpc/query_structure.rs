@@ -80,8 +80,6 @@ pub fn encode_query_structure(
         .iter()
         .map(|func| encode_function_structure(snapshot, type_manager, func))
         .collect::<Result<_, _>>()?;
-
-    todo_must_implement!("We removed the optionality of all this somewhere.");
     Ok(typedb_protocol::analyze::res::QueryStructure { query: Some(query), preamble })
 }
 
@@ -466,7 +464,6 @@ fn query_structure_constraint(
         // Optimisations don't represent the structure
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
-    error::todo_must_implement!("This whole file may need an update. I def need to update kind");
     Ok(())
 }
 
