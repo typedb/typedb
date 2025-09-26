@@ -12,6 +12,7 @@ use std::path::PathBuf;
 use clap::Parser;
 use logger::initialise_logging_global;
 use resource::constants::server::{DEFAULT_CONFIG_PATH, SENTRY_REPORTING_URI, SERVER_INFO};
+use sentry::ClientInitGuard as SentryGuard;
 use server::{
     parameters::{
         cli::CLIArgs,
@@ -32,14 +33,32 @@ fn main() {
     config_builder.override_with_cliargs(cli_args);
     let config = config_builder.build().expect("Error validating config file overridden with cli args");
     initialise_logging_global(&config.logging.directory);
-    may_initialise_error_reporting(&config);
-    create_tokio_runtime().block_on(async {
-        let server = ServerBuilder::default().server_info(SERVER_INFO).build(config).await.unwrap();
-        match server.serve().await {
-            Ok(_) => println!("Exited."),
-            Err(err) => println!("Exited with error: {:?}", err),
-        }
-    });
+
+    ServerApplication::new(config).run()
+}
+
+struct ServerApplication {
+    runtime: Runtime,
+    config: Config,
+    // This guard sends Sentry reports when it's dropped. It has to be alive for the lifetime of the app.
+    _error_reporting_guard: Option<SentryGuard>,
+}
+
+impl ServerApplication {
+    fn new(config: Config) -> Self {
+        let error_reporting_guard = may_initialise_error_reporting(&config);
+        Self { config, runtime: create_tokio_runtime(), _error_reporting_guard: error_reporting_guard }
+    }
+
+    fn run(self) {
+        self.runtime.block_on(async {
+            let server = ServerBuilder::default().server_info(SERVER_INFO).build(self.config).await.unwrap();
+            match server.serve().await {
+                Ok(_) => println!("Exited."),
+                Err(err) => println!("Exited with error: {:?}", err),
+            }
+        })
+    }
 }
 
 fn initialise_abort_on_panic() {
@@ -52,13 +71,15 @@ fn initialise_abort_on_panic() {
     });
 }
 
-fn may_initialise_error_reporting(config: &Config) {
+fn may_initialise_error_reporting(config: &Config) -> Option<SentryGuard> {
     if config.diagnostics.reporting.report_errors && !config.development_mode.enabled {
-        let opts = (
+        let options = (
             SENTRY_REPORTING_URI,
             sentry::ClientOptions { release: Some(SERVER_INFO.version.into()), ..Default::default() },
         );
-        let _ = sentry::init(opts);
+        Some(sentry::init(options))
+    } else {
+        None
     }
 }
 

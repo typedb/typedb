@@ -274,9 +274,7 @@ impl LastMapper {
 impl StreamModifierResultMapperTrait for LastMapper {
     fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
         if let Some(input_batch) = subquery_result {
-            self.last_row = (!input_batch.is_empty()).then(|| {
-                input_batch.get_row(input_batch.len() - 1).into_owned()
-            });
+            self.last_row = (!input_batch.is_empty()).then(|| input_batch.get_row(input_batch.len() - 1).into_owned());
             Some(FixedBatch::EMPTY) // Retry this instruction without returning any rows
         } else {
             self.last_row.take().map(FixedBatch::from)
