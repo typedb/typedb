@@ -28,7 +28,7 @@ use tokio::{
 use tonic::Response;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
-use user::errors::UserCreateError;
+use user::errors::{UserCreateError, UserDeleteError};
 use crate::{
     authentication::Accessor,
     http::diagnostics::run_with_diagnostics,
@@ -535,11 +535,42 @@ impl TypeDBService {
             ActionKind::UsersDelete,
             || async {
                 let username = user_path.username.as_str();
-                service
-                    .server_state
-                    .users_delete(username, accessor)
-                    .await
-                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
+                let (mut transaction_profile, delete_result) = match service.server_state.user_manager().await {
+                    Some(user_manager) => {
+                        match user_manager.delete2(username) {
+                            (Some(mut transaction_profile), Ok((database, snapshot))) => {
+                                let commit_profile = transaction_profile.commit_profile();
+                                let into_commit_record_result = snapshot
+                                    .finalise(commit_profile)
+                                    .map_err(|error|
+                                        LocalServerStateError::UserCannotBeDeleted { typedb_source: UserDeleteError::Unexpected { } }
+                                    );
+                                (transaction_profile, into_commit_record_result
+                                    .map(|commit_record| (database, commit_record)))
+                            }
+                            (None, Err(error)) =>
+                                return Err(
+                                    HttpServiceError::State { typedb_source: Arc::new(LocalServerStateError::UserCannotBeDeleted { typedb_source: error }) }
+                                ),
+                            (None, Ok(_)) => panic!("Unexpected condition"),
+                            (Some(_), Err(_)) => panic!("Unexpected condition"),
+                        }
+                    },
+                    None => return Err(HttpServiceError::State { typedb_source: Arc::new(LocalServerStateError::NotInitialised { })})
+                };
+
+                let delete_result = match delete_result {
+                    Ok((_, commit_record_opt)) => {
+                        let commit_profile = transaction_profile.commit_profile();
+                        if let Some(commit_record) = commit_record_opt {
+                            service.server_state.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await.unwrap();
+                        }
+                        Ok(())
+                    }
+                    Err(err) => return Err(HttpServiceError::State { typedb_source: Arc::new(err) })
+                };
+
+                delete_result
             },
         )
         .await

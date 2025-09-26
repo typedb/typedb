@@ -7,7 +7,7 @@
 use user::permission_manager::PermissionManager;
 use storage::snapshot::CommittableSnapshot;
 use std::{net::SocketAddr, pin::Pin, time::Instant};
-
+use std::sync::Arc;
 use diagnostics::metrics::ActionKind;
 use itertools::Itertools;
 use tokio::sync::mpsc::channel;
@@ -612,11 +612,44 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                 let accessor = Accessor::from_extensions(&request.extensions())
                     .map_err(|err| err.into_error_message().into_status())?;
                 let name = request.into_inner().name;
-                self.server_state
-                    .users_delete(name.as_str(), accessor)
-                    .await
-                    .map(|_| Response::new(users_delete_res()))
-                    .map_err(|err| err.into_error_message().into_status())
+                if !PermissionManager::exec_user_delete_allowed(accessor.0.as_str(), &name) {
+                    return Err(LocalServerStateError::OperationNotPermitted {}.into_error_message().into_status());
+                }
+
+                let (mut transaction_profile, delete_result) = match self.server_state.user_manager().await {
+                    Some(user_manager) => {
+                        match user_manager.delete2(&name) {
+                            (Some(mut transaction_profile), Ok((database, snapshot))) => {
+                                let commit_profile = transaction_profile.commit_profile();
+                                let into_commit_record_result = snapshot
+                                    .finalise(commit_profile)
+                                    .map_err(|error|
+                                        LocalServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected { } }
+                                    );
+                                (transaction_profile, into_commit_record_result
+                                    .map(|commit_record| (database, commit_record)))
+                            }
+                            (None, Err(error)) =>
+                                return Err(LocalServerStateError::UserCannotBeDeleted { typedb_source: error }.into_error_message().into_status()),
+                            (None, Ok(_)) => panic!("Unexpected condition"),
+                            (Some(_), Err(_)) => panic!("Unexpected condition"),
+                        }
+                    },
+                    None => return Err(LocalServerStateError::NotInitialised { }.into_error_message().into_status())
+                };
+
+                let delete_result = match delete_result {
+                    Ok((_, commit_record_opt)) => {
+                        let commit_profile = transaction_profile.commit_profile();
+                        if let Some(commit_record) = commit_record_opt {
+                            self.server_state.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await.unwrap();
+                        }
+                        Ok(Response::new(users_delete_res()))
+                    }
+                    Err(err) => return Err(err.into_error_message().into_status())
+                };
+
+                delete_result
             },
         )
         .await

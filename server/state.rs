@@ -112,8 +112,6 @@ pub trait ServerState: Debug {
         accessor: Accessor,
     ) -> Result<(), ArcServerStateError>;
 
-    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ArcServerStateError>;
-
     async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError>;
 
     async fn token_create(&self, username: String, password: String) -> Result<String, ArcServerStateError>;
@@ -512,23 +510,6 @@ impl ServerState for LocalServerState {
                 user_manager
                     .update(name, &user_update, &credential_update)
                     .map_err(|err| LocalServerStateError::UserCannotBeUpdated { typedb_source: err })?;
-                self.token_manager.invalidate_user(name).await;
-                Ok(())
-            }
-            Err(err) => Err(Arc::new(err)),
-        }
-    }
-
-    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ArcServerStateError> {
-        if !PermissionManager::exec_user_delete_allowed(accessor.0.as_str(), name) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
-        }
-
-        match self.get_user_manager() {
-            Ok(user_manager) => {
-                user_manager
-                    .delete(name)
-                    .map_err(|err| LocalServerStateError::UserCannotBeDeleted { typedb_source: err })?;
                 self.token_manager.invalidate_user(name).await;
                 Ok(())
             }

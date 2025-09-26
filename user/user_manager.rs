@@ -89,6 +89,40 @@ impl UserManager {
         }
     }
 
+    pub fn delete2(
+        &self,
+        username: &str
+    ) -> (Option<TransactionProfile>, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), UserDeleteError>) {
+        if username == DEFAULT_USER_NAME {
+            return (None, Err(UserDeleteError::DefaultUserCannotBeDeleted {}));
+        }
+        match self.contains(username) {
+            Ok(contains) => {
+                if !contains {
+                    return (None, Err(UserDeleteError::UserNotFound {}));
+                }
+            }
+            Err(user_get_err) => {
+                return match user_get_err {
+                    UserGetError::IllegalUsername { .. } => (None, Err(UserDeleteError::IllegalUsername {})),
+                    UserGetError::Unexpected { .. } => (None, Err(UserDeleteError::Unexpected {})),
+                }
+            }
+        }
+
+        let (transaction_profile, delete_result) = self
+            .transaction_util
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
+                user_repository::delete(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, username)
+            });
+        let delete_result = match delete_result {
+            Ok(tuple) => Ok(tuple),
+            Err(_query_error) => Err(UserDeleteError::IllegalUsername {}),
+        };
+
+        (Some(transaction_profile), delete_result)
+    }
+
     pub fn delete(&self, username: &str) -> Result<(), UserDeleteError> {
         if username == DEFAULT_USER_NAME {
             return Err(UserDeleteError::DefaultUserCannotBeDeleted {});
