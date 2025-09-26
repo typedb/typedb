@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use user::errors::UserUpdateError;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{
@@ -513,11 +514,41 @@ impl TypeDBService {
                 let user_update = None; // updating username is not supported now
                 let credential_update = Some(Credential::new_password(&payload.password));
                 let username = user_path.username.as_str();
-                service
-                    .server_state
-                    .users_update(username, user_update, credential_update, accessor)
-                    .await
-                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
+
+                let (mut transaction_profile, update_result) = match service.server_state.user_manager().await {
+                    Some(user_manager) => {
+                        match user_manager.update2(&username, &user_update, &credential_update) {
+                            (mut transaction_profile, Ok((database, snapshot))) => {
+                                let commit_profile = transaction_profile.commit_profile();
+                                let into_commit_record_result = snapshot
+                                    .finalise(commit_profile)
+                                    .map_err(|error|
+                                        LocalServerStateError::UserCannotBeUpdated { typedb_source: UserUpdateError::Unexpected { } }
+                                    );
+                                (transaction_profile, into_commit_record_result
+                                    .map(|commit_record| (database, commit_record)))
+                            }
+                            (transaction_profile, Err(error)) =>
+                                return Err(
+                                    HttpServiceError::State { typedb_source: Arc::new(LocalServerStateError::UserCannotBeUpdated { typedb_source: error }) }
+                                )
+                        }
+                    },
+                    None => return Err(HttpServiceError::State { typedb_source: Arc::new(LocalServerStateError::NotInitialised { })})
+                };
+
+                let update_result = match update_result {
+                    Ok((_, commit_record_opt)) => {
+                        let commit_profile = transaction_profile.commit_profile();
+                        if let Some(commit_record) = commit_record_opt {
+                            service.server_state.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await.unwrap();
+                        }
+                        Ok(())
+                    }
+                    Err(err) => return Err(HttpServiceError::State { typedb_source: Arc::new(err) })
+                };
+
+                update_result
             },
         )
         .await
