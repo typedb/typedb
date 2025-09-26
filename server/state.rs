@@ -104,14 +104,6 @@ pub trait ServerState: Debug {
 
     async fn users_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
     
-    async fn users_update(
-        &self,
-        name: &str,
-        user_update: Option<User>,
-        credential_update: Option<Credential>,
-        accessor: Accessor,
-    ) -> Result<(), ArcServerStateError>;
-
     async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError>;
 
     async fn token_create(&self, username: String, password: String) -> Result<String, ArcServerStateError>;
@@ -490,28 +482,6 @@ impl ServerState for LocalServerState {
                 Ok(bool) => Ok(bool),
                 Err(err) => Err(Arc::new(LocalServerStateError::UserCannotBeRetrieved { typedb_source: err })),
             },
-            Err(err) => Err(Arc::new(err)),
-        }
-    }
-
-    async fn users_update(
-        &self,
-        name: &str,
-        user_update: Option<User>,
-        credential_update: Option<Credential>,
-        accessor: Accessor,
-    ) -> Result<(), ArcServerStateError> {
-        if !PermissionManager::exec_user_update_permitted(accessor.0.as_str(), name) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
-        }
-        match self.get_user_manager() {
-            Ok(user_manager) => {
-                user_manager
-                    .update(name, &user_update, &credential_update)
-                    .map_err(|err| LocalServerStateError::UserCannotBeUpdated { typedb_source: err })?;
-                self.token_manager.invalidate_user(name).await;
-                Ok(())
-            }
             Err(err) => Err(Arc::new(err)),
         }
     }

@@ -596,7 +596,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
                 let (mut transaction_profile, update_result) = match self.server_state.user_manager().await {
                     Some(user_manager) => {
-                        match user_manager.update2(&username, &user_update, &credential_update) {
+                        match user_manager.update(&username, &user_update, &credential_update) {
                             (mut transaction_profile, Ok((database, snapshot))) => {
                                 let commit_profile = transaction_profile.commit_profile();
                                 let into_commit_record_result = snapshot

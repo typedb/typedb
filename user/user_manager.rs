@@ -61,7 +61,7 @@ impl UserManager {
         (transaction_profile, create_result)
     }
 
-    pub fn update2(
+    pub fn update(
         &self,
         username: &str,
         user: &Option<User>,
@@ -86,34 +86,6 @@ impl UserManager {
             Err(_query_error) => Err(UserUpdateError::IllegalUsername {}),
         };
         (transaction_profile, update_result)
-    }
-
-    pub fn update(
-        &self,
-        username: &str,
-        user: &Option<User>,
-        credential: &Option<Credential>,
-    ) -> Result<(), UserUpdateError> {
-        let update_result = self
-            .transaction_util
-            .write_transaction_commit(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
-                user_repository::update(
-                    snapshot,
-                    &type_mgr,
-                    thing_mgr.clone(),
-                    &fn_mgr,
-                    &query_mgr,
-                    username,
-                    user,
-                    credential,
-                )
-            })
-            .1;
-        match update_result {
-            Ok(Ok(())) => Ok(()),
-            Ok(Err(_query_error)) => Err(UserUpdateError::IllegalUsername {}),
-            Err(_commit_error) => Err(UserUpdateError::Unexpected {}),
-        }
     }
 
     pub fn delete(

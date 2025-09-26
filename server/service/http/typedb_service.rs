@@ -517,7 +517,7 @@ impl TypeDBService {
 
                 let (mut transaction_profile, update_result) = match service.server_state.user_manager().await {
                     Some(user_manager) => {
-                        match user_manager.update2(&username, &user_update, &credential_update) {
+                        match user_manager.update(&username, &user_update, &credential_update) {
                             (mut transaction_profile, Ok((database, snapshot))) => {
                                 let commit_profile = transaction_profile.commit_profile();
                                 let into_commit_record_result = snapshot
