@@ -7,7 +7,7 @@
 use std::{collections::HashMap, iter, str::FromStr};
 
 use answer::{variable_value::VariableValue, Thing};
-use compiler::VariablePosition;
+use compiler::{query_structure::QueryStructure, VariablePosition};
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, object::ObjectAPI, ThingAPI},
@@ -27,13 +27,17 @@ use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 use params;
-use query::error::QueryError;
+use query::{analyse::AnalysedQuery, error::QueryError};
 use resource::profile::StorageCounters;
+use server::service::http::message::query::{
+    annotations::encode_query_structure_annotations, query_structure::bdd::encode_query_structure_as_functor,
+};
 use storage::snapshot::SnapshotDropGuard;
 use test_utils::assert_matches;
 
 use crate::{
     generic_step,
+    json::JSON,
     query_answer_context::{with_rows_answer, QueryAnswer},
     transaction_context::{
         with_read_tx, with_schema_tx, with_write_tx_deconstructed,
@@ -197,6 +201,25 @@ fn execute_write_query(
                 }
             }
         }
+    })
+}
+
+fn execute_analyze_query(
+    context: &mut Context,
+    query: typeql::Query,
+    source_query: &str,
+) -> Result<AnalysedQuery, BehaviourTestExecutionError> {
+    with_read_tx!(context, |tx| {
+        tx.query_manager
+            .analyse_query(
+                tx.snapshot.clone_inner(),
+                &tx.type_manager,
+                tx.thing_manager.clone(),
+                &tx.function_manager,
+                &query.into_structure().into_pipeline(),
+                source_query,
+            )
+            .map_err(|source| BehaviourTestExecutionError::Query(*source))
     })
 }
 
@@ -600,4 +623,56 @@ async fn verify_answer_set(context: &mut Context, step: &Step) {
         }
     }
     let _num_answers = context.query_answer.as_ref().unwrap().as_rows().len();
+}
+
+#[apply(generic_step)]
+#[step(expr = r"get answers of typeql analyze query")]
+async fn get_answers_of_typeql_analyze_query(context: &mut Context, step: &Step) {
+    let query_str = step.docstring.as_ref().unwrap().as_str();
+    let query = typeql::parse_query(query_str).unwrap();
+    let analyzed_unencoded = execute_analyze_query(context, query, query_str).unwrap();
+    let analyzed = with_read_tx!(context, |tx| {
+        encode_query_structure_annotations(&(*tx.snapshot), &tx.type_manager, analyzed_unencoded).unwrap()
+    });
+    context.analyzed_query = Some(analyzed);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"analyzed query pipeline structure is:")]
+async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
+    use server::service::http::message::query::query_structure::bdd::FunctorEncoded;
+    let expected_functor = step.docstring().unwrap();
+    let analyzed = context.analyzed_query.as_ref().unwrap();
+    let (actual_functor, _preamble) = encode_query_structure_as_functor(&analyzed.structure);
+    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
+}
+
+#[apply(generic_step)]
+#[step(expr = r"analyzed query preamble contains:")]
+async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
+    use server::service::http::message::query::query_structure::bdd::FunctorEncoded;
+    let expected_functor = step.docstring().unwrap();
+    let analyzed = context.analyzed_query.as_ref().unwrap();
+    let (_pipeline, preamble_functors) = encode_query_structure_as_functor(&analyzed.structure);
+
+    assert!(
+        preamble_functors.iter().any(|actual_functor| {
+            normalize_functor_for_compare(actual_functor) == normalize_functor_for_compare(expected_functor)
+        }),
+        "Looking for\n\t{}\nin any of:\n\t{}",
+        normalize_functor_for_compare(expected_functor),
+        preamble_functors.iter().map(|s| normalize_functor_for_compare(s)).join("\n\t")
+    );
+}
+
+#[apply(generic_step)]
+#[step(expr = r"analyzed query annotations is:")]
+async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
+    todo!()
+}
+
+fn normalize_functor_for_compare(functor: &String) -> String {
+    let mut normalized = functor.to_lowercase();
+    normalized.retain(|c| !c.is_whitespace());
+    normalized
 }
