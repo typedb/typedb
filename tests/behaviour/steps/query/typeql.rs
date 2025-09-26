@@ -31,7 +31,7 @@ use params;
 use query::{analyse::AnalysedQuery, error::QueryError};
 use resource::profile::StorageCounters;
 use server::service::http::message::query::{
-    annotations::encode_query_structure_annotations, query_structure::bdd::encode_query_structure_as_functor,
+    annotations::encode_query_structure_and_annotations, query_structure::bdd::encode_query_structure_as_functor,
 };
 use storage::snapshot::SnapshotDropGuard;
 use test_utils::assert_matches;
@@ -633,7 +633,7 @@ async fn get_answers_of_typeql_analyze_query(context: &mut Context, step: &Step)
     let query = typeql::parse_query(query_str).unwrap();
     let analyzed_unencoded = execute_analyze_query(context, query, query_str).unwrap();
     let analyzed = with_read_tx!(context, |tx| {
-        encode_query_structure_annotations(&(*tx.snapshot), &tx.type_manager, analyzed_unencoded).unwrap()
+        encode_query_structure_and_annotations(&(*tx.snapshot), &tx.type_manager, analyzed_unencoded).unwrap()
     });
     context.analyzed_query = Some(analyzed);
 }

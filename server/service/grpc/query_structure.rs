@@ -74,7 +74,7 @@ pub fn encode_query_structure(
     type_manager: &TypeManager,
     query_structure: &QueryStructure,
 ) -> Result<typedb_protocol::analyze::res::QueryStructure, Box<ConceptReadError>> {
-    let query = encode_pipeline_structure(snapshot, type_manager, query_structure.query.as_ref().unwrap())?;
+    let query = encode_pipeline_structure(snapshot, type_manager, &query_structure.query)?;
     let preamble = query_structure
         .preamble
         .iter()
@@ -91,7 +91,7 @@ fn encode_function_structure(
     function: &FunctionStructure,
 ) -> Result<typedb_protocol::analyze::res::query_structure::FunctionStructure, Box<ConceptReadError>> {
     use typedb_protocol::analyze::res::query_structure::function_structure;
-    let body = encode_pipeline_structure(snapshot, type_manager, function.pipeline.as_ref().unwrap())?;
+    let body = encode_pipeline_structure(snapshot, type_manager, &function.body)?;
     let arguments = function.arguments.iter().map(|v| encode_structure_variable(*v)).collect();
     let returns = match &function.return_ {
         FunctionReturnStructure::Stream { variables } => {
@@ -148,7 +148,12 @@ fn encode_pipeline_structure(
         .collect();
     let stages =
         pipeline_structure.parametrised_structure.stages.iter().map(|stage| encode_query_stage(stage)).collect();
-    let outputs = pipeline_structure.available_variables.iter().map(|var| encode_structure_variable(*var)).collect();
+    let outputs = pipeline_structure
+        .parametrised_structure
+        .output_variables
+        .iter()
+        .map(|var| encode_structure_variable(*var))
+        .collect();
     Ok(typedb_protocol::analyze::res::query_structure::PipelineStructure {
         conjunctions,
         variable_info,
@@ -579,11 +584,11 @@ fn encode_ir_value_type(
     // TODO: Structs being just a string is a bit sus
     match value_type {
         ValueType::Builtin(value_type) => encode_value_type(value_type, snapshot, type_manager),
-        ValueType::Struct(name) => {
-            Ok(typedb_protocol::ValueType { value_type: Some(
-                typedb_protocol::value_type::ValueType::Struct(typedb_protocol::value_type::Struct { name })
-            )})
-        }
+        ValueType::Struct(name) => Ok(typedb_protocol::ValueType {
+            value_type: Some(typedb_protocol::value_type::ValueType::Struct(typedb_protocol::value_type::Struct {
+                name,
+            })),
+        }),
     }
 }
 

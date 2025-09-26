@@ -548,18 +548,16 @@ fn encode_structure_vertex(
             context.record_variable(variable.into());
             StructureVertex::Variable { id: variable.into() }
         }
-        Vertex::Label(label) => {
-            match context.get_type(label) {
-                Some(type_) => {
-                    let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
-                    StructureVertex::Label { r#type }
-                },
-                None => {
-                    let label = label.scoped_name.as_str().to_owned();
-                    StructureVertex::FailedTypeInference { label }
-                },
+        Vertex::Label(label) => match context.get_type(label) {
+            Some(type_) => {
+                let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
+                StructureVertex::Label { r#type }
             }
-        }
+            None => {
+                let label = label.scoped_name.as_str().to_owned();
+                StructureVertex::FailedTypeInference { label }
+            }
+        },
         Vertex::Parameter(param) => {
             let value = context.get_parameter_value(param).unwrap();
             StructureVertex::Value(encode_value(value))
