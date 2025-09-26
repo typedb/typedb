@@ -624,7 +624,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                                 let into_commit_record_result = snapshot
                                     .finalise(commit_profile)
                                     .map_err(|error|
-                                        LocalServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected { } }
+                                        LocalServerStateError::UserCannotBeDeleted { typedb_source: UserCreateError::Unexpected { } }
                                     );
                                 (transaction_profile, into_commit_record_result
                                     .map(|commit_record| (database, commit_record)))
