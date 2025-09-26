@@ -61,6 +61,33 @@ impl UserManager {
         (transaction_profile, create_result)
     }
 
+    pub fn update2(
+        &self,
+        username: &str,
+        user: &Option<User>,
+        credential: &Option<Credential>,
+    ) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), UserUpdateError>) {
+        let (transaction_profile, update_result) = self
+            .transaction_util
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
+                user_repository::update(
+                    snapshot,
+                    &type_mgr,
+                    thing_mgr.clone(),
+                    &fn_mgr,
+                    &query_mgr,
+                    username,
+                    user,
+                    credential,
+                )
+            });
+        let update_result = match update_result {
+            Ok(tuple) => Ok(tuple),
+            Err(_query_error) => Err(UserUpdateError::IllegalUsername {}),
+        };
+        (transaction_profile, update_result)
+    }
+
     pub fn update(
         &self,
         username: &str,
