@@ -53,7 +53,7 @@ use typeql::{parse_query, query::SchemaQuery};
 use super::message::query::query_structure::encode_pipeline_structure;
 use crate::service::{
     http::message::query::{
-        annotations::encode_query_structure_annotations, document::encode_document,
+        annotations::encode_query_structure_and_annotations, document::encode_document,
         query_structure::PipelineStructureResponse, row::encode_row, AnalysedQueryResponse,
     },
     transaction_service::{
@@ -1182,7 +1182,7 @@ impl TransactionService {
                     |typedb_source| { TransactionServiceError::AnalyseQueryFailed { typedb_source: *typedb_source } }
                 );
                 let encoded_analysed = unwrap_or_execute_else_respond_error_and_return_break!(
-                    encode_query_structure_annotations(snapshot.as_ref(), &type_manager, analysed),
+                    encode_query_structure_and_annotations(snapshot.as_ref(), &type_manager, analysed),
                     responder,
                     |typedb_source| {
                         TransactionServiceError::AnalyseQueryFailed {

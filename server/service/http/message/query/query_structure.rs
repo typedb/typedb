@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
-    encode_type_concept, encode_value, RoleTypeResponse, ValueResponse,
+    encode_type_concept, encode_value, RoleTypeResponse, TypeFailedInferenceResponse, ValueResponse,
 };
 
 struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
@@ -494,7 +494,7 @@ fn encode_structure_constraint(
         Constraint::Kind(kind) => constraints.push(StructureConstraintWithSpan {
             text_span: span,
             constraint: StructureConstraint::Kind {
-                kind: kind.kind().to_string(),
+                kind: kind.kind().name().to_owned(),
                 r#type: encode_structure_vertex(context, kind.type_())?,
             },
         }),

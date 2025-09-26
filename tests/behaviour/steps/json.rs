@@ -98,3 +98,17 @@ fn write_escaped_string(string: &str, f: &mut fmt::Formatter<'_>) -> fmt::Result
 
     write!(f, r#""{}""#, unsafe { String::from_utf8_unchecked(buf) })
 }
+
+impl From<serde_json::Value> for JSON {
+    fn from(value: serde_json::Value) -> Self {
+        use serde_json::Value;
+        match value {
+            Value::Null => Self::Null,
+            Value::Bool(v) => Self::Boolean(v),
+            Value::Number(v) => Self::Number(v.as_f64().unwrap()),
+            Value::String(v) => Self::String(Cow::Owned(v)),
+            Value::Array(v) => Self::Array(v.into_iter().map(|v| v.into()).collect()),
+            Value::Object(v) => Self::Object(v.into_iter().map(|(k, v)| (Cow::Owned(k), v.into())).collect()),
+        }
+    }
+}

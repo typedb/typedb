@@ -169,7 +169,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             typeql::token::Kind::Attribute => VariableCategory::ThingType,
             typeql::token::Kind::Role => VariableCategory::RoleType,
         };
-        let kind = Kind::new(kind, variable, source_span);
+        let kind = Kind::new(kind.into(), variable, source_span);
         self.context.set_variable_category(variable, category, kind.clone().into())?;
         let as_ref = self.constraints.add_constraint(kind);
         Ok(as_ref.as_kind().unwrap())
@@ -572,7 +572,7 @@ impl<ID: IrID> Constraint<ID> {
     pub fn name(&self) -> &str {
         match self {
             Constraint::Is(_) => typeql::token::Keyword::Is.as_str(),
-            Constraint::Kind(kind) => kind.kind.as_str(),
+            Constraint::Kind(kind) => kind.kind.name(),
             Constraint::Label(_) => typeql::token::Keyword::Label.as_str(),
             Constraint::Sub(_) => typeql::token::Keyword::Sub.as_str(),
             Constraint::Isa(_) => typeql::token::Keyword::Isa.as_str(),
@@ -1165,7 +1165,7 @@ impl<ID: IrID> fmt::Display for RoleName<ID> {
 }
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Kind<ID> {
-    kind: typeql::token::Kind,
+    kind: encoding::graph::type_::Kind,
     type_: Vertex<ID>,
     source_span: Option<Span>,
 }
@@ -1177,7 +1177,7 @@ impl<ID> Kind<ID> {
 }
 
 impl<ID: IrID> Kind<ID> {
-    pub fn new(kind: typeql::token::Kind, type_: ID, source_span: Option<Span>) -> Self {
+    pub fn new(kind: encoding::graph::type_::Kind, type_: ID, source_span: Option<Span>) -> Self {
         Self { kind, type_: Vertex::Variable(type_), source_span }
     }
 
@@ -1185,7 +1185,7 @@ impl<ID: IrID> Kind<ID> {
         &self.type_
     }
 
-    pub fn kind(&self) -> typeql::token::Kind {
+    pub fn kind(&self) -> encoding::graph::type_::Kind {
         self.kind
     }
 
@@ -1218,13 +1218,13 @@ impl<ID: IrID> From<Kind<ID>> for Constraint<ID> {
 impl<ID: StructuralEquality> StructuralEquality for Kind<ID> {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        hasher.write_u64(StructuralEquality::hash(self.kind.as_str()));
+        hasher.write_u64(StructuralEquality::hash(&mem::discriminant(&self.kind)));
         hasher.write_u64(StructuralEquality::hash(&self.type_));
         hasher.finish()
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.kind.as_str().equals(other.kind.as_str()) && self.type_.equals(&other.type_)
+        mem::discriminant(&self.kind).equals(&mem::discriminant(&other.kind)) && self.type_.equals(&other.type_)
     }
 }
 

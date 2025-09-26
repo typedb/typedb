@@ -18,6 +18,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType, ValueEncodable},
     AsBytes,
 };
+use error::todo_must_implement;
 use executor::{
     batch::Batch,
     pipeline::stage::{ExecutionContext, StageIterator},
@@ -43,7 +44,7 @@ use crate::{
         with_read_tx, with_schema_tx, with_write_tx_deconstructed,
         ActiveTransaction::{Read, Schema},
     },
-    util::{iter_table_map, list_contains_json, parse_json},
+    util::{iter_table_map, jsons_equal_up_to_reorder, list_contains_json, parse_json},
     BehaviourTestExecutionError, Context,
 };
 

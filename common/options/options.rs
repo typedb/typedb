@@ -28,6 +28,13 @@ impl Default for TransactionOptions {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
+
+pub enum QueryQueueOptions {
+    Query(QueryOptions),
+    Analyze,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct QueryOptions {
     pub include_instance_types: bool,
     pub answer_count_limit: Option<usize>,

@@ -372,6 +372,15 @@ macro_rules! unimplemented_feature {
     };
 }
 
+#[cfg(debug_assertions)]
+#[macro_export]
+macro_rules! todo_must_implement {
+    ($msg:literal) => {
+        todo!(concat!("TODO: Must implement: ", $msg)) // Ensure this is enabled when checking in.
+    };
+}
+
+#[cfg(not(debug_assertions))]
 #[macro_export]
 macro_rules! todo_must_implement {
     ($msg:literal) => {
