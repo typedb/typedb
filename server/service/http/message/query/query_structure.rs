@@ -402,7 +402,7 @@ fn encode_structure_constraint(
                 text_span: span,
                 constraint: StructureConstraint::Plays {
                     player: encode_structure_vertex(context, plays.player())?,
-                    role: encode_role_type_as_vertex(context, plays.role_type())?, // Doesn't have to be encode_role_type
+                    role: encode_structure_vertex(context, plays.role_type())?, // Doesn't have to be encode_role_type
                 },
             });
         }

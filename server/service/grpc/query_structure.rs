@@ -323,7 +323,7 @@ fn query_structure_constraint(
                 span,
                 constraint: Some(structure_constraint::Constraint::Plays(structure_constraint::Plays {
                     player: Some(encode_structure_vertex_label_or_variable(context, plays.player())?),
-                    role: Some(encode_role_as_vertex(context, plays.role_type())?),
+                    role: Some(encode_structure_vertex_label_or_variable(context, plays.role_type())?),
                     exactness: encode_exactness(false) as i32,
                 })),
             });
@@ -504,7 +504,7 @@ fn encode_role_as_vertex(
 ) -> Result<typedb_protocol::conjunction_structure::StructureVertex, Box<ConceptReadError>> {
     if let Some(label) = context.get_role_type(&role_type.as_variable().unwrap()) {
         // At present rolename could resolve to multiple types - Manually encode.
-        todo_must_implement!("This should encode rolename");
+        // todo_must_implement!("This should encode rolename");
         let label = structure_vertex::Label {
             label: Some(structure_vertex::label::Label::FailedInference(label.to_owned()))
         };
