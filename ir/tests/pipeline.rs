@@ -15,11 +15,12 @@ use ir::{
     },
     pipeline::{
         block::Block,
-        function_signature::{FunctionID, FunctionSignature},
+        function_signature::{FunctionID, FunctionSignature, HashMapFunctionSignatureIndex},
         ParameterRegistry,
     },
-    translation::PipelineTranslationContext,
+    translation::{pipeline::translate_pipeline, PipelineTranslationContext},
 };
+use test_utils_storage::mock_snapshot::MockSnapshot;
 
 // TODO: if we re-instante modifiers/stream operators as part of blocks, then we can bring this test back
 // #[test]
@@ -79,4 +80,123 @@ fn build_with_functions() {
     println!("{}", block.conjunction());
 
     // TODO: incomplete, since we don't have the called function IR
+}
+
+#[test]
+fn optional_writes() {
+    let query = r#"
+        match $p isa person; try { $p has name $name; };
+        delete try { has $name of $p; };
+        insert $q isa person; try { $q has $name; };
+    "#;
+    let translation_result = translate_pipeline(
+        &MockSnapshot::new(),
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_ok(), "{translation_result:?}");
+
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        delete try { has $name of $p; }; try { has $age of $p; };
+        insert $q isa person; try { $q has $name; }; try { $q has $age; };
+    "#;
+    let translation_result = translate_pipeline(
+        &MockSnapshot::new(),
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_ok(), "{translation_result:?}");
+
+    let query = r#"
+        match $p isa person; try { $p has name $name; };
+        put $q isa person; try { $q has $name; };
+    "#;
+    // put-try blocks don't parse currently
+    if let Ok(parsed) = typeql::parse_query(query) {
+        let translation_result = translate_pipeline(
+            &MockSnapshot::new(),
+            &HashMapFunctionSignatureIndex::empty(),
+            &parsed.into_structure().into_pipeline(),
+        );
+        assert!(translation_result.is_err(), "Try blocks are not yet supported in put stages: {query}");
+    }
+
+    let query = r#"
+        match $p isa person; try { $p has name $name; };
+        update try { $p has $name; };
+    "#;
+    // update-try blocks don't parse currently
+    if let Ok(parsed) = typeql::parse_query(query) {
+        let translation_result = translate_pipeline(
+            &MockSnapshot::new(),
+            &HashMapFunctionSignatureIndex::empty(),
+            &parsed.into_structure().into_pipeline(),
+        );
+        assert!(translation_result.is_err(), "Try blocks are not yet supported in update stages: {query}");
+    }
+}
+
+#[test]
+fn multiple_optional_writes_in_a_block() {
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        delete try { has $name of $p; has $age of $p; };
+    "#;
+    let translation_result = translate_pipeline(
+        &MockSnapshot::new(),
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_err(), "Multiple write statements in a try block are not yet supported: {query}");
+
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        insert $q isa person; try { $q has $name; $q has $age; };
+    "#;
+    let translation_result = translate_pipeline(
+        &MockSnapshot::new(),
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_err(), "Multiple write statements in a try block are not yet supported: {query}");
+
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        insert $q isa person; try { $q has $name, has $age; };
+    "#;
+    let translation_result = translate_pipeline(
+        &MockSnapshot::new(),
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_err(), "Multiple write statements in a try block are not yet supported: {query}");
+}
+
+#[test]
+fn nested_optional_blocks_in_write() {
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        delete try { has $name of $p; try { has $age of $p; }; };
+    "#;
+    if let Ok(parsed) = typeql::parse_query(query) {
+        // currently nested try blocks don't even parse in delete
+        let translation_result = translate_pipeline(
+            &MockSnapshot::new(),
+            &HashMapFunctionSignatureIndex::empty(),
+            &parsed.into_structure().into_pipeline(),
+        );
+        assert!(translation_result.is_err(), "Nested try blocks are not yet supported in write stages: {query}");
+    }
+
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        insert $q isa person; try { $q has $name; try { $q has $age; }; };
+    "#;
+    let translation_result = translate_pipeline(
+        &MockSnapshot::new(),
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_err(), "Nested try blocks are not yet supported in write stages: {query}");
 }

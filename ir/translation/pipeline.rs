@@ -57,8 +57,8 @@ impl TranslatedPipeline {
         translation_context: PipelineTranslationContext,
         value_parameters: ParameterRegistry,
         translated_preamble: Vec<Function>,
-        translated_fetch: Option<FetchObject>,
         translated_stages: Vec<TranslatedStage>,
+        translated_fetch: Option<FetchObject>,
     ) -> Self {
         TranslatedPipeline {
             translated_preamble,
@@ -185,13 +185,13 @@ pub fn translate_pipeline(
         &query.stages,
     )?;
 
-    Ok(TranslatedPipeline {
+    Ok(TranslatedPipeline::new(
+        translation_context,
+        value_parameters,
         translated_preamble,
         translated_stages,
         translated_fetch,
-        variable_registry: translation_context.variable_registry,
-        value_parameters,
-    })
+    ))
 }
 
 pub(crate) fn translate_pipeline_stages(
