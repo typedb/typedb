@@ -351,6 +351,9 @@ pub enum UnimplementedFeature {
 
     IrrelevantUnboundInvertedMode(&'static str),
     QueryingAnnotations,
+
+    MultipleOptionalWrites,
+    NestedOptionalWrites,
 }
 impl std::fmt::Display for UnimplementedFeature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

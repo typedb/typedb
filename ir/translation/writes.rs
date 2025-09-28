@@ -5,17 +5,23 @@
 */
 
 use answer::variable::Variable;
+use error::UnimplementedFeature;
 use typeql::{
     common::Spanned,
-    query::stage::{delete::DeletableKind, Put},
+    query::stage::{
+        delete::{Deletable, DeletableKind},
+        Put,
+    },
     statement::thing::{Constraint, HasValue, Head, RolePlayer},
     Expression, Statement,
 };
 
 use crate::{
+    pattern::conjunction::ConjunctionBuilder,
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{
         constraints::{add_statement, add_typeql_relation, register_typeql_var},
+        match_::add_patterns,
         verify_variable_available, PipelineTranslationContext,
     },
     RepresentationError,
@@ -26,12 +32,64 @@ pub fn translate_insert(
     value_parameters: &mut ParameterRegistry,
     insert: &typeql::query::stage::Insert,
 ) -> Result<Block, Box<RepresentationError>> {
+    validate_insert(insert)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
-    for statement in &insert.statements {
-        add_statement(&function_index, &mut builder.conjunction_mut(), statement)?;
-    }
+    add_patterns(&function_index, &mut builder.conjunction_mut(), &insert.patterns)?;
     builder.finish()
+}
+
+fn validate_insert(insert: &typeql::query::stage::Insert) -> Result<(), Box<RepresentationError>> {
+    for pattern in &insert.patterns {
+        validate_insert_pattern(pattern)?;
+    }
+    Ok(())
+}
+
+fn validate_insert_pattern(pattern: &typeql::Pattern) -> Result<(), Box<RepresentationError>> {
+    match pattern {
+        typeql::Pattern::Optional(typeql::pattern::Optional { patterns, .. }) => {
+            let [pattern] = &**patterns else {
+                return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                    feature: UnimplementedFeature::MultipleOptionalWrites,
+                }));
+            };
+            if matches!(pattern, typeql::Pattern::Optional(typeql::pattern::Optional { .. })) {
+                return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                    feature: UnimplementedFeature::NestedOptionalWrites,
+                }));
+            }
+            if let typeql::Pattern::Statement(Statement::Thing(thing_stmt)) = pattern {
+                if thing_stmt.constraints.len() != 1 {
+                    return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                        feature: UnimplementedFeature::MultipleOptionalWrites,
+                    }));
+                };
+            }
+            validate_insert_pattern(pattern)?;
+        }
+        typeql::Pattern::Conjunction(typeql::pattern::Conjunction { span, .. })
+        | typeql::Pattern::Disjunction(typeql::pattern::Disjunction { span, .. })
+        | typeql::Pattern::Negation(typeql::pattern::Negation { span, .. }) => {
+            return Err(Box::new(RepresentationError::IllegalNestedPatternForInsert { source_span: *span }))
+        }
+        typeql::Pattern::Statement(Statement::Thing(thing_stmt)) => {
+            for constraint in &thing_stmt.constraints {
+                match constraint {
+                    Constraint::Iid(_) => {
+                        return Err(Box::new(RepresentationError::IllegalStatementForInsert {
+                            source_span: thing_stmt.span(),
+                        }))
+                    }
+                    Constraint::Isa(_) | Constraint::Has(_) | Constraint::Links(_) => (),
+                }
+            }
+        }
+        typeql::Pattern::Statement(stmt) => {
+            return Err(Box::new(RepresentationError::IllegalStatementForInsert { source_span: stmt.span() }))
+        }
+    }
+    Ok(())
 }
 
 pub fn translate_update(
@@ -80,32 +138,68 @@ pub fn translate_delete(
     value_parameters: &mut ParameterRegistry,
     delete: &typeql::query::stage::Delete,
 ) -> Result<(Block, Vec<Variable>), Box<RepresentationError>> {
+    validate_delete(delete)?;
     validate_deleted_variables_availability(context, delete)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
-    let mut conjunction = builder.conjunction_mut();
-    let mut constraints = conjunction.constraints_mut();
     let mut deleted_concepts = Vec::new();
+    add_deletables(&delete.deletables, builder.conjunction_mut(), &mut deleted_concepts)?;
+    let block = builder.finish()?;
+    context.last_stage_visible_variables.retain(|name, var| !deleted_concepts.contains(var));
+    Ok((block, deleted_concepts))
+}
+
+fn validate_delete(delete: &typeql::query::stage::Delete) -> Result<(), Box<RepresentationError>> {
     for deletable in &delete.deletables {
         match &deletable.kind {
+            DeletableKind::Optional { deletables } if deletables.len() != 1 => {
+                return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                    feature: UnimplementedFeature::MultipleOptionalWrites,
+                }));
+            }
+            DeletableKind::Optional { deletables } if matches!(deletables[0].kind, DeletableKind::Optional { .. }) => {
+                return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                    feature: UnimplementedFeature::NestedOptionalWrites,
+                }));
+            }
+            _ => (),
+        }
+    }
+    Ok(())
+}
+
+fn add_deletables(
+    deletables: &[Deletable],
+    mut conjunction: ConjunctionBuilder<'_, '_>,
+    deleted_concepts: &mut Vec<Variable>,
+) -> Result<(), Box<RepresentationError>> {
+    for deletable in deletables {
+        match &deletable.kind {
             DeletableKind::Has { attribute, owner } => {
+                let mut constraints = conjunction.constraints_mut();
                 let translated_owner = register_typeql_var(&mut constraints, owner)?;
                 let translated_attribute = register_typeql_var(&mut constraints, attribute)?;
                 constraints.add_has(translated_owner, translated_attribute, deletable.span())?;
             }
             DeletableKind::Links { players, relation } => {
+                let mut constraints = conjunction.constraints_mut();
                 let translated_relation = register_typeql_var(&mut constraints, relation)?;
                 add_typeql_relation(&mut constraints, translated_relation, players)?;
             }
             DeletableKind::Concept { variable } => {
+                let mut constraints = conjunction.constraints_mut();
                 let translated_variable =
                     constraints.get_or_declare_variable(variable.name().unwrap(), variable.span())?;
                 deleted_concepts.push(translated_variable);
             }
+            DeletableKind::Optional { deletables } => {
+                debug_assert_eq!(deletables.len(), 1);
+                debug_assert!(!matches!(deletables[0].kind, DeletableKind::Optional { .. }));
+                let optional_builder = conjunction.add_optional(deletable.span())?;
+                add_deletables(deletables, optional_builder, deleted_concepts)?;
+            }
         }
     }
-    let block = builder.finish()?;
-    context.last_stage_visible_variables.retain(|name, var| !deleted_concepts.contains(var));
-    Ok((block, deleted_concepts))
+    Ok(())
 }
 
 fn validate_update_statements_and_variables(
@@ -200,25 +294,41 @@ fn validate_deleted_variables_availability(
     context: &mut PipelineTranslationContext,
     delete: &typeql::query::stage::Delete,
 ) -> Result<(), Box<RepresentationError>> {
-    delete.deletables.iter().try_for_each(|deletable| {
-        match &deletable.kind {
-            DeletableKind::Has { owner, attribute } => {
-                verify_variable_available!(context, owner => DeleteVariableUnavailable)?;
-                verify_variable_available!(context, attribute => DeleteVariableUnavailable)?;
-            }
-            DeletableKind::Links { relation, players } => {
-                verify_variable_available!(context, relation => DeleteVariableUnavailable)?;
-                players.role_players.iter().try_for_each(|rp| match rp {
-                    RolePlayer::Typed(_, player) | RolePlayer::Untyped(player) => {
-                        verify_variable_available!(context, player => DeleteVariableUnavailable).map(|_| ())
-                    }
-                })?;
-            }
-            DeletableKind::Concept { variable } => {
-                let translated = verify_variable_available!(context, variable => DeleteVariableUnavailable)?;
-                context.variable_registry.set_deleted_variable_category(translated)?;
-            }
-        };
-        Ok(())
-    })
+    for deletable in &delete.deletables {
+        validate_deleted_variable_availability_deletable(context, deletable)?;
+    }
+    Ok(())
+}
+
+fn validate_deleted_variable_availability_deletable(
+    context: &mut PipelineTranslationContext,
+    deletable: &Deletable,
+) -> Result<(), Box<RepresentationError>> {
+    match &deletable.kind {
+        DeletableKind::Has { owner, attribute } => {
+            verify_variable_available!(context, owner => DeleteVariableUnavailable)?;
+            verify_variable_available!(context, attribute => DeleteVariableUnavailable)?;
+        }
+        DeletableKind::Links { relation, players } => {
+            verify_variable_available!(context, relation => DeleteVariableUnavailable)?;
+            players.role_players.iter().try_for_each(|rp| match rp {
+                RolePlayer::Typed(_, player) | RolePlayer::Untyped(player) => {
+                    verify_variable_available!(context, player => DeleteVariableUnavailable).map(|_| ())
+                }
+            })?;
+        }
+        DeletableKind::Concept { variable } => {
+            let translated = verify_variable_available!(context, variable => DeleteVariableUnavailable)?;
+            context.variable_registry.set_deleted_variable_category(translated)?;
+        }
+        DeletableKind::Optional { deletables } if deletables.len() == 1 => {
+            let deletable = &deletables[0];
+            debug_assert!(!matches!(deletable.kind, DeletableKind::Optional { .. }));
+            validate_deleted_variable_availability_deletable(context, deletable)?;
+        }
+        DeletableKind::Optional { deletables } => {
+            unreachable!("Only one statement permitted in a delete try block! {deletable:?}");
+        }
+    };
+    Ok(())
 }
