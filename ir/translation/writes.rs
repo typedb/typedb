@@ -60,11 +60,15 @@ fn validate_insert_pattern(pattern: &typeql::Pattern) -> Result<(), Box<Represen
                 }));
             }
             if let typeql::Pattern::Statement(Statement::Thing(thing_stmt)) = pattern {
-                if thing_stmt.constraints.len() != 1 {
+                if let [Constraint::Isa(_) | Constraint::Iid(_)] = &*thing_stmt.constraints {
+                    return Err(Box::new(RepresentationError::IllegalStatementForInsert {
+                        source_span: thing_stmt.span(),
+                    }));
+                } else if thing_stmt.constraints.len() != 1 {
                     return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
                         feature: UnimplementedFeature::MultipleOptionalWrites,
                     }));
-                };
+                }
             }
             validate_insert_pattern(pattern)?;
         }
