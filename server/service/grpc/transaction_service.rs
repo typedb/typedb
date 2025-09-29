@@ -842,7 +842,7 @@ impl TransactionService {
                 } else {
                     self.run_analyse_query(req_id, pipeline, query).await;
                     // running read queries have no response on the main loop and will respond asynchronously
-                    Ok(Break(()))
+                    Ok(Continue(()))
                 }
             }
         }
