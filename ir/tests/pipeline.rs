@@ -20,7 +20,6 @@ use ir::{
     },
     translation::{pipeline::translate_pipeline, PipelineTranslationContext},
 };
-use test_utils_storage::mock_snapshot::MockSnapshot;
 
 // TODO: if we re-instante modifiers/stream operators as part of blocks, then we can bring this test back
 // #[test]
@@ -90,11 +89,19 @@ fn optional_writes() {
         insert $q isa person; try { $q has $name; };
     "#;
     let translation_result = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
+
+    let query = r#"
+        insert try { $p isa person; };
+    "#;
+    let translation_result = translate_pipeline(
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_err(), "insert try {{ $_ isa person; }} is not supported: {query}");
 
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
@@ -102,7 +109,6 @@ fn optional_writes() {
         insert $q isa person; try { $q has $name; }; try { $q has $age; };
     "#;
     let translation_result = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
@@ -114,11 +120,8 @@ fn optional_writes() {
     "#;
     // put-try blocks don't parse currently
     if let Ok(parsed) = typeql::parse_query(query) {
-        let translation_result = translate_pipeline(
-            &MockSnapshot::new(),
-            &HashMapFunctionSignatureIndex::empty(),
-            &parsed.into_structure().into_pipeline(),
-        );
+        let translation_result =
+            translate_pipeline(&HashMapFunctionSignatureIndex::empty(), &parsed.into_structure().into_pipeline());
         assert!(translation_result.is_err(), "Try blocks are not yet supported in put stages: {query}");
     }
 
@@ -128,11 +131,8 @@ fn optional_writes() {
     "#;
     // update-try blocks don't parse currently
     if let Ok(parsed) = typeql::parse_query(query) {
-        let translation_result = translate_pipeline(
-            &MockSnapshot::new(),
-            &HashMapFunctionSignatureIndex::empty(),
-            &parsed.into_structure().into_pipeline(),
-        );
+        let translation_result =
+            translate_pipeline(&HashMapFunctionSignatureIndex::empty(), &parsed.into_structure().into_pipeline());
         assert!(translation_result.is_err(), "Try blocks are not yet supported in update stages: {query}");
     }
 }
@@ -144,7 +144,6 @@ fn multiple_optional_writes_in_a_block() {
         delete try { has $name of $p; has $age of $p; };
     "#;
     let translation_result = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
@@ -155,7 +154,6 @@ fn multiple_optional_writes_in_a_block() {
         insert $q isa person; try { $q has $name; $q has $age; };
     "#;
     let translation_result = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
@@ -166,7 +164,6 @@ fn multiple_optional_writes_in_a_block() {
         insert $q isa person; try { $q has $name, has $age; };
     "#;
     let translation_result = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
@@ -181,11 +178,8 @@ fn nested_optional_blocks_in_write() {
     "#;
     if let Ok(parsed) = typeql::parse_query(query) {
         // currently nested try blocks don't even parse in delete
-        let translation_result = translate_pipeline(
-            &MockSnapshot::new(),
-            &HashMapFunctionSignatureIndex::empty(),
-            &parsed.into_structure().into_pipeline(),
-        );
+        let translation_result =
+            translate_pipeline(&HashMapFunctionSignatureIndex::empty(), &parsed.into_structure().into_pipeline());
         assert!(translation_result.is_err(), "Nested try blocks are not yet supported in write stages: {query}");
     }
 
@@ -194,7 +188,6 @@ fn nested_optional_blocks_in_write() {
         insert $q isa person; try { $q has $name; try { $q has $age; }; };
     "#;
     let translation_result = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
