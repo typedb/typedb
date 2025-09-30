@@ -648,6 +648,7 @@ fn role_player_distinct() {
     let person_label = Label::build("person", None);
     let company_label = Label::build("company", None);
 
+    // Schema transaction
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
@@ -784,6 +785,45 @@ fn role_player_distinct() {
         assert_eq!(company_2.get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED).count(), 1);
         assert_eq!(company_3.get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED).count(), 1);
 
+        assert!(
+            person_1
+                .get_indexed_relations(&snapshot, &thing_manager, employment_type, StorageCounters::DISABLED)
+                .is_err(),
+            "Expected no indices in schema transactions"
+        );
+
+        let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
+        assert!(finalise_result.is_ok());
+    }
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+    // Write transaction
+    {
+        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None, true);
+
+        let employment_type = type_manager.get_relation_type(&snapshot, &employment_label).unwrap().unwrap();
+
+        let entities: Vec<Entity> =
+            thing_manager.get_entities(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
+        assert_eq!(entities.len(), 4);
+        let relations: Vec<Relation> =
+            thing_manager.get_relations(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
+        assert_eq!(relations.len(), 2);
+
+        let players_0 = relations[0].get_players(&snapshot, &thing_manager, StorageCounters::DISABLED).count();
+        if players_0 == 2 {
+            assert_eq!(relations[1].get_players(&snapshot, &thing_manager, StorageCounters::DISABLED).count(), 3);
+        } else {
+            assert_eq!(relations[1].get_players(&snapshot, &thing_manager, StorageCounters::DISABLED).count(), 2);
+        }
+
+        let person_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap())
+            .unwrap();
+
+        assert_eq!(person_1.get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED).count(), 2);
         assert_eq!(
             person_1
                 .get_indexed_relations(&snapshot, &thing_manager, employment_type, StorageCounters::DISABLED)
@@ -791,14 +831,12 @@ fn role_player_distinct() {
                 .count(),
             3
         );
-
-        let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
-        assert!(finalise_result.is_ok());
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+    // Read transaction
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None, true);
 
         let employment_type = type_manager.get_relation_type(&snapshot, &employment_label).unwrap().unwrap();
 
@@ -843,6 +881,7 @@ fn role_player_duplicates_unordered() {
     let resource_label = Label::build("resource", None);
     let group_label = Label::build("group", None);
 
+    // Schema transaction
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
@@ -940,6 +979,80 @@ fn role_player_duplicates_unordered() {
             .sum();
         assert_eq!(resource_relations_count, 1);
 
+        assert!(
+            group_1
+                .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
+                .is_err(),
+            "Expected no indices in schema transactions"
+        );
+        assert!(
+            resource_1
+                .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
+                .is_err(),
+            "Expected no indices in schema transactions"
+        );
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(group_relations_count, 1);
+
+        let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
+        assert!(finalise_result.is_ok());
+    }
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+    // Write transaction
+    {
+        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None, true);
+        let collection_type = type_manager.get_relation_type(&snapshot, &collection_label).unwrap().unwrap();
+
+        let entities: Vec<Entity> =
+            thing_manager.get_entities(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
+        assert_eq!(entities.len(), 2);
+        let relations: Vec<Relation> =
+            thing_manager.get_relations(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
+        assert_eq!(relations.len(), 1);
+
+        let collection_1 = relations.first().unwrap();
+        let player_counts: u64 = collection_1
+            .get_players(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| res.unwrap().1)
+            .sum();
+        assert_eq!(player_counts, 2);
+
+        let group_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &group_label).unwrap().unwrap())
+            .unwrap();
+
+        let resource_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &resource_label).unwrap().unwrap())
+            .unwrap();
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(group_relations_count, 1);
+        let resource_relations_count: u64 = resource_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(resource_relations_count, 1);
+
         let group_1_indexed_count: u64 = group_1
             .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
             .unwrap()
@@ -958,23 +1071,12 @@ fn role_player_duplicates_unordered() {
             })
             .sum();
         assert_eq!(resource_1_indexed_count, 1);
-
-        let group_relations_count: u64 = group_1
-            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
-            .map(|res| {
-                let (_, _, count) = res.unwrap();
-                count
-            })
-            .sum();
-        assert_eq!(group_relations_count, 1);
-
-        let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
-        assert!(finalise_result.is_ok());
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+    // Read transaction
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None, true);
         let collection_type = type_manager.get_relation_type(&snapshot, &collection_label).unwrap().unwrap();
 
         let entities: Vec<Entity> =
@@ -1329,6 +1431,79 @@ fn role_player_duplicates_ordered_small_card() {
             .sum();
         assert_eq!(resource_relations_count, 2);
 
+        assert!(
+            group_1
+                .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
+                .is_err(),
+            "Expected no indices in schema transactions"
+        );
+        assert!(
+            resource_1
+                .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
+                .is_err(),
+            "Expected no indices in schema transactions"
+        );
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(group_relations_count, 1);
+
+        let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
+        assert!(finalise_result.is_ok());
+    }
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+    // Write transaction
+    {
+        let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None, true);
+        let collection_type = type_manager.get_relation_type(&snapshot, &collection_label).unwrap().unwrap();
+        let entities: Vec<Entity> =
+            thing_manager.get_entities(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
+        assert_eq!(entities.len(), 2);
+        let relations: Vec<Relation> =
+            thing_manager.get_relations(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
+        assert_eq!(relations.len(), 1);
+
+        let collection_1 = relations.first().unwrap();
+        let player_counts: u64 = collection_1
+            .get_players(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| res.unwrap().1)
+            .sum();
+        assert_eq!(player_counts, 3);
+
+        let group_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &group_label).unwrap().unwrap())
+            .unwrap();
+
+        let resource_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &resource_label).unwrap().unwrap())
+            .unwrap();
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(group_relations_count, 1);
+        let resource_relations_count: u64 = resource_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(resource_relations_count, 2);
+
         let group_1_indexed_count: u64 = group_1
             .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
             .unwrap()
@@ -1347,23 +1522,12 @@ fn role_player_duplicates_ordered_small_card() {
             })
             .sum();
         assert_eq!(resource_1_indexed_count, 2, "Expected index to work");
-
-        let group_relations_count: u64 = group_1
-            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
-            .map(|res| {
-                let (_, _, count) = res.unwrap();
-                count
-            })
-            .sum();
-        assert_eq!(group_relations_count, 1);
-
-        let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
-        assert!(finalise_result.is_ok());
     }
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+    // Read transaction
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None, true);
         let collection_type = type_manager.get_relation_type(&snapshot, &collection_label).unwrap().unwrap();
         let entities: Vec<Entity> =
             thing_manager.get_entities(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();

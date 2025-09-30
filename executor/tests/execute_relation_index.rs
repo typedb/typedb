@@ -336,7 +336,7 @@ fn traverse_index_from_unbound() {
     let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, true);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -591,7 +591,7 @@ fn traverse_index_from_bound() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, true);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -757,7 +757,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, true);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
