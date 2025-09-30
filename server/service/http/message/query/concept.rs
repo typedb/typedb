@@ -335,3 +335,23 @@ pub fn encode_value_type(
     };
     Ok(value_type)
 }
+
+pub mod tests {
+    use serde::Serialize;
+    #[derive(Serialize)]
+    #[serde(tag = "type", rename = "MyStruct")] // This defines a tag field named "type"
+    struct MyStruct {
+        field1: String,
+        field2: Option<u64>,
+    }
+
+    #[test]
+    fn test_struct_serialization() {
+        let my_struct = MyStruct {
+            field1: "hello".to_string(),
+            field2: None,
+        };
+        let serialized = serde_json::to_string(&my_struct).unwrap();
+        assert_eq!(serialized, r#"{"field1":"hello"}"#);
+    }
+}

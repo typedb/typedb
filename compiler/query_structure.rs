@@ -244,7 +244,7 @@ pub enum QueryStructureNestedPattern {
     Try { conjunction: QueryStructureConjunctionID },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct QueryStructureConjunctionID(pub u16);
 
 impl QueryStructureConjunctionID {

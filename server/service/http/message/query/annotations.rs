@@ -17,7 +17,6 @@ use query::analyse::{
     QueryStructureAnnotations,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::{
@@ -31,16 +30,27 @@ use crate::service::http::message::query::{
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", untagged)]
-enum SingleTypeAnnotationResponse {
+pub(crate) enum SingleTypeAnnotationResponse {
     Entity(EntityTypeResponse),
     Relation(RelationTypeResponse),
     Attribute(AttributeTypeResponse),
     Role(RoleTypeResponse),
 }
 
+impl SingleTypeAnnotationResponse {
+    pub fn label(&self) -> &'_ str {
+        match self {
+            SingleTypeAnnotationResponse::Entity(entity) => &entity.label,
+            SingleTypeAnnotationResponse::Relation(relation) => &relation.label,
+            SingleTypeAnnotationResponse::Attribute(attribute) => &attribute.label,
+            SingleTypeAnnotationResponse::Role(role) => &role.label,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-enum TypeAnnotationResponse {
+pub(crate) enum TypeAnnotationResponse {
     Thing {
         annotations: Vec<SingleTypeAnnotationResponse>,
     },
@@ -49,35 +59,35 @@ enum TypeAnnotationResponse {
     },
     #[serde(rename_all = "camelCase")]
     Value {
-        value_types: Vec<serde_json::Value>,
+        value_types: Vec<String>,
     },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct VariableAnnotationsByConjunctionResponse {
-    variable_annotations: HashMap<StructureVariableId, TypeAnnotationResponse>,
+pub(crate) struct VariableAnnotationsByConjunctionResponse {
+    pub(crate) variable_annotations: HashMap<StructureVariableId, TypeAnnotationResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct PipelineStructureAnnotationsResponse {
-    annotations_by_conjunction: Vec<VariableAnnotationsByConjunctionResponse>,
+pub(crate) struct PipelineStructureAnnotationsResponse {
+    pub(crate) annotations_by_conjunction: Vec<VariableAnnotationsByConjunctionResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-enum FunctionReturnAnnotationsResponse {
+pub(crate) enum FunctionReturnAnnotationsResponse {
     Single { annotations: Vec<TypeAnnotationResponse> },
     Stream { annotations: Vec<TypeAnnotationResponse> },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct FunctionStructureAnnotationsResponse {
-    arguments: Vec<TypeAnnotationResponse>,
-    returns: FunctionReturnAnnotationsResponse,
-    body: PipelineStructureAnnotationsResponse,
+pub(crate) struct FunctionStructureAnnotationsResponse {
+    pub(crate) arguments: Vec<TypeAnnotationResponse>,
+    pub(crate) returns: FunctionReturnAnnotationsResponse,
+    pub(crate) body: PipelineStructureAnnotationsResponse,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -106,9 +116,9 @@ pub struct FetchStructureFieldAnnotationsResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryStructureAnnotationsResponse {
-    preamble: Vec<FunctionStructureAnnotationsResponse>,
-    query: PipelineStructureAnnotationsResponse,
-    fetch: Option<FetchStructureAnnotationsResponse>, // Will always be the 'Object' variant
+    pub(crate) preamble: Vec<FunctionStructureAnnotationsResponse>,
+    pub(crate) query: PipelineStructureAnnotationsResponse,
+    pub(crate) fetch: Option<FetchStructureAnnotationsResponse>, // Will always be the 'Object' variant
 }
 
 fn encode_function_parameter_annotations(
@@ -117,14 +127,11 @@ fn encode_function_parameter_annotations(
     annotation: FunctionParameterAnnotation,
 ) -> Result<TypeAnnotationResponse, Box<ConceptReadError>> {
     Ok(match annotation {
-        FunctionParameterAnnotation::Concept(types) => TypeAnnotationResponse::Thing {
-            annotations: types
-                .into_iter()
-                .map(|type_| encode_type_annotation(snapshot, type_manager, &type_))
-                .collect::<Result<Vec<_>, _>>()?,
+        FunctionParameterAnnotation::Concept(types) => {
+            TypeAnnotationResponse::Thing { annotations: encode_type_annotation_vec(snapshot, type_manager, types.iter())?, }
         },
         FunctionParameterAnnotation::Value(v) => {
-            TypeAnnotationResponse::Value { value_types: vec![json!(encode_value_type(v, snapshot, type_manager)?)] }
+            TypeAnnotationResponse::Value { value_types: vec![encode_value_type(v, snapshot, type_manager)?] }
         }
     })
 }
@@ -136,22 +143,26 @@ fn encode_variable_type_annotations(
 ) -> Result<TypeAnnotationResponse, Box<ConceptReadError>> {
     Ok(match annotation {
         PipelineVariableAnnotation::Type(types) => TypeAnnotationResponse::Type {
-            annotations: types
-                .into_iter()
-                .map(|type_| encode_type_annotation(snapshot, type_manager, type_))
-                .collect::<Result<Vec<_>, _>>()?,
+            annotations: encode_type_annotation_vec(snapshot, type_manager, types.iter())?,
         },
         PipelineVariableAnnotation::Thing(types) => TypeAnnotationResponse::Thing {
-            annotations: types
-                .into_iter()
-                .map(|type_| encode_type_annotation(snapshot, type_manager, type_))
-                .collect::<Result<Vec<_>, _>>()?,
+            annotations: encode_type_annotation_vec(snapshot, type_manager, types.iter())?,
         },
         PipelineVariableAnnotation::Value(v) => {
-            let value_types = vec![json!(encode_value_type(v.clone(), snapshot, type_manager)?)];
+            let value_types = vec![encode_value_type(v.clone(), snapshot, type_manager)?];
             TypeAnnotationResponse::Value { value_types }
         }
     })
+}
+
+fn encode_type_annotation_vec<'a>(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    types: impl Iterator<Item = &'a Type>,
+) -> Result<Vec<SingleTypeAnnotationResponse>, Box<ConceptReadError>> {
+    let mut encoded = types.map(|t| encode_type_annotation(snapshot, type_manager, t)).collect::<Result<Vec<_>, _>>()?;
+    encoded.sort_by(|a, b| a.label().cmp(b.label()));
+    Ok(encoded)
 }
 
 fn encode_type_annotation(
