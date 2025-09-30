@@ -6,6 +6,7 @@
 
 use std::collections::HashMap;
 
+use answer::Type;
 use compiler::{
     annotation::function::FunctionParameterAnnotation,
     query_structure::{PipelineStructureAnnotations, PipelineVariableAnnotation, StructureVariableId},
@@ -20,19 +21,31 @@ use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::{
-    concept::{encode_type_concept, encode_value_type},
+    concept::{
+        encode_attribute_type, encode_entity_type, encode_relation_type, encode_role_type, encode_value_type,
+        AttributeTypeResponse, EntityTypeResponse, RelationTypeResponse, RoleTypeResponse,
+    },
     query_structure::encode_query_structure,
     AnalysedQueryResponse,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", untagged)]
+enum SingleTypeAnnotationResponse {
+    Entity(EntityTypeResponse),
+    Relation(RelationTypeResponse),
+    Attribute(AttributeTypeResponse),
+    Role(RoleTypeResponse),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 enum TypeAnnotationResponse {
     Thing {
-        annotations: Vec<serde_json::Value>,
+        annotations: Vec<SingleTypeAnnotationResponse>,
     },
     Type {
-        annotations: Vec<serde_json::Value>,
+        annotations: Vec<SingleTypeAnnotationResponse>,
     },
     #[serde(rename_all = "camelCase")]
     Value {
@@ -107,7 +120,7 @@ fn encode_function_parameter_annotations(
         FunctionParameterAnnotation::Concept(types) => TypeAnnotationResponse::Thing {
             annotations: types
                 .into_iter()
-                .map(|type_| encode_type_concept(&type_, snapshot, type_manager))
+                .map(|type_| encode_type_annotation(snapshot, type_manager, &type_))
                 .collect::<Result<Vec<_>, _>>()?,
         },
         FunctionParameterAnnotation::Value(v) => {
@@ -125,13 +138,13 @@ fn encode_variable_type_annotations(
         PipelineVariableAnnotation::Type(types) => TypeAnnotationResponse::Type {
             annotations: types
                 .into_iter()
-                .map(|type_| encode_type_concept(type_, snapshot, type_manager))
+                .map(|type_| encode_type_annotation(snapshot, type_manager, type_))
                 .collect::<Result<Vec<_>, _>>()?,
         },
         PipelineVariableAnnotation::Thing(types) => TypeAnnotationResponse::Thing {
             annotations: types
                 .into_iter()
-                .map(|type_| encode_type_concept(type_, snapshot, type_manager))
+                .map(|type_| encode_type_annotation(snapshot, type_manager, type_))
                 .collect::<Result<Vec<_>, _>>()?,
         },
         PipelineVariableAnnotation::Value(v) => {
@@ -139,6 +152,25 @@ fn encode_variable_type_annotations(
             TypeAnnotationResponse::Value { value_types }
         }
     })
+}
+
+fn encode_type_annotation(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    type_: &Type,
+) -> Result<SingleTypeAnnotationResponse, Box<ConceptReadError>> {
+    match type_ {
+        Type::Entity(entity) => {
+            Ok(SingleTypeAnnotationResponse::Entity(encode_entity_type(entity, snapshot, type_manager)?))
+        }
+        Type::Relation(relation) => {
+            Ok(SingleTypeAnnotationResponse::Relation(encode_relation_type(relation, snapshot, type_manager)?))
+        }
+        Type::Attribute(attribute) => {
+            Ok(SingleTypeAnnotationResponse::Attribute(encode_attribute_type(attribute, snapshot, type_manager)?))
+        }
+        Type::RoleType(role) => Ok(SingleTypeAnnotationResponse::Role(encode_role_type(role, snapshot, type_manager)?)),
+    }
 }
 
 pub(crate) fn encode_query_structure_annotations(

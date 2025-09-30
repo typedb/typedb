@@ -92,9 +92,9 @@ fn check_concept_is_kind(concept: &ConceptResponse, concept_kind: ConceptKind, i
 
 fn concept_get_type(concept: &ConceptResponse) -> ConceptResponse {
     match concept {
-        ConceptResponse::Entity(entity) => ConceptResponse::EntityType(entity.type_.clone().unwrap()),
-        ConceptResponse::Relation(relation) => ConceptResponse::RelationType(relation.type_.clone().unwrap()),
-        ConceptResponse::Attribute(attribute) => ConceptResponse::AttributeType(attribute.type_.clone().unwrap()),
+        ConceptResponse::Entity(entity) => ConceptResponse::EntityType(entity.r#type.clone().unwrap()),
+        ConceptResponse::Relation(relation) => ConceptResponse::RelationType(relation.r#type.clone().unwrap()),
+        ConceptResponse::Attribute(attribute) => ConceptResponse::AttributeType(attribute.r#type.clone().unwrap()),
         _ => panic!("Only instances can have types"),
     }
 }

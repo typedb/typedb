@@ -412,9 +412,9 @@ impl ConceptResponse {
             ConceptResponse::RelationType(relation_type) => Some(relation_type.label.as_str()),
             ConceptResponse::AttributeType(attribute_type) => Some(attribute_type.label.as_str()),
             ConceptResponse::RoleType(role_type) => Some(role_type.label.as_str()),
-            ConceptResponse::Entity(entity) => entity.type_.as_ref().map(|val| val.label.as_str()),
-            ConceptResponse::Relation(relation) => relation.type_.as_ref().map(|val| val.label.as_str()),
-            ConceptResponse::Attribute(attribute) => attribute.type_.as_ref().map(|val| val.label.as_str()),
+            ConceptResponse::Entity(entity) => entity.r#type.as_ref().map(|val| val.label.as_str()),
+            ConceptResponse::Relation(relation) => relation.r#type.as_ref().map(|val| val.label.as_str()),
+            ConceptResponse::Attribute(attribute) => attribute.r#type.as_ref().map(|val| val.label.as_str()),
             ConceptResponse::Value(value) => Some(value.value_type.as_ref()),
         }
     }

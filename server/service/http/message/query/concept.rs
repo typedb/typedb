@@ -32,93 +32,58 @@ macro_rules! count_fields {
     ($head:ident $(, $tail:ident)*) => { 1 + count_fields!($($tail),*) };
 }
 
-macro_rules! serializable_response {
-    (
-        $vis:vis struct $name:ident {
-            kind = $kind:expr,
-            $( $field_vis:vis $field:ident : $ty:ty => $json_key:literal ),* $(,)?
-        }
-    ) => {
-        #[derive(Debug, Clone, serde::Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        $vis struct $name {
-            $( $field_vis $field : $ty ),*
-        }
-
-        impl serde::Serialize for $name {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: serde::Serializer,
-            {
-                let mut state = serializer.serialize_struct(stringify!($name), 1 + count_fields!($($field),*))?;
-                state.serialize_field("kind", $kind)?;
-                $( state.serialize_field($json_key, &self.$field)?; )*
-                state.end()
-            }
-        }
-    };
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "kind", rename = "entity")]
+pub struct EntityResponse {
+    pub iid: String,
+    pub r#type: Option<EntityTypeResponse>,
 }
 
-serializable_response! {
-    pub struct EntityResponse {
-        kind = "entity",
-        pub iid: String => "iid",
-        pub type_: Option<EntityTypeResponse> => "type",
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "kind", rename = "relation")]
+pub struct RelationResponse {
+    pub iid: String,
+    pub r#type: Option<RelationTypeResponse>,
 }
 
-serializable_response! {
-    pub struct RelationResponse {
-        kind = "relation",
-        pub iid: String => "iid",
-        pub type_: Option<RelationTypeResponse> => "type",
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "kind", rename = "attribute")]
+pub struct AttributeResponse {
+    pub value: serde_json::Value,
+    pub value_type: String,
+    pub r#type: Option<AttributeTypeResponse>,
 }
 
-serializable_response! {
-    pub struct AttributeResponse {
-        kind = "attribute",
-        pub value: serde_json::Value => "value",
-        pub value_type: String => "valueType",
-        pub type_: Option<AttributeTypeResponse> => "type",
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "kind", rename = "value")]
+pub struct ValueResponse {
+    pub value: serde_json::Value,
+    pub value_type: String,
 }
 
-serializable_response! {
-    pub struct ValueResponse {
-        kind = "value",
-        pub value: serde_json::Value => "value",
-        pub value_type: String => "valueType",
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "kind", rename = "entityType")]
+pub struct EntityTypeResponse {
+    pub label: String,
 }
 
-serializable_response! {
-    pub struct EntityTypeResponse {
-        kind = "entityType",
-        pub label: String => "label",
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "kind", rename = "relationType")]
+pub struct RelationTypeResponse {
+    pub label: String,
 }
 
-serializable_response! {
-    pub struct RelationTypeResponse {
-        kind = "relationType",
-        pub label: String => "label",
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "kind", rename = "attributeType")]
+pub struct AttributeTypeResponse {
+    pub label: String,
+    pub value_type: Option<String>,
 }
 
-serializable_response! {
-    pub struct AttributeTypeResponse {
-        kind = "attributeType",
-        pub label: String => "label",
-        pub value_type: Option<String> => "valueType",
-    }
-}
-
-serializable_response! {
-    pub struct RoleTypeResponse {
-        kind = "roleType",
-        pub label: String => "label",
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "kind", rename = "roleType")]
+pub struct RoleTypeResponse {
+    pub label: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -214,7 +179,7 @@ pub fn encode_entity(
 ) -> Result<EntityResponse, Box<ConceptReadError>> {
     Ok(EntityResponse {
         iid: encode_iid(entity.iid()),
-        type_: if include_instance_types {
+        r#type: if include_instance_types {
             Some(encode_entity_type(&entity.type_(), snapshot, type_manager)?)
         } else {
             None
@@ -230,7 +195,7 @@ pub fn encode_relation(
 ) -> Result<RelationResponse, Box<ConceptReadError>> {
     Ok(RelationResponse {
         iid: encode_iid(relation.iid()),
-        type_: if include_instance_types {
+        r#type: if include_instance_types {
             Some(encode_relation_type(&relation.type_(), snapshot, type_manager)?)
         } else {
             None
@@ -250,7 +215,7 @@ pub fn encode_attribute(
     Ok(AttributeResponse {
         value_type: encode_value_value_type(&value),
         value: encode_value_value(value),
-        type_: if include_instance_types {
+        r#type: if include_instance_types {
             Some(encode_attribute_type(&attribute.type_(), snapshot, type_manager)?)
         } else {
             None
