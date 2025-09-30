@@ -521,7 +521,7 @@ fn write_to_delta<D>(
         Write::Delete => {
             if commits.range(concurrent_commit_range).any(|(_, writes)| {
                 matches!(
-                    writes.operations.writes_in(write_key.keyspace_id()).get_write(write_key.bytes()),
+                    writes.operations.writes_in(write_key.keyspace_id()).writes_get(write_key.bytes()),
                     Some(Write::Delete)
                 )
             }) {
@@ -542,7 +542,7 @@ fn write_to_delta<D>(
             let first_commit_sequence_number = *commits.first_key_value().unwrap().0;
 
             if let Some(write) = commits.range(concurrent_commit_range).rev().find_map(|(_, writes)| {
-                writes.operations.writes_in(write_key.keyspace_id()).get_write(write_key.bytes())
+                writes.operations.writes_in(write_key.keyspace_id()).writes_get(write_key.bytes())
             }) {
                 match write {
                     Write::Insert { .. } | Write::Put { .. } => Ok(0),

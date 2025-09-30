@@ -66,7 +66,7 @@ const CASTING_CHARACTER_LABEL: Label = Label::new_static_scoped("character", "ca
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
@@ -336,7 +336,7 @@ fn traverse_index_from_unbound() {
     let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -591,7 +591,7 @@ fn traverse_index_from_bound() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -757,7 +757,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(

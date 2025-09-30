@@ -52,7 +52,7 @@ const DOG_LABEL: Label = Label::new_static("dog");
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let animal_type = type_manager.create_entity_type(&mut snapshot, &ANIMAL_LABEL).unwrap();
@@ -120,7 +120,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -198,7 +198,7 @@ fn traverse_isa_unbounded_sorted_type() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -280,7 +280,7 @@ fn traverse_isa_bounded_thing() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -376,7 +376,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -454,7 +454,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -536,7 +536,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -634,7 +634,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -732,7 +732,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -811,7 +811,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(

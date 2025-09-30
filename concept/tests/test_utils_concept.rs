@@ -29,6 +29,7 @@ pub fn setup_concept_storage(storage: &mut Arc<MVCCStorage<WALClient>>) {
 pub fn load_managers(
     storage: Arc<MVCCStorage<WALClient>>,
     type_cache_at: Option<SequenceNumber>,
+    static_schema_guarantee: bool,
 ) -> (Arc<TypeManager>, Arc<ThingManager>) {
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let mut statistics = Statistics::new(DurabilitySequenceNumber::MIN);
@@ -41,6 +42,7 @@ pub fn load_managers(
         thing_vertex_generator,
         type_manager.clone(),
         Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+        static_schema_guarantee,
     ));
     (type_manager, thing_manager)
 }

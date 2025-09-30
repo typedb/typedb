@@ -18,7 +18,7 @@ use test_utils_encoding::create_core_storage;
 fn basic() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let mut snapshot = storage.clone().open_snapshot_schema();
     let query_manager = QueryManager::new(None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);

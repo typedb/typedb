@@ -67,7 +67,7 @@ const RELATES_CARDINALITY_ANY: RelatesAnnotation = RelatesAnnotation::Cardinalit
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
@@ -291,7 +291,7 @@ fn traverse_links_unbounded_sorted_from() {
 
     let entry = builder.finish().unwrap();
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -394,7 +394,7 @@ fn traverse_links_unbounded_sorted_to() {
 
     let entry = builder.finish().unwrap();
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -497,7 +497,7 @@ fn traverse_links_bounded_relation() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -616,7 +616,7 @@ fn traverse_links_bounded_relation_player() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -739,7 +739,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     let entry = builder.finish().unwrap();
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let snapshot1 = &*snapshot;
     let previous_stage_variable_annotations = &BTreeMap::new();
@@ -839,7 +839,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     let entry = builder.finish().unwrap();
 
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let snapshot1 = &*snapshot;
     let previous_stage_variable_annotations = &BTreeMap::new();
@@ -943,7 +943,7 @@ fn traverse_links_reverse_bounded_player() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(
@@ -1062,7 +1062,7 @@ fn traverse_links_reverse_bounded_player_relation() {
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
     let block_annotations = infer_types(

@@ -626,6 +626,14 @@ impl RelationType {
         }
         Ok(())
     }
+
+    pub fn qualifies_for_relation_index(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        type_manager.type_qualifies_for_relation_index(snapshot, *self)
+    }
 }
 
 impl fmt::Display for RelationType {

@@ -525,6 +525,10 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         )
     }
 
+    fn is_same_role_player(self, self_role_type: RoleType, other_player: Object, other_role_type: RoleType) -> bool {
+        self.into_object() == other_player && self_role_type == other_role_type
+    }
+
     fn get_indexed_relations(
         self,
         snapshot: &impl ReadableSnapshot,

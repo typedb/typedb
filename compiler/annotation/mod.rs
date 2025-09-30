@@ -291,6 +291,7 @@ pub mod tests {
             thing_vertex_generator.clone(),
             type_manager.clone(),
             Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
+            false,
         );
 
         (type_manager, thing_manager)

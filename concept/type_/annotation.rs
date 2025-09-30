@@ -21,7 +21,7 @@ use encoding::{
     value::{value::Value, value_type::ValueType, ValueEncodable},
 };
 use error::typedb_error;
-use regex::{Regex};
+use regex::Regex;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
 
@@ -247,7 +247,7 @@ impl AnnotationRegex {
         if !self.regex.is_empty() {
             match Regex::new(&self.regex) {
                 Ok(_) => Ok(()),
-                Err(err) => Err(err)
+                Err(err) => Err(err),
             }
         } else {
             Err(regex::Error::Syntax(String::from("Unexpected empty regex")))

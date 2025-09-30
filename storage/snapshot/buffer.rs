@@ -177,10 +177,6 @@ impl WriteBuffer {
         self.writes.contains_key(key)
     }
 
-    pub(crate) fn get(&self, key: &[u8]) -> Option<&Write> {
-        self.writes.get(key)
-    }
-
     pub(crate) fn iterate_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> BufferRangeIterator {
         let (range_start, range_end, _) = range.into_raw();
         let exclusive_end_bytes = Self::compute_exclusive_end(&range_start, &range_end);
@@ -256,7 +252,7 @@ impl WriteBuffer {
         &mut self.writes
     }
 
-    pub fn get_write(&self, key: &[u8]) -> Option<&Write> {
+    pub fn writes_get(&self, key: &[u8]) -> Option<&Write> {
         self.writes.get(key)
     }
 

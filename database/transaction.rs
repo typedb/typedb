@@ -64,6 +64,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
             database.thing_vertex_generator.clone(),
             type_manager.clone(),
             schema.thing_statistics.clone(),
+            true,
         ));
         let function_manager = Arc::new(FunctionManager::new(
             database.definition_key_generator.clone(),
@@ -121,6 +122,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             database.thing_vertex_generator.clone(),
             type_manager.clone(),
             schema.thing_statistics.clone(),
+            true,
         ));
         let function_manager = Arc::new(FunctionManager::new(
             database.definition_key_generator.clone(),
@@ -240,6 +242,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
                 database.thing_vertex_generator.clone(),
                 type_manager.clone(),
                 schema.thing_statistics.clone(),
+                false,
             )
         };
         let function_manager = Arc::new(FunctionManager::new(database.definition_key_generator.clone(), None));
