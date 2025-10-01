@@ -312,9 +312,9 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
                     unreachable!("Expected either type annotations or value annotations to be present");
                 }
             }
-            AnnotatedFetchSome::ListAttributesAsList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
-            | AnnotatedFetchSome::ListAttributesFromList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
-            | AnnotatedFetchSome::SingleAttribute(var, attribute_type) => {
+            AnnotatedFetchSome::ListAttributesAsList(_var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
+            | AnnotatedFetchSome::ListAttributesFromList(_var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
+            | AnnotatedFetchSome::SingleAttribute(_var, attribute_type) => {
                 // TODO: Refine based on owner?
                 let subtypes = attribute_type.get_subtypes(snapshot, type_manager)?;
                 let attribute_types = chain!([*attribute_type].into_iter(), subtypes.iter().copied());
@@ -383,14 +383,13 @@ pub fn get_last_stage_annotations(stages: &[AnnotatedStage]) -> &TypeAnnotations
     stages
         .iter()
         .filter_map(|stage| match stage {
-            AnnotatedStage::Match { block_annotations, block, .. }
-            | AnnotatedStage::Put { match_annotations: block_annotations, block, .. } => {
+            | AnnotatedStage::Match { block_annotations, block, .. }
+            | AnnotatedStage::Put { match_annotations: block_annotations, block, .. }
+            | AnnotatedStage::Insert { annotations: block_annotations, block, .. }
+            | AnnotatedStage::Update { annotations: block_annotations, block, .. } => {
                 Some(block_annotations.type_annotations_of(block.conjunction()).unwrap())
             }
-            AnnotatedStage::Insert { annotations, .. } | AnnotatedStage::Update { annotations, .. } => {
-                Some(annotations)
-            }
-            AnnotatedStage::Delete { .. }
+            | AnnotatedStage::Delete { .. }
             | AnnotatedStage::Select(_)
             | AnnotatedStage::Sort(_)
             | AnnotatedStage::Offset(_)
