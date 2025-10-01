@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use compiler::{
     executable::insert::{
-        executable::InsertExecutable,
+        executable::{InsertExecutable, OptionalInsert},
         instructions::{ConceptInstruction, ConnectionInstruction},
         VariableSource,
     },
@@ -129,7 +129,7 @@ pub(crate) fn prepare_output_rows(
 pub(crate) fn append_row_for_insert_mapped(
     output_batch: &mut Batch,
     unmapped_row: MaybeOwnedRow<'_>,
-    mapping: &Vec<(VariablePosition, VariablePosition)>,
+    mapping: &[(VariablePosition, VariablePosition)],
 ) {
     // copy out row multiplicity M, set it to 1, then append the row M times
     let one = 1;
@@ -152,23 +152,77 @@ pub(crate) fn execute_insert(
 ) -> Result<(), Box<WriteError>> {
     debug_assert!(row.get_multiplicity() == 1);
     debug_assert!(row.len() == executable.output_row_schema.len());
-    let mut index = 0;
-    for instruction in &executable.concept_instructions {
-        let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
-        let measurement = step_profile.start_measurement();
-        match instruction {
-            ConceptInstruction::PutAttribute(isa_attr) => {
-                isa_attr.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
-            }
-            ConceptInstruction::PutObject(isa_object) => {
-                isa_object.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
-            }
-        }
-        measurement.end(&step_profile, 1, 1);
-        index += 1;
+    let mut profile_index = 0;
+    execute_concept_instructions(
+        &executable.concept_instructions,
+        snapshot,
+        thing_manager,
+        parameters,
+        row,
+        stage_profile,
+        &mut profile_index,
+    )?;
+    execute_connection_instructions(
+        &executable.connection_instructions,
+        snapshot,
+        thing_manager,
+        parameters,
+        row,
+        stage_profile,
+        &mut profile_index,
+    )?;
+    for optional in &executable.optional_inserts {
+        execute_optional_insert(optional, snapshot, thing_manager, parameters, row, stage_profile, &mut profile_index)?;
     }
-    for instruction in &executable.connection_instructions {
-        let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
+    Ok(())
+}
+
+fn execute_optional_insert(
+    optional: &OptionalInsert,
+    snapshot: &mut impl WritableSnapshot,
+    thing_manager: &ThingManager,
+    parameters: &ParameterRegistry,
+    row: &mut Row<'_>,
+    stage_profile: &StageProfile,
+    profile_index: &mut usize,
+) -> Result<(), Box<WriteError>> {
+    for &input in &optional.required_input_variables {
+        if row.len() <= input.as_usize() || row.get(input).is_none() {
+            return Ok(());
+        }
+    }
+    execute_concept_instructions(
+        &optional.concept_instructions,
+        snapshot,
+        thing_manager,
+        parameters,
+        row,
+        stage_profile,
+        profile_index,
+    )?;
+    execute_connection_instructions(
+        &optional.connection_instructions,
+        snapshot,
+        thing_manager,
+        parameters,
+        row,
+        stage_profile,
+        profile_index,
+    )?;
+    Ok(())
+}
+
+fn execute_connection_instructions(
+    connection_instructions: &[ConnectionInstruction],
+    snapshot: &mut impl WritableSnapshot,
+    thing_manager: &ThingManager,
+    parameters: &ParameterRegistry,
+    row: &mut Row<'_>,
+    stage_profile: &StageProfile,
+    profile_index: &mut usize,
+) -> Result<(), Box<WriteError>> {
+    for instruction in connection_instructions {
+        let step_profile = stage_profile.extend_or_get(*profile_index, || format!("{}", instruction));
         let measurement = step_profile.start_measurement();
         match instruction {
             ConnectionInstruction::Has(has) => {
@@ -179,7 +233,33 @@ pub(crate) fn execute_insert(
             }
         };
         measurement.end(&step_profile, 1, 1);
-        index += 1;
+        *profile_index += 1;
+    }
+    Ok(())
+}
+
+fn execute_concept_instructions(
+    concept_instructions: &[ConceptInstruction],
+    snapshot: &mut impl WritableSnapshot,
+    thing_manager: &ThingManager,
+    parameters: &ParameterRegistry,
+    row: &mut Row<'_>,
+    stage_profile: &StageProfile,
+    profile_index: &mut usize,
+) -> Result<(), Box<WriteError>> {
+    for instruction in concept_instructions {
+        let step_profile = stage_profile.extend_or_get(*profile_index, || format!("{}", instruction));
+        let measurement = step_profile.start_measurement();
+        match instruction {
+            ConceptInstruction::PutAttribute(isa_attr) => {
+                isa_attr.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
+            }
+            ConceptInstruction::PutObject(isa_object) => {
+                isa_object.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
+            }
+        }
+        measurement.end(&step_profile, 1, 1);
+        *profile_index += 1;
     }
     Ok(())
 }
