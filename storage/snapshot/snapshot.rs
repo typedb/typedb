@@ -46,6 +46,8 @@ macro_rules! get_mapped_method {
 }
 
 pub trait ReadableSnapshot {
+    const STATIC_SCHEMA_GUARANTEE: bool;
+
     fn open_sequence_number(&self) -> SequenceNumber;
 
     fn get<const INLINE_BYTES: usize>(
@@ -229,6 +231,8 @@ impl<D> ReadSnapshot<D> {
 }
 
 impl<D> ReadableSnapshot for ReadSnapshot<D> {
+    const STATIC_SCHEMA_GUARANTEE: bool = true;
+
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }
@@ -333,6 +337,8 @@ impl<D> WriteSnapshot<D> {
 }
 
 impl<D> ReadableSnapshot for WriteSnapshot<D> {
+    const STATIC_SCHEMA_GUARANTEE: bool = true;
+
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }
@@ -489,6 +495,8 @@ impl<D> SchemaSnapshot<D> {
 }
 
 impl<D> ReadableSnapshot for SchemaSnapshot<D> {
+    const STATIC_SCHEMA_GUARANTEE: bool = false;
+
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }

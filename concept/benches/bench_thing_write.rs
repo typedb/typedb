@@ -61,7 +61,7 @@ fn write_entity_attributes(
             type_vertex_generator.clone(),
             Some(schema_cache),
         ));
-        let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone(), statistics, false);
+        let thing_manager = ThingManager::new(thing_vertex_generator.clone(), type_manager.clone(), statistics);
 
         let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot, AGE_LABEL.get().unwrap()).unwrap().unwrap();
@@ -84,7 +84,7 @@ fn write_entity_attributes(
 }
 
 fn create_schema(storage: Arc<MVCCStorage<WALClient>>) {
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap()).unwrap();
     age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();

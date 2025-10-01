@@ -58,7 +58,7 @@ const EMAIL_LABEL: Label = Label::new_static("email");
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
@@ -212,7 +212,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
 
     let block_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone(), None, false);
+        let (type_manager, _) = load_managers(storage.clone(), None);
         let variable_registry = &translation_context.variable_registry;
         let previous_stage_variable_annotations = &BTreeMap::new();
         infer_types(
@@ -247,7 +247,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (_, thing_manager) = load_managers(storage.clone(), None, false);
+    let (_, thing_manager) = load_managers(storage.clone(), None);
     let executor = MatchExecutor::new(
         &executable,
         &snapshot,
@@ -307,7 +307,7 @@ fn unselected_named_vars_counted() {
 
     let block_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone(), None, false);
+        let (type_manager, _) = load_managers(storage.clone(), None);
         let variable_registry = &translation_context.variable_registry;
         let previous_stage_variable_annotations = &BTreeMap::new();
         infer_types(
@@ -344,7 +344,7 @@ fn unselected_named_vars_counted() {
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-    let (_, thing_manager) = load_managers(storage.clone(), None, false);
+    let (_, thing_manager) = load_managers(storage.clone(), None);
     let executor = MatchExecutor::new(
         &executable,
         &snapshot,
@@ -415,7 +415,7 @@ fn cartesian_named_counted_checked() {
 
     let block_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
-        let (type_manager, _) = load_managers(storage.clone(), None, false);
+        let (type_manager, _) = load_managers(storage.clone(), None);
         let variable_registry = &translation_context.variable_registry;
         let previous_stage_variable_annotations = &BTreeMap::new();
         infer_types(
@@ -461,7 +461,7 @@ fn cartesian_named_counted_checked() {
 
     // Executor
     let snapshot: Arc<ReadSnapshot<WALClient>> = Arc::new(storage.clone().open_snapshot_read());
-    let (_, thing_manager) = load_managers(storage.clone(), None, false);
+    let (_, thing_manager) = load_managers(storage.clone(), None);
     let executor = MatchExecutor::new(
         &conjunction_executable,
         &snapshot,

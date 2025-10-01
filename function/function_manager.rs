@@ -534,7 +534,6 @@ pub mod tests {
             Arc::new(ThingVertexGenerator::new()),
             type_manager.clone(),
             Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
-            false,
         );
 
         let ((_type_animal, type_cat, _type_dog), _) =

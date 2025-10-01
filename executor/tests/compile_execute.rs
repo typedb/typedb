@@ -98,7 +98,7 @@ fn setup(
 fn test_has_planning_traversal() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
         attribute age value integer;
@@ -126,7 +126,7 @@ fn test_has_planning_traversal() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let entry_annotations = infer_types(
         &*snapshot,
@@ -185,7 +185,7 @@ fn test_has_planning_traversal() {
 fn test_expression_planning_traversal() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
         attribute age value integer;
@@ -216,7 +216,7 @@ fn test_expression_planning_traversal() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let entry_annotations = infer_types(
         &*snapshot,
@@ -286,7 +286,7 @@ fn test_expression_planning_traversal() {
 fn test_links_planning_traversal() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
         entity person owns name @card(0..), plays membership:member;
@@ -316,7 +316,7 @@ fn test_links_planning_traversal() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let entry_annotations = infer_types(
         &*snapshot,
@@ -375,7 +375,7 @@ fn test_links_planning_traversal() {
 fn test_links_intersection() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
         entity user plays purchase:buyer;
@@ -412,7 +412,7 @@ fn test_links_intersection() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let entry_annotations = infer_types(
         &*snapshot,
@@ -471,7 +471,7 @@ fn test_links_intersection() {
 fn test_negation_planning_traversal() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
         attribute age value integer;
@@ -499,7 +499,7 @@ fn test_negation_planning_traversal() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let entry_annotations = infer_types(
         &*snapshot,
@@ -558,7 +558,7 @@ fn test_negation_planning_traversal() {
 fn test_forall_planning_traversal() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
         relation set-membership, relates set, relates item;
@@ -607,7 +607,7 @@ fn test_forall_planning_traversal() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let entry_annotations = infer_types(
         &*snapshot,
@@ -673,7 +673,7 @@ fn test_forall_planning_traversal() {
 fn test_named_var_select() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
         attribute age value integer;
@@ -702,7 +702,7 @@ fn test_named_var_select() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let entry_annotations = infer_types(
         &*snapshot,
@@ -764,7 +764,7 @@ fn test_named_var_select() {
 fn test_disjunction_planning_traversal() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
         attribute age value integer;
@@ -796,7 +796,7 @@ fn test_disjunction_planning_traversal() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let entry_annotations = infer_types(
         &*snapshot,
@@ -856,7 +856,7 @@ fn test_disjunction_planning_traversal() {
 fn test_disjunction_planning_nested_negations() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
         attribute age value integer;
@@ -894,7 +894,7 @@ fn test_disjunction_planning_nested_negations() {
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let entry_annotations = infer_types(
         &*snapshot,
@@ -953,7 +953,7 @@ fn test_disjunction_planning_nested_negations() {
 fn test_mismatched_input_types() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
         attribute age value integer;
@@ -967,7 +967,7 @@ fn test_mismatched_input_types() {
         $_ isa friendship, links (friend: $p1, friend: $p2), has age 5;
     ";
     let statistics = setup(&storage, type_manager, thing_manager, schema, data);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     {
         let query = "match
             $x has age $age;

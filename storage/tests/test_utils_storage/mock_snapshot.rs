@@ -30,6 +30,8 @@ impl MockSnapshot {
 }
 
 impl ReadableSnapshot for MockSnapshot {
+    const STATIC_SCHEMA_GUARANTEE: bool = false;
+
     fn open_sequence_number(&self) -> SequenceNumber {
         SequenceNumber::MIN
     }

@@ -173,7 +173,7 @@ pub(crate) struct CardinalityChangeTracker {
 }
 
 impl CardinalityChangeTracker {
-    pub(crate) fn new(
+    pub(crate) fn build(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,

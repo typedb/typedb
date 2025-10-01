@@ -39,7 +39,7 @@ use crate::{
 pub fn relation_index_transformation(
     conjunction: &mut Conjunction,
     block_annotations: &mut BlockAnnotations,
-    thing_manager: &ThingManager,
+    type_manager: &TypeManager,
     snapshot: &impl ReadableSnapshot,
 ) -> Result<(), StaticOptimiserError> {
     let mut candidates: HashMap<Vertex<Variable>, (usize, Vec<usize>)> = HashMap::new();
@@ -59,7 +59,7 @@ pub fn relation_index_transformation(
         let (links_index, other_links_indices) = candidates.remove(&relation).unwrap();
         // we will for now only apply the optimisation when it's exactly a binary edge query involving 2 role player variables
         if other_links_indices.len() == 1
-            && index_available(thing_manager, snapshot, &relation, type_annotations)?
+            && index_available(type_manager, snapshot, &relation, type_annotations)?
             && !with_iid_or_constant_attribute(&relation, conjunction)
         {
             let other_links_index = other_links_indices[0];
@@ -79,14 +79,14 @@ pub fn relation_index_transformation(
         match nested {
             NestedPattern::Disjunction(disjunction) => {
                 for branch_conjunction in disjunction.conjunctions_mut() {
-                    relation_index_transformation(branch_conjunction, block_annotations, thing_manager, snapshot)?;
+                    relation_index_transformation(branch_conjunction, block_annotations, type_manager, snapshot)?;
                 }
             }
             NestedPattern::Negation(negation) => {
-                relation_index_transformation(negation.conjunction_mut(), block_annotations, thing_manager, snapshot)?;
+                relation_index_transformation(negation.conjunction_mut(), block_annotations, type_manager, snapshot)?;
             }
             NestedPattern::Optional(optional) => {
-                relation_index_transformation(optional.conjunction_mut(), block_annotations, thing_manager, snapshot)?;
+                relation_index_transformation(optional.conjunction_mut(), block_annotations, type_manager, snapshot)?;
             }
         }
     }
@@ -94,15 +94,16 @@ pub fn relation_index_transformation(
 }
 
 fn index_available(
-    thing_manager: &ThingManager,
+    type_manager: &TypeManager,
     snapshot: &impl ReadableSnapshot,
     relation: &Vertex<Variable>,
     type_annotations: &TypeAnnotations,
 ) -> Result<bool, StaticOptimiserError> {
     let relation_types = type_annotations.vertex_annotations_of(relation).unwrap();
     for type_ in relation_types.iter() {
-        let index_available = thing_manager
-            .relation_index_available(snapshot, type_.as_relation_type())
+        let index_available = type_
+            .as_relation_type()
+            .relation_index_available(snapshot, type_manager)
             .map_err(|err| StaticOptimiserError::ConceptRead { typedb_source: err })?;
         if !index_available {
             return Ok(false);

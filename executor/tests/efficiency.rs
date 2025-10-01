@@ -84,7 +84,7 @@ const VALUE_STRING_WILLOW: &str = "willow";
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
@@ -509,7 +509,7 @@ fn value_int_equality_isa_reads() {
     let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let type_annotations = get_type_annotations(&translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_id_type, var_attr], []);
@@ -613,7 +613,7 @@ fn value_int_equality_has_reverse_reads() {
     let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let type_annotations = get_type_annotations(&translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_person, var_gov_id], []);
@@ -701,7 +701,7 @@ fn value_int_equality_has_bound_owner() {
     let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let type_annotations = get_type_annotations(&translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -811,7 +811,7 @@ fn value_int_inequality_has_bound_owner() {
     let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -916,7 +916,7 @@ fn value_inline_string_equality_has_bound_owner() {
     let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let entry_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -1016,7 +1016,7 @@ fn value_hashed_string_equality_has_bound_owner() {
     let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -1126,7 +1126,7 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
     let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -1243,7 +1243,7 @@ fn intersection_seeks() {
     let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -1360,7 +1360,7 @@ fn intersections_seeks_with_extra_values() {
 
     // add `match $person_3 isa person, has gov_id 4; insert $person_3 has age 12;`
     // this reveals the use of the Value during an intersection seek optimisation
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_write();
     let person_type = type_manager.get_entity_type(&mut snapshot, &PERSON_LABEL).unwrap().unwrap();
     let age_type = type_manager.get_attribute_type(&mut snapshot, &AGE_LABEL).unwrap().unwrap();
@@ -1429,7 +1429,7 @@ fn intersections_seeks_with_extra_values() {
     let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =

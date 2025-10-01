@@ -62,7 +62,6 @@ fn thing_manager(type_manager: Arc<TypeManager>) -> Arc<ThingManager> {
         thing_vertex_generator.clone(),
         type_manager.clone(),
         Arc::new(Statistics::new(DurabilitySequenceNumber::MIN)),
-        false,
     ))
 }
 

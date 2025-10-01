@@ -94,7 +94,7 @@ fn setup_common(schema: &str) -> Context {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let query_manager = QueryManager::new(None);
 
@@ -107,7 +107,7 @@ fn setup_common(schema: &str) -> Context {
 
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
     // reload to obtain latest vertex generators and statistics entries
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
 }
 

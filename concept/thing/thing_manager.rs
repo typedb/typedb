@@ -107,8 +107,6 @@ pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
     type_manager: Arc<TypeManager>,
     statistics: Arc<Statistics>,
-    // TODO: Ideally, ask the incoming snapshot if there are schema changes instead.
-    static_schema_guarantee: bool,
 }
 
 impl ThingManager {
@@ -116,9 +114,8 @@ impl ThingManager {
         vertex_generator: Arc<ThingVertexGenerator>,
         type_manager: Arc<TypeManager>,
         statistics: Arc<Statistics>,
-        static_schema_guarantee: bool,
     ) -> Self {
-        ThingManager { vertex_generator, type_manager, statistics, static_schema_guarantee }
+        ThingManager { vertex_generator, type_manager, statistics }
     }
 
     pub fn statistics(&self) -> &Statistics {
@@ -1514,7 +1511,7 @@ impl ThingManager {
         end_role: RoleType,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        if !self.relation_index_available(snapshot, relation.type_())? {
+        if !relation.type_().relation_index_available(snapshot, self.type_manager())? {
             Err(ConceptReadError::RelationIndexNotAvailable {
                 relation_label: relation.type_().get_label(snapshot, self.type_manager())?.to_owned(),
             })?;
@@ -1614,7 +1611,7 @@ impl ThingManager {
         relation_type: RelationType,
         storage_counters: StorageCounters,
     ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
-        if !self.relation_index_available(snapshot, relation_type)? {
+        if !relation_type.relation_index_available(snapshot, self.type_manager())? {
             Err(ConceptReadError::RelationIndexNotAvailable {
                 relation_label: relation_type.get_label(snapshot, self.type_manager())?.to_owned(),
             })?;
@@ -1791,10 +1788,8 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Vec<ConceptWriteError>> {
         let cardinality_change_tracker =
-            match CardinalityChangeTracker::new(snapshot, self.type_manager(), &self, storage_counters.clone()) {
-                Ok(tracker) => tracker,
-                Err(typedb_source) => return Err(vec![ConceptWriteError::ConceptRead { typedb_source }]),
-            };
+            CardinalityChangeTracker::build(snapshot, self.type_manager(), &self, storage_counters.clone())
+                .map_err(|typedb_source| vec![ConceptWriteError::ConceptRead { typedb_source }])?;
 
         self.validate_cardinalities(snapshot, &cardinality_change_tracker, storage_counters.clone())?;
 
@@ -2223,7 +2218,7 @@ impl ThingManager {
         for (relation, modified_relates) in change_tracker.modified_relations_role_types() {
             let qualifies_for_relation_index = relation
                 .type_()
-                .qualifies_for_relation_index(snapshot, self.type_manager())
+                .schema_qualifies_for_relation_index(snapshot, self.type_manager())
                 .map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?;
             self.update_relation_index_on_cardinality_change(
                 snapshot,
@@ -2687,7 +2682,7 @@ impl ThingManager {
             ThingEdgeLinks::new_reverse(player.clone().vertex(), relation.clone().vertex(), role_type.vertex());
         snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
-        if self.relation_index_available(snapshot, relation.type_())? {
+        if relation.type_().relation_index_available(snapshot, self.type_manager())? {
             self.relation_index_player_regenerate(
                 snapshot,
                 relation,
@@ -2739,7 +2734,7 @@ impl ThingManager {
             snapshot.put_val(links.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
-            if self.relation_index_available(snapshot, relation.type_())? {
+            if relation.type_().relation_index_available(snapshot, self.type_manager())? {
                 let player = Object::new(player.vertex());
                 self.relation_index_player_regenerate(snapshot, relation, player, role_type, count, storage_counters)?
             }
@@ -2779,8 +2774,9 @@ impl ThingManager {
             }
         }
 
-        if self
-            .relation_index_available(snapshot, relation.type_())
+        if relation
+            .type_()
+            .relation_index_available(snapshot, self.type_manager())
             .map_err(|error| ConceptWriteError::ConceptRead { typedb_source: error })?
         {
             self.relation_index_player_remove(snapshot, relation, player, role_type, storage_counters)?;
@@ -2983,14 +2979,6 @@ impl ThingManager {
             }
         }
         Ok(())
-    }
-
-    pub fn relation_index_available(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        relation_type: RelationType,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        Ok(self.static_schema_guarantee && relation_type.qualifies_for_relation_index(snapshot, self.type_manager())?)
     }
 
     pub(crate) fn get_snapshot_put_value(

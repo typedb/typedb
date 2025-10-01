@@ -19,14 +19,14 @@ use crate::{
 
 pub fn apply_transformations(
     snapshot: &impl ReadableSnapshot,
-    thing_manager: &ThingManager,
+    type_manager: &TypeManager,
     pipeline: &mut AnnotatedPipeline,
 ) -> Result<(), StaticOptimiserError> {
     for stage in &mut pipeline.annotated_stages {
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
             optimize_away_statically_unsatisfiable_conjunctions(block.conjunction_mut(), block_annotations);
             prune_redundant_roleplayer_deduplication(block.conjunction_mut(), block_annotations);
-            relation_index_transformation(block.conjunction_mut(), block_annotations, thing_manager, snapshot)?;
+            relation_index_transformation(block.conjunction_mut(), block_annotations, type_manager, snapshot)?;
         }
     }
     Ok(())

@@ -167,7 +167,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
                 .or_default() += count;
             *this_relation_players.entry(player.type_()).or_default() += 1;
         }
-        if thing_manager.relation_index_available(&snapshot, relation.type_()).unwrap() {
+        if relation.type_().relation_index_available(&snapshot, thing_manager.type_manager()).unwrap() {
             for (player_1, count_1) in &this_relation_players {
                 for (player_2, count_2) in &this_relation_players {
                     let link_count = if player_1 == player_2 { count_1 * (count_2 - 1) } else { count_1 * count_2 };
@@ -200,7 +200,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
 fn create_entity() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let person_label = Label::build("person", None);
 
@@ -225,7 +225,7 @@ fn create_entity() {
 fn delete_twice() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let person_label = Label::build("person", None);
 
@@ -255,7 +255,7 @@ fn delete_twice() {
 fn put_has_twice() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let person_label = Label::build("person", None);
     let name_label = Label::build("name", None);
@@ -310,7 +310,7 @@ fn put_has_twice() {
 fn put_plays() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let person_label = Label::build("person", None);
     let friendship_label = Label::build("friendship", None);

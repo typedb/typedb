@@ -42,7 +42,7 @@ const START_TIME_LABEL: Label = Label::new_static("start-time");
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, false);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
@@ -118,15 +118,49 @@ fn translate_and_annotate(
     (conjunction, type_annotations)
 }
 
-fn run_test_relation_index_transformation_single<const STATIC_SCHEMA_GUARANTEE: bool>() {
+#[test]
+fn test_relation_index_transformation_single_schema_snapshot() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, STATIC_SCHEMA_GUARANTEE);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_schema();
+
+    let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
+    assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(!dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
+
+    run_test_relation_index_transformation_single(snapshot, &type_manager);
+}
+
+#[test]
+fn test_relation_index_transformation_single_write_snapshot() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_write();
+
+    let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
+    assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
+
+    run_test_relation_index_transformation_single(snapshot, &type_manager);
+}
+
+#[test]
+fn test_relation_index_transformation_single_read_snapshot() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
     let snapshot = storage.clone().open_snapshot_read();
 
     let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
-    assert!(dog_ownership.qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
 
+    run_test_relation_index_transformation_single(snapshot, &type_manager);
+}
+
+fn run_test_relation_index_transformation_single(snapshot: impl ReadableSnapshot, type_manager: &TypeManager) {
     let query = "match $r links ($role_x: $x, $role_y: $y);";
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let mut context = PipelineTranslationContext::new();
@@ -139,7 +173,7 @@ fn run_test_relation_index_transformation_single<const STATIC_SCHEMA_GUARANTEE: 
         &snapshot,
         &block,
         &context.variable_registry,
-        &type_manager,
+        type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
         false,
@@ -148,47 +182,67 @@ fn run_test_relation_index_transformation_single<const STATIC_SCHEMA_GUARANTEE: 
 
     let mut conjunction = block.into_conjunction();
 
-    relation_index_transformation(&mut conjunction, &mut type_annotations, &thing_manager, &snapshot).unwrap();
+    relation_index_transformation(&mut conjunction, &mut type_annotations, type_manager, &snapshot).unwrap();
 
-    let first_indexed_relation =
-        conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation()).next();
-    if STATIC_SCHEMA_GUARANTEE {
-        let indexed_relation = first_indexed_relation.expect("Expected indexed relation");
-        let var_r = Vertex::Variable(context.get_variable("r").unwrap());
-        let var_x = Vertex::Variable(context.get_variable("x").unwrap());
-        let var_y = Vertex::Variable(context.get_variable("y").unwrap());
-        let var_role_x = Vertex::Variable(context.get_variable("role_x").unwrap());
-        let var_role_y = Vertex::Variable(context.get_variable("role_y").unwrap());
+    let indexed_relation =
+        conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation()).next().unwrap();
 
-        assert_eq!(indexed_relation.relation(), &(var_r));
-        assert!(indexed_relation.player_1() == &(var_x) || indexed_relation.player_2() == &(var_x));
-        assert!(indexed_relation.player_1() == &(var_y) || indexed_relation.player_2() == &(var_y));
-        assert!(indexed_relation.role_type_1() == &(var_role_x) || indexed_relation.role_type_2() == &(var_role_x));
-        assert!(indexed_relation.role_type_1() == &(var_role_y) || indexed_relation.role_type_2() == &(var_role_y));
-    } else {
-        assert!(first_indexed_relation.is_none(), "Expected no indexed relation without relation guarantees");
-    }
+    let var_r = Vertex::Variable(context.get_variable("r").unwrap());
+    let var_x = Vertex::Variable(context.get_variable("x").unwrap());
+    let var_y = Vertex::Variable(context.get_variable("y").unwrap());
+    let var_role_x = Vertex::Variable(context.get_variable("role_x").unwrap());
+    let var_role_y = Vertex::Variable(context.get_variable("role_y").unwrap());
+
+    assert_eq!(indexed_relation.relation(), &(var_r));
+    assert!(indexed_relation.player_1() == &(var_x) || indexed_relation.player_2() == &(var_x));
+    assert!(indexed_relation.player_1() == &(var_y) || indexed_relation.player_2() == &(var_y));
+    assert!(indexed_relation.role_type_1() == &(var_role_x) || indexed_relation.role_type_2() == &(var_role_x));
+    assert!(indexed_relation.role_type_1() == &(var_role_y) || indexed_relation.role_type_2() == &(var_role_y));
 }
 
 #[test]
-fn test_relation_index_transformation_single() {
-    run_test_relation_index_transformation_single::<false>()
-}
-
-#[test]
-fn test_relation_index_transformation_single_static_schema_guarantee() {
-    run_test_relation_index_transformation_single::<true>()
-}
-
-fn run_test_relation_index_transformation_dual<const STATIC_SCHEMA_GUARANTEE: bool>() {
+fn test_relation_index_transformation_dual_schema_snapshot() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, STATIC_SCHEMA_GUARANTEE);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_schema();
+
+    let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
+    assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(!dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
+
+    run_test_relation_index_transformation_dual(snapshot, &type_manager)
+}
+
+#[test]
+fn test_relation_index_transformation_dual_write_snapshot() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_write();
+
+    let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
+    assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
+
+    run_test_relation_index_transformation_dual(snapshot, &type_manager)
+}
+
+#[test]
+fn test_relation_index_transformation_dual_read_snapshot() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
     let snapshot = storage.clone().open_snapshot_read();
 
     let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
-    assert!(dog_ownership.qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
 
+    run_test_relation_index_transformation_dual(snapshot, &type_manager)
+}
+
+fn run_test_relation_index_transformation_dual(snapshot: impl ReadableSnapshot, type_manager: &TypeManager) {
     let query = "match $r links ($x, $y); $q links ($a, $b);";
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let mut context = PipelineTranslationContext::new();
@@ -201,7 +255,7 @@ fn run_test_relation_index_transformation_dual<const STATIC_SCHEMA_GUARANTEE: bo
         &snapshot,
         &block,
         &context.variable_registry,
-        &type_manager,
+        type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
         false,
@@ -210,7 +264,7 @@ fn run_test_relation_index_transformation_dual<const STATIC_SCHEMA_GUARANTEE: bo
 
     let mut conjunction = block.into_conjunction();
 
-    relation_index_transformation(&mut conjunction, &mut type_annotations, &thing_manager, &snapshot).unwrap();
+    relation_index_transformation(&mut conjunction, &mut type_annotations, type_manager, &snapshot).unwrap();
 
     let var_r = Vertex::Variable(context.get_variable("r").unwrap());
     let var_x = Vertex::Variable(context.get_variable("x").unwrap());
@@ -222,49 +276,72 @@ fn run_test_relation_index_transformation_dual<const STATIC_SCHEMA_GUARANTEE: bo
 
     let mut indexed_relations =
         conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation());
-    if STATIC_SCHEMA_GUARANTEE {
-        let first_indexed_relation = indexed_relations.next().expect("Expected first indexed relation");
-        let second_indexed_relation = indexed_relations.next().expect("Expected second indexed relation");
+    let first_indexed_relation = indexed_relations.next().unwrap();
+    let second_indexed_relation = indexed_relations.next().unwrap();
 
-        if first_indexed_relation.relation() == &var_r {
-            assert!(first_indexed_relation.player_1() == &var_x || first_indexed_relation.player_2() == &var_x);
-            assert!(first_indexed_relation.player_1() == &var_y || first_indexed_relation.player_2() == &var_y);
+    if first_indexed_relation.relation() == &var_r {
+        assert!(first_indexed_relation.player_1() == &var_x || first_indexed_relation.player_2() == &var_x);
+        assert!(first_indexed_relation.player_1() == &var_y || first_indexed_relation.player_2() == &var_y);
 
-            assert!(second_indexed_relation.relation() == &var_q || second_indexed_relation.player_2() == &var_q);
-            assert!(second_indexed_relation.player_1() == &var_a || second_indexed_relation.player_2() == &var_a);
-            assert!(second_indexed_relation.player_1() == &var_b || second_indexed_relation.player_2() == &var_b);
-        } else {
-            assert!(first_indexed_relation.relation() == &var_q || first_indexed_relation.player_2() == &var_q);
-            assert!(first_indexed_relation.player_1() == &var_a || first_indexed_relation.player_2() == &var_a);
-            assert!(first_indexed_relation.player_1() == &var_b || first_indexed_relation.player_2() == &var_b);
-
-            assert!(second_indexed_relation.player_1() == &var_x || second_indexed_relation.player_2() == &var_x);
-            assert!(second_indexed_relation.player_1() == &var_y || second_indexed_relation.player_2() == &var_y);
-        }
+        assert!(second_indexed_relation.relation() == &var_q || second_indexed_relation.player_2() == &var_q);
+        assert!(second_indexed_relation.player_1() == &var_a || second_indexed_relation.player_2() == &var_a);
+        assert!(second_indexed_relation.player_1() == &var_b || second_indexed_relation.player_2() == &var_b);
     } else {
-        assert!(indexed_relations.next().is_none(), "Expected no indexed relation without relation guarantees");
+        assert!(first_indexed_relation.relation() == &var_q || first_indexed_relation.player_2() == &var_q);
+        assert!(first_indexed_relation.player_1() == &var_a || first_indexed_relation.player_2() == &var_a);
+        assert!(first_indexed_relation.player_1() == &var_b || first_indexed_relation.player_2() == &var_b);
+
+        assert!(second_indexed_relation.player_1() == &var_x || second_indexed_relation.player_2() == &var_x);
+        assert!(second_indexed_relation.player_1() == &var_y || second_indexed_relation.player_2() == &var_y);
     }
 }
 
 #[test]
-fn test_relation_index_transformation_dual() {
-    run_test_relation_index_transformation_dual::<false>()
+fn test_relation_index_transformation_not_applied_ternary_schema_snapshot() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_schema();
+
+    let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
+    assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(!dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
+
+    run_test_relation_index_transformation_not_applied_ternary(snapshot, &type_manager)
 }
 
 #[test]
-fn test_relation_index_transformation_dual_static_schema_guarantee() {
-    run_test_relation_index_transformation_dual::<true>()
-}
-
-fn run_test_relation_index_transformation_not_applied_ternary<const STATIC_SCHEMA_GUARANTEE: bool>() {
+fn test_relation_index_transformation_not_applied_ternary_write_snapshot() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None, STATIC_SCHEMA_GUARANTEE);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_write();
+
+    let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
+    assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
+
+    run_test_relation_index_transformation_not_applied_ternary(snapshot, &type_manager)
+}
+
+#[test]
+fn test_relation_index_transformation_not_applied_ternary_read_snapshot() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
     let snapshot = storage.clone().open_snapshot_read();
 
     let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
-    assert!(dog_ownership.qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+    assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
 
+    run_test_relation_index_transformation_not_applied_ternary(snapshot, &type_manager)
+}
+
+fn run_test_relation_index_transformation_not_applied_ternary(
+    snapshot: impl ReadableSnapshot,
+    type_manager: &TypeManager,
+) {
     let query = "match $r links ($x, $y, $z);";
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let mut context = PipelineTranslationContext::new();
@@ -277,7 +354,7 @@ fn run_test_relation_index_transformation_not_applied_ternary<const STATIC_SCHEM
         &snapshot,
         &block,
         &context.variable_registry,
-        &type_manager,
+        type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
         false,
@@ -286,37 +363,60 @@ fn run_test_relation_index_transformation_not_applied_ternary<const STATIC_SCHEM
 
     let mut conjunction = block.into_conjunction();
 
-    relation_index_transformation(&mut conjunction, &mut type_annotations, &thing_manager, &snapshot).unwrap();
+    relation_index_transformation(&mut conjunction, &mut type_annotations, type_manager, &snapshot).unwrap();
 
     let mut indexed_relations =
         conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation());
     assert!(!indexed_relations.next().is_some());
 }
 
-#[test]
-fn test_relation_index_transformation_not_applied_ternary() {
-    run_test_relation_index_transformation_not_applied_ternary::<false>()
-}
-
-#[test]
-fn test_relation_index_transformation_not_applied_ternary_static_schema_guarantee() {
-    run_test_relation_index_transformation_not_applied_ternary::<true>()
-}
-
 //  TODO: we just want to add with an exclusitivity constraint
-//
-// fn run_test_relation_index_transformation_not_applied_attribute<const STATIC_SCHEMA_GUARANTEE: bool>() {
+// #[test]
+// fn test_relation_index_transformation_not_applied_attribute_schema_snapshot() {
 //     let (_tmp_dir, mut storage) = create_core_storage();
 //     setup_database(&mut storage);
-//     let (type_manager, thing_manager) = load_managers(storage.clone(), None, STATIC_SCHEMA_GUARANTEE);
+//     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+//     let snapshot = storage.clone().open_snapshot_schema();
+//
+//     let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
+//     assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+//     assert!(!dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
+//
+//     run_test_relation_index_transformation_not_applied_attribute(snapshot, &type_manager)
+// }
+//
+// #[test]
+// fn test_relation_index_transformation_not_applied_attribute_write_snapshot() {
+//     let (_tmp_dir, mut storage) = create_core_storage();
+//     setup_database(&mut storage);
+//     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+//     let snapshot = storage.clone().open_snapshot_write();
+//
+//     let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
+//     assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+//     assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
+//
+//     run_test_relation_index_transformation_not_applied_attribute(snapshot, &type_manager)
+// }
+//
+// #[test]
+// fn test_relation_index_transformation_not_applied_attribute_read_snapshot() {
+//     let (_tmp_dir, mut storage) = create_core_storage();
+//     setup_database(&mut storage);
+//     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 //     let snapshot = storage.clone().open_snapshot_read();
 //
 //     let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
-//     assert!(type_manager.relation_index_available(&snapshot, dog_ownership).unwrap());
+//     assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
+//     assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
 //
+//     run_test_relation_index_transformation_not_applied_attribute(snapshot, &type_manager)
+// }
+//
+// fn run_test_relation_index_transformation_not_applied_attribute(snapshot: impl ReadableSnapshot, type_manager: &TypeManager) {
 //     let query = "match $r links ($x, $y), has start-time $a; $a == 10;";
 //     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
-//     let mut context = TranslationContext::new();
+//     let mut context = PipelineTranslationContext::new();
 //     let mut parameters = ParameterRegistry::new();
 //     let translated = translate_match(
 //         &mut context,
@@ -330,7 +430,7 @@ fn test_relation_index_transformation_not_applied_ternary_static_schema_guarante
 //         &snapshot,
 //         &block,
 //         &context.variable_registry,
-//         &type_manager,
+//         type_manager,
 //         &BTreeMap::new(),
 //         &EmptyAnnotatedFunctionSignatures,
 //     ).unwrap();
@@ -341,31 +441,44 @@ fn test_relation_index_transformation_not_applied_ternary_static_schema_guarante
 //     relation_index_transformation(
 //         &mut conjunction,
 //         &type_annotations,
-//         &thing_manager,
+//         type_manager,
 //         &snapshot
 //     ).unwrap();
 //
 //     println!("{}", &conjunction);
 // }
-//
-// #[test]
-// fn test_relation_index_transformation_not_applied_attribute() {
-//     run_test_relation_index_transformation_not_applied_attribute::<false>()
-// }
-//
-// #[test]
-// fn test_relation_index_transformation_not_applied_attribute_static_schema_guarantee() {
-//     run_test_relation_index_transformation_not_applied_attribute::<true>()
-// }
 
-fn run_test_optimise_away<const STATIC_SCHEMA_GUARANTEE: bool>() {
+#[test]
+fn test_optimise_away_schema_snapshot() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
-    let (type_manager, _thing_manager) = load_managers(storage.clone(), None, STATIC_SCHEMA_GUARANTEE);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_schema();
+    run_test_optimise_away(snapshot, &type_manager)
+}
+
+#[test]
+fn test_optimise_away_write_snapshot() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_write();
+    run_test_optimise_away(snapshot, &type_manager)
+}
+
+#[test]
+fn test_optimise_away_read_snapshot() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
     let snapshot = storage.clone().open_snapshot_read();
+    run_test_optimise_away(snapshot, &type_manager)
+}
+
+fn run_test_optimise_away(snapshot: impl ReadableSnapshot, type_manager: &TypeManager) {
     {
         let query = "match $p sub person, plays dog-ownership:owner;";
-        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, &type_manager, query);
+        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
         optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
         assert!(
             conjunction.constraints().len() == 2
@@ -375,14 +488,14 @@ fn run_test_optimise_away<const STATIC_SCHEMA_GUARANTEE: bool>() {
     }
     {
         let query = "match $p sub person, plays dog-ownership:dog;";
-        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, &type_manager, query);
+        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
         optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
         assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::Unsatisfiable(_)));
     }
 
     {
         let query = "match $p sub person; { $p plays dog-ownership:dog; } or { $p plays dog-ownership:owner; };";
-        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, &type_manager, query);
+        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
         optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
         assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::Sub(_)));
         let must_be_plays = conjunction
@@ -405,7 +518,7 @@ fn run_test_optimise_away<const STATIC_SCHEMA_GUARANTEE: bool>() {
 
     {
         let query = "match $p sub person; not { $p plays dog-ownership:dog; };";
-        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, &type_manager, query);
+        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
         optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
         assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::Sub(_)));
         let must_be_optimised_to_unsatisfiable = conjunction
@@ -422,14 +535,4 @@ fn run_test_optimise_away<const STATIC_SCHEMA_GUARANTEE: bool>() {
             .unwrap();
         assert!(matches!(must_be_optimised_to_unsatisfiable, Constraint::Unsatisfiable(_)))
     }
-}
-
-#[test]
-fn test_optimise_away() {
-    run_test_optimise_away::<false>()
-}
-
-#[test]
-fn test_optimise_away_static_schema_guarantee() {
-    run_test_optimise_away::<true>()
 }
