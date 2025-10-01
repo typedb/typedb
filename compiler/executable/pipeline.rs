@@ -304,7 +304,7 @@ fn compile_stage(
         }
         AnnotatedStage::Insert { block, annotations, source_span } => {
             let plan = crate::executable::insert::executable::compile(
-                block.conjunction().constraints(),
+                block,
                 stage_input_positions,
                 annotations,
                 variable_registry,
@@ -316,7 +316,7 @@ fn compile_stage(
         }
         AnnotatedStage::Update { block, annotations, source_span } => {
             let plan = crate::executable::update::executable::compile(
-                block.conjunction().constraints(),
+                block,
                 stage_input_positions,
                 annotations,
                 variable_registry,
@@ -342,7 +342,7 @@ fn compile_stage(
             )
             .map_err(|source| ExecutableCompilationError::PutMatchCompilation { typedb_source: source })?;
             let insert_plan = crate::executable::insert::executable::compile(
-                block.conjunction().constraints(),
+                block,
                 stage_input_positions,
                 insert_annotations,
                 variable_registry,
@@ -360,7 +360,7 @@ fn compile_stage(
                 stage_input_positions,
                 annotations,
                 variable_registry,
-                block.conjunction().constraints(),
+                block,
                 deleted_variables,
                 *source_span,
             )

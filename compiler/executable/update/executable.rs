@@ -7,11 +7,14 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use ir::{pattern::constraint::Constraint, pipeline::VariableRegistry};
+use ir::{
+    pattern::constraint::Constraint,
+    pipeline::{block::Block, VariableRegistry},
+};
 use typeql::common::Span;
 
 use crate::{
-    annotation::type_annotations::TypeAnnotations,
+    annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
     executable::{
         insert::{
             executable::{add_inserted_concepts, get_thing_position, prepare_output_row_schema, resolve_links_roles},
@@ -41,24 +44,28 @@ impl UpdateExecutable {
 }
 
 pub fn compile(
-    constraints: &[Constraint<Variable>],
+    block: &Block,
     input_variables: &HashMap<Variable, VariablePosition>,
-    type_annotations: &TypeAnnotations,
+    block_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     source_span: Option<Span>,
 ) -> Result<UpdateExecutable, Box<WriteCompilationError>> {
     let mut variable_positions = input_variables.clone();
     let attributes_inserts = add_inserted_concepts(
-        constraints,
-        type_annotations,
+        block.conjunction(),
+        block_annotations,
         variable_registry,
         input_variables,
         &mut variable_positions,
         source_span,
     )?;
 
-    let mut connection_inserts = Vec::with_capacity(constraints.len());
+    let constraints = &block.conjunction().constraints();
+    let type_annotations = block_annotations
+        .type_annotations_of(block.conjunction())
+        .expect("update conjunction must have type annotations");
 
+    let mut connection_inserts = Vec::with_capacity(constraints.len());
     add_has(constraints, &variable_positions, variable_registry, &mut connection_inserts)?;
     add_links(
         constraints,

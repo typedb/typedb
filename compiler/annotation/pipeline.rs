@@ -32,7 +32,6 @@ use ir::{
     },
     translation::pipeline::TranslatedStage,
 };
-use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
@@ -74,24 +73,24 @@ pub enum AnnotatedStage {
     },
     Insert {
         block: Block,
-        annotations: TypeAnnotations,
+        annotations: BlockAnnotations,
         source_span: Option<Span>,
     },
     Update {
         block: Block,
-        annotations: TypeAnnotations,
+        annotations: BlockAnnotations,
         source_span: Option<Span>,
     },
     Put {
         block: Block,
         match_annotations: BlockAnnotations,
-        insert_annotations: TypeAnnotations,
+        insert_annotations: BlockAnnotations,
         source_span: Option<Span>,
     },
     Delete {
         block: Block,
         deleted_variables: Vec<Variable>,
-        annotations: TypeAnnotations,
+        annotations: BlockAnnotations,
         source_span: Option<Span>,
     },
     // ...
@@ -570,7 +569,7 @@ fn annotate_write_stage(
     type_manager: &TypeManager,
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     block: &Block,
-) -> Result<TypeAnnotations, AnnotationError> {
+) -> Result<BlockAnnotations, AnnotationError> {
     let mut block_annotations = infer_types(
         snapshot,
         block,
@@ -581,6 +580,7 @@ fn annotate_write_stage(
         true,
     )
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+
     complete_block_annotations_with_value_types(
         block.conjunction(),
         &mut block_annotations,
@@ -590,13 +590,35 @@ fn annotate_write_stage(
     let annotations_by_scope = block_annotations.into_parts();
     // Break if we introduce nested patterns in writes.
     debug_assert!(block.conjunction().nested_patterns().is_empty() && 1 == annotations_by_scope.len());
-    let annotations = annotations_by_scope
-        .into_iter()
-        .map(|(_, annotations)| annotations)
-        .exactly_one()
-        .expect("Writes have only one conjunction");
+
+    let annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
     // Extend running annotations for variables introduced in this stage.
-    block.conjunction().constraints().iter().for_each(|constraint| match constraint {
+    block
+        .conjunction()
+        .constraints()
+        .iter()
+        .for_each(|constraint| annotate_write_constraint(constraint, running_variable_annotations, annotations));
+
+    block.conjunction().nested_patterns().iter().for_each(|pattern| match pattern {
+        NestedPattern::Optional(optional) => {
+            let constraint =
+                &optional.conjunction().constraints().get(0).expect("Expected one constraint in a write-try block");
+            annotate_write_constraint(constraint, running_variable_annotations, annotations);
+        }
+        NestedPattern::Disjunction(_) | NestedPattern::Negation(_) => {
+            unreachable!("Non-try nested pattern encountered in a write stage: {pattern}")
+        }
+    });
+
+    Ok(block_annotations)
+}
+
+fn annotate_write_constraint(
+    constraint: &Constraint<Variable>,
+    running_variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    annotations: &TypeAnnotations,
+) {
+    match constraint {
         Constraint::Isa(isa) => {
             running_variable_annotations.insert(
                 isa.thing().as_variable().unwrap(),
@@ -620,8 +642,7 @@ fn annotate_write_stage(
             }
         }
         _ => (),
-    });
-    Ok(annotations)
+    }
 }
 
 pub fn resolve_reducer_by_value_type(
