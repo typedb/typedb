@@ -47,7 +47,7 @@ impl FunctionCache {
         let function_index = HashMapFunctionSignatureIndex::build(
             schema_functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)),
         );
-        let mut functions_ir = FunctionManager::translate_functions(snapshot, &schema_functions, &function_index)?;
+        let mut functions_ir = FunctionManager::translate_functions(&schema_functions, &function_index)?;
 
         // Run type-inference
         let annotated_functions = annotate_stored_functions(&mut functions_ir, snapshot, type_manager)

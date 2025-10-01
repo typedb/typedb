@@ -143,6 +143,7 @@ pub fn build_pipeline_annotations(
             .collect();
         variable_annotations.insert(block_id, annotations);
     }
+
     let mut variable_annotations = BTreeMap::new();
     stages.iter().for_each(|stage| match stage {
         AnnotatedStage::Put { match_annotations: block_annotations, .. }
@@ -159,7 +160,14 @@ pub fn build_pipeline_annotations(
                 .get(&block.conjunction().scope_id())
                 .unwrap()
                 .clone();
-            insert_variable_annotations(variable_registry, &mut variable_annotations, block_id, annotations);
+            insert_variable_annotations(
+                variable_registry,
+                &mut variable_annotations,
+                block_id,
+                annotations
+                    .type_annotations_of(block.conjunction())
+                    .expect("insert conjunction must have type annotations"),
+            );
         }
         AnnotatedStage::Delete { .. }
         | AnnotatedStage::Select(_)
@@ -242,9 +250,9 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
                     });
                 FetchObjectStructureAnnotations::Leaf(build_leaf_annotations(snapshot, type_manager, attribute_types)?)
             }
-            AnnotatedFetchSome::ListAttributesAsList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
-            | AnnotatedFetchSome::ListAttributesFromList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
-            | AnnotatedFetchSome::SingleAttribute(var, attribute_type) => {
+            AnnotatedFetchSome::ListAttributesAsList(_var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
+            | AnnotatedFetchSome::ListAttributesFromList(_var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
+            | AnnotatedFetchSome::SingleAttribute(_var, attribute_type) => {
                 // TODO: Refine based on owner?
                 let subtypes = attribute_type.get_subtypes(snapshot, type_manager)?;
                 let attribute_types = chain!([*attribute_type].into_iter(), subtypes.iter().copied());
@@ -313,14 +321,13 @@ pub fn get_last_stage_annotations(stages: &[AnnotatedStage]) -> &TypeAnnotations
     stages
         .iter()
         .filter_map(|stage| match stage {
-            AnnotatedStage::Match { block_annotations, block, .. }
-            | AnnotatedStage::Put { match_annotations: block_annotations, block, .. } => {
+            | AnnotatedStage::Match { block_annotations, block, .. }
+            | AnnotatedStage::Put { match_annotations: block_annotations, block, .. }
+            | AnnotatedStage::Insert { annotations: block_annotations, block, .. }
+            | AnnotatedStage::Update { annotations: block_annotations, block, .. } => {
                 Some(block_annotations.type_annotations_of(block.conjunction()).unwrap())
             }
-            AnnotatedStage::Insert { annotations, .. } | AnnotatedStage::Update { annotations, .. } => {
-                Some(annotations)
-            }
-            AnnotatedStage::Delete { .. }
+            | AnnotatedStage::Delete { .. }
             | AnnotatedStage::Select(_)
             | AnnotatedStage::Sort(_)
             | AnnotatedStage::Offset(_)
