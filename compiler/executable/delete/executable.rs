@@ -4,18 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
 use ir::{
-    pattern::{constraint::Constraint, Vertex},
-    pipeline::VariableRegistry,
+    pattern::{constraint::Constraint, nested_pattern::NestedPattern, Vertex},
+    pipeline::{block::Block, VariableRegistry},
 };
 use typeql::common::Span;
 
 use crate::{
-    annotation::type_annotations::TypeAnnotations,
+    annotation::type_annotations::BlockAnnotations,
     executable::{
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
@@ -32,21 +32,138 @@ pub struct DeleteExecutable {
     pub executable_id: u64,
     pub concept_instructions: Vec<ThingInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
+    pub optional_deletes: Vec<OptionalDelete>,
     pub output_row_schema: Vec<Option<Variable>>,
     // pub debug_info: HashMap<VariableSource, Variable>,
 }
 
 pub fn compile(
     input_variables: &HashMap<Variable, VariablePosition>,
-    type_annotations: &TypeAnnotations,
+    block_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
-    constraints: &[Constraint<Variable>],
+    block: &Block,
     deleted_concepts: &[Variable],
     source_span: Option<Span>,
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
-    let resolved_roles = resolve_links_roles(constraints, type_annotations, input_variables, variable_registry)?;
-    let mut connection_deletes = Vec::new();
-    for constraint in constraints {
+    let mut connection_instructions = Vec::new();
+    add_connection_deletes(
+        block.conjunction(),
+        block_annotations,
+        input_variables,
+        variable_registry,
+        &mut connection_instructions,
+    )?;
+
+    let mut optional_deletes = Vec::with_capacity(block.conjunction().nested_patterns().len());
+    for nested_pattern in block.conjunction().nested_patterns() {
+        let NestedPattern::Optional(optional) = nested_pattern else {
+            unreachable!("Only optionals are allowed as nested patterns in delete")
+        };
+        optional_deletes.push(OptionalDelete::new(optional, block_annotations, variable_registry, input_variables)?);
+    }
+
+    let mut concept_instructions = Vec::new();
+    for &variable in deleted_concepts {
+        let Some(input_position) = input_variables.get(&variable) else {
+            return Err(Box::new(WriteCompilationError::DeletedThingWasNotInInput {
+                variable: variable_registry
+                    .variable_names()
+                    .get(&variable)
+                    .cloned()
+                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                source_span,
+            }));
+        };
+        if block_annotations.type_annotations().values().any(|type_annotations| {
+            type_annotations
+                .vertex_annotations_of(&Vertex::Variable(variable))
+                .unwrap()
+                .iter()
+                .any(|type_| type_.kind() == Kind::Role)
+        }) {
+            return Err(Box::new(WriteCompilationError::DeleteIllegalRoleVariable {
+                variable: variable_registry
+                    .variable_names()
+                    .get(&variable)
+                    .cloned()
+                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                source_span,
+            }));
+        } else {
+            concept_instructions.push(ThingInstruction { thing: ThingPosition(*input_position) });
+        };
+    }
+
+    // To produce the output stream, we remove the deleted concepts from each map in the stream.
+    let mut output_row_schema = Vec::new();
+    for (&variable, position) in input_variables {
+        if deleted_concepts.contains(&variable) {
+            continue;
+        }
+        let pos_as_usize = position.as_usize();
+        if output_row_schema.len() <= pos_as_usize {
+            output_row_schema.resize(pos_as_usize + 1, None);
+        }
+        output_row_schema[pos_as_usize] = Some(variable);
+    }
+
+    Ok(DeleteExecutable {
+        executable_id: next_executable_id(),
+        connection_instructions,
+        concept_instructions,
+        optional_deletes,
+        output_row_schema,
+    })
+}
+
+#[derive(Debug)]
+pub struct OptionalDelete {
+    pub connection_instructions: Vec<ConnectionInstruction>,
+    pub required_input_variables: HashSet<VariablePosition>,
+}
+
+impl OptionalDelete {
+    fn new(
+        optional: &ir::pattern::optional::Optional,
+        block_annotations: &BlockAnnotations,
+        variable_registry: &VariableRegistry,
+        input_variables: &HashMap<Variable, VariablePosition>,
+    ) -> Result<Self, Box<WriteCompilationError>> {
+        let mut connection_instructions = Vec::new();
+        add_connection_deletes(
+            optional.conjunction(),
+            block_annotations,
+            input_variables,
+            variable_registry,
+            &mut connection_instructions,
+        )?;
+
+        let required_input_variables = optional
+            .conjunction()
+            .constraints()
+            .iter()
+            .flat_map(|constraint| constraint.ids())
+            .filter_map(|id| input_variables.get(&id).copied())
+            .collect();
+
+        Ok(Self { connection_instructions, required_input_variables })
+    }
+}
+
+fn add_connection_deletes(
+    conjunction: &ir::pattern::conjunction::Conjunction,
+    block_annotations: &BlockAnnotations,
+    input_variables: &HashMap<Variable, VariablePosition>,
+    variable_registry: &VariableRegistry,
+    connection_deletes: &mut Vec<ConnectionInstruction>,
+) -> Result<(), Box<WriteCompilationError>> {
+    let resolved_roles = resolve_links_roles(
+        conjunction.constraints(),
+        block_annotations.type_annotations_of(conjunction).expect("delete conjunction must have type annotations"),
+        input_variables,
+        variable_registry,
+    )?;
+    for constraint in conjunction.constraints() {
         match constraint {
             Constraint::Has(has) => {
                 connection_deletes.push(ConnectionInstruction::Has(Has {
@@ -100,55 +217,5 @@ pub fn compile(
             }
         }
     }
-
-    let mut concept_deletes = Vec::new();
-    for &variable in deleted_concepts {
-        let Some(input_position) = input_variables.get(&variable) else {
-            return Err(Box::new(WriteCompilationError::DeletedThingWasNotInInput {
-                variable: variable_registry
-                    .variable_names()
-                    .get(&variable)
-                    .cloned()
-                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-                source_span,
-            }));
-        };
-        if type_annotations
-            .vertex_annotations_of(&Vertex::Variable(variable))
-            .unwrap()
-            .iter()
-            .any(|type_| type_.kind() == Kind::Role)
-        {
-            return Err(Box::new(WriteCompilationError::DeleteIllegalRoleVariable {
-                variable: variable_registry
-                    .variable_names()
-                    .get(&variable)
-                    .cloned()
-                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-                source_span,
-            }));
-        } else {
-            concept_deletes.push(ThingInstruction { thing: ThingPosition(*input_position) });
-        };
-    }
-
-    // To produce the output stream, we remove the deleted concepts from each map in the stream.
-    let mut output_row_schema = Vec::new();
-    for (&variable, position) in input_variables {
-        if deleted_concepts.contains(&variable) {
-            continue;
-        }
-        let pos_as_usize = position.as_usize();
-        if output_row_schema.len() <= pos_as_usize {
-            output_row_schema.resize(pos_as_usize + 1, None);
-        }
-        output_row_schema[pos_as_usize] = Some(variable);
-    }
-
-    Ok(DeleteExecutable {
-        executable_id: next_executable_id(),
-        connection_instructions: connection_deletes,
-        concept_instructions: concept_deletes,
-        output_row_schema,
-    })
+    Ok(())
 }
