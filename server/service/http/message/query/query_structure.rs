@@ -597,7 +597,7 @@ pub mod bdd {
     use itertools::Itertools;
     use serde_json::Value;
     use crate::service::http::message::query::AnalysedQueryResponse;
-    use crate::service::http::message::query::annotations::{FunctionReturnAnnotationsResponse, FunctionStructureAnnotationsResponse, PipelineStructureAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse, VariableAnnotationsByConjunctionResponse};
+    use crate::service::http::message::query::annotations::{FunctionReturnAnnotationsResponse, FunctionStructureAnnotationsResponse, FetchStructureAnnotationsResponse, PipelineStructureAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse, VariableAnnotationsByConjunctionResponse};
     use crate::service::http::message::query::concept::{EntityTypeResponse, RelationTypeResponse, AttributeTypeResponse, RoleTypeResponse};
 
     use crate::service::http::message::query::query_structure::{
@@ -926,6 +926,33 @@ pub mod bdd {
             }
         }
     ]);
+
+    // Fetch
+    pub fn encode_fetch_annotations_as_functor(analyzed: &AnalysedQueryResponse) -> String {
+        let context = FunctorContext {
+            structure: &analyzed.structure.query,
+            annotations: &analyzed.annotations.query
+        };
+        analyzed.annotations.fetch.encode_as_functor(&context)
+    }
+
+    impl FunctorEncoded for FetchStructureAnnotationsResponse {
+        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
+            match self {
+                FetchStructureAnnotationsResponse::Value { value_types } => {
+                    value_types.encode_as_functor(context)
+                }
+                FetchStructureAnnotationsResponse::Object { possible_fields } => {
+                    let as_map = possible_fields.iter().cloned().map(|kv| (kv.key, kv.value)).collect::<HashMap<_,_>>();
+                    as_map.encode_as_functor(context)
+                }
+                FetchStructureAnnotationsResponse::List { elements } => {
+                    let elements_as_ref = elements.as_ref();
+                    encode_functor_impl!(context, List { elements_as_ref, })
+                }
+            }
+        }
+    }
 
     // #[cfg(test)]
     // pub mod test {

@@ -32,7 +32,7 @@ use resource::profile::StorageCounters;
 use server::service::http::message::query::{
     annotations::encode_query_structure_annotations, query_structure::bdd::encode_query_structure_as_functor,
 };
-use server::service::http::message::query::query_structure::bdd::encode_query_annotations_as_functor;
+use server::service::http::message::query::query_structure::bdd::{encode_fetch_annotations_as_functor, encode_query_annotations_as_functor};
 use storage::snapshot::SnapshotDropGuard;
 use test_utils::assert_matches;
 
@@ -688,6 +688,7 @@ async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
     let (actual_functor, _preamble) = encode_query_annotations_as_functor(&analyzed);
     assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
+
 #[apply(generic_step)]
 #[step(expr = r"analyzed preamble annotations contains:")]
 async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &Step) {
@@ -703,6 +704,20 @@ async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &St
         "Looking for\n\t{}\nin any of:\n\t{}",
         normalize_functor_for_compare(expected_functor),
         preamble_functors.iter().map(|s| normalize_functor_for_compare(s)).join("\n\t")
+    );
+}
+
+#[apply(generic_step)]
+#[step(expr = r"analyzed fetch annotations are:")]
+async fn analyzed_fetch_annotations_are(context: &mut Context, step: &Step) {
+    use server::service::http::message::query::query_structure::bdd::FunctorEncoded;
+    let expected_functor = step.docstring().unwrap();
+    let analyzed = context.analyzed_query.as_ref().unwrap();
+    let actual_functor = encode_fetch_annotations_as_functor(&analyzed);
+
+    assert_eq!(
+        normalize_functor_for_compare(&actual_functor),
+        normalize_functor_for_compare(expected_functor)
     );
 }
 

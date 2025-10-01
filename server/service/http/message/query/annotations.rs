@@ -90,9 +90,9 @@ pub(crate) struct FunctionStructureAnnotationsResponse {
     pub(crate) body: PipelineStructureAnnotationsResponse,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-enum FetchStructureAnnotationsResponse {
+pub(crate) enum FetchStructureAnnotationsResponse {
     #[serde(rename_all = "camelCase")]
     Value {
         value_types: Vec<String>,
@@ -106,12 +106,12 @@ enum FetchStructureAnnotationsResponse {
     },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FetchStructureFieldAnnotationsResponse {
-    key: String,
+    pub(crate) key: String,
     #[serde(flatten)]
-    value: FetchStructureAnnotationsResponse,
+    pub(crate) value: FetchStructureAnnotationsResponse,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
