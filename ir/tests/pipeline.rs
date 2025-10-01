@@ -101,7 +101,7 @@ fn optional_writes() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
-    assert!(translation_result.is_err(), "insert try {{ $_ isa person; }} is not supported: {query}");
+    assert!(translation_result.is_ok(), "{translation_result:?}");
 
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
@@ -147,7 +147,7 @@ fn multiple_optional_writes_in_a_block() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
-    assert!(translation_result.is_err(), "Multiple write statements in a try block are not yet supported: {query}");
+    assert!(translation_result.is_ok(), "{translation_result:?}");
 
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
@@ -157,7 +157,7 @@ fn multiple_optional_writes_in_a_block() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
-    assert!(translation_result.is_err(), "Multiple write statements in a try block are not yet supported: {query}");
+    assert!(translation_result.is_ok(), "{translation_result:?}");
 
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
@@ -167,7 +167,7 @@ fn multiple_optional_writes_in_a_block() {
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
-    assert!(translation_result.is_err(), "Multiple write statements in a try block are not yet supported: {query}");
+    assert!(translation_result.is_ok(), "{translation_result:?}");
 }
 
 #[test]
