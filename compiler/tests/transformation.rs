@@ -129,7 +129,7 @@ fn test_relation_index_transformation_single_schema_snapshot() {
     assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
     assert!(!dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
 
-    run_test_relation_index_transformation_single(snapshot, &type_manager);
+    run_test_relation_index_transformation_single(snapshot, &type_manager, false);
 }
 
 #[test]
@@ -143,7 +143,7 @@ fn test_relation_index_transformation_single_write_snapshot() {
     assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
     assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
 
-    run_test_relation_index_transformation_single(snapshot, &type_manager);
+    run_test_relation_index_transformation_single(snapshot, &type_manager, true);
 }
 
 #[test]
@@ -157,10 +157,14 @@ fn test_relation_index_transformation_single_read_snapshot() {
     assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
     assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
 
-    run_test_relation_index_transformation_single(snapshot, &type_manager);
+    run_test_relation_index_transformation_single(snapshot, &type_manager, true);
 }
 
-fn run_test_relation_index_transformation_single(snapshot: impl ReadableSnapshot, type_manager: &TypeManager) {
+fn run_test_relation_index_transformation_single(
+    snapshot: impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    expect_indices: bool,
+) {
     let query = "match $r links ($role_x: $x, $role_y: $y);";
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let mut context = PipelineTranslationContext::new();
@@ -184,20 +188,24 @@ fn run_test_relation_index_transformation_single(snapshot: impl ReadableSnapshot
 
     relation_index_transformation(&mut conjunction, &mut type_annotations, type_manager, &snapshot).unwrap();
 
-    let indexed_relation =
-        conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation()).next().unwrap();
+    let mut indexed_relations =
+        conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation());
+    if expect_indices {
+        let indexed_relation = indexed_relations.next().unwrap();
+        let var_r = Vertex::Variable(context.get_variable("r").unwrap());
+        let var_x = Vertex::Variable(context.get_variable("x").unwrap());
+        let var_y = Vertex::Variable(context.get_variable("y").unwrap());
+        let var_role_x = Vertex::Variable(context.get_variable("role_x").unwrap());
+        let var_role_y = Vertex::Variable(context.get_variable("role_y").unwrap());
 
-    let var_r = Vertex::Variable(context.get_variable("r").unwrap());
-    let var_x = Vertex::Variable(context.get_variable("x").unwrap());
-    let var_y = Vertex::Variable(context.get_variable("y").unwrap());
-    let var_role_x = Vertex::Variable(context.get_variable("role_x").unwrap());
-    let var_role_y = Vertex::Variable(context.get_variable("role_y").unwrap());
-
-    assert_eq!(indexed_relation.relation(), &(var_r));
-    assert!(indexed_relation.player_1() == &(var_x) || indexed_relation.player_2() == &(var_x));
-    assert!(indexed_relation.player_1() == &(var_y) || indexed_relation.player_2() == &(var_y));
-    assert!(indexed_relation.role_type_1() == &(var_role_x) || indexed_relation.role_type_2() == &(var_role_x));
-    assert!(indexed_relation.role_type_1() == &(var_role_y) || indexed_relation.role_type_2() == &(var_role_y));
+        assert_eq!(indexed_relation.relation(), &(var_r));
+        assert!(indexed_relation.player_1() == &(var_x) || indexed_relation.player_2() == &(var_x));
+        assert!(indexed_relation.player_1() == &(var_y) || indexed_relation.player_2() == &(var_y));
+        assert!(indexed_relation.role_type_1() == &(var_role_x) || indexed_relation.role_type_2() == &(var_role_x));
+        assert!(indexed_relation.role_type_1() == &(var_role_y) || indexed_relation.role_type_2() == &(var_role_y));
+    } else {
+        assert!(indexed_relations.next().is_none(), "Expected no indexed relations");
+    }
 }
 
 #[test]
@@ -211,7 +219,7 @@ fn test_relation_index_transformation_dual_schema_snapshot() {
     assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
     assert!(!dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
 
-    run_test_relation_index_transformation_dual(snapshot, &type_manager)
+    run_test_relation_index_transformation_dual(snapshot, &type_manager, false)
 }
 
 #[test]
@@ -225,7 +233,7 @@ fn test_relation_index_transformation_dual_write_snapshot() {
     assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
     assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
 
-    run_test_relation_index_transformation_dual(snapshot, &type_manager)
+    run_test_relation_index_transformation_dual(snapshot, &type_manager, true)
 }
 
 #[test]
@@ -239,10 +247,14 @@ fn test_relation_index_transformation_dual_read_snapshot() {
     assert!(dog_ownership.schema_qualifies_for_relation_index(&snapshot, &type_manager).unwrap());
     assert!(dog_ownership.relation_index_available(&snapshot, &type_manager).unwrap());
 
-    run_test_relation_index_transformation_dual(snapshot, &type_manager)
+    run_test_relation_index_transformation_dual(snapshot, &type_manager, true)
 }
 
-fn run_test_relation_index_transformation_dual(snapshot: impl ReadableSnapshot, type_manager: &TypeManager) {
+fn run_test_relation_index_transformation_dual(
+    snapshot: impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    expect_indices: bool,
+) {
     let query = "match $r links ($x, $y); $q links ($a, $b);";
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let mut context = PipelineTranslationContext::new();
@@ -276,23 +288,27 @@ fn run_test_relation_index_transformation_dual(snapshot: impl ReadableSnapshot, 
 
     let mut indexed_relations =
         conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation());
-    let first_indexed_relation = indexed_relations.next().unwrap();
-    let second_indexed_relation = indexed_relations.next().unwrap();
+    if expect_indices {
+        let first_indexed_relation = indexed_relations.next().unwrap();
+        let second_indexed_relation = indexed_relations.next().unwrap();
 
-    if first_indexed_relation.relation() == &var_r {
-        assert!(first_indexed_relation.player_1() == &var_x || first_indexed_relation.player_2() == &var_x);
-        assert!(first_indexed_relation.player_1() == &var_y || first_indexed_relation.player_2() == &var_y);
+        if first_indexed_relation.relation() == &var_r {
+            assert!(first_indexed_relation.player_1() == &var_x || first_indexed_relation.player_2() == &var_x);
+            assert!(first_indexed_relation.player_1() == &var_y || first_indexed_relation.player_2() == &var_y);
 
-        assert!(second_indexed_relation.relation() == &var_q || second_indexed_relation.player_2() == &var_q);
-        assert!(second_indexed_relation.player_1() == &var_a || second_indexed_relation.player_2() == &var_a);
-        assert!(second_indexed_relation.player_1() == &var_b || second_indexed_relation.player_2() == &var_b);
+            assert!(second_indexed_relation.relation() == &var_q || second_indexed_relation.player_2() == &var_q);
+            assert!(second_indexed_relation.player_1() == &var_a || second_indexed_relation.player_2() == &var_a);
+            assert!(second_indexed_relation.player_1() == &var_b || second_indexed_relation.player_2() == &var_b);
+        } else {
+            assert!(first_indexed_relation.relation() == &var_q || first_indexed_relation.player_2() == &var_q);
+            assert!(first_indexed_relation.player_1() == &var_a || first_indexed_relation.player_2() == &var_a);
+            assert!(first_indexed_relation.player_1() == &var_b || first_indexed_relation.player_2() == &var_b);
+
+            assert!(second_indexed_relation.player_1() == &var_x || second_indexed_relation.player_2() == &var_x);
+            assert!(second_indexed_relation.player_1() == &var_y || second_indexed_relation.player_2() == &var_y);
+        }
     } else {
-        assert!(first_indexed_relation.relation() == &var_q || first_indexed_relation.player_2() == &var_q);
-        assert!(first_indexed_relation.player_1() == &var_a || first_indexed_relation.player_2() == &var_a);
-        assert!(first_indexed_relation.player_1() == &var_b || first_indexed_relation.player_2() == &var_b);
-
-        assert!(second_indexed_relation.player_1() == &var_x || second_indexed_relation.player_2() == &var_x);
-        assert!(second_indexed_relation.player_1() == &var_y || second_indexed_relation.player_2() == &var_y);
+        assert!(indexed_relations.next().is_none(), "Expected no indexed relations");
     }
 }
 
@@ -367,7 +383,7 @@ fn run_test_relation_index_transformation_not_applied_ternary(
 
     let mut indexed_relations =
         conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation());
-    assert!(!indexed_relations.next().is_some());
+    assert!(indexed_relations.next().is_none());
 }
 
 //  TODO: we just want to add with an exclusitivity constraint
