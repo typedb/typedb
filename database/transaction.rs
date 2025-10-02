@@ -369,8 +369,8 @@ macro_rules! with_transaction_parts {
 }
 
 pub struct DataCommitIntent<D> {
-    database_drop_guard: DatabaseDropGuard<D>,
-    write_snapshot: WriteSnapshot<D>
+    pub database_drop_guard: DatabaseDropGuard<D>,
+    pub write_snapshot: WriteSnapshot<D>
 }
 
 pub struct DatabaseDropGuard<D> {
