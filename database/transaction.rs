@@ -29,7 +29,7 @@ use storage::{
     MVCCStorage,
 };
 use tracing::Level;
-
+use storage::durability_client::WALClient;
 use crate::Database;
 
 #[derive(Debug)]
@@ -162,7 +162,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         }
     }
 
-    pub fn finalise(self) -> (TransactionProfile, Result<(DatabaseDropGuard<D>, WriteSnapshot<D>), DataCommitError>) {
+    pub fn finalise(self) -> (TransactionProfile, Result<DataCommitIntent<D>, DataCommitError>) {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
 
@@ -179,7 +179,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         };
         commit_profile.things_finalised();
         drop(self.type_manager);
-        (profile, Ok((self.database, snapshot)))
+        (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot }))
     }
 
     // TODO: remove this method and update the test accordingly
@@ -187,7 +187,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         self.profile.commit_profile().start();
 
         let (mut profile, (database, snapshot)) = match self.finalise() {
-            (profile, Ok((database, snapshot))) => (profile, (database, snapshot)),
+            (profile, Ok(DataCommitIntent { database_drop_guard, write_snapshot } )) => (profile, (database_drop_guard, write_snapshot)),
             (profile, Err(error)) => return (profile, Err(error)),
         };
         let result = database.data_commit_with_snapshot(snapshot, profile.commit_profile());
@@ -366,6 +366,11 @@ macro_rules! with_transaction_parts {
 
         ($transaction, result)
     }};
+}
+
+pub struct DataCommitIntent<D> {
+    database_drop_guard: DatabaseDropGuard<D>,
+    write_snapshot: WriteSnapshot<D>
 }
 
 pub struct DatabaseDropGuard<D> {

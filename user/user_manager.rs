@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use database::Database;
-use database::transaction::{DatabaseDropGuard, TransactionWrite};
+use database::transaction::{DataCommitIntent, DatabaseDropGuard, TransactionWrite};
 use resource::constants::server::DEFAULT_USER_NAME;
 use resource::profile::{CommitProfile, TransactionProfile};
 use storage::durability_client::WALClient;
@@ -47,7 +47,7 @@ impl UserManager {
         self.get(username).map(|opt| opt.is_some())
     }
 
-    pub fn create(&self, user: &User, credential: &Credential) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), UserCreateError>) {
+    pub fn create(&self, user: &User, credential: &Credential) -> (TransactionProfile, Result<DataCommitIntent<WALClient>, UserCreateError>) {
         let (transaction_profile, create_result) = self
             .transaction_util
             .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
@@ -65,7 +65,7 @@ impl UserManager {
         username: &str,
         user: &Option<User>,
         credential: &Option<Credential>,
-    ) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), UserUpdateError>) {
+    ) -> (TransactionProfile, Result<DataCommitIntent<WALClient>, UserUpdateError>) {
         let (transaction_profile, update_result) = self
             .transaction_util
             .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
@@ -89,7 +89,7 @@ impl UserManager {
     pub fn delete(
         &self,
         username: &str
-    ) -> (Option<TransactionProfile>, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), UserDeleteError>) {
+    ) -> (Option<TransactionProfile>, Result<DataCommitIntent<WALClient>, UserDeleteError>) {
         if username == DEFAULT_USER_NAME {
             return (None, Err(UserDeleteError::DefaultUserCannotBeDeleted {}));
         }

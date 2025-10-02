@@ -13,6 +13,7 @@ pub mod transaction_util {
         transaction::{DatabaseDropGuard, DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
         Database,
     };
+    use database::transaction::DataCommitIntent;
     use function::function_manager::FunctionManager;
     use options::TransactionOptions;
     use query::query_manager::QueryManager;
@@ -109,7 +110,7 @@ pub mod transaction_util {
                 Arc<Database<WALClient>>,
                 TransactionOptions,
             ) -> (T, Arc<WriteSnapshot<WALClient>>),
-        ) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), DataCommitError>) {
+        ) -> (TransactionProfile, Result<DataCommitIntent<WALClient>, DataCommitError>) {
             let TransactionWrite {
                 snapshot,
                 type_manager,
