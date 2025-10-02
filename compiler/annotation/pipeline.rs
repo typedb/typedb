@@ -33,6 +33,8 @@ use ir::{
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
+use ir::pattern::variable_category::VariableCategory;
+use ir::pattern::Vertex;
 
 use crate::{
     annotation::{
@@ -254,7 +256,7 @@ fn annotate_stage(
 ) -> Result<AnnotatedStage, AnnotationError> {
     match stage {
         TranslatedStage::Match { block, source_span } => {
-            let block_annotations = infer_types(
+            let mut block_annotations = infer_types(
                 snapshot,
                 &block,
                 variable_registry,
@@ -293,6 +295,7 @@ fn annotate_stage(
                     .insert(binding.left().as_variable().unwrap(), compiled.return_type().clone());
                 debug_assert!(_existing.is_none() || _existing == Some(compiled.return_type().clone()))
             });
+            complete_block_annotations_with_value_types(block.conjunction(), &mut block_annotations, variable_registry, running_value_variable_assigned_types)?;
             Ok(AnnotatedStage::Match {
                 block,
                 block_annotations,
@@ -304,6 +307,7 @@ fn annotate_stage(
         TranslatedStage::Insert { block, source_span } => {
             let annotations = annotate_write_stage(
                 running_variable_annotations,
+                running_value_variable_assigned_types,
                 variable_registry,
                 snapshot,
                 type_manager,
@@ -327,6 +331,7 @@ fn annotate_stage(
         TranslatedStage::Update { block, source_span } => {
             let annotations = annotate_write_stage(
                 running_variable_annotations,
+                running_value_variable_assigned_types,
                 variable_registry,
                 snapshot,
                 type_manager,
@@ -360,6 +365,7 @@ fn annotate_stage(
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             let insert_annotations = annotate_write_stage(
                 running_variable_annotations,
+                running_value_variable_assigned_types,
                 variable_registry,
                 snapshot,
                 type_manager,
@@ -389,6 +395,7 @@ fn annotate_stage(
         TranslatedStage::Delete { block, deleted_variables, source_span } => {
             let delete_annotations = annotate_write_stage(
                 running_variable_annotations,
+                running_value_variable_assigned_types,
                 variable_registry,
                 snapshot,
                 type_manager,
@@ -447,6 +454,34 @@ fn annotate_stage(
     }
 }
 
+fn complete_block_annotations_with_value_types(
+    conjunction: &Conjunction,
+    block_annotations: &mut BlockAnnotations,
+    variable_registry: &VariableRegistry,
+    source_value_variable_annotations: &BTreeMap<Variable, ExpressionValueType>
+) -> Result<(), AnnotationError> {
+    let value_types_in_conjunction = conjunction.constraints().iter().flat_map(|c| c.ids()).filter(|v| {
+        variable_registry.get_variable_category(*v).map_or(false, |cat| cat == VariableCategory::Value)
+    }).map(|v| (
+        Vertex::Variable(v),
+        source_value_variable_annotations.get(&v).expect("Expected value annotation").clone()
+    )).collect();
+    let _existing = block_annotations.set_value_types_of(conjunction, value_types_in_conjunction);
+    conjunction.nested_patterns().iter().try_for_each(|pattern| match pattern {
+        NestedPattern::Disjunction(disjunction) => {
+            disjunction.conjunctions().iter().try_for_each(|c| {
+                complete_block_annotations_with_value_types(c, block_annotations, variable_registry, source_value_variable_annotations)
+            })
+        },
+        NestedPattern::Negation(inner) => {
+            complete_block_annotations_with_value_types(inner.conjunction(), block_annotations, variable_registry, source_value_variable_annotations)
+        }
+        NestedPattern::Optional(inner) => {
+            complete_block_annotations_with_value_types(inner.conjunction(), block_annotations, variable_registry, source_value_variable_annotations)
+        }
+    })
+}
+
 pub fn validate_sort_variables_comparable(
     sort: &Sort,
     variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
@@ -491,13 +526,14 @@ pub fn validate_sort_variables_comparable(
 
 fn annotate_write_stage(
     running_variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    running_value_variable_types: &BTreeMap<Variable, ExpressionValueType>,
     variable_registry: &mut VariableRegistry,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     block: &Block,
 ) -> Result<TypeAnnotations, AnnotationError> {
-    let block_annotations = infer_types(
+    let mut block_annotations = infer_types(
         snapshot,
         block,
         variable_registry,
@@ -507,8 +543,10 @@ fn annotate_write_stage(
         true,
     )
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+    complete_block_annotations_with_value_types(
+        block.conjunction(), &mut block_annotations, variable_registry, running_value_variable_types
+    )?;
     let annotations_by_scope = block_annotations.into_parts();
-
     // Break if we introduce nested patterns in writes.
     debug_assert!(block.conjunction().nested_patterns().is_empty() && 1 == annotations_by_scope.len());
     let annotations = annotations_by_scope

@@ -118,7 +118,7 @@ pub fn build_pipeline_annotations(
         block_id: QueryStructureConjunctionID,
         annotations_for_block: &TypeAnnotations,
     ) {
-        let annotations = annotations_for_block
+        let mut annotations : BTreeMap<_,_> = annotations_for_block
             .vertex_annotations()
             .iter()
             .filter_map(|(vertex, annos)| {
@@ -132,6 +132,12 @@ pub fn build_pipeline_annotations(
                 })
             })
             .collect();
+        annotations.extend(annotations_for_block.value_annotations().iter().filter_map(|(vertex, annos)| {
+            vertex.as_variable().map(|variable| (
+                StructureVariableId::from(variable),
+                PipelineVariableAnnotation::Value(annos.value_type().clone())
+            ))
+        }));
         variable_annotations.insert(block_id, annotations);
     }
     let mut variable_annotations = BTreeMap::new();
@@ -226,12 +232,18 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
         let key = parameters.fetch_key(*parameter_id).expect("Expected fetch key to be present").to_owned();
         let fetch_object_annotations_maybe_list = match fetch_object {
             AnnotatedFetchSome::SingleVar(var) => {
-                let attribute_types = last_stage_annotations.vertex_annotations_of(&Vertex::Variable(*var))
-                    .expect("Expected annotations to be present").iter()
-                    .filter_map(|attribute_type| {
+                let as_vertex = Vertex::Variable(*var);
+                if let Some(annotations) = last_stage_annotations.vertex_annotations_of(&as_vertex) {
+                    let attribute_types = annotations.iter().filter_map(|attribute_type| {
                         attribute_type.is_attribute_type().then(|| attribute_type.as_attribute_type())
                     });
-                FetchObjectStructureAnnotations::Leaf(build_leaf_annotations(snapshot, type_manager, attribute_types)?)
+                    let leaf_annotations = build_leaf_annotations(snapshot, type_manager, attribute_types)?;
+                    FetchObjectStructureAnnotations::Leaf(leaf_annotations)
+                } else if let Some(value_type) = last_stage_annotations.value_type_annotations_of(&as_vertex) {
+                    FetchObjectStructureAnnotations::Leaf(BTreeSet::from([value_type.value_type().clone()]))
+                } else {
+                    unreachable!("Expected either type annotations or value annotations to be present");
+                }
             }
             AnnotatedFetchSome::ListAttributesAsList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
             | AnnotatedFetchSome::ListAttributesFromList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
