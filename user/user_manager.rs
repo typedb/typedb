@@ -50,7 +50,7 @@ impl UserManager {
     pub fn create(&self, user: &User, credential: &Credential) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), UserCreateError>) {
         let (transaction_profile, create_result) = self
             .transaction_util
-            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::create(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, user, credential)
             });
         let create_result = match create_result {
@@ -68,7 +68,7 @@ impl UserManager {
     ) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), UserUpdateError>) {
         let (transaction_profile, update_result) = self
             .transaction_util
-            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::update(
                     snapshot,
                     &type_mgr,
@@ -110,7 +110,7 @@ impl UserManager {
 
         let (transaction_profile, delete_result) = self
             .transaction_util
-            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::delete(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, username)
             });
         let delete_result = match delete_result {
