@@ -623,12 +623,14 @@ pub mod bdd {
             ($context:ident, $func:ident $args:tt) => {
                 std::format!("{}({})", std::stringify!($func), functor_macros::encode_args!($context, $args))
             };
+            ($context:ident, ( $( $arg:ident, )* ) ) => {
+                functor_macros::encode_args!($context, { $( $arg, )* } )
+            };
         }
 
         macro_rules! add_ignored_fields {
-            ($qualified:path { $( $arg:ident, )* }) => {
-                $qualified { $( $arg, )* .. }
-            };
+            ($qualified:path : { $( $arg:ident, )* }) => { $qualified { $( $arg, )* .. } };
+            ($qualified:path : ($( $arg:ident, )*)) => { $qualified ( $( $arg, )* .. ) };
         }
 
         macro_rules! encode_functor {
@@ -643,7 +645,7 @@ pub mod bdd {
             };
             ($context:ident, $what:ident => [ $($qualified:path => $func:ident $fields:tt, )* ]) => {
                 match $what {
-                    $( functor_macros::add_ignored_fields!($qualified $fields) => {
+                    $( functor_macros::add_ignored_fields!($qualified : $fields) => {
                         functor_macros::encode_functor_impl!($context, $func $fields)
                     })*
                 }
