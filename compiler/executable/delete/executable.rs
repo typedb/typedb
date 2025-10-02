@@ -74,12 +74,14 @@ pub fn compile(
                 source_span,
             }));
         };
+        assert!(block_annotations
+            .type_annotations()
+            .values()
+            .any(|type_annotations| type_annotations.vertex_annotations_of(&Vertex::Variable(variable)).is_some()));
         if block_annotations.type_annotations().values().any(|type_annotations| {
             type_annotations
                 .vertex_annotations_of(&Vertex::Variable(variable))
-                .unwrap()
-                .iter()
-                .any(|type_| type_.kind() == Kind::Role)
+                .is_some_and(|anno| anno.iter().any(|type_| type_.kind() == Kind::Role))
         }) {
             return Err(Box::new(WriteCompilationError::DeleteIllegalRoleVariable {
                 variable: variable_registry
