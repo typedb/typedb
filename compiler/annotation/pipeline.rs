@@ -428,7 +428,11 @@ fn annotate_stage(
             )?;
             Ok(AnnotatedStage::Sort(sort))
         }
-        TranslatedStage::Select(select) => Ok(AnnotatedStage::Select(select)),
+        TranslatedStage::Select(select) => {
+            running_variable_annotations.retain(|var, _| select.variables.contains(var));
+            running_value_variable_assigned_types.retain(|var,_| select.variables.contains(var));
+            Ok(AnnotatedStage::Select(select))
+        },
         TranslatedStage::Offset(offset) => Ok(AnnotatedStage::Offset(offset)),
         TranslatedStage::Limit(limit) => Ok(AnnotatedStage::Limit(limit)),
         TranslatedStage::Require(require) => Ok(AnnotatedStage::Require(require)),
