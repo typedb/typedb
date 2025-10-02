@@ -23,12 +23,11 @@ use crate::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateEr
 #[derive(Debug)]
 pub struct UserManager {
     transaction_util: TransactionUtil,
-    system_db: Arc<Database<WALClient>>
 }
 
 impl UserManager {
     pub fn new(system_db: Arc<Database<WALClient>>) -> Self {
-        UserManager { transaction_util: TransactionUtil::new(system_db.clone()), system_db }
+        UserManager { transaction_util: TransactionUtil::new(system_db.clone()) }
     }
 
     pub fn all(&self) -> Vec<User> {
