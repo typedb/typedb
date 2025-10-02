@@ -353,7 +353,7 @@ fn annotate_stage(
         }
 
         TranslatedStage::Put { block, source_span } => {
-            let match_annotations = infer_types(
+            let mut match_annotations = infer_types(
                 snapshot,
                 &block,
                 variable_registry,
@@ -363,6 +363,7 @@ fn annotate_stage(
                 false,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            complete_block_annotations_with_value_types(block.conjunction(), &mut match_annotations, variable_registry, running_value_variable_assigned_types)?;
             let insert_annotations = annotate_write_stage(
                 running_variable_annotations,
                 running_value_variable_assigned_types,
