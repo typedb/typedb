@@ -80,10 +80,9 @@ impl UserManager {
                     credential,
                 )
             });
-        let update_result = match update_result {
-            Ok(tuple) => Ok(tuple),
-            Err(_query_error) => Err(UserUpdateError::IllegalUsername {}),
-        };
+        let update_result = update_result
+            .map(|tuple| tuple)
+            .map_err(|_query_error| UserUpdateError::IllegalUsername {});
         (transaction_profile, update_result)
     }
 
@@ -113,10 +112,10 @@ impl UserManager {
             .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::delete(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, username)
             });
-        let delete_result = match delete_result {
-            Ok(tuple) => Ok(tuple),
-            Err(_query_error) => Err(UserDeleteError::IllegalUsername {}),
-        };
+
+        let delete_result = delete_result
+            .map(|tuple| tuple)
+            .map_err(|_query_error| UserDeleteError::IllegalUsername {});
 
         (Some(transaction_profile), delete_result)
     }
