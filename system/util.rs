@@ -10,7 +10,9 @@ pub mod transaction_util {
 
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::{
-        transaction::{DatabaseDropGuard, DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+        transaction::{
+            DataCommitError, DatabaseDropGuard, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite,
+        },
         Database,
     };
     use database::transaction::{DataCommitIntent, SchemaCommitIntent};
@@ -143,7 +145,7 @@ pub mod transaction_util {
             let (profile, result) = tx.finalise();
             (profile, result)
         }
-        
+
         pub fn write_transaction_commit<T>(
             &self,
             fn_: impl Fn(

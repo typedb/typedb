@@ -17,6 +17,7 @@ use diagnostics::metrics::ActionKind;
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
 use resource::{constants::common::SECONDS_IN_MINUTE, distribution_info::DistributionInfo};
+use storage::snapshot::CommittableSnapshot;
 use system::concepts::{Credential, User};
 use tokio::{
     sync::{
@@ -30,6 +31,7 @@ use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 use crate::{
     authentication::Accessor,
+    error::LocalServerStateError,
     http::diagnostics::run_with_diagnostics,
     service::{
         http::{
@@ -53,6 +55,7 @@ use crate::{
         QueryType,
     },
     state::ArcServerState,
+    system_init::SYSTEM_DB,
 };
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
@@ -456,7 +459,7 @@ impl HTTPTypeDBService {
             || async {
                 let user = User { name: user_path.username };
                 let credential = Credential::new_password(payload.password.as_str());
-                
+
                 TypeDBService::create_user(&service.server_state, accessor, user, credential)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })

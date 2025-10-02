@@ -8,6 +8,8 @@ use std::{net::SocketAddr, pin::Pin, time::Instant};
 use std::sync::Arc;
 use diagnostics::metrics::ActionKind;
 use itertools::Itertools;
+use resource::profile::CommitProfile;
+use storage::snapshot::CommittableSnapshot;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
@@ -18,6 +20,7 @@ use typedb_protocol::{
     database_manager::import::Server as DatabasesImportServerProto,
     transaction::{Client as TransactionClientProto, Server as TransactionServerProto},
 };
+use user::{errors::UserCreateError, permission_manager::PermissionManager};
 use uuid::Uuid;
 use crate::{
     authentication::{Accessor, AuthenticationError},
@@ -50,6 +53,7 @@ use crate::{
         typedb_service::TypeDBService,
     },
     state::ArcServerState,
+    system_init::SYSTEM_DB,
 };
 
 #[derive(Debug)]

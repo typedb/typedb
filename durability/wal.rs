@@ -327,7 +327,7 @@ impl Files {
             return Ok(());
         };
 
-        let Some(truncate_position) = self.files[file_index].find_last_position_before(sequence_number)? else {
+        let Some(truncate_position) = self.files[file_index].offset_of(sequence_number)? else {
             // Already does not have anything from this sequence number. Can be changed to an error.
             return Ok(());
         };
@@ -414,18 +414,16 @@ impl File {
         Ok(())
     }
 
-    fn find_last_position_before(
-        &self,
-        sequence_number: DurabilitySequenceNumber,
-    ) -> Result<Option<u64>, DurabilityServiceError> {
+    fn offset_of(&self, sequence_number: DurabilitySequenceNumber) -> Result<Option<u64>, DurabilityServiceError> {
         let mut reader = FileReader::new(self.clone())?;
-        let mut last_good_position = 0;
+        let mut current_record_offset = 0;
 
         while let Some(record) = reader.read_one_record()? {
             if record.sequence_number.number() == sequence_number.number() {
-                return Ok(Some(last_good_position));
+                return Ok(Some(current_record_offset));
             }
-            last_good_position = reader.reader.stream_position()?;
+            // Points to the beginning of the next record
+            current_record_offset = reader.reader.stream_position()?;
         }
 
         Ok(None)
@@ -741,6 +739,16 @@ mod test {
         wal
     }
 
+    fn read_all_records(wal: &WAL) -> Vec<(DurabilitySequenceNumber, Vec<u8>)> {
+        wal.iter_any_from(DurabilitySequenceNumber::MIN)
+            .unwrap()
+            .map(|r| {
+                let RawRecord { sequence_number, bytes, .. } = r.unwrap();
+                (sequence_number, bytes.into_owned())
+            })
+            .collect_vec()
+    }
+
     #[test]
     fn test_wal_write_read() {
         let directory = TempDir::new("wal-test").unwrap();
@@ -910,33 +918,61 @@ mod test {
         let directory = TempDir::new("wal-test").unwrap();
         let wal = create_wal(&directory);
 
-        let _s1 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"a000").unwrap();
-        let s2 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"b111").unwrap();
-        let _s3 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"c222").unwrap();
+        let records = [b"a000", b"b111", b"c222", b"d333", b"e444"];
+        let seqs: Vec<_> = records
+            .iter()
+            .map(|record| wal.sequenced_write(TestRecord::RECORD_TYPE, record.as_ref()))
+            .try_collect()
+            .unwrap();
 
-        wal.truncate_from(s2).unwrap();
+        let reads_before_cut = read_all_records(&wal);
+        assert_eq!(reads_before_cut.len(), 5);
 
-        let read_records = wal
-            .iter_any_from(DurabilitySequenceNumber::MIN)
-            .unwrap()
-            .map(|res| res.unwrap().bytes.into_owned())
-            .collect::<Vec<_>>();
+        let cut = seqs[2];
+        wal.truncate_from(cut).expect("Expected to truncate everything starting from seqs[2] (including itself)");
 
-        let mut expected_records = vec![b"a000".to_vec()];
-        assert_eq!(read_records, expected_records);
-        assert_eq!(wal.current(), s2);
+        assert_eq!(wal.current(), seqs[2], "Expected to have the current seq equal to the cut seq");
 
-        let s4 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"d444").unwrap();
+        let reads_after_cut = read_all_records(&wal);
 
-        let read_records = wal
-            .iter_any_from(DurabilitySequenceNumber::MIN)
-            .unwrap()
-            .map(|res| res.unwrap().bytes.into_owned())
-            .collect::<Vec<_>>();
+        assert_eq!(
+            reads_after_cut,
+            reads_before_cut[..2].to_vec(),
+            "Expected only two records after the cut, without the truncated and following records"
+        );
 
-        expected_records.push(b"d444".to_vec());
-        assert_eq!(read_records, expected_records);
-        assert_eq!(s4, s2);
+        assert_eq!(wal.current(), cut);
+        let new_seq1 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"x555").unwrap();
+        assert_eq!(new_seq1, cut, "Expected to have the next seq equal to the cut seq");
+
+        let new_seq2 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"y666").unwrap();
+        assert_eq!(new_seq2, cut.next(), "Expected to have the next next seq equal to the cut's next seq");
+
+        let reads_after_new_writes = read_all_records(&wal);
+        assert_eq!(
+            reads_after_new_writes,
+            vec![
+                reads_before_cut[0].clone(),
+                reads_before_cut[1].clone(),
+                (new_seq1, b"x555".to_vec()),
+                (new_seq2, b"y666".to_vec()),
+            ]
+        );
+
+        // Verify the same after reload.
+        drop(wal);
+        let wal = load_wal(&directory);
+        let reads_reloaded = read_all_records(&wal);
+        assert_eq!(reads_reloaded, reads_after_new_writes);
+
+        let new_seq3 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"z777").unwrap();
+        assert_eq!(new_seq3, cut.next().next(), "Expected the final seq to be the cut's next next one");
+
+        let reads_final = read_all_records(&wal);
+        assert_eq!(
+            reads_final,
+            reads_after_new_writes.into_iter().chain(std::iter::once((new_seq3, b"z777".to_vec()))).collect_vec()
+        );
     }
 
     #[test]

@@ -6,12 +6,15 @@
 
 use std::sync::Arc;
 
-use database::Database;
-use database::transaction::{DataCommitIntent, DatabaseDropGuard, TransactionWrite};
-use resource::constants::server::DEFAULT_USER_NAME;
-use resource::profile::{CommitProfile, TransactionProfile};
-use storage::durability_client::WALClient;
-use storage::snapshot::WriteSnapshot;
+use database::{
+    Database,
+};
+use database::transaction::DataCommitIntent;
+use resource::{
+    constants::server::DEFAULT_USER_NAME,
+    profile::{TransactionProfile},
+};
+use storage::{durability_client::WALClient};
 use system::{
     concepts::{Credential, User},
     repositories::{user_repository, user_repository::SystemDBError},
@@ -52,7 +55,8 @@ impl UserManager {
             .transaction_util
             .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::create(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, user, credential)
-            });
+            },
+        );
         let create_result = match create_result {
             Ok(tuple) => Ok(tuple),
             Err(_query_error) => Err(UserCreateError::IllegalUsername {}),
