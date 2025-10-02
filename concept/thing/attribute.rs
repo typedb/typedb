@@ -83,9 +83,9 @@ impl Attribute {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) -> bool {
-        match self.get_status(snapshot, thing_manager, storage_counters) {
-            ConceptStatus::Put | ConceptStatus::Persisted => thing_manager.has_owners(snapshot, self, false),
+    ) -> Result<bool, Box<ConceptReadError>> {
+        match self.get_status(snapshot, thing_manager, storage_counters)? {
+            ConceptStatus::Put | ConceptStatus::Persisted => Ok(thing_manager.has_owners(snapshot, self, false)),
             ConceptStatus::Inserted | ConceptStatus::Deleted => {
                 unreachable!("Attributes are expected to always have a PUT status.")
             }
@@ -143,12 +143,13 @@ impl ThingAPI for Attribute {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         _storage_counters: StorageCounters,
-    ) {
+    ) -> Result<(), Box<ConceptReadError>> {
         // always lock the attribute, even if put in this snapshot since we don't know
         // if it pre-existed or concurrently created/deleted, or even put again later in this transaction
         // contrast this with entities/relations:
         // those cannot be shared or concurrently created by other transactions unless pre-existing as Persisted
         thing_manager.lock_existing_attribute(snapshot, self);
+        Ok(())
     }
 
     fn get_status(
@@ -156,7 +157,7 @@ impl ThingAPI for Attribute {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) -> ConceptStatus {
+    ) -> Result<ConceptStatus, Box<ConceptReadError>> {
         thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
     }
 
