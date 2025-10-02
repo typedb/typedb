@@ -176,6 +176,7 @@ pub(crate) fn annotate_stages_and_fetch(
         translated_stages,
         input_type_annotations,
         input_value_type_annotations,
+        None
     )?;
     let annotated_fetch = match translated_fetch {
         None => None,
@@ -205,6 +206,7 @@ pub(crate) fn annotate_pipeline_stages(
     translated_stages: Vec<TranslatedStage>,
     input_type_annotations: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: BTreeMap<Variable, ExpressionValueType>,
+    return_variables: Option<&[Variable]>, // Remove if anonymous vars can't cross stage boundaries
 ) -> Result<
     (Vec<AnnotatedStage>, BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>),
     AnnotationError,
@@ -235,6 +237,12 @@ pub(crate) fn annotate_pipeline_stages(
             running_constraint_annotations,
             stage,
         )?;
+
+        let retain_running_var_fn = |var: &Variable| {
+            var.is_named() || return_variables.map(|vars| vars.contains(var)).unwrap_or(false)
+        };
+        running_variable_annotations.retain(|var, _| retain_running_var_fn(var));
+        running_value_variable_types.retain(|var, _| retain_running_var_fn(var));
         if let AnnotatedStage::Match { .. } = annotated_stage {
             latest_match_index = Some(annotated_stages.len());
         }
