@@ -463,15 +463,15 @@ impl TypeDBService {
                 let (mut transaction_profile, create_result) = match service.server_state.user_manager().await {
                     Some(user_manager) => {
                         match user_manager.create(&user, &credential) {
-                            (mut transaction_profile, Ok((database, snapshot))) => {
+                            (mut transaction_profile, Ok(commit_intent)) => {
                                 let commit_profile = transaction_profile.commit_profile();
-                                let into_commit_record_result = snapshot
+                                let into_commit_record_result = commit_intent.write_snapshot
                                     .finalise(commit_profile)
                                     .map_err(|error|
                                         LocalServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected { } }
                                     );
                                 (transaction_profile, into_commit_record_result
-                                    .map(|commit_record| (database, commit_record)))
+                                    .map(|commit_record| (commit_intent.database_drop_guard, commit_record)))
                             }
                             (transaction_profile, Err(error)) =>
                                 return Err(
@@ -518,15 +518,15 @@ impl TypeDBService {
                 let (mut transaction_profile, update_result) = match service.server_state.user_manager().await {
                     Some(user_manager) => {
                         match user_manager.update(&username, &user_update, &credential_update) {
-                            (mut transaction_profile, Ok((database, snapshot))) => {
+                            (mut transaction_profile, Ok(commit_intent)) => {
                                 let commit_profile = transaction_profile.commit_profile();
-                                let into_commit_record_result = snapshot
+                                let into_commit_record_result = commit_intent.write_snapshot
                                     .finalise(commit_profile)
                                     .map_err(|error|
                                         LocalServerStateError::UserCannotBeUpdated { typedb_source: UserUpdateError::Unexpected { } }
                                     );
                                 (transaction_profile, into_commit_record_result
-                                    .map(|commit_record| (database, commit_record)))
+                                    .map(|commit_record| (commit_intent.database_drop_guard, commit_record)))
                             }
                             (transaction_profile, Err(error)) =>
                                 return Err(
@@ -569,15 +569,15 @@ impl TypeDBService {
                 let (mut transaction_profile, delete_result) = match service.server_state.user_manager().await {
                     Some(user_manager) => {
                         match user_manager.delete(username) {
-                            (Some(mut transaction_profile), Ok((database, snapshot))) => {
+                            (Some(mut transaction_profile), Ok(commit_intent)) => {
                                 let commit_profile = transaction_profile.commit_profile();
-                                let into_commit_record_result = snapshot
+                                let into_commit_record_result = commit_intent.write_snapshot
                                     .finalise(commit_profile)
                                     .map_err(|error|
                                         LocalServerStateError::UserCannotBeDeleted { typedb_source: UserDeleteError::Unexpected { } }
                                     );
                                 (transaction_profile, into_commit_record_result
-                                    .map(|commit_record| (database, commit_record)))
+                                    .map(|commit_record| (commit_intent.database_drop_guard, commit_record)))
                             }
                             (None, Err(error)) =>
                                 return Err(
