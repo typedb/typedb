@@ -32,6 +32,7 @@ use ir::{
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::chain;
+use compiler::query_structure::StageIndex;
 use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug)]
@@ -141,25 +142,22 @@ pub fn build_pipeline_annotations(
         variable_annotations.insert(block_id, annotations);
     }
     let mut variable_annotations = BTreeMap::new();
-    stages.iter().for_each(|stage| match stage {
+    stages.iter().enumerate().for_each(|(index, stage)| match stage {
         AnnotatedStage::Put { match_annotations: block_annotations, .. }
         | AnnotatedStage::Match { block_annotations, .. } => {
             block_annotations.type_annotations().iter().for_each(|(scope_id, annotations)| {
-                let block_id = structure.parametrised_structure.scope_to_conjunction_id.get(scope_id).unwrap().clone();
+                let block_id = structure.parametrised_structure.resolve_conjunction_id(StageIndex(index), *scope_id);
                 insert_variable_annotations(variable_registry, &mut variable_annotations, block_id, annotations);
             })
         }
-        AnnotatedStage::Insert { block, annotations, .. } | AnnotatedStage::Update { block, annotations, .. } => {
-            let block_id = structure
-                .parametrised_structure
-                .scope_to_conjunction_id
-                .get(&block.conjunction().scope_id())
-                .unwrap()
-                .clone();
+        AnnotatedStage::Insert { block, annotations, .. }
+        | AnnotatedStage::Update { block, annotations, .. }
+        | AnnotatedStage::Delete { block, annotations, .. } => {
+            let scope_id = block.conjunction().scope_id();
+            let block_id = structure.parametrised_structure.resolve_conjunction_id(StageIndex(index), scope_id);
             insert_variable_annotations(variable_registry, &mut variable_annotations, block_id, annotations);
         }
-        AnnotatedStage::Delete { .. }
-        | AnnotatedStage::Select(_)
+        AnnotatedStage::Select(_)
         | AnnotatedStage::Sort(_)
         | AnnotatedStage::Offset(_)
         | AnnotatedStage::Limit(_)
@@ -167,6 +165,9 @@ pub fn build_pipeline_annotations(
         | AnnotatedStage::Distinct(_)
         | AnnotatedStage::Reduce(_, _) => {}
     });
+    debug_assert!(
+        variable_annotations.iter().enumerate().all(|(index, (conjunction_id, _))| index == conjunction_id.as_u32() as usize)
+    );
     variable_annotations
 }
 

@@ -125,7 +125,9 @@ pub fn extract_pipeline_structure_from(
 ) -> ParametrisedPipelineStructure {
     let branch_ids_allocated = variable_registry.branch_ids_allocated();
     let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
-    annotated_stages.into_iter().for_each(|stage| builder.add_stage(stage));
+    annotated_stages.into_iter().enumerate().for_each(|(index, stage)| {
+        builder.add_stage(stage, StageIndex(index))
+    });
     let output_variables = annotated_stages
         .last()
         .unwrap()
@@ -142,6 +144,8 @@ pub enum PipelineVariableAnnotation {
     Value(ValueType),
 }
 
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+pub struct StageIndex(pub usize);
 pub type PipelineStructureAnnotations =
     BTreeMap<QueryStructureConjunctionID, BTreeMap<StructureVariableId, PipelineVariableAnnotation>>;
 #[derive(Debug, Clone)]
@@ -151,7 +155,7 @@ pub struct ParametrisedPipelineStructure {
     pub output_variables: Vec<StructureVariableId>,
     pub resolved_labels: HashMap<Label, answer::Type>,
     pub calls_syntax: HashMap<Constraint<Variable>, String>,
-    pub scope_to_conjunction_id: HashMap<ScopeId, QueryStructureConjunctionID>,
+    pub scope_to_conjunction_id: HashMap<(StageIndex,ScopeId), QueryStructureConjunctionID>,
 }
 
 impl ParametrisedPipelineStructure {
@@ -184,6 +188,10 @@ impl ParametrisedPipelineStructure {
             })
             .cloned()
             .collect()
+    }
+
+    pub fn resolve_conjunction_id(&self, stage_index: StageIndex, scope_id: ScopeId) -> QueryStructureConjunctionID {
+        self.scope_to_conjunction_id.get(&(stage_index, scope_id)).unwrap().clone()
     }
 }
 
@@ -279,15 +287,16 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
         }
     }
 
-    pub fn add_stage(&mut self, stage: &AnnotatedStage) {
+    pub fn add_stage(&mut self, stage: &AnnotatedStage, stage_index: StageIndex) {
         match stage {
             AnnotatedStage::Match { block, block_annotations, .. } => {
-                let conjunction = self.add_conjunction(None, block.conjunction(), &block_annotations);
+                let conjunction = self.add_conjunction(stage_index, None, block.conjunction(), &block_annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Match { block: conjunction });
             }
             AnnotatedStage::Insert { block, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
                 let block = self.add_conjunction_to_structure(
+                    stage_index,
                     block.conjunction().scope_id(),
                     None,
                     Vec::from(block.conjunction().constraints()),
@@ -299,6 +308,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             AnnotatedStage::Put { block, insert_annotations: annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
                 let block = self.add_conjunction_to_structure(
+                    stage_index,
                     block.conjunction().scope_id(),
                     None,
                     Vec::from(block.conjunction().constraints()),
@@ -310,6 +320,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             AnnotatedStage::Update { block, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
                 let block = self.add_conjunction_to_structure(
+                    stage_index,
                     block.conjunction().scope_id(),
                     None,
                     Vec::from(block.conjunction().constraints()),
@@ -321,6 +332,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             AnnotatedStage::Delete { block, deleted_variables, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
                 let block = self.add_conjunction_to_structure(
+                    stage_index,
                     block.conjunction().scope_id(),
                     None,
                     Vec::from(block.conjunction().constraints()),
@@ -359,6 +371,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
 
     fn add_conjunction(
         &mut self,
+        stage_index: StageIndex,
         existing_branch_id: Option<BranchID>,
         conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
@@ -368,20 +381,21 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             NestedPattern::Disjunction(disjunction) => {
                 let branches = disjunction
                     .conjunctions_by_branch_id()
-                    .map(|(id, branch)| self.add_conjunction(Some(*id), branch, block_annotations))
+                    .map(|(id, branch)| self.add_conjunction(stage_index, Some(*id), branch, block_annotations))
                     .collect::<Vec<_>>();
                 nested_patterns.push(QueryStructureNestedPattern::Or { branches });
             }
             NestedPattern::Negation(negation) => {
-                let conj = self.add_conjunction(None, negation.conjunction(), block_annotations);
+                let conj = self.add_conjunction(stage_index, None, negation.conjunction(), block_annotations);
                 nested_patterns.push(QueryStructureNestedPattern::Not { conjunction: conj });
             }
             NestedPattern::Optional(optional) => {
-                let conj = self.add_conjunction(Some(optional.branch_id()), optional.conjunction(), block_annotations);
+                let conj = self.add_conjunction(stage_index, Some(optional.branch_id()), optional.conjunction(), block_annotations);
                 nested_patterns.push(QueryStructureNestedPattern::Try { conjunction: conj });
             }
         });
         self.add_conjunction_to_structure(
+            stage_index,
             conjunction.scope_id(),
             existing_branch_id,
             Vec::from(conjunction.constraints()),
@@ -392,6 +406,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
 
     fn add_conjunction_to_structure(
         &mut self,
+        stage_index: StageIndex,
         scope_id: ScopeId,
         existing_branch_id: Option<BranchID>,
         constraints: Vec<Constraint<Variable>>,
@@ -408,7 +423,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             self.pipeline_structure.conjunctions.push(QueryStructureConjunction { constraints, nested });
             QueryStructureConjunctionID(self.pipeline_structure.conjunctions.len() as u16 - 1)
         };
-        self.pipeline_structure.scope_to_conjunction_id.insert(scope_id, conj_id.clone());
+        self.pipeline_structure.scope_to_conjunction_id.insert((stage_index, scope_id), conj_id.clone());
         conj_id
     }
 
