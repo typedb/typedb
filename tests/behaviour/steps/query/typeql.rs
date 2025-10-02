@@ -26,7 +26,6 @@ use executor::{
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
-use params;
 use query::{analyse::AnalysedQuery, error::QueryError};
 use resource::profile::StorageCounters;
 use server::service::http::message::query::{
@@ -332,7 +331,7 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
             for answer_row in query_answer {
                 let table_row_within_answer =
                     row.iter().all(|(&var, &spec)| does_var_in_row_match_spec(context, answer_row, var, spec));
-                if table_row_within_answer && row.len() == answer_row.len() {
+                if table_row_within_answer {
                     num_matches += 1;
                 }
             }
@@ -530,7 +529,7 @@ async fn answer_contains_document(context: &mut Context, contains_or_doesnt: par
 }
 
 #[cucumber::then(expr = "answers do not contain variable: {word}")]
-async fn answers_do_not_contain_variable(context: &mut Context, variable: String, step: &Step) {
+async fn answers_do_not_contain_variable(context: &mut Context, variable: String) {
     context.query_answer.as_ref().unwrap().as_rows().iter().all(|row| !row.contains_key(&variable));
 }
 

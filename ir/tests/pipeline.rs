@@ -96,6 +96,7 @@ fn optional_writes() {
 
     let query = r#"
         insert try { $p isa person; };
+        delete try { $p; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
