@@ -592,23 +592,24 @@ fn annotate_write_stage(
     debug_assert!(block.conjunction().nested_patterns().is_empty() && 1 == annotations_by_scope.len());
 
     let annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
-    // Extend running annotations for variables introduced in this stage.
-    block
-        .conjunction()
-        .constraints()
-        .iter()
-        .for_each(|constraint| annotate_write_constraint(constraint, running_variable_annotations, annotations));
 
-    block.conjunction().nested_patterns().iter().for_each(|pattern| match pattern {
-        NestedPattern::Optional(optional) => {
-            let constraint =
-                &optional.conjunction().constraints().get(0).expect("Expected one constraint in a write-try block");
-            annotate_write_constraint(constraint, running_variable_annotations, annotations);
+    // Extend running annotations for variables introduced in this stage.
+    for constraint in block.conjunction().constraints() {
+        annotate_write_constraint(constraint, running_variable_annotations, annotations)
+    }
+
+    for nested_pattern in block.conjunction().nested_patterns() {
+        match nested_pattern {
+            NestedPattern::Optional(optional) => {
+                for constraint in optional.conjunction().constraints() {
+                    annotate_write_constraint(constraint, running_variable_annotations, annotations);
+                }
+            }
+            NestedPattern::Disjunction(_) | NestedPattern::Negation(_) => {
+                unreachable!("Non-try nested pattern encountered in a write stage: {nested_pattern}")
+            }
         }
-        NestedPattern::Disjunction(_) | NestedPattern::Negation(_) => {
-            unreachable!("Non-try nested pattern encountered in a write stage: {pattern}")
-        }
-    });
+    }
 
     Ok(block_annotations)
 }
