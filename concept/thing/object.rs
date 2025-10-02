@@ -111,7 +111,7 @@ impl ThingAPI for Object {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) {
+    ) -> Result<(), Box<ConceptReadError>> {
         match self {
             Object::Entity(entity) => entity.set_required(snapshot, thing_manager, storage_counters),
             Object::Relation(relation) => relation.set_required(snapshot, thing_manager, storage_counters),
@@ -123,7 +123,7 @@ impl ThingAPI for Object {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) -> ConceptStatus {
+    ) -> Result<ConceptStatus, Box<ConceptReadError>> {
         match self {
             Object::Entity(entity) => entity.get_status(snapshot, thing_manager, storage_counters),
             Object::Relation(relation) => relation.get_status(snapshot, thing_manager, storage_counters),
