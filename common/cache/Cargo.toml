@@ -12,6 +12,13 @@ features = {}
 [lib]
 	path = "cache.rs"
 
+[dev-dependencies]
+
+	[dev-dependencies.test_utils]
+		path = "../../util/test"
+		features = []
+		default-features = false
+
 [dependencies]
 
 	[dependencies.tracing]

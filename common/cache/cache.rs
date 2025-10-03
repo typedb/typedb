@@ -34,6 +34,7 @@ impl<T: Serialize + DeserializeOwned + Clone> SpilloverCache<T> {
     }
 
     pub fn insert(&mut self, key: String, value: T) -> Result<(), CacheError> {
+        self.remove(&key)?;
         match self.memory_storage.len() < self.memory_size_limit {
             true => {
                 self.memory_storage.insert(key, value);
@@ -132,5 +133,56 @@ impl Error for CacheError {
             CacheError::DiskStorageSerialization => None,
             CacheError::DiskStorageDeserialization => None,
         }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use test_utils::{create_tmp_dir, TempDir};
+    use crate::SpilloverCache;
+    macro_rules! put {
+        ($cache:ident, $key:literal, $value:literal) => {
+            $cache.insert($key.to_owned(), $value.to_owned()).unwrap()
+        };
+    }
+    macro_rules! get {
+        ($cache:ident, $key:literal) => {
+            $cache.get($key).unwrap().as_ref().map(String::as_str)
+        };
+    }
+
+    fn create_cache_in_tmpdir() -> (TempDir, SpilloverCache<String>) {
+        let tmp_dir = create_tmp_dir();
+        let cache : SpilloverCache<String> = SpilloverCache::new(&tmp_dir.as_ref().to_path_buf(), Some("unit_test"), 1);
+        (tmp_dir, cache)
+    }
+
+    #[test]
+    fn test_insert_spillover_duplicates() {
+        let (tmp_dir, mut cache) = create_cache_in_tmpdir();
+        put!(cache, "key1", "value1");
+        assert_eq!(get!(cache, "key1"), Some("value1"));
+        put!(cache, "key1", "value2");
+        assert_eq!(get!(cache, "key1"), Some("value2"));
+    }
+
+    #[test]
+    fn test_delete_insert_duplicates() {
+        let (tmp_dir, mut cache) = create_cache_in_tmpdir();
+        put!(cache, "key1", "value1");
+        assert_eq!(get!(cache, "key1"), Some("value1"));
+
+        put!(cache, "key2", "value2_1");
+        assert_eq!(cache.get("key2").unwrap().unwrap(), "value2_1");
+
+        cache.remove("key1").unwrap();
+        assert_eq!(get!(cache, "key1"), None);
+
+        put!(cache, "key2", "value2_2");
+        assert_eq!(get!(cache, "key2"), Some("value2_2"));
+
+
+        cache.remove("key2").unwrap();
+        assert_eq!(get!(cache, "key2"), None);
     }
 }
