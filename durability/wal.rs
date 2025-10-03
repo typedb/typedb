@@ -327,6 +327,7 @@ impl Files {
             return Ok(());
         };
 
+        // Call this before file deletion so we don't delete files in case of an error.
         let Some(truncate_position) = self.files[file_index].offset_of(sequence_number)? else {
             // Already does not have anything from this sequence number. Can be changed to an error.
             return Ok(());
@@ -392,10 +393,10 @@ impl File {
 
     fn trim_corrupted_tail_if_needed(&mut self) -> Result<(), DurabilityServiceError> {
         let mut reader = FileReader::new(self.clone())?;
-        let mut last_good_position = 0;
+        let mut last_good_position_end = 0;
         while let Some(record) = reader.read_one_record().transpose() {
             if record.as_ref().is_ok_and(|record| !record.bytes.is_empty()) {
-                last_good_position = reader.reader.stream_position()?;
+                last_good_position_end = reader.reader.stream_position()?;
             } else {
                 match record {
                     Ok(_record) => warn!(
@@ -406,7 +407,7 @@ impl File {
                         err,
                     ),
                 }
-                self.truncate_from_position(last_good_position)?;
+                self.truncate_from_position(last_good_position_end)?;
                 break;
             }
         }
