@@ -45,9 +45,9 @@ pub async fn get_system_database_schema_commit_record(db: Arc<Database<WALClient
         );
     });
     let mut commit_profile = transaction_profile.commit_profile();
-    let (_, snapshot) = finalise_result
+    let commit_intent = finalise_result
         .map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;
-    let commit_record_opt = snapshot.finalise(&mut commit_profile)
+    let commit_record_opt = commit_intent.schema_snapshot.finalise(&mut commit_profile)
         .map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: SchemaCommitError::SnapshotError { typedb_source: error }})?;
     return Ok((transaction_profile, commit_record_opt));
 }

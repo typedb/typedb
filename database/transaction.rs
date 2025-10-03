@@ -273,7 +273,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
     pub fn finalise(
         self,
-    ) -> (TransactionProfile, Result<(DatabaseDropGuard<D>, SchemaSnapshot<D>), SchemaCommitError>) {
+    ) -> (TransactionProfile, Result<SchemaCommitIntent<D>, SchemaCommitError>) {
         use SchemaCommitError::{ConceptWriteErrorsFirst, FunctionError};
 
         let mut profile = self.profile;
@@ -309,18 +309,18 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         drop(type_manager);
-        (profile, Ok((self.database, snapshot)))
+        (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot}))
     }
 
     // TODO: remove this method and update the test accordingly
     pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
         self.profile.commit_profile().start();
 
-        let (mut profile, (database, snapshot)) = match self.finalise() {
-            (profile, Ok((database, snapshot))) => (profile, (database, snapshot)),
+        let (mut profile, commit_intent) = match self.finalise() {
+            (profile, Ok(commit_intent)) => (profile, commit_intent),
             (profile, Err(error)) => return (profile, Err(error)),
         };
-        let result = database.schema_commit_with_snapshot(snapshot, profile.commit_profile());
+        let result = commit_intent.database_drop_guard.schema_commit_with_snapshot(commit_intent.schema_snapshot, profile.commit_profile());
         profile.commit_profile().end();
         (profile, result)
     }
@@ -366,6 +366,11 @@ macro_rules! with_transaction_parts {
 
         ($transaction, result)
     }};
+}
+
+pub struct SchemaCommitIntent<D> {
+    pub database_drop_guard: DatabaseDropGuard<D>,
+    pub schema_snapshot: SchemaSnapshot<D>
 }
 
 pub struct DataCommitIntent<D> {
