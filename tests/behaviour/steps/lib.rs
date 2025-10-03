@@ -16,7 +16,7 @@ use std::{
 };
 
 use ::concept::thing::{attribute::Attribute, object::Object};
-use ::query::{analyse::AnalysedQuery, error::QueryError};
+use ::query::error::QueryError;
 use cucumber::{gherkin::Feature, StatsWriter, World};
 use database::Database;
 use futures::{

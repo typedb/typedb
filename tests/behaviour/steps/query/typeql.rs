@@ -204,7 +204,7 @@ fn execute_write_query(
     })
 }
 
-fn execute_analyze_query(
+fn execute_analyze(
     context: &mut Context,
     query: typeql::Query,
     source_query: &str,
@@ -630,7 +630,7 @@ async fn verify_answer_set(context: &mut Context, step: &Step) {
 async fn get_answers_of_typeql_analyze_query(context: &mut Context, step: &Step) {
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let query = typeql::parse_query(query_str).unwrap();
-    let analyzed_unencoded = execute_analyze_query(context, query, query_str).unwrap();
+    let analyzed_unencoded = execute_analyze(context, query, query_str).unwrap();
     let analyzed = with_read_tx!(context, |tx| {
         encode_query_structure_annotations(&(*tx.snapshot), &tx.type_manager, analyzed_unencoded).unwrap()
     });
