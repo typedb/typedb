@@ -455,7 +455,7 @@ fn annotate_and_compile_query(
         extract_pipeline_structure_from(&variable_registry, &annotated_pipeline.annotated_stages, source_query)
             .map(Arc::new);
 
-    match apply_transformations(snapshot, type_manager, &mut annotated_pipeline) {
+    match apply_transformations(snapshot, &type_manager, &mut annotated_pipeline) {
         Ok(_) => {}
         Err(err) => {
             return Err(Box::new(QueryError::Transformation {

@@ -779,7 +779,7 @@ impl TypeManager {
         }
     }
 
-    pub fn relation_index_available(
+    pub(crate) fn type_qualifies_for_relation_index(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType,

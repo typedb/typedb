@@ -13,7 +13,7 @@ use crate::{
     type_::{constraint::ConstraintError, owns::Owns},
 };
 
-pub(crate) mod commit_time_validation;
+pub(crate) mod cardinality_validation;
 pub(crate) mod operation_time_validation;
 pub(crate) mod validation;
 

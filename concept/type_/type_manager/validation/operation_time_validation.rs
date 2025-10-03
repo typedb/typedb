@@ -3161,7 +3161,7 @@ impl OperationTimeValidation {
             "At least one constraint should exist otherwise we don't need to iterate"
         );
 
-        // TODO #7138: It is EXCEPTIONALLY memory-greedy and should be optimized before a non-alpha release!
+        // TODO #7138: It is EXCEPTIONALLY memory-greedy and should be optimized / removed from RAM!
         let mut unique_values = HashMap::new();
 
         for object_type in object_types {

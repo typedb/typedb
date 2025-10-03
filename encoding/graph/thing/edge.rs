@@ -805,6 +805,17 @@ impl ThingEdgeIndexedRelation {
         Self { player_from, player_to, relation_type_id, relation_id, role_id_from, role_id_to }
     }
 
+    pub fn into_reverse(self) -> Self {
+        Self {
+            player_from: self.player_to,
+            player_to: self.player_from,
+            relation_type_id: self.relation_type_id,
+            relation_id: self.relation_id,
+            role_id_from: self.role_id_to,
+            role_id_to: self.role_id_from,
+        }
+    }
+
     /// Byte layout: [rp_index][rel type][from_object][to_object][relation id][from_role_id][to_role_id]
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);

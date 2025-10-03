@@ -46,6 +46,8 @@ macro_rules! get_mapped_method {
 }
 
 pub trait ReadableSnapshot {
+    const IMMUTABLE_SCHEMA: bool;
+
     fn open_sequence_number(&self) -> SequenceNumber;
 
     fn get<const INLINE_BYTES: usize>(
@@ -162,7 +164,7 @@ pub trait WritableSnapshot: ReadableSnapshot {
     ) -> Result<ByteArray<BUFFER_VALUE_INLINE>, SnapshotGetError> {
         let keyspace_id = key.keyspace_id();
         let writes = self.operations().writes_in(keyspace_id);
-        match writes.get(key.bytes()) {
+        match writes.writes_get(key.bytes()) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(ByteArray::copy(value)),
             Some(Write::Delete) => {
                 Err(SnapshotGetError::ExpectedRequiredKeyToExist { key: StorageKey::Array(key.into_owned_array()) })
@@ -229,6 +231,8 @@ impl<D> ReadSnapshot<D> {
 }
 
 impl<D> ReadableSnapshot for ReadSnapshot<D> {
+    const IMMUTABLE_SCHEMA: bool = true;
+
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }
@@ -333,6 +337,8 @@ impl<D> WriteSnapshot<D> {
 }
 
 impl<D> ReadableSnapshot for WriteSnapshot<D> {
+    const IMMUTABLE_SCHEMA: bool = true;
+
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }
@@ -343,8 +349,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         key: StorageKeyReference<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        let writes = self.operations().writes_in(key.keyspace_id());
-        match writes.get(key.bytes()) {
+        match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
             None => self
@@ -360,8 +365,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         key: StorageKeyReference<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        let writes = self.operations().writes_in(key.keyspace_id());
-        match writes.get(key.bytes()) {
+        match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) | None => self
                 .storage
@@ -393,7 +397,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     }
 
     fn get_write(&self, key: StorageKeyReference<'_>) -> Option<&Write> {
-        self.operations().writes_in(key.keyspace_id()).get_write(key.bytes())
+        self.operations().writes_in(key.keyspace_id()).writes_get(key.bytes())
     }
 
     fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {
@@ -491,6 +495,8 @@ impl<D> SchemaSnapshot<D> {
 }
 
 impl<D> ReadableSnapshot for SchemaSnapshot<D> {
+    const IMMUTABLE_SCHEMA: bool = false;
+
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
     }
@@ -501,8 +507,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         key: StorageKeyReference<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        let writes = self.operations().writes_in(key.keyspace_id());
-        match writes.get(key.bytes()) {
+        match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) => Ok(None),
             None => self
@@ -518,8 +523,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         key: StorageKeyReference<'_>,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        let writes = self.operations().writes_in(key.keyspace_id());
-        match writes.get(key.bytes()) {
+        match self.get_write(key) {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) | None => self
                 .storage
@@ -551,7 +555,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     }
 
     fn get_write(&self, key: StorageKeyReference<'_>) -> Option<&Write> {
-        self.operations().writes_in(key.keyspace_id()).get_write(key.bytes())
+        self.operations().writes_in(key.keyspace_id()).writes_get(key.bytes())
     }
 
     fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {

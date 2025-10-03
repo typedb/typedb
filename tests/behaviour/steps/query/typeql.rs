@@ -210,7 +210,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
     }
     let typeql_schema = parse_result.unwrap().into_structure().into_schema();
 
-    if !matches!(context.active_transaction.as_ref().unwrap(), Schema(_)) {
+    if !matches!(context.active_transaction.as_ref().expect("Expected an active tx"), Schema(_)) {
         may_error.check_logic::<(), BehaviourTestExecutionError>(Err(
             BehaviourTestExecutionError::UseInvalidTransactionAsSchema,
         ));

@@ -626,6 +626,22 @@ impl RelationType {
         }
         Ok(())
     }
+
+    pub fn relation_index_available<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        Ok(Snapshot::IMMUTABLE_SCHEMA && self.schema_qualifies_for_relation_index(snapshot, type_manager)?)
+    }
+
+    pub fn schema_qualifies_for_relation_index(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        type_manager.type_qualifies_for_relation_index(snapshot, *self)
+    }
 }
 
 impl fmt::Display for RelationType {

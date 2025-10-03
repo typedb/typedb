@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use concept::type_::type_manager::TypeManager;
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use ir::pattern::{
     conjunction::Conjunction,
     constraint::{Comparator, Constraint, IndexedRelation, Links},
@@ -101,8 +101,9 @@ fn index_available(
 ) -> Result<bool, StaticOptimiserError> {
     let relation_types = type_annotations.vertex_annotations_of(relation).unwrap();
     for type_ in relation_types.iter() {
-        let index_available = type_manager
-            .relation_index_available(snapshot, type_.as_relation_type())
+        let index_available = type_
+            .as_relation_type()
+            .relation_index_available(snapshot, type_manager)
             .map_err(|err| StaticOptimiserError::ConceptRead { typedb_source: err })?;
         if !index_available {
             return Ok(false);

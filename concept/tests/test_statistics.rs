@@ -167,14 +167,16 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
                 .or_default() += count;
             *this_relation_players.entry(player.type_()).or_default() += 1;
         }
-        for (player_1, count_1) in &this_relation_players {
-            for (player_2, count_2) in &this_relation_players {
-                let link_count = if player_1 == player_2 { count_1 * (count_2 - 1) } else { count_1 * count_2 };
-                if link_count == 0 {
-                    continue;
+        if relation.type_().relation_index_available(&snapshot, thing_manager.type_manager()).unwrap() {
+            for (player_1, count_1) in &this_relation_players {
+                for (player_2, count_2) in &this_relation_players {
+                    let link_count = if player_1 == player_2 { count_1 * (count_2 - 1) } else { count_1 * count_2 };
+                    if link_count == 0 {
+                        continue;
+                    }
+                    *statistics.links_index_counts.entry(*player_1).or_default().entry(*player_2).or_default() +=
+                        link_count;
                 }
-                *statistics.links_index_counts.entry(*player_1).or_default().entry(*player_2).or_default() +=
-                    link_count;
             }
         }
     }
