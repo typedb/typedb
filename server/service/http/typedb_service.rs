@@ -579,9 +579,9 @@ impl TypeDBService {
                                 (transaction_profile, into_commit_record_result
                                     .map(|commit_record| (commit_intent.database_drop_guard, commit_record)))
                             }
-                            (None, Err(error)) =>
+                            (None, Err(typedb_source)) =>
                                 return Err(
-                                    HttpServiceError::State { typedb_source: Arc::new(LocalServerStateError::UserCannotBeDeleted { typedb_source: error }) }
+                                    HttpServiceError::State { typedb_source: Arc::new(LocalServerStateError::UserCannotBeDeleted { typedb_source }) }
                                 ),
                             (None, Ok(_)) => panic!("Unexpected condition"),
                             (Some(_), Err(_)) => panic!("Unexpected condition"),
