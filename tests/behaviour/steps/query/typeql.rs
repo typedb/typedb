@@ -638,6 +638,19 @@ async fn get_answers_of_typeql_analyze_query(context: &mut Context, step: &Step)
 }
 
 #[apply(generic_step)]
+#[step(expr = r"typeql analyze query{typeql_may_error}")]
+async fn typeql_analyze_query_may_error(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+    let query_str = step.docstring.as_ref().unwrap().as_str();
+    let parse_result = typeql::parse_query(query_str);
+    if let Either::Right(_) = may_error.check_parsing(parse_result.as_ref()) {
+        return;
+    }
+    let query = parse_result.unwrap();
+    let result = execute_analyze(context, query, query_str);
+    may_error.check_logic(result);
+}
+
+#[apply(generic_step)]
 #[step(expr = r"analyzed query pipeline structure is:")]
 async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
     use server::service::http::message::query::query_structure::bdd::FunctorEncoded;
