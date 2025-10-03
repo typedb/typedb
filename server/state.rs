@@ -449,7 +449,7 @@ impl ServerState for LocalServerState {
     }
 
     async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ArcServerStateError> {
-        if !PermissionManager::exec_user_get_permitted(accessor.0.as_str(), name) {
+        if !PermissionManager::exec_user_get_permitted(accessor.as_str(), name) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
@@ -466,7 +466,7 @@ impl ServerState for LocalServerState {
     }
 
     async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError> {
-        if !PermissionManager::exec_user_all_permitted(accessor.0.as_str()) {
+        if !PermissionManager::exec_user_all_permitted(accessor.as_str()) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 

@@ -25,7 +25,7 @@ impl TypeDBService {
         user: system::concepts::User,
         credential: system::concepts::Credential,
     ) -> Result<(), ArcServerStateError> {
-        if !PermissionManager::exec_user_create_permitted(accessor.0.as_str()) {
+        if !PermissionManager::exec_user_create_permitted(accessor.as_str()) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
@@ -59,7 +59,7 @@ impl TypeDBService {
         user_update: Option<system::concepts::User>,
         credential_update: Option<system::concepts::Credential>,
     ) -> Result<(), ArcServerStateError> {
-        if !PermissionManager::exec_user_update_permitted(accessor.0.as_str(), username) {
+        if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
@@ -91,7 +91,7 @@ impl TypeDBService {
         accessor: Accessor,
         username: &str,
     ) -> Result<(), ArcServerStateError> {
-        if !PermissionManager::exec_user_delete_allowed(accessor.0.as_str(), username) {
+        if !PermissionManager::exec_user_delete_allowed(accessor.as_str(), username) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
