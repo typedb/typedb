@@ -46,7 +46,7 @@ macro_rules! get_mapped_method {
 }
 
 pub trait ReadableSnapshot {
-    const STATIC_SCHEMA_GUARANTEE: bool;
+    const IMMUTABLE_SCHEMA: bool;
 
     fn open_sequence_number(&self) -> SequenceNumber;
 
@@ -231,7 +231,7 @@ impl<D> ReadSnapshot<D> {
 }
 
 impl<D> ReadableSnapshot for ReadSnapshot<D> {
-    const STATIC_SCHEMA_GUARANTEE: bool = true;
+    const IMMUTABLE_SCHEMA: bool = true;
 
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
@@ -337,7 +337,7 @@ impl<D> WriteSnapshot<D> {
 }
 
 impl<D> ReadableSnapshot for WriteSnapshot<D> {
-    const STATIC_SCHEMA_GUARANTEE: bool = true;
+    const IMMUTABLE_SCHEMA: bool = true;
 
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
@@ -495,7 +495,7 @@ impl<D> SchemaSnapshot<D> {
 }
 
 impl<D> ReadableSnapshot for SchemaSnapshot<D> {
-    const STATIC_SCHEMA_GUARANTEE: bool = false;
+    const IMMUTABLE_SCHEMA: bool = false;
 
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number

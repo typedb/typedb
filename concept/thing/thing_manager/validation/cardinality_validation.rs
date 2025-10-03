@@ -164,6 +164,7 @@ Please keep these complexities in mind when modifying the collection stage in th
 */
 
 pub(crate) struct CardinalityChangeTracker {
+    // TODO #7138: It is EXCEPTIONALLY memory-greedy and should be optimized / removed from RAM!
     modified_objects_attribute_types: HashMap<Object, HashSet<AttributeType>>,
     has_modified_owns: bool,
     modified_objects_role_types: HashMap<Object, HashSet<RoleType>>,

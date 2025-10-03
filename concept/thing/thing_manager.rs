@@ -1782,9 +1782,9 @@ impl ThingManager {
         snapshot.unmodifiable_lock_add(attribute.vertex().into_storage_key().into_owned_array())
     }
 
-    pub fn finalise(
+    pub fn finalise<Snapshot: WritableSnapshot>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<(), Vec<ConceptWriteError>> {
         let cardinality_change_tracker =
@@ -1793,7 +1793,8 @@ impl ThingManager {
 
         self.validate_cardinalities(snapshot, &cardinality_change_tracker, storage_counters.clone())?;
 
-        if cardinality_change_tracker.has_modified_relates() {
+        // For immutable schema, the indices are updated at operation time
+        if !Snapshot::IMMUTABLE_SCHEMA && cardinality_change_tracker.has_modified_relates() {
             self.update_relation_indices_on_cardinality_changes(
                 snapshot,
                 &cardinality_change_tracker,

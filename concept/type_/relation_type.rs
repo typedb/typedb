@@ -632,7 +632,7 @@ impl RelationType {
         snapshot: &Snapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
-        Ok(Snapshot::STATIC_SCHEMA_GUARANTEE && self.schema_qualifies_for_relation_index(snapshot, type_manager)?)
+        Ok(Snapshot::IMMUTABLE_SCHEMA && self.schema_qualifies_for_relation_index(snapshot, type_manager)?)
     }
 
     pub fn schema_qualifies_for_relation_index(
