@@ -144,8 +144,8 @@ pub enum PipelineVariableAnnotation {
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct StageIndex(pub usize);
-pub type PipelineStructureAnnotations =
-    BTreeMap<QueryStructureConjunctionID, BTreeMap<StructureVariableId, PipelineVariableAnnotation>>;
+pub type PipelineStructureAnnotations = Vec<BTreeMap<StructureVariableId, PipelineVariableAnnotation>>;
+
 #[derive(Debug, Clone)]
 pub struct ParametrisedPipelineStructure {
     pub stages: Vec<QueryStructureStage>,

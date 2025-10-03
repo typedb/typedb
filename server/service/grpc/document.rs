@@ -192,7 +192,7 @@ fn encode_leaf(
     }
 }
 
-fn encode_kind(kind: Kind) -> typedb_protocol::concept_document::node::leaf::Kind {
+pub(crate) fn encode_kind(kind: Kind) -> typedb_protocol::concept_document::node::leaf::Kind {
     match kind {
         Kind::Entity => typedb_protocol::concept_document::node::leaf::Kind::Entity,
         Kind::Attribute => typedb_protocol::concept_document::node::leaf::Kind::Attribute,

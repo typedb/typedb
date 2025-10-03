@@ -137,9 +137,10 @@ pub fn build_pipeline_annotations(
                 (StructureVariableId::from(variable), PipelineVariableAnnotation::Value(annos.value_type().clone()))
             })
         }));
-        variable_annotations.insert(block_id, annotations);
+        variable_annotations[block_id.as_u32() as usize] = annotations;
     }
-    let mut variable_annotations = BTreeMap::new();
+    let mut variable_annotations = Vec::with_capacity(structure.parametrised_structure.conjunctions.len());
+    variable_annotations.resize(structure.parametrised_structure.conjunctions.len(), BTreeMap::new());
     stages.iter().enumerate().for_each(|(index, stage)| match stage {
         AnnotatedStage::Put { match_annotations: block_annotations, .. }
         | AnnotatedStage::Match { block_annotations, .. } => {
@@ -163,10 +164,6 @@ pub fn build_pipeline_annotations(
         | AnnotatedStage::Distinct(_)
         | AnnotatedStage::Reduce(_, _) => {}
     });
-    debug_assert!(variable_annotations
-        .iter()
-        .enumerate()
-        .all(|(index, (conjunction_id, _))| index == conjunction_id.as_u32() as usize));
     variable_annotations
 }
 

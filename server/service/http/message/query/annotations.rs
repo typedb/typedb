@@ -183,26 +183,19 @@ pub(super) fn encode_pipeline_structure_annotations(
     type_manager: &TypeManager,
     pipeline_structure_annotations: PipelineStructureAnnotations,
 ) -> Result<PipelineStructureAnnotationsResponse, Box<ConceptReadError>> {
-    let mut annotations_by_conjunction = Vec::new();
-    pipeline_structure_annotations.iter().try_for_each(|(conj_id, var_annotations)| {
-        let conj_id = conj_id.0 as usize;
-        if annotations_by_conjunction.len() <= conj_id {
-            annotations_by_conjunction.resize_with(conj_id + 1, || VariableAnnotationsByConjunctionResponse {
-                variable_annotations: HashMap::new(),
-            });
-        }
-        let variable_annotations = var_annotations
-            .into_iter()
-            .map(|(var_id, annotations)| {
-                Ok::<_, Box<ConceptReadError>>((
-                    var_id.clone(),
-                    encode_variable_type_annotations(snapshot, type_manager, annotations)?,
-                ))
-            })
-            .collect::<Result<HashMap<_, _>, _>>()?;
-        annotations_by_conjunction[conj_id] = VariableAnnotationsByConjunctionResponse { variable_annotations };
-        Ok::<_, Box<ConceptReadError>>(())
-    })?;
+    let mut annotations_by_conjunction = Vec::with_capacity(pipeline_structure_annotations.len());
+    annotations_by_conjunction.resize_with(pipeline_structure_annotations.len(), || {
+        VariableAnnotationsByConjunctionResponse { variable_annotations: HashMap::new() };
+    });
+    let annotations_by_conjunction = pipeline_structure_annotations.iter().map(|var_annotations| {
+        let variable_annotations = var_annotations.into_iter().map(|(var_id, annotations)| {
+            Ok((
+                var_id.clone(),
+                encode_variable_type_annotations(snapshot, type_manager, annotations)?,
+            ))
+        }).collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
+        Ok(VariableAnnotationsByConjunctionResponse { variable_annotations })
+    }).collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
     Ok(PipelineStructureAnnotationsResponse { annotations_by_conjunction })
 }
 
