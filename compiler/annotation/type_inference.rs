@@ -6,7 +6,8 @@
 
 use std::collections::{BTreeSet, HashSet};
 
-use answer::Type;
+use answer::{Type, Type as TypeAnnotation};
+use concept::error::ConceptReadError;
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::ValueType;
 use storage::snapshot::ReadableSnapshot;
@@ -52,7 +53,7 @@ pub mod tests {
         sync::Arc,
     };
 
-    use answer::{variable::Variable, Type};
+    use answer::{Type, variable::Variable};
     use assert as assert_true;
     use encoding::{
         graph::definition::definition_key::{DefinitionID, DefinitionKey},
@@ -81,15 +82,15 @@ pub mod tests {
             EmptyAnnotatedFunctionSignatures,
         },
         match_inference::{
-            compute_type_inference_graph, infer_types, prune_types, NestedTypeInferenceGraphDisjunction,
+            compute_type_inference_graph, infer_types, NestedTypeInferenceGraphDisjunction, prune_types,
             TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
         },
         pipeline::AnnotatedStage,
         tests::{
             managers,
             schema_consts::{
-                setup_types, LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS,
-                LABEL_HAS_FEAR, LABEL_IS_FEARED, LABEL_NAME,
+                LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_HAS_FEAR,
+                LABEL_IS_FEARED, LABEL_NAME, setup_types,
             },
             setup_storage,
         },
@@ -1459,5 +1460,23 @@ pub mod tests {
             expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears);
             assert_eq!(expected_graph, graph)
         }
+    }
+}
+
+pub fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
+    snapshot: &Snapshot,
+    type_manager: &TypeManager,
+    label_value: &encoding::value::label::Label,
+) -> Result<Option<TypeAnnotation>, Box<ConceptReadError>> {
+    if let Some(t) = type_manager.get_attribute_type(snapshot, label_value)?.map(TypeAnnotation::Attribute) {
+        Ok(Some(t))
+    } else if let Some(t) = type_manager.get_entity_type(snapshot, label_value)?.map(TypeAnnotation::Entity) {
+        Ok(Some(t))
+    } else if let Some(t) = type_manager.get_relation_type(snapshot, label_value)?.map(TypeAnnotation::Relation) {
+        Ok(Some(t))
+    } else if let Some(t) = type_manager.get_role_type(snapshot, label_value)?.map(TypeAnnotation::RoleType) {
+        Ok(Some(t))
+    } else {
+        Ok(None)
     }
 }

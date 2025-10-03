@@ -10,10 +10,10 @@ use std::{
     iter::zip,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation, Type};
+use answer::{Type as TypeAnnotation, Type, variable::Variable};
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
+    type_::{object_type::ObjectType, OwnerAPI, PlayerAPI, type_manager::TypeManager, TypeAPI},
 };
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::{
@@ -25,19 +25,15 @@ use ir::{
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
-        variable_category::VariableCategory,
-        Pattern, Scope, Vertex,
+        Pattern,
+        Scope, variable_category::VariableCategory, Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::annotation::{
-    function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
-    match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
-    TypeInferenceError,
-};
+use crate::annotation::{function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation}, match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations}, type_inference, TypeInferenceError};
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
@@ -216,7 +212,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Vertex::Variable(_) => unreachable!("variable in fixed vertices"),
                 Vertex::Label(label) => {
                     if !graph.vertices.contains_key(vertex) {
-                        let annotation_opt = get_type_annotation_from_label(self.snapshot, self.type_manager, label)
+                        let annotation_opt = type_inference::get_type_annotation_from_label(self.snapshot, self.type_manager, label)
                             .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
                         if let Some(annotation) = annotation_opt {
                             graph.vertices.insert(vertex.clone(), BTreeSet::from([annotation]));
@@ -230,7 +226,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                         #[cfg(debug_assertions)]
                         {
                             let annotation_opt =
-                                get_type_annotation_from_label(self.snapshot, self.type_manager, label)
+                                type_inference::get_type_annotation_from_label(self.snapshot, self.type_manager, label)
                                     .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
                             debug_assert_ne!(annotation_opt, None);
                             debug_assert_eq!(graph.vertices[vertex], BTreeSet::from([annotation_opt.unwrap()]));
@@ -576,30 +572,12 @@ trait UnaryConstraint {
     ) -> Result<(), TypeInferenceError>;
 }
 
-pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
-    snapshot: &Snapshot,
-    type_manager: &TypeManager,
-    label_value: &encoding::value::label::Label,
-) -> Result<Option<TypeAnnotation>, Box<ConceptReadError>> {
-    if let Some(t) = type_manager.get_attribute_type(snapshot, label_value)?.map(TypeAnnotation::Attribute) {
-        Ok(Some(t))
-    } else if let Some(t) = type_manager.get_entity_type(snapshot, label_value)?.map(TypeAnnotation::Entity) {
-        Ok(Some(t))
-    } else if let Some(t) = type_manager.get_relation_type(snapshot, label_value)?.map(TypeAnnotation::Relation) {
-        Ok(Some(t))
-    } else if let Some(t) = type_manager.get_role_type(snapshot, label_value)?.map(TypeAnnotation::RoleType) {
-        Ok(Some(t))
-    } else {
-        Ok(None)
-    }
-}
-
 pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnapshot>(
     snapshot: &Snapshot,
     type_manager: &TypeManager,
     label_value: &encoding::value::label::Label,
 ) -> Result<BTreeSet<TypeAnnotation>, TypeInferenceError> {
-    let type_opt = get_type_annotation_from_label(snapshot, type_manager, label_value)
+    let type_opt = type_inference::get_type_annotation_from_label(snapshot, type_manager, label_value)
         .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
     let Some(type_) = type_opt else {
         return Err(TypeInferenceError::LabelNotResolved {
@@ -1655,7 +1633,7 @@ pub mod tests {
         match_inference::{TypeInferenceGraph, VertexAnnotations},
         tests::{
             managers,
-            schema_consts::{setup_types, LABEL_CAT, LABEL_NAME},
+            schema_consts::{LABEL_CAT, LABEL_NAME, setup_types},
             setup_storage,
         },
         type_inference::tests::expected_edge,

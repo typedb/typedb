@@ -19,6 +19,7 @@ use ir::pattern::{
     ParameterID, Vertex,
 };
 use serde::{Deserialize, Serialize, Serializer};
+use compiler::annotation::type_inference::get_type_annotation_from_label;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
@@ -236,7 +237,7 @@ enum StructureVertex {
     Variable { id: StructureVariableId },
     Label { r#type: serde_json::Value },
     Value(ValueResponse),
-    FailedTypeInference { label: String },
+    Unresolved { label: String },
 }
 
 pub(crate) fn encode_query_structure(
@@ -555,8 +556,17 @@ fn encode_structure_vertex(
                     StructureVertex::Label { r#type }
                 },
                 None => {
-                    let label = label.scoped_name.as_str().to_owned();
-                    StructureVertex::FailedTypeInference { label }
+                    match get_type_annotation_from_label(context.snapshot, context.type_manager, label)? {
+                        Some(type_) => {
+                            let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
+                            StructureVertex::Label { r#type }
+                        }
+                        None => {
+                            debug_assert!(false, "Likely unreachable, thanks to the rolename handling");
+                            let label = label.scoped_name.as_str().to_owned();
+                            StructureVertex::Unresolved { label }
+                        }
+                    }
                 },
             }
         }
@@ -741,7 +751,7 @@ pub mod bdd {
         match self {
             StructureVertex::Variable { id } => { id.encode_as_functor(context) }
             StructureVertex::Label { r#type } => { r#type.as_object().unwrap()["label"].as_str().unwrap().to_owned() }
-            StructureVertex::FailedTypeInference { label } => { label.encode_as_functor(context) }
+            StructureVertex::Unresolved { label } => { label.encode_as_functor(context) }
             StructureVertex::Value(v) => {
                 match &v.value {
                     Value::String(s) => std::format!("\"{}\"", s.to_string()),
