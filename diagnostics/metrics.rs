@@ -427,7 +427,7 @@ impl ActionMetrics {
     }
 
     fn get_attempted(&self, action_kind: &ActionKind) -> u64 {
-        self.get_attempted(action_kind)
+        self.get_action(action_kind).get_attempted()
     }
 
     fn get_successful_delta(&self, action_kind: &ActionKind) -> i64 {
