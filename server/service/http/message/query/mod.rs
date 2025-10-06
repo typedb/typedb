@@ -169,7 +169,7 @@ impl IntoResponse for AnalysedQueryResponse {
     }
 }
 
-pub fn encode_query_structure_annotations(
+pub fn encode_analyzed_query(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     analysed_query: AnalysedQuery,

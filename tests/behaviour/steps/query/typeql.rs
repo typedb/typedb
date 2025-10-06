@@ -31,7 +31,7 @@ use query::{analyse::AnalysedQuery, error::QueryError};
 use resource::profile::StorageCounters;
 use server::service::http::message::query::{
     annotations::bdd::{encode_fetch_annotations_as_functor, encode_query_annotations_as_functor},
-    encode_query_structure_annotations,
+    encode_analyzed_query,
     query_structure::bdd::encode_query_structure_as_functor,
 };
 use storage::snapshot::SnapshotDropGuard;

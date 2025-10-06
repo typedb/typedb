@@ -53,7 +53,7 @@ use typeql::{parse_query, query::SchemaQuery};
 use super::message::query::query_structure::encode_pipeline_structure;
 use crate::service::{
     http::message::query::{
-        document::encode_document, encode_query_structure_annotations, query_structure::PipelineStructureResponse,
+        document::encode_document, encode_analyzed_query, query_structure::PipelineStructureResponse,
         row::encode_row, AnalysedQueryResponse,
     },
     transaction_service::{
