@@ -256,7 +256,7 @@ fn query_structure_constraint(
         Constraint::Links(links) => {
             let relation = encode_structure_vertex_variable(links.relation())?;
             let player = encode_structure_vertex_variable(links.player())?;
-            let role = encode_role_as_vertex(context, links.role_type())?;
+            let role = encode_named_role_as_vertex(context, links.role_type())?;
             constraints.push(typedb_protocol::conjunction_structure::StructureConstraint {
                 span,
                 constraint: Some(structure_constraint::Constraint::Links(structure_constraint::Links {
@@ -313,7 +313,7 @@ fn query_structure_constraint(
                 span,
                 constraint: Some(structure_constraint::Constraint::Relates(structure_constraint::Relates {
                     relation: Some(encode_structure_vertex_label_or_variable(context, relates.relation())?),
-                    role: Some(encode_role_as_vertex(context, relates.role_type())?),
+                    role: Some(encode_named_role_as_vertex(context, relates.role_type())?),
                     exactness: encode_exactness(false) as i32,
                 })),
             });
@@ -342,7 +342,7 @@ fn query_structure_constraint(
                 constraint: Some(structure_constraint::Constraint::Links(structure_constraint::Links {
                     relation: Some(encode_structure_vertex_variable(indexed.relation())?),
                     player: Some(encode_structure_vertex_variable(indexed.player_1())?),
-                    role: Some(encode_role_as_vertex(context, indexed.role_type_1())?),
+                    role: Some(encode_named_role_as_vertex(context, indexed.role_type_1())?),
                     exactness: encode_exactness(false) as i32,
                 })),
             });
@@ -351,7 +351,7 @@ fn query_structure_constraint(
                 constraint: Some(structure_constraint::Constraint::Links(structure_constraint::Links {
                     relation: Some(encode_structure_vertex_variable(indexed.relation())?),
                     player: Some(encode_structure_vertex_variable(indexed.player_2())?),
-                    role: Some(encode_role_as_vertex(context, indexed.role_type_2())?),
+                    role: Some(encode_named_role_as_vertex(context, indexed.role_type_2())?),
                     exactness: encode_exactness(false) as i32,
                 })),
             });
@@ -498,22 +498,21 @@ fn encode_structure_variable(id: StructureVariableId) -> typedb_protocol::conjun
     typedb_protocol::conjunction_structure::Variable { id: id.as_u32() }
 }
 
-fn encode_role_as_vertex(
+fn encode_named_role_as_vertex(
     context: &PipelineStructureContext<'_, impl ReadableSnapshot>,
     role_type: &Vertex<Variable>,
 ) -> Result<typedb_protocol::conjunction_structure::StructureVertex, Box<ConceptReadError>> {
-    if let Some(label) = context.get_role_type(&role_type.as_variable().unwrap()) {
-        // At present rolename could resolve to multiple types - Manually encode.
-        // error::todo_must_implement!("This should encode rolename");
-        let label = structure_vertex::Label {
-            label: Some(structure_vertex::label::Label::Unresolved(label.to_owned()))
-        };
-        Ok(typedb_protocol::conjunction_structure::StructureVertex {
-            vertex: Some(structure_vertex::Vertex::Label(label))
-        })
-    } else {
-        encode_structure_vertex_label_or_variable(context, role_type)
-    }
+    debug_assert!(role_type.is_variable());
+    let as_var = role_type.as_variable().expect("Expected role_type to be variable");
+    let name = context.get_role_type(&role_type.as_variable().unwrap())
+        .expect("Expected role name to be available in context");
+    let named_role_vertex = structure_vertex::NamedRole {
+        name: name.to_owned(),
+        variable: Some(encode_structure_variable(StructureVariableId::from(as_var))),
+    };
+    Ok(typedb_protocol::conjunction_structure::StructureVertex {
+        vertex: Some(structure_vertex::Vertex::NamedRole(named_role_vertex))
+    })
 }
 
 fn encode_structure_vertex_variable(
@@ -535,18 +534,17 @@ fn encode_structure_vertex_label_or_variable(
         Vertex::Label(label) => {
             let encoded_type = if let Some(type_) = context.get_type(label) {
                 let resolved = encode_type(&type_, context.snapshot, context.type_manager)?;
-                structure_vertex::label::Label::Resolved(resolved)
+                structure_vertex::Vertex::Label(resolved)
             } else if let Some(type_) = get_type_annotation_from_label(context.snapshot, context.type_manager, label)? {
                 let resolved = encode_type(&type_, context.snapshot, context.type_manager)?;
-                structure_vertex::label::Label::Resolved(resolved)
+                structure_vertex::Vertex::Label(resolved)
             } else {
                 debug_assert!(false, "Is this reachable?");
                 let unresolved = label.scoped_name.as_str().to_owned();
-                structure_vertex::label::Label::Unresolved(unresolved)
+                structure_vertex::Vertex::Unresolved(unresolved)
             };
-            let label = structure_vertex::Label { label: Some(encoded_type) };
             Ok(typedb_protocol::conjunction_structure::StructureVertex {
-                vertex: Some(structure_vertex::Vertex::Label(label)),
+                vertex: Some(encoded_type),
             })
         }
         Vertex::Parameter(_) => unreachable!("Expected variable or label"),
