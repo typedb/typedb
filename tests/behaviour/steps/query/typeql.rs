@@ -634,7 +634,7 @@ async fn get_answers_of_typeql_analyze_query(context: &mut Context, step: &Step)
     let query = typeql::parse_query(query_str).unwrap();
     let analyzed_unencoded = execute_analyze(context, query, query_str).unwrap();
     let analyzed = with_read_tx!(context, |tx| {
-        encode_query_structure_annotations(&(*tx.snapshot), &tx.type_manager, analyzed_unencoded).unwrap()
+        encode_analyzed_query(&(*tx.snapshot), &tx.type_manager, analyzed_unencoded).unwrap()
     });
     context.analyzed_query = Some(analyzed);
 }
