@@ -505,10 +505,10 @@ impl TransactionService {\
                     LoadKind::WriteTransactions,
                 );
                 let (mut profile, into_commit_record_result) = match transaction.finalise() {
-                    (mut profile, Ok((database, snapshot))) => {
-                        let into_commit_record_result = snapshot
+                    (mut profile, Ok(commit_intent)) => {
+                        let into_commit_record_result = commit_intent.write_snapshot
                             .finalise(profile.commit_profile())
-                            .map(|commit_record_opt| (database, commit_record_opt))
+                            .map(|commit_record_opt| (commit_intent.database_drop_guard, commit_record_opt))
                             .map_err(|typedb_source| DataCommitError::SnapshotError { typedb_source });
                         (profile, into_commit_record_result)
                     }
@@ -544,10 +544,10 @@ impl TransactionService {\
                     LoadKind::SchemaTransactions,
                 );
                 let (mut profile, into_commit_record_result) = match transaction.finalise() {
-                    (mut profile, Ok((database, snapshot))) => {
-                        let into_commit_record_result = snapshot
+                    (mut profile, Ok(commit_intent)) => {
+                        let into_commit_record_result = commit_intent.schema_snapshot
                             .finalise(profile.commit_profile())
-                            .map(|commit_record_opt| (database, commit_record_opt))
+                            .map(|commit_record_opt| (commit_intent.database_drop_guard, commit_record_opt))
                             .map_err(|error| SchemaCommitError::SnapshotError { typedb_source: error });
                         (profile, into_commit_record_result)
                     }
