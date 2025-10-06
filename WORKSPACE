@@ -70,13 +70,13 @@ rust_register_toolchains(
         "x86_64-pc-windows-msvc",
         "x86_64-unknown-linux-gnu",
     ],
-    rust_analyzer_version = "1.81.0",
-    versions = ["1.81.0"],
+    rust_analyzer_version = "1.84.0",
+    versions = ["1.84.0"],
 )
 
 rust_analyzer_toolchain_tools_repository(
     name = "rust_analyzer_toolchain_tools",
-    version = "1.81.0"
+    version = "1.84.0"
 )
 
 load("@typedb_dependencies//library/crates:crates.bzl", "fetch_crates")
