@@ -104,16 +104,6 @@ pub trait ServerState: Debug {
 
     async fn users_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
     
-    async fn users_update(
-        &self,
-        name: &str,
-        user_update: Option<User>,
-        credential_update: Option<Credential>,
-        accessor: Accessor,
-    ) -> Result<(), ArcServerStateError>;
-
-    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ArcServerStateError>;
-
     async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError>;
 
     async fn token_create(&self, username: String, password: String) -> Result<String, ArcServerStateError>;
@@ -217,7 +207,6 @@ impl LocalServerState {
 
     pub async fn load(&mut self) {
         let system_database = self.database_manager().await.database_unrestricted(SYSTEM_DB).unwrap();
-        println!("load system db: {:?}", system_database);
         let user_manager = Arc::new(UserManager::new(system_database));
         let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
         self.user_manager = Some(user_manager);
@@ -460,7 +449,7 @@ impl ServerState for LocalServerState {
     }
 
     async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ArcServerStateError> {
-        if !PermissionManager::exec_user_get_permitted(accessor.0.as_str(), name) {
+        if !PermissionManager::exec_user_get_permitted(accessor.as_str(), name) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
@@ -477,7 +466,7 @@ impl ServerState for LocalServerState {
     }
 
     async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError> {
-        if !PermissionManager::exec_user_all_permitted(accessor.0.as_str()) {
+        if !PermissionManager::exec_user_all_permitted(accessor.as_str()) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
@@ -493,45 +482,6 @@ impl ServerState for LocalServerState {
                 Ok(bool) => Ok(bool),
                 Err(err) => Err(Arc::new(LocalServerStateError::UserCannotBeRetrieved { typedb_source: err })),
             },
-            Err(err) => Err(Arc::new(err)),
-        }
-    }
-
-    async fn users_update(
-        &self,
-        name: &str,
-        user_update: Option<User>,
-        credential_update: Option<Credential>,
-        accessor: Accessor,
-    ) -> Result<(), ArcServerStateError> {
-        if !PermissionManager::exec_user_update_permitted(accessor.0.as_str(), name) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
-        }
-        match self.get_user_manager() {
-            Ok(user_manager) => {
-                user_manager
-                    .update(name, &user_update, &credential_update)
-                    .map_err(|err| LocalServerStateError::UserCannotBeUpdated { typedb_source: err })?;
-                self.token_manager.invalidate_user(name).await;
-                Ok(())
-            }
-            Err(err) => Err(Arc::new(err)),
-        }
-    }
-
-    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ArcServerStateError> {
-        if !PermissionManager::exec_user_delete_allowed(accessor.0.as_str(), name) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
-        }
-
-        match self.get_user_manager() {
-            Ok(user_manager) => {
-                user_manager
-                    .delete(name)
-                    .map_err(|err| LocalServerStateError::UserCannotBeDeleted { typedb_source: err })?;
-                self.token_manager.invalidate_user(name).await;
-                Ok(())
-            }
             Err(err) => Err(Arc::new(err)),
         }
     }

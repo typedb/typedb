@@ -247,7 +247,7 @@ impl Server {
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
-        let service = grpc::typedb_service::TypeDBService::new(address.clone(), server_state.clone());
+        let service = grpc::typedb_service::GRPCTypeDBService::new(address.clone(), server_state.clone());
         let mut grpc_server =
             tonic::transport::Server::builder().http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE));
         if let Some(tls_config) = grpc::encryption::prepare_tls_config(encryption_config)? {
@@ -274,13 +274,13 @@ impl Server {
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());
-        let service = http::typedb_service::TypeDBService::new(distribution_info, address, server_state.clone());
+        let service = http::typedb_service::HTTPTypeDBService::new(distribution_info, address, server_state.clone());
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);
-        let router_service = http::typedb_service::TypeDBService::create_protected_router(http_service.clone())
+        let router_service = http::typedb_service::HTTPTypeDBService::create_protected_router(http_service.clone())
             .layer(authenticator)
-            .merge(http::typedb_service::TypeDBService::create_unprotected_router(http_service))
-            .layer(http::typedb_service::TypeDBService::create_cors_layer())
+            .merge(http::typedb_service::HTTPTypeDBService::create_unprotected_router(http_service))
+            .layer(http::typedb_service::HTTPTypeDBService::create_cors_layer())
             .into_make_service();
 
         let shutdown_handle = Handle::new();
