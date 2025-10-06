@@ -6,21 +6,30 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use typedb_protocol::analyze::res::analyzed_query::{query_structure as structure_proto, query_annotations as annotations_proto};
-
 use answer::{variable::Variable, Type};
-use compiler::query_structure::{FunctionReturnStructure, FunctionStructure, PipelineStructure, PipelineStructureAnnotations, PipelineVariableAnnotation, QueryStructure, QueryStructureConjunction, QueryStructureNestedPattern, QueryStructureStage, StructureVariableId};
+use compiler::{
+    annotation::{function::FunctionParameterAnnotation, type_inference::get_type_annotation_from_label},
+    query_structure::{
+        FunctionReturnStructure, FunctionStructure, PipelineStructure, PipelineStructureAnnotations,
+        PipelineVariableAnnotation, QueryStructure, QueryStructureConjunction, QueryStructureNestedPattern,
+        QueryStructureStage, StructureVariableId,
+    },
+};
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
 use ir::pattern::{
     constraint::{Comparator, Constraint, IsaKind, SubKind},
     ParameterID, Vertex,
 };
-use query::analyse::{AnalysedQuery, FetchObjectStructureAnnotations, FetchStructureAnnotations, FunctionStructureAnnotations, QueryStructureAnnotations};
+use query::analyse::{
+    AnalysedQuery, FetchObjectStructureAnnotations, FetchStructureAnnotations, FunctionStructureAnnotations,
+    QueryStructureAnnotations,
+};
 use storage::snapshot::ReadableSnapshot;
-use typedb_protocol::conjunction_structure::{structure_constraint, structure_vertex};
-use compiler::annotation::function::FunctionParameterAnnotation;
-use compiler::annotation::type_inference::get_type_annotation_from_label;
+use typedb_protocol::{
+    analyze::res::analyzed_query::{query_annotations as annotations_proto, query_structure as structure_proto},
+    conjunction_structure::{structure_constraint, structure_vertex},
+};
 
 use crate::service::grpc::{
     concept::{
@@ -107,20 +116,13 @@ fn encode_function_structure(
                 .iter()
                 .map(|reducer| {
                     let variables = reducer.arguments.iter().map(|v| encode_structure_variable(*v)).collect();
-                    structure_proto::Reducer {
-                        reducer: reducer.reducer.clone(),
-                        variables,
-                    }
+                    structure_proto::Reducer { reducer: reducer.reducer.clone(), variables }
                 })
                 .collect();
             function_structure::Returns::Reduce(function_structure::ReturnOpReduce { reducers })
         }
     };
-    Ok(structure_proto::FunctionStructure {
-        body: Some(body),
-        arguments,
-        returns: Some(returns),
-    })
+    Ok(structure_proto::FunctionStructure { body: Some(body), arguments, returns: Some(returns) })
 }
 
 fn encode_pipeline_structure(
@@ -137,12 +139,7 @@ fn encode_pipeline_structure(
     let variable_info = pipeline_structure
         .variable_names
         .iter()
-        .map(|(var, name)| {
-            (
-                var.as_u32(),
-                structure_proto::pipeline_structure::VariableInfo { name: name.clone() },
-            )
-        })
+        .map(|(var, name)| (var.as_u32(), structure_proto::pipeline_structure::VariableInfo { name: name.clone() }))
         .collect();
     let stages =
         pipeline_structure.parametrised_structure.stages.iter().map(|stage| encode_query_stage(stage)).collect();
@@ -152,17 +149,10 @@ fn encode_pipeline_structure(
         .iter()
         .map(|var| encode_structure_variable(*var))
         .collect();
-    Ok(structure_proto::PipelineStructure {
-        conjunctions,
-        variable_info,
-        stages,
-        outputs,
-    })
+    Ok(structure_proto::PipelineStructure { conjunctions, variable_info, stages, outputs })
 }
 
-fn encode_query_stage(
-    stage: &QueryStructureStage,
-) -> structure_proto::pipeline_structure::PipelineStage {
+fn encode_query_stage(stage: &QueryStructureStage) -> structure_proto::pipeline_structure::PipelineStage {
     use structure_proto::pipeline_structure::{pipeline_stage, pipeline_stage::Stage};
     let variant = match stage {
         QueryStructureStage::Match { block } => Stage::Match(pipeline_stage::Match { block: block.as_u32() }),
@@ -178,9 +168,7 @@ fn encode_query_stage(
             Stage::Select(pipeline_stage::Select { variables })
         }
         QueryStructureStage::Sort { variables } => {
-            use structure_proto::pipeline_structure::pipeline_stage::{
-                sort, sort::sort_variable::SortDirection,
-            };
+            use structure_proto::pipeline_structure::pipeline_stage::{sort, sort::sort_variable::SortDirection};
             let sort_variables = variables
                 .iter()
                 .map(|v| {
@@ -208,10 +196,7 @@ fn encode_query_stage(
                     let assigned = Some(encode_structure_variable(reducer.assigned));
                     let variables = reducer.reducer.arguments.iter().map(|v| encode_structure_variable(*v)).collect();
                     let reducer_name = reducer.reducer.reducer.clone();
-                    let reducer = Some(structure_proto::Reducer {
-                        reducer: reducer_name,
-                        variables,
-                    });
+                    let reducer = Some(structure_proto::Reducer { reducer: reducer_name, variables });
                     pipeline_stage::reduce::ReduceAssign { assigned, reducer }
                 })
                 .collect();
@@ -545,9 +530,7 @@ fn encode_structure_vertex_label_or_variable(
                 let unresolved = label.scoped_name.as_str().to_owned();
                 structure_vertex::Vertex::Unresolved(unresolved)
             };
-            Ok(typedb_protocol::conjunction_structure::StructureVertex {
-                vertex: Some(encoded_type),
-            })
+            Ok(typedb_protocol::conjunction_structure::StructureVertex { vertex: Some(encoded_type) })
         }
         Vertex::Parameter(_) => unreachable!("Expected variable or label"),
     }
@@ -604,82 +587,94 @@ fn encode_comparator(comparator: Comparator) -> structure_constraint::comparison
 fn encode_query_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    annotations: &QueryStructureAnnotations
+    annotations: &QueryStructureAnnotations,
 ) -> Result<typedb_protocol::analyze::res::analyzed_query::QueryAnnotations, Box<ConceptReadError>> {
     let query = Some(encode_pipeline_annotations(snapshot, type_manager, &annotations.query)?);
-    let preamble = annotations.preamble.iter().map(|f| {
-        encode_function_annotations(snapshot, type_manager, f)
-    }).collect::<Result<Vec<_>, _>>()?;
-    let fetch = annotations.fetch.as_ref().map(|fetch| {
-        encode_fetch_annotations(snapshot, type_manager, &fetch).map(|object| {
-            annotations_proto::FetchAnnotations {
-                node: Some(annotations_proto::fetch_annotations::Node::Object(object))
-            }
-        } )
-    }).transpose()?;
+    let preamble = annotations
+        .preamble
+        .iter()
+        .map(|f| encode_function_annotations(snapshot, type_manager, f))
+        .collect::<Result<Vec<_>, _>>()?;
+    let fetch = annotations
+        .fetch
+        .as_ref()
+        .map(|fetch| {
+            encode_fetch_annotations(snapshot, type_manager, &fetch).map(|object| annotations_proto::FetchAnnotations {
+                node: Some(annotations_proto::fetch_annotations::Node::Object(object)),
+            })
+        })
+        .transpose()?;
     Ok(typedb_protocol::analyze::res::analyzed_query::QueryAnnotations { query, preamble, fetch })
 }
 
 fn encode_pipeline_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    annotations: &PipelineStructureAnnotations
+    annotations: &PipelineStructureAnnotations,
 ) -> Result<annotations_proto::PipelineAnnotations, Box<ConceptReadError>> {
-    let conjunctions = annotations.iter().map(|annotations| {
-        encode_conjunction_annotations(snapshot, type_manager, annotations)
-    }).collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
+    let conjunctions = annotations
+        .iter()
+        .map(|annotations| encode_conjunction_annotations(snapshot, type_manager, annotations))
+        .collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
     Ok(annotations_proto::PipelineAnnotations { conjunctions })
 }
 
 fn encode_conjunction_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    conjunction_annotations: &BTreeMap<StructureVariableId, PipelineVariableAnnotation>
+    conjunction_annotations: &BTreeMap<StructureVariableId, PipelineVariableAnnotation>,
 ) -> Result<annotations_proto::pipeline_annotations::ConjunctionAnnotations, Box<ConceptReadError>> {
-    let variable_annotations = conjunction_annotations.iter().map(|(variable_id, annotation)| {
-        let encoded = match annotation {
-            PipelineVariableAnnotation::Thing(types) => {
-                annotations_proto::variable_annotations::Annotations::Thing(
-                    encode_types_to_concept_variable_annotations(snapshot, type_manager, types.iter())?
-                )
-            }
-            PipelineVariableAnnotation::Type(types) => {
-                annotations_proto::variable_annotations::Annotations::Type(
-                    encode_types_to_concept_variable_annotations(snapshot, type_manager, types.iter())?
-                )
-            }
-            PipelineVariableAnnotation::Value(value_type) => {
-                annotations_proto::variable_annotations::Annotations::ValueAnnotations(
-                    encode_value_type(value_type.clone(), snapshot, type_manager)?
-                )
-            }
-        };
-        Ok((variable_id.as_u32(), annotations_proto::VariableAnnotations { annotations: Some(encoded) }))
-    }).collect::<Result<HashMap<_,_>, Box<ConceptReadError>>>()?;
+    let variable_annotations = conjunction_annotations
+        .iter()
+        .map(|(variable_id, annotation)| {
+            let encoded = match annotation {
+                PipelineVariableAnnotation::Thing(types) => {
+                    annotations_proto::variable_annotations::Annotations::Thing(
+                        encode_types_to_concept_variable_annotations(snapshot, type_manager, types.iter())?,
+                    )
+                }
+                PipelineVariableAnnotation::Type(types) => annotations_proto::variable_annotations::Annotations::Type(
+                    encode_types_to_concept_variable_annotations(snapshot, type_manager, types.iter())?,
+                ),
+                PipelineVariableAnnotation::Value(value_type) => {
+                    annotations_proto::variable_annotations::Annotations::ValueAnnotations(encode_value_type(
+                        value_type.clone(),
+                        snapshot,
+                        type_manager,
+                    )?)
+                }
+            };
+            Ok((variable_id.as_u32(), annotations_proto::VariableAnnotations { annotations: Some(encoded) }))
+        })
+        .collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
     Ok(annotations_proto::pipeline_annotations::ConjunctionAnnotations { variable_annotations })
 }
 
 fn encode_fetch_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    annotations: &FetchStructureAnnotations
+    annotations: &FetchStructureAnnotations,
 ) -> Result<annotations_proto::fetch_annotations::Object, Box<ConceptReadError>> {
-    let annotations = annotations.iter().map(|(key, fetch_object_annotaitons)| {
-        Ok((key.clone(), encode_fetch_object_annotations(snapshot, type_manager, fetch_object_annotaitons)?))
-    }).collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
+    let annotations = annotations
+        .iter()
+        .map(|(key, fetch_object_annotaitons)| {
+            Ok((key.clone(), encode_fetch_object_annotations(snapshot, type_manager, fetch_object_annotaitons)?))
+        })
+        .collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
     Ok(annotations_proto::fetch_annotations::Object { annotations })
 }
 
 fn encode_fetch_object_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    annotations: &FetchObjectStructureAnnotations
+    annotations: &FetchObjectStructureAnnotations,
 ) -> Result<annotations_proto::FetchAnnotations, Box<ConceptReadError>> {
     let node = match annotations {
         FetchObjectStructureAnnotations::Leaf(value_types) => {
-            let annotations = value_types.iter().map(|v| {
-                encode_value_type(v.clone(), snapshot, type_manager)
-            }).collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
+            let annotations = value_types
+                .iter()
+                .map(|v| encode_value_type(v.clone(), snapshot, type_manager))
+                .collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
             let inner = annotations_proto::fetch_annotations::Leaf { annotations };
             annotations_proto::fetch_annotations::Node::Leaf(inner)
         }
@@ -698,14 +693,20 @@ fn encode_fetch_object_annotations(
 fn encode_function_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    annotations: &FunctionStructureAnnotations
+    annotations: &FunctionStructureAnnotations,
 ) -> Result<annotations_proto::FunctionAnnotations, Box<ConceptReadError>> {
-    let arguments = annotations.signature.arguments.iter().map(|arg| {
-        encode_function_parameter_annotations(snapshot, type_manager, arg)
-    }).collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
-    let returns = annotations.signature.returns.iter().map(|arg| {
-        encode_function_parameter_annotations(snapshot, type_manager, arg)
-    }).collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
+    let arguments = annotations
+        .signature
+        .arguments
+        .iter()
+        .map(|arg| encode_function_parameter_annotations(snapshot, type_manager, arg))
+        .collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
+    let returns = annotations
+        .signature
+        .returns
+        .iter()
+        .map(|arg| encode_function_parameter_annotations(snapshot, type_manager, arg))
+        .collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
     let returns_stream = annotations.signature.is_stream;
     let body = Some(encode_pipeline_annotations(snapshot, type_manager, &annotations.body)?);
     Ok(annotations_proto::FunctionAnnotations { arguments, returns, body, returns_stream })
@@ -714,7 +715,7 @@ fn encode_function_annotations(
 fn encode_function_parameter_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    parameter: &FunctionParameterAnnotation
+    parameter: &FunctionParameterAnnotation,
 ) -> Result<annotations_proto::VariableAnnotations, Box<ConceptReadError>> {
     let annotations = match parameter {
         FunctionParameterAnnotation::Concept(types) => {
@@ -722,9 +723,11 @@ fn encode_function_parameter_annotations(
             annotations_proto::variable_annotations::Annotations::Thing(annotations)
         }
         FunctionParameterAnnotation::Value(value) => {
-            annotations_proto::variable_annotations::Annotations::ValueAnnotations(
-                encode_value_type(value.clone(), snapshot, type_manager)?
-            )
+            annotations_proto::variable_annotations::Annotations::ValueAnnotations(encode_value_type(
+                value.clone(),
+                snapshot,
+                type_manager,
+            )?)
         }
     };
     Ok(annotations_proto::VariableAnnotations { annotations: Some(annotations) })
@@ -733,14 +736,12 @@ fn encode_function_parameter_annotations(
 fn encode_types_to_concept_variable_annotations<'a>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    types: impl Iterator<Item=&'a answer::Type>,
+    types: impl Iterator<Item = &'a answer::Type>,
 ) -> Result<annotations_proto::variable_annotations::ConceptVariableAnnotations, Box<ConceptReadError>> {
     types
         .map(|type_| encode_type(type_, snapshot, type_manager))
         .collect::<Result<Vec<_>, _>>()
-        .map(|types| {
-            annotations_proto::variable_annotations::ConceptVariableAnnotations { types }
-        })
+        .map(|types| annotations_proto::variable_annotations::ConceptVariableAnnotations { types })
 }
 
 fn encode_type(
@@ -752,7 +753,9 @@ fn encode_type(
     let encoded = match type_ {
         Type::Entity(entity) => TypeProto::EntityType(encode_entity_type(entity, snapshot, type_manager)?),
         Type::Relation(relation) => TypeProto::RelationType(encode_relation_type(relation, snapshot, type_manager)?),
-        Type::Attribute(attribute) => TypeProto::AttributeType(encode_attribute_type(attribute, snapshot, type_manager)?),
+        Type::Attribute(attribute) => {
+            TypeProto::AttributeType(encode_attribute_type(attribute, snapshot, type_manager)?)
+        }
         Type::RoleType(role) => TypeProto::RoleType(encode_role_type(role, snapshot, type_manager)?),
     };
     Ok(typedb_protocol::Type { r#type: Some(encoded) })

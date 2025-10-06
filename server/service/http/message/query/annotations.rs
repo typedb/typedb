@@ -187,15 +187,18 @@ pub(super) fn encode_pipeline_structure_annotations(
     annotations_by_conjunction.resize_with(pipeline_structure_annotations.len(), || {
         VariableAnnotationsByConjunctionResponse { variable_annotations: HashMap::new() };
     });
-    let annotations_by_conjunction = pipeline_structure_annotations.iter().map(|var_annotations| {
-        let variable_annotations = var_annotations.into_iter().map(|(var_id, annotations)| {
-            Ok((
-                var_id.clone(),
-                encode_variable_type_annotations(snapshot, type_manager, annotations)?,
-            ))
-        }).collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
-        Ok(VariableAnnotationsByConjunctionResponse { variable_annotations })
-    }).collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
+    let annotations_by_conjunction = pipeline_structure_annotations
+        .iter()
+        .map(|var_annotations| {
+            let variable_annotations = var_annotations
+                .into_iter()
+                .map(|(var_id, annotations)| {
+                    Ok((var_id.clone(), encode_variable_type_annotations(snapshot, type_manager, annotations)?))
+                })
+                .collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
+            Ok(VariableAnnotationsByConjunctionResponse { variable_annotations })
+        })
+        .collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
     Ok(PipelineStructureAnnotationsResponse { annotations_by_conjunction })
 }
 

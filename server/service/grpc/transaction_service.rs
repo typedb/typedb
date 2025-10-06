@@ -486,10 +486,7 @@ impl TransactionService {
             ImmediateAnalyzeResponse::ResAnalyse(analyzed) => typedb_protocol::analyze::res::Result::Ok(analyzed),
         };
         let res = typedb_protocol::analyze::Res { result: Some(result) };
-        send_ok_message_else_return_break!(
-            response_sender,
-            transaction_server_res_analyze_res(req_id, res)
-        );
+        send_ok_message_else_return_break!(response_sender, transaction_server_res_analyze_res(req_id, res));
         Continue(())
     }
 

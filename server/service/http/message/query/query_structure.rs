@@ -563,7 +563,7 @@ fn encode_structure_vertex(
                 let label = label.scoped_name.as_str().to_owned();
                 StructureVertex::Unresolved { label }
             }
-        },
+        }
         Vertex::Parameter(param) => {
             let value = context.get_parameter_value(param).unwrap();
             StructureVertex::Value(encode_value(value))
