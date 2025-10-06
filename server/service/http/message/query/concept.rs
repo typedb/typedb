@@ -347,10 +347,7 @@ pub mod tests {
 
     #[test]
     fn test_struct_serialization() {
-        let my_struct = MyStruct {
-            field1: "hello".to_string(),
-            field2: None,
-        };
+        let my_struct = MyStruct { field1: "hello".to_string(), field2: None };
         let serialized = serde_json::to_string(&my_struct).unwrap();
         assert_eq!(serialized, r#"{"field1":"hello"}"#);
     }

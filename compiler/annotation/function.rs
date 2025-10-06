@@ -302,7 +302,7 @@ fn annotate_function_impl(
         stages.clone(),
         argument_concept_variable_types.clone(),
         argument_value_variable_types.clone(),
-        Some(&return_operation.variables().as_ref())
+        Some(&return_operation.variables().as_ref()),
     )
     .map_err(|err| {
         Box::new(FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) })

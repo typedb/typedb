@@ -10,10 +10,10 @@ use std::{
     iter::zip,
 };
 
-use answer::{Type as TypeAnnotation, Type, variable::Variable};
+use answer::{variable::Variable, Type as TypeAnnotation, Type};
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, OwnerAPI, PlayerAPI, type_manager::TypeManager, TypeAPI},
+    type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
 };
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::{
@@ -25,15 +25,19 @@ use ir::{
         },
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
-        Pattern,
-        Scope, variable_category::VariableCategory, Vertex,
+        variable_category::VariableCategory,
+        Pattern, Scope, Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::annotation::{function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation}, match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations}, type_inference, TypeInferenceError};
+use crate::annotation::{
+    function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
+    match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
+    type_inference, TypeInferenceError,
+};
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     snapshot: &'this Snapshot,
@@ -212,8 +216,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Vertex::Variable(_) => unreachable!("variable in fixed vertices"),
                 Vertex::Label(label) => {
                     if !graph.vertices.contains_key(vertex) {
-                        let annotation_opt = type_inference::get_type_annotation_from_label(self.snapshot, self.type_manager, label)
-                            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+                        let annotation_opt =
+                            type_inference::get_type_annotation_from_label(self.snapshot, self.type_manager, label)
+                                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
                         if let Some(annotation) = annotation_opt {
                             graph.vertices.insert(vertex.clone(), BTreeSet::from([annotation]));
                         } else {
@@ -1633,7 +1638,7 @@ pub mod tests {
         match_inference::{TypeInferenceGraph, VertexAnnotations},
         tests::{
             managers,
-            schema_consts::{LABEL_CAT, LABEL_NAME, setup_types},
+            schema_consts::{setup_types, LABEL_CAT, LABEL_NAME},
             setup_storage,
         },
         type_inference::tests::expected_edge,

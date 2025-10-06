@@ -163,9 +163,12 @@ impl IntoResponse for AnalysedQueryResponse {
 #[cfg(debug_assertions)]
 pub mod bdd {
     use std::collections::HashMap;
+
     use itertools::Itertools;
-    use crate::service::http::message::query::annotations::PipelineStructureAnnotationsResponse;
-    use crate::service::http::message::query::query_structure::PipelineStructureResponse;
+
+    use crate::service::http::message::query::{
+        annotations::PipelineStructureAnnotationsResponse, query_structure::PipelineStructureResponse,
+    };
 
     pub(crate) struct FunctorContext<'a> {
         pub(super) structure: &'a PipelineStructureResponse,
@@ -219,14 +222,14 @@ pub mod bdd {
     }
 
         macro_rules! impl_functor_for_impl {
-        ($which:ident => |$self:ident, $context:ident| $block:block) => {
-            impl FunctorEncoded for $which {
-                fn encode_as_functor<'a>($self: &Self, $context: &FunctorContext<'a>) -> String {
-                    $block
+            ($which:ident => |$self:ident, $context:ident| $block:block) => {
+                impl FunctorEncoded for $which {
+                    fn encode_as_functor<'a>($self: &Self, $context: &FunctorContext<'a>) -> String {
+                        $block
+                    }
                 }
-            }
-        };
-    }
+            };
+        }
 
         macro_rules! impl_functor_for {
         (struct $struct_name:ident $fields:tt) => {
@@ -246,7 +249,7 @@ pub mod bdd {
             functor_macros::impl_functor_for_impl!($primitive => |self, _context| { self.to_string() });
         };
     }
-    macro_rules! impl_functor_for_multi {
+        macro_rules! impl_functor_for_multi {
         (|$self:ident, $context:ident| [ $( $type_name:ident => $block:block )* ]) => {
             $ (functor_macros::impl_functor_for_impl!($type_name => |$self, $context| $block); )*
         };
@@ -271,9 +274,15 @@ pub mod bdd {
 
     impl<K: FunctorEncoded, V: FunctorEncoded> FunctorEncoded for HashMap<K, V> {
         fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            std::format!("{{ {} }}", self.iter().map(|(k, v)| {
-                std::format!("{}: {}", k.encode_as_functor(context), v.encode_as_functor(context))
-            }).sorted_by(|a,b| a.cmp(b)).join(", "))
+            std::format!(
+                "{{ {} }}",
+                self.iter()
+                    .map(|(k, v)| {
+                        std::format!("{}: {}", k.encode_as_functor(context), v.encode_as_functor(context))
+                    })
+                    .sorted_by(|a, b| a.cmp(b))
+                    .join(", ")
+            )
         }
     }
 

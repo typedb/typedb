@@ -30,9 +30,11 @@ use params;
 use query::{analyse::AnalysedQuery, error::QueryError};
 use resource::profile::StorageCounters;
 use server::service::http::message::query::{
-    annotations::encode_query_structure_annotations, query_structure::bdd::encode_query_structure_as_functor,
+    annotations::encode_query_structure_annotations,
+    query_structure::bdd::{
+        encode_fetch_annotations_as_functor, encode_query_annotations_as_functor, encode_query_structure_as_functor,
+    },
 };
-use server::service::http::message::query::query_structure::bdd::{encode_fetch_annotations_as_functor, encode_query_annotations_as_functor};
 use storage::snapshot::SnapshotDropGuard;
 use test_utils::assert_matches;
 
@@ -715,10 +717,7 @@ async fn analyzed_fetch_annotations_are(context: &mut Context, step: &Step) {
     let analyzed = context.analyzed_query.as_ref().unwrap();
     let actual_functor = encode_fetch_annotations_as_functor(&analyzed);
 
-    assert_eq!(
-        normalize_functor_for_compare(&actual_functor),
-        normalize_functor_for_compare(expected_functor)
-    );
+    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
 fn normalize_functor_for_compare(functor: &String) -> String {

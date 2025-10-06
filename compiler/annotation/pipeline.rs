@@ -19,6 +19,8 @@ use ir::{
         conjunction::Conjunction,
         constraint::{Constraint, ExpressionBinding},
         nested_pattern::NestedPattern,
+        variable_category::VariableCategory,
+        Vertex,
     },
     pipeline::{
         block::Block,
@@ -33,8 +35,6 @@ use ir::{
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
-use ir::pattern::variable_category::VariableCategory;
-use ir::pattern::Vertex;
 
 use crate::{
     annotation::{
@@ -176,7 +176,7 @@ pub(crate) fn annotate_stages_and_fetch(
         translated_stages,
         input_type_annotations,
         input_value_type_annotations,
-        None
+        None,
     )?;
     let annotated_fetch = match translated_fetch {
         None => None,
@@ -238,9 +238,8 @@ pub(crate) fn annotate_pipeline_stages(
             stage,
         )?;
 
-        let retain_running_var_fn = |var: &Variable| {
-            var.is_named() || return_variables.map(|vars| vars.contains(var)).unwrap_or(false)
-        };
+        let retain_running_var_fn =
+            |var: &Variable| var.is_named() || return_variables.map(|vars| vars.contains(var)).unwrap_or(false);
         running_variable_annotations.retain(|var, _| retain_running_var_fn(var));
         running_value_variable_types.retain(|var, _| retain_running_var_fn(var));
         if let AnnotatedStage::Match { .. } = annotated_stage {
@@ -303,7 +302,12 @@ fn annotate_stage(
                     .insert(binding.left().as_variable().unwrap(), compiled.return_type().clone());
                 debug_assert!(_existing.is_none() || _existing == Some(compiled.return_type().clone()))
             });
-            complete_block_annotations_with_value_types(block.conjunction(), &mut block_annotations, variable_registry, running_value_variable_assigned_types)?;
+            complete_block_annotations_with_value_types(
+                block.conjunction(),
+                &mut block_annotations,
+                variable_registry,
+                running_value_variable_assigned_types,
+            )?;
             Ok(AnnotatedStage::Match {
                 block,
                 block_annotations,
@@ -371,7 +375,12 @@ fn annotate_stage(
                 false,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-            complete_block_annotations_with_value_types(block.conjunction(), &mut match_annotations, variable_registry, running_value_variable_assigned_types)?;
+            complete_block_annotations_with_value_types(
+                block.conjunction(),
+                &mut match_annotations,
+                variable_registry,
+                running_value_variable_assigned_types,
+            )?;
             let insert_annotations = annotate_write_stage(
                 running_variable_annotations,
                 running_value_variable_assigned_types,
@@ -438,9 +447,9 @@ fn annotate_stage(
         }
         TranslatedStage::Select(select) => {
             running_variable_annotations.retain(|var, _| select.variables.contains(var));
-            running_value_variable_assigned_types.retain(|var,_| select.variables.contains(var));
+            running_value_variable_assigned_types.retain(|var, _| select.variables.contains(var));
             Ok(AnnotatedStage::Select(select))
-        },
+        }
         TranslatedStage::Offset(offset) => Ok(AnnotatedStage::Offset(offset)),
         TranslatedStage::Limit(limit) => Ok(AnnotatedStage::Limit(limit)),
         TranslatedStage::Require(require) => Ok(AnnotatedStage::Require(require)),
@@ -471,27 +480,39 @@ fn complete_block_annotations_with_value_types(
     conjunction: &Conjunction,
     block_annotations: &mut BlockAnnotations,
     variable_registry: &VariableRegistry,
-    source_value_variable_annotations: &BTreeMap<Variable, ExpressionValueType>
+    source_value_variable_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<(), AnnotationError> {
-    let value_types_in_conjunction = conjunction.constraints().iter().flat_map(|c| c.ids()).filter(|v| {
-        variable_registry.get_variable_category(*v).map_or(false, |cat| cat == VariableCategory::Value)
-    }).map(|v| (
-        Vertex::Variable(v),
-        source_value_variable_annotations.get(&v).expect("Expected value annotation").clone()
-    )).collect();
+    let value_types_in_conjunction = conjunction
+        .constraints()
+        .iter()
+        .flat_map(|c| c.ids())
+        .filter(|v| variable_registry.get_variable_category(*v).map_or(false, |cat| cat == VariableCategory::Value))
+        .map(|v| {
+            (Vertex::Variable(v), source_value_variable_annotations.get(&v).expect("Expected value annotation").clone())
+        })
+        .collect();
     let _existing = block_annotations.set_value_types_of(conjunction, value_types_in_conjunction);
     conjunction.nested_patterns().iter().try_for_each(|pattern| match pattern {
-        NestedPattern::Disjunction(disjunction) => {
-            disjunction.conjunctions().iter().try_for_each(|c| {
-                complete_block_annotations_with_value_types(c, block_annotations, variable_registry, source_value_variable_annotations)
-            })
-        },
-        NestedPattern::Negation(inner) => {
-            complete_block_annotations_with_value_types(inner.conjunction(), block_annotations, variable_registry, source_value_variable_annotations)
-        }
-        NestedPattern::Optional(inner) => {
-            complete_block_annotations_with_value_types(inner.conjunction(), block_annotations, variable_registry, source_value_variable_annotations)
-        }
+        NestedPattern::Disjunction(disjunction) => disjunction.conjunctions().iter().try_for_each(|c| {
+            complete_block_annotations_with_value_types(
+                c,
+                block_annotations,
+                variable_registry,
+                source_value_variable_annotations,
+            )
+        }),
+        NestedPattern::Negation(inner) => complete_block_annotations_with_value_types(
+            inner.conjunction(),
+            block_annotations,
+            variable_registry,
+            source_value_variable_annotations,
+        ),
+        NestedPattern::Optional(inner) => complete_block_annotations_with_value_types(
+            inner.conjunction(),
+            block_annotations,
+            variable_registry,
+            source_value_variable_annotations,
+        ),
     })
 }
 
@@ -557,7 +578,10 @@ fn annotate_write_stage(
     )
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
     complete_block_annotations_with_value_types(
-        block.conjunction(), &mut block_annotations, variable_registry, running_value_variable_types
+        block.conjunction(),
+        &mut block_annotations,
+        variable_registry,
+        running_value_variable_types,
     )?;
     let annotations_by_scope = block_annotations.into_parts();
     // Break if we introduce nested patterns in writes.

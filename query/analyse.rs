@@ -19,7 +19,7 @@ use compiler::{
     },
     query_structure::{
         PipelineStructure, PipelineStructureAnnotations, PipelineVariableAnnotation, QueryStructure,
-        QueryStructureConjunctionID, StructureVariableId,
+        QueryStructureConjunctionID, StageIndex, StructureVariableId,
     },
 };
 use concept::{
@@ -32,7 +32,6 @@ use ir::{
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::chain;
-use compiler::query_structure::StageIndex;
 use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug)]
@@ -119,7 +118,7 @@ pub fn build_pipeline_annotations(
         block_id: QueryStructureConjunctionID,
         annotations_for_block: &TypeAnnotations,
     ) {
-        let mut annotations : BTreeMap<_,_> = annotations_for_block
+        let mut annotations: BTreeMap<_, _> = annotations_for_block
             .vertex_annotations()
             .iter()
             .filter_map(|(vertex, annos)| {
@@ -134,10 +133,9 @@ pub fn build_pipeline_annotations(
             })
             .collect();
         annotations.extend(annotations_for_block.value_annotations().iter().filter_map(|(vertex, annos)| {
-            vertex.as_variable().map(|variable| (
-                StructureVariableId::from(variable),
-                PipelineVariableAnnotation::Value(annos.value_type().clone())
-            ))
+            vertex.as_variable().map(|variable| {
+                (StructureVariableId::from(variable), PipelineVariableAnnotation::Value(annos.value_type().clone()))
+            })
         }));
         variable_annotations.insert(block_id, annotations);
     }
@@ -165,9 +163,10 @@ pub fn build_pipeline_annotations(
         | AnnotatedStage::Distinct(_)
         | AnnotatedStage::Reduce(_, _) => {}
     });
-    debug_assert!(
-        variable_annotations.iter().enumerate().all(|(index, (conjunction_id, _))| index == conjunction_id.as_u32() as usize)
-    );
+    debug_assert!(variable_annotations
+        .iter()
+        .enumerate()
+        .all(|(index, (conjunction_id, _))| index == conjunction_id.as_u32() as usize));
     variable_annotations
 }
 

@@ -8,9 +8,12 @@ use std::{collections::HashMap, str::FromStr};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
-use compiler::query_structure::{
-    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure,
-    QueryStructureConjunctionID, QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
+use compiler::{
+    annotation::type_inference::get_type_annotation_from_label,
+    query_structure::{
+        FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure,
+        QueryStructureConjunctionID, QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
+    },
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
@@ -19,7 +22,6 @@ use ir::pattern::{
     ParameterID, Vertex,
 };
 use serde::{Deserialize, Serialize, Serializer};
-use compiler::annotation::type_inference::get_type_annotation_from_label;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
@@ -549,27 +551,23 @@ fn encode_structure_vertex(
             context.record_variable(variable.into());
             StructureVertex::Variable { id: variable.into() }
         }
-        Vertex::Label(label) => {
-            match context.get_type(label) {
+        Vertex::Label(label) => match context.get_type(label) {
+            Some(type_) => {
+                let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
+                StructureVertex::Label { r#type }
+            }
+            None => match get_type_annotation_from_label(context.snapshot, context.type_manager, label)? {
                 Some(type_) => {
                     let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
                     StructureVertex::Label { r#type }
-                },
+                }
                 None => {
-                    match get_type_annotation_from_label(context.snapshot, context.type_manager, label)? {
-                        Some(type_) => {
-                            let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
-                            StructureVertex::Label { r#type }
-                        }
-                        None => {
-                            debug_assert!(false, "Likely unreachable, thanks to the rolename handling");
-                            let label = label.scoped_name.as_str().to_owned();
-                            StructureVertex::Unresolved { label }
-                        }
-                    }
-                },
-            }
-        }
+                    debug_assert!(false, "Likely unreachable, thanks to the rolename handling");
+                    let label = label.scoped_name.as_str().to_owned();
+                    StructureVertex::Unresolved { label }
+                }
+            },
+        },
         Vertex::Parameter(param) => {
             let value = context.get_parameter_value(param).unwrap();
             StructureVertex::Value(encode_value(value))
@@ -592,18 +590,23 @@ fn encode_role_type_as_vertex(
 
 #[cfg(debug_assertions)]
 pub mod bdd {
-    use compiler::query_structure::{FunctionReturnStructure, QueryStructureConjunctionID, QueryStructureStage, StructureReduceAssign, StructureReducer, StructureSortVariable, StructureVariableId};
+    use compiler::query_structure::{
+        FunctionReturnStructure, QueryStructureConjunctionID, QueryStructureStage, StructureReduceAssign,
+        StructureReducer, StructureSortVariable, StructureVariableId,
+    };
     use itertools::Itertools;
     use serde_json::Value;
-    use crate::service::http::message::query::bdd::{
-        functor_macros, FunctorEncoded, FunctorContext,
-        functor_macros::{impl_functor_for, impl_functor_for_multi}
-    };
-    use crate::service::http::message::query::bdd::functor_macros::{encode_functor_impl, impl_functor_for_impl};
 
-    use crate::service::http::message::query::query_structure::{
-        FunctionStructureResponse, PipelineStructureResponse, StructureConstraint,
-        StructureConstraintWithSpan, StructureVertex,
+    use crate::service::http::message::query::{
+        bdd::{
+            functor_macros,
+            functor_macros::{encode_functor_impl, impl_functor_for, impl_functor_for_impl, impl_functor_for_multi},
+            FunctorContext, FunctorEncoded,
+        },
+        query_structure::{
+            FunctionStructureResponse, PipelineStructureResponse, StructureConstraint, StructureConstraintWithSpan,
+            StructureVertex,
+        },
     };
     impl_functor_for!(struct StructureReduceAssign { assigned, reducer,  } named ReduceAssign);
     impl_functor_for!(struct StructureReducer { reducer, arguments, } named Reducer);

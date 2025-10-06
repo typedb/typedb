@@ -215,7 +215,7 @@ fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
             )?;
             return_types.insert(compiled.return_type.clone());
             let _existing = context.compiled_expressions.insert((*assignment).clone(), compiled);
-         }
+        }
         if let Ok(value_type) = return_types.iter().exactly_one() {
             context.variable_value_types.insert(variable, value_type.clone());
             Ok(Some(value_type.clone()))

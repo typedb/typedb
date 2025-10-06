@@ -125,9 +125,7 @@ pub fn extract_pipeline_structure_from(
 ) -> ParametrisedPipelineStructure {
     let branch_ids_allocated = variable_registry.branch_ids_allocated();
     let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
-    annotated_stages.into_iter().enumerate().for_each(|(index, stage)| {
-        builder.add_stage(stage, StageIndex(index))
-    });
+    annotated_stages.into_iter().enumerate().for_each(|(index, stage)| builder.add_stage(stage, StageIndex(index)));
     let output_variables = annotated_stages
         .last()
         .unwrap()
@@ -155,7 +153,7 @@ pub struct ParametrisedPipelineStructure {
     pub output_variables: Vec<StructureVariableId>,
     pub resolved_labels: HashMap<Label, answer::Type>,
     pub calls_syntax: HashMap<Constraint<Variable>, String>,
-    pub scope_to_conjunction_id: HashMap<(StageIndex,ScopeId), QueryStructureConjunctionID>,
+    pub scope_to_conjunction_id: HashMap<(StageIndex, ScopeId), QueryStructureConjunctionID>,
 }
 
 impl ParametrisedPipelineStructure {
@@ -390,7 +388,12 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 nested_patterns.push(QueryStructureNestedPattern::Not { conjunction: conj });
             }
             NestedPattern::Optional(optional) => {
-                let conj = self.add_conjunction(stage_index, Some(optional.branch_id()), optional.conjunction(), block_annotations);
+                let conj = self.add_conjunction(
+                    stage_index,
+                    Some(optional.branch_id()),
+                    optional.conjunction(),
+                    block_annotations,
+                );
                 nested_patterns.push(QueryStructureNestedPattern::Try { conjunction: conj });
             }
         });

@@ -11,6 +11,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use ir::pattern::{conjunction::Conjunction, constraint::Constraint, Scope, ScopeId, Vertex};
+
 use crate::annotation::expression::compiled_expression::ExpressionValueType;
 
 #[derive(Debug, Clone)]
@@ -35,7 +36,11 @@ impl BlockAnnotations {
         self.scope_annotations.get_mut(&conjunction.scope_id())
     }
 
-    pub(crate) fn set_value_types_of(&mut self, conjunction: &Conjunction, annotations: BTreeMap<Vertex<Variable>, ExpressionValueType>) {
+    pub(crate) fn set_value_types_of(
+        &mut self,
+        conjunction: &Conjunction,
+        annotations: BTreeMap<Vertex<Variable>, ExpressionValueType>,
+    ) {
         let conjunction_annotations = self.type_annotations_mut_of(conjunction).expect("Expected annotations");
         debug_assert!(conjunction_annotations.value_type_annotations.is_none());
         conjunction_annotations.value_type_annotations = Some(annotations);

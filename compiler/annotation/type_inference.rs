@@ -7,8 +7,7 @@
 use std::collections::{BTreeSet, HashSet};
 
 use answer::{Type, Type as TypeAnnotation};
-use concept::error::ConceptReadError;
-use concept::type_::type_manager::TypeManager;
+use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::value_type::ValueType;
 use storage::snapshot::ReadableSnapshot;
 
@@ -53,7 +52,7 @@ pub mod tests {
         sync::Arc,
     };
 
-    use answer::{Type, variable::Variable};
+    use answer::{variable::Variable, Type};
     use assert as assert_true;
     use encoding::{
         graph::definition::definition_key::{DefinitionID, DefinitionKey},
@@ -82,15 +81,15 @@ pub mod tests {
             EmptyAnnotatedFunctionSignatures,
         },
         match_inference::{
-            compute_type_inference_graph, infer_types, NestedTypeInferenceGraphDisjunction, prune_types,
+            compute_type_inference_graph, infer_types, prune_types, NestedTypeInferenceGraphDisjunction,
             TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
         },
         pipeline::AnnotatedStage,
         tests::{
             managers,
             schema_consts::{
-                LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_HAS_FEAR,
-                LABEL_IS_FEARED, LABEL_NAME, setup_types,
+                setup_types, LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS,
+                LABEL_HAS_FEAR, LABEL_IS_FEARED, LABEL_NAME,
             },
             setup_storage,
         },
