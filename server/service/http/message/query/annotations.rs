@@ -12,25 +12,18 @@ use compiler::{
     query_structure::{PipelineStructureAnnotations, PipelineVariableAnnotation, StructureVariableId},
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
-use query::analyse::{
-    AnalysedQuery, FetchObjectStructureAnnotations, FetchStructureAnnotations, FunctionStructureAnnotations,
-    QueryStructureAnnotations,
-};
+use query::analyse::{FetchObjectStructureAnnotations, FetchStructureAnnotations, FunctionStructureAnnotations};
 use serde::{Deserialize, Serialize};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::service::http::message::query::{
-    concept::{
-        encode_attribute_type, encode_entity_type, encode_relation_type, encode_role_type, encode_value_type,
-        AttributeTypeResponse, EntityTypeResponse, RelationTypeResponse, RoleTypeResponse,
-    },
-    query_structure::encode_query_structure,
-    AnalysedQueryResponse,
+use crate::service::http::message::query::concept::{
+    encode_attribute_type, encode_entity_type, encode_relation_type, encode_role_type, encode_value_type,
+    AttributeTypeResponse, EntityTypeResponse, RelationTypeResponse, RoleTypeResponse,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", untagged)]
-pub(crate) enum SingleTypeAnnotationResponse {
+enum SingleTypeAnnotationResponse {
     Entity(EntityTypeResponse),
     Relation(RelationTypeResponse),
     Attribute(AttributeTypeResponse),
@@ -50,7 +43,7 @@ impl SingleTypeAnnotationResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-pub(crate) enum TypeAnnotationResponse {
+enum TypeAnnotationResponse {
     Thing {
         annotations: Vec<SingleTypeAnnotationResponse>,
     },
@@ -65,34 +58,34 @@ pub(crate) enum TypeAnnotationResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct VariableAnnotationsByConjunctionResponse {
-    pub(crate) variable_annotations: HashMap<StructureVariableId, TypeAnnotationResponse>,
+struct VariableAnnotationsByConjunctionResponse {
+    variable_annotations: HashMap<StructureVariableId, TypeAnnotationResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct PipelineStructureAnnotationsResponse {
-    pub(crate) annotations_by_conjunction: Vec<VariableAnnotationsByConjunctionResponse>,
+pub(super) struct PipelineStructureAnnotationsResponse {
+    annotations_by_conjunction: Vec<VariableAnnotationsByConjunctionResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-pub(crate) enum FunctionReturnAnnotationsResponse {
+enum FunctionReturnAnnotationsResponse {
     Single { annotations: Vec<TypeAnnotationResponse> },
     Stream { annotations: Vec<TypeAnnotationResponse> },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct FunctionStructureAnnotationsResponse {
-    pub(crate) arguments: Vec<TypeAnnotationResponse>,
-    pub(crate) returns: FunctionReturnAnnotationsResponse,
-    pub(crate) body: PipelineStructureAnnotationsResponse,
+pub struct FunctionStructureAnnotationsResponse {
+    arguments: Vec<TypeAnnotationResponse>,
+    returns: FunctionReturnAnnotationsResponse,
+    pub(super) body: PipelineStructureAnnotationsResponse,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-pub(crate) enum FetchStructureAnnotationsResponse {
+pub enum FetchStructureAnnotationsResponse {
     #[serde(rename_all = "camelCase")]
     Value {
         value_types: Vec<String>,
@@ -109,16 +102,16 @@ pub(crate) enum FetchStructureAnnotationsResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FetchStructureFieldAnnotationsResponse {
-    pub(crate) key: String,
+    key: String,
     #[serde(flatten)]
-    pub(crate) value: FetchStructureAnnotationsResponse,
+    value: FetchStructureAnnotationsResponse,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct QueryStructureAnnotationsResponse {
-    pub(crate) preamble: Vec<FunctionStructureAnnotationsResponse>,
-    pub(crate) query: PipelineStructureAnnotationsResponse,
-    pub(crate) fetch: Option<FetchStructureAnnotationsResponse>, // Will always be the 'Object' variant
+    pub(super) preamble: Vec<FunctionStructureAnnotationsResponse>,
+    pub(super) query: PipelineStructureAnnotationsResponse,
+    pub(super) fetch: Option<FetchStructureAnnotationsResponse>, // Will always be the 'Object' variant
 }
 
 fn encode_function_parameter_annotations(
@@ -185,30 +178,7 @@ fn encode_type_annotation(
     }
 }
 
-pub fn encode_query_structure_annotations(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    analysed_query: AnalysedQuery,
-) -> Result<AnalysedQueryResponse, Box<ConceptReadError>> {
-    let AnalysedQuery { structure, annotations: analysed_query_annotations } = analysed_query;
-    let QueryStructureAnnotations { query: pipeline, preamble, fetch } = analysed_query_annotations;
-    let preamble = preamble
-        .into_iter()
-        .map(|function| encode_function_structure_annotations(snapshot, type_manager, function))
-        .collect::<Result<Vec<_>, _>>()?;
-    let pipeline = encode_pipeline_structure_annotations(snapshot, type_manager, pipeline)?;
-    let fetch = fetch
-        .map(|fetch| {
-            encode_fetch_structure_annotations(snapshot, type_manager, fetch)
-                .map(|fields| FetchStructureAnnotationsResponse::Object { possible_fields: fields })
-        })
-        .transpose()?;
-    let annotations = QueryStructureAnnotationsResponse { preamble, query: pipeline, fetch };
-    let structure = encode_query_structure(snapshot, type_manager, structure)?;
-    Ok(AnalysedQueryResponse { structure, annotations })
-}
-
-fn encode_pipeline_structure_annotations(
+pub(super) fn encode_pipeline_structure_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     pipeline_structure_annotations: PipelineStructureAnnotations,
@@ -236,7 +206,7 @@ fn encode_pipeline_structure_annotations(
     Ok(PipelineStructureAnnotationsResponse { annotations_by_conjunction })
 }
 
-pub(crate) fn encode_function_structure_annotations(
+pub(super) fn encode_function_structure_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     function_structure_annotations: FunctionStructureAnnotations,
@@ -260,7 +230,7 @@ pub(crate) fn encode_function_structure_annotations(
     Ok(FunctionStructureAnnotationsResponse { arguments, returns, body })
 }
 
-fn encode_fetch_structure_annotations(
+pub(super) fn encode_fetch_structure_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     fetch_structure_annotations: FetchStructureAnnotations,
@@ -321,23 +291,6 @@ pub mod bdd {
         query_structure::StructureConstraint,
         AnalysedQueryResponse,
     };
-
-    pub fn encode_query_structure_as_functor(analyzed: &AnalysedQueryResponse) -> (String, Vec<String>) {
-        let AnalysedQueryResponse { structure, annotations } = analyzed;
-        let context = FunctorContext { structure: &structure.query, annotations: &annotations.query };
-        let pipeline = &structure.query;
-        let query = pipeline.encode_as_functor(&context);
-        let preamble = structure
-            .preamble
-            .iter()
-            .zip(annotations.preamble.iter())
-            .map(|(func, annotations)| {
-                let context = FunctorContext { structure: &func.body, annotations: &annotations.body };
-                func.encode_as_functor(&context)
-            })
-            .collect();
-        (query, preamble)
-    }
 
     pub fn encode_query_annotations_as_functor(analyzed: &AnalysedQueryResponse) -> (String, Vec<String>) {
         let context = FunctorContext { structure: &analyzed.structure.query, annotations: &analyzed.annotations.query };

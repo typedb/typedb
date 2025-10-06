@@ -4,10 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use ::concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use annotations::QueryStructureAnnotationsResponse;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use options::QueryOptions;
+use query::analyse::{AnalysedQuery, QueryStructureAnnotations};
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
 };
@@ -19,8 +21,15 @@ use crate::service::{
     http::{
         message::{
             body::JsonBody,
-            query::query_structure::{
-                PipelineStructureResponse, PipelineStructureResponseForStudio, QueryStructureResponse,
+            query::{
+                annotations::{
+                    encode_fetch_structure_annotations, encode_function_structure_annotations,
+                    encode_pipeline_structure_annotations, FetchStructureAnnotationsResponse,
+                },
+                query_structure::{
+                    encode_query_structure, PipelineStructureResponse, PipelineStructureResponseForStudio,
+                    QueryStructureResponse,
+                },
             },
             transaction::TransactionOpenPayload,
         },
@@ -158,6 +167,29 @@ impl IntoResponse for AnalysedQueryResponse {
         let body = JsonBody(self);
         (code, body).into_response()
     }
+}
+
+pub fn encode_query_structure_annotations(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    analysed_query: AnalysedQuery,
+) -> Result<AnalysedQueryResponse, Box<ConceptReadError>> {
+    let AnalysedQuery { structure, annotations: analysed_query_annotations } = analysed_query;
+    let QueryStructureAnnotations { query: pipeline, preamble, fetch } = analysed_query_annotations;
+    let preamble = preamble
+        .into_iter()
+        .map(|function| encode_function_structure_annotations(snapshot, type_manager, function))
+        .collect::<Result<Vec<_>, _>>()?;
+    let pipeline = encode_pipeline_structure_annotations(snapshot, type_manager, pipeline)?;
+    let fetch = fetch
+        .map(|fetch| {
+            encode_fetch_structure_annotations(snapshot, type_manager, fetch)
+                .map(|fields| FetchStructureAnnotationsResponse::Object { possible_fields: fields })
+        })
+        .transpose()?;
+    let annotations = QueryStructureAnnotationsResponse { preamble, query: pipeline, fetch };
+    let structure = encode_query_structure(snapshot, type_manager, structure)?;
+    Ok(AnalysedQueryResponse { structure, annotations })
 }
 
 #[cfg(debug_assertions)]

@@ -30,10 +30,9 @@ use params;
 use query::{analyse::AnalysedQuery, error::QueryError};
 use resource::profile::StorageCounters;
 use server::service::http::message::query::{
-    annotations::encode_query_structure_annotations,
-    query_structure::bdd::{
-        encode_fetch_annotations_as_functor, encode_query_annotations_as_functor, encode_query_structure_as_functor,
-    },
+    annotations::bdd::{encode_fetch_annotations_as_functor, encode_query_annotations_as_functor},
+    encode_query_structure_annotations,
+    query_structure::bdd::encode_query_structure_as_functor,
 };
 use storage::snapshot::SnapshotDropGuard;
 use test_utils::assert_matches;
@@ -656,7 +655,6 @@ async fn typeql_analyze_query_may_error(context: &mut Context, may_error: params
 #[apply(generic_step)]
 #[step(expr = r"analyzed query pipeline structure is:")]
 async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
-    use server::service::http::message::query::query_structure::bdd::FunctorEncoded;
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
     let (actual_functor, _preamble) = encode_query_structure_as_functor(&analyzed);
@@ -666,7 +664,6 @@ async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
 #[apply(generic_step)]
 #[step(expr = r"analyzed query preamble contains:")]
 async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
-    use server::service::http::message::query::query_structure::bdd::FunctorEncoded;
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
     let (_pipeline, preamble_functors) = encode_query_structure_as_functor(&analyzed);
@@ -684,7 +681,6 @@ async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
 #[apply(generic_step)]
 #[step(expr = r"analyzed query pipeline annotations are:")]
 async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
-    use server::service::http::message::query::query_structure::bdd::FunctorEncoded;
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
     let (actual_functor, _preamble) = encode_query_annotations_as_functor(&analyzed);
@@ -694,7 +690,6 @@ async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
 #[apply(generic_step)]
 #[step(expr = r"analyzed preamble annotations contains:")]
 async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &Step) {
-    use server::service::http::message::query::query_structure::bdd::FunctorEncoded;
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
     let (_pipeline, preamble_functors) = encode_query_annotations_as_functor(&analyzed);
@@ -712,7 +707,6 @@ async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &St
 #[apply(generic_step)]
 #[step(expr = r"analyzed fetch annotations are:")]
 async fn analyzed_fetch_annotations_are(context: &mut Context, step: &Step) {
-    use server::service::http::message::query::query_structure::bdd::FunctorEncoded;
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
     let actual_functor = encode_fetch_annotations_as_functor(&analyzed);

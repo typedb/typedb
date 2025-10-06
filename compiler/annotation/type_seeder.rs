@@ -36,7 +36,8 @@ use storage::snapshot::ReadableSnapshot;
 use crate::annotation::{
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
-    type_inference, TypeInferenceError,
+    type_inference::get_type_annotation_from_label,
+    TypeInferenceError,
 };
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
@@ -216,9 +217,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Vertex::Variable(_) => unreachable!("variable in fixed vertices"),
                 Vertex::Label(label) => {
                     if !graph.vertices.contains_key(vertex) {
-                        let annotation_opt =
-                            type_inference::get_type_annotation_from_label(self.snapshot, self.type_manager, label)
-                                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
+                        let annotation_opt = get_type_annotation_from_label(self.snapshot, self.type_manager, label)
+                            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
                         if let Some(annotation) = annotation_opt {
                             graph.vertices.insert(vertex.clone(), BTreeSet::from([annotation]));
                         } else {
@@ -231,7 +231,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                         #[cfg(debug_assertions)]
                         {
                             let annotation_opt =
-                                type_inference::get_type_annotation_from_label(self.snapshot, self.type_manager, label)
+                                get_type_annotation_from_label(self.snapshot, self.type_manager, label)
                                     .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
                             debug_assert_ne!(annotation_opt, None);
                             debug_assert_eq!(graph.vertices[vertex], BTreeSet::from([annotation_opt.unwrap()]));
@@ -582,7 +582,7 @@ pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnap
     type_manager: &TypeManager,
     label_value: &encoding::value::label::Label,
 ) -> Result<BTreeSet<TypeAnnotation>, TypeInferenceError> {
-    let type_opt = type_inference::get_type_annotation_from_label(snapshot, type_manager, label_value)
+    let type_opt = get_type_annotation_from_label(snapshot, type_manager, label_value)
         .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
     let Some(type_) = type_opt else {
         return Err(TypeInferenceError::LabelNotResolved {

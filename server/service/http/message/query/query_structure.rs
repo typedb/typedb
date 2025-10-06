@@ -72,22 +72,22 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct FunctionStructureResponse {
-    pub(crate) body: PipelineStructureResponse,
-    pub(crate) arguments: Vec<StructureVariableId>,
-    pub(crate) returns: FunctionReturnStructure,
+pub struct FunctionStructureResponse {
+    pub(super) body: PipelineStructureResponse,
+    pub(super) arguments: Vec<StructureVariableId>,
+    pub(super) returns: FunctionReturnStructure,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryStructureResponse {
-    pub(crate) query: PipelineStructureResponse,
-    pub(crate) preamble: Vec<FunctionStructureResponse>,
+    pub(super) query: PipelineStructureResponse,
+    pub(super) preamble: Vec<FunctionStructureResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct PipelineStructureResponse {
+pub struct PipelineStructureResponse {
     pub(super) conjunctions: Vec<Vec<StructureConstraintWithSpan>>,
     pub(super) pipeline: Vec<QueryStructureStage>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
@@ -97,7 +97,7 @@ pub(crate) struct PipelineStructureResponse {
 // Kept for backwards compatibility
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct PipelineStructureResponseForStudio {
+pub(super) struct PipelineStructureResponseForStudio {
     blocks: Vec<StructureBlockForStudio>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
     outputs: Vec<StructureVariableId>,
@@ -227,10 +227,10 @@ struct StructureConstraintSpan {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct StructureConstraintWithSpan {
+pub(super) struct StructureConstraintWithSpan {
     text_span: Option<StructureConstraintSpan>,
     #[serde(flatten)]
-    pub(crate) constraint: StructureConstraint,
+    pub(super) constraint: StructureConstraint,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -607,7 +607,26 @@ pub mod bdd {
             FunctionStructureResponse, PipelineStructureResponse, StructureConstraint, StructureConstraintWithSpan,
             StructureVertex,
         },
+        AnalysedQueryResponse,
     };
+
+    pub fn encode_query_structure_as_functor(analyzed: &AnalysedQueryResponse) -> (String, Vec<String>) {
+        let AnalysedQueryResponse { structure, annotations } = analyzed;
+        let context = FunctorContext { structure: &structure.query, annotations: &annotations.query };
+        let pipeline = &structure.query;
+        let query = pipeline.encode_as_functor(&context);
+        let preamble = structure
+            .preamble
+            .iter()
+            .zip(annotations.preamble.iter())
+            .map(|(func, annotations)| {
+                let context = FunctorContext { structure: &func.body, annotations: &annotations.body };
+                func.encode_as_functor(&context)
+            })
+            .collect();
+        (query, preamble)
+    }
+
     impl_functor_for!(struct StructureReduceAssign { assigned, reducer,  } named ReduceAssign);
     impl_functor_for!(struct StructureReducer { reducer, arguments, } named Reducer);
 
