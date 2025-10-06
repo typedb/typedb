@@ -503,16 +503,18 @@ fn encode_named_role_as_vertex(
     role_type: &Vertex<Variable>,
 ) -> Result<typedb_protocol::conjunction_structure::StructureVertex, Box<ConceptReadError>> {
     debug_assert!(role_type.is_variable());
-    let as_var = role_type.as_variable().expect("Expected role_type to be variable");
-    let name = context.get_role_type(&role_type.as_variable().unwrap())
-        .expect("Expected role name to be available in context");
-    let named_role_vertex = structure_vertex::NamedRole {
-        name: name.to_owned(),
-        variable: Some(encode_structure_variable(StructureVariableId::from(as_var))),
+    let role_var = role_type.as_variable().expect("Expected role_type to be variable");
+    if context.get_role_type(&role_type.as_variable().unwrap()).is_none() {}
+    let vertex = if let Some(name) = context.get_role_type(&role_type.as_variable().unwrap()) {
+        let named_role_vertex = structure_vertex::NamedRole {
+            name: name.to_owned(),
+            variable: Some(encode_structure_variable(StructureVariableId::from(role_var))),
+        };
+        structure_vertex::Vertex::NamedRole(named_role_vertex)
+    } else {
+        structure_vertex::Vertex::Variable(encode_structure_variable(StructureVariableId::from(role_var)))
     };
-    Ok(typedb_protocol::conjunction_structure::StructureVertex {
-        vertex: Some(structure_vertex::Vertex::NamedRole(named_role_vertex))
-    })
+    Ok(typedb_protocol::conjunction_structure::StructureVertex { vertex: Some(vertex) })
 }
 
 fn encode_structure_vertex_variable(

@@ -577,6 +577,7 @@ fn encode_role_type_as_vertex(
     role_type: &Vertex<Variable>,
 ) -> Result<StructureVertex, Box<ConceptReadError>> {
     if let Some(label) = context.get_role_type(&role_type.as_variable().unwrap()) {
+        // TODO: Make consistent with GRPC API by introducing StructureVertex::NamedRole
         // At present rolename could resolve to multiple types - Manually encode.
         Ok(StructureVertex::Label { r#type: serde_json::json!(RoleTypeResponse { label: label.to_owned() }) })
     } else {
