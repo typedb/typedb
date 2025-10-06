@@ -4,10 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use user::permission_manager::PermissionManager;
-use storage::snapshot::CommittableSnapshot;
 use std::{net::SocketAddr, pin::Pin, time::Instant};
-
+use std::sync::Arc;
 use diagnostics::metrics::ActionKind;
 use itertools::Itertools;
 use tokio::sync::mpsc::channel;
@@ -21,9 +19,6 @@ use typedb_protocol::{
     transaction::{Client as TransactionClientProto, Server as TransactionServerProto},
 };
 use uuid::Uuid;
-use database::transaction::DataCommitError;
-use resource::profile::CommitProfile;
-use user::errors::UserCreateError;
 use crate::{
     authentication::{Accessor, AuthenticationError},
     error::LocalServerStateError,
@@ -52,18 +47,18 @@ use crate::{
             ConnectionID,
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
+        typedb_service::TypeDBService,
     },
     state::ArcServerState,
 };
-use crate::system_init::SYSTEM_DB;
 
 #[derive(Debug)]
-pub(crate) struct TypeDBService {
+pub(crate) struct GRPCTypeDBService {
     address: SocketAddr,
     server_state: ArcServerState,
 }
 
-impl TypeDBService {
+impl GRPCTypeDBService {
     pub(crate) fn new(address: SocketAddr, server_state: ArcServerState) -> Self {
         Self { address, server_state }
     }
@@ -76,7 +71,7 @@ impl TypeDBService {
 }
 
 #[tonic::async_trait]
-impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
+impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
     // Update AUTHENTICATION_FREE_METHODS if this method is renamed
     async fn connection_open(
         &self,
@@ -537,42 +532,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                 let (user, credential) =
                     users_create_req(request).map_err(|err| err.into_error_message().into_status())?;
 
-                if !PermissionManager::exec_user_create_permitted(accessor.0.as_str()) {
-                    return Err(LocalServerStateError::OperationNotPermitted {}.into_error_message().into_status());
-                }
-
-                let (mut transaction_profile, create_result) = match self.server_state.user_manager().await {
-                    Some(user_manager) => {
-                        match user_manager.create(&user, &credential) {
-                            (mut transaction_profile, Ok((database, snapshot))) => {
-                                let commit_profile = transaction_profile.commit_profile();
-                                let into_commit_record_result = snapshot
-                                    .finalise(commit_profile)
-                                    .map_err(|error|
-                                        LocalServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected { } }
-                                    );
-                                (transaction_profile, into_commit_record_result
-                                    .map(|commit_record| (database, commit_record)))
-                            }
-                            (transaction_profile, Err(error)) =>
-                                return Err(LocalServerStateError::UserCannotBeCreated { typedb_source: error }.into_error_message().into_status())
-                        }
-                    },
-                    None => return Err(LocalServerStateError::NotInitialised { }.into_error_message().into_status())
-                };
-
-                let create_result = match create_result {
-                    Ok((_, commit_record_opt)) => {
-                        let commit_profile = transaction_profile.commit_profile();
-                        if let Some(commit_record) = commit_record_opt {
-                            self.server_state.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await.unwrap();
-                        }
-                        Ok(Response::new(user_create_res()))
-                    }
-                    Err(err) => return Err(err.into_error_message().into_status())
-                };
-
-                create_result
+                TypeDBService::create_user(&self.server_state, accessor, user, credential)
+                    .await
+                    .map(|_| Response::new(user_create_res()))
+                    .map_err(|err| err.into_error_message().into_status())
             },
         )
         .await
@@ -591,9 +554,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     .map_err(|err| err.into_error_message().into_status())?;
                 let (username, user_update, credential_update) =
                     users_update_req(request).map_err(|err| err.into_error_message().into_status())?;
-                let username = username.as_str();
-                self.server_state
-                    .users_update(username, user_update, credential_update, accessor)
+
+                TypeDBService::update_user(&self.server_state, accessor, &username, user_update, credential_update)
                     .await
                     .map(|_| Response::new(user_update_res()))
                     .map_err(|err| err.into_error_message().into_status())
@@ -614,8 +576,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                 let accessor = Accessor::from_extensions(&request.extensions())
                     .map_err(|err| err.into_error_message().into_status())?;
                 let name = request.into_inner().name;
-                self.server_state
-                    .users_delete(name.as_str(), accessor)
+
+                TypeDBService::delete_user(&self.server_state, accessor, &name)
                     .await
                     .map(|_| Response::new(users_delete_res()))
                     .map_err(|err| err.into_error_message().into_status())

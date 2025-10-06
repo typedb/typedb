@@ -7,6 +7,8 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
+use storage::snapshot::WriteSnapshot;
+use crate::transaction::DatabaseDropGuard;
 pub use self::database::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
 
 pub mod database;
