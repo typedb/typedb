@@ -13,6 +13,7 @@ pub mod transaction_util {
         transaction::{DatabaseDropGuard, DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
         Database,
     };
+    use database::transaction::{DataCommitIntent, SchemaCommitIntent};
     use function::function_manager::FunctionManager;
     use options::TransactionOptions;
     use query::query_manager::QueryManager;
@@ -35,7 +36,7 @@ pub mod transaction_util {
         pub fn schema_transaction<T>(
             &self,
             fn_: impl Fn(&mut SchemaSnapshot<WALClient>, &TypeManager, &ThingManager, &FunctionManager, &QueryManager) -> T,
-        ) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, SchemaSnapshot<WALClient>), SchemaCommitError>) {
+        ) -> (TransactionProfile, Result<SchemaCommitIntent<WALClient>, SchemaCommitError>) {
             let TransactionSchema {
                 snapshot,
                 type_manager,
@@ -61,7 +62,7 @@ pub mod transaction_util {
             let (profile, result) = tx.finalise();
             (profile, result)
         }
-        
+
         pub fn schema_transaction_commit<T>(
             &self,
             fn_: impl Fn(&mut SchemaSnapshot<WALClient>, &TypeManager, &ThingManager, &FunctionManager, &QueryManager) -> T,
@@ -109,7 +110,7 @@ pub mod transaction_util {
                 Arc<Database<WALClient>>,
                 TransactionOptions,
             ) -> (T, Arc<WriteSnapshot<WALClient>>),
-        ) -> (TransactionProfile, Result<(DatabaseDropGuard<WALClient>, WriteSnapshot<WALClient>), DataCommitError>) {
+        ) -> (TransactionProfile, Result<DataCommitIntent<WALClient>, DataCommitError>) {
             let TransactionWrite {
                 snapshot,
                 type_manager,
