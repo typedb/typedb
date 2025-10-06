@@ -71,23 +71,23 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct FunctionStructureResponse {
-    body: PipelineStructureResponse,
-    arguments: Vec<StructureVariableId>,
-    returns: FunctionReturnStructure,
+    pub(crate) body: PipelineStructureResponse,
+    pub(crate) arguments: Vec<StructureVariableId>,
+    pub(crate) returns: FunctionReturnStructure,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryStructureResponse {
-    query: PipelineStructureResponse,
-    preamble: Vec<FunctionStructureResponse>,
+    pub(crate) query: PipelineStructureResponse,
+    pub(crate) preamble: Vec<FunctionStructureResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PipelineStructureResponse {
-    conjunctions: Vec<Vec<StructureConstraintWithSpan>>,
-    pipeline: Vec<QueryStructureStage>,
+    pub(super) conjunctions: Vec<Vec<StructureConstraintWithSpan>>,
+    pub(super) pipeline: Vec<QueryStructureStage>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
     outputs: Vec<StructureVariableId>,
 }
@@ -225,10 +225,10 @@ struct StructureConstraintSpan {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct StructureConstraintWithSpan {
+pub(crate) struct StructureConstraintWithSpan {
     text_span: Option<StructureConstraintSpan>,
     #[serde(flatten)]
-    constraint: StructureConstraint,
+    pub(crate) constraint: StructureConstraint,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -592,133 +592,23 @@ fn encode_role_type_as_vertex(
 
 #[cfg(debug_assertions)]
 pub mod bdd {
-    use std::collections::HashMap;
     use compiler::query_structure::{FunctionReturnStructure, QueryStructureConjunctionID, QueryStructureStage, StructureReduceAssign, StructureReducer, StructureSortVariable, StructureVariableId};
     use itertools::Itertools;
     use serde_json::Value;
-    use crate::service::http::message::query::AnalysedQueryResponse;
-    use crate::service::http::message::query::annotations::{FunctionReturnAnnotationsResponse, FunctionStructureAnnotationsResponse, FetchStructureAnnotationsResponse, PipelineStructureAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse, VariableAnnotationsByConjunctionResponse};
-    use crate::service::http::message::query::concept::{EntityTypeResponse, RelationTypeResponse, AttributeTypeResponse, RoleTypeResponse};
+    use crate::service::http::message::query::bdd::{
+        functor_macros, FunctorEncoded, FunctorContext,
+        functor_macros::{impl_functor_for, impl_functor_for_multi}
+    };
+    use crate::service::http::message::query::bdd::functor_macros::{encode_functor_impl, impl_functor_for_impl};
 
     use crate::service::http::message::query::query_structure::{
         FunctionStructureResponse, PipelineStructureResponse, StructureConstraint,
         StructureConstraintWithSpan, StructureVertex,
     };
-    use crate::service::http::message::query::query_structure::bdd::functor_macros::{encode_functor_impl, impl_functor_for};
+    impl_functor_for!(struct StructureReduceAssign { assigned, reducer,  } named ReduceAssign);
+    impl_functor_for!(struct StructureReducer { reducer, arguments, } named Reducer);
 
-    struct FunctorContext<'a> {
-        structure: &'a PipelineStructureResponse,
-        annotations: &'a PipelineStructureAnnotationsResponse,
-    }
-
-    pub trait FunctorEncoded {
-        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String;
-    }
-
-    pub mod functor_macros {
-        macro_rules! encode_args {
-            ($context:ident, { $( $arg:ident, )* } )   => {
-                {
-                    let arr: Vec<&dyn FunctorEncoded> = vec![ $($arg,)* ];
-                    arr.into_iter().map(|s| s.encode_as_functor($context)).join(", ")
-                }
-            }
-        }
-        macro_rules! encode_functor_impl {
-            ($context:ident, $func:ident $args:tt) => {
-                std::format!("{}({})", std::stringify!($func), functor_macros::encode_args!($context, $args))
-            };
-            ($context:ident, ( $( $arg:ident, )* ) ) => {
-                functor_macros::encode_args!($context, { $( $arg, )* } )
-            };
-        }
-
-        macro_rules! add_ignored_fields {
-            ($qualified:path : { $( $arg:ident, )* }) => { $qualified { $( $arg, )* .. } };
-            ($qualified:path : ($( $arg:ident, )*)) => { $qualified ( $( $arg, )* .. ) };
-        }
-
-        macro_rules! encode_functor {
-            ($context:ident, $what:ident as struct $struct_name:ident  $fields:tt) => {
-                functor_macros::encode_functor!($context, $what => [ $struct_name => $struct_name $fields, ])
-            };
-            ($context:ident, $what:ident as struct $struct_name:ident $fields:tt named $renamed:ident ) => {
-                functor_macros::encode_functor!($context, $what => [ $struct_name => $renamed $fields, ])
-            };
-            ($context:ident, $what:ident as enum $enum_name:ident [ $($variant:ident $fields:tt |)* ]) => {
-                functor_macros::encode_functor!($context, $what => [ $( $enum_name::$variant => $variant $fields ,)* ])
-            };
-            ($context:ident, $what:ident => [ $($qualified:path => $func:ident $fields:tt, )* ]) => {
-                match $what {
-                    $( functor_macros::add_ignored_fields!($qualified : $fields) => {
-                        functor_macros::encode_functor_impl!($context, $func $fields)
-                    })*
-                }
-            };
-        }
-
-        macro_rules! impl_functor_for_impl {
-            ($which:ident => |$self:ident, $context:ident| $block:block) => {
-                impl FunctorEncoded for $which {
-                    fn encode_as_functor<'a>($self: &Self, $context: &FunctorContext<'a>) -> String {
-                        $block
-                    }
-                }
-            };
-        }
-
-        macro_rules! impl_functor_for {
-            (struct $struct_name:ident $fields:tt) => {
-                functor_macros::impl_functor_for!(struct $struct_name $fields named $struct_name);
-            };
-            (struct $struct_name:ident $fields:tt named $renamed:ident) => {
-                functor_macros::impl_functor_for_impl!($struct_name => |self, context| {
-                    functor_macros::encode_functor!(context, self as struct $struct_name $fields named $renamed)
-                });
-            };
-            (enum $enum_name:ident [ $($func:ident $fields:tt |)* ]) => {
-                functor_macros::impl_functor_for_impl!($enum_name => |self, context| {
-                    functor_macros::encode_functor!(context, self as enum $enum_name [ $($func $fields |)* ])
-                });
-            };
-            (primitive $primitive:ident) => {
-                functor_macros::impl_functor_for_impl!($primitive => |self, _context| { self.to_string() });
-            };
-        }
-        pub(crate) use add_ignored_fields;
-        pub(crate) use encode_args;
-        pub(crate) use encode_functor;
-        pub(crate) use encode_functor_impl;
-        pub(crate) use impl_functor_for;
-        pub(crate) use impl_functor_for_impl;
-    }
-
-    functor_macros::impl_functor_for!(primitive String);
-    functor_macros::impl_functor_for!(primitive u64);
-    impl<T: FunctorEncoded> FunctorEncoded for Vec<T> {
-        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            std::format!("[{}]", self.iter().map(|v| v.encode_as_functor(context)).join(", "))
-        }
-    }
-
-    impl<K: FunctorEncoded, V: FunctorEncoded> FunctorEncoded for HashMap<K, V> {
-        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            std::format!("{{ {} }}", self.iter().map(|(k, v)| {
-                std::format!("{}: {}", k.encode_as_functor(context), v.encode_as_functor(context))
-            }).sorted_by(|a,b| a.cmp(b)).join(", "))
-        }
-    }
-
-    impl<T: FunctorEncoded> FunctorEncoded for Option<T> {
-        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            self.as_ref().map(|inner| inner.encode_as_functor(context)).unwrap_or("<NONE>".to_owned())
-        }
-    }
-
-    functor_macros::impl_functor_for!(struct StructureReduceAssign { assigned, reducer,  } named ReduceAssign);
-    functor_macros::impl_functor_for!(struct StructureReducer { reducer, arguments, } named Reducer);
-
-    functor_macros::impl_functor_for!(enum QueryStructureStage [
+    impl_functor_for!(enum QueryStructureStage [
         Match { block, } |
         Insert { block, } |
         Delete { deleted_variables, block, } |
@@ -733,7 +623,7 @@ pub mod bdd {
         Reduce { reducers, groupby, } | // TODO
     ]);
 
-    functor_macros::impl_functor_for!(enum StructureConstraint [
+    impl_functor_for!(enum StructureConstraint [
         Isa { instance, r#type, } |
         IsaExact { instance, r#type, } |
         Has { owner, attribute, } |
@@ -756,13 +646,7 @@ pub mod bdd {
         Try { conjunction, } |
     ]);
 
-    macro_rules! impl_functor_for_multi {
-        (|$self:ident, $context:ident| [ $( $type_name:ident => $block:block )* ]) => {
-            $ (functor_macros::impl_functor_for_impl!($type_name => |$self, $context| $block); )*
-        };
-    }
-
-    functor_macros::impl_functor_for_impl!(StructureVertex => |self, context| {
+    impl_functor_for_impl!(StructureVertex => |self, context| {
         match self {
             StructureVertex::Variable { id } => { id.encode_as_functor(context) }
             StructureVertex::Label { r#type } => { r#type.as_object().unwrap()["label"].as_str().unwrap().to_owned() }
@@ -780,218 +664,24 @@ pub mod bdd {
         StructureVariableId =>  { format!("${}", context.structure.variables[self].name.as_ref().map(|s| s.as_str()).unwrap_or("_")) }
         QueryStructureConjunctionID => { context.structure.conjunctions[self.0 as usize].encode_as_functor(context) }
         StructureConstraintWithSpan => { self.constraint.encode_as_functor(context) }
-        PipelineStructureResponse => { let pipeline = &self.pipeline; functor_macros::encode_functor_impl!(context, Pipeline { pipeline, }) }
+        PipelineStructureResponse => { let pipeline = &self.pipeline; encode_functor_impl!(context, Pipeline { pipeline, }) }
         FunctionStructureResponse => {
             let FunctionStructureResponse { arguments, returns, body } = self;
-            functor_macros::encode_functor_impl!(context, Function { arguments, returns, body, })
+            encode_functor_impl!(context, Function { arguments, returns, body, })
         }
         StructureSortVariable => {
             let Self { ascending, variable } = self;
             match ascending {
-                true => functor_macros::encode_functor_impl!(context, Asc { variable, }),
-                false => functor_macros::encode_functor_impl!(context, Desc { variable, }),
+                true => encode_functor_impl!(context, Asc { variable, }),
+                false => encode_functor_impl!(context, Desc { variable, }),
             }
         }
     ]);
 
-    functor_macros::impl_functor_for!(enum FunctionReturnStructure [
+    impl_functor_for!(enum FunctionReturnStructure [
         Stream { variables, } |
         Single { selector, variables, }  |
         Check { }  |
         Reduce {} |
     ]);
-
-    pub fn encode_query_structure_as_functor(analyzed: &AnalysedQueryResponse) -> (String, Vec<String>) {
-        let AnalysedQueryResponse { structure, annotations } = analyzed;
-        let context = FunctorContext { structure: &structure.query, annotations: &annotations.query};
-        let pipeline = &structure.query;
-        let query = pipeline.encode_as_functor(&context);
-        let preamble = structure.preamble.iter().zip(annotations.preamble.iter())
-            .map(|(func, annotations)| {
-            let context = FunctorContext { structure: &func.body, annotations: &annotations.body };
-            func.encode_as_functor(&context)
-        }).collect();
-        (query, preamble)
-    }
-
-    pub fn encode_query_annotations_as_functor(analyzed: &AnalysedQueryResponse) -> (String, Vec<String>) {
-        let context = FunctorContext { structure: &analyzed.structure.query, annotations: &analyzed.annotations.query };
-        let query = analyzed.annotations.query.encode_as_functor(&context);
-        let preamble = analyzed.annotations.preamble.iter().zip(analyzed.structure.preamble.iter())
-            .map(|(annotations, structure)| {
-                let context = FunctorContext { structure: &structure.body, annotations: &annotations.body };
-                annotations.encode_as_functor(&context)
-            }).collect();
-        (query, preamble)
-    }
-
-    impl FunctorEncoded for PipelineStructureAnnotationsResponse {
-        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            let encoded_stages = context.structure.pipeline.iter().map(|stage| {
-                match stage {
-                    QueryStructureStage::Match { block } => {
-                        let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        functor_macros::encode_functor_impl!(context, Match { block, })
-                    },
-                    QueryStructureStage::Insert { block } => {
-                        let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        functor_macros::encode_functor_impl!(context, Insert { block, })
-                    }
-                    QueryStructureStage::Delete { block, .. } => {
-                        let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        functor_macros::encode_functor_impl!(context, Delete { block, })
-                    }
-                    QueryStructureStage::Put { block }  => {
-                        let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        functor_macros::encode_functor_impl!(context, Put { block, })
-                    },
-                    QueryStructureStage::Update { block } =>  {
-                        let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        functor_macros::encode_functor_impl!(context, Update { block, })
-                    }
-                    QueryStructureStage::Select { .. } => functor_macros::encode_functor_impl!(context, Select { }),
-                    QueryStructureStage::Sort { .. } => functor_macros::encode_functor_impl!(context, Sort { }),
-                    QueryStructureStage::Offset { .. }  => functor_macros::encode_functor_impl!(context, Offset { }),
-                    QueryStructureStage::Limit { .. } => functor_macros::encode_functor_impl!(context, Limit { }),
-                    QueryStructureStage::Require { .. } => functor_macros::encode_functor_impl!(context, Require { }),
-                    QueryStructureStage::Distinct => functor_macros::encode_functor_impl!(context, Select { }),
-                    QueryStructureStage::Reduce { .. } => functor_macros::encode_functor_impl!(context, Reduce { }),
-                }
-            }).collect::<Vec<_>>();
-            let encoded_stages_ref = &encoded_stages;
-            encode_functor_impl!(context, Pipeline { encoded_stages_ref, })// Not ideal to encode the elements again
-        }
-    }
-
-    functor_macros::impl_functor_for!(struct FunctionStructureAnnotationsResponse { arguments, returns, body, } named Function);
-    functor_macros::impl_functor_for!(enum FunctionReturnAnnotationsResponse [ Single { annotations, } | Stream { annotations, } | ]);
-
-    #[derive(Debug, Clone, Copy)]
-    struct TrunkAnnotationToEncode(usize);
-
-    #[derive(Debug, Clone, Copy)]
-    struct BlockAnnotationToEncode(usize);
-    impl From<QueryStructureConjunctionID> for BlockAnnotationToEncode {
-        fn from(value: QueryStructureConjunctionID) -> Self {
-            Self(value.as_u32() as usize)
-        }
-    }
-
-    enum SubBlockAnnotation {
-        Trunk { conjunction: TrunkAnnotationToEncode },
-        Or { branches: Vec<BlockAnnotationToEncode> },
-        Not { conjunction: BlockAnnotationToEncode },
-        Try { conjunction: BlockAnnotationToEncode },
-    }
-
-    impl FunctorEncoded for BlockAnnotationToEncode {
-        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            let mut elements = vec![SubBlockAnnotation::Trunk { conjunction: TrunkAnnotationToEncode(self.0) }];
-            elements.extend(context.structure.conjunctions[self.0]
-                .iter()
-                .filter_map(|c| match &c.constraint {
-                    StructureConstraint::Or { branches } => {
-                        let branches = branches.iter().copied().map_into().collect();
-                        Some(SubBlockAnnotation::Or { branches })
-                    },
-                    StructureConstraint::Not { conjunction } => {
-                        Some(SubBlockAnnotation::Not { conjunction: (*conjunction).into() })
-                    },
-                    StructureConstraint::Try { conjunction } => {
-                        Some(SubBlockAnnotation::Try { conjunction: (*conjunction).into() })
-                    },
-                    _ => None,
-                }));
-            elements.encode_as_functor(context)
-        }
-    }
-
-    impl_functor_for!(enum SubBlockAnnotation [ Trunk { conjunction, } | Or { branches, } | Not { conjunction, } | Try { conjunction, } | ]);
-    functor_macros::impl_functor_for!(enum TypeAnnotationResponse [ Thing { annotations, } | Type { annotations, } | Value { value_types, } | ]);
-    impl_functor_for_multi!(|self, context| [
-        TrunkAnnotationToEncode => {
-            context.annotations.annotations_by_conjunction[self.0].encode_as_functor(context)
-        }
-        VariableAnnotationsByConjunctionResponse => {
-            self.variable_annotations.encode_as_functor(context)
-        }
-        SingleTypeAnnotationResponse =>  {
-            match self {
-                    Self::Entity(EntityTypeResponse { label, ..})
-                    | Self::Relation(RelationTypeResponse { label, .. })
-                    | Self::Attribute(AttributeTypeResponse { label, .. })
-                    | Self::Role(RoleTypeResponse { label, .. })=> {
-                        label.encode_as_functor(context)
-                    }
-            }
-        }
-    ]);
-
-    // Fetch
-    pub fn encode_fetch_annotations_as_functor(analyzed: &AnalysedQueryResponse) -> String {
-        let context = FunctorContext {
-            structure: &analyzed.structure.query,
-            annotations: &analyzed.annotations.query
-        };
-        analyzed.annotations.fetch.encode_as_functor(&context)
-    }
-
-    impl FunctorEncoded for FetchStructureAnnotationsResponse {
-        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            match self {
-                FetchStructureAnnotationsResponse::Value { value_types } => {
-                    value_types.encode_as_functor(context)
-                }
-                FetchStructureAnnotationsResponse::Object { possible_fields } => {
-                    let as_map = possible_fields.iter().cloned().map(|kv| (kv.key, kv.value)).collect::<HashMap<_,_>>();
-                    as_map.encode_as_functor(context)
-                }
-                FetchStructureAnnotationsResponse::List { elements } => {
-                    let elements_as_ref = elements.as_ref();
-                    encode_functor_impl!(context, List { elements_as_ref, })
-                }
-            }
-        }
-    }
-
-    // #[cfg(test)]
-    // pub mod test {
-    //     use std::collections::HashMap;
-    //
-    //     use itertools::Itertools;
-    //     use crate::service::http::message::query::AnalysedQueryResponse;
-    //
-    //     use super::{functor_macros, FunctorContext};
-    //     use crate::service::http::message::query::query_structure::bdd::FunctorEncoded;
-    //
-    //     fn print_encoded(x: impl FunctorEncoded) {
-    //         let dummy =
-    //             AnalysedQueryResponse { annotations: vec![], conjunctions: vec![], structure: vec![], variables: HashMap::new(), outputs: vec![] };
-    //         println!("{}", x.encode_as_functor(&dummy));
-    //     }
-    //
-    //     #[test]
-    //     fn testme() {
-    //         print_encoded(TestMeStruct { field: "foo".to_owned() });
-    //         print_encoded(TestMeEnum::First { f1: "abc".to_owned() });
-    //         print_encoded(TestMeEnum::Second { f2: 123 });
-    //         print_encoded(TestMeEnum::Third { f3: TestMeStruct { field: "bar".to_owned() }, ignoreme: 0.456 });
-    //     }
-    //
-    //     struct TestMeStruct {
-    //         field: String,
-    //     }
-    //
-    //     enum TestMeEnum {
-    //         First { f1: String },
-    //         Second { f2: u64 },
-    //         Third { f3: TestMeStruct, ignoreme: f64 },
-    //     }
-    //
-    //     functor_macros::impl_functor_for!(struct TestMeStruct { field, } );
-    //     functor_macros::impl_functor_for!(enum TestMeEnum [
-    //         First { f1, } |  Second { f2, } | Third { f3, } |
-    //     ]);
-    // }
-
 }
