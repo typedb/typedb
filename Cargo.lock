@@ -702,6 +702,7 @@ dependencies = [
  "resource",
  "rocksdb",
  "serde",
+ "test_utils",
  "tracing",
  "uuid",
 ]
