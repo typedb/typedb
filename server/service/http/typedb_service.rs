@@ -28,7 +28,6 @@ use tokio::{
 use tonic::Response;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
-use user::errors::UserCreateError;
 use crate::{
     authentication::Accessor,
     http::diagnostics::run_with_diagnostics,
@@ -50,13 +49,11 @@ use crate::{
             },
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
+        typedb_service::TypeDBService,
         QueryType,
     },
     state::ArcServerState,
 };
-use crate::error::LocalServerStateError;
-use crate::system_init::SYSTEM_DB;
-use storage::snapshot::CommittableSnapshot;
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 
@@ -69,7 +66,7 @@ struct TransactionInfo {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct TypeDBService {
+pub(crate) struct HTTPTypeDBService {
     distribution_info: DistributionInfo,
     address: SocketAddr,
     server_state: ArcServerState,
@@ -77,7 +74,7 @@ pub(crate) struct TypeDBService {
     _transaction_cleanup_job: Arc<TokioIntervalRunner>,
 }
 
-impl TypeDBService {
+impl HTTPTypeDBService {
     const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
     const QUERY_ENDPOINT_COMMIT_DEFAULT: bool = true;
 
@@ -116,7 +113,7 @@ impl TypeDBService {
     }
 
     async fn transaction_new(
-        service: &TypeDBService,
+        service: &HTTPTypeDBService,
         owner: String,
         payload: TransactionOpenPayload,
     ) -> Result<(TransactionInfo, u64), HttpServiceError> {
@@ -193,7 +190,7 @@ impl TypeDBService {
         }
     }
 
-    pub(crate) fn create_protected_router<T>(service: Arc<TypeDBService>) -> Router<T> {
+    pub(crate) fn create_protected_router<T>(service: Arc<HTTPTypeDBService>) -> Router<T> {
         Router::new()
             .route("/:version/databases", get(Self::databases))
             .route("/:version/databases/:database-name", get(Self::databases_get))
@@ -216,7 +213,7 @@ impl TypeDBService {
             .with_state(service)
     }
 
-    pub(crate) fn create_unprotected_router<T>(service: Arc<TypeDBService>) -> Router<T> {
+    pub(crate) fn create_unprotected_router<T>(service: Arc<HTTPTypeDBService>) -> Router<T> {
         Router::new()
             .route("/", get(Self::redirect_to_latest_version))
             .route("/:version", get(Self::redirect_to_version))
@@ -235,7 +232,7 @@ impl TypeDBService {
         StatusCode::NO_CONTENT
     }
 
-    async fn version(_version: ProtocolVersion, State(service): State<Arc<TypeDBService>>) -> impl IntoResponse {
+    async fn version(_version: ProtocolVersion, State(service): State<Arc<HTTPTypeDBService>>) -> impl IntoResponse {
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager().await,
             None::<&str>,
@@ -260,7 +257,7 @@ impl TypeDBService {
 
     async fn signin(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         JsonBody(payload): JsonBody<SigninPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -279,7 +276,7 @@ impl TypeDBService {
         .await
     }
 
-    async fn databases(_version: ProtocolVersion, State(service): State<Arc<TypeDBService>>) -> impl IntoResponse {
+    async fn databases(_version: ProtocolVersion, State(service): State<Arc<HTTPTypeDBService>>) -> impl IntoResponse {
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager().await,
             None::<&str>,
@@ -298,7 +295,7 @@ impl TypeDBService {
 
     async fn databases_get(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -322,7 +319,7 @@ impl TypeDBService {
 
     async fn databases_create(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -342,7 +339,7 @@ impl TypeDBService {
 
     async fn databases_delete(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -362,7 +359,7 @@ impl TypeDBService {
 
     async fn databases_schema(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -383,7 +380,7 @@ impl TypeDBService {
 
     async fn databases_type_schema(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -404,7 +401,7 @@ impl TypeDBService {
 
     async fn users(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         accessor: Accessor,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
@@ -425,7 +422,7 @@ impl TypeDBService {
 
     async fn users_get(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         accessor: Accessor,
         user_path: UserPath,
     ) -> impl IntoResponse {
@@ -447,7 +444,7 @@ impl TypeDBService {
 
     async fn users_create(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         accessor: Accessor,
         user_path: UserPath,
         JsonBody(payload): JsonBody<CreateUserPayload>,
@@ -459,40 +456,10 @@ impl TypeDBService {
             || async {
                 let user = User { name: user_path.username };
                 let credential = Credential::new_password(payload.password.as_str());
-                let (mut transaction_profile, create_result) = match service.server_state.user_manager().await {
-                    Some(user_manager) => {
-                        match user_manager.create(&user, &credential) {
-                            (mut transaction_profile, Ok((database, snapshot))) => {
-                                let commit_profile = transaction_profile.commit_profile();
-                                let into_commit_record_result = snapshot
-                                    .finalise(commit_profile)
-                                    .map_err(|error|
-                                        LocalServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected { } }
-                                    );
-                                (transaction_profile, into_commit_record_result
-                                    .map(|commit_record| (database, commit_record)))
-                            }
-                            (transaction_profile, Err(error)) =>
-                                return Err(
-                                    HttpServiceError::State { typedb_source: Arc::new(LocalServerStateError::UserCannotBeCreated { typedb_source: error }) }
-                                )
-                        }
-                    },
-                    None => return Err(HttpServiceError::State { typedb_source: Arc::new(LocalServerStateError::NotInitialised { })})
-                };
-
-                let create_result = match create_result {
-                    Ok((_, commit_record_opt)) => {
-                        let commit_profile = transaction_profile.commit_profile();
-                        if let Some(commit_record) = commit_record_opt {
-                            service.server_state.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await.unwrap();
-                        }
-                        Ok(())
-                    }
-                    Err(err) => return Err(HttpServiceError::State { typedb_source: Arc::new(err) })
-                };
-
-                create_result
+                
+                TypeDBService::create_user(&service.server_state, accessor, user, credential)
+                    .await
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
         )
         .await
@@ -500,7 +467,7 @@ impl TypeDBService {
 
     async fn users_update(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         accessor: Accessor,
         user_path: UserPath,
         JsonBody(payload): JsonBody<UpdateUserPayload>,
@@ -513,9 +480,8 @@ impl TypeDBService {
                 let user_update = None; // updating username is not supported now
                 let credential_update = Some(Credential::new_password(&payload.password));
                 let username = user_path.username.as_str();
-                service
-                    .server_state
-                    .users_update(username, user_update, credential_update, accessor)
+
+                TypeDBService::update_user(&service.server_state, accessor, username, user_update, credential_update)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -525,7 +491,7 @@ impl TypeDBService {
 
     async fn users_delete(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         accessor: Accessor,
         user_path: UserPath,
     ) -> impl IntoResponse {
@@ -535,9 +501,8 @@ impl TypeDBService {
             ActionKind::UsersDelete,
             || async {
                 let username = user_path.username.as_str();
-                service
-                    .server_state
-                    .users_delete(username, accessor)
+                
+                TypeDBService::delete_user(&service.server_state, accessor, username)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -547,7 +512,7 @@ impl TypeDBService {
 
     async fn transaction_open(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         Accessor(accessor): Accessor,
         JsonBody(payload): JsonBody<TransactionOpenPayload>,
     ) -> impl IntoResponse {
@@ -567,7 +532,7 @@ impl TypeDBService {
 
     async fn transactions_commit(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         Accessor(accessor): Accessor,
         path: TransactionPath,
     ) -> impl IntoResponse {
@@ -591,7 +556,7 @@ impl TypeDBService {
 
     async fn transactions_close(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         Accessor(accessor): Accessor,
         path: TransactionPath,
     ) -> impl IntoResponse {
@@ -617,7 +582,7 @@ impl TypeDBService {
 
     async fn transactions_rollback(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         Accessor(accessor): Accessor,
         path: TransactionPath,
     ) -> impl IntoResponse {
@@ -641,7 +606,7 @@ impl TypeDBService {
 
     async fn transactions_analyse_query(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         Accessor(accessor): Accessor,
         path: TransactionPath,
         JsonBody(payload): JsonBody<TransactionQueryPayload>,
@@ -666,7 +631,7 @@ impl TypeDBService {
 
     async fn transactions_query(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         Accessor(accessor): Accessor,
         path: TransactionPath,
         JsonBody(payload): JsonBody<TransactionQueryPayload>,
@@ -696,7 +661,7 @@ impl TypeDBService {
 
     async fn query(
         _version: ProtocolVersion,
-        State(service): State<Arc<TypeDBService>>,
+        State(service): State<Arc<HTTPTypeDBService>>,
         Accessor(accessor): Accessor,
         JsonBody(payload): JsonBody<QueryPayload>,
     ) -> impl IntoResponse {

@@ -68,6 +68,10 @@ impl Accessor {
     pub fn from_extensions(extensions: &Extensions) -> Result<Self, AuthenticationError> {
         extensions.get::<Self>().cloned().ok_or_else(|| AuthenticationError::CorruptedAccessor {})
     }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
 // CAREFUL: Do not reorder these errors as we depend on errors codes in drivers.
