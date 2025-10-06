@@ -506,7 +506,7 @@ fn encode_role_as_vertex(
         // At present rolename could resolve to multiple types - Manually encode.
         // error::todo_must_implement!("This should encode rolename");
         let label = structure_vertex::Label {
-            label: Some(structure_vertex::label::Label::FailedInference(label.to_owned()))
+            label: Some(structure_vertex::label::Label::Unresolved(label.to_owned()))
         };
         Ok(typedb_protocol::conjunction_structure::StructureVertex {
             vertex: Some(structure_vertex::Vertex::Label(label))
@@ -534,15 +534,15 @@ fn encode_structure_vertex_label_or_variable(
         Vertex::Variable(_) => encode_structure_vertex_variable(vertex),
         Vertex::Label(label) => {
             let encoded_type = if let Some(type_) = context.get_type(label) {
-                let resolved = encode_structure_vertex_label(context.snapshot, context.type_manager, &type_)?;
+                let resolved = encode_type(&type_, context.snapshot, context.type_manager)?;
                 structure_vertex::label::Label::Resolved(resolved)
             } else if let Some(type_) = get_type_annotation_from_label(context.snapshot, context.type_manager, label)? {
-                let resolved = encode_structure_vertex_label(context.snapshot, context.type_manager, &type_)?;
+                let resolved = encode_type(&type_, context.snapshot, context.type_manager)?;
                 structure_vertex::label::Label::Resolved(resolved)
             } else {
                 debug_assert!(false, "Is this reachable?");
                 let unresolved = label.scoped_name.as_str().to_owned();
-                structure_vertex::label::Label::FailedInference(unresolved)
+                structure_vertex::label::Label::Unresolved(unresolved)
             };
             let label = structure_vertex::Label { label: Some(encoded_type) };
             Ok(typedb_protocol::conjunction_structure::StructureVertex {
@@ -567,28 +567,6 @@ fn encode_structure_vertex_value_or_variable(
         }
         Vertex::Label(_) => unreachable!("Expected variable or value"),
     }
-}
-
-fn encode_structure_vertex_label(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    type_: &Type,
-) -> Result<typedb_protocol::Type, Box<ConceptReadError>> {
-    let encoded = match type_ {
-        Type::Entity(entity) => {
-            typedb_protocol::r#type::Type::EntityType(encode_entity_type(entity, snapshot, type_manager).unwrap())
-        }
-        Type::Relation(relation) => {
-            typedb_protocol::r#type::Type::RelationType(encode_relation_type(relation, snapshot, type_manager)?)
-        }
-        Type::Attribute(attribute) => {
-            typedb_protocol::r#type::Type::AttributeType(encode_attribute_type(attribute, snapshot, type_manager)?)
-        }
-        Type::RoleType(role) => {
-            typedb_protocol::r#type::Type::RoleType(encode_role_type(role, snapshot, type_manager)?)
-        }
-    };
-    Ok(typedb_protocol::Type { r#type: Some(encoded) })
 }
 
 fn encode_ir_value_type(
