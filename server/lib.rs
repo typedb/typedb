@@ -106,7 +106,10 @@ impl ServerBuilder {
                     shutdown_receiver.clone(),
                 )
                 .await?;
-                server_state.initialise_and_load().await.map_err(|error| ServerOpenError::ServerState { typedb_source: error })?;
+                server_state
+                    .initialise_and_load()
+                    .await
+                    .map_err(|error| ServerOpenError::ServerState { typedb_source: error })?;
                 Arc::new(server_state)
             }
         };

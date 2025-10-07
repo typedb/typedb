@@ -14,7 +14,7 @@ use std::{
 use macro_rules_attribute::apply;
 use resource::distribution_info::DistributionInfo;
 use server::{parameters::config::ConfigBuilder, Server, ServerBuilder};
-use test_utils::{create_tmp_dir, TempDir};
+use test_utils::{create_tmp_storage_dir, TempDir};
 use tokio::sync::OnceCell;
 
 use crate::{generic_step, Context};
@@ -38,7 +38,7 @@ pub async fn typedb_starts(context: &mut Context) {
         .get_or_init(|| async {
             let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
             let shutdown_sender_clone = shutdown_sender.clone();
-            let server_dir = create_tmp_dir();
+            let server_dir = create_tmp_storage_dir();
             let config = ConfigBuilder::from_file(config_path())
                 .expect("Failed to load config file")
                 .server_address(ADDRESS)

@@ -27,7 +27,7 @@ use storage::{
     },
 };
 use tracing::Level;
-use storage::durability_client::WALClient;
+
 use crate::Database;
 
 #[derive(Debug)]
@@ -185,7 +185,9 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         self.profile.commit_profile().start();
 
         let (mut profile, (database, snapshot)) = match self.finalise() {
-            (profile, Ok(DataCommitIntent { database_drop_guard, write_snapshot } )) => (profile, (database_drop_guard, write_snapshot)),
+            (profile, Ok(DataCommitIntent { database_drop_guard, write_snapshot })) => {
+                (profile, (database_drop_guard, write_snapshot))
+            }
             (profile, Err(error)) => return (profile, Err(error)),
         };
         let result = database.data_commit_with_snapshot(snapshot, profile.commit_profile());
@@ -269,9 +271,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
     }
 
-    pub fn finalise(
-        self,
-    ) -> (TransactionProfile, Result<SchemaCommitIntent<D>, SchemaCommitError>) {
+    pub fn finalise(self) -> (TransactionProfile, Result<SchemaCommitIntent<D>, SchemaCommitError>) {
         use SchemaCommitError::{ConceptWriteErrorsFirst, FunctionError};
 
         let mut profile = self.profile;
@@ -307,7 +307,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         drop(type_manager);
-        (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot}))
+        (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot }))
     }
 
     // TODO: remove this method and update the test accordingly
@@ -318,7 +318,9 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             (profile, Ok(commit_intent)) => (profile, commit_intent),
             (profile, Err(error)) => return (profile, Err(error)),
         };
-        let result = commit_intent.database_drop_guard.schema_commit_with_snapshot(commit_intent.schema_snapshot, profile.commit_profile());
+        let result = commit_intent
+            .database_drop_guard
+            .schema_commit_with_snapshot(commit_intent.schema_snapshot, profile.commit_profile());
         profile.commit_profile().end();
         (profile, result)
     }
@@ -368,12 +370,12 @@ macro_rules! with_transaction_parts {
 
 pub struct SchemaCommitIntent<D> {
     pub database_drop_guard: DatabaseDropGuard<D>,
-    pub schema_snapshot: SchemaSnapshot<D>
+    pub schema_snapshot: SchemaSnapshot<D>,
 }
 
 pub struct DataCommitIntent<D> {
     pub database_drop_guard: DatabaseDropGuard<D>,
-    pub write_snapshot: WriteSnapshot<D>
+    pub write_snapshot: WriteSnapshot<D>,
 }
 
 pub struct DatabaseDropGuard<D> {

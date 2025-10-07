@@ -73,12 +73,12 @@ features = {}
 
 	[dependencies.regex]
 		features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
-		version = "1.11.1"
+		version = "1.11.3"
 		default-features = false
 
 	[dependencies.chrono-tz]
 		features = ["case-insensitive", "default", "std"]
-		version = "0.9.0"
+		version = "0.10.3"
 		default-features = false
 
 	[dependencies.answer]
@@ -99,7 +99,7 @@ features = {}
 
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-		version = "0.4.41"
+		version = "0.4.40"
 		default-features = false
 
 [[test]]
