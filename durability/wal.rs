@@ -49,9 +49,9 @@ impl WAL {
         let directory = directory.as_ref().to_owned();
         let wal_dir = directory.join(Self::WAL_DIR_NAME);
         if wal_dir.exists() {
-            Err(WALError::CreateErrorDirectoryExists { directory: wal_dir.clone() })?
+            Err(WALError::CreateDirectoryExists { directory: wal_dir.clone() })?
         } else {
-            fs::create_dir_all(wal_dir.clone()).map_err(|err| WALError::CreateError { source: Arc::new(err) })?;
+            fs::create_dir_all(wal_dir.clone()).map_err(|err| WALError::Create { source: Arc::new(err) })?;
         }
 
         let files = Files::open(wal_dir.clone())?;
@@ -75,7 +75,7 @@ impl WAL {
         let directory = directory.as_ref().to_owned();
         let wal_dir = directory.join(Self::WAL_DIR_NAME);
         if !wal_dir.exists() {
-            Err(WALError::LoadErrorDirectoryMissing { directory: wal_dir.clone() })?
+            Err(WALError::LoadDirectoryMissing { directory: wal_dir.clone() })?
         }
         let files = Files::open(wal_dir.clone())?;
 
@@ -191,7 +191,7 @@ impl DurabilityService for WAL {
         let mut files = self.files.write().unwrap();
         files.truncate_from(sequence_number)?;
         // TODO: Should we not fsync the while directory instead since it got deleted files?
-        files.sync_all();
+        files.sync_all()?;
         self.next_sequence_number.store(sequence_number.number(), Ordering::SeqCst);
         Ok(())
     }
@@ -213,12 +213,13 @@ impl DurabilityService for WAL {
 
 #[derive(Debug, Clone)]
 pub enum WALError {
-    CreateError { source: Arc<io::Error> },
-    CreateErrorDirectoryExists { directory: PathBuf },
-    LoadError { source: Arc<io::Error> },
-    LoadErrorDirectoryMissing { directory: PathBuf },
+    Create { source: Arc<io::Error> },
+    CreateDirectoryExists { directory: PathBuf },
+    Load { source: Arc<io::Error> },
+    LoadDirectoryMissing { directory: PathBuf },
     Compression { source: Arc<io::Error> },
     Decompression { source: Arc<io::Error> },
+    Sync { source: Arc<io::Error> },
 }
 
 impl fmt::Display for WALError {
@@ -230,12 +231,13 @@ impl fmt::Display for WALError {
 impl Error for WALError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::CreateError { source, .. } => Some(source),
-            Self::CreateErrorDirectoryExists { .. } => None,
-            Self::LoadError { source, .. } => Some(source),
-            Self::LoadErrorDirectoryMissing { .. } => None,
+            Self::Create { source, .. } => Some(source),
+            Self::CreateDirectoryExists { .. } => None,
+            Self::Load { source, .. } => Some(source),
+            Self::LoadDirectoryMissing { .. } => None,
             Self::Compression { source, .. } => Some(source),
             Self::Decompression { source, .. } => Some(source),
+            Self::Sync { source, .. } => Some(source),
         }
     }
 }
@@ -310,8 +312,26 @@ impl Files {
         Ok(())
     }
 
-    pub(crate) fn sync_all(&mut self) {
-        self.files.last_mut().unwrap().writer().unwrap().get_mut().sync_all().unwrap()
+    pub(crate) fn sync_all(&mut self) -> Result<(), DurabilityServiceError> {
+        self.files
+            .last_mut()
+            .expect("Expected at least one file")
+            .writer()
+            .expect("Expected file writer on sync all")
+            .get_mut()
+            .sync_all()
+            .map_err(|err| WALError::Sync { source: Arc::new(err) })?;
+        self.sync_directory_best_effort();
+        Ok(())
+    }
+
+    fn sync_directory_best_effort(&mut self) {
+        // This works on Unix-like systems but is effectively a noop on Windows
+        // since FlushFileBuffers don't support directory handles
+        // TODO: This requires additional testing on Windows and probably a separate OS-specific impl
+        if let Ok(dir) = StdFile::open(&self.directory) {
+            let _ = dir.sync_all();
+        }
     }
 
     fn iter(&self) -> impl DoubleEndedIterator<Item = &File> {
@@ -667,7 +687,7 @@ impl FsyncThread {
         let vec_lock = context.signalling.get(current_signal as usize).unwrap().lock();
         let mut vec = vec_lock.unwrap();
         if !vec.is_empty() {
-            context.files.write().unwrap().sync_all();
+            context.files.write().unwrap().sync_all().expect("Expected sync all");
             while let Some(sender_opt) = vec.pop() {
                 if let Some(sender) = sender_opt {
                     sender.send(()).unwrap();
