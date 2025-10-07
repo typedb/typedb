@@ -167,7 +167,7 @@ fn annotate_some(
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
         FetchSome::SingleAttribute(FetchSingleAttribute { variable, attribute }) => {
             let variable_name = variable_registry.get_variable_name(variable)
-                .expect("Fetched variable names were validated during translation");
+                .expect("Expected fetched variable names to be validated during translation");
             let attribute_type = type_manager
                 .get_attribute_type(snapshot, &attribute)
                 .map_err(|err| AnnotationError::ConceptRead { typedb_source: err })?
@@ -240,7 +240,7 @@ fn annotate_some(
         }
         FetchSome::ListAttributesAsList(FetchListAttributeAsList { variable, attribute }) => {
             let variable_name = variable_registry.get_variable_name(variable)
-                .expect("Fetched variable names were validated during translation");
+                .expect("Expected fetched variable names to be validated during translation");
             let attribute_type = type_manager
                 .get_attribute_type(snapshot, &attribute)
                 .map_err(|err| AnnotationError::ConceptRead { typedb_source: err })?
