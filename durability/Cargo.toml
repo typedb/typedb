@@ -15,42 +15,66 @@ features = {}
 [dev-dependencies]
 
 	[dev-dependencies.rand]
-		workspace = true
+		features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
+		version = "0.8.5"
+		default-features = false
 
 	[dev-dependencies.criterion]
-		workspace = true
+		features = ["cargo_bench_support", "default", "plotters", "rayon"]
+		version = "0.5.1"
+		default-features = false
 
 	[dev-dependencies.bincode]
-		workspace = true
+		features = []
+		version = "1.3.3"
+		default-features = false
 
 	[dev-dependencies.tempdir]
-		workspace = true
+		features = []
+		version = "0.3.7"
+		default-features = false
 
 	[dev-dependencies.durability_test_common]
-		workspace = true
+		path = "../durability/tests/common"
+		features = []
+		default-features = false
 
 [dependencies]
 
 	[dependencies.tracing]
-		workspace = true
+		features = ["attributes", "default", "log", "std", "tracing-attributes"]
+		version = "0.1.41"
+		default-features = false
 
 	[dependencies.resource]
-		workspace = true
+		path = "../resource"
+		features = []
+		default-features = false
 
 	[dependencies.serde]
-		workspace = true
+		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
+		version = "1.0.228"
+		default-features = false
 
 	[dependencies.logger]
-		workspace = true
+		path = "../common/logger"
+		features = []
+		default-features = false
 
 	[dependencies.lz4]
-		workspace = true
+		features = []
+		version = "1.28.1"
+		default-features = false
 
 	[dependencies.error]
-		workspace = true
+		path = "../common/error"
+		features = []
+		default-features = false
 
 	[dependencies.itertools]
-		workspace = true
+		features = ["default", "use_alloc", "use_std"]
+		version = "0.10.5"
+		default-features = false
 
 [[bench]]
 	name = "throughput"

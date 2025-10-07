@@ -24,7 +24,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
     MVCCStorage,
 };
-use test_utils::{create_tmp_dir, init_logging};
+use test_utils::{create_tmp_storage_dir, init_logging};
 
 use self::TestKeyspaceSet::Keyspace;
 
@@ -135,17 +135,17 @@ fn criterion_benchmark(c: &mut Criterion) {
     const INITIAL_KEY_COUNT: usize = 10_000; // 10 million = approximately 0.2 GB of keys
     println!("In cirterion benchmark");
     {
-        let storage_path = create_tmp_dir();
+        let storage_path = create_tmp_storage_dir();
         let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
         c.bench_function("snapshot_read_get", |b| b.iter(|| bench_snapshot_read_get(storage.clone(), Keyspace)));
     }
     // {
-    //     let storage_path = create_tmp_dir();
+    //     let storage_path = create_tmp_storage_dir();
     //     let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
     //     c.bench_function("snapshot_write_put", |b| b.iter(|| bench_snapshot_write_put(&storage, Keyspace, 100)));
     // }
     // {
-    //     let storage_path = create_tmp_dir();
+    //     let storage_path = create_tmp_storage_dir();
     //     let storage = setup_storage(&storage_path, INITIAL_KEY_COUNT);
     //     c.bench_function("snapshot_read_iterate", |b| b.iter(|| bench_snapshot_read_iterate::<1>(&storage, Keyspace)));
     // }

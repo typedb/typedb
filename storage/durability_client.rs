@@ -95,6 +95,8 @@ pub trait DurabilityClient {
         &self,
     ) -> Result<Option<Record>, DurabilityClientError>;
 
+    fn truncate_from(&self, sequence_number: SequenceNumber) -> Result<(), DurabilityClientError>;
+
     fn delete_durability(self) -> Result<(), DurabilityClientError>;
 
     fn reset(&mut self) -> Result<(), DurabilityClientError>;
@@ -199,6 +201,10 @@ impl DurabilityClient for WALClient {
             Ok(None) => Ok(None),
             Err(err) => Err(DurabilityClientError::ServiceError { source: err }),
         }
+    }
+
+    fn truncate_from(&self, sequence_number: SequenceNumber) -> Result<(), DurabilityClientError> {
+        self.wal.truncate_from(sequence_number).map_err(|err| DurabilityClientError::ServiceError { source: err })
     }
 
     fn delete_durability(self) -> Result<(), DurabilityClientError> {

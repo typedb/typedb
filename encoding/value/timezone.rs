@@ -114,6 +114,7 @@ impl fmt::Display for TimeZone {
 macro_rules! tz_to_number {
     ($($id:literal => $tz:path),+ $(,)?) => {
         pub(crate) const NUM_TZS: u32 = 596;
+        pub(crate) const NUM_TZS: u32 = 597;
         const _: () = {
             // NOTE: if this breaks, that means a new timezone has been added to the IANA database.
             // The new timezone(s) MUST be added to the END of the list below in order to preserve the data integrity.
@@ -731,4 +732,5 @@ tz_to_number! {
     593 => Tz::WSU,
     594 => Tz::WET,
     595 => Tz::Zulu,
+    596 => Tz::America__Coyhaique,
 }

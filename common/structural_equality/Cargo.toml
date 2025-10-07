@@ -15,11 +15,18 @@ features = {}
 [dependencies]
 
 	[dependencies.serde]
-		workspace = true
+		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
+		version = "1.0.228"
+		default-features = false
 
 	[dependencies.typeql]
-		workspace = true
+		features = []
+		git = "https://github.com/typedb/typeql"
+		tag = "3.8.0"
+		default-features = false
 
 	[dependencies.paste]
-		workspace = true
+		features = []
+		version = "1.0.15"
+		default-features = false
 

@@ -15,35 +15,58 @@ features = {}
 [dependencies]
 
 	[dependencies.test_utils]
-		workspace = true
+		path = "../../../../util/test"
+		features = []
+		default-features = false
 
 	[dependencies.regex]
-		workspace = true
+		features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
+		version = "1.11.3"
+		default-features = false
 
 	[dependencies.chrono-tz]
-		workspace = true
+		features = ["case-insensitive", "default", "std"]
+		version = "0.10.3"
+		default-features = false
 
 	[dependencies.cucumber]
-		workspace = true
+		features = ["default", "macros"]
+		version = "0.19.1"
+		default-features = false
 
 	[dependencies.concept]
-		workspace = true
+		path = "../../../../concept"
+		features = []
+		default-features = false
 
 	[dependencies.ir]
-		workspace = true
+		path = "../../../../ir"
+		features = []
+		default-features = false
 
 	[dependencies.typeql]
-		workspace = true
+		features = []
+		git = "https://github.com/typedb/typeql"
+		tag = "3.8.0"
+		default-features = false
 
 	[dependencies.storage]
-		workspace = true
+		path = "../../../../storage"
+		features = []
+		default-features = false
 
 	[dependencies.encoding]
-		workspace = true
+		path = "../../../../encoding"
+		features = []
+		default-features = false
 
 	[dependencies.chrono]
-		workspace = true
+		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
+		version = "0.4.40"
+		default-features = false
 
 	[dependencies.itertools]
-		workspace = true
+		features = ["default", "use_alloc", "use_std"]
+		version = "0.10.5"
+		default-features = false
 

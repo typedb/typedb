@@ -15,10 +15,10 @@ use database::{
     Database, DatabaseDeleteError,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use itertools::Itertools;
 use error::typedb_error;
 use futures::{StreamExt, TryFutureExt};
 use ir::pipeline::FunctionReadError;
+use itertools::Itertools;
 use options::TransactionOptions;
 use resource::{
     constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo, profile::CommitProfile,
@@ -27,9 +27,7 @@ use storage::{
     durability_client::{DurabilityClient, WALClient},
     isolation_manager::CommitRecord,
 };
-use system::{
-    concepts::{Credential, User},
-};
+use system::concepts::{Credential, User};
 use tokio::{net::lookup_host, sync::watch::Receiver};
 use user::{
     errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError},
@@ -43,8 +41,8 @@ use crate::{
     parameters::config::{Config, DiagnosticsConfig},
     service::export_service::{get_transaction_schema, get_transaction_type_schema},
     status::{LocalServerStatus, ServerStatus},
+    system_init::SYSTEM_DB,
 };
-use crate::system_init::SYSTEM_DB;
 
 pub type DynServerState = dyn ServerState + Send + Sync;
 pub type ArcServerState = Arc<DynServerState>;
@@ -103,7 +101,7 @@ pub trait ServerState: Debug {
     async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError>;
 
     async fn users_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
-    
+
     async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError>;
 
     async fn token_create(&self, username: String, password: String) -> Result<String, ArcServerStateError>;
@@ -188,12 +186,12 @@ impl LocalServerState {
     }
 
     pub async fn initialise(&self) -> Result<(), ArcServerStateError> {
-        let system_database = if let Some(system_database) =
-            self.database_manager().await.database_unrestricted(SYSTEM_DB) {
-            system_database
-        } else {
-            crate::system_init::initialise_system_database(self).await?
-        };
+        let system_database =
+            if let Some(system_database) = self.database_manager().await.database_unrestricted(SYSTEM_DB) {
+                system_database
+            } else {
+                crate::system_init::initialise_system_database(self).await?
+            };
 
         let user_manager = Arc::new(UserManager::new(system_database));
         crate::system_init::initialise_default_user(&user_manager, self).await?;

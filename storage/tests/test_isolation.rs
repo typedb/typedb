@@ -21,7 +21,7 @@ use storage::{
     snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
     MVCCStorage, StorageCommitError,
 };
-use test_utils::{create_tmp_dir, init_logging};
+use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_storage::{create_storage, load_storage, test_keyspace_set};
 
 use self::TestKeyspaceSet::Keyspace;
@@ -55,7 +55,7 @@ fn setup_storage(path: &Path) -> Arc<MVCCStorage<WALClient>> {
 #[test]
 fn commits_isolated() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
@@ -91,7 +91,7 @@ fn commits_isolated() {
 #[test]
 fn g0_update_conflicts_fail() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
@@ -120,7 +120,7 @@ fn g0_dirty_writes() {
     // With snapshots, all writes happen together at commit time.
     // Hence, all writes of t_i happen before t_j or vice-versa, and no ww-ww cycles are possible
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
@@ -187,7 +187,7 @@ fn g1a_aborted_writes() {
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let value_1_0 = ByteArray::inline([10], 1);
     let value_1_1 = ByteArray::inline([11], 1);
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
@@ -211,7 +211,7 @@ fn g1b_intermediate_read() {
     let value_1_0 = ByteArray::inline([10], 1);
     let value_1_1i = ByteArray::inline([111], 1);
     let value_1_1f = ByteArray::inline([112], 1);
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
@@ -240,7 +240,7 @@ fn g1c_circular_info_flow() {
     let value_1_1 = ByteArray::inline([11], 1);
     let value_2_0 = ByteArray::inline([20], 1);
     let value_2_2 = ByteArray::inline([22], 1);
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
@@ -268,7 +268,7 @@ fn p4_g_cursor_lost_update() {
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let value_0 = ByteArray::inline([0], 1);
 
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
@@ -308,7 +308,7 @@ fn g_single_read_skew() {
     let value_2_0 = ByteArray::inline([20], 1);
     let value_2_2 = ByteArray::inline([22], 1);
 
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
@@ -343,7 +343,7 @@ fn g2_item_write_skew_disjoint_read() {
     let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
     let value_0 = ByteArray::inline([10], 1);
     let value_1 = ByteArray::inline([11], 1);
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
@@ -390,7 +390,7 @@ fn g2_predicate_anti_dependency_cycles() {
     let prefix = KeyRange::new_within(StorageKey::Array(key_prefix), false);
     let value_31 = ByteArray::inline([30], 1);
     let value_42 = ByteArray::inline([42], 1);
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
@@ -436,7 +436,7 @@ fn g2_antidependency_cycles_fekete() {
     let value_1_0 = ByteArray::inline([10], 1);
     let value_2_0 = ByteArray::inline([20], 1);
     let value_1_3 = ByteArray::inline([13], 1);
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
@@ -489,7 +489,7 @@ fn otv() {
     let value_2_0 = ByteArray::inline([20], 1);
     let value_2_1 = ByteArray::inline([21], 1);
     let value_2_2 = ByteArray::inline([22], 1);
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
@@ -593,7 +593,7 @@ fn imp_commit_delete_first() {
     //  t_delete performs "delete (k,v) where v == 20"
     // By our implementation, committing the update first and delete second looks correct.
     // But committing the delete first and update second leaves both keys present.
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = imp_setup(&storage_path);
     let mut snapshot_update = storage.clone().open_snapshot_write();
     let mut snapshot_delete = storage.clone().open_snapshot_write();
@@ -609,7 +609,7 @@ fn imp_commit_delete_first() {
 
 #[test]
 fn imp_commit_update_first() {
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = imp_setup(&storage_path);
     let mut snapshot_update = storage.clone().open_snapshot_write();
     let mut snapshot_delete = storage.clone().open_snapshot_write();
@@ -626,7 +626,7 @@ fn imp_commit_update_first() {
 #[test]
 fn isolation_manager_reads_evicted_from_disk() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = setup_storage(&storage_path);
     let key_1 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_2));
@@ -681,7 +681,7 @@ fn isolation_manager_correctly_recovers_from_disk() {
     let key_1 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_1));
     let value_1 = ByteArray::copy(&VALUE_1);
 
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let watermark_after_one_commit = {
         let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
         let mut snapshot = storage.clone().open_snapshot_write();

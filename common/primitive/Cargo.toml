@@ -15,5 +15,7 @@ features = {}
 [dependencies]
 
 	[dependencies.serde]
-		workspace = true
+		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
+		version = "1.0.228"
+		default-features = false
 
