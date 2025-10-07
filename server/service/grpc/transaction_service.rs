@@ -413,7 +413,8 @@ impl TransactionService {\
 
         let database_name = open_req.database;
         let database = self
-            .server_state.databases_get(database_name.as_ref())
+            .server_state
+            .databases_get(database_name.as_ref())
             .await
             .map_err(|typedb_source| typedb_source.into_error_message().into_status())?
             .ok_or_else(|| {
@@ -506,7 +507,8 @@ impl TransactionService {\
                 );
                 let (mut profile, into_commit_record_result) = match transaction.finalise() {
                     (mut profile, Ok(commit_intent)) => {
-                        let into_commit_record_result = commit_intent.write_snapshot
+                        let into_commit_record_result = commit_intent
+                            .write_snapshot
                             .finalise(profile.commit_profile())
                             .map(|commit_record_opt| (commit_intent.database_drop_guard, commit_record_opt))
                             .map_err(|typedb_source| DataCommitError::SnapshotError { typedb_source });
@@ -545,7 +547,8 @@ impl TransactionService {\
                 );
                 let (mut profile, into_commit_record_result) = match transaction.finalise() {
                     (mut profile, Ok(commit_intent)) => {
-                        let into_commit_record_result = commit_intent.schema_snapshot
+                        let into_commit_record_result = commit_intent
+                            .schema_snapshot
                             .finalise(profile.commit_profile())
                             .map(|commit_record_opt| (commit_intent.database_drop_guard, commit_record_opt))
                             .map_err(|error| SchemaCommitError::SnapshotError { typedb_source: error });

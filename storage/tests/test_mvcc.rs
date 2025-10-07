@@ -28,7 +28,7 @@ use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
-use test_utils::{create_tmp_dir, init_logging};
+use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_storage::{create_storage, test_keyspace_set};
 use TestKeyspaceSet::Keyspace;
 
@@ -45,7 +45,7 @@ const VALUE_2: [u8; 1] = [0x2];
 #[test]
 fn test_commit_increments_watermark() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
     let wm_initial = storage.snapshot_watermark();
     let mut snapshot_0 = storage.clone().open_snapshot_write();
@@ -59,7 +59,7 @@ fn test_commit_increments_watermark() {
 #[test]
 fn test_reading_snapshots() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(Keyspace, &KEY_1));
@@ -109,7 +109,7 @@ fn test_reading_snapshots() {
 fn test_conflicting_update_fails() {
     // TODO: Why does this exist if we have separate isolation tests?
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1 = StorageKey::new_owned(Keyspace, ByteArray::copy(&KEY_1));
@@ -145,7 +145,7 @@ fn test_conflicting_update_fails() {
 #[test]
 fn test_open_snapshot_write_at() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(Keyspace, &KEY_1));

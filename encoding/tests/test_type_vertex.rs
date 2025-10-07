@@ -27,7 +27,7 @@ use storage::{
     snapshot::{CommittableSnapshot, WritableSnapshot},
     MVCCStorage,
 };
-use test_utils::{create_tmp_dir, init_logging};
+use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;
 
 pub struct MockEntityType {
@@ -130,7 +130,7 @@ fn max_entity_type_vertexes() {
 #[test]
 fn loading_storage_assigns_next_vertex() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     {
         let wal = WAL::create(&storage_path).unwrap();
         let _ = Arc::new(
