@@ -365,7 +365,7 @@ impl Database<WALClient> {
 
         fs::create_dir(path).map_err(|source| DirectoryCreate { name: name.to_string(), source: Arc::new(source) })?;
 
-        let wal = WAL::create(path).map_err(|error| WALOpen { source: error })?;
+        let wal = WAL::create(path).map_err(|source| WALOpen { source })?;
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
 
@@ -431,7 +431,7 @@ impl Database<WALClient> {
         );
 
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
-        let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
+        let wal = WAL::load(path).map_err(|source| WALOpen { source })?;
         let wal_last_sequence_number = wal.previous();
 
         let mut wal_client = WALClient::new(wal);
@@ -453,7 +453,7 @@ impl Database<WALClient> {
         let mut thing_statistics = storage
             .durability()
             .find_last_unsequenced_type::<Statistics>()
-            .map_err(|err| DurabilityClientRead { typedb_source: err })?
+            .map_err(|typedb_source| DurabilityClientRead { typedb_source })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
         event!(
             Level::TRACE,
@@ -646,7 +646,7 @@ typedb_error! {
         DirectoryCreate(3, "Error creating directory for '{name}'", name: String, source: Arc<io::Error>),
         StorageOpen(4, "Error opening storage layer.", typedb_source: StorageOpenError),
         WALOpen(5, "Error opening WAL.", source: DurabilityServiceError),
-        DurabilityClientOpen(6, "Error opening durability client.", typedb_source:DurabilityClientError),
+        DurabilityClientOpen(6, "Error opening durability client.", typedb_source: DurabilityClientError),
         DurabilityClientRead(7, "Error reading from durability client.", typedb_source: DurabilityClientError),
         CheckpointLoad(8, "Error loading checkpoint for database '{name}'.", name: String, typedb_source: CheckpointLoadError),
         CheckpointCreate(9, "Error creating checkpoint for database '{name}'.", name: String, source: CheckpointCreateError),

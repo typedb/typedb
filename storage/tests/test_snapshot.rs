@@ -18,7 +18,7 @@ use storage::{
     key_value::{StorageKey, StorageKeyArray},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
-use test_utils::{create_tmp_dir, init_logging};
+use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_storage::{create_storage, test_keyspace_set};
 
 use self::TestKeyspaceSet::Keyspace;
@@ -29,7 +29,7 @@ test_keyspace_set! {
 #[test]
 fn snapshot_buffered_put_get() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let mut snapshot = storage.open_snapshot_write();
@@ -60,7 +60,7 @@ fn snapshot_buffered_put_get() {
 #[test]
 fn snapshot_buffered_put_iterate() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let mut snapshot = storage.open_snapshot_write();
@@ -84,7 +84,7 @@ fn snapshot_buffered_put_iterate() {
 #[test]
 fn snapshot_buffered_delete() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let mut snapshot = storage.open_snapshot_write();
@@ -113,7 +113,7 @@ fn snapshot_buffered_delete() {
 #[test]
 fn snapshot_read_through() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1]));
@@ -160,7 +160,7 @@ fn snapshot_read_through() {
 #[test]
 fn snapshot_read_buffered_delete_of_persisted_key() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0]));
@@ -218,7 +218,7 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
 #[test]
 fn snapshot_delete_reinserted() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1]));

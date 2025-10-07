@@ -5,16 +5,19 @@
  */
 
 use std::sync::Arc;
+
 use storage::snapshot::CommittableSnapshot;
-use user::errors::{UserCreateError, UserDeleteError, UserUpdateError};
-use user::permission_manager::PermissionManager;
+use user::{
+    errors::{UserCreateError, UserDeleteError, UserUpdateError},
+    permission_manager::PermissionManager,
+};
+
 use crate::{
     authentication::Accessor,
-    error::LocalServerStateError,
+    error::{ArcServerStateError, LocalServerStateError},
     state::ArcServerState,
+    system_init::SYSTEM_DB,
 };
-use crate::error::ArcServerStateError;
-use crate::system_init::SYSTEM_DB;
 
 pub struct TypeDBService;
 
@@ -29,20 +32,17 @@ impl TypeDBService {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
-        let user_manager = server_state.user_manager().await
-            .ok_or(LocalServerStateError::NotInitialised {})?;
+        let user_manager = server_state.user_manager().await.ok_or(LocalServerStateError::NotInitialised {})?;
 
         let (mut transaction_profile, commit_intent_result) = user_manager.create(&user, &credential);
-        
+
         let commit_intent = commit_intent_result
             .map_err(|typedb_source| LocalServerStateError::UserCannotBeCreated { typedb_source })?;
 
         let commit_profile = transaction_profile.commit_profile();
-        let commit_record = commit_intent.write_snapshot
-            .finalise(commit_profile)
-            .map_err(|_error| LocalServerStateError::UserCannotBeCreated { 
-                typedb_source: UserCreateError::Unexpected { } 
-            })?;
+        let commit_record = commit_intent.write_snapshot.finalise(commit_profile).map_err(|_error| {
+            LocalServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected {} }
+        })?;
 
         if let Some(commit_record) = commit_record {
             let commit_profile = transaction_profile.commit_profile();
@@ -63,20 +63,18 @@ impl TypeDBService {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
-        let user_manager = server_state.user_manager().await
-            .ok_or(LocalServerStateError::NotInitialised {})?;
+        let user_manager = server_state.user_manager().await.ok_or(LocalServerStateError::NotInitialised {})?;
 
-        let (mut transaction_profile, commit_intent_result) = user_manager.update(username, &user_update, &credential_update);
-        
+        let (mut transaction_profile, commit_intent_result) =
+            user_manager.update(username, &user_update, &credential_update);
+
         let commit_intent = commit_intent_result
             .map_err(|typedb_source| LocalServerStateError::UserCannotBeUpdated { typedb_source })?;
 
         let commit_profile = transaction_profile.commit_profile();
-        let commit_record = commit_intent.write_snapshot
-            .finalise(commit_profile)
-            .map_err(|_error| LocalServerStateError::UserCannotBeUpdated { 
-                typedb_source: UserUpdateError::Unexpected { } 
-            })?;
+        let commit_record = commit_intent.write_snapshot.finalise(commit_profile).map_err(|_error| {
+            LocalServerStateError::UserCannotBeUpdated { typedb_source: UserUpdateError::Unexpected {} }
+        })?;
 
         if let Some(commit_record) = commit_record {
             let commit_profile = transaction_profile.commit_profile();
@@ -95,25 +93,20 @@ impl TypeDBService {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
-        let user_manager = server_state.user_manager().await
-            .ok_or(LocalServerStateError::NotInitialised {})?;
+        let user_manager = server_state.user_manager().await.ok_or(LocalServerStateError::NotInitialised {})?;
 
         let (transaction_profile_opt, commit_intent_result) = user_manager.delete(username);
-        
+
         let mut transaction_profile = transaction_profile_opt
-            .ok_or(LocalServerStateError::UserCannotBeDeleted { 
-                typedb_source: UserDeleteError::Unexpected { } 
-            })?;
+            .ok_or(LocalServerStateError::UserCannotBeDeleted { typedb_source: UserDeleteError::Unexpected {} })?;
 
         let commit_intent = commit_intent_result
             .map_err(|error| LocalServerStateError::UserCannotBeDeleted { typedb_source: error })?;
 
         let commit_profile = transaction_profile.commit_profile();
-        let commit_record = commit_intent.write_snapshot
-            .finalise(commit_profile)
-            .map_err(|_error| LocalServerStateError::UserCannotBeDeleted { 
-                typedb_source: UserDeleteError::Unexpected { } 
-            })?;
+        let commit_record = commit_intent.write_snapshot.finalise(commit_profile).map_err(|_error| {
+            LocalServerStateError::UserCannotBeDeleted { typedb_source: UserDeleteError::Unexpected {} }
+        })?;
 
         if let Some(commit_record) = commit_record {
             let commit_profile = transaction_profile.commit_profile();

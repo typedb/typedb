@@ -26,6 +26,8 @@ use crate::{
     sequence_number::SequenceNumber,
 };
 
+const TEMP_FILE_EXTENSION: &'static str = "tmp";
+
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
 /// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
 /// have to reapply commits to the keyspaces from the WAL.
@@ -54,18 +56,15 @@ impl Checkpoint {
     }
 
     pub fn add_storage(&self, keyspaces: &Keyspaces, watermark: SequenceNumber) -> Result<(), CheckpointCreateError> {
-        use CheckpointCreateError::{KeyspaceCheckpoint, MetadataFileCreate, MetadataWrite};
+        use CheckpointCreateError::{KeyspaceCheckpoint, MetadataWrite};
         keyspaces
             .checkpoint(&self.directory)
             .map_err(|error| KeyspaceCheckpoint { dir: self.directory.clone(), source: error })?;
 
         let metadata_file_path = self.directory.join(Self::STORAGE_METADATA_FILE_NAME);
-        let mut metadata_file = File::create(&metadata_file_path)
-            .map_err(|error| MetadataFileCreate { file_path: metadata_file_path.clone(), source: Arc::new(error) })?;
-        metadata_file
-            .write_all(watermark.number().to_string().as_bytes())
-            .and_then(|()| metadata_file.sync_all())
-            .map_err(|error| MetadataWrite { file_path: metadata_file_path.clone(), source: Arc::new(error) })?;
+        write_file_content_safe(&metadata_file_path, &watermark.number().to_string().as_bytes())
+            .map_err(|e| MetadataWrite { file_path: metadata_file_path, source: Arc::new(e) })?;
+
         Ok(())
     }
 
@@ -77,11 +76,14 @@ impl Checkpoint {
             return Err(ExtensionDuplicate { name: T::NAME.to_string() });
         }
 
-        let mut file =
-            File::create(path).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
-
-        data.serialise_into(&mut file)
-            .map_err(|err| ExtensionSerialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
+        let tmp = path.with_extension(TEMP_FILE_EXTENSION);
+        {
+            let mut file =
+                File::create(&tmp).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
+            data.serialise_into(&mut file)
+                .map_err(|err| ExtensionSerialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
+        }
+        fs::rename(&tmp, &path).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
 
         Ok(())
     }
@@ -193,7 +195,7 @@ fn restore_storage_from_checkpoint(keyspace_dir: PathBuf, keyspace_checkpoint_di
         let checkpoint_file = entry?.path();
         let storage_file = keyspace_dir.join(checkpoint_file.file_name().unwrap());
         if !storage_file.exists() || !is_same_file(&storage_file, &checkpoint_file)? {
-            fs::copy(checkpoint_file, storage_file)?;
+            copy_file_content_safe(&checkpoint_file, &storage_file)?;
         }
     }
 
@@ -206,11 +208,46 @@ fn find_latest_checkpoint(checkpoint_dir: &Path) -> Result<Option<PathBuf>, Chec
     }
 
     fs::read_dir(checkpoint_dir)
-        .and_then(|mut entries| entries.try_fold(None, |cur, entry| Ok(cur.max(Some(entry?.path())))))
+        .and_then(|mut entries| {
+            entries.try_fold(None, |cur, entry| {
+                let entry_path = entry?.path();
+                let is_complete =
+                    entry_path.is_dir() && entry_path.join(Checkpoint::STORAGE_METADATA_FILE_NAME).exists();
+                if !is_complete {
+                    return Ok(cur);
+                }
+                Ok(cur.max(Some(entry_path)))
+            })
+        })
         .map_err(|error| CheckpointLoadError::CheckpointRead {
             dir: checkpoint_dir.to_owned(),
             source: Arc::new(error),
         })
+}
+
+fn write_file_content_safe(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    let tmp = path.with_extension(TEMP_FILE_EXTENSION);
+    {
+        let mut tmp_file = File::create(&tmp)?;
+        tmp_file.write_all(bytes)?;
+        tmp_file.sync_all()?;
+    }
+    // The directory is not fsynced, so there is a chance that the file won't be persisted after a crash.
+    // However, if the file is found, it's correct and complete.
+    fs::rename(&tmp, path)
+}
+
+fn copy_file_content_safe(source: &Path, destination: &Path) -> io::Result<()> {
+    let tmp = destination.with_extension(TEMP_FILE_EXTENSION);
+    {
+        let mut tmp_file = File::create(&tmp)?;
+        let mut source_file = File::open(source)?;
+        std::io::copy(&mut source_file, &mut tmp_file)?;
+        tmp_file.sync_all()?;
+    }
+    // The directory is not fsynced, so there is a chance that the copied file won't be persisted.
+    // However, if the file is found, it's correct and complete.
+    fs::rename(&tmp, destination)
 }
 
 pub trait CheckpointAdditionalData: Sized {
