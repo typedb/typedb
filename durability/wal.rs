@@ -190,7 +190,6 @@ impl DurabilityService for WAL {
     fn truncate_from(&self, sequence_number: DurabilitySequenceNumber) -> Result<(), DurabilityServiceError> {
         let mut files = self.files.write().unwrap();
         files.truncate_from(sequence_number)?;
-        // TODO: Should we not fsync the while directory instead since it got deleted files?
         files.sync_all()?;
         self.next_sequence_number.store(sequence_number.number(), Ordering::SeqCst);
         Ok(())
@@ -321,16 +320,27 @@ impl Files {
             .get_mut()
             .sync_all()
             .map_err(|err| WALError::Sync { source: Arc::new(err) })?;
-        self.sync_directory_best_effort();
-        Ok(())
+        self.sync_directory_best_effort()
     }
 
-    fn sync_directory_best_effort(&mut self) {
-        // This works on Unix-like systems but is effectively a noop on Windows
-        // since FlushFileBuffers don't support directory handles
-        // TODO: This requires additional testing on Windows and probably a separate OS-specific impl
-        if let Ok(dir) = StdFile::open(&self.directory) {
-            let _ = dir.sync_all();
+    fn sync_directory_best_effort(&mut self) -> Result<(), DurabilityServiceError> {
+        #[cfg(unix)]
+        {
+            StdFile::open(&self.directory)
+                .map_err(|err| WALError::Sync { source: Arc::new(err) })?
+                .sync_all()
+                .map_err(|err| WALError::Sync { source: Arc::new(err) }.into())
+        }
+
+        #[cfg(windows)]
+        {
+            // On Windows, FlushFileBuffers doesn't support directory handles, so it's likely
+            // a noop or an error (which is ignored), but we try it for symmetry.
+            // TODO: This requires additional testing and probably a separate OS-specific impl.
+            if let Ok(dir) = StdFile::open(&self.directory) {
+                let _ = dir.sync_all();
+            }
+            Ok(())
         }
     }
 
