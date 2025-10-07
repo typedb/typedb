@@ -984,7 +984,7 @@ impl TransactionService {
                 }
                 Err(err) => ImmediateAnalyzeResponse::non_fatal_err(err),
             };
-            Self::respond_analyze_response(&self.response_sender, req_id, resp).await;
+            let _ = Self::respond_analyze_response(&self.response_sender, req_id, resp).await;
         });
     }
 
