@@ -74,10 +74,16 @@ async fn initialise_system_database_schema(
 pub async fn get_default_user_commit_record(
     user_manager: &user::user_manager::UserManager,
 ) -> Result<(TransactionProfile, Option<CommitRecord>), LocalServerStateError> {
-    let (mut transaction_profile, finalise_result) = user_manager.create(
+    let (transaction_profile_opt, finalise_result) = user_manager.create(
         &User::new(DEFAULT_USER_NAME.to_string()),
         &Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
     );
+
+    let mut transaction_profile = transaction_profile_opt
+        .ok_or(LocalServerStateError::UserCannotBeCreated {
+            typedb_source: UserCreateError::Unexpected { }
+        })?;
+
     let mut commit_profile = transaction_profile.commit_profile();
     let commit_intent =
         finalise_result.map_err(|error| LocalServerStateError::UserCannotBeCreated { typedb_source: error })?;

@@ -34,8 +34,11 @@ impl TypeDBService {
 
         let user_manager = server_state.user_manager().await.ok_or(LocalServerStateError::NotInitialised {})?;
 
-        let (mut transaction_profile, commit_intent_result) = user_manager.create(&user, &credential);
-
+        let (transaction_profile_opt, commit_intent_result) = user_manager.create(&user, &credential);
+let mut transaction_profile = transaction_profile_opt
+            .ok_or(LocalServerStateError::UserCannotBeCreated {
+                typedb_source: UserCreateError::Unexpected { }
+            })?;
         let commit_intent = commit_intent_result
             .map_err(|typedb_source| LocalServerStateError::UserCannotBeCreated { typedb_source })?;
 
