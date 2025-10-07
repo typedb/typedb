@@ -29,6 +29,7 @@ use tokio::{
 use tonic::Response;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
+
 use crate::{
     authentication::Accessor,
     error::LocalServerStateError,
@@ -504,7 +505,7 @@ impl HTTPTypeDBService {
             ActionKind::UsersDelete,
             || async {
                 let username = user_path.username.as_str();
-                
+
                 TypeDBService::delete_user(&service.server_state, accessor, username)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })

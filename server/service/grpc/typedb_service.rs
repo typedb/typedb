@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{net::SocketAddr, pin::Pin, time::Instant};
-use std::sync::Arc;
+use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
+
 use diagnostics::metrics::ActionKind;
 use itertools::Itertools;
 use resource::profile::CommitProfile;
@@ -22,6 +22,7 @@ use typedb_protocol::{
 };
 use user::{errors::UserCreateError, permission_manager::PermissionManager};
 use uuid::Uuid;
+
 use crate::{
     authentication::{Accessor, AuthenticationError},
     error::LocalServerStateError,

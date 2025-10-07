@@ -6,15 +6,9 @@
 
 use std::sync::Arc;
 
-use database::{
-    Database,
-};
-use database::transaction::DataCommitIntent;
-use resource::{
-    constants::server::DEFAULT_USER_NAME,
-    profile::{TransactionProfile},
-};
-use storage::{durability_client::WALClient};
+use database::{transaction::DataCommitIntent, Database};
+use resource::{constants::server::DEFAULT_USER_NAME, profile::TransactionProfile};
+use storage::durability_client::WALClient;
 use system::{
     concepts::{Credential, User},
     repositories::{user_repository, user_repository::SystemDBError},
@@ -50,10 +44,13 @@ impl UserManager {
         self.get(username).map(|opt| opt.is_some())
     }
 
-    pub fn create(&self, user: &User, credential: &Credential) -> (TransactionProfile, Result<DataCommitIntent<WALClient>, UserCreateError>) {
-        let (transaction_profile, create_result) = self
-            .transaction_util
-            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
+    pub fn create(
+        &self,
+        user: &User,
+        credential: &Credential,
+    ) -> (TransactionProfile, Result<DataCommitIntent<WALClient>, UserCreateError>) {
+        let (transaction_profile, create_result) = self.transaction_util.write_transaction(
+            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::create(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, user, credential)
             },
         );
@@ -70,9 +67,8 @@ impl UserManager {
         user: &Option<User>,
         credential: &Option<Credential>,
     ) -> (TransactionProfile, Result<DataCommitIntent<WALClient>, UserUpdateError>) {
-        let (transaction_profile, update_result) = self
-            .transaction_util
-            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
+        let (transaction_profile, update_result) = self.transaction_util.write_transaction(
+            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::update(
                     snapshot,
                     &type_mgr,
@@ -83,16 +79,16 @@ impl UserManager {
                     user,
                     credential,
                 )
-            });
-        let update_result = update_result
-            .map(|tuple| tuple)
-            .map_err(|_query_error| UserUpdateError::IllegalUsername {});
+            },
+        );
+        let update_result =
+            update_result.map(|tuple| tuple).map_err(|_query_error| UserUpdateError::IllegalUsername {});
         (transaction_profile, update_result)
     }
 
     pub fn delete(
         &self,
-        username: &str
+        username: &str,
     ) -> (Option<TransactionProfile>, Result<DataCommitIntent<WALClient>, UserDeleteError>) {
         if username == DEFAULT_USER_NAME {
             return (None, Err(UserDeleteError::DefaultUserCannotBeDeleted {}));
@@ -111,15 +107,14 @@ impl UserManager {
             }
         }
 
-        let (transaction_profile, delete_result) = self
-            .transaction_util
-            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
+        let (transaction_profile, delete_result) = self.transaction_util.write_transaction(
+            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::delete(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, username)
-            });
+            },
+        );
 
-        let delete_result = delete_result
-            .map(|tuple| tuple)
-            .map_err(|_query_error| UserDeleteError::IllegalUsername {});
+        let delete_result =
+            delete_result.map(|tuple| tuple).map_err(|_query_error| UserDeleteError::IllegalUsername {});
 
         (Some(transaction_profile), delete_result)
     }

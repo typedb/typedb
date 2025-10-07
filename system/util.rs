@@ -11,11 +11,11 @@ pub mod transaction_util {
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::{
         transaction::{
-            DataCommitError, DatabaseDropGuard, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite,
+            DataCommitError, DataCommitIntent, DatabaseDropGuard, SchemaCommitError, SchemaCommitIntent,
+            TransactionRead, TransactionSchema, TransactionWrite,
         },
         Database,
     };
-    use database::transaction::{DataCommitIntent, SchemaCommitIntent};
     use function::function_manager::FunctionManager;
     use options::TransactionOptions;
     use query::query_manager::QueryManager;

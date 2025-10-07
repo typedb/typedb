@@ -5,29 +5,22 @@
  */
 use std::sync::Arc;
 
-use database::{
-    transaction::{SchemaCommitError},
-    Database,
-};
+use database::{transaction::SchemaCommitError, Database};
 use resource::{
     constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD},
     internal_database_prefix,
-    profile::{TransactionProfile},
+    profile::TransactionProfile,
 };
-use storage::{
-    durability_client::WALClient,
-    isolation_manager::CommitRecord,
-    snapshot::{CommittableSnapshot},
-};
+use storage::{durability_client::WALClient, isolation_manager::CommitRecord, snapshot::CommittableSnapshot};
 use system::{
     concepts::{Credential, PasswordHash, User},
-    repositories::{SCHEMA},
+    repositories::SCHEMA,
     util::transaction_util::TransactionUtil,
 };
 
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},
-    state::{ServerState},
+    state::ServerState,
 };
 
 pub const SYSTEM_DB: &str = concat!(internal_database_prefix!(), "system");
@@ -58,10 +51,13 @@ pub async fn get_system_database_schema_commit_record(
             });
         });
     let mut commit_profile = transaction_profile.commit_profile();
-    let commit_intent = finalise_result
-        .map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;
-    let commit_record_opt = commit_intent.schema_snapshot.finalise(&mut commit_profile)
-        .map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: SchemaCommitError::SnapshotError { typedb_source: error }})?;
+    let commit_intent =
+        finalise_result.map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;
+    let commit_record_opt = commit_intent.schema_snapshot.finalise(&mut commit_profile).map_err(|error| {
+        LocalServerStateError::DatabaseSchemaCommitFailed {
+            typedb_source: SchemaCommitError::SnapshotError { typedb_source: error },
+        }
+    })?;
     Ok((transaction_profile, commit_record_opt))
 }
 
@@ -83,10 +79,13 @@ pub async fn get_default_user_commit_record(
         &Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
     );
     let mut commit_profile = transaction_profile.commit_profile();
-    let commit_intent = finalise_result
-        .map_err(|error| LocalServerStateError::UserCannotBeCreated { typedb_source: error })?;
-    let commit_record_opt = commit_intent.write_snapshot.finalise(&mut commit_profile)
-        .map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: SchemaCommitError::SnapshotError { typedb_source: error }})?;
+    let commit_intent =
+        finalise_result.map_err(|error| LocalServerStateError::UserCannotBeCreated { typedb_source: error })?;
+    let commit_record_opt = commit_intent.write_snapshot.finalise(&mut commit_profile).map_err(|error| {
+        LocalServerStateError::DatabaseSchemaCommitFailed {
+            typedb_source: SchemaCommitError::SnapshotError { typedb_source: error },
+        }
+    })?;
     Ok((transaction_profile, commit_record_opt))
 }
 
