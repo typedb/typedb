@@ -327,10 +327,7 @@ fn construct_error_message_for_unsatisfiable_edge(
     edge: &TypeInferenceEdge<'_>,
 ) -> TypeInferenceError {
     let resolve_vertex = |vertex: &Vertex<Variable>| match vertex {
-        Vertex::Variable(v) => variable_registry
-            .get_variable_name(*v)
-            .cloned()
-            .unwrap_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+        Vertex::Variable(v) => variable_registry.get_variable_name_or_unnamed(*v).to_owned(),
         Vertex::Label(label) => label.scoped_name().as_str().to_string(),
         Vertex::Parameter(_) => unreachable!("Parameters can't be involved in TypeInferenceEdges"),
     };
