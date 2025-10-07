@@ -136,18 +136,18 @@ fn validate_conjunction(
     //   it's actually only required in a sibling part of the pattern ??
     if let Some(variable) = unbound {
         return Err(Box::new(RepresentationError::UnboundVariable {
-            variable: variable_registry.get_variable_name(variable).cloned().unwrap_or(String::new()),
+            variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
             source_span: variable_registry.source_span(variable),
         }));
     }
     if let ControlFlow::Break((var, source_span)) = conjunction.find_disjoint_variable(block_context) {
-        let name = variable_registry.get_variable_name(var).unwrap().clone();
+        let name = variable_registry.get_variable_name_or_unnamed(var).to_owned();
         return Err(Box::new(RepresentationError::LocallyBoundVariableReuse { name, source_span }));
     }
 
     for (var, mode) in conjunction.variable_binding_modes() {
         if mode.is_require_prebound() && block_context.get_declaring_scope(&var) != Some(ScopeId::INPUT) {
-            let variable = variable_registry.get_variable_name(var).unwrap().clone();
+            let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
             let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
             return Err(Box::new(RepresentationError::UnboundRequiredVariable {
                 variable,
@@ -175,8 +175,8 @@ fn validate_is_variables_have_same_category(
         let rhs = is.rhs().as_variable().unwrap();
         let lhs_category = variable_registry.get_variable_category(lhs).unwrap();
         let rhs_category = variable_registry.get_variable_category(rhs).unwrap();
-        let lhs_variable = variable_registry.get_variable_name(lhs).map_or("_", |s| s.as_str()).to_owned();
-        let rhs_variable = variable_registry.get_variable_name(rhs).map_or("_", |s| s.as_str()).to_owned();
+        let lhs_variable = variable_registry.get_variable_name_or_unnamed(lhs).to_owned();
+        let rhs_variable = variable_registry.get_variable_name_or_unnamed(rhs).to_owned();
         return Err(Box::new(RepresentationError::VariableCategoryMismatchInIs {
             lhs_variable,
             rhs_variable,

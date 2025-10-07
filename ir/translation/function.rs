@@ -117,7 +117,8 @@ pub fn translate_function_from(
                 false
             }
         }) {
-            let argument_variable = context.variable_registry.get_variable_name(arg).unwrap();
+            let argument_variable = context.variable_registry.get_variable_name(arg)
+                .expect("Argument names were validated earlier");
             return Err(Box::new(FunctionRepresentationError::FunctionArgumentUnused {
                 variable: argument_variable.clone(),
                 source_span: signature.args[index].span.clone(),
