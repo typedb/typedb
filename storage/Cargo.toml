@@ -68,7 +68,7 @@ features = {}
 
 	[dependencies.serde]
 		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.219"
+		version = "1.0.228"
 		default-features = false
 
 	[dependencies.resource]
@@ -134,7 +134,7 @@ features = {}
 
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-		version = "0.4.41"
+		version = "0.4.40"
 		default-features = false
 
 	[dependencies.lending_iterator]

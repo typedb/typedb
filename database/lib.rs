@@ -8,8 +8,9 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use storage::snapshot::WriteSnapshot;
-use crate::transaction::DatabaseDropGuard;
+
 pub use self::database::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
+use crate::transaction::DatabaseDropGuard;
 
 pub mod database;
 pub mod database_manager;

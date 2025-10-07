@@ -15,7 +15,7 @@ use database::{
 };
 use options::TransactionOptions;
 use storage::durability_client::WALClient;
-use test_utils::{create_tmp_dir, init_logging, TempDir};
+use test_utils::{create_tmp_storage_dir, init_logging, TempDir};
 use tokio::{
     runtime::Runtime,
     sync::{broadcast, Notify},
@@ -78,7 +78,7 @@ fn transaction_sleep_timeout() -> Duration {
 #[test]
 fn open_close_schema_transaction() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
     let tx_schema = open_schema(database.clone());
     tx_schema.close()
@@ -87,7 +87,7 @@ fn open_close_schema_transaction() {
 #[test]
 fn open_rollback_schema_transaction() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
     let mut tx_schema = open_schema(database.clone());
     tx_schema.rollback()
@@ -96,7 +96,7 @@ fn open_rollback_schema_transaction() {
 #[test]
 fn open_commit_schema_transaction() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
     let tx_schema = open_schema(database.clone());
     let (_, commit_result) = tx_schema.commit();
@@ -106,7 +106,7 @@ fn open_commit_schema_transaction() {
 #[test]
 fn open_close_write_transaction() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
     let tx_write = open_write(database.clone());
     tx_write.close()
@@ -115,7 +115,7 @@ fn open_close_write_transaction() {
 #[test]
 fn open_rollback_write_transaction() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
     let mut tx_write = open_write(database.clone());
     tx_write.rollback()
@@ -124,7 +124,7 @@ fn open_rollback_write_transaction() {
 #[test]
 fn open_commit_write_transaction() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
     let tx_write = open_write(database.clone());
     let (_, commit_result) = tx_write.commit();
@@ -134,7 +134,7 @@ fn open_commit_write_transaction() {
 #[test]
 fn open_close_read_transaction() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
     let tx_read = open_read(database.clone());
     tx_read.close()
@@ -147,7 +147,7 @@ fn open_close_read_transaction() {
 #[test]
 fn schema_transaction_does_not_block_concurrent_schema_transactions_after_freeing() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -176,7 +176,7 @@ fn schema_transaction_does_not_block_concurrent_schema_transactions_after_freein
 #[test]
 fn schema_transaction_blocks_concurrent_schema_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -196,7 +196,7 @@ fn schema_transaction_blocks_concurrent_schema_transactions() {
 #[test]
 fn schema_transaction_blocks_concurrent_write_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let _tx_schema = open_schema(database.clone());
@@ -208,7 +208,7 @@ fn schema_transaction_blocks_concurrent_write_transactions() {
 #[test]
 fn schema_transaction_does_not_block_concurrent_read_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -236,7 +236,7 @@ fn schema_transaction_does_not_block_concurrent_read_transactions() {
 #[test]
 fn schema_transaction_can_be_opened_after_prior_timeout_error() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -272,7 +272,7 @@ fn schema_transaction_can_be_opened_after_prior_timeout_error() {
 #[test]
 fn schema_transaction_close_unblocks_concurrent_schema_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -302,7 +302,7 @@ fn schema_transaction_close_unblocks_concurrent_schema_transactions() {
 #[test]
 fn schema_transaction_commit_unblocks_concurrent_schema_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -332,7 +332,7 @@ fn schema_transaction_commit_unblocks_concurrent_schema_transactions() {
 #[test]
 fn schema_transaction_rollback_does_not_unblock_concurrent_schema_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -367,7 +367,7 @@ fn schema_transaction_rollback_does_not_unblock_concurrent_schema_transactions()
 #[test]
 fn schema_transaction_close_unblocks_concurrent_write_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -397,7 +397,7 @@ fn schema_transaction_close_unblocks_concurrent_write_transactions() {
 #[test]
 fn schema_transaction_commit_unblocks_concurrent_write_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -427,7 +427,7 @@ fn schema_transaction_commit_unblocks_concurrent_write_transactions() {
 #[test]
 fn schema_transaction_rollback_does_not_unblock_concurrent_write_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -466,7 +466,7 @@ fn schema_transaction_rollback_does_not_unblock_concurrent_write_transactions() 
 #[test]
 fn write_transaction_does_not_block_concurrent_schema_transactions_after_freeing() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -495,7 +495,7 @@ fn write_transaction_does_not_block_concurrent_schema_transactions_after_freeing
 #[test]
 fn write_transaction_blocks_concurrent_schema_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -528,7 +528,7 @@ fn write_transaction_blocks_concurrent_schema_transactions() {
 #[test]
 fn write_transaction_close_unblocks_concurrent_schema_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -558,7 +558,7 @@ fn write_transaction_close_unblocks_concurrent_schema_transactions() {
 #[test]
 fn write_transaction_commit_unblocks_concurrent_schema_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -588,7 +588,7 @@ fn write_transaction_commit_unblocks_concurrent_schema_transactions() {
 #[test]
 fn write_transaction_rollback_does_not_unblock_concurrent_schema_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -623,7 +623,7 @@ fn write_transaction_rollback_does_not_unblock_concurrent_schema_transactions() 
 #[test]
 fn write_transaction_does_not_block_concurrent_write_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -646,7 +646,7 @@ fn write_transaction_does_not_block_concurrent_write_transactions() {
 #[test]
 fn write_transaction_does_not_block_concurrent_read_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let _tx_write = open_write(database.clone());
@@ -660,7 +660,7 @@ fn write_transaction_does_not_block_concurrent_read_transactions() {
 #[test]
 fn read_transaction_does_not_block_concurrent_schema_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
     let _tx_read = open_read(database.clone());
     let _tx_schema = open_schema(database);
@@ -669,7 +669,7 @@ fn read_transaction_does_not_block_concurrent_schema_transactions() {
 #[test]
 fn read_transaction_does_not_block_concurrent_write_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
     let _tx_read = open_read(database.clone());
     let _tx_write = open_write(database);
@@ -678,7 +678,7 @@ fn read_transaction_does_not_block_concurrent_write_transactions() {
 #[test]
 fn read_transaction_does_not_block_concurrent_read_transactions() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -705,7 +705,7 @@ fn read_transaction_does_not_block_concurrent_read_transactions() {
 #[test]
 fn blocked_schema_transactions_progress_one_at_a_time() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -779,7 +779,7 @@ fn blocked_schema_transactions_progress_one_at_a_time() {
 #[test]
 fn blocked_write_transactions_progress_together() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
@@ -853,7 +853,7 @@ fn blocked_write_transactions_progress_together() {
 #[test]
 fn blocked_schema_and_write_transactions_can_progress_in_different_orders() {
     init_logging();
-    let databases_path = create_tmp_dir();
+    let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");

@@ -26,7 +26,7 @@ features = {}
 
 	[dependencies.serde]
 		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.219"
+		version = "1.0.228"
 		default-features = false
 
 	[dependencies.bincode]
@@ -41,6 +41,6 @@ features = {}
 
 	[dependencies.uuid]
 		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-		version = "1.17.0"
+		version = "1.18.1"
 		default-features = false
 

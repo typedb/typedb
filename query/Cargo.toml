@@ -58,7 +58,7 @@ features = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.46.0"
+		version = "1.47.1"
 		default-features = false
 
 	[dependencies.tracing]
@@ -68,7 +68,7 @@ features = {}
 
 	[dependencies.serde]
 		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.219"
+		version = "1.0.228"
 		default-features = false
 
 	[dependencies.resource]
@@ -93,7 +93,7 @@ features = {}
 
 	[dependencies.moka]
 		features = ["default", "sync"]
-		version = "0.12.10"
+		version = "0.12.11"
 		default-features = false
 
 	[dependencies.storage]

@@ -24,7 +24,7 @@ dev-dependencies = {}
 
 	[dependencies.uuid]
 		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-		version = "1.17.0"
+		version = "1.18.1"
 		default-features = false
 
 	[dependencies.rand]
@@ -39,7 +39,7 @@ dev-dependencies = {}
 
 	[dependencies.tokio-rustls]
 		features = ["logging", "ring", "tls12"]
-		version = "0.26.2"
+		version = "0.26.4"
 		default-features = false
 
 	[dependencies.executor]
@@ -69,7 +69,7 @@ dev-dependencies = {}
 
 	[dependencies.serde_with]
 		features = ["alloc", "default", "macros", "std"]
-		version = "3.14.0"
+		version = "3.15.0"
 		default-features = false
 
 	[dependencies.typeql]
@@ -126,7 +126,7 @@ dev-dependencies = {}
 
 	[dependencies.regex]
 		features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
-		version = "1.11.1"
+		version = "1.11.3"
 		default-features = false
 
 	[dependencies.system]
@@ -156,7 +156,7 @@ dev-dependencies = {}
 
 	[dependencies.yaml-rust2]
 		features = ["default", "encoding"]
-		version = "0.10.3"
+		version = "0.10.4"
 		default-features = false
 
 	[dependencies.concept]
@@ -171,7 +171,7 @@ dev-dependencies = {}
 
 	[dependencies.moka]
 		features = ["default", "sync"]
-		version = "0.12.10"
+		version = "0.12.11"
 		default-features = false
 
 	[dependencies.storage]
@@ -201,12 +201,12 @@ dev-dependencies = {}
 
 	[dependencies.chrono-tz]
 		features = ["case-insensitive", "default", "std"]
-		version = "0.9.0"
+		version = "0.10.3"
 		default-features = false
 
 	[dependencies.async-trait]
 		features = []
-		version = "0.1.88"
+		version = "0.1.89"
 		default-features = false
 
 	[dependencies.compiler]
@@ -221,7 +221,7 @@ dev-dependencies = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.46.0"
+		version = "1.47.1"
 		default-features = false
 
 	[dependencies.tower-http]
@@ -231,7 +231,7 @@ dev-dependencies = {}
 
 	[dependencies.serde]
 		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.219"
+		version = "1.0.228"
 		default-features = false
 
 	[dependencies.tokio-stream]
@@ -266,7 +266,7 @@ dev-dependencies = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.40"
+		version = "4.5.48"
 		default-features = false
 
 	[dependencies.bytes]
@@ -281,7 +281,7 @@ dev-dependencies = {}
 
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-		version = "0.4.41"
+		version = "0.4.40"
 		default-features = false
 
 	[dependencies.user]
@@ -291,6 +291,6 @@ dev-dependencies = {}
 
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.140"
+		version = "1.0.145"
 		default-features = false
 
