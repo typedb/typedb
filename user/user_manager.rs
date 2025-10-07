@@ -48,7 +48,20 @@ impl UserManager {
         &self,
         user: &User,
         credential: &Credential,
-    ) -> (TransactionProfile, Result<DataCommitIntent<WALClient>, UserCreateError>) {
+    ) -> (Option<TransactionProfile>, Result<DataCommitIntent<WALClient>, UserCreateError>) {
+        match self.contains(&user.name) {
+            Ok(contains) => {
+                if contains {
+                    return (None, Err(UserCreateError::UserAlreadyExist {}));
+                }
+            }
+            Err(user_get_err) => {
+                return match user_get_err {
+                    UserGetError::IllegalUsername { .. } => (None, Err(UserCreateError::IllegalUsername {})),
+                    UserGetError::Unexpected { .. } => (None, Err(UserCreateError::Unexpected {})),
+                }
+            }
+        }
         let (transaction_profile, create_result) = self.transaction_util.write_transaction(
             |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::create(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, user, credential)
@@ -58,7 +71,7 @@ impl UserManager {
             Ok(tuple) => Ok(tuple),
             Err(_query_error) => Err(UserCreateError::IllegalUsername {}),
         };
-        (transaction_profile, create_result)
+        (Some(transaction_profile), create_result)
     }
 
     pub fn update(
