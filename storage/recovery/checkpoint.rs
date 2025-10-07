@@ -26,6 +26,8 @@ use crate::{
     sequence_number::SequenceNumber,
 };
 
+const TEMP_FILE_EXTENSION: &'static str = "tmp";
+
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
 /// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
 /// have to reapply commits to the keyspaces from the WAL.
@@ -74,7 +76,7 @@ impl Checkpoint {
             return Err(ExtensionDuplicate { name: T::NAME.to_string() });
         }
 
-        let tmp = path.with_extension("tmp");
+        let tmp = path.with_extension(TEMP_FILE_EXTENSION);
         {
             let mut file =
                 File::create(&tmp).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
@@ -224,7 +226,7 @@ fn find_latest_checkpoint(checkpoint_dir: &Path) -> Result<Option<PathBuf>, Chec
 }
 
 fn write_file_content_safe(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    let tmp = path.with_extension("tmp");
+    let tmp = path.with_extension(TEMP_FILE_EXTENSION);
     {
         let mut tmp_file = File::create(&tmp)?;
         tmp_file.write_all(bytes)?;
@@ -236,7 +238,7 @@ fn write_file_content_safe(path: &Path, bytes: &[u8]) -> io::Result<()> {
 }
 
 fn copy_file_content_safe(source: &Path, destination: &Path) -> io::Result<()> {
-    let tmp = destination.with_extension("tmp");
+    let tmp = destination.with_extension(TEMP_FILE_EXTENSION);
     {
         let mut tmp_file = File::create(&tmp)?;
         let mut source_file = File::open(source)?;
