@@ -17,6 +17,7 @@ use system::{
     repositories::SCHEMA,
     util::transaction_util::TransactionUtil,
 };
+use user::errors::UserCreateError;
 
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},
