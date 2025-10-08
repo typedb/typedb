@@ -17,6 +17,7 @@ use system::{
     repositories::SCHEMA,
     util::transaction_util::TransactionUtil,
 };
+use user::errors::UserCreateError;
 
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},
@@ -28,7 +29,7 @@ pub const SYSTEM_DB: &str = concat!(internal_database_prefix!(), "system");
 pub async fn initialise_system_database(
     server_state: &dyn ServerState,
 ) -> Result<Arc<Database<WALClient>>, ArcServerStateError> {
-    server_state.databases_create(SYSTEM_DB).await?;
+    server_state.databases_create_unrestricted(SYSTEM_DB).await?;
     let db = server_state.database_manager().await.database_unrestricted(SYSTEM_DB).expect("todo");
     initialise_system_database_schema(db.clone(), server_state).await?;
     Ok(db)
@@ -74,13 +75,14 @@ async fn initialise_system_database_schema(
 pub async fn get_default_user_commit_record(
     user_manager: &user::user_manager::UserManager,
 ) -> Result<(TransactionProfile, Option<CommitRecord>), LocalServerStateError> {
-    let (mut transaction_profile, finalise_result) = user_manager.create(
+    let create_result = user_manager.create(
         &User::new(DEFAULT_USER_NAME.to_string()),
         &Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
     );
+
+    let (mut transaction_profile, commit_intent) =
+        create_result.map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeCreated { typedb_source })?;
     let mut commit_profile = transaction_profile.commit_profile();
-    let commit_intent =
-        finalise_result.map_err(|error| LocalServerStateError::UserCannotBeCreated { typedb_source: error })?;
     let commit_record_opt = commit_intent.write_snapshot.finalise(&mut commit_profile).map_err(|error| {
         LocalServerStateError::DatabaseSchemaCommitFailed {
             typedb_source: SchemaCommitError::SnapshotError { typedb_source: error },
