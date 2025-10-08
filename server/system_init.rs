@@ -29,7 +29,7 @@ pub const SYSTEM_DB: &str = concat!(internal_database_prefix!(), "system");
 pub async fn initialise_system_database(
     server_state: &dyn ServerState,
 ) -> Result<Arc<Database<WALClient>>, ArcServerStateError> {
-    server_state.databases_create(SYSTEM_DB).await?;
+    server_state.databases_create_unrestricted(SYSTEM_DB).await?;
     let db = server_state.database_manager().await.database_unrestricted(SYSTEM_DB).expect("todo");
     initialise_system_database_schema(db.clone(), server_state).await?;
     Ok(db)
