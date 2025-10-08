@@ -48,17 +48,17 @@ impl UserManager {
         &self,
         user: &User,
         credential: &Credential,
-    ) -> (Option<TransactionProfile>, Result<DataCommitIntent<WALClient>, UserCreateError>) {
+    ) -> Result<(TransactionProfile, DataCommitIntent<WALClient>), (Option<TransactionProfile>, UserCreateError)> {
         match self.contains(&user.name) {
             Ok(contains) => {
                 if contains {
-                    return (None, Err(UserCreateError::UserAlreadyExist {}));
+                    return Err((None, UserCreateError::UserAlreadyExist {}));
                 }
             }
             Err(user_get_err) => {
                 return match user_get_err {
-                    UserGetError::IllegalUsername { .. } => (None, Err(UserCreateError::IllegalUsername {})),
-                    UserGetError::Unexpected { .. } => (None, Err(UserCreateError::Unexpected {})),
+                    UserGetError::IllegalUsername { .. } => Err((None, UserCreateError::IllegalUsername {})),
+                    UserGetError::Unexpected { .. } => Err((None, UserCreateError::Unexpected {})),
                 }
             }
         }
@@ -68,10 +68,10 @@ impl UserManager {
             },
         );
         let create_result = match create_result {
-            Ok(tuple) => Ok(tuple),
-            Err(_query_error) => Err(UserCreateError::IllegalUsername {}),
+            Ok(commit_intent) => Ok((transaction_profile, commit_intent)),
+            Err(_query_error) => Err((Some(transaction_profile), UserCreateError::IllegalUsername {})),
         };
-        (Some(transaction_profile), create_result)
+        create_result
     }
 
     pub fn update(
