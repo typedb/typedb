@@ -102,20 +102,20 @@ impl UserManager {
     pub fn delete(
         &self,
         username: &str,
-    ) -> (Option<TransactionProfile>, Result<DataCommitIntent<WALClient>, UserDeleteError>) {
+    ) -> Result<(TransactionProfile, DataCommitIntent<WALClient>), (Option<TransactionProfile>, UserDeleteError)> {
         if username == DEFAULT_USER_NAME {
-            return (None, Err(UserDeleteError::DefaultUserCannotBeDeleted {}));
+            return Err((None, UserDeleteError::DefaultUserCannotBeDeleted {}));
         }
         match self.contains(username) {
             Ok(contains) => {
                 if !contains {
-                    return (None, Err(UserDeleteError::UserNotFound {}));
+                    return Err((None, UserDeleteError::UserNotFound {}));
                 }
             }
             Err(user_get_err) => {
                 return match user_get_err {
-                    UserGetError::IllegalUsername { .. } => (None, Err(UserDeleteError::IllegalUsername {})),
-                    UserGetError::Unexpected { .. } => (None, Err(UserDeleteError::Unexpected {})),
+                    UserGetError::IllegalUsername { .. } => Err((None, UserDeleteError::IllegalUsername {})),
+                    UserGetError::Unexpected { .. } => Err((None, UserDeleteError::Unexpected {})),
                 }
             }
         }
@@ -126,9 +126,9 @@ impl UserManager {
             },
         );
 
-        let delete_result =
-            delete_result.map(|tuple| tuple).map_err(|_query_error| UserDeleteError::IllegalUsername {});
-
-        (Some(transaction_profile), delete_result)
+        match delete_result {
+            Ok(tuple) => Ok((transaction_profile, tuple)),
+            Err(_) => Err((Some(transaction_profile), UserDeleteError::IllegalUsername {}))
+        }
     }
 }
