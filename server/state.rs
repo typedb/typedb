@@ -72,9 +72,13 @@ pub trait ServerState: Debug {
 
     async fn databases_get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
 
+    async fn databases_get_unrestricted(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
+
     async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
 
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError>;
+
+    async fn databases_create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError>;
 
     async fn database_schema(&self, name: String) -> Result<String, ArcServerStateError>;
 
@@ -381,14 +385,24 @@ impl ServerState for LocalServerState {
     }
 
     async fn databases_get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
+        Ok(self.database_manager.database(name))
+    }
+
+    async fn databases_get_unrestricted(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
         Ok(self.database_manager.database_unrestricted(name))
     }
 
     async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError> {
-        Ok(self.database_manager.database_unrestricted(name).is_some())
+        Ok(self.database_manager.database(name).is_some())
     }
 
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError> {
+        self.database_manager
+            .put_database(name)
+            .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: err }))
+    }
+
+    async fn databases_create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager
             .put_database_unrestricted(name)
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: err }))
@@ -418,7 +432,7 @@ impl ServerState for LocalServerState {
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError> {
-        let Some(database) = self.databases_get(name).await? else {
+        let Some(database) = self.databases_get_unrestricted(name).await? else {
             return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
         };
         database.schema_commit_with_commit_record(commit_record, commit_profile).map_err(|error| {
@@ -432,7 +446,7 @@ impl ServerState for LocalServerState {
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError> {
-        let Some(database) = self.databases_get(name).await? else {
+        let Some(database) = self.databases_get_unrestricted(name).await? else {
             return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
         };
         database.data_commit_with_commit_record(commit_record, commit_profile).map_err(|typedb_source| {
