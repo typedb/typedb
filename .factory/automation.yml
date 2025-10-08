@@ -24,17 +24,12 @@ build:
     build:
       image: typedb-ubuntu-22.04
       command: |
-        echo 'build'
-
-#    build:
-#      image: typedb-ubuntu-22.04
-#      command: |
-#        sudo apt update
-#        sudo apt install -y libclang-dev
-#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        bazel build //...
-#        bazel run @typedb_dependencies//tool/checkstyle:test-coverage
-#        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
+        sudo apt update
+        sudo apt install -y libclang-dev
+        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel build //... 
+        bazel run @typedb_dependencies//tool/checkstyle:test-coverage
+        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
 
 #    build-dependency:
 #      image: typedb-ubuntu-22.04
