@@ -300,7 +300,7 @@ impl QueryManager {
         ))
     }
 
-    pub fn analyse_query<Snapshot: ReadableSnapshot + 'static>(
+    pub fn analyse<Snapshot: ReadableSnapshot + 'static>(
         &self,
         snapshot: Arc<Snapshot>,
         type_manager: &TypeManager,
