@@ -36,6 +36,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::annotation::{
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
+    type_inference::get_type_annotation_from_label,
     TypeInferenceError,
 };
 
@@ -576,24 +577,6 @@ trait UnaryConstraint {
     ) -> Result<(), TypeInferenceError>;
 }
 
-pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
-    snapshot: &Snapshot,
-    type_manager: &TypeManager,
-    label_value: &encoding::value::label::Label,
-) -> Result<Option<TypeAnnotation>, Box<ConceptReadError>> {
-    if let Some(t) = type_manager.get_attribute_type(snapshot, label_value)?.map(TypeAnnotation::Attribute) {
-        Ok(Some(t))
-    } else if let Some(t) = type_manager.get_entity_type(snapshot, label_value)?.map(TypeAnnotation::Entity) {
-        Ok(Some(t))
-    } else if let Some(t) = type_manager.get_relation_type(snapshot, label_value)?.map(TypeAnnotation::Relation) {
-        Ok(Some(t))
-    } else if let Some(t) = type_manager.get_role_type(snapshot, label_value)?.map(TypeAnnotation::RoleType) {
-        Ok(Some(t))
-    } else {
-        Ok(None)
-    }
-}
-
 pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnapshot>(
     snapshot: &Snapshot,
     type_manager: &TypeManager,
@@ -643,27 +626,28 @@ impl UnaryConstraint for Kind<Variable> {
         context: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
+        use encoding::graph::type_::Kind as EncodingKind;
         let type_manager = &context.type_manager;
         let annotations = match self.kind() {
-            typeql::token::Kind::Entity => type_manager
+            EncodingKind::Entity => type_manager
                 .get_entity_types(context.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()
                 .map(|t| TypeAnnotation::Entity(*t))
                 .collect(),
-            typeql::token::Kind::Relation => type_manager
+            EncodingKind::Relation => type_manager
                 .get_relation_types(context.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()
                 .map(|t| TypeAnnotation::Relation(*t))
                 .collect(),
-            typeql::token::Kind::Attribute => type_manager
+            EncodingKind::Attribute => type_manager
                 .get_attribute_types(context.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()
                 .map(|t| TypeAnnotation::Attribute(*t))
                 .collect(),
-            typeql::token::Kind::Role => type_manager
+            EncodingKind::Role => type_manager
                 .get_role_types(context.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()

@@ -201,7 +201,7 @@ impl QueryManager {
             snapshot,
             thing_manager,
             variable_registry.variable_names(),
-            pipeline_structure,
+            (variable_registry.branch_ids_allocated() < 64).then_some(pipeline_structure),
             Arc::new(executable_functions),
             &executable_stages,
             executable_fetch,
@@ -290,7 +290,7 @@ impl QueryManager {
         Ok(Pipeline::build_write_pipeline(
             snapshot,
             variable_registry.variable_names(),
-            pipeline_structure,
+            (variable_registry.branch_ids_allocated() < 64).then_some(pipeline_structure),
             thing_manager,
             Arc::new(executable_functions),
             executable_stages,
@@ -451,9 +451,11 @@ fn annotate_and_compile_query(
     };
     compile_profile.annotation_finished();
     // TODO: We can avoid this for the regular query path when we break studio backwards compatibility
-    let pipeline_structure =
-        extract_pipeline_structure_from(&variable_registry, &annotated_pipeline.annotated_stages, source_query)
-            .map(Arc::new);
+    let pipeline_structure = Arc::new(extract_pipeline_structure_from(
+        &variable_registry,
+        &annotated_pipeline.annotated_stages,
+        source_query,
+    ));
 
     match apply_transformations(snapshot, &type_manager, &mut annotated_pipeline) {
         Ok(_) => {}

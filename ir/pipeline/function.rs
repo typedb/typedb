@@ -110,7 +110,7 @@ impl ReturnOperation {
         }
     }
 
-    pub(crate) fn variables(&self) -> Cow<'_, [Variable]> {
+    pub fn variables(&self) -> Cow<'_, [Variable]> {
         match self {
             ReturnOperation::Stream(vars, _) => Cow::Borrowed(vars),
             ReturnOperation::Single(_, vars, _) => Cow::Borrowed(vars),

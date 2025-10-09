@@ -31,6 +31,17 @@ impl Kind {
     }
 }
 
+impl From<typeql::token::Kind> for Kind {
+    fn from(value: typeql::token::Kind) -> Self {
+        match value {
+            typeql::token::Kind::Entity => Self::Entity,
+            typeql::token::Kind::Relation => Self::Relation,
+            typeql::token::Kind::Attribute => Self::Attribute,
+            typeql::token::Kind::Role => Self::Role,
+        }
+    }
+}
+
 impl fmt::Debug for Kind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Kind[{}]", self.name())

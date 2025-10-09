@@ -24,7 +24,7 @@ use futures::{
     stream::{self, StreamExt},
 };
 use itertools::Itertools;
-use server::Server;
+use server::{service::http::message::query::AnalysedQueryResponse, Server};
 use storage::durability_client::WALClient;
 use thing_util::ObjectWithKey;
 use transaction_context::ActiveTransaction;
@@ -112,6 +112,8 @@ pub struct Context {
     object_lists: HashMap<String, Vec<Object>>,
     attributes: HashMap<String, Option<Attribute>>,
     attribute_lists: HashMap<String, Vec<Attribute>>,
+
+    analyzed_query: Option<AnalysedQueryResponse>,
 }
 
 static CONTEXT_INIT: Once = Once::new();
