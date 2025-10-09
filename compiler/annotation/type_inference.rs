@@ -7,14 +7,14 @@
 use std::collections::{BTreeSet, HashSet};
 
 use answer::Type;
-use concept::type_::type_manager::TypeManager;
+use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::value_type::ValueType;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::TypeInferenceError;
 
 pub fn resolve_value_types(
-    types: &BTreeSet<answer::Type>,
+    types: &BTreeSet<Type>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<HashSet<ValueType>, TypeInferenceError> {
@@ -1459,5 +1459,23 @@ pub mod tests {
             expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears);
             assert_eq!(expected_graph, graph)
         }
+    }
+}
+
+pub fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
+    snapshot: &Snapshot,
+    type_manager: &TypeManager,
+    label_value: &encoding::value::label::Label,
+) -> Result<Option<Type>, Box<ConceptReadError>> {
+    if let Some(t) = type_manager.get_attribute_type(snapshot, label_value)?.map(Type::Attribute) {
+        Ok(Some(t))
+    } else if let Some(t) = type_manager.get_entity_type(snapshot, label_value)?.map(Type::Entity) {
+        Ok(Some(t))
+    } else if let Some(t) = type_manager.get_relation_type(snapshot, label_value)?.map(Type::Relation) {
+        Ok(Some(t))
+    } else if let Some(t) = type_manager.get_role_type(snapshot, label_value)?.map(Type::RoleType) {
+        Ok(Some(t))
+    } else {
+        Ok(None)
     }
 }

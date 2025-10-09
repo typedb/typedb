@@ -19,7 +19,7 @@ use compiler::{
     },
     query_structure::{
         PipelineStructure, PipelineStructureAnnotations, PipelineVariableAnnotation, QueryStructure,
-        QueryStructureConjunctionID, StructureVariableId,
+        QueryStructureConjunctionID, StageIndex, StructureVariableId,
     },
 };
 use concept::{
@@ -43,7 +43,7 @@ pub struct AnalysedQuery {
 #[derive(Debug)]
 pub struct QueryStructureAnnotations {
     pub preamble: Vec<FunctionStructureAnnotations>,
-    pub query: Option<PipelineStructureAnnotations>,
+    pub query: PipelineStructureAnnotations,
     pub fetch: Option<FetchStructureAnnotations>,
 }
 
@@ -58,42 +58,33 @@ impl QueryStructureAnnotations {
         query_structure: &QueryStructure,
     ) -> Result<Self, Box<ConceptReadError>> {
         let AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble } = &annotated_pipeline;
-        let (pipeline, fetch) = match query_structure.query.as_ref() {
-            None => (None, None),
-            Some(pipeline_structure) => {
-                let pipeline =
-                    build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), pipeline_structure);
-                let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());
-                let fetch = annotated_fetch
-                    .as_ref()
-                    .map(|fetch| {
-                        build_fetch_annotations(
-                            snapshot,
-                            type_manager,
-                            parameters.clone(),
-                            source_query,
-                            last_stage_annotations,
-                            &fetch.object,
-                        )
-                    })
-                    .transpose()?;
-                (Some(pipeline), fetch)
-            }
-        };
-
+        let pipeline =
+            build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), &query_structure.query);
+        let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());
+        let fetch = annotated_fetch
+            .as_ref()
+            .map(|fetch| {
+                build_fetch_annotations(
+                    snapshot,
+                    type_manager,
+                    parameters.clone(),
+                    source_query,
+                    last_stage_annotations,
+                    &fetch.object,
+                )
+            })
+            .transpose()?;
         let preamble = annotated_preamble
             .iter()
             .zip(query_structure.preamble.iter())
             .map(|(annotated_function, structure)| {
                 let signature = annotated_function.annotated_signature.clone();
-                let pipeline = structure.pipeline.as_ref().map(|pipeline_structure| {
-                    build_pipeline_annotations(
-                        &annotated_function.variable_registry,
-                        annotated_function.stages.as_slice(),
-                        pipeline_structure,
-                    )
-                });
-                FunctionStructureAnnotations { signature, body: pipeline }
+                let body = build_pipeline_annotations(
+                    &annotated_function.variable_registry,
+                    annotated_function.stages.as_slice(),
+                    &structure.body,
+                );
+                FunctionStructureAnnotations { signature, body }
             })
             .collect();
 
@@ -113,7 +104,7 @@ pub enum FetchObjectStructureAnnotations {
 #[derive(Debug)]
 pub struct FunctionStructureAnnotations {
     pub signature: AnnotatedFunctionSignature,
-    pub body: Option<PipelineStructureAnnotations>,
+    pub body: PipelineStructureAnnotations,
 }
 
 pub fn build_pipeline_annotations(
@@ -127,7 +118,7 @@ pub fn build_pipeline_annotations(
         block_id: QueryStructureConjunctionID,
         annotations_for_block: &TypeAnnotations,
     ) {
-        let annotations = annotations_for_block
+        let mut annotations: BTreeMap<_, _> = annotations_for_block
             .vertex_annotations()
             .iter()
             .filter_map(|(vertex, annos)| {
@@ -141,28 +132,30 @@ pub fn build_pipeline_annotations(
                 })
             })
             .collect();
+        annotations.extend(annotations_for_block.value_annotations().iter().filter_map(|(vertex, annos)| {
+            vertex.as_variable().map(|variable| {
+                (StructureVariableId::from(variable), PipelineVariableAnnotation::Value(annos.value_type().clone()))
+            })
+        }));
         variable_annotations.insert(block_id, annotations);
     }
     let mut variable_annotations = BTreeMap::new();
-    stages.iter().for_each(|stage| match stage {
+    stages.iter().enumerate().for_each(|(index, stage)| match stage {
         AnnotatedStage::Put { match_annotations: block_annotations, .. }
         | AnnotatedStage::Match { block_annotations, .. } => {
             block_annotations.type_annotations().iter().for_each(|(scope_id, annotations)| {
-                let block_id = structure.parametrised_structure.scope_to_conjunction_id.get(scope_id).unwrap().clone();
+                let block_id = structure.parametrised_structure.resolve_conjunction_id(StageIndex(index), *scope_id);
                 insert_variable_annotations(variable_registry, &mut variable_annotations, block_id, annotations);
             })
         }
-        AnnotatedStage::Insert { block, annotations, .. } | AnnotatedStage::Update { block, annotations, .. } => {
-            let block_id = structure
-                .parametrised_structure
-                .scope_to_conjunction_id
-                .get(&block.conjunction().scope_id())
-                .unwrap()
-                .clone();
+        AnnotatedStage::Insert { block, annotations, .. }
+        | AnnotatedStage::Update { block, annotations, .. }
+        | AnnotatedStage::Delete { block, annotations, .. } => {
+            let scope_id = block.conjunction().scope_id();
+            let block_id = structure.parametrised_structure.resolve_conjunction_id(StageIndex(index), scope_id);
             insert_variable_annotations(variable_registry, &mut variable_annotations, block_id, annotations);
         }
-        AnnotatedStage::Delete { .. }
-        | AnnotatedStage::Select(_)
+        AnnotatedStage::Select(_)
         | AnnotatedStage::Sort(_)
         | AnnotatedStage::Offset(_)
         | AnnotatedStage::Limit(_)
@@ -170,6 +163,10 @@ pub fn build_pipeline_annotations(
         | AnnotatedStage::Distinct(_)
         | AnnotatedStage::Reduce(_, _) => {}
     });
+    debug_assert!(variable_annotations
+        .iter()
+        .enumerate()
+        .all(|(index, (conjunction_id, _))| index == conjunction_id.as_u32() as usize));
     variable_annotations
 }
 
@@ -235,12 +232,18 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
         let key = parameters.fetch_key(*parameter_id).expect("Expected fetch key to be present").to_owned();
         let fetch_object_annotations_maybe_list = match fetch_object {
             AnnotatedFetchSome::SingleVar(var) => {
-                let attribute_types = last_stage_annotations.vertex_annotations_of(&Vertex::Variable(*var))
-                    .expect("Expected annotations to be present").iter()
-                    .filter_map(|attribute_type| {
+                let as_vertex = Vertex::Variable(*var);
+                if let Some(annotations) = last_stage_annotations.vertex_annotations_of(&as_vertex) {
+                    let attribute_types = annotations.iter().filter_map(|attribute_type| {
                         attribute_type.is_attribute_type().then(|| attribute_type.as_attribute_type())
                     });
-                FetchObjectStructureAnnotations::Leaf(build_leaf_annotations(snapshot, type_manager, attribute_types)?)
+                    let leaf_annotations = build_leaf_annotations(snapshot, type_manager, attribute_types)?;
+                    FetchObjectStructureAnnotations::Leaf(leaf_annotations)
+                } else if let Some(value_type) = last_stage_annotations.value_type_annotations_of(&as_vertex) {
+                    FetchObjectStructureAnnotations::Leaf(BTreeSet::from([value_type.value_type().clone()]))
+                } else {
+                    unreachable!("Expected either type annotations or value annotations to be present");
+                }
             }
             AnnotatedFetchSome::ListAttributesAsList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
             | AnnotatedFetchSome::ListAttributesFromList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute

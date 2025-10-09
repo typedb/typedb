@@ -36,6 +36,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::annotation::{
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
+    type_inference::get_type_annotation_from_label,
     TypeInferenceError,
 };
 
@@ -574,24 +575,6 @@ trait UnaryConstraint {
         context: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError>;
-}
-
-pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
-    snapshot: &Snapshot,
-    type_manager: &TypeManager,
-    label_value: &encoding::value::label::Label,
-) -> Result<Option<TypeAnnotation>, Box<ConceptReadError>> {
-    if let Some(t) = type_manager.get_attribute_type(snapshot, label_value)?.map(TypeAnnotation::Attribute) {
-        Ok(Some(t))
-    } else if let Some(t) = type_manager.get_entity_type(snapshot, label_value)?.map(TypeAnnotation::Entity) {
-        Ok(Some(t))
-    } else if let Some(t) = type_manager.get_relation_type(snapshot, label_value)?.map(TypeAnnotation::Relation) {
-        Ok(Some(t))
-    } else if let Some(t) = type_manager.get_role_type(snapshot, label_value)?.map(TypeAnnotation::RoleType) {
-        Ok(Some(t))
-    } else {
-        Ok(None)
-    }
 }
 
 pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnapshot>(

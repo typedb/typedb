@@ -78,7 +78,7 @@ pub struct ExecutablePipeline {
     pub executable_functions: ExecutableFunctionRegistry,
     pub executable_stages: Vec<ExecutableStage>,
     pub executable_fetch: Option<Arc<ExecutableFetch>>,
-    pub pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
+    pub pipeline_structure: Arc<ParametrisedPipelineStructure>,
     pub type_populations: TypePopulations,
 }
 
@@ -147,7 +147,7 @@ pub fn compile_pipeline_and_functions(
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
-    pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
+    pipeline_structure: Arc<ParametrisedPipelineStructure>,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     // TODO: we could cache compiled schema functions so we dont have to re-compile with every query here
     let referenced_functions = find_referenced_functions(
