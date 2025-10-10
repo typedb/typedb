@@ -49,7 +49,7 @@ fn test_assembly() {
     if !extract_output.status.success() {
         panic!("{:?}", extract_output);
     }
-    let server_process = build_cmd("typedb-extracted/typedb server").spawn().expect("Failed to spawn server process");
+    let server_process = build_cmd("typedb-extracted/typedb server --development-mode.enabled=true").spawn().expect("Failed to spawn server process");
     thread::sleep(Duration::from_secs(10));
     let console_process_output = run_test_against_server();
     let server_process_output = kill_process(server_process);

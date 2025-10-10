@@ -26,6 +26,7 @@ checkstyle_test(
     include = glob(["*"]),
     exclude = glob([
         "Cargo.*",
+        "script.tql",
     ]),
     license_type = "mpl-header",
 )
