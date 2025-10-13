@@ -4,7 +4,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 # TypeDB global variables
-[[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+[[ $(readlink -f $0) ]] && path=$(readlink -f $0) || path=$0
 TYPEDB_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 
 
