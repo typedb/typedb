@@ -21,6 +21,6 @@ class Typedb < Formula
 
   def install
     libexec.install Dir["*"]
-    bin.install libexec / "typedb"
+    bin.install_symlink libexec / "typedb"
   end
 end
