@@ -143,12 +143,16 @@ features = {}
 		default-features = false
 
 [[bench]]
-	name = "bench_rocks"
+	name = "bench_mvcc_storage"
 	harness = false
 
 [[bench]]
-	name = "bench_mvcc_storage"
+	name = "bench_rocks"
 	harness = false
+
+[[test]]
+	path = "tests/test_mvcc.rs"
+	name = "test_mvcc"
 
 [[test]]
 	path = "tests/test_isolation.rs"
@@ -161,10 +165,6 @@ features = {}
 [[test]]
 	path = "tests/test_snapshot.rs"
 	name = "test_snapshot"
-
-[[test]]
-	path = "tests/test_mvcc.rs"
-	name = "test_mvcc"
 
 [[test]]
 	path = "tests/test_storage.rs"
