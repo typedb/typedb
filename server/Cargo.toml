@@ -73,10 +73,7 @@ dev-dependencies = {}
 		default-features = false
 
 	[dependencies.typeql]
-		features = []
-		rev = "a133354e8db3e2f1bf9e9f8a3a260e9b73bfd690"
-		git = "https://github.com/typedb/typeql"
-		default-features = false
+		path = "../../typeql/rust"
 
 	[dependencies.hyper]
 		features = ["client", "default", "full", "h2", "http1", "http2", "runtime", "server", "socket2", "stream", "tcp"]
