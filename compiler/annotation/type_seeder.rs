@@ -1027,7 +1027,9 @@ impl BinaryConstraint for Isa<Variable> {
                             collector.insert(subtype);
                         });
                 }
-                TypeAnnotation::RoleType(_) => unreachable!("Cannot get instances of role types."),
+                TypeAnnotation::RoleType(_) => {
+                    // Add nothing to the collector -> it'll get pruned
+                }
             }
         }
         collector.insert(*left_type);
@@ -1069,7 +1071,9 @@ impl BinaryConstraint for Isa<Variable> {
                             collector.insert(subtype);
                         });
                 }
-                TypeAnnotation::RoleType(_) => unreachable!("Cannot get instances of role types."),
+                TypeAnnotation::RoleType(_) => {
+                    // Add nothing to the collector -> it'll get pruned
+                },
             }
         }
         collector.insert(*right_type);
@@ -1309,7 +1313,7 @@ impl BinaryConstraint for Comparison<Variable> {
                 TypeAnnotation::Attribute(attribute) => {
                     attribute.get_value_type_without_source(context.snapshot, context.type_manager)?
                 }
-                _ => unreachable!("Expected attribute type"),
+                _ => None,
             };
             if let Some(value_type) = left_value_type {
                 let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
@@ -1355,7 +1359,7 @@ impl BinaryConstraint for Comparison<Variable> {
                 TypeAnnotation::Attribute(attribute) => {
                     attribute.get_value_type_without_source(context.snapshot, context.type_manager)?
                 }
-                _ => unreachable!("Expected attribute type"),
+                _ => None,
             };
             if let Some(value_type) = right_value_type {
                 let comparable_types = ValueTypeCategory::comparable_categories(value_type.category());
