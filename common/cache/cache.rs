@@ -139,6 +139,7 @@ impl Error for CacheError {
 #[cfg(test)]
 pub mod tests {
     use test_utils::{create_tmp_dir, TempDir};
+
     use crate::SpilloverCache;
     macro_rules! put {
         ($cache:ident, $key:literal, $value:literal) => {
@@ -153,7 +154,7 @@ pub mod tests {
 
     fn create_cache_in_tmpdir() -> (TempDir, SpilloverCache<String>) {
         let tmp_dir = create_tmp_dir();
-        let cache : SpilloverCache<String> = SpilloverCache::new(&tmp_dir.as_ref().to_path_buf(), Some("unit_test"), 1);
+        let cache: SpilloverCache<String> = SpilloverCache::new(&tmp_dir.as_ref().to_path_buf(), Some("unit_test"), 1);
         (tmp_dir, cache)
     }
 
@@ -180,7 +181,6 @@ pub mod tests {
 
         put!(cache, "key2", "value2_2");
         assert_eq!(get!(cache, "key2"), Some("value2_2"));
-
 
         cache.remove("key2").unwrap();
         assert_eq!(get!(cache, "key2"), None);

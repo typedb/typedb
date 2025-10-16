@@ -13,9 +13,8 @@ use answer::{variable::Variable, Type};
 use concept::type_::{constraint::Constraint as TypeConstraint, type_manager::TypeManager, OwnerAPI, TypeAPI};
 use ir::{
     pattern::constraint::{Constraint, Has, Links},
-    pipeline::block::Block,
+    pipeline::{block::Block, VariableRegistry},
 };
-use ir::pipeline::VariableRegistry;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
@@ -144,13 +143,17 @@ fn validate_links_updatable(
 
     let input_relation_types = input_annotations_variables.get(&links.relation().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: variable_registry.get_variable_name_or_unnamed(links.relation().as_variable().unwrap()).to_owned(),
+            variable: variable_registry
+                .get_variable_name_or_unnamed(links.relation().as_variable().unwrap())
+                .to_owned(),
             source_span: links.source_span(),
         },
     )?;
     let input_role_types = input_annotations_variables.get(&links.role_type().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: variable_registry.get_variable_name_or_unnamed(links.role_type().as_variable().unwrap()).to_owned(),
+            variable: variable_registry
+                .get_variable_name_or_unnamed(links.role_type().as_variable().unwrap())
+                .to_owned(),
             source_span: links.source_span(),
         },
     )?;

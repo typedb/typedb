@@ -737,8 +737,8 @@ fn collect_value_types_of_function_call_assignments(
             zip(binding.assigned(), return_.iter()).try_for_each(|(var, annotation)| match &annotation {
                 FunctionParameterAnnotation::Value(value_type) => {
                     if value_type_annotations.contains_key(&var.as_variable().unwrap()) {
-                        let assign_variable = variable_registry
-                            .get_variable_name_or_unnamed(var.as_variable().unwrap()).to_owned();
+                        let assign_variable =
+                            variable_registry.get_variable_name_or_unnamed(var.as_variable().unwrap()).to_owned();
                         return Err(AnnotationError::ExpressionCompilation {
                             typedb_source: Box::new(ExpressionCompileError::MultipleAssignmentsForVariable {
                                 variable: assign_variable,

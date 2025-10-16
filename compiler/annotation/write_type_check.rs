@@ -16,12 +16,11 @@ use ir::{
         constraint::{Constraint, Has, Links},
         Vertex,
     },
-    pipeline::block::Block,
+    pipeline::{block::Block, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
-use ir::pipeline::VariableRegistry;
 
 use crate::annotation::{
     type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
