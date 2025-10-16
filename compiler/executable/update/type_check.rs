@@ -15,6 +15,7 @@ use ir::{
     pattern::constraint::{Constraint, Has, Links},
     pipeline::block::Block,
 };
+use ir::pipeline::VariableRegistry;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
@@ -26,6 +27,7 @@ use crate::annotation::{
 pub fn check_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
     block: &Block,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -37,6 +39,7 @@ pub fn check_annotations(
                 validate_has_updatable(
                     snapshot,
                     type_manager,
+                    variable_registry,
                     has,
                     input_annotations_variables,
                     input_annotations_constraints,
@@ -47,6 +50,7 @@ pub fn check_annotations(
                 validate_links_updatable(
                     snapshot,
                     type_manager,
+                    variable_registry,
                     links,
                     input_annotations_variables,
                     input_annotations_constraints,
@@ -82,6 +86,7 @@ pub fn check_annotations(
 fn validate_has_updatable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
     has: &Has<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
@@ -90,6 +95,7 @@ fn validate_has_updatable(
     validate_has_type_combinations_for_write(
         snapshot,
         type_manager,
+        variable_registry,
         has,
         input_annotations_variables,
         input_annotations_constraints,
@@ -98,13 +104,13 @@ fn validate_has_updatable(
 
     let input_owner_types = input_annotations_variables.get(&has.owner().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: has.owner().as_variable().unwrap(),
+            variable: variable_registry.get_variable_name_or_unnamed(has.owner().as_variable().unwrap()).to_owned(),
             source_span: has.source_span(),
         },
     )?;
     let input_attr_types = input_annotations_variables.get(&has.attribute().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: has.attribute().as_variable().unwrap(),
+            variable: variable_registry.get_variable_name_or_unnamed(has.attribute().as_variable().unwrap()).to_owned(),
             source_span: has.source_span(),
         },
     )?;
@@ -120,6 +126,7 @@ fn validate_has_updatable(
 fn validate_links_updatable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
     links: &Links<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
@@ -128,6 +135,7 @@ fn validate_links_updatable(
     validate_links_type_combinations_for_write(
         snapshot,
         type_manager,
+        variable_registry,
         links,
         input_annotations_variables,
         input_annotations_constraints,
@@ -136,13 +144,13 @@ fn validate_links_updatable(
 
     let input_relation_types = input_annotations_variables.get(&links.relation().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: links.relation().as_variable().unwrap(),
+            variable: variable_registry.get_variable_name_or_unnamed(links.relation().as_variable().unwrap()).to_owned(),
             source_span: links.source_span(),
         },
     )?;
     let input_role_types = input_annotations_variables.get(&links.role_type().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: links.role_type().as_variable().unwrap(),
+            variable: variable_registry.get_variable_name_or_unnamed(links.role_type().as_variable().unwrap()).to_owned(),
             source_span: links.source_span(),
         },
     )?;

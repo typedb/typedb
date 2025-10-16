@@ -314,6 +314,7 @@ fn annotate_stage(
             check_type_combinations_for_write(
                 snapshot,
                 type_manager,
+                variable_registry,
                 &block,
                 running_variable_annotations,
                 running_constraint_annotations,
@@ -337,6 +338,7 @@ fn annotate_stage(
             update::type_check::check_annotations(
                 snapshot,
                 type_manager,
+                variable_registry,
                 &block,
                 running_variable_annotations,
                 running_constraint_annotations,
@@ -369,6 +371,7 @@ fn annotate_stage(
             check_type_combinations_for_write(
                 snapshot,
                 type_manager,
+                variable_registry,
                 &block,
                 running_variable_annotations,
                 running_constraint_annotations,
@@ -398,6 +401,7 @@ fn annotate_stage(
             check_type_combinations_for_write(
                 snapshot,
                 type_manager,
+                variable_registry,
                 &block,
                 running_variable_annotations,
                 running_constraint_annotations,
