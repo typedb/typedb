@@ -212,7 +212,7 @@ impl DatabaseImportService {
             let total_items = database_importer.total_item_count();
             if total_items != 0 && total_items % ITEMS_LOG_INTERVAL == 0 {
                 let name = database_importer.database_name();
-                event!(Level::INFO, "Processed {total_items} imported items of '{name}'...");
+                event!(Level::DEBUG, "Processed {total_items} imported items of '{name}'...");
             }
         }
 
@@ -225,7 +225,7 @@ impl DatabaseImportService {
             None => return Err(DatabaseImportServiceError::DatabaseNotFoundForDone {}),
         };
 
-        event!(Level::INFO, "Finalising the imported database...");
+        event!(Level::DEBUG, "Finalising the imported database...");
         database_importer
             .import_done()
             .await
@@ -335,7 +335,7 @@ impl DatabaseImportService {
     ) -> Result<(), DatabaseImportServiceError> {
         let MigrationHeaderProto { typedb_version: original_version, original_database } = header_proto;
         let new_database = database_importer.database_name();
-        event!(Level::INFO, "Importing '{original_database}' from TypeDB {original_version} to '{new_database}'.");
+        event!(Level::DEBUG, "Importing '{original_database}' from TypeDB {original_version} to '{new_database}'.");
         Ok(())
     }
 

@@ -108,7 +108,7 @@ impl DatabaseExportService {
 
     pub(crate) async fn export(mut self) {
         let start = Instant::now();
-        event!(Level::INFO, "Exporting '{}' from TypeDB {}.", self.database.name(), self.server_info.version);
+        event!(Level::DEBUG, "Exporting '{}' from TypeDB {}.", self.database.name(), self.server_info.version);
         let Some(transaction) = self.open_transaction().await else {
             return;
         };
@@ -242,7 +242,7 @@ impl DatabaseExportService {
         self.total_item_count += 1;
 
         if self.total_item_count % ITEMS_LOG_INTERVAL == 0 {
-            event!(Level::INFO, "Processed {} exported items of '{}'...", self.total_item_count, self.database.name());
+            event!(Level::DEBUG, "Processed {} exported items of '{}'...", self.total_item_count, self.database.name());
         }
     }
 
