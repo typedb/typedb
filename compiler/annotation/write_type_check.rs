@@ -244,7 +244,7 @@ fn pairs_from_vertex_annotations(
 ) -> Result<BTreeSet<(Type, Type)>, TypeInferenceError> {
     let left_types = input_annotations_variables.get(left.as_variable().as_ref().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: variable_registry.get_variable_name_or_unnamed(right.as_variable().unwrap()).to_owned(),
+            variable: variable_registry.get_variable_name_or_unnamed(left.as_variable().unwrap()).to_owned(),
             source_span,
         },
     )?;
