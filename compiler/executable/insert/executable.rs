@@ -76,13 +76,11 @@ pub fn compile(
         source_span,
     )?;
 
-    let mut connection_instructions = Vec::with_capacity(block.conjunction().constraints().len());
-    add_connections(
+    let connection_instructions = add_connections(
         block.conjunction(),
         block_annotations,
         &variable_positions,
         variable_registry,
-        &mut connection_instructions,
         input_variables,
     )?;
 
@@ -135,13 +133,11 @@ impl OptionalInsert {
             stage_source_span,
         )?;
 
-        let mut connection_instructions = Vec::with_capacity(optional.conjunction().constraints().len());
-        add_connections(
+        let connection_instructions = add_connections(
             optional.conjunction(),
             block_annotations,
             variable_positions,
             variable_registry,
-            &mut connection_instructions,
             input_variables,
         )?;
 
@@ -291,22 +287,22 @@ fn add_connections(
     block_annotations: &BlockAnnotations,
     variable_positions: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
-    optional_connection_instructions: &mut Vec<ConnectionInstruction>,
     input_variables: &HashMap<Variable, VariablePosition>,
-) -> Result<(), Box<WriteCompilationError>> {
+) -> Result<Vec<ConnectionInstruction>, Box<WriteCompilationError>> {
     let constraints = conjunction.constraints();
+    let mut connection_instructions = Vec::with_capacity(constraints.len());
     let type_annotations =
         block_annotations.type_annotations_of(conjunction).expect("insert conjunction must have type annotations");
-    add_has(constraints, variable_positions, variable_registry, optional_connection_instructions)?;
+    add_has(constraints, variable_positions, variable_registry, &mut connection_instructions)?;
     add_links(
         constraints,
         type_annotations,
         input_variables,
         variable_positions,
         variable_registry,
-        optional_connection_instructions,
+        &mut connection_instructions,
     )?;
-    Ok(())
+    Ok(connection_instructions)
 }
 
 fn add_has(
@@ -501,11 +497,11 @@ pub(crate) fn resolve_links_roles(
             let role_type_vertex = links.role_type();
             let role_type = role_type_vertex.as_variable().expect("links.role_type is always a variable");
             if let Some(input_position) = input_variables.get(&role_type) {
-                Ok((role_type.clone(), TypeSource::InputVariable(*input_position)))
+                Ok((role_type, TypeSource::InputVariable(*input_position)))
             } else {
                 let annotations = type_annotations.vertex_annotations_of(role_type_vertex).unwrap();
                 if let Ok(type_) = annotations.iter().exactly_one() {
-                    Ok((role_type.clone(), TypeSource::Constant(*type_)))
+                    Ok((role_type, TypeSource::Constant(*type_)))
                 } else {
                     let player_variable = variable_registry
                         .get_variable_name_or_unnamed(links.player().as_variable().unwrap())
