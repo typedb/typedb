@@ -336,7 +336,7 @@ impl LocalServerState {
             .await
             .unwrap()
             .next()
-            .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
+            .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP address", address))
     }
 }
 
