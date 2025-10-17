@@ -304,12 +304,10 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 self.pipeline_structure.stages.push(QueryStructureStage::Insert { block });
             }
             AnnotatedStage::Put { block, insert_annotations: annotations, .. } => {
-                debug_assert!(block.conjunction().nested_patterns().is_empty());
                 let block = self.add_conjunction(None, block.conjunction(), &annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Put { block });
             }
             AnnotatedStage::Update { block, annotations, .. } => {
-                debug_assert!(block.conjunction().nested_patterns().is_empty());
                 let block = self.add_conjunction(None, block.conjunction(), &annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Update { block });
             }

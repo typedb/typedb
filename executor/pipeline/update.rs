@@ -9,12 +9,16 @@ use std::sync::Arc;
 use compiler::{
     executable::{
         insert::{instructions::ConceptInstruction, VariableSource},
-        update::{executable::UpdateExecutable, instructions::ConnectionInstruction},
+        update::{
+            executable::{OptionalUpdate, UpdateExecutable},
+            instructions::ConnectionInstruction,
+        },
     },
     VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
+use itertools::Itertools;
 use resource::{constants::traversal::CHECK_INTERRUPT_FREQUENCY_ROWS, profile::StageProfile};
 use storage::snapshot::WritableSnapshot;
 
@@ -71,7 +75,7 @@ where
                 Some((_, VariableSource::Input(src))) => Some((*src, VariablePosition::new(i as u32))),
                 Some((_, VariableSource::Inserted)) | None => None,
             })
-            .collect();
+            .collect_vec();
         let mut batch =
             match prepare_output_rows(executable.output_width() as u32, previous_iterator, &input_output_mapping) {
                 Ok(output_rows) => output_rows,
@@ -115,23 +119,103 @@ fn execute_update(
 ) -> Result<(), Box<WriteError>> {
     debug_assert!(row.get_multiplicity() == 1);
     debug_assert!(row.len() == executable.output_row_schema.len());
-    let mut index = 0;
-    for instruction in &executable.concept_instructions {
-        let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
+    let mut profile_index = 0;
+    execute_concept_instructions(
+        &executable.concept_instructions,
+        snapshot,
+        thing_manager,
+        parameters,
+        row,
+        stage_profile,
+        &mut profile_index,
+    )?;
+    execute_connection_instructions(
+        &executable.connection_instructions,
+        snapshot,
+        thing_manager,
+        parameters,
+        row,
+        stage_profile,
+        &mut profile_index,
+    )?;
+    for optional in &executable.optional_updates {
+        execute_optional_update(optional, snapshot, thing_manager, parameters, row, stage_profile, &mut profile_index)?;
+    }
+    Ok(())
+}
+
+fn execute_optional_update(
+    optional: &OptionalUpdate,
+    snapshot: &mut impl WritableSnapshot,
+    thing_manager: &ThingManager,
+    parameters: &ParameterRegistry,
+    row: &mut Row<'_>,
+    stage_profile: &StageProfile,
+    profile_index: &mut usize,
+) -> Result<(), Box<WriteError>> {
+    for &input in &optional.required_input_variables {
+        if row.len() <= input.as_usize() || row.get(input).is_none() {
+            return Ok(());
+        }
+    }
+    execute_concept_instructions(
+        &optional.concept_instructions,
+        snapshot,
+        thing_manager,
+        parameters,
+        row,
+        stage_profile,
+        profile_index,
+    )?;
+    execute_connection_instructions(
+        &optional.connection_instructions,
+        snapshot,
+        thing_manager,
+        parameters,
+        row,
+        stage_profile,
+        profile_index,
+    )?;
+    Ok(())
+}
+
+fn execute_concept_instructions(
+    concept_instructions: &[ConceptInstruction],
+    snapshot: &mut impl WritableSnapshot,
+    thing_manager: &ThingManager,
+    parameters: &ParameterRegistry,
+    row: &mut Row<'_>,
+    stage_profile: &StageProfile,
+    profile_index: &mut usize,
+) -> Result<(), Box<WriteError>> {
+    for instruction in concept_instructions {
+        let step_profile = stage_profile.extend_or_get(*profile_index, || format!("{}", instruction));
         let measurement = step_profile.start_measurement();
         match instruction {
             ConceptInstruction::PutAttribute(isa_attr) => {
                 isa_attr.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
             ConceptInstruction::PutObject(isa_object) => {
-                unreachable!("Unexpected Put Object for Update: {isa_object:?}");
+                isa_object.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
         }
         measurement.end(&step_profile, 1, 1);
-        index += 1;
+        *profile_index += 1;
     }
-    for instruction in &executable.connection_instructions {
-        let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
+    Ok(())
+}
+
+fn execute_connection_instructions(
+    connection_instructions: &Vec<ConnectionInstruction>,
+    snapshot: &mut impl WritableSnapshot,
+    thing_manager: &ThingManager,
+    parameters: &ParameterRegistry,
+    row: &mut Row<'_>,
+    stage_profile: &StageProfile,
+    profile_index: &mut usize,
+) -> Result<(), Box<WriteError>> {
+    for instruction in connection_instructions {
+        let step_profile = stage_profile.extend_or_get(*profile_index, || format!("{}", instruction));
         let measurement = step_profile.start_measurement();
         match instruction {
             ConnectionInstruction::Has(has) => {
@@ -142,7 +226,7 @@ fn execute_update(
             }
         };
         measurement.end(&step_profile, 1, 1);
-        index += 1;
+        *profile_index += 1;
     }
     Ok(())
 }

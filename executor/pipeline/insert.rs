@@ -16,6 +16,7 @@ use compiler::{
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
+use itertools::Itertools;
 use resource::{
     constants::traversal::{BATCH_DEFAULT_CAPACITY, CHECK_INTERRUPT_FREQUENCY_ROWS},
     profile::StageProfile,
@@ -76,7 +77,7 @@ where
                 Some((_, VariableSource::Input(src))) => Some((*src, VariablePosition::new(i as u32))),
                 Some((_, VariableSource::Inserted)) | None => None,
             })
-            .collect();
+            .collect_vec();
         let mut batch =
             match prepare_output_rows(executable.output_width() as u32, previous_iterator, &input_output_mapping) {
                 Ok(output_rows) => output_rows,
@@ -113,7 +114,7 @@ where
 pub(crate) fn prepare_output_rows(
     output_width: u32,
     mut input_iterator: impl StageIterator,
-    mapping: &Vec<(VariablePosition, VariablePosition)>,
+    mapping: &[(VariablePosition, VariablePosition)],
 ) -> Result<Batch, Box<PipelineExecutionError>> {
     let initial_output_batch_size = input_iterator.multiplicity_sum_if_collected().unwrap_or(BATCH_DEFAULT_CAPACITY);
     let mut output_batch = Batch::new(output_width, initial_output_batch_size);
@@ -211,6 +212,31 @@ fn execute_optional_insert(
     )?;
     Ok(())
 }
+fn execute_concept_instructions(
+    concept_instructions: &[ConceptInstruction],
+    snapshot: &mut impl WritableSnapshot,
+    thing_manager: &ThingManager,
+    parameters: &ParameterRegistry,
+    row: &mut Row<'_>,
+    stage_profile: &StageProfile,
+    profile_index: &mut usize,
+) -> Result<(), Box<WriteError>> {
+    for instruction in concept_instructions {
+        let step_profile = stage_profile.extend_or_get(*profile_index, || format!("{}", instruction));
+        let measurement = step_profile.start_measurement();
+        match instruction {
+            ConceptInstruction::PutAttribute(isa_attr) => {
+                isa_attr.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
+            }
+            ConceptInstruction::PutObject(isa_object) => {
+                isa_object.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
+            }
+        }
+        measurement.end(&step_profile, 1, 1);
+        *profile_index += 1;
+    }
+    Ok(())
+}
 
 fn execute_connection_instructions(
     connection_instructions: &[ConnectionInstruction],
@@ -232,32 +258,6 @@ fn execute_connection_instructions(
                 role_player.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
         };
-        measurement.end(&step_profile, 1, 1);
-        *profile_index += 1;
-    }
-    Ok(())
-}
-
-fn execute_concept_instructions(
-    concept_instructions: &[ConceptInstruction],
-    snapshot: &mut impl WritableSnapshot,
-    thing_manager: &ThingManager,
-    parameters: &ParameterRegistry,
-    row: &mut Row<'_>,
-    stage_profile: &StageProfile,
-    profile_index: &mut usize,
-) -> Result<(), Box<WriteError>> {
-    for instruction in concept_instructions {
-        let step_profile = stage_profile.extend_or_get(*profile_index, || format!("{}", instruction));
-        let measurement = step_profile.start_measurement();
-        match instruction {
-            ConceptInstruction::PutAttribute(isa_attr) => {
-                isa_attr.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
-            }
-            ConceptInstruction::PutObject(isa_object) => {
-                isa_object.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
-            }
-        }
         measurement.end(&step_profile, 1, 1);
         *profile_index += 1;
     }

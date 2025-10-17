@@ -254,6 +254,11 @@ typedb_error! {
             "Illegal nested pattern provided for an insert stage. Only 'try {{}}' blocks are allowed.",
             source_span: Option<Span>,
         ),
+        IllegalNestedPatternForUpdate(
+            47,
+            "Illegal nested pattern provided for an update stage. Only 'try {{}}' blocks are allowed.",
+            source_span: Option<Span>,
+        ),
         RegexExpectedStringLiteral(
             50,
             "Expected a string literal as regex.",

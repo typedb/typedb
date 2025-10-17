@@ -119,23 +119,21 @@ fn optional_writes() {
         match $p isa person; try { $p has name $name; };
         put $q isa person; try { $q has $name; };
     "#;
-    // put-try blocks don't parse currently
-    if let Ok(parsed) = typeql::parse_query(query) {
-        let translation_result =
-            translate_pipeline(&HashMapFunctionSignatureIndex::empty(), &parsed.into_structure().into_pipeline());
-        assert!(translation_result.is_err(), "Try blocks are not yet supported in put stages: {query}");
-    }
+    let translation_result = translate_pipeline(
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_ok(), "{translation_result:?}");
 
     let query = r#"
         match $p isa person; try { $p has name $name; };
         update try { $p has $name; };
     "#;
-    // update-try blocks don't parse currently
-    if let Ok(parsed) = typeql::parse_query(query) {
-        let translation_result =
-            translate_pipeline(&HashMapFunctionSignatureIndex::empty(), &parsed.into_structure().into_pipeline());
-        assert!(translation_result.is_err(), "Try blocks are not yet supported in update stages: {query}");
-    }
+    let translation_result = translate_pipeline(
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_ok(), "{translation_result:?}");
 }
 
 #[test]
@@ -169,6 +167,46 @@ fn multiple_optional_writes_in_a_block() {
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     );
     assert!(translation_result.is_ok(), "{translation_result:?}");
+
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        put $q isa person; try { $q has $name; $q has $age; };
+    "#;
+    let translation_result = translate_pipeline(
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_ok(), "{translation_result:?}");
+
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        put $q isa person; try { $q has $name, has $age; };
+    "#;
+    let translation_result = translate_pipeline(
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_ok(), "{translation_result:?}");
+
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        update try { $p has $name; $p has $age; };
+    "#;
+    let translation_result = translate_pipeline(
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_ok(), "{translation_result:?}");
+
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        update try { $p has $name, has $age; };
+    "#;
+    let translation_result = translate_pipeline(
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_ok(), "{translation_result:?}");
 }
 
 #[test]
@@ -187,6 +225,26 @@ fn nested_optional_blocks_in_write() {
     let query = r#"
         match $p isa person; try { $p has name $name, has age $age; };
         insert $q isa person; try { $q has $name; try { $q has $age; }; };
+    "#;
+    let translation_result = translate_pipeline(
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_err(), "Nested try blocks are not yet supported in write stages: {query}");
+
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        put $q isa person; try { $q has $name; try { $q has $age; }; };
+    "#;
+    let translation_result = translate_pipeline(
+        &HashMapFunctionSignatureIndex::empty(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
+    );
+    assert!(translation_result.is_err(), "Nested try blocks are not yet supported in write stages: {query}");
+
+    let query = r#"
+        match $p isa person; try { $p has name $name, has age $age; };
+        update try { $p has $name; try { $p has $age; }; };
     "#;
     let translation_result = translate_pipeline(
         &HashMapFunctionSignatureIndex::empty(),
