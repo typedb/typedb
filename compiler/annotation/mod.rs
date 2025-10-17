@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable::Variable;
 use concept::error::ConceptReadError;
 use encoding::value::{label::Label, value_type::ValueTypeCategory};
 use error::typedb_error;
@@ -200,7 +199,7 @@ typedb_error!(
         AnnotationsUnavailableForVariableInWrite(
             10,
             "Typing information for the variable '{variable}' is not available. Ensure the variable is available from a previous stage or is inserted in this stage.",
-            variable: Variable,
+            variable: String,
             source_span: Option<Span>,
         ),
         DetectedUnsatisfiableEdge(

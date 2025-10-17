@@ -16,7 +16,7 @@ use ir::{
         constraint::{Constraint, Has, Links},
         Vertex,
     },
-    pipeline::block::Block,
+    pipeline::{block::Block, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -30,6 +30,7 @@ use crate::annotation::{
 pub fn check_type_combinations_for_write(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
     block: &Block,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -41,6 +42,7 @@ pub fn check_type_combinations_for_write(
                 validate_has_type_combinations_for_write(
                     snapshot,
                     type_manager,
+                    variable_registry,
                     has,
                     input_annotations_variables,
                     input_annotations_constraints,
@@ -51,6 +53,7 @@ pub fn check_type_combinations_for_write(
                 validate_links_type_combinations_for_write(
                     snapshot,
                     type_manager,
+                    variable_registry,
                     links,
                     input_annotations_variables,
                     input_annotations_constraints,
@@ -85,6 +88,7 @@ pub fn check_type_combinations_for_write(
 pub(crate) fn validate_has_type_combinations_for_write(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
     insert_has: &Has<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
@@ -106,6 +110,7 @@ pub(crate) fn validate_has_type_combinations_for_write(
     let match_pairs = match may_intersect_all(applicable_constraint_annotations) {
         Some(pairs) => pairs,
         None => pairs_from_vertex_annotations(
+            variable_registry,
             input_annotations_variables,
             insert_has.owner(),
             insert_has.attribute(),
@@ -125,6 +130,7 @@ pub(crate) fn validate_has_type_combinations_for_write(
 pub(crate) fn validate_links_type_combinations_for_write(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
     insert_links: &Links<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
@@ -152,6 +158,7 @@ pub(crate) fn validate_links_type_combinations_for_write(
             .map(|(_, annotations)| annotations.as_left_right().left_to_right());
         let match_pairs = match (may_intersect_all(link_annotations), may_intersect_all(relates_annotations)) {
             (None, None) => pairs_from_vertex_annotations(
+                variable_registry,
                 input_annotations_variables,
                 insert_links.relation(),
                 insert_links.role_type(),
@@ -188,6 +195,7 @@ pub(crate) fn validate_links_type_combinations_for_write(
             .map(|(_, annotations)| annotations.as_left_right().left_to_right());
         let match_pairs = match (may_intersect_all(link_annotations), may_intersect_all(plays_annotations)) {
             (None, None) => pairs_from_vertex_annotations(
+                variable_registry,
                 input_annotations_variables,
                 insert_links.player(),
                 insert_links.role_type(),
@@ -228,6 +236,7 @@ fn may_intersect_all<T: ContainsAndIterOnType>(
 }
 
 fn pairs_from_vertex_annotations(
+    variable_registry: &VariableRegistry,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     left: &Vertex<Variable>,
     right: &Vertex<Variable>,
@@ -235,13 +244,13 @@ fn pairs_from_vertex_annotations(
 ) -> Result<BTreeSet<(Type, Type)>, TypeInferenceError> {
     let left_types = input_annotations_variables.get(left.as_variable().as_ref().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: right.as_variable().unwrap(),
+            variable: variable_registry.get_variable_name_or_unnamed(left.as_variable().unwrap()).to_owned(),
             source_span,
         },
     )?;
     let right_types = input_annotations_variables.get(right.as_variable().as_ref().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: right.as_variable().unwrap(),
+            variable: variable_registry.get_variable_name_or_unnamed(right.as_variable().unwrap()).to_owned(),
             source_span,
         },
     )?;

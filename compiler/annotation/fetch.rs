@@ -166,7 +166,8 @@ fn annotate_some(
     match some {
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
         FetchSome::SingleAttribute(FetchSingleAttribute { variable, attribute }) => {
-            let variable_name = variable_registry.get_variable_name(variable)
+            let variable_name = variable_registry
+                .get_variable_name(variable)
                 .expect("Expected fetched variable names to be validated during translation");
             let attribute_type = type_manager
                 .get_attribute_type(snapshot, &attribute)
@@ -239,7 +240,8 @@ fn annotate_some(
             Ok(AnnotatedFetchSome::ListSubFetch(annotated_sub_fetch?))
         }
         FetchSome::ListAttributesAsList(FetchListAttributeAsList { variable, attribute }) => {
-            let variable_name = variable_registry.get_variable_name(variable)
+            let variable_name = variable_registry
+                .get_variable_name(variable)
                 .expect("Expected fetched variable names to be validated during translation");
             let attribute_type = type_manager
                 .get_attribute_type(snapshot, &attribute)
