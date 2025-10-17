@@ -19,14 +19,10 @@ def typedb_dependencies():
     )
 
 def typeql():
-    native.local_repository(
-        name = "typeql",
-        path = "../typeql"
-    )
     git_repository(
-        name = "_typeql",
-        remote = "https://github.com/typedb/typeql",
-        commit = "a133354e8db3e2f1bf9e9f8a3a260e9b73bfd690",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
+        name = "typeql",
+        remote = "https://github.com/dmitrii-ubskii/typeql",
+        commit = "b220659baa0a3ec70b5298bd71a7fe66fec9348d",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_driver
     )
 
 def typedb_protocol():
