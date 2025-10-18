@@ -213,7 +213,7 @@ fn execute_analyze(
 ) -> Result<AnalysedQuery, BehaviourTestExecutionError> {
     with_read_tx!(context, |tx| {
         tx.query_manager
-            .analyse_query(
+            .analyse(
                 tx.snapshot.clone_inner(),
                 &tx.type_manager,
                 tx.thing_manager.clone(),
