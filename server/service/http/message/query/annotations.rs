@@ -14,6 +14,7 @@ use compiler::{
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use query::analyse::{FetchObjectStructureAnnotations, FetchStructureAnnotations, FunctionStructureAnnotations};
 use serde::{Deserialize, Serialize};
+use compiler::query_structure::PipelineVariableAnnotationAndModifier;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
@@ -43,6 +44,14 @@ impl SingleTypeAnnotationResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
+struct VariableAnnotationsResponse {
+    is_optional: bool,
+    #[serde(flatten)]
+    annotations: TypeAnnotationResponse,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "tag")]
 enum TypeAnnotationResponse {
     Thing {
         annotations: Vec<SingleTypeAnnotationResponse>,
@@ -59,7 +68,7 @@ enum TypeAnnotationResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct VariableAnnotationsByConjunctionResponse {
-    variable_annotations: HashMap<StructureVariableId, TypeAnnotationResponse>,
+    variable_annotations: HashMap<StructureVariableId, VariableAnnotationsResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -129,12 +138,12 @@ fn encode_function_parameter_annotations(
     })
 }
 
-fn encode_variable_type_annotations(
+fn encode_variable_type_annotations_and_modifiers(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    annotation: &PipelineVariableAnnotation,
-) -> Result<TypeAnnotationResponse, Box<ConceptReadError>> {
-    Ok(match annotation {
+    annotations_modifiers: &PipelineVariableAnnotationAndModifier,
+) -> Result<VariableAnnotationsResponse, Box<ConceptReadError>> {
+    let annotations = match &annotations_modifiers.annotations {
         PipelineVariableAnnotation::Type(types) => TypeAnnotationResponse::Type {
             annotations: encode_type_annotation_vec(snapshot, type_manager, types.iter())?,
         },
@@ -145,7 +154,9 @@ fn encode_variable_type_annotations(
             let value_types = vec![encode_value_type(v.clone(), snapshot, type_manager)?];
             TypeAnnotationResponse::Value { value_types }
         }
-    })
+    };
+    let is_optional = annotations_modifiers.is_optional;
+    Ok(VariableAnnotationsResponse { is_optional, annotations })
 }
 
 fn encode_type_annotation_vec<'a>(
@@ -183,26 +194,22 @@ pub(super) fn encode_pipeline_structure_annotations(
     type_manager: &TypeManager,
     pipeline_structure_annotations: PipelineStructureAnnotations,
 ) -> Result<PipelineStructureAnnotationsResponse, Box<ConceptReadError>> {
-    let mut annotations_by_conjunction = Vec::new();
-    pipeline_structure_annotations.iter().try_for_each(|(conj_id, var_annotations)| {
-        let conj_id = conj_id.0 as usize;
-        if annotations_by_conjunction.len() <= conj_id {
-            annotations_by_conjunction.resize_with(conj_id + 1, || VariableAnnotationsByConjunctionResponse {
-                variable_annotations: HashMap::new(),
-            });
-        }
-        let variable_annotations = var_annotations
-            .into_iter()
-            .map(|(var_id, annotations)| {
-                Ok::<_, Box<ConceptReadError>>((
-                    var_id.clone(),
-                    encode_variable_type_annotations(snapshot, type_manager, annotations)?,
-                ))
-            })
-            .collect::<Result<HashMap<_, _>, _>>()?;
-        annotations_by_conjunction[conj_id] = VariableAnnotationsByConjunctionResponse { variable_annotations };
-        Ok::<_, Box<ConceptReadError>>(())
-    })?;
+    let mut annotations_by_conjunction = Vec::with_capacity(pipeline_structure_annotations.len());
+    annotations_by_conjunction.resize_with(pipeline_structure_annotations.len(), || {
+        VariableAnnotationsByConjunctionResponse { variable_annotations: HashMap::new() };
+    });
+    let annotations_by_conjunction = pipeline_structure_annotations
+        .iter()
+        .map(|var_annotations| {
+            let variable_annotations = var_annotations
+                .into_iter()
+                .map(|(var_id, annotations)| {
+                    Ok((var_id.clone(), encode_variable_type_annotations_and_modifiers(snapshot, type_manager, annotations)?))
+                })
+                .collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
+            Ok(VariableAnnotationsByConjunctionResponse { variable_annotations })
+        })
+        .collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
     Ok(PipelineStructureAnnotationsResponse { annotations_by_conjunction })
 }
 
@@ -276,11 +283,7 @@ pub mod bdd {
     use compiler::query_structure::{QueryStructureConjunctionID, QueryStructureStage};
     use itertools::Itertools;
 
-    use super::{
-        FetchStructureAnnotationsResponse, FunctionReturnAnnotationsResponse, FunctionStructureAnnotationsResponse,
-        PipelineStructureAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse,
-        VariableAnnotationsByConjunctionResponse,
-    };
+    use super::{FetchStructureAnnotationsResponse, FunctionReturnAnnotationsResponse, FunctionStructureAnnotationsResponse, PipelineStructureAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse, VariableAnnotationsByConjunctionResponse, VariableAnnotationsResponse};
     use crate::service::http::message::query::{
         bdd::{
             functor_macros,
@@ -364,7 +367,6 @@ pub mod bdd {
     }
 
     enum SubBlockAnnotation {
-        Trunk { conjunction: TrunkAnnotationToEncode },
         Or { branches: Vec<BlockAnnotationToEncode> },
         Not { conjunction: BlockAnnotationToEncode },
         Try { conjunction: BlockAnnotationToEncode },
@@ -372,8 +374,8 @@ pub mod bdd {
 
     impl FunctorEncoded for BlockAnnotationToEncode {
         fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            let mut elements = vec![SubBlockAnnotation::Trunk { conjunction: TrunkAnnotationToEncode(self.0) }];
-            elements.extend(context.structure.conjunctions[self.0].iter().filter_map(|c| match &c.constraint {
+            let trunk = TrunkAnnotationToEncode(self.0);
+            let subpatterns = context.structure.conjunctions[self.0].iter().filter_map(|c| match &c.constraint {
                 StructureConstraint::Or { branches } => {
                     let branches = branches.iter().copied().map_into().collect();
                     Some(SubBlockAnnotation::Or { branches })
@@ -385,12 +387,13 @@ pub mod bdd {
                     Some(SubBlockAnnotation::Try { conjunction: (*conjunction).into() })
                 }
                 _ => None,
-            }));
-            elements.encode_as_functor(context)
+            }).collect::<Vec<_>>();
+            let (trunk_ref, subpatterns_ref) = (&trunk, &subpatterns);
+            encode_functor_impl!(context, And { trunk_ref, subpatterns_ref, })
         }
     }
 
-    impl_functor_for!(enum SubBlockAnnotation [ Trunk { conjunction, } | Or { branches, } | Not { conjunction, } | Try { conjunction, } | ]);
+    impl_functor_for!(enum SubBlockAnnotation [ Or { branches, } | Not { conjunction, } | Try { conjunction, } | ]);
     impl_functor_for!(enum TypeAnnotationResponse [ Thing { annotations, } | Type { annotations, } | Value { value_types, } | ]);
     impl_functor_for_multi!(|self, context| [
         TrunkAnnotationToEncode => {
@@ -408,6 +411,10 @@ pub mod bdd {
                         label.encode_as_functor(context)
                     }
             }
+        }
+        VariableAnnotationsResponse => {
+            debug_assert!(!self.is_optional); // Still has to be implemented
+            self.annotations.encode_as_functor(context)
         }
     ]);
 
