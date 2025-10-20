@@ -103,7 +103,25 @@ pub fn translate_put(
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
     add_patterns(&function_index, &mut builder.conjunction_mut(), &put.patterns)?;
-    builder.finish()
+    let block = builder.finish()?;
+    for constraint in block.conjunction().constraints() {
+        match constraint {
+            | crate::pattern::constraint::Constraint::RoleName(_)
+            | crate::pattern::constraint::Constraint::Isa(_)
+            | crate::pattern::constraint::Constraint::Links(_)
+            | crate::pattern::constraint::Constraint::Has(_)
+            | crate::pattern::constraint::Constraint::Comparison(_)
+            | crate::pattern::constraint::Constraint::LinksDeduplication(_)
+            | crate::pattern::constraint::Constraint::Value(_) => (),
+            constraint => {
+                return Err(Box::new(RepresentationError::IllegalStatementForPut {
+                    constraint_type: constraint.name().to_owned(),
+                    source_span: constraint.source_span(),
+                }))
+            }
+        }
+    }
+    Ok(block)
 }
 
 pub fn translate_delete(
