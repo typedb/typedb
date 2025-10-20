@@ -413,7 +413,7 @@ workflows:
       - test-deploy-snapshot-linux-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, grpc-query-structure--deploy-ci-artifact]
 
       - test-deploy-snapshot-linux-arm64:
           filters:
