@@ -1057,7 +1057,7 @@ impl BinaryConstraint for Isa<Variable> {
                 }
                 TypeAnnotation::RoleType(_) => {
                     // Add nothing to the collector -> it'll get pruned
-                },
+                }
             }
         }
         collector.insert(*right_type);
