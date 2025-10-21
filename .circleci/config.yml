@@ -30,8 +30,8 @@ executors:
 
   mac-arm64:
     macos:
-      xcode: "13.4.1"
-    resource_class: macos.m1.medium.gen1
+      xcode: "16.4.0"
+    resource_class: m4pro.medium
     working_directory: ~/typedb
 
   win-x86_64:
