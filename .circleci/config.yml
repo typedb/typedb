@@ -423,12 +423,12 @@ workflows:
       - test-deploy-snapshot-mac-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, update-circleci-mac-executors--test-deploy-snapshot ]
 
       - test-deploy-snapshot-mac-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, update-circleci-mac-executors--test-deploy-snapshot ]
 
       - test-deploy-snapshot-windows-x86_64:
           filters:
