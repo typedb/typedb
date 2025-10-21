@@ -18,7 +18,6 @@ use encoding::{
     value::{label::Label, value_type::ValueType, ValueEncodable},
     AsBytes,
 };
-use error::todo_must_implement;
 use executor::{
     batch::Batch,
     pipeline::stage::{ExecutionContext, StageIterator},
