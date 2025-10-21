@@ -281,6 +281,7 @@ fn encode_fetch_object_structure_annotations(
     Ok(encoded)
 }
 
+#[rustfmt::skip]
 #[cfg(debug_assertions)]
 pub mod bdd {
     use std::collections::HashMap;
@@ -329,23 +330,23 @@ pub mod bdd {
                 .map(|stage| match stage {
                     QueryStructureStage::Match { block } => {
                         let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        encode_functor_impl!(context, Match { block })
+                        encode_functor_impl!(context, Match { block, })
                     }
                     QueryStructureStage::Insert { block } => {
                         let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        encode_functor_impl!(context, Insert { block })
+                        encode_functor_impl!(context, Insert { block, })
                     }
                     QueryStructureStage::Delete { block, .. } => {
                         let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        encode_functor_impl!(context, Delete { block })
+                        encode_functor_impl!(context, Delete { block, })
                     }
                     QueryStructureStage::Put { block } => {
                         let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        encode_functor_impl!(context, Put { block })
+                        encode_functor_impl!(context, Put { block, })
                     }
                     QueryStructureStage::Update { block } => {
                         let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        encode_functor_impl!(context, Update { block })
+                        encode_functor_impl!(context, Update { block, })
                     }
                     QueryStructureStage::Select { .. } => encode_functor_impl!(context, Select {}),
                     QueryStructureStage::Sort { .. } => encode_functor_impl!(context, Sort {}),
@@ -357,7 +358,7 @@ pub mod bdd {
                 })
                 .collect::<Vec<_>>();
             let encoded_stages_ref = &encoded_stages;
-            encode_functor_impl!(context, Pipeline { encoded_stages_ref }) // Not ideal to encode the elements again
+            encode_functor_impl!(context, Pipeline { encoded_stages_ref, }) // Not ideal to encode the elements again
         }
     }
 
@@ -401,7 +402,7 @@ pub mod bdd {
                 })
                 .collect::<Vec<_>>();
             let (trunk_ref, subpatterns_ref) = (&trunk, &subpatterns);
-            encode_functor_impl!(context, And { trunk_ref, subpatterns_ref })
+            encode_functor_impl!(context, And { trunk_ref, subpatterns_ref, })
         }
     }
 
@@ -447,7 +448,7 @@ pub mod bdd {
                 }
                 FetchStructureAnnotationsResponse::List { elements } => {
                     let elements_as_ref = elements.as_ref();
-                    encode_functor_impl!(context, List { elements_as_ref })
+                    encode_functor_impl!(context, List { elements_as_ref, })
                 }
             }
         }
