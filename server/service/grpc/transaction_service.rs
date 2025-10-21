@@ -1700,7 +1700,7 @@ impl QueryStreamTransmitter {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub enum QueryQueueOptions {
+enum QueryQueueOptions {
     Query(QueryOptions),
     Analyze,
 }
