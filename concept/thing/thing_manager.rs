@@ -24,8 +24,7 @@ use encoding::{
             ThingVertex,
         },
         type_::{
-            edge::TypeEdge,
-            property::{TypeEdgeProperty, TypeVertexProperty, TypeVertexPropertyEncoding},
+            property::{TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
         },
         Typed,
@@ -50,7 +49,6 @@ use encoding::{
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use iterator::minmax_or;
 use itertools::Itertools;
 use lending_iterator::Peekable;
 use primitive::either::Either;

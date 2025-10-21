@@ -31,7 +31,7 @@ use ir::{
         function_signature::{
             FunctionID, FunctionIDAPI, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
-        FunctionReadError, FunctionRepresentationError,
+        FunctionReadError,
     },
     translation::{
         function::{build_signature, translate_typeql_function},

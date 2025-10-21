@@ -4,13 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt};
+use std::fmt;
 
-use answer::variable::Variable;
-use ir::pipeline::VariableRegistry;
-
-use super::{ThingPosition, TypeSource, ValueSource};
-use crate::{annotation::type_annotations::BlockAnnotations, VariablePosition};
+use crate::executable::insert::{ThingPosition, TypeSource, ValueSource};
 
 #[derive(Debug)]
 pub enum InsertInstruction {

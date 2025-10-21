@@ -8,7 +8,7 @@ use std::collections::{Bound, HashMap, HashSet};
 
 use bytes::Bytes;
 use resource::profile::StorageCounters;
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,

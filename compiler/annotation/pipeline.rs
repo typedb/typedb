@@ -587,9 +587,6 @@ fn annotate_write_stage(
         variable_registry,
         running_value_variable_types,
     )?;
-    let annotations_by_scope = block_annotations.into_parts();
-    // Break if we introduce nested patterns in writes.
-    debug_assert!(block.conjunction().nested_patterns().is_empty() && 1 == annotations_by_scope.len());
 
     let annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
 

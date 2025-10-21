@@ -300,19 +300,19 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 self.pipeline_structure.stages.push(QueryStructureStage::Match { block: conjunction });
             }
             AnnotatedStage::Insert { block, annotations, .. } => {
-                let block = self.add_conjunction(None, block.conjunction(), &annotations);
+                let block = self.add_conjunction(stage_index, None, block.conjunction(), &annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Insert { block });
             }
             AnnotatedStage::Put { block, insert_annotations: annotations, .. } => {
-                let block = self.add_conjunction(None, block.conjunction(), &annotations);
+                let block = self.add_conjunction(stage_index, None, block.conjunction(), &annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Put { block });
             }
             AnnotatedStage::Update { block, annotations, .. } => {
-                let block = self.add_conjunction(None, block.conjunction(), &annotations);
+                let block = self.add_conjunction(stage_index, None, block.conjunction(), &annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Update { block });
             }
             AnnotatedStage::Delete { block, deleted_variables, annotations, .. } => {
-                let block = self.add_conjunction(None, block.conjunction(), &annotations);
+                let block = self.add_conjunction(stage_index, None, block.conjunction(), &annotations);
                 self.pipeline_structure
                     .stages
                     .push(QueryStructureStage::Delete { block, deleted_variables: vec_from(deleted_variables.iter()) });

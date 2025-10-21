@@ -42,6 +42,7 @@ pub fn check_type_combinations_for_write(
         conjunction,
         snapshot,
         type_manager,
+        variable_registry,
         input_annotations_variables,
         input_annotations_constraints,
         insert_annotations,
@@ -58,6 +59,7 @@ pub fn check_type_combinations_for_write(
                 optional.conjunction(),
                 snapshot,
                 type_manager,
+                variable_registry,
                 input_annotations_variables,
                 input_annotations_constraints,
                 insert_annotations,
@@ -71,11 +73,12 @@ fn check_type_combinations_for_write_conjunction(
     conjunction: &ir::pattern::conjunction::Conjunction,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     insert_annotations: &BlockAnnotations,
 ) -> Result<(), TypeInferenceError> {
-    Ok(for constraint in conjunction.constraints() {
+    for constraint in conjunction.constraints() {
         match constraint {
             Constraint::Has(has) => {
                 validate_has_type_combinations_for_write(
@@ -130,7 +133,8 @@ fn check_type_combinations_for_write_conjunction(
                 unreachable!("Optimised away can only appear after type inference")
             }
         }
-    })
+    }
+    Ok(())
 }
 
 pub(crate) fn validate_has_type_combinations_for_write(
