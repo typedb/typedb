@@ -497,7 +497,7 @@ fn encode_structure_constraint(
         Constraint::Kind(kind) => constraints.push(StructureConstraintWithSpan {
             text_span: span,
             constraint: StructureConstraint::Kind {
-                kind: kind.kind().to_string(),
+                kind: kind.kind().name().to_owned(),
                 r#type: encode_structure_vertex(context, kind.type_())?,
             },
         }),
@@ -551,23 +551,19 @@ fn encode_structure_vertex(
             context.record_variable(variable.into());
             StructureVertex::Variable { id: variable.into() }
         }
-        Vertex::Label(label) => match context.get_type(label) {
-            Some(type_) => {
+        Vertex::Label(label) => {
+            if let Some(type_) = context.get_type(label) {
                 let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
                 StructureVertex::Label { r#type }
+            } else if let Some(type_) = get_type_annotation_from_label(context.snapshot, context.type_manager, label)? {
+                let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
+                StructureVertex::Label { r#type }
+            } else {
+                debug_assert!(false, "Likely unreachable, thanks to the rolename handling");
+                let label = label.scoped_name.as_str().to_owned();
+                StructureVertex::Unresolved { label }
             }
-            None => match get_type_annotation_from_label(context.snapshot, context.type_manager, label)? {
-                Some(type_) => {
-                    let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
-                    StructureVertex::Label { r#type }
-                }
-                None => {
-                    debug_assert!(false, "Likely unreachable, thanks to the rolename handling");
-                    let label = label.scoped_name.as_str().to_owned();
-                    StructureVertex::Unresolved { label }
-                }
-            },
-        },
+        }
         Vertex::Parameter(param) => {
             let value = context.get_parameter_value(param).unwrap();
             StructureVertex::Value(encode_value(value))
@@ -581,6 +577,7 @@ fn encode_role_type_as_vertex(
     role_type: &Vertex<Variable>,
 ) -> Result<StructureVertex, Box<ConceptReadError>> {
     if let Some(label) = context.get_role_type(&role_type.as_variable().unwrap()) {
+        // TODO: Make consistent with GRPC API by introducing StructureVertex::NamedRole
         // At present rolename could resolve to multiple types - Manually encode.
         Ok(StructureVertex::Label { r#type: serde_json::json!(RoleTypeResponse { label: label.to_owned() }) })
     } else {
@@ -611,7 +608,7 @@ pub mod bdd {
     };
 
     pub fn encode_query_structure_as_functor(analyzed: &AnalysedQueryResponse) -> (String, Vec<String>) {
-        let AnalysedQueryResponse { structure, annotations } = analyzed;
+        let AnalysedQueryResponse { structure, annotations, source: _ } = analyzed;
         let context = FunctorContext { structure: &structure.query, annotations: &annotations.query };
         let pipeline = &structure.query;
         let query = pipeline.encode_as_functor(&context);
