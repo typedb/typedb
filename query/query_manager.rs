@@ -62,7 +62,9 @@ use typeql::query::SchemaQuery;
 
 use crate::{
     analyse,
-    analyse::{AnalysedQuery, FetchStructureAnnotations, FunctionStructureAnnotations, QueryStructureAnnotations},
+    analyse::{
+        AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
+    },
     define,
     error::QueryError,
     query_cache::QueryCache,
@@ -377,7 +379,11 @@ impl QueryManager {
             Box::new(QueryError::QueryAnalysisFailed { source_query: source_query.to_owned(), typedb_source: source })
         })?;
 
-        Ok(AnalysedQuery { structure: query_structure, annotations: query_structure_annotations })
+        Ok(AnalysedQuery {
+            source: source_query.to_owned(),
+            structure: query_structure,
+            annotations: query_structure_annotations,
+        })
     }
 }
 
