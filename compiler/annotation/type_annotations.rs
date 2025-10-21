@@ -12,6 +12,8 @@ use std::{
 use answer::{variable::Variable, Type};
 use ir::pattern::{conjunction::Conjunction, constraint::Constraint, Scope, ScopeId, Vertex};
 
+use crate::annotation::expression::compiled_expression::ExpressionValueType;
+
 #[derive(Debug, Clone)]
 pub struct BlockAnnotations {
     scope_annotations: HashMap<ScopeId, TypeAnnotations>,
@@ -34,6 +36,16 @@ impl BlockAnnotations {
         self.scope_annotations.get_mut(&conjunction.scope_id())
     }
 
+    pub(crate) fn set_value_types_of(
+        &mut self,
+        conjunction: &Conjunction,
+        annotations: BTreeMap<Vertex<Variable>, ExpressionValueType>,
+    ) {
+        let conjunction_annotations = self.type_annotations_mut_of(conjunction).expect("Expected annotations");
+        debug_assert!(conjunction_annotations.value_type_annotations.is_none());
+        conjunction_annotations.value_type_annotations = Some(annotations);
+    }
+
     pub(crate) fn into_parts(self) -> HashMap<ScopeId, TypeAnnotations> {
         self.scope_annotations
     }
@@ -47,6 +59,7 @@ impl BlockAnnotations {
 pub struct TypeAnnotations {
     vertex: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
     constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
+    value_type_annotations: Option<BTreeMap<Vertex<Variable>, ExpressionValueType>>,
 }
 
 impl TypeAnnotations {
@@ -54,7 +67,7 @@ impl TypeAnnotations {
         variables: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,
         constraints: HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     ) -> Self {
-        TypeAnnotations { vertex: variables, constraints }
+        TypeAnnotations { vertex: variables, constraints, value_type_annotations: None }
     }
 
     pub fn vertex_annotations(&self) -> &BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
@@ -67,6 +80,15 @@ impl TypeAnnotations {
 
     pub(super) fn vertex_annotations_mut(&mut self) -> &mut BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
         &mut self.vertex
+    }
+
+    pub fn value_annotations(&self) -> &BTreeMap<Vertex<Variable>, ExpressionValueType> {
+        self.value_type_annotations.as_ref().expect("Expected value annotations")
+    }
+
+    pub fn value_type_annotations_of(&self, vertex: &Vertex<Variable>) -> Option<&ExpressionValueType> {
+        debug_assert!(self.value_type_annotations.is_some());
+        self.value_type_annotations.as_ref().and_then(|annotations| annotations.get(vertex))
     }
 
     pub fn constraint_annotations(&self) -> &HashMap<Constraint<Variable>, ConstraintTypeAnnotations> {

@@ -15,11 +15,11 @@ use compiler::{
         fetch::{AnnotatedFetchObject, AnnotatedFetchSome},
         function::{AnnotatedFunctionSignature, FunctionParameterAnnotation},
         pipeline::{AnnotatedPipeline, AnnotatedStage},
-        type_annotations::TypeAnnotations,
+        type_annotations::{BlockAnnotations, TypeAnnotations},
     },
     query_structure::{
-        PipelineStructure, PipelineStructureAnnotations, PipelineVariableAnnotation, QueryStructure,
-        QueryStructureConjunctionID, StructureVariableId,
+        ConjunctionAnnotations, PipelineStructure, PipelineStructureAnnotations, PipelineVariableAnnotation,
+        PipelineVariableAnnotationAndModifier, QueryStructure, StageIndex, StructureVariableId,
     },
 };
 use concept::{
@@ -28,11 +28,15 @@ use concept::{
 };
 use encoding::value::value_type::ValueType;
 use ir::{
-    pattern::{ParameterID, Scope, Vertex},
+    pattern::{
+        conjunction::Conjunction, nested_pattern::NestedPattern, ParameterID, Pattern, Scope, VariableBindingMode,
+        Vertex,
+    },
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
+use tokio::io::AsyncReadExt;
 
 #[derive(Debug)]
 pub struct AnalysedQuery {
@@ -43,7 +47,7 @@ pub struct AnalysedQuery {
 #[derive(Debug)]
 pub struct QueryStructureAnnotations {
     pub preamble: Vec<FunctionStructureAnnotations>,
-    pub query: Option<PipelineStructureAnnotations>,
+    pub query: PipelineStructureAnnotations,
     pub fetch: Option<FetchStructureAnnotations>,
 }
 
@@ -58,42 +62,33 @@ impl QueryStructureAnnotations {
         query_structure: &QueryStructure,
     ) -> Result<Self, Box<ConceptReadError>> {
         let AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble } = &annotated_pipeline;
-        let (pipeline, fetch) = match query_structure.query.as_ref() {
-            None => (None, None),
-            Some(pipeline_structure) => {
-                let pipeline =
-                    build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), pipeline_structure);
-                let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());
-                let fetch = annotated_fetch
-                    .as_ref()
-                    .map(|fetch| {
-                        build_fetch_annotations(
-                            snapshot,
-                            type_manager,
-                            parameters.clone(),
-                            source_query,
-                            last_stage_annotations,
-                            &fetch.object,
-                        )
-                    })
-                    .transpose()?;
-                (Some(pipeline), fetch)
-            }
-        };
-
+        let pipeline =
+            build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), &query_structure.query);
+        let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());
+        let fetch = annotated_fetch
+            .as_ref()
+            .map(|fetch| {
+                build_fetch_annotations(
+                    snapshot,
+                    type_manager,
+                    parameters.clone(),
+                    source_query,
+                    last_stage_annotations,
+                    &fetch.object,
+                )
+            })
+            .transpose()?;
         let preamble = annotated_preamble
             .iter()
             .zip(query_structure.preamble.iter())
             .map(|(annotated_function, structure)| {
                 let signature = annotated_function.annotated_signature.clone();
-                let pipeline = structure.pipeline.as_ref().map(|pipeline_structure| {
-                    build_pipeline_annotations(
-                        &annotated_function.variable_registry,
-                        annotated_function.stages.as_slice(),
-                        pipeline_structure,
-                    )
-                });
-                FunctionStructureAnnotations { signature, body: pipeline }
+                let body = build_pipeline_annotations(
+                    &annotated_function.variable_registry,
+                    annotated_function.stages.as_slice(),
+                    &structure.body,
+                );
+                FunctionStructureAnnotations { signature, body }
             })
             .collect();
 
@@ -113,7 +108,7 @@ pub enum FetchObjectStructureAnnotations {
 #[derive(Debug)]
 pub struct FunctionStructureAnnotations {
     pub signature: AnnotatedFunctionSignature,
-    pub body: Option<PipelineStructureAnnotations>,
+    pub body: PipelineStructureAnnotations,
 }
 
 pub fn build_pipeline_annotations(
@@ -121,48 +116,33 @@ pub fn build_pipeline_annotations(
     stages: &[AnnotatedStage],
     structure: &PipelineStructure,
 ) -> PipelineStructureAnnotations {
-    fn insert_variable_annotations(
-        variable_registry: &VariableRegistry,
-        variable_annotations: &mut PipelineStructureAnnotations,
-        block_id: QueryStructureConjunctionID,
-        annotations_for_block: &TypeAnnotations,
-    ) {
-        let annotations = annotations_for_block
-            .vertex_annotations()
-            .iter()
-            .filter_map(|(vertex, annos)| {
-                vertex.as_variable().map(|variable| {
-                    let category = variable_registry.get_variable_category(variable).unwrap();
-                    let annotations = match category.is_category_type() {
-                        true => PipelineVariableAnnotation::Type(annos.iter().copied().collect()),
-                        false => PipelineVariableAnnotation::Thing(annos.iter().copied().collect()),
-                    };
-                    (StructureVariableId::from(variable), annotations)
-                })
-            })
-            .collect();
-        variable_annotations.insert(block_id, annotations);
-    }
-    let mut variable_annotations = BTreeMap::new();
-    stages.iter().for_each(|stage| match stage {
-        AnnotatedStage::Put { match_annotations: block_annotations, .. }
-        | AnnotatedStage::Match { block_annotations, .. } => {
+    let mut pipeline_annotations = Vec::with_capacity(structure.parametrised_structure.conjunctions.len());
+    pipeline_annotations.resize(structure.parametrised_structure.conjunctions.len(), BTreeMap::new());
+    stages.iter().enumerate().for_each(|(index, stage)| match stage {
+        AnnotatedStage::Put { block, match_annotations: block_annotations, .. }
+        | AnnotatedStage::Match { block, block_annotations, .. } => {
             block_annotations.type_annotations().iter().for_each(|(scope_id, annotations)| {
-                let block_id = structure.parametrised_structure.scope_to_conjunction_id.get(scope_id).unwrap().clone();
-                insert_variable_annotations(variable_registry, &mut variable_annotations, block_id, annotations);
+                insert_pipeline_annotations_recursive(
+                    variable_registry,
+                    structure,
+                    StageIndex(index),
+                    block_annotations,
+                    block.conjunction(),
+                    &mut pipeline_annotations,
+                )
             })
         }
-        AnnotatedStage::Insert { block, annotations, .. } | AnnotatedStage::Update { block, annotations, .. } => {
+        AnnotatedStage::Insert { block, annotations, .. }
+        | AnnotatedStage::Update { block, annotations, .. }
+        | AnnotatedStage::Delete { block, annotations, .. } => {
+            debug_assert!(block.conjunction().nested_patterns().is_empty());
             let block_id = structure
                 .parametrised_structure
-                .scope_to_conjunction_id
-                .get(&block.conjunction().scope_id())
-                .unwrap()
-                .clone();
-            insert_variable_annotations(variable_registry, &mut variable_annotations, block_id, annotations);
+                .resolve_conjunction_id(StageIndex(index), block.conjunction().scope_id());
+            let annotations = variable_annotations_for_block(variable_registry, annotations);
+            pipeline_annotations[block_id.0 as usize] = enrich_annotations(block.conjunction(), annotations);
         }
-        AnnotatedStage::Delete { .. }
-        | AnnotatedStage::Select(_)
+        AnnotatedStage::Select(_)
         | AnnotatedStage::Sort(_)
         | AnnotatedStage::Offset(_)
         | AnnotatedStage::Limit(_)
@@ -170,7 +150,90 @@ pub fn build_pipeline_annotations(
         | AnnotatedStage::Distinct(_)
         | AnnotatedStage::Reduce(_, _) => {}
     });
+    pipeline_annotations
+}
+
+fn variable_annotations_for_block<'a>(
+    variable_registry: &'a VariableRegistry,
+    annotations_for_block: &'a TypeAnnotations,
+) -> impl Iterator<Item = (Variable, PipelineVariableAnnotation)> + 'a {
+    let mut concept_annotations = annotations_for_block.vertex_annotations().iter().filter_map(|(vertex, annos)| {
+        let variable = vertex.as_variable()?;
+        let category = variable_registry.get_variable_category(variable).unwrap();
+        let annotations = match category.is_category_type() {
+            true => PipelineVariableAnnotation::Type(annos.iter().copied().collect()),
+            false => PipelineVariableAnnotation::Thing(annos.iter().copied().collect()),
+        };
+        Some((variable, annotations))
+    });
+    let value_annotations = annotations_for_block.value_annotations().iter().filter_map(|(vertex, annos)| {
+        vertex.as_variable().map(|variable| (variable, PipelineVariableAnnotation::Value(annos.value_type().clone())))
+    });
+    concept_annotations.chain(value_annotations)
+}
+
+fn insert_pipeline_annotations_recursive(
+    variable_registry: &VariableRegistry,
+    structure: &PipelineStructure,
+    stage_index: StageIndex,
+    block_annotations: &BlockAnnotations,
+    conjunction: &Conjunction,
+    pipeline_annotations: &mut PipelineStructureAnnotations,
+) {
+    let block_id = structure.parametrised_structure.resolve_conjunction_id(stage_index, conjunction.scope_id());
+    let variable_annotations =
+        variable_annotations_for_block(variable_registry, block_annotations.type_annotations_of(conjunction).unwrap());
+    pipeline_annotations[block_id.0 as usize] = enrich_annotations(conjunction, variable_annotations);
+
+    conjunction.nested_patterns().iter().for_each(|nested| match nested {
+        NestedPattern::Disjunction(branches) => branches.conjunctions().iter().for_each(|inner| {
+            insert_pipeline_annotations_recursive(
+                variable_registry,
+                structure,
+                stage_index,
+                block_annotations,
+                inner,
+                pipeline_annotations,
+            );
+        }),
+        NestedPattern::Negation(inner) => {
+            insert_pipeline_annotations_recursive(
+                variable_registry,
+                structure,
+                stage_index,
+                block_annotations,
+                inner.conjunction(),
+                pipeline_annotations,
+            );
+        }
+        NestedPattern::Optional(inner) => {
+            insert_pipeline_annotations_recursive(
+                variable_registry,
+                structure,
+                stage_index,
+                block_annotations,
+                inner.conjunction(),
+                pipeline_annotations,
+            );
+        }
+    });
+}
+
+fn enrich_annotations(
+    conjunction: &Conjunction,
+    variable_annotations: impl Iterator<Item = (Variable, PipelineVariableAnnotation)>,
+) -> ConjunctionAnnotations {
     variable_annotations
+        .map(|(variable, annotations)| {
+            // TODO: We don't always have the info here :/
+            let is_optional = conjunction
+                .variable_binding_modes()
+                .get(&variable)
+                .map(VariableBindingMode::is_optionally_binding)
+                .unwrap_or(false);
+            (StructureVariableId::from(variable), PipelineVariableAnnotationAndModifier { is_optional, annotations })
+        })
+        .collect()
 }
 
 pub fn build_fetch_annotations(
@@ -235,12 +298,18 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
         let key = parameters.fetch_key(*parameter_id).expect("Expected fetch key to be present").to_owned();
         let fetch_object_annotations_maybe_list = match fetch_object {
             AnnotatedFetchSome::SingleVar(var) => {
-                let attribute_types = last_stage_annotations.vertex_annotations_of(&Vertex::Variable(*var))
-                    .expect("Expected annotations to be present").iter()
-                    .filter_map(|attribute_type| {
+                let as_vertex = Vertex::Variable(*var);
+                if let Some(annotations) = last_stage_annotations.vertex_annotations_of(&as_vertex) {
+                    let attribute_types = annotations.iter().filter_map(|attribute_type| {
                         attribute_type.is_attribute_type().then(|| attribute_type.as_attribute_type())
                     });
-                FetchObjectStructureAnnotations::Leaf(build_leaf_annotations(snapshot, type_manager, attribute_types)?)
+                    let leaf_annotations = build_leaf_annotations(snapshot, type_manager, attribute_types)?;
+                    FetchObjectStructureAnnotations::Leaf(leaf_annotations)
+                } else if let Some(value_type) = last_stage_annotations.value_type_annotations_of(&as_vertex) {
+                    FetchObjectStructureAnnotations::Leaf(BTreeSet::from([value_type.value_type().clone()]))
+                } else {
+                    unreachable!("Expected either type annotations or value annotations to be present");
+                }
             }
             AnnotatedFetchSome::ListAttributesAsList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
             | AnnotatedFetchSome::ListAttributesFromList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute

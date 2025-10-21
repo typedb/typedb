@@ -53,8 +53,8 @@ use typeql::{parse_query, query::SchemaQuery};
 use super::message::query::query_structure::encode_pipeline_structure;
 use crate::service::{
     http::message::query::{
-        annotations::encode_query_structure_annotations, document::encode_document,
-        query_structure::PipelineStructureResponse, row::encode_row, AnalysedQueryResponse,
+        document::encode_document, encode_analyzed_query, query_structure::PipelineStructureResponse, row::encode_row,
+        AnalysedQueryResponse,
     },
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
@@ -1168,7 +1168,7 @@ impl TransactionService {
             let function_manager = transaction.function_manager.clone();
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
-                let analyse_result = query_manager.analyse_query(
+                let analyse_result = query_manager.analyse(
                     snapshot.clone(),
                     &type_manager,
                     thing_manager.clone(),
@@ -1182,7 +1182,7 @@ impl TransactionService {
                     |typedb_source| { TransactionServiceError::AnalyseQueryFailed { typedb_source: *typedb_source } }
                 );
                 let encoded_analysed = unwrap_or_execute_else_respond_error_and_return_break!(
-                    encode_query_structure_annotations(snapshot.as_ref(), &type_manager, analysed),
+                    encode_analyzed_query(snapshot.as_ref(), &type_manager, analysed),
                     responder,
                     |typedb_source| {
                         TransactionServiceError::AnalyseQueryFailed {

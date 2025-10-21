@@ -8,9 +8,12 @@ use std::{collections::HashMap, str::FromStr};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
-use compiler::query_structure::{
-    FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure,
-    QueryStructureConjunctionID, QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
+use compiler::{
+    annotation::type_inference::get_type_annotation_from_label,
+    query_structure::{
+        FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure, QueryStructure,
+        QueryStructureConjunctionID, QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
+    },
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
@@ -69,24 +72,24 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct FunctionStructureResponse {
-    body: Option<PipelineStructureResponse>,
-    arguments: Vec<StructureVariableId>,
-    returns: FunctionReturnStructure,
+pub struct FunctionStructureResponse {
+    pub(super) body: PipelineStructureResponse,
+    pub(super) arguments: Vec<StructureVariableId>,
+    pub(super) returns: FunctionReturnStructure,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct QueryStructureResponse {
-    query: Option<PipelineStructureResponse>,
-    preamble: Vec<FunctionStructureResponse>,
+pub struct QueryStructureResponse {
+    pub(super) query: PipelineStructureResponse,
+    pub(super) preamble: Vec<FunctionStructureResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct PipelineStructureResponse {
-    conjunctions: Vec<Vec<StructureConstraintWithSpan>>,
-    pipeline: Vec<QueryStructureStage>,
+pub struct PipelineStructureResponse {
+    pub(super) conjunctions: Vec<Vec<StructureConstraintWithSpan>>,
+    pub(super) pipeline: Vec<QueryStructureStage>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
     outputs: Vec<StructureVariableId>,
 }
@@ -94,7 +97,7 @@ pub(crate) struct PipelineStructureResponse {
 // Kept for backwards compatibility
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct PipelineStructureResponseForStudio {
+pub(super) struct PipelineStructureResponseForStudio {
     blocks: Vec<StructureBlockForStudio>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
     outputs: Vec<StructureVariableId>,
@@ -122,10 +125,17 @@ pub struct StructureVariableInfo {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-enum StructureConstraint {
-    Isa(StructureConstraintIsaBase),
+pub(super) enum StructureConstraint {
+    Isa {
+        instance: StructureVertex,
+        r#type: StructureVertex,
+    },
+
     #[serde(rename = "isa!")]
-    IsaExact(StructureConstraintIsaBase),
+    IsaExact {
+        instance: StructureVertex,
+        r#type: StructureVertex,
+    },
     Has {
         owner: StructureVertex,
         attribute: StructureVertex,
@@ -136,9 +146,15 @@ enum StructureConstraint {
         role: StructureVertex,
     },
 
-    Sub(StructureConstraintSubBase),
+    Sub {
+        subtype: StructureVertex,
+        supertype: StructureVertex,
+    },
     #[serde(rename = "sub!")]
-    SubExact(StructureConstraintSubBase),
+    SubExact {
+        subtype: StructureVertex,
+        supertype: StructureVertex,
+    },
     Owns {
         owner: StructureVertex,
         attribute: StructureVertex,
@@ -202,20 +218,6 @@ enum StructureConstraint {
     },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct StructureConstraintIsaBase {
-    instance: StructureVertex,
-    r#type: StructureVertex,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct StructureConstraintSubBase {
-    subtype: StructureVertex,
-    supertype: StructureVertex,
-}
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct StructureConstraintSpan {
@@ -225,10 +227,10 @@ struct StructureConstraintSpan {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct StructureConstraintWithSpan {
+pub(super) struct StructureConstraintWithSpan {
     text_span: Option<StructureConstraintSpan>,
     #[serde(flatten)]
-    constraint: StructureConstraint,
+    pub(super) constraint: StructureConstraint,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -237,6 +239,7 @@ enum StructureVertex {
     Variable { id: StructureVariableId },
     Label { r#type: serde_json::Value },
     Value(ValueResponse),
+    Unresolved { label: String },
 }
 
 pub(crate) fn encode_query_structure(
@@ -245,18 +248,11 @@ pub(crate) fn encode_query_structure(
     query_structure: QueryStructure,
 ) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
     let QueryStructure { preamble, query: pipeline } = query_structure;
-    let pipeline = pipeline
-        .as_ref()
-        .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, &pipeline, true))
-        .transpose()?;
+    let pipeline = encode_pipeline_structure(snapshot, type_manager, &pipeline, true)?;
     let preamble = preamble
         .into_iter()
         .map(|function| {
-            let pipeline = function
-                .pipeline
-                .as_ref()
-                .map(|pipeline| encode_pipeline_structure(snapshot, type_manager, pipeline, true))
-                .transpose()?;
+            let pipeline = encode_pipeline_structure(snapshot, type_manager, &function.body, true)?;
             Ok::<_, Box<ConceptReadError>>(FunctionStructureResponse {
                 body: pipeline,
                 arguments: function.arguments,
@@ -290,7 +286,7 @@ pub(crate) fn encode_pipeline_structure(
         .collect::<Result<Vec<_>, _>>()?;
     // Ensure reduced variables are added to variables
     record_reducer_variables(snapshot, type_manager, pipeline_structure, &mut variables);
-    let outputs = pipeline_structure.available_variables.clone();
+    let outputs = pipeline_structure.parametrised_structure.output_variables.clone();
     Ok(PipelineStructureResponse { conjunctions: encoded_conjunctions, outputs, variables, pipeline: stages.clone() })
 }
 
@@ -367,28 +363,24 @@ fn encode_structure_constraint(
         }
 
         Constraint::Isa(isa) => {
-            let constraint = StructureConstraintIsaBase {
-                instance: encode_structure_vertex(context, isa.thing())?,
-                r#type: encode_structure_vertex(context, isa.type_())?,
-            };
+            let instance = encode_structure_vertex(context, isa.thing())?;
+            let r#type = encode_structure_vertex(context, isa.type_())?;
             constraints.push(StructureConstraintWithSpan {
                 text_span: span,
                 constraint: match isa.isa_kind() {
-                    IsaKind::Exact => StructureConstraint::IsaExact(constraint),
-                    IsaKind::Subtype => StructureConstraint::Isa(constraint),
+                    IsaKind::Exact => StructureConstraint::IsaExact { instance, r#type },
+                    IsaKind::Subtype => StructureConstraint::Isa { instance, r#type },
                 },
             })
         }
         Constraint::Sub(sub) => {
-            let constraint = StructureConstraintSubBase {
-                subtype: encode_structure_vertex(context, sub.subtype())?,
-                supertype: encode_structure_vertex(context, sub.supertype())?,
-            };
+            let subtype = encode_structure_vertex(context, sub.subtype())?;
+            let supertype = encode_structure_vertex(context, sub.supertype())?;
             constraints.push(StructureConstraintWithSpan {
                 text_span: span,
                 constraint: match sub.sub_kind() {
-                    SubKind::Exact => StructureConstraint::SubExact(constraint),
-                    SubKind::Subtype => StructureConstraint::Sub(constraint),
+                    SubKind::Exact => StructureConstraint::SubExact { subtype, supertype },
+                    SubKind::Subtype => StructureConstraint::Sub { subtype, supertype },
                 },
             })
         }
@@ -404,7 +396,7 @@ fn encode_structure_constraint(
                 text_span: span,
                 constraint: StructureConstraint::Relates {
                     relation: encode_structure_vertex(context, relates.relation())?,
-                    role: encode_structure_vertex(context, relates.role_type())?,
+                    role: encode_role_type_as_vertex(context, relates.role_type())?,
                 },
             });
         }
@@ -413,7 +405,7 @@ fn encode_structure_constraint(
                 text_span: span,
                 constraint: StructureConstraint::Plays {
                     player: encode_structure_vertex(context, plays.player())?,
-                    role: encode_structure_vertex(context, plays.role_type())?,
+                    role: encode_structure_vertex(context, plays.role_type())?, // Doesn't have to be encode_role_type
                 },
             });
         }
@@ -498,7 +490,7 @@ fn encode_structure_constraint(
             text_span: span,
             constraint: StructureConstraint::Comparison {
                 lhs: encode_structure_vertex(context, comparison.lhs())?,
-                rhs: encode_structure_vertex(context, comparison.lhs())?,
+                rhs: encode_structure_vertex(context, comparison.rhs())?,
                 comparator: comparison.comparator().name().to_owned(),
             },
         }),
@@ -559,12 +551,23 @@ fn encode_structure_vertex(
             context.record_variable(variable.into());
             StructureVertex::Variable { id: variable.into() }
         }
-        Vertex::Label(label) => {
-            let type_ = context.get_type(label).unwrap();
-            StructureVertex::Label {
-                r#type: serde_json::json!(encode_type_concept(&type_, context.snapshot, context.type_manager)?),
+        Vertex::Label(label) => match context.get_type(label) {
+            Some(type_) => {
+                let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
+                StructureVertex::Label { r#type }
             }
-        }
+            None => match get_type_annotation_from_label(context.snapshot, context.type_manager, label)? {
+                Some(type_) => {
+                    let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
+                    StructureVertex::Label { r#type }
+                }
+                None => {
+                    debug_assert!(false, "Likely unreachable, thanks to the rolename handling");
+                    let label = label.scoped_name.as_str().to_owned();
+                    StructureVertex::Unresolved { label }
+                }
+            },
+        },
         Vertex::Parameter(param) => {
             let value = context.get_parameter_value(param).unwrap();
             StructureVertex::Value(encode_value(value))
@@ -583,4 +586,124 @@ fn encode_role_type_as_vertex(
     } else {
         encode_structure_vertex(context, role_type)
     }
+}
+
+#[cfg(debug_assertions)]
+pub mod bdd {
+    use compiler::query_structure::{
+        FunctionReturnStructure, QueryStructureConjunctionID, QueryStructureStage, StructureReduceAssign,
+        StructureReducer, StructureSortVariable, StructureVariableId,
+    };
+    use itertools::Itertools;
+    use serde_json::Value;
+
+    use crate::service::http::message::query::{
+        bdd::{
+            functor_macros,
+            functor_macros::{encode_functor_impl, impl_functor_for, impl_functor_for_impl, impl_functor_for_multi},
+            FunctorContext, FunctorEncoded,
+        },
+        query_structure::{
+            FunctionStructureResponse, PipelineStructureResponse, StructureConstraint, StructureConstraintWithSpan,
+            StructureVertex,
+        },
+        AnalysedQueryResponse,
+    };
+
+    pub fn encode_query_structure_as_functor(analyzed: &AnalysedQueryResponse) -> (String, Vec<String>) {
+        let AnalysedQueryResponse { structure, annotations } = analyzed;
+        let context = FunctorContext { structure: &structure.query, annotations: &annotations.query };
+        let pipeline = &structure.query;
+        let query = pipeline.encode_as_functor(&context);
+        let preamble = structure
+            .preamble
+            .iter()
+            .zip(annotations.preamble.iter())
+            .map(|(func, annotations)| {
+                let context = FunctorContext { structure: &func.body, annotations: &annotations.body };
+                func.encode_as_functor(&context)
+            })
+            .collect();
+        (query, preamble)
+    }
+
+    impl_functor_for!(struct StructureReduceAssign { assigned, reducer,  } named ReduceAssign);
+    impl_functor_for!(struct StructureReducer { reducer, arguments, } named Reducer);
+
+    impl_functor_for!(enum QueryStructureStage [
+        Match { block, } |
+        Insert { block, } |
+        Delete { deleted_variables, block, } |
+        Put { block, } |
+        Update { block, } |
+        Select { variables, } |
+        Sort { variables, } |
+        Offset { offset, } |
+        Limit { limit, } |
+        Require { variables, } |
+        Distinct { } |
+        Reduce { reducers, groupby, } | // TODO
+    ]);
+
+    impl_functor_for!(enum StructureConstraint [
+        Isa { instance, r#type, } |
+        IsaExact { instance, r#type, } |
+        Has { owner, attribute, } |
+        Links { relation, player, role, } |
+        Sub { subtype, supertype, } |
+        SubExact { subtype, supertype, } |
+        Owns { owner, attribute, } |
+        Relates { relation, role, } |
+        Plays { player, role, } |
+        FunctionCall { name, assigned, arguments, } |
+        Expression { text, assigned, arguments, } |
+        Is { lhs, rhs, } |
+        Iid { concept, iid, } |
+        Comparison { lhs, rhs, comparator, } |
+        Kind { kind, r#type, } |
+        Label { r#type, label, } |
+        Value { attribute_type, value_type, } |
+        Or { branches, } |
+        Not { conjunction, } |
+        Try { conjunction, } |
+    ]);
+
+    impl_functor_for_impl!(StructureVertex => |self, context| {
+        match self {
+            StructureVertex::Variable { id } => { id.encode_as_functor(context) }
+            StructureVertex::Label { r#type } => { r#type.as_object().unwrap()["label"].as_str().unwrap().to_owned() }
+            StructureVertex::Unresolved { label } => { label.encode_as_functor(context) }
+            StructureVertex::Value(v) => {
+                match &v.value {
+                    Value::String(s) => std::format!("\"{}\"", s.to_string()),
+                    other => other.to_string(),
+                }
+            }
+        }
+    });
+
+    impl_functor_for_multi!(|self, context| [
+        StructureVariableId =>  { format!("${}", context.structure.variables[self].name.as_ref().map(|s| s.as_str()).unwrap_or("_")) }
+        QueryStructureConjunctionID => { context.structure.conjunctions[self.0 as usize].encode_as_functor(context) }
+        StructureConstraintWithSpan => { self.constraint.encode_as_functor(context) }
+        PipelineStructureResponse => { let pipeline = &self.pipeline; encode_functor_impl!(context, Pipeline { pipeline, }) }
+        FunctionStructureResponse => {
+            let FunctionStructureResponse { arguments, returns, body } = self;
+            encode_functor_impl!(context, Function { arguments, returns, body, })
+        }
+        StructureSortVariable => {
+            let Self { ascending, variable } = self;
+            match ascending {
+                true => encode_functor_impl!(context, Asc { variable, }),
+                false => encode_functor_impl!(context, Desc { variable, }),
+            }
+        }
+    ]);
+
+    impl_functor_for!(enum FunctionReturnStructure [
+        Stream { variables, } |
+        Single { selector, variables, }  |
+        Check { }  |
+        Reduce {} |
+    ]);
 }

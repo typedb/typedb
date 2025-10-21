@@ -4,6 +4,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod analyze;
-mod functions;
-mod language;
+mod annotations;
+mod structure;
