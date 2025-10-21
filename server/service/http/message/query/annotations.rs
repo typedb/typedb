@@ -9,12 +9,14 @@ use std::collections::HashMap;
 use answer::Type;
 use compiler::{
     annotation::function::FunctionParameterAnnotation,
-    query_structure::{PipelineStructureAnnotations, PipelineVariableAnnotation, StructureVariableId},
+    query_structure::{
+        PipelineStructureAnnotations, PipelineVariableAnnotation, PipelineVariableAnnotationAndModifier,
+        StructureVariableId,
+    },
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use query::analyse::{FetchObjectStructureAnnotations, FetchStructureAnnotations, FunctionStructureAnnotations};
 use serde::{Deserialize, Serialize};
-use compiler::query_structure::PipelineVariableAnnotationAndModifier;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
@@ -204,7 +206,10 @@ pub(super) fn encode_pipeline_structure_annotations(
             let variable_annotations = var_annotations
                 .into_iter()
                 .map(|(var_id, annotations)| {
-                    Ok((var_id.clone(), encode_variable_type_annotations_and_modifiers(snapshot, type_manager, annotations)?))
+                    Ok((
+                        var_id.clone(),
+                        encode_variable_type_annotations_and_modifiers(snapshot, type_manager, annotations)?,
+                    ))
                 })
                 .collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
             Ok(VariableAnnotationsByConjunctionResponse { variable_annotations })
@@ -283,7 +288,11 @@ pub mod bdd {
     use compiler::query_structure::{QueryStructureConjunctionID, QueryStructureStage};
     use itertools::Itertools;
 
-    use super::{FetchStructureAnnotationsResponse, FunctionReturnAnnotationsResponse, FunctionStructureAnnotationsResponse, PipelineStructureAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse, VariableAnnotationsByConjunctionResponse, VariableAnnotationsResponse};
+    use super::{
+        FetchStructureAnnotationsResponse, FunctionReturnAnnotationsResponse, FunctionStructureAnnotationsResponse,
+        PipelineStructureAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse,
+        VariableAnnotationsByConjunctionResponse, VariableAnnotationsResponse,
+    };
     use crate::service::http::message::query::{
         bdd::{
             functor_macros,
@@ -320,23 +329,23 @@ pub mod bdd {
                 .map(|stage| match stage {
                     QueryStructureStage::Match { block } => {
                         let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        encode_functor_impl!(context, Match { block, })
+                        encode_functor_impl!(context, Match { block })
                     }
                     QueryStructureStage::Insert { block } => {
                         let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        encode_functor_impl!(context, Insert { block, })
+                        encode_functor_impl!(context, Insert { block })
                     }
                     QueryStructureStage::Delete { block, .. } => {
                         let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        encode_functor_impl!(context, Delete { block, })
+                        encode_functor_impl!(context, Delete { block })
                     }
                     QueryStructureStage::Put { block } => {
                         let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        encode_functor_impl!(context, Put { block, })
+                        encode_functor_impl!(context, Put { block })
                     }
                     QueryStructureStage::Update { block } => {
                         let block = &BlockAnnotationToEncode(block.as_u32() as usize);
-                        encode_functor_impl!(context, Update { block, })
+                        encode_functor_impl!(context, Update { block })
                     }
                     QueryStructureStage::Select { .. } => encode_functor_impl!(context, Select {}),
                     QueryStructureStage::Sort { .. } => encode_functor_impl!(context, Sort {}),
@@ -348,7 +357,7 @@ pub mod bdd {
                 })
                 .collect::<Vec<_>>();
             let encoded_stages_ref = &encoded_stages;
-            encode_functor_impl!(context, Pipeline { encoded_stages_ref, }) // Not ideal to encode the elements again
+            encode_functor_impl!(context, Pipeline { encoded_stages_ref }) // Not ideal to encode the elements again
         }
     }
 
@@ -375,21 +384,24 @@ pub mod bdd {
     impl FunctorEncoded for BlockAnnotationToEncode {
         fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
             let trunk = TrunkAnnotationToEncode(self.0);
-            let subpatterns = context.structure.conjunctions[self.0].iter().filter_map(|c| match &c.constraint {
-                StructureConstraint::Or { branches } => {
-                    let branches = branches.iter().copied().map_into().collect();
-                    Some(SubBlockAnnotation::Or { branches })
-                }
-                StructureConstraint::Not { conjunction } => {
-                    Some(SubBlockAnnotation::Not { conjunction: (*conjunction).into() })
-                }
-                StructureConstraint::Try { conjunction } => {
-                    Some(SubBlockAnnotation::Try { conjunction: (*conjunction).into() })
-                }
-                _ => None,
-            }).collect::<Vec<_>>();
+            let subpatterns = context.structure.conjunctions[self.0]
+                .iter()
+                .filter_map(|c| match &c.constraint {
+                    StructureConstraint::Or { branches } => {
+                        let branches = branches.iter().copied().map_into().collect();
+                        Some(SubBlockAnnotation::Or { branches })
+                    }
+                    StructureConstraint::Not { conjunction } => {
+                        Some(SubBlockAnnotation::Not { conjunction: (*conjunction).into() })
+                    }
+                    StructureConstraint::Try { conjunction } => {
+                        Some(SubBlockAnnotation::Try { conjunction: (*conjunction).into() })
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
             let (trunk_ref, subpatterns_ref) = (&trunk, &subpatterns);
-            encode_functor_impl!(context, And { trunk_ref, subpatterns_ref, })
+            encode_functor_impl!(context, And { trunk_ref, subpatterns_ref })
         }
     }
 
@@ -435,7 +447,7 @@ pub mod bdd {
                 }
                 FetchStructureAnnotationsResponse::List { elements } => {
                     let elements_as_ref = elements.as_ref();
-                    encode_functor_impl!(context, List { elements_as_ref, })
+                    encode_functor_impl!(context, List { elements_as_ref })
                 }
             }
         }

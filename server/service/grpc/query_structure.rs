@@ -11,8 +11,8 @@ use compiler::{
     annotation::{function::FunctionParameterAnnotation, type_inference::get_type_annotation_from_label},
     query_structure::{
         ConjunctionAnnotations, FunctionReturnStructure, FunctionStructure, PipelineStructure,
-        PipelineStructureAnnotations, PipelineVariableAnnotation, QueryStructureConjunction,
-        QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
+        PipelineStructureAnnotations, PipelineVariableAnnotation, PipelineVariableAnnotationAndModifier,
+        QueryStructureConjunction, QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
     },
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
@@ -30,7 +30,6 @@ use typedb_protocol::{
     analyzed_conjunction as conjunction_proto,
     analyzed_conjunction::{constraint as structure_constraint, constraint_vertex},
 };
-use compiler::query_structure::PipelineVariableAnnotationAndModifier;
 
 use crate::service::grpc::{
     concept::{
@@ -692,10 +691,7 @@ fn encode_function_parameter_annotations(
         }
     };
     // TODO: If we ever have optional parameters
-    Ok(conjunction_proto::VariableAnnotations {
-        is_optional: false,
-        annotations: Some(annotations),
-    })
+    Ok(conjunction_proto::VariableAnnotations { is_optional: false, annotations: Some(annotations) })
 }
 
 fn encode_types_to_concept_variable_annotations<'a>(
