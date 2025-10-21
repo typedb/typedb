@@ -365,10 +365,7 @@ fn query_structure_constraint(
             let text = context
                 .get_call_syntax(constraint)
                 .map_or_else(|| format!("Expression#{}", constraints.len()), |text| text.clone());
-            let assigned = expr
-                .ids_assigned()
-                .map(|variable| encode_structure_vertex_variable(&Vertex::Variable(variable)))
-                .collect::<Result<Vec<_>, _>>()?;
+            let assigned = Some(encode_structure_vertex_variable(expr.left())?);
             let arguments = expr
                 .expression_ids()
                 .map(|variable| encode_structure_vertex_variable(&Vertex::Variable(variable)))
@@ -541,9 +538,11 @@ fn encode_structure_vertex_label_or_variable(
                 let resolved = encode_type(&type_, context.snapshot, context.type_manager)?;
                 constraint_vertex::Vertex::Label(resolved)
             } else {
-                debug_assert!(false, "Is this reachable?");
-                let unresolved = label.scoped_name.as_str().to_owned();
-                constraint_vertex::Vertex::Unresolved(unresolved)
+                debug_assert!(false, "This should be unreachable, but we don't want crashes");
+                let label = format!("ERROR_UNRESOLVED:{}", label.scoped_name.as_str());
+                constraint_vertex::Vertex::Label(typedb_protocol::Type {
+                    r#type: Some(typedb_protocol::r#type::Type::EntityType(typedb_protocol::EntityType { label })),
+                })
             };
             Ok(conjunction_proto::ConstraintVertex { vertex: Some(encoded_type) })
         }

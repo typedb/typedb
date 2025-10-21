@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
-    encode_type_concept, encode_value, RoleTypeResponse, ValueResponse,
+    encode_type_concept, encode_value, EntityTypeResponse, RoleTypeResponse, ValueResponse,
 };
 
 struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
@@ -239,7 +239,6 @@ enum StructureVertex {
     Variable { id: StructureVariableId },
     Label { r#type: serde_json::Value },
     Value(ValueResponse),
-    Unresolved { label: String },
 }
 
 pub(crate) fn encode_query_structure(
@@ -559,9 +558,10 @@ fn encode_structure_vertex(
                 let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
                 StructureVertex::Label { r#type }
             } else {
-                debug_assert!(false, "Likely unreachable, thanks to the rolename handling");
-                let label = label.scoped_name.as_str().to_owned();
-                StructureVertex::Unresolved { label }
+                debug_assert!(false, "This should be unreachable, but we don't want crashes");
+                let label = format!("ERROR_UNRESOLVED:{}", label.scoped_name.as_str());
+                let r#type = serde_json::json!(EntityTypeResponse { label });
+                StructureVertex::Label { r#type }
             }
         }
         Vertex::Parameter(param) => {
@@ -669,7 +669,6 @@ pub mod bdd {
         match self {
             StructureVertex::Variable { id } => { id.encode_as_functor(context) }
             StructureVertex::Label { r#type } => { r#type.as_object().unwrap()["label"].as_str().unwrap().to_owned() }
-            StructureVertex::Unresolved { label } => { label.encode_as_functor(context) }
             StructureVertex::Value(v) => {
                 match &v.value {
                     Value::String(s) => std::format!("\"{}\"", s.to_string()),
