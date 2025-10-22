@@ -128,7 +128,7 @@ impl UserManager {
 
         match delete_result {
             Ok(tuple) => Ok((transaction_profile, tuple)),
-            Err(_) => Err((Some(transaction_profile), UserDeleteError::IllegalUsername {}))
+            Err(_) => Err((Some(transaction_profile), UserDeleteError::IllegalUsername {})),
         }
     }
 }

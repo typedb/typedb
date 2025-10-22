@@ -34,7 +34,8 @@ impl TypeDBService {
 
         let user_manager = server_state.user_manager().await.ok_or(LocalServerStateError::NotInitialised {})?;
 
-        let (mut transaction_profile, commit_intent) = user_manager.create(&user, &credential)
+        let (mut transaction_profile, commit_intent) = user_manager
+            .create(&user, &credential)
             .map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeCreated { typedb_source })?;
 
         let commit_profile = transaction_profile.commit_profile();
@@ -93,7 +94,8 @@ impl TypeDBService {
 
         let user_manager = server_state.user_manager().await.ok_or(LocalServerStateError::NotInitialised {})?;
 
-        let (mut transaction_profile, commit_intent) = user_manager.delete(username)
+        let (mut transaction_profile, commit_intent) = user_manager
+            .delete(username)
             .map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeDeleted { typedb_source })?;
 
         let commit_profile = transaction_profile.commit_profile();

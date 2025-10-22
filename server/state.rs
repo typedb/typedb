@@ -72,7 +72,10 @@ pub trait ServerState: Debug {
 
     async fn databases_get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
 
-    async fn databases_get_unrestricted(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
+    async fn databases_get_unrestricted(
+        &self,
+        name: &str,
+    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
 
     async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
 
@@ -388,7 +391,10 @@ impl ServerState for LocalServerState {
         Ok(self.database_manager.database(name))
     }
 
-    async fn databases_get_unrestricted(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
+    async fn databases_get_unrestricted(
+        &self,
+        name: &str,
+    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
         Ok(self.database_manager.database_unrestricted(name))
     }
 
