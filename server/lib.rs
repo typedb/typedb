@@ -19,7 +19,8 @@ use database::database_manager::DatabaseManager;
 use rand::prelude::SliceRandom;
 use resource::{
     constants::server::{
-        DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
+        DISTRIBUTION, DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
+        SERVER_ID_LENGTH,
     },
     distribution_info::DistributionInfo,
 };
@@ -205,6 +206,7 @@ impl Server {
                 .server_status()
                 .await
                 .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?,
+            self.distribution_info,
             &self.config.server.encryption,
         );
 
@@ -290,7 +292,11 @@ impl Server {
         }
     }
 
-    fn print_serving_information(server_status: BoxServerStatus, encryption_config: &EncryptionConfig) {
+    fn print_serving_information(
+        server_status: BoxServerStatus,
+        distribution_info: DistributionInfo,
+        encryption_config: &EncryptionConfig,
+    ) {
         print!("Serving gRPC on {}", server_status.grpc_address());
         if let Some(http_address) = server_status.http_address() {
             print!(" and HTTP on {http_address}");
@@ -303,7 +309,11 @@ impl Server {
             println!("WARNING: TLS NOT ENABLED. This means connections are insecure and transmit username/password credentials unencrypted over the network.");
             println!("**To allow driver connections, drivers must also be configured to *not* use TLS**")
         }
-        println!("\nReady!");
+
+        if distribution_info.distribution == DISTRIBUTION {
+            // Same distribution -> the initialization is finished.
+            println!("\nReady!");
+        }
     }
 
     fn spawn_shutdown_handler(shutdown_sender: Sender<()>) {
