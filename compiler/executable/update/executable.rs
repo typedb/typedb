@@ -72,7 +72,9 @@ pub fn compile(
     let mut optional_updates = Vec::with_capacity(block.conjunction().nested_patterns().len());
     for nested_pattern in block.conjunction().nested_patterns() {
         let NestedPattern::Optional(optional) = nested_pattern else {
-            unreachable!("Only optionals are allowed as nested patterns in update")
+            unreachable!(
+                "Non-optional nested patterns in update are illegal and should have been rejected during translation"
+            )
         };
         optional_updates.push(OptionalUpdate::new(
             optional,
