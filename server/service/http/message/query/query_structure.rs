@@ -175,7 +175,7 @@ pub(super) enum StructureConstraint {
     },
     Expression {
         text: String,
-        assigned: Vec<StructureVertex>,
+        assigned: Vec<StructureVertex>, // TODO: Change to just StructureVertex
         arguments: Vec<StructureVertex>,
     },
     Is {
