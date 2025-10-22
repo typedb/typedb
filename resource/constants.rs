@@ -28,7 +28,7 @@ pub mod server {
         distribution_info::DistributionInfo,
     };
 
-    const DISTRIBUTION: &str = "TypeDB CE";
+    pub const DISTRIBUTION: &str = "TypeDB CE";
     const VERSION: &str = include_str!("../VERSION");
     const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
     pub const DISTRIBUTION_INFO: DistributionInfo =
