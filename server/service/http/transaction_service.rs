@@ -1173,13 +1173,11 @@ impl TransactionService {
             respond_error_and_return_break!(responder, TransactionServiceError::AnalyseQueryExpectsPipeline {});
         };
         if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-            self.query_queue.push_back((responder, QueueOptions::Analyze, pipeline, query));
             // queued queries are not handled yet so there will be no query response yet
+            self.query_queue.push_back((responder, QueueOptions::Analyze, pipeline, query));
             Continue(())
         } else {
-            self.run_analyse_query(responder, pipeline, query).await;
-            // running read queries have no response on the main loop and will respond asynchronously
-            Continue(())
+            self.run_analyse_query(responder, pipeline, query).await
         }
     }
 
