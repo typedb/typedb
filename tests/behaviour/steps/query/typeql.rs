@@ -620,8 +620,8 @@ async fn verify_answer_set(context: &mut Context, step: &Step) {
     let _num_answers = context.query_answer.as_ref().unwrap().as_rows().len();
 }
 
-#[cucumber::when("get answers of typeql analyze query")]
-async fn get_answers_of_typeql_analyze_query(context: &mut Context, step: &Step) {
+#[cucumber::when("get answers of typeql analyze")]
+async fn get_answers_of_typeql_analyze(context: &mut Context, step: &Step) {
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let query = typeql::parse_query(query_str).unwrap();
     let analyzed_unencoded = execute_analyze(context, query, query_str).unwrap();
@@ -631,8 +631,8 @@ async fn get_answers_of_typeql_analyze_query(context: &mut Context, step: &Step)
     context.analyzed_query = Some(analyzed);
 }
 
-#[cucumber::when(expr = "typeql analyze query{typeql_may_error}")]
-async fn typeql_analyze_query_may_error(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+#[cucumber::when(expr = r"typeql analyze{typeql_may_error}")]
+async fn typeql_analyze_may_error(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query_str);
     if let Either::Right(_) = may_error.check_parsing(parse_result.as_ref()) {
