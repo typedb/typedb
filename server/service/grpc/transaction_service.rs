@@ -112,7 +112,7 @@ pub(crate) struct TransactionService {
 
     is_open: bool,
     transaction: Option<Transaction>,
-    query_queue: VecDeque<(Uuid, QueryQueueOptions, typeql::query::Pipeline, String)>,
+    query_queue: VecDeque<(Uuid, QueueOptions, typeql::query::Pipeline, String)>,
     query_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
 }
@@ -717,7 +717,7 @@ impl TransactionService {
     async fn cancel_queued_read_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut write_queries = VecDeque::with_capacity(self.query_queue.len());
         for (req_id, query_options, pipeline, source_query) in self.query_queue.drain(0..self.query_queue.len()) {
-            if is_write_pipeline(&pipeline) {
+            if query_options.is_query() && is_write_pipeline(&pipeline) {
                 write_queries.push_back((req_id, query_options, pipeline, source_query));
             } else {
                 Self::respond_query_response(
@@ -777,8 +777,8 @@ impl TransactionService {
 
     async fn cancel_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut read_queries = VecDeque::with_capacity(self.query_queue.len());
-        for (req_id, query_options, pipeline, source_query) in self.query_queue.drain(0..self.query_queue.len()) {
-            if is_write_pipeline(&pipeline) {
+        for (req_id, options, pipeline, source_query) in self.query_queue.drain(0..self.query_queue.len()) {
+            if options.is_query() && is_write_pipeline(&pipeline) {
                 Self::respond_query_response(
                     &self.response_sender,
                     req_id,
@@ -788,7 +788,7 @@ impl TransactionService {
                 )
                 .await?;
             } else {
-                read_queries.push_back((req_id, query_options, pipeline, source_query));
+                read_queries.push_back((req_id, options, pipeline, source_query));
             }
         }
         self.query_queue = read_queries;
@@ -800,7 +800,7 @@ impl TransactionService {
         let requests: Vec<_> = self.query_queue.drain(0..self.query_queue.len()).collect();
         for (req_id, query_queue_options, pipeline, source_query) in requests.into_iter() {
             match (query_queue_options, is_write_pipeline(&pipeline)) {
-                (QueryQueueOptions::Query(query_options), true) => {
+                (QueueOptions::Query(query_options), true) => {
                     self.run_write_query(req_id, query_options, pipeline, source_query).await;
                     self.finish_running_write_query_no_transmit(interrupt).await?;
                 }
@@ -818,14 +818,14 @@ impl TransactionService {
         // unblock requests until the first write request, which we begin executing if it exists
         while let Some((req_id, queue_options, query_pipeline, source_query)) = self.query_queue.pop_front() {
             match (queue_options, is_write_pipeline(&query_pipeline)) {
-                (QueryQueueOptions::Analyze, _) => {
+                (QueueOptions::Analyze, _) => {
                     self.run_analyse_query(req_id, query_pipeline, source_query).await;
                 }
-                (QueryQueueOptions::Query(query_options), true) => {
+                (QueueOptions::Query(query_options), true) => {
                     self.run_write_query(req_id, query_options, query_pipeline, source_query).await;
                     return;
                 }
-                (QueryQueueOptions::Query(query_options), false) => {
+                (QueueOptions::Query(query_options), false) => {
                     self.run_and_activate_read_transmitter(req_id, query_options, query_pipeline, source_query);
                 }
             }
@@ -847,24 +847,20 @@ impl TransactionService {
                 return Ok(Self::respond_analyze_response(&self.response_sender, req_id, response).await);
             }
         };
-        match parsed.into_structure() {
-            typeql::query::QueryStructure::Schema(_) => {
-                // schema queries are handled immediately so there is a query response or a fatal Status
-                let response =
-                    ImmediateAnalyzeResponse::non_fatal_err(TransactionServiceError::AnalyseQueryExpectsPipeline {});
-                Ok(Self::respond_analyze_response(&self.response_sender, req_id, response).await)
-            }
-            typeql::query::QueryStructure::Pipeline(pipeline) => {
-                if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-                    self.query_queue.push_back((req_id, QueryQueueOptions::Analyze, pipeline, query));
-                    // queued queries are not handled yet so there will be no query response yet
-                    Ok(Continue(()))
-                } else {
-                    self.run_analyse_query(req_id, pipeline, query).await;
-                    // running read queries have no response on the main loop and will respond asynchronously
-                    Ok(Continue(()))
-                }
-            }
+        let typeql::query::QueryStructure::Pipeline(pipeline) = parsed.into_structure() else {
+            let response =
+                ImmediateAnalyzeResponse::non_fatal_err(TransactionServiceError::AnalyseQueryExpectsPipeline {});
+            return Ok(Self::respond_analyze_response(&self.response_sender, req_id, response).await);
+        };
+
+        if !self.query_queue.is_empty() || self.running_write_query.is_some() {
+            self.query_queue.push_back((req_id, QueueOptions::Analyze, pipeline, query));
+            // queued queries are not handled yet so there will be no query response yet
+            Ok(Continue(()))
+        } else {
+            self.run_analyse_query(req_id, pipeline, query).await;
+            // running read queries have no response on the main loop and will respond asynchronously
+            Ok(Continue(()))
         }
     }
 
@@ -901,7 +897,7 @@ impl TransactionService {
                 #[allow(clippy::collapsible_else_if)]
                 if is_write_pipeline(&pipeline) {
                     if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-                        self.query_queue.push_back((req_id, QueryQueueOptions::Query(query_options), pipeline, query));
+                        self.query_queue.push_back((req_id, QueueOptions::Query(query_options), pipeline, query));
                         // queued queries are not handled yet so there will be no query response yet
                         Ok(Continue(()))
                     } else {
@@ -910,7 +906,7 @@ impl TransactionService {
                     }
                 } else {
                     if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-                        self.query_queue.push_back((req_id, QueryQueueOptions::Query(query_options), pipeline, query));
+                        self.query_queue.push_back((req_id, QueueOptions::Query(query_options), pipeline, query));
                         // queued queries are not handled yet so there will be no query response yet
                         Ok(Continue(()))
                     } else {
@@ -1700,7 +1696,13 @@ impl QueryStreamTransmitter {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-enum QueryQueueOptions {
+enum QueueOptions {
     Query(QueryOptions),
     Analyze,
+}
+
+impl QueueOptions {
+    fn is_query(&self) -> bool {
+        matches!(self, QueueOptions::Query(_))
+    }
 }
