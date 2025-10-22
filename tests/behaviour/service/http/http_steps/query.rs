@@ -183,7 +183,7 @@ pub async fn one_shot_query_typeql_query(
 }
 
 #[apply(generic_step)]
-#[step(expr = "get answers of typeql schema query")]
+#[step("get answers of typeql schema query")]
 #[step(expr = "get answers of typeql write query")]
 #[step(expr = "get answers of typeql read query")]
 pub async fn get_answers_of_typeql_query(context: &mut Context, step: &Step) {

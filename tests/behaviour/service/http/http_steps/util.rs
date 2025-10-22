@@ -104,7 +104,7 @@ async fn wait_seconds(_: &mut Context, seconds: u64) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "wait authentication token expiration")]
+#[step("wait authentication token expiration")]
 async fn wait_authentication_token_expiration(_: &mut Context) {
     tokio::time::sleep(TEST_TOKEN_EXPIRATION).await
 }

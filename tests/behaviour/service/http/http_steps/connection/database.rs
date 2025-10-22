@@ -71,7 +71,7 @@ pub async fn connection_create_database_with_an_empty_name(context: &mut Context
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection create database(s):")]
+#[step("connection create database(s):")]
 async fn connection_create_databases(context: &mut Context, step: &Step) {
     for name in iter_table(step) {
         create_database(context.http_client(), context.auth_token(), name.into(), params::MayError::False).await;
@@ -79,7 +79,7 @@ async fn connection_create_databases(context: &mut Context, step: &Step) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection create databases in parallel:")]
+#[step("connection create databases in parallel:")]
 async fn connection_create_databases_in_parallel(context: &mut Context, step: &Step) {
     join_all(iter_table(step).map(|name| databases_create(context.http_client(), context.auth_token(), name))).await;
 }
@@ -109,7 +109,7 @@ pub async fn connection_delete_database(
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection delete database(s):")]
+#[step("connection delete database(s):")]
 async fn connection_delete_databases(context: &mut Context, step: &Step) {
     for name in iter_table(step) {
         delete_database(context.http_client(), context.auth_token(), name, params::MayError::False).await;
@@ -117,7 +117,7 @@ async fn connection_delete_databases(context: &mut Context, step: &Step) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection delete databases in parallel:")]
+#[step("connection delete databases in parallel:")]
 async fn connection_delete_databases_in_parallel(context: &mut Context, step: &Step) {
     try_join_all(iter_table(step).map(|name| databases_delete(context.http_client(), context.auth_token(), name)))
         .await
@@ -162,7 +162,7 @@ async fn connection_has_database(context: &mut Context, name: String) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection has database(s):")]
+#[step("connection has database(s):")]
 async fn connection_has_databases(context: &mut Context, step: &Step) {
     for name in iter_table(step).map(|name| name.to_owned()) {
         assert!(
@@ -179,7 +179,7 @@ async fn connection_does_not_have_database(context: &mut Context, name: String) 
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection does not have database(s):")]
+#[step("connection does not have database(s):")]
 async fn connection_does_not_have_databases(context: &mut Context, step: &Step) {
     for name in iter_table(step).map(|name| name.to_owned()) {
         assert!(

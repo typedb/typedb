@@ -35,7 +35,7 @@ pub async fn connection_create_database_with_an_empty_name(context: &mut Context
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection create database(s):")]
+#[step("connection create database(s):")]
 pub async fn connection_create_databases(context: &mut Context, step: &Step) {
     let server = context.server().unwrap().lock().unwrap();
     for name in util::iter_table(step) {
@@ -45,7 +45,7 @@ pub async fn connection_create_databases(context: &mut Context, step: &Step) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection create database(s) in parallel:")]
+#[step("connection create database(s) in parallel:")]
 pub async fn connection_create_databases_in_parallel(context: &mut Context, step: &Step) {
     let server = context.server().unwrap().lock().unwrap();
     join_all(util::iter_table(step).map(|name| server_create_database(&server, name.into(), params::MayError::False)))
@@ -71,7 +71,7 @@ pub async fn connection_delete_database(context: &mut Context, name: String, may
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection delete database(s):")]
+#[step("connection delete database(s):")]
 async fn connection_delete_databases(context: &mut Context, step: &Step) {
     let server = context.server().unwrap().lock().unwrap();
     for name in util::iter_table(step) {
@@ -81,7 +81,7 @@ async fn connection_delete_databases(context: &mut Context, step: &Step) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection delete database(s) in parallel:")]
+#[step("connection delete database(s) in parallel:")]
 async fn connection_delete_databases_in_parallel(context: &mut Context, step: &Step) {
     let server = context.server().unwrap().lock().unwrap();
     join_all(util::iter_table(step).map(|name| server_delete_database(&server, name.into(), params::MayError::False)))
@@ -99,7 +99,7 @@ async fn connection_has_database(context: &mut Context, name: String) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection has database(s):")]
+#[step("connection has database(s):")]
 async fn connection_has_databases(context: &mut Context, step: &Step) {
     for name in util::iter_table(step).map(str::to_owned) {
         connection_has_database(context, name).await;
@@ -116,7 +116,7 @@ async fn connection_does_not_have_database(context: &mut Context, name: String) 
 }
 
 #[apply(generic_step)]
-#[step(expr = "connection does not have database(s):")]
+#[step("connection does not have database(s):")]
 async fn connection_does_not_have_databases(context: &mut Context, step: &Step) {
     for name in util::iter_table(step).map(str::to_owned) {
         connection_does_not_have_database(context, name).await;

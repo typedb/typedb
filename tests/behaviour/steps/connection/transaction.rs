@@ -105,7 +105,7 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "transactions( in parallel) have type:")]
+#[step("transactions( in parallel) have type:")]
 pub async fn transactions_in_parallel_have_type(context: &mut Context, step: &Step) {
     let mut active_transaction_iter = context.get_concurrent_transactions().iter();
     for tx_type in util::iter_table(step) {
@@ -247,7 +247,7 @@ pub async fn transaction_rollbacks(context: &mut Context, may_error: params::May
 }
 
 #[apply(generic_step)]
-#[step(expr = "transaction closes")]
+#[step("transaction closes")]
 pub async fn transaction_closes(context: &mut Context) {
     context.close_active_transaction()
 }
