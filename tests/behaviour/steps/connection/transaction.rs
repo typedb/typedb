@@ -61,8 +61,7 @@ pub async fn connection_open_transaction(context: &mut Context, tx_type: String,
     context.set_transaction(tx);
 }
 
-#[apply(generic_step)]
-#[step(expr = "connection open transaction(s) for database: {word}, of type:")]
+#[cucumber::when(expr = "connection open transaction(s) for database: {word}, of type:")]
 pub async fn connection_open_transactions(context: &mut Context, database_name: String, step: &Step) {
     let server = context.server().expect("Expected server").lock().unwrap();
     let mut transactions = vec![];
@@ -73,8 +72,7 @@ pub async fn connection_open_transactions(context: &mut Context, database_name: 
     context.set_concurrent_transactions(transactions);
 }
 
-#[apply(generic_step)]
-#[step(expr = "connection open transaction(s) in parallel for database: {word}, of type:")]
+#[cucumber::when(expr = "connection open transaction(s) in parallel for database: {word}, of type:")]
 pub async fn connection_open_transactions_in_parallel(context: &mut Context, database_name: String, step: &Step) {
     let server = context.server().expect("Expected server").lock().unwrap();
     let transactions: Vec<ActiveTransaction> = join_all(
@@ -86,26 +84,22 @@ pub async fn connection_open_transactions_in_parallel(context: &mut Context, dat
     context.set_concurrent_transactions(transactions);
 }
 
-#[apply(generic_step)]
-#[step(expr = "transaction is open: {boolean}")]
+#[cucumber::then(expr = "transaction is open: {boolean}")]
 pub async fn transaction_is_open(context: &mut Context, is_open: params::Boolean) {
     check_boolean!(is_open, context.transaction().is_some());
 }
 
-#[apply(generic_step)]
-#[step(expr = "transactions( in parallel) are open: {boolean}")]
+#[cucumber::then(expr = "transactions( in parallel) are open: {boolean}")]
 pub async fn transactions_in_parallel_are_open(context: &mut Context, are_open: params::Boolean) {
     check_boolean!(are_open, !context.get_concurrent_transactions().is_empty());
 }
 
-#[apply(generic_step)]
-#[step(expr = "transaction has type: {word}")]
+#[cucumber::then(expr = "transaction has type: {word}")]
 pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
     transaction_type_matches(context.transaction().unwrap(), &tx_type)
 }
 
-#[apply(generic_step)]
-#[step("transactions( in parallel) have type:")]
+#[cucumber::then("transactions( in parallel) have type:")]
 pub async fn transactions_in_parallel_have_type(context: &mut Context, step: &Step) {
     let mut active_transaction_iter = context.get_concurrent_transactions().iter();
     for tx_type in util::iter_table(step) {

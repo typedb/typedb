@@ -345,8 +345,7 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "result is a single row with variable '{word}': {word}")]
+#[cucumber::then(expr = "result is a single row with variable '{word}': {word}")]
 async fn single_row_result_with_variable_value(context: &mut Context, variable_name: String, spec: String) {
     with_rows_answer!(context, |query_answer| {
         assert_eq!(query_answer.len(), 1, "Expected single row, received {}", query_answer.len());
@@ -496,8 +495,7 @@ async fn answer_size_is(context: &mut Context, answer_size: i32) {
     assert_eq!(context.query_answer.as_ref().unwrap().len(), answer_size as usize)
 }
 
-#[apply(generic_step)]
-#[step("order of answer concepts is")]
+#[cucumber::then("order of answer concepts is")]
 async fn order_of_answers_is(context: &mut Context, step: &Step) {
     with_rows_answer!(context, |query_answer| {
         let num_specs = step.table().unwrap().rows.len() - 1;
@@ -516,8 +514,7 @@ async fn order_of_answers_is(context: &mut Context, step: &Step) {
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "answer {contains_or_doesnt} document:")]
+#[cucumber::then(expr = "answer {contains_or_doesnt} document:")]
 async fn answer_contains_document(context: &mut Context, contains_or_doesnt: params::ContainsOrDoesnt, step: &Step) {
     let expected_document = parse_json(step.docstring().unwrap());
     with_read_tx!(context, |tx| {
@@ -533,14 +530,12 @@ async fn answer_contains_document(context: &mut Context, contains_or_doesnt: par
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "answers do not contain variable: {word}")]
+#[cucumber::then(expr = "answers do not contain variable: {word}")]
 async fn answers_do_not_contain_variable(context: &mut Context, variable: String, step: &Step) {
     context.query_answer.as_ref().unwrap().as_rows().iter().all(|row| !row.contains_key(&variable));
 }
 
-#[apply(generic_step)]
-#[step("each answer satisfies")]
+#[cucumber::then("each answer satisfies")]
 async fn each_answer_satisfies(context: &mut Context, step: &Step) {
     let templated_query = step.docstring().unwrap();
     for answer in context.query_answer.as_ref().unwrap().as_rows() {
@@ -592,8 +587,7 @@ fn iid_of(thing: &Thing) -> Vec<u8> {
     }
 }
 
-#[apply(generic_step)]
-#[step("verify answer set is equivalent for query")]
+#[cucumber::then("verify answer set is equivalent for query")]
 async fn verify_answer_set(context: &mut Context, step: &Step) {
     if true {
         eprintln!("TODO: Implement step: verify answer set is equivalent for query");
@@ -627,8 +621,7 @@ async fn verify_answer_set(context: &mut Context, step: &Step) {
     let _num_answers = context.query_answer.as_ref().unwrap().as_rows().len();
 }
 
-#[apply(generic_step)]
-#[step("get answers of typeql analyze query")]
+#[cucumber::when("get answers of typeql analyze query")]
 async fn get_answers_of_typeql_analyze_query(context: &mut Context, step: &Step) {
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let query = typeql::parse_query(query_str).unwrap();
@@ -639,8 +632,7 @@ async fn get_answers_of_typeql_analyze_query(context: &mut Context, step: &Step)
     context.analyzed_query = Some(analyzed);
 }
 
-#[apply(generic_step)]
-#[step(expr = "typeql analyze query{typeql_may_error}")]
+#[cucumber::when(expr = "typeql analyze query{typeql_may_error}")]
 async fn typeql_analyze_query_may_error(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query_str);
@@ -652,8 +644,7 @@ async fn typeql_analyze_query_may_error(context: &mut Context, may_error: params
     may_error.check_logic(result);
 }
 
-#[apply(generic_step)]
-#[step("analyzed query pipeline structure is:")]
+#[cucumber::then("analyzed query pipeline structure is:")]
 async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
@@ -661,8 +652,7 @@ async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
     assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
-#[apply(generic_step)]
-#[step("analyzed query preamble contains:")]
+#[cucumber::then("analyzed query preamble contains:")]
 async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
@@ -678,8 +668,7 @@ async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
     );
 }
 
-#[apply(generic_step)]
-#[step("analyzed query pipeline annotations are:")]
+#[cucumber::then("analyzed query pipeline annotations are:")]
 async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
@@ -687,8 +676,7 @@ async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
     assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
-#[apply(generic_step)]
-#[step("analyzed preamble annotations contains:")]
+#[cucumber::then("analyzed preamble annotations contains:")]
 async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
@@ -704,8 +692,7 @@ async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &St
     );
 }
 
-#[apply(generic_step)]
-#[step("analyzed fetch annotations are:")]
+#[cucumber::then("analyzed fetch annotations are:")]
 async fn analyzed_fetch_annotations_are(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();

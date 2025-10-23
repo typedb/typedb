@@ -66,8 +66,8 @@ pub async fn typedb_starts(context: &mut Context) {
 #[step("connection is open: false")]
 pub async fn connection_ignore(_: &mut Context) {}
 
-#[apply(generic_step)]
-#[step(expr = r"connection has {int} database(s)")]
+#[cucumber::given(expr = r"connection has {int} database(s)")]
+#[cucumber::then(expr = r"connection has {int} database(s)")]
 pub async fn connection_has_count_databases(context: &mut Context, count: usize) {
     assert_eq!(context.server().unwrap().lock().unwrap().database_manager().database_names().len(), count)
 }
