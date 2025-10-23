@@ -119,7 +119,7 @@ pub async fn transaction_has_type(_context: &mut Context, _transaction_type: Str
 }
 
 #[apply(generic_step)]
-#[step("transactions( in parallel) have type:")]
+#[step(expr = "transactions( in parallel) have type:")]
 pub async fn transactions_have_type(_context: &mut Context) {
     // no op: cannot check in http
 }
