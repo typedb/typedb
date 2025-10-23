@@ -161,7 +161,7 @@ pub async fn type_exists(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "{kind}\\({type_label}\\) set label: {type_label}{may_error}")]
 pub async fn type_set_label(
     context: &mut Context,
@@ -182,8 +182,7 @@ pub async fn type_set_label(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get name: {type_label}")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get name: {type_label}")]
 pub async fn type_get_name(
     context: &mut Context,
     kind: params::Kind,

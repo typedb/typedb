@@ -44,8 +44,7 @@ pub async fn set_owns_unordered(
     });
 }
 
-#[apply(unused_step)]
-#[step(expr = "{kind}\\({type_label}\\) set owns: {type_label}[]{may_error}")]
+#[cucumber::when(expr = "{kind}\\({type_label}\\) set owns: {type_label}[]{may_error}")]
 pub async fn set_owns_ordered(
     context: &mut Context,
     kind: params::Kind,
