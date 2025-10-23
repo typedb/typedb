@@ -99,7 +99,7 @@ pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
     transaction_type_matches(context.transaction().unwrap(), &tx_type)
 }
 
-#[cucumber::then("transactions( in parallel) have type:")]
+#[cucumber::then(expr="transactions( in parallel) have type:")]
 pub async fn transactions_in_parallel_have_type(context: &mut Context, step: &Step) {
     let mut active_transaction_iter = context.get_concurrent_transactions().iter();
     for tx_type in util::iter_table(step) {
