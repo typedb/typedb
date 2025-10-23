@@ -183,7 +183,7 @@ pub async fn one_shot_query_typeql_query(
 }
 
 #[apply(generic_step)]
-#[step(expr = "get answers of typeql schema query")]
+#[step("get answers of typeql schema query")]
 #[step(expr = "get answers of typeql write query")]
 #[step(expr = "get answers of typeql read query")]
 pub async fn get_answers_of_typeql_query(context: &mut Context, step: &Step) {
@@ -504,8 +504,7 @@ pub async fn answer_get_row_get_variable_get_type_is_kind(
     check_concept_is_kind(&type_, checked_kind, is_kind);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) try get label {is_or_not} none")]
+#[cucumber::then(expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) try get label {is_or_not} none")]
 pub async fn answer_get_row_get_variable_try_get_label_is_none(
     context: &mut Context,
     index: usize,
@@ -522,8 +521,7 @@ pub async fn answer_get_row_get_variable_try_get_label_is_none(
     is_or_not.check_none(&concept.try_get_label());
 }
 
-#[apply(generic_step)]
-#[step(expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) try get label: {word}")]
+#[cucumber::then(expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) try get label: {word}")]
 pub async fn answer_get_row_get_variable_try_get_label(
     context: &mut Context,
     index: usize,
@@ -540,8 +538,7 @@ pub async fn answer_get_row_get_variable_try_get_label(
     assert_eq!(label.as_str(), concept.get_label());
 }
 
-#[apply(generic_step)]
-#[step(expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) get label: {word}")]
+#[cucumber::then(expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) get label: {word}")]
 pub async fn answer_get_row_get_variable_get_label(
     context: &mut Context,
     index: usize,
@@ -558,8 +555,7 @@ pub async fn answer_get_row_get_variable_get_label(
     assert_eq!(label.as_str(), concept.get_label());
 }
 
-#[apply(generic_step)]
-#[step(expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) get type get label: {word}")]
+#[cucumber::then(expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) get type get label: {word}")]
 pub async fn answer_get_row_get_variable_get_type_get_label(
     context: &mut Context,
     index: usize,

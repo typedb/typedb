@@ -8,12 +8,7 @@ use cucumber::gherkin::Step;
 use macro_rules_attribute::apply;
 use params::{self, check_boolean};
 
-use crate::{
-    concept::type_::BehaviourConceptTestExecutionError,
-    generic_step,
-    transaction_context::{with_read_tx, with_schema_tx},
-    util, Context,
-};
+use crate::{concept::type_::BehaviourConceptTestExecutionError, generic_step, transaction_context::{with_read_tx, with_schema_tx}, util, Context, when_then};
 
 #[apply(generic_step)]
 #[step(expr = "create struct: {type_label}{may_error}")]
@@ -28,7 +23,7 @@ pub async fn struct_create(context: &mut Context, type_label: params::Label, may
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "delete struct: {type_label}{may_error}")]
 pub async fn struct_delete(context: &mut Context, type_label: params::Label, may_error: params::MayError) {
     with_schema_tx!(context, |tx| {
@@ -48,8 +43,7 @@ pub async fn struct_delete(context: &mut Context, type_label: params::Label, may
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "struct\\({type_label}\\) {exists_or_doesnt}")]
+#[cucumber::then(expr = "struct\\({type_label}\\) {exists_or_doesnt}")]
 pub async fn struct_exists(context: &mut Context, type_label: params::Label, exists: params::ExistsOrDoesnt) {
     with_read_tx!(context, |tx| {
         let type_label = type_label.into_typedb();
@@ -96,7 +90,7 @@ pub async fn struct_create_field_with_value_type(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "struct\\({type_label}\\) delete field: {type_label}{may_error}")]
 pub async fn struct_delete_field(
     context: &mut Context,
@@ -119,8 +113,7 @@ pub async fn struct_delete_field(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "struct\\({type_label}\\) get fields {contains_or_doesnt}:")]
+#[cucumber::then(expr = "struct\\({type_label}\\) get fields {contains_or_doesnt}:")]
 pub async fn struct_get_fields_contains_or_doesnt(
     context: &mut Context,
     type_label: params::Label,
@@ -142,8 +135,7 @@ pub async fn struct_get_fields_contains_or_doesnt(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "struct\\({type_label}\\) get field\\({type_label}\\) get value type: {value_type}")]
+#[cucumber::then(expr = "struct\\({type_label}\\) get field\\({type_label}\\) get value type: {value_type}")]
 pub async fn struct_get_field_get_value_type(
     context: &mut Context,
     type_label: params::Label,
@@ -168,8 +160,7 @@ pub async fn struct_get_field_get_value_type(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "struct\\({type_label}\\) get field\\({type_label}\\) is optional: {boolean}")]
+#[cucumber::then(expr = "struct\\({type_label}\\) get field\\({type_label}\\) is optional: {boolean}")]
 pub async fn struct_get_field_is_optional(
     context: &mut Context,
     type_label: params::Label,

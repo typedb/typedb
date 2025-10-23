@@ -13,12 +13,7 @@ use macro_rules_attribute::apply;
 use params::{self, check_boolean};
 use resource::profile::StorageCounters;
 
-use crate::{
-    concept::type_::BehaviourConceptTestExecutionError,
-    generic_step,
-    transaction_context::{with_read_tx, with_schema_tx},
-    util, Context,
-};
+use crate::{concept::type_::BehaviourConceptTestExecutionError, generic_step, transaction_context::{with_read_tx, with_schema_tx}, util, Context, when_then, unused_step};
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) create role: {type_label}{may_error}")]
@@ -43,8 +38,7 @@ pub async fn relation_type_create_role_unordered(
     may_error.check_concept_write_without_read_errors(&res);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) create role: {type_label}[]{may_error}")]
+#[cucumber::when(expr = r"relation\({type_label}\) create role: {type_label}[]{may_error}")]
 pub async fn relation_type_create_role_ordered(
     context: &mut Context,
     type_label: params::Label,
@@ -112,7 +106,7 @@ pub async fn relation_role_set_specialise(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) unset specialise{may_error}")]
 pub async fn relation_role_unset_specialise(
     context: &mut Context,
@@ -136,8 +130,7 @@ pub async fn relation_role_unset_specialise(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get relates {contains_or_doesnt}:")]
+#[cucumber::then(expr = r"relation\({type_label}\) get relates {contains_or_doesnt}:")]
 pub async fn relation_roles_contain(
     context: &mut Context,
     type_label: params::Label,
@@ -166,8 +159,7 @@ pub async fn relation_roles_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get relates {is_empty_or_not}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get relates {is_empty_or_not}")]
 pub async fn relation_roles_is_empty(
     context: &mut Context,
     type_label: params::Label,
@@ -224,8 +216,7 @@ pub async fn relation_declared_roles_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get explicit declared relates {contains_or_doesnt}:")]
+#[cucumber::then(expr = r"relation\({type_label}\) get explicit declared relates {contains_or_doesnt}:")]
 pub async fn relation_explicit_declared_roles_contain(
     context: &mut Context,
     type_label: params::Label,
@@ -254,8 +245,7 @@ pub async fn relation_explicit_declared_roles_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get declared relates {is_empty_or_not}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get declared relates {is_empty_or_not}")]
 pub async fn relation_declared_roles_is_empty(
     context: &mut Context,
     type_label: params::Label,
@@ -282,8 +272,7 @@ pub async fn relation_declared_roles_is_empty(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get explicit declared relates {is_empty_or_not}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get explicit declared relates {is_empty_or_not}")]
 pub async fn relation_explicit_declared_roles_is_empty(
     context: &mut Context,
     type_label: params::Label,
@@ -329,8 +318,7 @@ pub async fn relation_role_exists(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get relates\({type_label}\) is implicit: {boolean}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get relates\({type_label}\) is implicit: {boolean}")]
 pub async fn relation_role_is_implicit(
     context: &mut Context,
     type_label: params::Label,
@@ -348,8 +336,7 @@ pub async fn relation_role_is_implicit(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get label: {type_label}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get label: {type_label}")]
 pub async fn relation_role_get_label(
     context: &mut Context,
     type_label: params::Label,
@@ -375,8 +362,7 @@ pub async fn relation_role_get_label(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get name: {type_label}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get name: {type_label}")]
 pub async fn relation_role_get_name(
     context: &mut Context,
     type_label: params::Label,
@@ -402,7 +388,7 @@ pub async fn relation_role_get_name(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"relation\({type_label}\) delete role: {type_label}{may_error}")]
 pub async fn relation_type_delete_role(
     context: &mut Context,
@@ -427,7 +413,7 @@ pub async fn relation_type_delete_role(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) get supertype: {type_label}")]
 pub async fn relation_role_get_supertype(
     context: &mut Context,
@@ -455,7 +441,7 @@ pub async fn relation_role_get_supertype(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) get supertype {exists_or_doesnt}")]
 pub async fn relation_role_get_supertype_exists(
     context: &mut Context,
@@ -477,8 +463,7 @@ pub async fn relation_role_get_supertype_exists(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get supertypes {is_empty_or_not}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get supertypes {is_empty_or_not}")]
 pub async fn relation_role_supertypes_is_empty(
     context: &mut Context,
     relation_label: params::Label,
@@ -502,8 +487,7 @@ pub async fn relation_role_supertypes_is_empty(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get supertypes {contains_or_doesnt}:")]
+#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get supertypes {contains_or_doesnt}:")]
 pub async fn relation_role_supertypes_contain(
     context: &mut Context,
     relation_label: params::Label,
@@ -537,8 +521,7 @@ pub async fn relation_role_supertypes_contain(
 }
 
 // TODO: Make different transitive / non-transitive steps?
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get subtypes {contains_or_doesnt}:")]
+#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get subtypes {contains_or_doesnt}:")]
 pub async fn relation_role_subtypes_contain(
     context: &mut Context,
     relation_label: params::Label,
@@ -571,8 +554,7 @@ pub async fn relation_role_subtypes_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get subtypes {is_empty_or_not}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get subtypes {is_empty_or_not}")]
 pub async fn relation_role_subtypes_is_empty(
     context: &mut Context,
     relation_label: params::Label,
@@ -603,8 +585,7 @@ pub async fn relation_role_subtypes_is_empty(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) set name: {type_label}{may_error}")]
+#[cucumber::when(expr = r"relation\({type_label}\) get role\({type_label}\) set name: {type_label}{may_error}")]
 pub async fn relation_role_set_name(
     context: &mut Context,
     relation_label: params::Label,
@@ -661,7 +642,7 @@ pub async fn relation_role_set_annotation(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) unset annotation: {annotation_category}{may_error}")]
 pub async fn relation_role_unset_annotation(
     context: &mut Context,
@@ -693,8 +674,7 @@ pub async fn relation_role_unset_annotation(
     });
 }
 
-#[apply(generic_step)]
-#[step(
+#[cucumber::then(
     expr = r"relation\({type_label}\) get constraints for related role\({type_label}\) {contains_or_doesnt}: {constraint}"
 )]
 pub async fn relation_get_constraints_for_related_role_contain(
@@ -721,7 +701,7 @@ pub async fn relation_get_constraints_for_related_role_contain(
     });
 }
 
-#[apply(generic_step)]
+#[apply(unused_step)]
 #[step(
     expr = r"relation\({type_label}\) get constraint categories for related role\({type_label}\) {contains_or_doesnt}: {constraint_category}"
 )]
@@ -749,8 +729,7 @@ pub async fn relation_constraint_categories_for_related_role_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get constraints {contains_or_doesnt}: {constraint}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get constraints {contains_or_doesnt}: {constraint}")]
 pub async fn relation_role_constraints_contain(
     context: &mut Context,
     relation_label: params::Label,
@@ -780,8 +759,7 @@ pub async fn relation_role_constraints_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(
+#[cucumber::then(
     expr = r"relation\({type_label}\) get role\({type_label}\) get constraint categories {contains_or_doesnt}: {constraint_category}"
 )]
 pub async fn relation_role_constraint_categories_contain(
@@ -813,8 +791,7 @@ pub async fn relation_role_constraint_categories_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get constraints {is_empty_or_not}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get constraints {is_empty_or_not}")]
 pub async fn relation_role_constraints_is_empty(
     context: &mut Context,
     relation_label: params::Label,
@@ -840,7 +817,7 @@ pub async fn relation_role_constraints_is_empty(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(
     expr = r"relation\({type_label}\) get role\({type_label}\) get declared annotations {contains_or_doesnt}: {annotation}"
 )]
@@ -872,8 +849,7 @@ pub async fn relation_role_declared_annotations_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(
+#[cucumber::then(
     expr = r"relation\({type_label}\) get role\({type_label}\) get declared annotation categories {contains_or_doesnt}: {annotation_category}"
 )]
 pub async fn relation_role_declared_annotation_categories_contain(
@@ -906,8 +882,7 @@ pub async fn relation_role_declared_annotation_categories_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get declared annotations {is_empty_or_not}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get declared annotations {is_empty_or_not}")]
 pub async fn relation_role_declared_annotations_is_empty(
     context: &mut Context,
     relation_label: params::Label,
@@ -935,7 +910,7 @@ pub async fn relation_role_declared_annotations_is_empty(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) get cardinality: {annotation}")]
 pub async fn relation_role_cardinality(
     context: &mut Context,
@@ -993,7 +968,7 @@ pub async fn relation_role_set_ordering(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) get ordering: {ordering}")]
 pub async fn relation_role_get_ordering(
     context: &mut Context,
@@ -1017,8 +992,7 @@ pub async fn relation_role_get_ordering(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get players {contains_or_doesnt}:")]
+#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get players {contains_or_doesnt}:")]
 pub async fn role_type_players_contain(
     context: &mut Context,
     relation_label: params::Label,
@@ -1062,7 +1036,7 @@ pub async fn role_type_players_contain(
     });
 }
 
-#[apply(generic_step)]
+#[apply(unused_step)]
 #[step(expr = r"relation\({type_label}\) get role\({type_label}\) get declared players {contains_or_doesnt}:")]
 pub async fn role_type_declared_players_contain(
     context: &mut Context,

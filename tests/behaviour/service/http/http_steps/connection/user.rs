@@ -28,7 +28,7 @@ async fn get_all_usernames(context: &HttpContext) -> impl IntoIterator<Item = St
 }
 
 #[apply(generic_step)]
-#[step(expr = "get all users:")]
+#[step("get all users:")]
 async fn get_all_users(context: &mut Context, step: &Step) {
     let expected_users: HashSet<String> = iter_table(step).map(|name| name.to_owned()).collect();
     let users = get_all_usernames(&context.http_context).await.into_iter().collect::<HashSet<_>>();

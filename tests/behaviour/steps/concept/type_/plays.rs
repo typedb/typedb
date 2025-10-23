@@ -11,11 +11,7 @@ use macro_rules_attribute::apply;
 use resource::profile::StorageCounters;
 
 use super::thing_type::get_as_object_type;
-use crate::{
-    generic_step,
-    transaction_context::{with_read_tx, with_schema_tx},
-    util, Context,
-};
+use crate::{generic_step, transaction_context::{with_read_tx, with_schema_tx}, util, Context, unused_step, when_then};
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) set plays: {type_label}{may_error}")]
@@ -41,7 +37,7 @@ pub async fn set_plays(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "{kind}\\({type_label}\\) unset plays: {type_label}{may_error}")]
 pub async fn unset_plays(
     context: &mut Context,
@@ -90,8 +86,7 @@ pub async fn get_plays_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get declared plays {contains_or_doesnt}:")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get declared plays {contains_or_doesnt}:")]
 pub async fn get_declared_plays_contain(
     context: &mut Context,
     step: &Step,
@@ -120,8 +115,7 @@ pub async fn get_declared_plays_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get plays {is_empty_or_not}")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get plays {is_empty_or_not}")]
 pub async fn get_plays_is_empty(
     context: &mut Context,
     kind: params::Kind,
@@ -135,7 +129,7 @@ pub async fn get_plays_is_empty(
     });
 }
 
-#[apply(generic_step)]
+#[apply(unused_step)]
 #[step(expr = "{kind}\\({type_label}\\) get declared plays {is_empty_or_not}")]
 pub async fn get_declared_plays_is_empty(
     context: &mut Context,
@@ -176,7 +170,7 @@ pub async fn get_plays_set_annotation(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(
     expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) unset annotation: {annotation_category}{may_error}"
 )]
@@ -203,7 +197,7 @@ pub async fn get_plays_unset_annotation(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(
     expr = "{kind}\\({type_label}\\) get constraints for played role\\({type_label}\\) {contains_or_doesnt}: {constraint}"
 )]
@@ -230,7 +224,7 @@ pub async fn get_constraints_for_played_role_contains(
     });
 }
 
-#[apply(generic_step)]
+#[apply(unused_step)]
 #[step(
     expr = "{kind}\\({type_label}\\) get constraint categories for played role\\({type_label}\\) {contains_or_doesnt}: {constraint_category}"
 )]
@@ -257,7 +251,7 @@ pub async fn get_constraint_categories_for_played_role_contains(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(
     expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}"
 )]
@@ -285,8 +279,7 @@ pub async fn get_plays_constraints_contains(
     });
 }
 
-#[apply(generic_step)]
-#[step(
+#[cucumber::then(
     expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get constraint categories {contains_or_doesnt}: {constraint_category}"
 )]
 pub async fn get_plays_constraint_categories_contains(
@@ -313,7 +306,7 @@ pub async fn get_plays_constraint_categories_contains(
     });
 }
 
-#[apply(generic_step)]
+#[apply(unused_step)]
 #[step(expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get constraints {is_empty_or_not}")]
 pub async fn get_owns_constraints_is_empty(
     context: &mut Context,
@@ -332,7 +325,7 @@ pub async fn get_owns_constraints_is_empty(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(
     expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get declared annotations {contains_or_doesnt}: {annotation}"
 )]
@@ -357,8 +350,7 @@ pub async fn get_plays_declared_annotations_contains(
     });
 }
 
-#[apply(generic_step)]
-#[step(
+#[cucumber::then(
     expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation_category}"
 )]
 pub async fn get_plays_declared_annotation_categories_contains(
@@ -384,8 +376,7 @@ pub async fn get_plays_declared_annotation_categories_contains(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get declared annotations {is_empty_or_not}")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get declared annotations {is_empty_or_not}")]
 pub async fn get_owns_declared_annotations_is_empty(
     context: &mut Context,
     kind: params::Kind,
@@ -404,7 +395,7 @@ pub async fn get_owns_declared_annotations_is_empty(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get cardinality: {annotation}")]
 pub async fn get_plays_cardinality(
     context: &mut Context,

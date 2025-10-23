@@ -10,8 +10,7 @@ use params;
 
 use crate::{generic_step, Context};
 
-#[apply(generic_step)]
-#[step(expr = r"{kind} {var} {exists_or_doesnt}")]
+#[cucumber::then(expr = r"{kind} {var} {exists_or_doesnt}")]
 async fn object_exists(
     context: &mut Context,
     kind: params::Kind,

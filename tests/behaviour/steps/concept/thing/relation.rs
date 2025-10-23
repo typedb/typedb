@@ -15,12 +15,7 @@ use macro_rules_attribute::apply;
 use params::{self, check_boolean};
 use resource::profile::StorageCounters;
 
-use crate::{
-    concept::type_::BehaviourConceptTestExecutionError,
-    generic_step,
-    transaction_context::{with_read_tx, with_write_tx},
-    Context,
-};
+use crate::{concept::type_::BehaviourConceptTestExecutionError, generic_step, transaction_context::{with_read_tx, with_write_tx}, Context, when_then, unused_step};
 
 #[apply(generic_step)]
 #[step(expr = r"relation {var} add player for role\({type_label}\): {var}{may_error}")]
@@ -54,7 +49,7 @@ async fn relation_add_player_for_role(
     may_error.check::<(), _>(Err(BehaviourConceptTestExecutionError::CannotFindRoleToAddPlayerTo));
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"relation {var} set players for role\({type_label}[]\): {vars}{may_error}")]
 async fn relation_set_players_for_role(
     context: &mut Context,
@@ -84,7 +79,7 @@ async fn relation_set_players_for_role(
     may_error.check_concept_write_without_read_errors(&res);
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"relation {var} remove player for role\({type_label}\): {var}{may_error}")]
 async fn relation_remove_player_for_role(
     context: &mut Context,
@@ -114,7 +109,7 @@ async fn relation_remove_player_for_role(
     });
 }
 
-#[apply(generic_step)]
+#[apply(unused_step)]
 #[step(expr = r"relation {var} remove {int} players for role\({type_label}[]\): {var}")]
 async fn relation_remove_count_players_for_role(
     context: &mut Context,
@@ -145,8 +140,7 @@ async fn relation_remove_count_players_for_role(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"{var} = relation {var} get players for role\({type_label}[]\)")]
+#[cucumber::then(expr = r"{var} = relation {var} get players for role\({type_label}[]\)")]
 async fn relation_get_players_ordered(
     context: &mut Context,
     players_var: params::Var,
@@ -169,8 +163,7 @@ async fn relation_get_players_ordered(
     context.object_lists.insert(players_var.name, players);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation {var} get players for role\({type_label}[]\) is {vars}: {boolean}")]
+#[cucumber::then(expr = r"relation {var} get players for role\({type_label}[]\) is {vars}: {boolean}")]
 async fn relation_get_players_ordered_is(
     context: &mut Context,
     relation_var: params::Var,
@@ -196,8 +189,7 @@ async fn relation_get_players_ordered_is(
     check_boolean!(is, actuals == players)
 }
 
-#[apply(generic_step)]
-#[step(expr = r"roleplayer {var}[{int}] is {var}")]
+#[cucumber::then(expr = r"roleplayer {var}[{int}] is {var}")]
 async fn roleplayer_list_at_index_is(
     context: &mut Context,
     list_var: params::Var,
@@ -209,8 +201,7 @@ async fn roleplayer_list_at_index_is(
     assert_eq!(list_item, roleplayer);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation {var} get players {contains_or_doesnt}: {var}")]
+#[cucumber::then(expr = r"relation {var} get players {contains_or_doesnt}: {var}")]
 async fn relation_get_players_contains(
     context: &mut Context,
     relation_var: params::Var,
@@ -228,8 +219,7 @@ async fn relation_get_players_contains(
     contains_or_doesnt.check(slice::from_ref(player), &players);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation {var} get players {contains_or_doesnt}:")]
+#[cucumber::then(expr = r"relation {var} get players {contains_or_doesnt}:")]
 async fn relation_get_players_contains_table(
     context: &mut Context,
     step: &Step,
@@ -263,8 +253,7 @@ async fn relation_get_players_contains_table(
     contains_or_doesnt.check(&expected, &players);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation {var} get players for role\({type_label}\) {is_empty_or_not}")]
+#[cucumber::then(expr = r"relation {var} get players for role\({type_label}\) {is_empty_or_not}")]
 async fn relation_get_players_for_role_empty(
     context: &mut Context,
     relation_var: params::Var,
@@ -288,8 +277,7 @@ async fn relation_get_players_for_role_empty(
     is_empty_or_not.check(actuals.is_empty());
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation {var} get players for role\({type_label}\) {contains_or_doesnt}: {var}")]
+#[cucumber::then(expr = r"relation {var} get players for role\({type_label}\) {contains_or_doesnt}: {var}")]
 async fn relation_get_players_for_role_contains(
     context: &mut Context,
     relation_var: params::Var,
@@ -314,8 +302,7 @@ async fn relation_get_players_for_role_contains(
     contains_or_doesnt.check(slice::from_ref(player), &players);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"{object_kind} {var} get relations {contains_or_doesnt}: {var}")]
+#[cucumber::then(expr = r"{object_kind} {var} get relations {contains_or_doesnt}: {var}")]
 async fn object_get_relations_contain(
     context: &mut Context,
     object_kind: params::ObjectKind,
@@ -337,8 +324,7 @@ async fn object_get_relations_contain(
     contains_or_doesnt.check(slice::from_ref(relation), &relations);
 }
 
-#[apply(generic_step)]
-#[step(
+#[cucumber::then(
     expr = r"{object_kind} {var} get relations\({type_label}\) with role\({type_label}\) {contains_or_doesnt}: {var}"
 )]
 async fn object_get_relations_of_type_with_role_contain(

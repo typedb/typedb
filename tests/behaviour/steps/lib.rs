@@ -255,3 +255,43 @@ macro_rules! generic_step {
         };
     };
 }
+
+#[macro_export]
+macro_rules! given_when {
+    {$(#[step($pattern:expr)])+ $vis:vis $async:ident fn $fn_name:ident $args:tt $(-> $res:ty)? $body:block} => {
+        #[allow(unused)]
+        $vis $async fn $fn_name $args $(-> $res)? $body
+
+        const _: () = {
+            $(
+            #[::cucumber::given($pattern)]
+            #[::cucumber::when($pattern)]
+            )+
+            $vis $async fn step $args $(-> $res)? $body
+        };
+    };
+}
+
+#[macro_export]
+macro_rules! when_then {
+    {$(#[step($pattern:expr)])+ $vis:vis $async:ident fn $fn_name:ident $args:tt $(-> $res:ty)? $body:block} => {
+        #[allow(unused)]
+        $vis $async fn $fn_name $args $(-> $res)? $body
+
+        const _: () = {
+            $(
+            #[::cucumber::when($pattern)]
+            #[::cucumber::then($pattern)]
+            )+
+            $vis $async fn step $args $(-> $res)? $body
+        };
+    };
+}
+
+// Keep it compiled, but don't add the cucumber bloat.
+#[macro_export]
+macro_rules! unused_step {
+    {$(#[step($pattern:expr)])+ $vis:vis $async:ident fn $fn_name:ident $args:tt $(-> $res:ty)? $body:block} => {
+        $vis $async fn $fn_name $args $(-> $res)? $body
+    };
+}

@@ -163,8 +163,7 @@ async fn object_unset_has_ordered(
     ));
 }
 
-#[apply(generic_step)]
-#[step(expr = r"{var} = {object_kind} {var} get has\({type_label}[]\)")]
+#[cucumber::then(expr = r"{var} = {object_kind} {var} get has\({type_label}[]\)")]
 async fn object_get_has_list(
     context: &mut Context,
     attribute_var: params::Var,
@@ -189,8 +188,7 @@ async fn object_get_has_list(
     context.attribute_lists.insert(attribute_var.name, attributes);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"{object_kind} {var} get has\({type_label}[]\) is {vars}: {boolean}")]
+#[cucumber::then(expr = r"{object_kind} {var} get has\({type_label}[]\) is {vars}: {boolean}")]
 async fn object_get_has_list_is(
     context: &mut Context,
     object_kind: params::ObjectKind,
@@ -221,8 +219,7 @@ async fn object_get_has_list_is(
     check_boolean!(is, actuals == attributes)
 }
 
-#[apply(generic_step)]
-#[step(expr = r"{object_kind} {var} get has {is_empty_or_not}")]
+#[cucumber::then(expr = r"{object_kind} {var} get has {is_empty_or_not}")]
 async fn object_get_has_is_empty(
     context: &mut Context,
     object_kind: params::ObjectKind,
@@ -245,8 +242,7 @@ async fn object_get_has_is_empty(
     is_empty_or_not.check(actuals.is_empty());
 }
 
-#[apply(generic_step)]
-#[step(expr = r"{object_kind} {var} get has {contains_or_doesnt}: {var}")]
+#[cucumber::then(expr = r"{object_kind} {var} get has {contains_or_doesnt}: {var}")]
 async fn object_get_has(
     context: &mut Context,
     object_kind: params::ObjectKind,
@@ -271,8 +267,7 @@ async fn object_get_has(
     contains_or_doesnt.check(std::slice::from_ref(attribute), &actuals);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"{object_kind} {var} get has\({type_label}\) {contains_or_doesnt}: {var}")]
+#[cucumber::then(expr = r"{object_kind} {var} get has\({type_label}\) {contains_or_doesnt}: {var}")]
 async fn object_get_has_type(
     context: &mut Context,
     object_kind: params::ObjectKind,
@@ -308,8 +303,7 @@ async fn object_get_has_type(
     contains_or_doesnt.check(std::slice::from_ref(attribute), &actuals);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"{object_kind} {var} get key has; {contains_or_doesnt}: {var}")]
+#[cucumber::then(expr = r"{object_kind} {var} get key has; {contains_or_doesnt}: {var}")]
 async fn object_get_has_with_annotations(
     context: &mut Context,
     object_kind: params::ObjectKind,

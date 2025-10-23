@@ -15,11 +15,7 @@ use macro_rules_attribute::apply;
 use params;
 use resource::profile::StorageCounters;
 
-use crate::{
-    generic_step,
-    transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
-    util, with_type, Context,
-};
+use crate::{generic_step, transaction_context::{with_read_tx, with_schema_tx, with_write_tx}, util, with_type, Context, when_then, unused_step};
 
 #[macro_export]
 macro_rules! with_type {
@@ -165,7 +161,7 @@ pub async fn type_exists(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "{kind}\\({type_label}\\) set label: {type_label}{may_error}")]
 pub async fn type_set_label(
     context: &mut Context,
@@ -186,8 +182,7 @@ pub async fn type_set_label(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get name: {type_label}")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get name: {type_label}")]
 pub async fn type_get_name(
     context: &mut Context,
     kind: params::Kind,
@@ -203,8 +198,7 @@ pub async fn type_get_name(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get label: {type_label}")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get label: {type_label}")]
 pub async fn type_get_label(
     context: &mut Context,
     kind: params::Kind,
@@ -243,7 +237,7 @@ pub async fn type_set_annotation(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "{kind}\\({type_label}\\) unset annotation: {annotation_category}{may_error}")]
 pub async fn type_unset_annotation(
     context: &mut Context,
@@ -265,7 +259,7 @@ pub async fn type_unset_annotation(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "{kind}\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}")]
 pub async fn type_constraints_contain(
     context: &mut Context,
@@ -287,8 +281,7 @@ pub async fn type_constraints_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get constraint categories {contains_or_doesnt}: {constraint_category}")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get constraint categories {contains_or_doesnt}: {constraint_category}")]
 pub async fn type_constraint_categories_contain(
     context: &mut Context,
     kind: params::Kind,
@@ -310,8 +303,7 @@ pub async fn type_constraint_categories_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get constraints {is_empty_or_not}")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get constraints {is_empty_or_not}")]
 pub async fn type_constraints_is_empty(
     context: &mut Context,
     kind: params::Kind,
@@ -327,7 +319,7 @@ pub async fn type_constraints_is_empty(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "{kind}\\({type_label}\\) get declared annotations {contains_or_doesnt}: {annotation}")]
 pub async fn type_declared_annotations_contain(
     context: &mut Context,
@@ -347,8 +339,7 @@ pub async fn type_declared_annotations_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(
+#[cucumber::then(
     expr = "{kind}\\({type_label}\\) get declared annotation categories {contains_or_doesnt}: {annotation_category}"
 )]
 pub async fn type_declared_annotation_categories_contain(
@@ -410,8 +401,7 @@ pub async fn type_declared_annotation_categories_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get declared annotations {is_empty_or_not}")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get declared annotations {is_empty_or_not}")]
 pub async fn type_declared_annotations_is_empty(
     context: &mut Context,
     kind: params::Kind,
@@ -537,7 +527,7 @@ pub async fn type_unset_supertype(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "{kind}\\({type_label}\\) get supertype: {type_label}")]
 pub async fn type_get_supertype(
     context: &mut Context,
@@ -557,7 +547,7 @@ pub async fn type_get_supertype(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "{kind}\\({type_label}\\) get supertype {exists_or_doesnt}")]
 pub async fn type_get_supertype_exists(
     context: &mut Context,
@@ -574,8 +564,7 @@ pub async fn type_get_supertype_exists(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get supertypes {contains_or_doesnt}:")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get supertypes {contains_or_doesnt}:")]
 pub async fn get_supertypes_transitive_contain(
     context: &mut Context,
     kind: params::Kind,
@@ -605,8 +594,7 @@ pub async fn get_supertypes_transitive_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get supertypes {is_empty_or_not}")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get supertypes {is_empty_or_not}")]
 pub async fn get_supertypes_transitive_is_empty(
     context: &mut Context,
     kind: params::Kind,
@@ -622,8 +610,7 @@ pub async fn get_supertypes_transitive_is_empty(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get subtypes {contains_or_doesnt}:")]
 pub async fn get_subtypes_contain(
     context: &mut Context,
     kind: params::Kind,
@@ -648,8 +635,7 @@ pub async fn get_subtypes_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "{kind}\\({type_label}\\) get subtypes {is_empty_or_not}")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get subtypes {is_empty_or_not}")]
 pub async fn get_subtypes_is_empty(
     context: &mut Context,
     kind: params::Kind,
@@ -665,8 +651,7 @@ pub async fn get_subtypes_is_empty(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "get {kind_extended} types {contains_or_doesnt}:")]
+#[cucumber::then(expr = "get {kind_extended} types {contains_or_doesnt}:")]
 pub async fn get_types_contain(
     context: &mut Context,
     kind: params::KindExtended,
@@ -727,7 +712,7 @@ pub async fn get_types_contain(
     contains.check(&expected_labels, type_labels)
 }
 
-#[apply(generic_step)]
+#[apply(unused_step)]
 #[step(expr = "get {kind_extended} types {is_empty_or_not}")]
 pub async fn get_types_empty(context: &mut Context, kind: params::KindExtended, is_empty_or_not: params::IsEmptyOrNot) {
     let is_empty = with_read_tx!(context, |tx| {
