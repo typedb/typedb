@@ -273,8 +273,7 @@ async fn typeql_write_query(context: &mut Context, may_error: params::TypeQLMayE
     }
 }
 
-#[apply(generic_step)]
-#[step("get answers of typeql write query")]
+#[cucumber::when("get answers of typeql write query")]
 async fn get_answers_of_typeql_write_query(context: &mut Context, step: &Step) {
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let query = typeql::parse_query(query_str).unwrap();
@@ -303,14 +302,12 @@ fn record_answers_of_typeql_read_query(context: &mut Context, query_str: &str) {
     }
 }
 
-#[apply(generic_step)]
-#[step("get answers of typeql read query")]
+#[cucumber::when("get answers of typeql read query")]
 async fn get_answers_of_typeql_read_query(context: &mut Context, step: &Step) {
     record_answers_of_typeql_read_query(context, step.docstring.as_ref().unwrap().as_str());
 }
 
-#[apply(generic_step)]
-#[step("get answers of templated typeql read query")]
+#[cucumber::when("get answers of templated typeql read query")]
 async fn get_answers_of_templated_typeql_read_query(context: &mut Context, step: &Step) {
     let rows = context.query_answer.as_ref().unwrap().as_rows();
     let [answer] = rows else { panic!("Expected single answer, found {}", rows.len()) };

@@ -13,11 +13,7 @@ use macro_rules_attribute::apply;
 use params::{self, check_boolean};
 use resource::profile::StorageCounters;
 
-use crate::{
-    generic_step,
-    transaction_context::{with_read_tx, with_write_tx},
-    Context,
-};
+use crate::{generic_step, transaction_context::{with_read_tx, with_write_tx}, Context, when_then, unused_step};
 
 pub fn attribute_put_instance_with_value_impl(
     context: &mut Context,
@@ -63,8 +59,7 @@ async fn attribute_put_instance_with_value_var(
     }
 }
 
-#[apply(generic_step)]
-#[step(expr = r"attribute {var} has type: {type_label}")]
+#[cucumber::then(expr = r"attribute {var} has type: {type_label}")]
 async fn attribute_has_type(context: &mut Context, var: params::Var, type_label: params::Label) {
     let attribute_type = context.attributes[&var.name].as_ref().unwrap().type_();
     with_read_tx!(context, |tx| {
@@ -72,8 +67,7 @@ async fn attribute_has_type(context: &mut Context, var: params::Var, type_label:
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"attribute {var} has value type: {value_type}")]
+#[cucumber::then(expr = r"attribute {var} has value type: {value_type}")]
 async fn attribute_has_value_type(context: &mut Context, var: params::Var, value_type: params::ValueType) {
     let attribute_type = context.attributes[&var.name].as_ref().unwrap().type_();
     with_read_tx!(context, |tx| {
@@ -84,8 +78,7 @@ async fn attribute_has_value_type(context: &mut Context, var: params::Var, value
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"attribute {var} has value: {value}")]
+#[cucumber::then(expr = r"attribute {var} has value: {value}")]
 async fn attribute_has_value(context: &mut Context, var: params::Var, value: params::Value) {
     let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
     let attribute_type = attribute.type_();
@@ -100,7 +93,7 @@ async fn attribute_has_value(context: &mut Context, var: params::Var, value: par
     });
 }
 
-#[apply(generic_step)]
+#[apply(unused_step)]
 #[step(expr = r"attribute {var}[{int}] is {var}")]
 async fn attribute_list_at_index_is(
     context: &mut Context,
@@ -145,7 +138,7 @@ async fn attribute_get_instance_with_value(
     context.attributes.insert(var.name, att);
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"delete attribute: {var}")]
 async fn delete_attribute(context: &mut Context, var: params::Var) {
     with_write_tx!(context, |tx| {
@@ -157,8 +150,7 @@ async fn delete_attribute(context: &mut Context, var: params::Var) {
     })
 }
 
-#[apply(generic_step)]
-#[step(expr = r"attribute {var} is deleted: {boolean}")]
+#[cucumber::then(expr = r"attribute {var} is deleted: {boolean}")]
 async fn attribute_is_deleted(context: &mut Context, var: params::Var, is_deleted: params::Boolean) {
     let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
     let attribute_type = attribute.type_();
@@ -178,8 +170,7 @@ async fn attribute_is_none(context: &mut Context, var: params::Var, is_none: par
     check_boolean!(is_none, attribute.is_none());
 }
 
-#[apply(generic_step)]
-#[step(expr = r"delete attributes of type: {type_label}")]
+#[cucumber::when(expr = r"delete attributes of type: {type_label}")]
 async fn delete_attributes_of_type(context: &mut Context, type_label: params::Label) {
     with_write_tx!(context, |tx| {
         let attribute_type =
@@ -197,7 +188,7 @@ async fn delete_attributes_of_type(context: &mut Context, type_label: params::La
     })
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"attribute\({type_label}\) get instances {contains_or_doesnt}: {var}")]
 async fn attribute_instances_contain(
     context: &mut Context,
@@ -218,8 +209,7 @@ async fn attribute_instances_contain(
     containment.check(std::slice::from_ref(attribute), &actuals);
 }
 
-#[apply(generic_step)]
-#[step(expr = r"attribute\({type_label}\) get instances {is_empty_or_not}")]
+#[cucumber::then(expr = r"attribute\({type_label}\) get instances {is_empty_or_not}")]
 async fn object_instances_is_empty(
     context: &mut Context,
     type_label: params::Label,

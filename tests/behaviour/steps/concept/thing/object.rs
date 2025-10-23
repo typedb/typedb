@@ -15,16 +15,10 @@ use params::{self, check_boolean};
 use resource::profile::StorageCounters;
 use test_utils::assert_matches;
 
-use crate::{
-    concept::thing::{
-        attribute::{attribute_put_instance_with_value_impl, get_attribute_by_value},
-        has::object_set_has_impl,
-    },
-    generic_step,
-    thing_util::ObjectWithKey,
-    transaction_context::{with_read_tx, with_write_tx},
-    Context,
-};
+use crate::{concept::thing::{
+    attribute::{attribute_put_instance_with_value_impl, get_attribute_by_value},
+    has::object_set_has_impl,
+}, generic_step, thing_util::ObjectWithKey, transaction_context::{with_read_tx, with_write_tx}, Context, when_then};
 
 fn object_create_instance_impl(
     context: &mut Context,
@@ -78,7 +72,7 @@ async fn object_create_instance_var(
     }
 }
 
-#[apply(generic_step)]
+#[apply(given_when)]
 #[step(expr = r"{var} = {object_kind}\({type_label}\) create new instance with key\({type_label}\): {value}")]
 async fn object_create_instance_with_key_var(
     context: &mut Context,
@@ -95,7 +89,7 @@ async fn object_create_instance_with_key_var(
     context.objects.insert(var.name, Some(ObjectWithKey::new_with_key(object, key)));
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"delete {object_kind}: {var}")]
 async fn delete_object(context: &mut Context, object_kind: params::ObjectKind, var: params::Var) {
     let object = context.objects[&var.name].as_ref().unwrap().object;
@@ -105,8 +99,7 @@ async fn delete_object(context: &mut Context, object_kind: params::ObjectKind, v
     })
 }
 
-#[apply(generic_step)]
-#[step(expr = r"delete {object_kind} of type: {type_label}")]
+#[cucumber::when(expr = r"delete {object_kind} of type: {type_label}")]
 async fn delete_objects_of_type(context: &mut Context, object_kind: params::ObjectKind, type_label: params::Label) {
     with_write_tx!(context, |tx| {
         let object_type =
@@ -137,8 +130,7 @@ async fn delete_objects_of_type(context: &mut Context, object_kind: params::Obje
     })
 }
 
-#[apply(generic_step)]
-#[step(expr = r"{object_kind} {var} is deleted: {boolean}")]
+#[cucumber::then(expr = r"{object_kind} {var} is deleted: {boolean}")]
 async fn object_is_deleted(
     context: &mut Context,
     object_kind: params::ObjectKind,
@@ -157,8 +149,7 @@ async fn object_is_deleted(
     check_boolean!(is_deleted, !objects.contains(object));
 }
 
-#[apply(generic_step)]
-#[step(expr = r"{object_kind} {var} has type: {type_label}")]
+#[cucumber::then(expr = r"{object_kind} {var} has type: {type_label}")]
 async fn object_has_type(
     context: &mut Context,
     object_kind: params::ObjectKind,
@@ -172,7 +163,7 @@ async fn object_has_type(
     });
 }
 
-#[apply(generic_step)]
+#[apply(given_when)]
 #[step(expr = r"{var} = {object_kind}\({type_label}\) get instance with key\({type_label}\): {value}")]
 async fn object_get_instance_with_value(
     context: &mut Context,
@@ -204,8 +195,7 @@ async fn object_get_instance_with_value(
     context.objects.insert(var.name, owner.map(|owner| ObjectWithKey::new_with_key(owner, key)));
 }
 
-#[apply(generic_step)]
-#[step(expr = r"{object_kind}\({type_label}\) get instances {is_empty_or_not}")]
+#[cucumber::then(expr = r"{object_kind}\({type_label}\) get instances {is_empty_or_not}")]
 async fn object_instances_is_empty(
     context: &mut Context,
     object_kind: params::ObjectKind,
@@ -225,7 +215,7 @@ async fn object_instances_is_empty(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = r"{object_kind}\({type_label}\) get instances {contains_or_doesnt}: {var}")]
 async fn object_instances_contain(
     context: &mut Context,
@@ -248,8 +238,7 @@ async fn object_instances_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"attribute {var} get owners {contains_or_doesnt}: {var}")]
+#[cucumber::then(expr = r"attribute {var} get owners {contains_or_doesnt}: {var}")]
 async fn attribute_owners_contains(
     context: &mut Context,
     attribute_var: params::Var,
