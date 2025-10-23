@@ -273,6 +273,7 @@ async fn typeql_write_query(context: &mut Context, may_error: params::TypeQLMayE
     }
 }
 
+#[cucumber::given("get answers of typeql write query")]
 #[cucumber::when("get answers of typeql write query")]
 async fn get_answers_of_typeql_write_query(context: &mut Context, step: &Step) {
     let query_str = step.docstring.as_ref().unwrap().as_str();
@@ -302,6 +303,7 @@ fn record_answers_of_typeql_read_query(context: &mut Context, query_str: &str) {
     }
 }
 
+#[cucumber::given("get answers of typeql read query")]
 #[cucumber::when("get answers of typeql read query")]
 async fn get_answers_of_typeql_read_query(context: &mut Context, step: &Step) {
     record_answers_of_typeql_read_query(context, step.docstring.as_ref().unwrap().as_str());
