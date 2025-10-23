@@ -18,7 +18,7 @@ use test_utils::assert_matches;
 use crate::{concept::thing::{
     attribute::{attribute_put_instance_with_value_impl, get_attribute_by_value},
     has::object_set_has_impl,
-}, generic_step, thing_util::ObjectWithKey, transaction_context::{with_read_tx, with_write_tx}, Context, when_then};
+}, generic_step, thing_util::ObjectWithKey, transaction_context::{with_read_tx, with_write_tx}, Context, when_then, given_when};
 
 fn object_create_instance_impl(
     context: &mut Context,

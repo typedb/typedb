@@ -10,11 +10,7 @@ use itertools::Itertools;
 use macro_rules_attribute::apply;
 use params;
 
-use crate::{
-    generic_step,
-    transaction_context::{with_read_tx, with_schema_tx},
-    util, Context,
-};
+use crate::{generic_step, transaction_context::{with_read_tx, with_schema_tx}, util, Context, when_then};
 
 #[apply(generic_step)]
 #[step(expr = "attribute\\({type_label}\\) set value type: {value_type}{may_error}")]
@@ -38,7 +34,7 @@ pub async fn attribute_type_set_value_type(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "attribute\\({type_label}\\) unset value type{may_error}")]
 pub async fn attribute_type_unset_value_type(
     context: &mut Context,
@@ -53,8 +49,7 @@ pub async fn attribute_type_unset_value_type(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "attribute\\({type_label}\\) get value type: {value_type}")]
+#[cucumber::then(expr = "attribute\\({type_label}\\) get value type: {value_type}")]
 pub async fn attribute_type_get_value_type(
     context: &mut Context,
     type_label: params::Label,
@@ -70,7 +65,7 @@ pub async fn attribute_type_get_value_type(
     });
 }
 
-#[apply(generic_step)]
+#[apply(when_then)]
 #[step(expr = "attribute\\({type_label}\\) get value type is none")]
 pub async fn attribute_type_get_value_type_is_null(context: &mut Context, type_label: params::Label) {
     with_read_tx!(context, |tx| {
@@ -80,8 +75,7 @@ pub async fn attribute_type_get_value_type_is_null(context: &mut Context, type_l
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "attribute\\({type_label}\\) get value type declared: {value_type}")]
+#[cucumber::then(expr = "attribute\\({type_label}\\) get value type declared: {value_type}")]
 pub async fn attribute_type_get_value_type_declared(
     context: &mut Context,
     type_label: params::Label,
@@ -97,8 +91,7 @@ pub async fn attribute_type_get_value_type_declared(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "attribute\\({type_label}\\) get value type declared is none")]
+#[cucumber::then(expr = "attribute\\({type_label}\\) get value type declared is none")]
 pub async fn attribute_type_get_value_type_declared_is_null(context: &mut Context, type_label: params::Label) {
     with_read_tx!(context, |tx| {
         let attribute_type =
@@ -107,8 +100,7 @@ pub async fn attribute_type_get_value_type_declared_is_null(context: &mut Contex
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "attribute\\({type_label}\\) get owners {contains_or_doesnt}:")]
+#[cucumber::then(expr = "attribute\\({type_label}\\) get owners {contains_or_doesnt}:")]
 pub async fn get_owners_contain(
     context: &mut Context,
     type_label: params::Label,
@@ -144,8 +136,7 @@ pub async fn get_owners_contain(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = "attribute\\({type_label}\\) get owners explicit {contains_or_doesnt}:")]
+#[cucumber::then(expr = "attribute\\({type_label}\\) get owners explicit {contains_or_doesnt}:")]
 pub async fn get_declaring_owners_contain(
     context: &mut Context,
     type_label: params::Label,

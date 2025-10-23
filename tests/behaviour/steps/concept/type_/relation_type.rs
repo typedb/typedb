@@ -348,8 +348,7 @@ pub async fn relation_role_is_implicit(
     });
 }
 
-#[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get role\({type_label}\) get label: {type_label}")]
+#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get label: {type_label}")]
 pub async fn relation_role_get_label(
     context: &mut Context,
     type_label: params::Label,
