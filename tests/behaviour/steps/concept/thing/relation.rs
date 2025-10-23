@@ -189,8 +189,7 @@ async fn relation_get_players_ordered_is(
     check_boolean!(is, actuals == players)
 }
 
-#[apply(generic_step)]
-#[step(expr = r"roleplayer {var}[{int}] is {var}")]
+#[cucumber::then(expr = r"roleplayer {var}[{int}] is {var}")]
 async fn roleplayer_list_at_index_is(
     context: &mut Context,
     list_var: params::Var,

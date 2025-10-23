@@ -93,8 +93,7 @@ async fn attribute_has_value(context: &mut Context, var: params::Var, value: par
     });
 }
 
-#[apply(unused_step)]
-#[step(expr = r"attribute {var}[{int}] is {var}")]
+#[cucumber::then(expr = r"attribute {var}[{int}] is {var}")]
 async fn attribute_list_at_index_is(
     context: &mut Context,
     list_var: params::Var,
