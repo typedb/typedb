@@ -198,8 +198,7 @@ pub async fn get_constraint_categories_for_owned_attribute_contains(
     });
 }
 
-#[apply(unused_step)]
-#[step(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}")]
+#[cucumber::then(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}")]
 pub async fn get_owns_constraints_contains(
     context: &mut Context,
     kind: params::Kind,
