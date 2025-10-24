@@ -29,6 +29,7 @@ build:
         bazel build //... 
         bazel run @typedb_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
+        bazel test $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config
 
 #    build-dependency:
 #      image: typedb-ubuntu-22.04

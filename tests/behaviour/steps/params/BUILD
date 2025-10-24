@@ -5,7 +5,7 @@
 package(default_visibility = ["//tests/behaviour:__subpackages__"])
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rustfmt_test")
 
 rust_library(
     name = "params",
@@ -25,6 +25,14 @@ rust_library(
         "@crates//:itertools",
         "@crates//:regex",
     ],
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":params",
+    ],
+    size = "small",
 )
 
 checkstyle_test(

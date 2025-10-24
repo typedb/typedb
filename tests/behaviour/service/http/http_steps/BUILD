@@ -5,7 +5,7 @@
 package(default_visibility = ["//tests/behaviour:__subpackages__"])
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rustfmt_test")
 
 rust_library(
     name = "http_steps",
@@ -39,6 +39,14 @@ rust_library(
         "@typeql//rust:typeql",
     ],
     data = ["//server:config.yml"]
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":http_steps",
+    ],
+    size = "small",
 )
 
 checkstyle_test(

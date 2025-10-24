@@ -4,7 +4,7 @@
 
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test", "rustfmt_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -111,6 +111,15 @@ rust_test(
     crate_features = ["bazel"],
     data = [":config.yml"],
     deps = [],
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":server",
+        ":test_crate_server",
+    ],
+    size = "small",
 )
 
 checkstyle_test(
