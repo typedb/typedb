@@ -15,7 +15,12 @@ use macro_rules_attribute::apply;
 use params::{self, check_boolean};
 use resource::profile::StorageCounters;
 
-use crate::{concept::type_::BehaviourConceptTestExecutionError, generic_step, transaction_context::{with_read_tx, with_write_tx}, Context, when_then, unused_step};
+use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
+    generic_step,
+    transaction_context::{with_read_tx, with_write_tx},
+    unused_step, when_then, Context,
+};
 
 #[apply(generic_step)]
 #[step(expr = r"relation {var} add player for role\({type_label}\): {var}{may_error}")]
