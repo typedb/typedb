@@ -11,7 +11,11 @@ use macro_rules_attribute::apply;
 use resource::profile::StorageCounters;
 
 use super::thing_type::get_as_object_type;
-use crate::{generic_step, transaction_context::{with_read_tx, with_schema_tx}, util, Context, unused_step, when_then};
+use crate::{
+    generic_step,
+    transaction_context::{with_read_tx, with_schema_tx},
+    unused_step, util, when_then, Context,
+};
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) set plays: {type_label}{may_error}")]
@@ -376,7 +380,9 @@ pub async fn get_plays_declared_annotation_categories_contains(
     });
 }
 
-#[cucumber::then(expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get declared annotations {is_empty_or_not}")]
+#[cucumber::then(
+    expr = "{kind}\\({type_label}\\) get plays\\({type_label}\\) get declared annotations {is_empty_or_not}"
+)]
 pub async fn get_owns_declared_annotations_is_empty(
     context: &mut Context,
     kind: params::Kind,

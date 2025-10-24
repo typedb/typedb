@@ -15,7 +15,11 @@ use macro_rules_attribute::apply;
 use params;
 use resource::profile::StorageCounters;
 
-use crate::{generic_step, transaction_context::{with_read_tx, with_schema_tx, with_write_tx}, util, with_type, Context, when_then, unused_step};
+use crate::{
+    generic_step,
+    transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
+    unused_step, util, when_then, with_type, Context,
+};
 
 #[macro_export]
 macro_rules! with_type {
@@ -281,7 +285,9 @@ pub async fn type_constraints_contain(
     });
 }
 
-#[cucumber::then(expr = "{kind}\\({type_label}\\) get constraint categories {contains_or_doesnt}: {constraint_category}")]
+#[cucumber::then(
+    expr = "{kind}\\({type_label}\\) get constraint categories {contains_or_doesnt}: {constraint_category}"
+)]
 pub async fn type_constraint_categories_contain(
     context: &mut Context,
     kind: params::Kind,
