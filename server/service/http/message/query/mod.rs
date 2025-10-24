@@ -157,6 +157,7 @@ impl IntoResponse for QueryAnswer {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysedQueryResponse {
+    pub source: String,
     pub structure: QueryStructureResponse,
     pub annotations: QueryStructureAnnotationsResponse,
 }
@@ -174,7 +175,7 @@ pub fn encode_analyzed_query(
     type_manager: &TypeManager,
     analysed_query: AnalysedQuery,
 ) -> Result<AnalysedQueryResponse, Box<ConceptReadError>> {
-    let AnalysedQuery { structure, annotations: analysed_query_annotations } = analysed_query;
+    let AnalysedQuery { source, structure, annotations: analysed_query_annotations } = analysed_query;
     let QueryStructureAnnotations { query: pipeline, preamble, fetch } = analysed_query_annotations;
     let preamble = preamble
         .into_iter()
@@ -189,7 +190,7 @@ pub fn encode_analyzed_query(
         .transpose()?;
     let annotations = QueryStructureAnnotationsResponse { preamble, query: pipeline, fetch };
     let structure = encode_query_structure(snapshot, type_manager, structure)?;
-    Ok(AnalysedQueryResponse { structure, annotations })
+    Ok(AnalysedQueryResponse { source, structure, annotations })
 }
 
 #[cfg(debug_assertions)]

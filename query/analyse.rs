@@ -40,6 +40,7 @@ use tokio::io::AsyncReadExt;
 
 #[derive(Debug)]
 pub struct AnalysedQuery {
+    pub source: String,
     pub structure: QueryStructure,
     pub annotations: QueryStructureAnnotations,
 }
@@ -48,7 +49,7 @@ pub struct AnalysedQuery {
 pub struct QueryStructureAnnotations {
     pub preamble: Vec<FunctionStructureAnnotations>,
     pub query: PipelineStructureAnnotations,
-    pub fetch: Option<FetchStructureAnnotations>,
+    pub fetch: Option<FetchStructureAnnotationsFields>,
 }
 
 impl QueryStructureAnnotations {
@@ -96,13 +97,13 @@ impl QueryStructureAnnotations {
     }
 }
 
-pub type FetchStructureAnnotations = HashMap<String, FetchObjectStructureAnnotations>;
+pub type FetchStructureAnnotationsFields = HashMap<String, FetchStructureAnnotations>;
 
 #[derive(Debug)]
-pub enum FetchObjectStructureAnnotations {
+pub enum FetchStructureAnnotations {
     Leaf(BTreeSet<ValueType>),
-    Object(FetchStructureAnnotations),
-    List(Box<FetchObjectStructureAnnotations>),
+    Object(FetchStructureAnnotationsFields),
+    List(Box<FetchStructureAnnotations>),
 }
 
 #[derive(Debug)]
@@ -243,7 +244,7 @@ pub fn build_fetch_annotations(
     source_query: &str,
     last_stage_annotations: &TypeAnnotations,
     object: &AnnotatedFetchObject,
-) -> Result<FetchStructureAnnotations, Box<ConceptReadError>> {
+) -> Result<FetchStructureAnnotationsFields, Box<ConceptReadError>> {
     match object {
         AnnotatedFetchObject::Entries(entries) => build_fetch_entries_annotations(
             snapshot,
@@ -264,7 +265,7 @@ fn build_fetch_attributes_annotations(
     type_manager: &TypeManager,
     last_stage_annotations: &TypeAnnotations,
     variable: Variable,
-) -> Result<FetchStructureAnnotations, Box<ConceptReadError>> {
+) -> Result<FetchStructureAnnotationsFields, Box<ConceptReadError>> {
     let mut fetch_value_types = HashMap::new();
     let owner_types = last_stage_annotations
         .vertex_annotations_of(&Vertex::Variable(variable))
@@ -277,7 +278,7 @@ fn build_fetch_attributes_annotations(
                 if !value_types.is_empty() {
                     let label: String =
                         attribute_type.get_label(snapshot, type_manager)?.scoped_name.as_str().to_owned();
-                    fetch_value_types.insert(label, FetchObjectStructureAnnotations::Leaf(value_types));
+                    fetch_value_types.insert(label, FetchStructureAnnotations::Leaf(value_types));
                 }
                 Ok::<(), Box<ConceptReadError>>(())
             })
@@ -293,7 +294,7 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
     source_query: &str,
     last_stage_annotations: &TypeAnnotations,
     entries: &HashMap<ParameterID, AnnotatedFetchSome>,
-) -> Result<FetchStructureAnnotations, Box<ConceptReadError>> {
+) -> Result<FetchStructureAnnotationsFields, Box<ConceptReadError>> {
     entries.iter().map(|(parameter_id, fetch_object)| {
         let key = parameters.fetch_key(*parameter_id).expect("Expected fetch key to be present").to_owned();
         let fetch_object_annotations_maybe_list = match fetch_object {
@@ -304,9 +305,9 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
                         attribute_type.is_attribute_type().then(|| attribute_type.as_attribute_type())
                     });
                     let leaf_annotations = build_leaf_annotations(snapshot, type_manager, attribute_types)?;
-                    FetchObjectStructureAnnotations::Leaf(leaf_annotations)
+                    FetchStructureAnnotations::Leaf(leaf_annotations)
                 } else if let Some(value_type) = last_stage_annotations.value_type_annotations_of(&as_vertex) {
-                    FetchObjectStructureAnnotations::Leaf(BTreeSet::from([value_type.value_type().clone()]))
+                    FetchStructureAnnotations::Leaf(BTreeSet::from([value_type.value_type().clone()]))
                 } else {
                     unreachable!("Expected either type annotations or value annotations to be present");
                 }
@@ -317,15 +318,15 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
                 // TODO: Refine based on owner?
                 let subtypes = attribute_type.get_subtypes(snapshot, type_manager)?;
                 let attribute_types = chain!([*attribute_type].into_iter(), subtypes.iter().copied());
-                FetchObjectStructureAnnotations::Leaf(build_leaf_annotations(snapshot, type_manager, attribute_types)?)
+                FetchStructureAnnotations::Leaf(build_leaf_annotations(snapshot, type_manager, attribute_types)?)
             }
             AnnotatedFetchSome::Object(inner) => {
-                FetchObjectStructureAnnotations::Object(build_fetch_annotations(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, inner)?)
+                FetchStructureAnnotations::Object(build_fetch_annotations(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, inner)?)
             }
             AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
                 let last_stage_annotations = get_last_stage_annotations(sub_fetch.stages.as_slice());
                 let fetch = build_fetch_annotations(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, &sub_fetch.fetch.object)?;
-                FetchObjectStructureAnnotations::Object(fetch)
+                FetchStructureAnnotations::Object(fetch)
             }
             AnnotatedFetchSome::ListFunction(function)
             | AnnotatedFetchSome::SingleFunction(function) => {
@@ -333,7 +334,7 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
                 match &function.annotated_signature.returns[0] {
                     FunctionParameterAnnotation::Concept(types) => {
                         debug_assert!(types.iter().all(|type_| type_.is_attribute_type()));
-                        FetchObjectStructureAnnotations::Leaf(
+                        FetchStructureAnnotations::Leaf(
                             build_leaf_annotations(
                                 snapshot,
                                 type_manager,
@@ -342,7 +343,7 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
                         )
                     }
                     FunctionParameterAnnotation::Value(value_type) => {
-                        FetchObjectStructureAnnotations::Leaf(BTreeSet::from([value_type.clone()]))
+                        FetchStructureAnnotations::Leaf(BTreeSet::from([value_type.clone()]))
                     }
                 }
             }
@@ -356,7 +357,7 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
             | AnnotatedFetchSome::ListSubFetch(_)
             | AnnotatedFetchSome::ListAttributesAsList(_, _)
             | AnnotatedFetchSome::ListAttributesFromList(_, _) => {
-                FetchObjectStructureAnnotations::List(Box::new(fetch_object_annotations_maybe_list))
+                FetchStructureAnnotations::List(Box::new(fetch_object_annotations_maybe_list))
             }
         };
         Ok((key, fetch_object_annotations))

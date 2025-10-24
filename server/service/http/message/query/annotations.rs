@@ -15,7 +15,7 @@ use compiler::{
     },
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
-use query::analyse::{FetchObjectStructureAnnotations, FetchStructureAnnotations, FunctionStructureAnnotations};
+use query::analyse::{FetchStructureAnnotations, FetchStructureAnnotationsFields, FunctionStructureAnnotations};
 use serde::{Deserialize, Serialize};
 use storage::snapshot::ReadableSnapshot;
 
@@ -45,7 +45,7 @@ impl SingleTypeAnnotationResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", tag = "tag")]
+#[serde(rename_all = "camelCase")]
 struct VariableAnnotationsResponse {
     is_optional: bool,
     #[serde(flatten)]
@@ -245,7 +245,7 @@ pub(super) fn encode_function_structure_annotations(
 pub(super) fn encode_fetch_structure_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    fetch_structure_annotations: FetchStructureAnnotations,
+    fetch_structure_annotations: FetchStructureAnnotationsFields,
 ) -> Result<Vec<FetchStructureFieldAnnotationsResponse>, Box<ConceptReadError>> {
     fetch_structure_annotations
         .into_iter()
@@ -259,21 +259,21 @@ pub(super) fn encode_fetch_structure_annotations(
 fn encode_fetch_object_structure_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    fetch_object_structure_annotations: FetchObjectStructureAnnotations,
+    fetch_object_structure_annotations: FetchStructureAnnotations,
 ) -> Result<FetchStructureAnnotationsResponse, Box<ConceptReadError>> {
     // TODO: We don't encode the pipeline anywhere
     let encoded = match fetch_object_structure_annotations {
-        FetchObjectStructureAnnotations::Leaf(leaf) => {
+        FetchStructureAnnotations::Leaf(leaf) => {
             let value_types = leaf
                 .into_iter()
                 .map(|v| encode_value_type(v, snapshot, type_manager))
                 .collect::<Result<Vec<_>, _>>()?;
             FetchStructureAnnotationsResponse::Value { value_types }
         }
-        FetchObjectStructureAnnotations::Object(object) => FetchStructureAnnotationsResponse::Object {
+        FetchStructureAnnotations::Object(object) => FetchStructureAnnotationsResponse::Object {
             possible_fields: encode_fetch_structure_annotations(snapshot, type_manager, object)?,
         },
-        FetchObjectStructureAnnotations::List(boxed_list_annotations) => {
+        FetchStructureAnnotations::List(boxed_list_annotations) => {
             let elements = encode_fetch_object_structure_annotations(snapshot, type_manager, *boxed_list_annotations)?;
             FetchStructureAnnotationsResponse::List { elements: Box::new(elements) }
         }

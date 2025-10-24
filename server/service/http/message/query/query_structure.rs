@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
@@ -21,11 +21,12 @@ use ir::pattern::{
     constraint::{Constraint, IsaKind, SubKind},
     ParameterID, Vertex,
 };
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, FromInto};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
-    encode_type_concept, encode_value, RoleTypeResponse, ValueResponse,
+    encode_type_concept, encode_value, EntityTypeResponse, RoleTypeResponse, ValueResponse,
 };
 
 struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
@@ -123,6 +124,7 @@ pub struct StructureVariableInfo {
     name: Option<String>,
 }
 
+#[serde_as]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub(super) enum StructureConstraint {
@@ -175,7 +177,8 @@ pub(super) enum StructureConstraint {
     },
     Expression {
         text: String,
-        assigned: Vec<StructureVertex>,
+        #[serde_as(as="FromInto<Singleton<StructureVertex>>")]
+        assigned: StructureVertex, // TODO: Serialize as is. Breaking change.
         arguments: Vec<StructureVertex>,
     },
     Is {
@@ -239,7 +242,6 @@ enum StructureVertex {
     Variable { id: StructureVariableId },
     Label { r#type: serde_json::Value },
     Value(ValueResponse),
-    Unresolved { label: String },
 }
 
 pub(crate) fn encode_query_structure(
@@ -436,10 +438,7 @@ fn encode_structure_constraint(
         Constraint::ExpressionBinding(expr) => {
             let text =
                 context.get_call_syntax(constraint).map_or_else(|| format!("Expression#{index}"), |text| text.clone());
-            let assigned = expr
-                .ids_assigned()
-                .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
-                .collect::<Result<Vec<_>, _>>()?;
+            let assigned = encode_structure_vertex(context, expr.left())?;
             let arguments = expr
                 .expression_ids()
                 .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
@@ -497,7 +496,7 @@ fn encode_structure_constraint(
         Constraint::Kind(kind) => constraints.push(StructureConstraintWithSpan {
             text_span: span,
             constraint: StructureConstraint::Kind {
-                kind: kind.kind().to_string(),
+                kind: kind.kind().name().to_owned(),
                 r#type: encode_structure_vertex(context, kind.type_())?,
             },
         }),
@@ -551,23 +550,20 @@ fn encode_structure_vertex(
             context.record_variable(variable.into());
             StructureVertex::Variable { id: variable.into() }
         }
-        Vertex::Label(label) => match context.get_type(label) {
-            Some(type_) => {
+        Vertex::Label(label) => {
+            if let Some(type_) = context.get_type(label) {
                 let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
                 StructureVertex::Label { r#type }
+            } else if let Some(type_) = get_type_annotation_from_label(context.snapshot, context.type_manager, label)? {
+                let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
+                StructureVertex::Label { r#type }
+            } else {
+                debug_assert!(false, "This should be unreachable, but we don't want crashes");
+                let label = format!("ERROR_UNRESOLVED:{}", label.scoped_name.as_str());
+                let r#type = serde_json::json!(EntityTypeResponse { label });
+                StructureVertex::Label { r#type }
             }
-            None => match get_type_annotation_from_label(context.snapshot, context.type_manager, label)? {
-                Some(type_) => {
-                    let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
-                    StructureVertex::Label { r#type }
-                }
-                None => {
-                    debug_assert!(false, "Likely unreachable, thanks to the rolename handling");
-                    let label = label.scoped_name.as_str().to_owned();
-                    StructureVertex::Unresolved { label }
-                }
-            },
-        },
+        }
         Vertex::Parameter(param) => {
             let value = context.get_parameter_value(param).unwrap();
             StructureVertex::Value(encode_value(value))
@@ -581,10 +577,26 @@ fn encode_role_type_as_vertex(
     role_type: &Vertex<Variable>,
 ) -> Result<StructureVertex, Box<ConceptReadError>> {
     if let Some(label) = context.get_role_type(&role_type.as_variable().unwrap()) {
+        // TODO: Make consistent with GRPC API by introducing StructureVertex::NamedRole
         // At present rolename could resolve to multiple types - Manually encode.
         Ok(StructureVertex::Label { r#type: serde_json::json!(RoleTypeResponse { label: label.to_owned() }) })
     } else {
         encode_structure_vertex(context, role_type)
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct Singleton<T>(Vec<T>);
+
+impl From<Singleton<StructureVertex>> for StructureVertex {
+    fn from(mut value: Singleton<StructureVertex>) -> Self {
+        value.0.pop().unwrap()
+    }
+}
+
+impl From<StructureVertex> for Singleton<StructureVertex> {
+    fn from(value: StructureVertex) -> Self {
+        Self(vec![value])
     }
 }
 
@@ -611,7 +623,7 @@ pub mod bdd {
     };
 
     pub fn encode_query_structure_as_functor(analyzed: &AnalysedQueryResponse) -> (String, Vec<String>) {
-        let AnalysedQueryResponse { structure, annotations } = analyzed;
+        let AnalysedQueryResponse { structure, annotations, source: _ } = analyzed;
         let context = FunctorContext { structure: &structure.query, annotations: &annotations.query };
         let pipeline = &structure.query;
         let query = pipeline.encode_as_functor(&context);
@@ -672,7 +684,6 @@ pub mod bdd {
         match self {
             StructureVertex::Variable { id } => { id.encode_as_functor(context) }
             StructureVertex::Label { r#type } => { r#type.as_object().unwrap()["label"].as_str().unwrap().to_owned() }
-            StructureVertex::Unresolved { label } => { label.encode_as_functor(context) }
             StructureVertex::Value(v) => {
                 match &v.value {
                     Value::String(s) => std::format!("\"{}\"", s.to_string()),
@@ -683,7 +694,9 @@ pub mod bdd {
     });
 
     impl_functor_for_multi!(|self, context| [
-        StructureVariableId =>  { format!("${}", context.structure.variables[self].name.as_ref().map(|s| s.as_str()).unwrap_or("_")) }
+        StructureVariableId =>  {
+            format!("${}", context.structure.variables.get(self).and_then(|v| v.name.as_ref()).map_or("_", String::as_str))
+        }
         QueryStructureConjunctionID => { context.structure.conjunctions[self.0 as usize].encode_as_functor(context) }
         StructureConstraintWithSpan => { self.constraint.encode_as_functor(context) }
         PipelineStructureResponse => { let pipeline = &self.pipeline; encode_functor_impl!(context, Pipeline { pipeline, }) }

@@ -626,27 +626,28 @@ impl UnaryConstraint for Kind<Variable> {
         context: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
+        use encoding::graph::type_::Kind as EncodingKind;
         let type_manager = &context.type_manager;
         let annotations = match self.kind() {
-            typeql::token::Kind::Entity => type_manager
+            EncodingKind::Entity => type_manager
                 .get_entity_types(context.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()
                 .map(|t| TypeAnnotation::Entity(*t))
                 .collect(),
-            typeql::token::Kind::Relation => type_manager
+            EncodingKind::Relation => type_manager
                 .get_relation_types(context.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()
                 .map(|t| TypeAnnotation::Relation(*t))
                 .collect(),
-            typeql::token::Kind::Attribute => type_manager
+            EncodingKind::Attribute => type_manager
                 .get_attribute_types(context.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()
                 .map(|t| TypeAnnotation::Attribute(*t))
                 .collect(),
-            typeql::token::Kind::Role => type_manager
+            EncodingKind::Role => type_manager
                 .get_role_types(context.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()
@@ -1056,7 +1057,7 @@ impl BinaryConstraint for Isa<Variable> {
                 }
                 TypeAnnotation::RoleType(_) => {
                     // Add nothing to the collector -> it'll get pruned
-                },
+                }
             }
         }
         collector.insert(*right_type);

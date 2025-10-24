@@ -309,6 +309,13 @@ pub(crate) mod transaction {
         transaction_server_res(req_id, typedb_protocol::transaction::res::Res::QueryInitialRes(message))
     }
 
+    pub(crate) fn transaction_server_res_analyze_res(
+        req_id: Uuid,
+        message: typedb_protocol::analyze::Res,
+    ) -> typedb_protocol::transaction::Server {
+        transaction_server_res(req_id, typedb_protocol::transaction::res::Res::AnalyzeRes(message))
+    }
+
     #[inline]
     pub(crate) fn transaction_server_res_parts_query_part(
         req_id: Uuid,

@@ -8,10 +8,17 @@ use std::str::FromStr;
 
 use cucumber::gherkin::Step;
 use futures::future::join_all;
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 use macro_rules_attribute::apply;
 use params::{self, check_boolean, ContainsOrDoesnt};
-use server::service::{http::message::query::QueryAnswerResponse, AnswerType};
+use server::service::{
+    AnswerType,
+    http::message::query::{
+        QueryAnswerResponse,
+        annotations::bdd::{encode_fetch_annotations_as_functor, encode_query_annotations_as_functor},
+        query_structure::bdd::encode_query_structure_as_functor,
+    },
+};
 
 use crate::{
     generic_step,
@@ -20,6 +27,7 @@ use crate::{
     util::{iter_table, list_contains_json, parse_json},
     Context, HttpBehaviourTestError,
 };
+use crate::message::transactions_analyze;
 
 fn get_answers_column_names(answer: &serde_json::Value) -> Vec<String> {
     if let serde_json::Value::Object(answers) = answer {
@@ -1012,4 +1020,100 @@ pub async fn answer_contains_document(
         list_contains_json(concept_documents, &expected_document),
         &format!("Concept documents: {:?}", concept_documents),
     );
+}
+
+#[cucumber::when("get answers of typeql analyze")]
+pub async fn get_answers_of_typeql_analyze(
+    context: &mut Context,
+    step: &Step,
+) {
+    context.analyzed = None;
+    context.analyzed = Some(
+            transactions_analyze(
+                context.http_client(),
+                context.auth_token(),
+                context.transaction(),
+                step.docstring().unwrap(),
+            ).await.unwrap()
+        )
+}
+
+#[cucumber::then(expr = r"typeql analyze{typeql_may_error}")]
+async fn typeql_analyze_may_error(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+    let query_str = step.docstring.as_ref().unwrap().as_str();
+    let parse_result = typeql::parse_query(query_str);
+    if let Either::Right(_) = may_error.check_parsing(parse_result.as_ref()) {
+        return;
+    }
+    let query = parse_result.unwrap();
+    let result = transactions_analyze(
+        context.http_client(),
+        context.auth_token(),
+        context.transaction(),
+        step.docstring().unwrap(),
+    ).await;
+    may_error.check_logic(result);
+}
+
+#[cucumber::then("analyzed query pipeline structure is:")]
+async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
+    let expected_functor = step.docstring().unwrap();
+    let analyzed = context.analyzed.as_ref().unwrap();
+    let (actual_functor, _preamble) = encode_query_structure_as_functor(&analyzed);
+    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
+}
+
+#[cucumber::then("analyzed query preamble contains:")]
+async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
+    let expected_functor = step.docstring().unwrap();
+    let analyzed = context.analyzed.as_ref().unwrap();
+    let (_pipeline, preamble_functors) = encode_query_structure_as_functor(&analyzed);
+
+    assert!(
+        preamble_functors.iter().any(|actual_functor| {
+            normalize_functor_for_compare(actual_functor) == normalize_functor_for_compare(expected_functor)
+        }),
+        "Looking for\n\t{}\nin any of:\n\t{}",
+        normalize_functor_for_compare(expected_functor),
+        preamble_functors.iter().map(|s| normalize_functor_for_compare(s)).join("\n\t")
+    );
+}
+
+#[cucumber::then("analyzed query pipeline annotations are:")]
+async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
+    let expected_functor = step.docstring().unwrap();
+    let analyzed = context.analyzed.as_ref().unwrap();
+    let (actual_functor, _preamble) = encode_query_annotations_as_functor(&analyzed);
+    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
+}
+
+#[cucumber::then("analyzed preamble annotations contains:")]
+async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &Step) {
+    let expected_functor = step.docstring().unwrap();
+    let analyzed = context.analyzed.as_ref().unwrap();
+    let (_pipeline, preamble_functors) = encode_query_annotations_as_functor(&analyzed);
+
+    assert!(
+        preamble_functors.iter().any(|actual_functor| {
+            normalize_functor_for_compare(actual_functor) == normalize_functor_for_compare(expected_functor)
+        }),
+        "Looking for\n\t{}\nin any of:\n\t{}",
+        normalize_functor_for_compare(expected_functor),
+        preamble_functors.iter().map(|s| normalize_functor_for_compare(s)).join("\n\t")
+    );
+}
+
+#[cucumber::then("analyzed fetch annotations are:")]
+async fn analyzed_fetch_annotations_are(context: &mut Context, step: &Step) {
+    let expected_functor = step.docstring().unwrap();
+    let analyzed = context.analyzed.as_ref().unwrap();
+    let actual_functor = encode_fetch_annotations_as_functor(&analyzed);
+
+    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
+}
+
+fn normalize_functor_for_compare(functor: &String) -> String {
+    let mut normalized = functor.to_lowercase();
+    normalized.retain(|c| !c.is_whitespace());
+    normalized
 }
