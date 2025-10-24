@@ -679,6 +679,9 @@ pub async fn relation_role_unset_annotation(
     });
 }
 
+#[cucumber::when(
+    expr = r"relation\({type_label}\) get constraints for related role\({type_label}\) {contains_or_doesnt}: {constraint}"
+)]
 #[cucumber::then(
     expr = r"relation\({type_label}\) get constraints for related role\({type_label}\) {contains_or_doesnt}: {constraint}"
 )]

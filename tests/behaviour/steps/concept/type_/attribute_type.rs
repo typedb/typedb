@@ -53,6 +53,7 @@ pub async fn attribute_type_unset_value_type(
     });
 }
 
+#[cucumber::when(expr = "attribute\\({type_label}\\) get value type: {value_type}")]
 #[cucumber::then(expr = "attribute\\({type_label}\\) get value type: {value_type}")]
 pub async fn attribute_type_get_value_type(
     context: &mut Context,
