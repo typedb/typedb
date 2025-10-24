@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rustfmt_test")
 package(default_visibility = ["//visibility:public"])
 
 rust_library(
@@ -12,6 +12,14 @@ rust_library(
     srcs = glob([
         "*.rs",
     ])
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":lending_iterator",
+    ],
+    size = "small",
 )
 
 checkstyle_test(

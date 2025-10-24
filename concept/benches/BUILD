@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test", "rust_binary")
+load("@rules_rust//rust:defs.bzl", "rust_test", "rust_binary", "rustfmt_test")
 package(default_visibility = ["//visibility:public",])
 
 # To run this via Bazel, Criterion must be provided the --bench argument:
@@ -28,6 +28,14 @@ rust_test(
         "@crates//:pprof",
     ],
     use_libtest_harness = False,
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":bench_thing_write",
+    ],
+    size = "small",
 )
 
 checkstyle_test(

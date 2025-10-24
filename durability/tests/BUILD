@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test", "rustfmt_test")
 package(default_visibility = ["//visibility:public",])
 
 rust_test(
@@ -37,6 +37,15 @@ rust_test(
         "@crates//:tempdir"
     ],
     use_libtest_harness = False,
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":basic",
+        ":crash",
+    ],
+    size = "small",
 )
 
 checkstyle_test(

@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_test", "rustfmt_test")
 
 rust_test(
     name = "test_assembly",
@@ -19,6 +19,14 @@ rust_test(
         "@typedb_bazel_distribution//platform:is_mac_arm64" : {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-mac-arm64.zip"},
         "@typedb_bazel_distribution//platform:is_windows_x86_64" :  {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-windows-x86_64.zip"}
     }),
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":test_assembly",
+    ],
+    size = "small",
 )
 
 checkstyle_test(

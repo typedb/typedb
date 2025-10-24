@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@rules_rust//rust:defs.bzl", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_test", "rustfmt_test")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 rust_test(
@@ -27,6 +27,15 @@ rust_test(
     ],
     data = ["@typedb_behaviour//connection:transaction.feature"],
     crate_features = ["bazel"],
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":test_http_database",
+        ":test_http_transaction",
+    ],
+    size = "small",
 )
 
 checkstyle_test(

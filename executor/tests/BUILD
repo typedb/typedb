@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_test", "rustfmt_test")
 package(default_visibility = ["//visibility:public",])
 
 deps = [
@@ -114,6 +114,24 @@ rust_test(
     crate_root = "efficiency.rs",
     srcs = ["efficiency.rs"],
     deps = deps,
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":test_compile_execute",
+        ":test_efficiency",
+        ":test_execute_expression",
+        ":test_execute_has",
+        ":test_execute_isa",
+        ":test_execute_links",
+        ":test_execute_relation_index",
+        ":test_functions",
+        ":test_pipelines",
+        ":test_select",
+        ":test_writes",
+    ],
+    size = "small",
 )
 
 checkstyle_test(
