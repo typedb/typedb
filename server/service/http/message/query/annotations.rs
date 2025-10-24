@@ -45,7 +45,7 @@ impl SingleTypeAnnotationResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", tag = "tag")]
+#[serde(rename_all = "camelCase")]
 struct VariableAnnotationsResponse {
     is_optional: bool,
     #[serde(flatten)]

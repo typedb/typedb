@@ -631,7 +631,7 @@ async fn get_answers_of_typeql_analyze(context: &mut Context, step: &Step) {
     context.analyzed_query = Some(analyzed);
 }
 
-#[cucumber::when(expr = r"typeql analyze{typeql_may_error}")]
+#[cucumber::then(expr = r"typeql analyze{typeql_may_error}")]
 async fn typeql_analyze_may_error(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query_str);

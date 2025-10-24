@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
@@ -21,7 +21,8 @@ use ir::pattern::{
     constraint::{Constraint, IsaKind, SubKind},
     ParameterID, Vertex,
 };
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, FromInto};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
@@ -123,6 +124,7 @@ pub struct StructureVariableInfo {
     name: Option<String>,
 }
 
+#[serde_as]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub(super) enum StructureConstraint {
@@ -175,7 +177,8 @@ pub(super) enum StructureConstraint {
     },
     Expression {
         text: String,
-        assigned: Vec<StructureVertex>, // TODO: Change to just StructureVertex
+        #[serde_as(as="FromInto<Singleton<StructureVertex>>")]
+        assigned: StructureVertex, // TODO: Serialize as is. Breaking change.
         arguments: Vec<StructureVertex>,
     },
     Is {
@@ -435,10 +438,7 @@ fn encode_structure_constraint(
         Constraint::ExpressionBinding(expr) => {
             let text =
                 context.get_call_syntax(constraint).map_or_else(|| format!("Expression#{index}"), |text| text.clone());
-            let assigned = expr
-                .ids_assigned()
-                .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
-                .collect::<Result<Vec<_>, _>>()?;
+            let assigned = encode_structure_vertex(context, expr.left())?;
             let arguments = expr
                 .expression_ids()
                 .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
@@ -585,6 +585,21 @@ fn encode_role_type_as_vertex(
     }
 }
 
+#[derive(Serialize, Deserialize)]
+struct Singleton<T>(Vec<T>);
+
+impl From<Singleton<StructureVertex>> for StructureVertex {
+    fn from(mut value: Singleton<StructureVertex>) -> Self {
+        value.0.pop().unwrap()
+    }
+}
+
+impl From<StructureVertex> for Singleton<StructureVertex> {
+    fn from(value: StructureVertex) -> Self {
+        Self(vec![value])
+    }
+}
+
 #[cfg(debug_assertions)]
 pub mod bdd {
     use compiler::query_structure::{
@@ -679,7 +694,9 @@ pub mod bdd {
     });
 
     impl_functor_for_multi!(|self, context| [
-        StructureVariableId =>  { format!("${}", context.structure.variables[self].name.as_ref().map(|s| s.as_str()).unwrap_or("_")) }
+        StructureVariableId =>  {
+            format!("${}", context.structure.variables.get(self).and_then(|v| v.name.as_ref()).map_or("_", String::as_str))
+        }
         QueryStructureConjunctionID => { context.structure.conjunctions[self.0 as usize].encode_as_functor(context) }
         StructureConstraintWithSpan => { self.constraint.encode_as_functor(context) }
         PipelineStructureResponse => { let pipeline = &self.pipeline; encode_functor_impl!(context, Pipeline { pipeline, }) }
