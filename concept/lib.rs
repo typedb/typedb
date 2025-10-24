@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![allow(clippy::collapsible_if, reason = "nested ifs are often clearer than a single conjunction")]
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 

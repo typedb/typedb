@@ -490,10 +490,7 @@ impl OperationTimeValidation {
             Some(type_value_type) if value_type.is_trivially_castable_to(type_value_type.category()) => Ok(()),
             Some(type_value_type) => Err(Box::new(ConceptWriteError::DataValidation {
                 typedb_source: Box::new(DataValidationError::ValueTypeMismatchWithAttributeType {
-                    attribute_type: attribute_type
-                        .get_label(snapshot, thing_manager.type_manager())
-                        .map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?
-                        .clone(),
+                    attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
                     expected_value_type: type_value_type,
                     provided_value_type: value_type,
                     provided_value: value.into_owned(),
@@ -501,10 +498,7 @@ impl OperationTimeValidation {
             })),
             None => Err(Box::new(ConceptWriteError::DataValidation {
                 typedb_source: Box::new(DataValidationError::AttributeTypeHasNoValueType {
-                    attribute_type: attribute_type
-                        .get_label(snapshot, thing_manager.type_manager())
-                        .map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?
-                        .clone(),
+                    attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager())?.clone(),
                     provided_value_type: value_type,
                     provided_value: value.into_owned(),
                 }),

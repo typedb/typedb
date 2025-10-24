@@ -13,7 +13,11 @@ use macro_rules_attribute::apply;
 use params::{self, check_boolean};
 use resource::profile::StorageCounters;
 
-use crate::{generic_step, transaction_context::{with_read_tx, with_write_tx}, Context, when_then, unused_step};
+use crate::{
+    generic_step,
+    transaction_context::{with_read_tx, with_write_tx},
+    unused_step, when_then, Context,
+};
 
 pub fn attribute_put_instance_with_value_impl(
     context: &mut Context,

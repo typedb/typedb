@@ -14,6 +14,7 @@ use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
         constraint::{Constraint, Has, Links},
+        nested_pattern::NestedPattern,
         Vertex,
     },
     pipeline::{block::Block, VariableRegistry},
@@ -23,7 +24,7 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
 use crate::annotation::{
-    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
+    type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
     TypeInferenceError,
 };
 
@@ -34,9 +35,50 @@ pub fn check_type_combinations_for_write(
     block: &Block,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    insert_annotations: &TypeAnnotations,
+    insert_annotations: &BlockAnnotations,
 ) -> Result<(), TypeInferenceError> {
-    for constraint in block.conjunction().constraints() {
+    let conjunction = block.conjunction();
+    check_type_combinations_for_write_conjunction(
+        conjunction,
+        snapshot,
+        type_manager,
+        variable_registry,
+        input_annotations_variables,
+        input_annotations_constraints,
+        insert_annotations,
+    )?;
+    for nested_pattern in conjunction.nested_patterns() {
+        match nested_pattern {
+            NestedPattern::Disjunction(_) => {
+                unreachable!("Disjunction in write should have been rejected")
+            }
+            NestedPattern::Negation(_) => {
+                unreachable!("Negation in write should have been rejected")
+            }
+            NestedPattern::Optional(optional) => check_type_combinations_for_write_conjunction(
+                optional.conjunction(),
+                snapshot,
+                type_manager,
+                variable_registry,
+                input_annotations_variables,
+                input_annotations_constraints,
+                insert_annotations,
+            )?,
+        }
+    }
+    Ok(())
+}
+
+fn check_type_combinations_for_write_conjunction(
+    conjunction: &ir::pattern::conjunction::Conjunction,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
+    input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
+    insert_annotations: &BlockAnnotations,
+) -> Result<(), TypeInferenceError> {
+    for constraint in conjunction.constraints() {
         match constraint {
             Constraint::Has(has) => {
                 validate_has_type_combinations_for_write(
@@ -46,7 +88,12 @@ pub fn check_type_combinations_for_write(
                     has,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_left_right(),
+                    insert_annotations
+                        .type_annotations_of(conjunction)
+                        .unwrap()
+                        .constraint_annotations_of(constraint.clone())
+                        .unwrap()
+                        .as_left_right(),
                 )?;
             }
             Constraint::Links(links) => {
@@ -57,7 +104,12 @@ pub fn check_type_combinations_for_write(
                     links,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_links(),
+                    insert_annotations
+                        .type_annotations_of(conjunction)
+                        .unwrap()
+                        .constraint_annotations_of(constraint.clone())
+                        .unwrap()
+                        .as_links(),
                 )?;
             }
 

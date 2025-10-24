@@ -593,11 +593,9 @@ impl TransactionService {
 
         // unblock requests until the first write request, which we begin executing if it exists
         while let Some((responder, queue_options, query_pipeline, source_query)) = self.query_queue.pop_front() {
-            match (queue_options,is_write_pipeline(&query_pipeline)) {
+            match (queue_options, is_write_pipeline(&query_pipeline)) {
                 (QueueOptions::Analyze, _) => {
-                    if let Break(()) = self
-                        .run_analyse_query(responder, query_pipeline, source_query)
-                        .await {
+                    if let Break(()) = self.run_analyse_query(responder, query_pipeline, source_query).await {
                         return Break(());
                     }
                 }
@@ -1181,7 +1179,12 @@ impl TransactionService {
         }
     }
 
-    async fn run_analyse_query(&mut self, responder: TransactionResponder, pipeline: typeql::query::Pipeline, source_query: String) -> ControlFlow<(),()> {
+    async fn run_analyse_query(
+        &mut self,
+        responder: TransactionResponder,
+        pipeline: typeql::query::Pipeline,
+        source_query: String,
+    ) -> ControlFlow<(), ()> {
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone_inner();

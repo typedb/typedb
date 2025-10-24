@@ -12,15 +12,16 @@ use ir::{
     pattern::{
         constraint::{Comparator, Constraint},
         expression::Expression,
+        nested_pattern::NestedPattern,
         ParameterID, Vertex,
     },
-    pipeline::VariableRegistry,
+    pipeline::{block::Block, VariableRegistry},
 };
 use itertools::Itertools;
 use typeql::common::Span;
 
 use crate::{
-    annotation::type_annotations::TypeAnnotations,
+    annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
     executable::{
         insert::{
             instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
@@ -36,6 +37,7 @@ pub struct InsertExecutable {
     pub executable_id: u64,
     pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
+    pub optional_inserts: Vec<OptionalInsert>,
     pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
 }
 
@@ -52,9 +54,9 @@ impl InsertExecutable {
  */
 
 pub fn compile(
-    constraints: &[Constraint<Variable>],
+    block: &Block,
     input_variables: &HashMap<Variable, VariablePosition>,
-    type_annotations: &TypeAnnotations,
+    block_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     desired_output_variable_positions: Option<HashMap<Variable, VariablePosition>>,
     source_span: Option<Span>,
@@ -65,41 +67,104 @@ pub fn compile(
         .unwrap_or(true));
     let mut variable_positions = desired_output_variable_positions.unwrap_or_else(|| input_variables.clone());
 
-    let concept_inserts = add_inserted_concepts(
-        constraints,
-        type_annotations,
+    let concept_instructions = add_inserted_concepts(
+        block.conjunction(),
+        block_annotations,
         variable_registry,
         input_variables,
         &mut variable_positions,
         source_span,
     )?;
-    let mut connection_inserts = Vec::with_capacity(constraints.len());
-    add_has(constraints, &variable_positions, variable_registry, &mut connection_inserts)?;
-    add_links(
-        constraints,
-        type_annotations,
-        input_variables,
+
+    let connection_instructions = add_connections(
+        block.conjunction(),
+        block_annotations,
         &variable_positions,
         variable_registry,
-        &mut connection_inserts,
+        input_variables,
     )?;
+
+    let mut optional_inserts = Vec::with_capacity(block.conjunction().nested_patterns().len());
+    for nested_pattern in block.conjunction().nested_patterns() {
+        let NestedPattern::Optional(optional) = nested_pattern else {
+            unreachable!("Only optionals are allowed as nested patterns in insert")
+        };
+        optional_inserts.push(OptionalInsert::new(
+            optional,
+            block_annotations,
+            &mut variable_positions,
+            variable_registry,
+            input_variables,
+            source_span,
+        )?);
+    }
 
     Ok(InsertExecutable {
         executable_id: next_executable_id(),
-        concept_instructions: concept_inserts,
-        connection_instructions: connection_inserts,
+        concept_instructions,
+        connection_instructions,
+        optional_inserts,
         output_row_schema: prepare_output_row_schema(input_variables, &variable_positions),
     })
 }
 
+#[derive(Debug)]
+pub struct OptionalInsert {
+    pub concept_instructions: Vec<ConceptInstruction>,
+    pub connection_instructions: Vec<ConnectionInstruction>,
+    pub required_input_variables: HashSet<VariablePosition>,
+}
+
+impl OptionalInsert {
+    fn new(
+        optional: &ir::pattern::optional::Optional,
+        block_annotations: &BlockAnnotations,
+        variable_positions: &mut HashMap<Variable, VariablePosition>,
+        variable_registry: &VariableRegistry,
+        input_variables: &HashMap<Variable, VariablePosition>,
+        stage_source_span: Option<Span>,
+    ) -> Result<Self, Box<WriteCompilationError>> {
+        let concept_instructions = add_inserted_concepts(
+            optional.conjunction(),
+            block_annotations,
+            variable_registry,
+            input_variables,
+            variable_positions,
+            stage_source_span,
+        )?;
+
+        let connection_instructions = add_connections(
+            optional.conjunction(),
+            block_annotations,
+            variable_positions,
+            variable_registry,
+            input_variables,
+        )?;
+
+        let required_input_variables = optional
+            .conjunction()
+            .constraints()
+            .iter()
+            .flat_map(|constraint| constraint.ids())
+            .filter_map(|id| input_variables.get(&id).copied())
+            .collect();
+
+        Ok(Self { concept_instructions, connection_instructions, required_input_variables })
+    }
+}
+
 pub(crate) fn add_inserted_concepts(
-    constraints: &[Constraint<Variable>],
-    type_annotations: &TypeAnnotations,
+    conjunction: &ir::pattern::conjunction::Conjunction,
+    block_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     input_variables: &HashMap<Variable, VariablePosition>,
     output_variables: &mut HashMap<Variable, VariablePosition>,
     stage_source_span: Option<Span>,
 ) -> Result<Vec<ConceptInstruction>, Box<WriteCompilationError>> {
+    let constraints = conjunction.constraints();
+    let type_annotations =
+        block_annotations.type_annotations_of(conjunction).expect("insert conjunction must have type annotations");
+
     let mut next_insert_position = output_variables.values().map(|pos| pos.position + 1).max().unwrap_or(0) as usize;
     let type_bindings = collect_type_bindings(constraints, type_annotations)?;
     let value_bindings = collect_value_bindings(constraints)?;
@@ -213,8 +278,31 @@ pub(crate) fn add_inserted_concepts(
         };
     }
     let concept_instructions_vec =
-        concept_instructions.into_values().sorted_by(|a, b| a.inserted_position().cmp(b.inserted_position())).collect();
+        concept_instructions.into_values().sorted_by_key(ConceptInstruction::inserted_position).collect();
     Ok(concept_instructions_vec)
+}
+
+fn add_connections(
+    conjunction: &ir::pattern::conjunction::Conjunction,
+    block_annotations: &BlockAnnotations,
+    variable_positions: &HashMap<Variable, VariablePosition>,
+    variable_registry: &VariableRegistry,
+    input_variables: &HashMap<Variable, VariablePosition>,
+) -> Result<Vec<ConnectionInstruction>, Box<WriteCompilationError>> {
+    let constraints = conjunction.constraints();
+    let mut connection_instructions = Vec::with_capacity(constraints.len());
+    let type_annotations =
+        block_annotations.type_annotations_of(conjunction).expect("insert conjunction must have type annotations");
+    add_has(constraints, variable_positions, variable_registry, &mut connection_instructions)?;
+    add_links(
+        constraints,
+        type_annotations,
+        input_variables,
+        variable_positions,
+        variable_registry,
+        &mut connection_instructions,
+    )?;
+    Ok(connection_instructions)
 }
 
 fn add_has(
@@ -409,11 +497,11 @@ pub(crate) fn resolve_links_roles(
             let role_type_vertex = links.role_type();
             let role_type = role_type_vertex.as_variable().expect("links.role_type is always a variable");
             if let Some(input_position) = input_variables.get(&role_type) {
-                Ok((role_type.clone(), TypeSource::InputVariable(*input_position)))
+                Ok((role_type, TypeSource::InputVariable(*input_position)))
             } else {
                 let annotations = type_annotations.vertex_annotations_of(role_type_vertex).unwrap();
                 if let Ok(type_) = annotations.iter().exactly_one() {
-                    Ok((role_type.clone(), TypeSource::Constant(*type_)))
+                    Ok((role_type, TypeSource::Constant(*type_)))
                 } else {
                     let player_variable = variable_registry
                         .get_variable_name_or_unnamed(links.player().as_variable().unwrap())

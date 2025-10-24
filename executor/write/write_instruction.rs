@@ -259,7 +259,8 @@ impl AsWriteInstruction for compiler::executable::delete::instructions::ThingIns
         row: &mut Row<'_>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<WriteError>> {
-        let thing = get_thing(row, &self.thing).clone();
+        let ThingPosition(position) = self.thing;
+        let Some(thing) = row.get(position).get_thing().cloned() else { return Ok(()) };
         match thing {
             Thing::Entity(entity) => {
                 entity

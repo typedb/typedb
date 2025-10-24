@@ -152,8 +152,8 @@ fn perform_inserts<Snapshot: WritableSnapshot>(
     let stage_profile = context.profile.profile_stage(|| String::from("PutInsert"), executable.executable_id as _);
     for index in 0..output_batch.len() {
         // TODO: parallelise -- though this requires our snapshots support parallel writes!
-        let mut row = output_batch.get_row_mut(index);
         if must_insert[index] {
+            let mut row = output_batch.get_row_mut(index);
             crate::pipeline::insert::execute_insert(
                 &executable.insert,
                 snapshot_mut,

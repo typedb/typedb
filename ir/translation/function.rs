@@ -7,7 +7,6 @@
 use answer::variable::Variable;
 use error::{needs_update_when_feature_is_implemented, UnimplementedFeature};
 use itertools::Itertools;
-use storage::snapshot::ReadableSnapshot;
 use typeql::{
     common::Spanned,
     schema::definable::function::{
@@ -48,15 +47,13 @@ macro_rules! verify_variable_available {
     };
 }
 pub fn translate_typeql_function(
-    snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
     function: &typeql::Function,
 ) -> Result<Function, Box<FunctionRepresentationError>> {
-    translate_function_from(snapshot, function_index, &function.signature, &function.block, Some(function))
+    translate_function_from(function_index, &function.signature, &function.block, Some(function))
 }
 
 pub fn translate_function_from(
-    snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
     signature: &typeql::schema::definable::function::Signature,
     block: &FunctionBlock,
@@ -76,11 +73,10 @@ pub fn translate_function_from(
     if let Some((source, _)) = output_types
         .iter()
         .map(|output_type| (output_type.span(), named_type_any_to_category_and_optionality(output_type)))
-        .filter(|(source, (_, optionality))| *optionality == VariableOptionality::Optional)
-        .next()
+        .find(|(source, (_, optionality))| *optionality == VariableOptionality::Optional)
     {
         Err(FunctionRepresentationError::UnimplementedFunctionOptionals {
-            source_span: source.clone(),
+            source_span: source,
             feature: UnimplementedFeature::OptionalFunctions,
         })?;
     }
@@ -106,7 +102,7 @@ pub fn translate_function_from(
     let (mut context, arguments) = PipelineTranslationContext::new_function_pipeline(args_sources_categories)
         .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
     let mut value_parameters = ParameterRegistry::new();
-    let body = translate_function_block(snapshot, function_index, &mut context, &mut value_parameters, block)?;
+    let body = translate_function_block(function_index, &mut context, &mut value_parameters, block)?;
 
     // Check for unused arguments
     for (index, &arg) in arguments.iter().enumerate() {
@@ -121,7 +117,7 @@ pub fn translate_function_from(
                 context.variable_registry.get_variable_name(arg).expect("Argument names were validated earlier");
             return Err(Box::new(FunctionRepresentationError::FunctionArgumentUnused {
                 variable: argument_variable.clone(),
-                source_span: signature.args[index].span.clone(),
+                source_span: signature.args[index].span,
             }));
         }
     }
@@ -157,15 +153,13 @@ pub fn translate_function_from(
 }
 
 pub(crate) fn translate_function_block(
-    snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
     context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_block: &FunctionBlock,
 ) -> Result<FunctionBody, Box<FunctionRepresentationError>> {
-    let (stages, fetch) =
-        translate_pipeline_stages(snapshot, function_index, context, value_parameters, &function_block.stages)
-            .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
+    let (stages, fetch) = translate_pipeline_stages(function_index, context, value_parameters, &function_block.stages)
+        .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
 
     let has_illegal_stages = stages.iter().any(|stage| match stage {
         TranslatedStage::Insert { .. }
@@ -183,10 +177,10 @@ pub(crate) fn translate_function_block(
     });
 
     if has_illegal_stages {
-        return Err(Box::new(FunctionRepresentationError::IllegalStages { source_span: function_block.span.clone() }));
+        return Err(Box::new(FunctionRepresentationError::IllegalStages { source_span: function_block.span }));
     }
     if let Some(fetch) = fetch {
-        return Err(Box::new(FunctionRepresentationError::IllegalFetch { source_span: function_block.span.clone() }));
+        return Err(Box::new(FunctionRepresentationError::IllegalFetch { source_span: function_block.span }));
     }
 
     let return_operation = match &function_block.return_stmt {

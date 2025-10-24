@@ -46,9 +46,9 @@ macro_rules! minmax_or {
         use itertools::{Itertools, MinMaxResult};
 
         match $iter.minmax() {
-            MinMaxResult::NoElements => $no_elements_expr,
-            MinMaxResult::OneElement(element) => (element, element),
-            MinMaxResult::MinMax(min, max) => (min, max),
+            ::itertools::MinMaxResult::NoElements => $no_elements_expr,
+            ::itertools::MinMaxResult::OneElement(element) => (element, element),
+            ::itertools::MinMaxResult::MinMax(min, max) => (min, max),
         }
     }};
 }

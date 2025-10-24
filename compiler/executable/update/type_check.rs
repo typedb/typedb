@@ -18,7 +18,7 @@ use ir::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
-    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
+    type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
     write_type_check::{validate_has_type_combinations_for_write, validate_links_type_combinations_for_write},
     TypeInferenceError,
 };
@@ -30,7 +30,7 @@ pub fn check_annotations(
     block: &Block,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    insert_annotations: &TypeAnnotations,
+    insert_annotations: &BlockAnnotations,
 ) -> Result<(), TypeInferenceError> {
     for constraint in block.conjunction().constraints() {
         match constraint {
@@ -42,7 +42,12 @@ pub fn check_annotations(
                     has,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_left_right(),
+                    insert_annotations
+                        .type_annotations_of(block.conjunction())
+                        .unwrap()
+                        .constraint_annotations_of(constraint.clone())
+                        .unwrap()
+                        .as_left_right(),
                 )?;
             }
             Constraint::Links(links) => {
@@ -53,7 +58,12 @@ pub fn check_annotations(
                     links,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_links(),
+                    insert_annotations
+                        .type_annotations_of(block.conjunction())
+                        .unwrap()
+                        .constraint_annotations_of(constraint.clone())
+                        .unwrap()
+                        .as_links(),
                 )?;
             }
 
