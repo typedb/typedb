@@ -7,7 +7,7 @@
 use std::{collections::HashMap, iter, str::FromStr};
 
 use answer::{variable_value::VariableValue, Thing};
-use compiler::{query_structure::QueryStructure, VariablePosition};
+use compiler::VariablePosition;
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, object::ObjectAPI, ThingAPI},
@@ -38,7 +38,6 @@ use test_utils::assert_matches;
 
 use crate::{
     generic_step,
-    json::JSON,
     query_answer_context::{with_rows_answer, QueryAnswer},
     transaction_context::{
         with_read_tx, with_schema_tx, with_write_tx_deconstructed,
@@ -646,7 +645,7 @@ async fn typeql_analyze_may_error(context: &mut Context, may_error: params::Type
 async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
-    let (actual_functor, _preamble) = encode_query_structure_as_functor(&analyzed);
+    let (actual_functor, _preamble) = encode_query_structure_as_functor(analyzed);
     assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
@@ -654,7 +653,7 @@ async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
 async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
-    let (_pipeline, preamble_functors) = encode_query_structure_as_functor(&analyzed);
+    let (_pipeline, preamble_functors) = encode_query_structure_as_functor(analyzed);
 
     assert!(
         preamble_functors.iter().any(|actual_functor| {
@@ -670,7 +669,7 @@ async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
 async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
-    let (actual_functor, _preamble) = encode_query_annotations_as_functor(&analyzed);
+    let (actual_functor, _preamble) = encode_query_annotations_as_functor(analyzed);
     assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
@@ -678,7 +677,7 @@ async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
 async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
-    let (_pipeline, preamble_functors) = encode_query_annotations_as_functor(&analyzed);
+    let (_pipeline, preamble_functors) = encode_query_annotations_as_functor(analyzed);
 
     assert!(
         preamble_functors.iter().any(|actual_functor| {
@@ -694,12 +693,12 @@ async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &St
 async fn analyzed_fetch_annotations_are(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
-    let actual_functor = encode_fetch_annotations_as_functor(&analyzed);
+    let actual_functor = encode_fetch_annotations_as_functor(analyzed);
 
     assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
-fn normalize_functor_for_compare(functor: &String) -> String {
+fn normalize_functor_for_compare(functor: &str) -> String {
     let mut normalized = functor.to_lowercase();
     normalized.retain(|c| !c.is_whitespace());
     normalized
