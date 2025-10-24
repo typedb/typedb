@@ -147,14 +147,14 @@ features = {}
 	harness = false
 
 [[test]]
+	path = "tests/test_statistics.rs"
+	name = "test_statistics"
+
+[[test]]
 	path = "tests/test_type.rs"
 	name = "test_type"
 
 [[test]]
 	path = "tests/test_thing.rs"
 	name = "test_thing"
-
-[[test]]
-	path = "tests/test_statistics.rs"
-	name = "test_statistics"
 
