@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rustfmt_test")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 rust_binary(
@@ -29,6 +29,15 @@ rust_binary(
         "//storage",
         "@crates//:clap",
     ],
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":read_wal",
+        ":replay_wal",
+    ],
+    size = "small",
 )
 
 checkstyle_test(

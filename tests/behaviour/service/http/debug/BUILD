@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_test", "rustfmt_test")
 
 rust_test(
     name = "test_http_debug",
@@ -15,6 +15,14 @@ rust_test(
     ],
     data = ["debug.feature"],
     crate_features = ["bazel"],
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":test_http_debug",
+    ],
+    size = "small",
 )
 
 checkstyle_test(

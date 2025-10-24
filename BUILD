@@ -18,7 +18,7 @@ load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = 
 
 load("@rules_pkg//:mappings.bzl", "pkg_files", "pkg_attributes")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rustfmt_test")
 
 load("@typedb_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@typedb_bazel_distribution//brew:rules.bzl", "deploy_brew")
@@ -506,6 +506,17 @@ release_validate_deps(
     ],
     tags = ["manual"],  # in order for bazel test //... to not fail
     version_file = "VERSION",
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [ ":typedb_server_bin" ],
+    size = "small",
+)
+
+filegroup(
+    name = "rustfmt_config",
+    srcs = ["rustfmt.toml"],
 )
 
 checkstyle_test(

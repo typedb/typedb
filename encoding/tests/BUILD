@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_test", "rust_library", "rustfmt_test")
 package(default_visibility = ["//visibility:public",])
 
 rust_library(
@@ -58,6 +58,17 @@ rust_test(
         "test_definitions.rs",
     ]),
     deps = test_deps,
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":test_attribute_vertex",
+        ":test_definitions",
+        ":test_type_vertex",
+        ":test_utils_encoding",
+    ],
+    size = "small",
 )
 
 checkstyle_test(

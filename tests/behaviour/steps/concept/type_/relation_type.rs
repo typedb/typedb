@@ -13,7 +13,12 @@ use macro_rules_attribute::apply;
 use params::{self, check_boolean};
 use resource::profile::StorageCounters;
 
-use crate::{concept::type_::BehaviourConceptTestExecutionError, generic_step, transaction_context::{with_read_tx, with_schema_tx}, util, Context, when_then, unused_step};
+use crate::{
+    concept::type_::BehaviourConceptTestExecutionError,
+    generic_step,
+    transaction_context::{with_read_tx, with_schema_tx},
+    unused_step, util, when_then, Context,
+};
 
 #[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) create role: {type_label}{may_error}")]
@@ -729,7 +734,9 @@ pub async fn relation_constraint_categories_for_related_role_contain(
     });
 }
 
-#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get constraints {contains_or_doesnt}: {constraint}")]
+#[cucumber::then(
+    expr = r"relation\({type_label}\) get role\({type_label}\) get constraints {contains_or_doesnt}: {constraint}"
+)]
 pub async fn relation_role_constraints_contain(
     context: &mut Context,
     relation_label: params::Label,
@@ -882,7 +889,9 @@ pub async fn relation_role_declared_annotation_categories_contain(
     });
 }
 
-#[cucumber::then(expr = r"relation\({type_label}\) get role\({type_label}\) get declared annotations {is_empty_or_not}")]
+#[cucumber::then(
+    expr = r"relation\({type_label}\) get role\({type_label}\) get declared annotations {is_empty_or_not}"
+)]
 pub async fn relation_role_declared_annotations_is_empty(
     context: &mut Context,
     relation_label: params::Label,
