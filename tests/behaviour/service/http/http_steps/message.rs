@@ -19,13 +19,12 @@ use server::service::http::message::{
             AttributeResponse, AttributeTypeResponse, EntityResponse, EntityTypeResponse, RelationResponse,
             RelationTypeResponse, RoleTypeResponse, ValueResponse,
         },
-        QueryAnswerResponse, QueryOptionsPayload,
+        AnalysedQueryResponse, QueryAnswerResponse, QueryOptionsPayload,
     },
     transaction::{TransactionOptionsPayload, TransactionResponse},
     user::{UserResponse, UsersResponse},
 };
 use url::form_urlencoded;
-use server::service::http::message::query::AnalysedQueryResponse;
 
 use crate::{Context, HttpBehaviourTestError};
 

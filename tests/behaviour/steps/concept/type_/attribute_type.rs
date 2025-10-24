@@ -10,7 +10,11 @@ use itertools::Itertools;
 use macro_rules_attribute::apply;
 use params;
 
-use crate::{generic_step, transaction_context::{with_read_tx, with_schema_tx}, util, Context, when_then};
+use crate::{
+    generic_step,
+    transaction_context::{with_read_tx, with_schema_tx},
+    util, when_then, Context,
+};
 
 #[apply(generic_step)]
 #[step(expr = "attribute\\({type_label}\\) set value type: {value_type}{may_error}")]
