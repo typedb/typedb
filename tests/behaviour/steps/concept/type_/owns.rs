@@ -14,7 +14,11 @@ use params::{self, check_boolean};
 use resource::profile::StorageCounters;
 
 use super::thing_type::get_as_object_type;
-use crate::{generic_step, transaction_context::{with_read_tx, with_schema_tx}, util, Context, unused_step, when_then};
+use crate::{
+    generic_step,
+    transaction_context::{with_read_tx, with_schema_tx},
+    unused_step, util, when_then, Context,
+};
 
 #[apply(generic_step)]
 #[step(expr = "{kind}\\({type_label}\\) set owns: {type_label}{may_error}")]
@@ -198,7 +202,9 @@ pub async fn get_constraint_categories_for_owned_attribute_contains(
     });
 }
 
-#[cucumber::then(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}")]
+#[cucumber::then(
+    expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get constraints {contains_or_doesnt}: {constraint}"
+)]
 pub async fn get_owns_constraints_contains(
     context: &mut Context,
     kind: params::Kind,
@@ -326,7 +332,9 @@ pub async fn get_owns_declared_annotation_categories_contains(
     });
 }
 
-#[cucumber::then(expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get declared annotations {is_empty_or_not}")]
+#[cucumber::then(
+    expr = "{kind}\\({type_label}\\) get owns\\({type_label}\\) get declared annotations {is_empty_or_not}"
+)]
 pub async fn get_owns_declared_annotations_is_empty(
     context: &mut Context,
     kind: params::Kind,
