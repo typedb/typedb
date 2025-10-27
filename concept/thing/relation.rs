@@ -63,10 +63,10 @@ impl Relation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) -> bool {
-        match self.get_status(snapshot, thing_manager, storage_counters) {
-            ConceptStatus::Inserted => thing_manager.has_links(snapshot, self, true),
-            ConceptStatus::Persisted => thing_manager.has_links(snapshot, self, false),
+    ) -> Result<bool, Box<ConceptReadError>> {
+        match self.get_status(snapshot, thing_manager, storage_counters)? {
+            ConceptStatus::Inserted => Ok(thing_manager.has_links(snapshot, self, true)),
+            ConceptStatus::Persisted => Ok(thing_manager.has_links(snapshot, self, false)),
             ConceptStatus::Put => unreachable!("Encountered a `put` relation"),
             ConceptStatus::Deleted => unreachable!("Cannot operate on a deleted concept."),
         }
@@ -390,10 +390,11 @@ impl ThingAPI for Relation {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) {
-        if matches!(self.get_status(snapshot, thing_manager, storage_counters), ConceptStatus::Persisted) {
+    ) -> Result<(), Box<ConceptReadError>> {
+        if matches!(self.get_status(snapshot, thing_manager, storage_counters)?, ConceptStatus::Persisted) {
             thing_manager.lock_existing_object(snapshot, *self);
         }
+        Ok(())
     }
 
     fn get_status(
@@ -401,7 +402,7 @@ impl ThingAPI for Relation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) -> ConceptStatus {
+    ) -> Result<ConceptStatus, Box<ConceptReadError>> {
         thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
     }
 
@@ -426,8 +427,7 @@ impl ThingAPI for Relation {
         }
 
         for relation_role in self.get_relations_roles(snapshot, thing_manager, storage_counters.clone()) {
-            let (relation, role, _count) =
-                relation_role.map_err(|error| Box::new(ConceptWriteError::ConceptRead { typedb_source: error }))?;
+            let (relation, role, _count) = relation_role?;
             thing_manager.unset_links(snapshot, relation, self, role, storage_counters.clone())?;
         }
 
@@ -435,8 +435,7 @@ impl ThingAPI for Relation {
             .get_players(snapshot, thing_manager, storage_counters.clone())
             .map_ok(|(roleplayer, _count)| (roleplayer.role_type, roleplayer.player));
         for role_player in players {
-            let (role, player) =
-                role_player.map_err(|error| Box::new(ConceptWriteError::ConceptRead { typedb_source: error }))?;
+            let (role, player) = role_player?;
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
             thing_manager.unset_links(snapshot, self, player, role, storage_counters.clone())?;
@@ -451,7 +450,7 @@ impl ThingAPI for Relation {
                 })));
         }
 
-        thing_manager.delete_relation(snapshot, self, storage_counters);
+        thing_manager.delete_relation(snapshot, self, storage_counters)?;
         Ok(())
     }
 

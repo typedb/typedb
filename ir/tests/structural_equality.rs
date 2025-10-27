@@ -12,7 +12,6 @@ use ir::{
     },
 };
 use structural_equality::{is_structurally_equivalent, StructuralEquality};
-use test_utils_storage::mock_snapshot::MockSnapshot;
 
 #[test]
 fn test_function_equivalence() {
@@ -23,9 +22,7 @@ fn test_function_equivalence() {
     ";
     let parsed_function = typeql::parse_definition_function(function).unwrap();
 
-    let function_ir =
-        translate_typeql_function(&MockSnapshot::new(), &HashMapFunctionSignatureIndex::empty(), &parsed_function)
-            .unwrap();
+    let function_ir = translate_typeql_function(&HashMapFunctionSignatureIndex::empty(), &parsed_function).unwrap();
 
     let hash = function_ir.hash();
     let equals_self = function_ir.equals(&function_ir);
@@ -38,12 +35,8 @@ fn test_function_equivalence() {
     ";
     let parsed_alpha_equivalent_function = typeql::parse_definition_function(alpha_equivalent_function).unwrap();
 
-    let alpha_equivalent_function_ir = translate_typeql_function(
-        &MockSnapshot::new(),
-        &HashMapFunctionSignatureIndex::empty(),
-        &parsed_alpha_equivalent_function,
-    )
-    .unwrap();
+    let alpha_equivalent_function_ir =
+        translate_typeql_function(&HashMapFunctionSignatureIndex::empty(), &parsed_alpha_equivalent_function).unwrap();
 
     let alpha_equivalent_hash = function_ir.hash();
     let alpha_equivalent_equals_self = function_ir.equals(&function_ir);
@@ -62,7 +55,6 @@ fn test_function_non_equivalence() {
         return sum($salary);
     ";
     let function_ir = translate_typeql_function(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_definition_function(function).unwrap(),
     )
@@ -74,7 +66,6 @@ fn test_function_non_equivalence() {
         return sum($salary);
     ";
     let different_1_ir = translate_typeql_function(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_definition_function(different_1).unwrap(),
     )
@@ -88,7 +79,6 @@ fn test_function_non_equivalence() {
         return sum($salary);
     ";
     let different_2_ir = translate_typeql_function(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_definition_function(different_2).unwrap(),
     )
@@ -102,7 +92,6 @@ fn test_function_non_equivalence() {
         return sum($salary);
     ";
     let different_3_ir = translate_typeql_function(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_definition_function(different_3).unwrap(),
     )
@@ -117,7 +106,6 @@ fn test_function_non_equivalence() {
         return sum($salary);
     ";
     let different_4_ir = translate_typeql_function(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_definition_function(different_4).unwrap(),
     )
@@ -154,7 +142,6 @@ fetch {
 };
 ";
     let TranslatedPipeline { translated_preamble, translated_stages, translated_fetch, .. } = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(pipeline).unwrap().into_structure().into_pipeline(),
     )
@@ -192,7 +179,6 @@ fetch {
         translated_fetch: equivalent_translated_fetch,
         ..
     } = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(structurally_equivalent_pipeline).unwrap().into_structure().into_pipeline(),
     )
@@ -232,7 +218,6 @@ fetch {
   'my-key': { $ol.* }
 };";
     let TranslatedPipeline { translated_preamble, translated_stages, translated_fetch, .. } = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(pipeline).unwrap().into_structure().into_pipeline(),
     )
@@ -268,7 +253,6 @@ fetch {
         translated_fetch: different_translated_fetch,
         ..
     } = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(different).unwrap().into_structure().into_pipeline(),
     )
@@ -287,7 +271,6 @@ fetch {
 fn test_anonymous_non_equivalence() {
     let query = "match $x relates $_ as parent;";
     let TranslatedPipeline { translated_stages, .. } = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     )
@@ -296,7 +279,6 @@ fn test_anonymous_non_equivalence() {
 
     let non_equivalent_query = "match $x relates $role as parent;";
     let TranslatedPipeline { translated_stages: different_translated_stages, .. } = translate_pipeline(
-        &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
         &typeql::parse_query(non_equivalent_query).unwrap().into_structure().into_pipeline(),
     )

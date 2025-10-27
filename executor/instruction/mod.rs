@@ -12,12 +12,7 @@ use compiler::{
     executable::match_::instructions::{ConstraintInstruction, VariableMode, VariableModes},
     ExecutorVariable,
 };
-use concept::{
-    error::ConceptReadError,
-    thing::{object::ObjectAPI, thing_manager::ThingManager, ThingAPI},
-    type_::{OwnerAPI, PlayerAPI},
-};
-use encoding::{value::ValueEncodable, AsBytes};
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::pattern::Vertex;
 use itertools::Itertools;
 use resource::profile::StorageCounters;

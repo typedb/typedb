@@ -24,8 +24,7 @@ use encoding::{
             ThingVertex,
         },
         type_::{
-            edge::TypeEdge,
-            property::{TypeEdgeProperty, TypeVertexProperty, TypeVertexPropertyEncoding},
+            property::{TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
         },
         Typed,
@@ -50,7 +49,6 @@ use encoding::{
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use iterator::minmax_or;
 use itertools::Itertools;
 use lending_iterator::Peekable;
 use primitive::either::Either;
@@ -1624,19 +1622,22 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         key: StorageKey<'_, BUFFER_KEY_INLINE>,
         storage_counters: StorageCounters,
-    ) -> ConceptStatus {
+    ) -> Result<ConceptStatus, Box<ConceptReadError>> {
         snapshot
             .get_write(key.as_reference())
             .map(|write| match write {
-                Write::Insert { .. } => ConceptStatus::Inserted,
-                Write::Put { .. } => ConceptStatus::Put,
-                Write::Delete => ConceptStatus::Deleted,
+                Write::Insert { .. } => Ok(ConceptStatus::Inserted),
+                Write::Put { .. } => Ok(ConceptStatus::Put),
+                Write::Delete => Ok(ConceptStatus::Deleted),
             })
             .unwrap_or_else(|| {
-                debug_assert!(snapshot
+                match snapshot
                     .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference(), storage_counters)
-                    .is_ok_and(|option| option.is_some()));
-                ConceptStatus::Persisted
+                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                {
+                    Some(_) => Ok(ConceptStatus::Persisted),
+                    None => Ok(ConceptStatus::Deleted),
+                }
             })
     }
 
@@ -1983,10 +1984,10 @@ impl ThingManager {
             {
                 let edge = ThingEdgeLinks::decode(Bytes::Reference(key.byte_array().as_ref()));
                 let relation = Relation::new(edge.from());
-                if relation.get_status(snapshot, self, storage_counters.clone()) == ConceptStatus::Deleted {
+                if relation.get_status(snapshot, self, storage_counters.clone())? == ConceptStatus::Deleted {
                     continue;
                 }
-                if !relation.has_players(snapshot, self, storage_counters.clone()) {
+                if !relation.has_players(snapshot, self, storage_counters.clone())? {
                     if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())? {
                         relation.delete(snapshot, self, storage_counters.clone())?;
                         any_deleted = true;
@@ -2006,7 +2007,7 @@ impl ThingManager {
                 .filter_map(|(key, write)| (!matches!(write, Write::Delete)).then_some(key))
             {
                 let relation = Relation::new(ObjectVertex::decode(key.bytes()));
-                if !relation.has_players(snapshot, self, storage_counters.clone()) {
+                if !relation.has_players(snapshot, self, storage_counters.clone())? {
                     relation.delete(snapshot, self, storage_counters.clone())?;
                     any_deleted = true;
                 }
@@ -2048,7 +2049,7 @@ impl ThingManager {
                             storage_counters.clone(),
                         );
                         while let Some(relation) = Iterator::next(&mut relations).transpose()? {
-                            if !relation.has_players(snapshot, self, storage_counters.clone()) {
+                            if !relation.has_players(snapshot, self, storage_counters.clone())? {
                                 relation.delete(snapshot, self, storage_counters.clone())?;
                                 any_deleted = true;
                             }
@@ -2074,10 +2075,10 @@ impl ThingManager {
             let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
             let attribute = Attribute::new(edge.to());
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
-            if attribute.get_status(snapshot, self, storage_counters.clone()) == ConceptStatus::Deleted {
+            if attribute.get_status(snapshot, self, storage_counters.clone())? == ConceptStatus::Deleted {
                 continue;
             }
-            if !is_independent && !attribute.has_owners(snapshot, self, storage_counters.clone()) {
+            if !is_independent && !attribute.has_owners(snapshot, self, storage_counters.clone())? {
                 attribute.delete(snapshot, self, storage_counters.clone())?;
             }
         }
@@ -2105,7 +2106,7 @@ impl ThingManager {
         {
             let attribute = Attribute::new(AttributeVertex::decode(key.bytes()));
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
-            if !is_independent && !attribute.has_owners(snapshot, self, storage_counters.clone()) {
+            if !is_independent && !attribute.has_owners(snapshot, self, storage_counters.clone())? {
                 self.unput_attribute(snapshot, &attribute, storage_counters.clone())?;
             }
         }
@@ -2143,7 +2144,7 @@ impl ThingManager {
                             storage_counters.clone(),
                         );
                         while let Some(attribute) = Iterator::next(&mut attributes).transpose()? {
-                            if !attribute.has_owners(snapshot, self, storage_counters.clone()) {
+                            if !attribute.has_owners(snapshot, self, storage_counters.clone())? {
                                 attribute.delete(snapshot, self, storage_counters.clone())?;
                             }
                         }
@@ -2447,8 +2448,8 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         entity: Entity,
         storage_counters: StorageCounters,
-    ) {
-        self.delete_object(snapshot, entity.vertex().into_storage_key(), storage_counters);
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.delete_object(snapshot, entity.vertex().into_storage_key(), storage_counters)
     }
 
     pub(crate) fn delete_relation(
@@ -2456,8 +2457,8 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         relation: Relation,
         storage_counters: StorageCounters,
-    ) {
-        self.delete_object(snapshot, relation.vertex().into_storage_key(), storage_counters);
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.delete_object(snapshot, relation.vertex().into_storage_key(), storage_counters)
     }
 
     fn delete_object(
@@ -2465,8 +2466,8 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         key: StorageKey<'_, BUFFER_KEY_INLINE>,
         storage_counters: StorageCounters,
-    ) {
-        let status = self.get_status(snapshot, StorageKey::Reference(key.as_reference()), storage_counters);
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let status = self.get_status(snapshot, StorageKey::Reference(key.as_reference()), storage_counters)?;
         let key = key.into_owned_array();
         snapshot.unmodifiable_lock_remove(&key);
         match status {
@@ -2475,6 +2476,7 @@ impl ThingManager {
             ConceptStatus::Deleted => (),
             ConceptStatus::Put => unreachable!("Encountered a `put` object"),
         }
+        Ok(())
     }
 
     pub(crate) fn delete_attribute(
@@ -2484,7 +2486,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let key = attribute.vertex().into_storage_key();
-        match self.get_status(snapshot, StorageKey::Reference(key.as_reference()), storage_counters.clone()) {
+        match self.get_status(snapshot, StorageKey::Reference(key.as_reference()), storage_counters.clone())? {
             ConceptStatus::Put => {
                 self.unput_attribute(snapshot, &attribute, storage_counters.clone())?;
                 if self.instance_exists(snapshot, &attribute, storage_counters)? {
@@ -2504,10 +2506,7 @@ impl ThingManager {
         attribute: &Attribute,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let value = match attribute
-            .get_value(snapshot, self, storage_counters)
-            .map_err(|error| ConceptWriteError::ConceptRead { typedb_source: error })?
-        {
+        let value = match attribute.get_value(snapshot, self, storage_counters)? {
             Value::String(string) => ByteArray::copy(string.as_bytes()),
             _ => ByteArray::empty(),
         };
@@ -2588,8 +2587,8 @@ impl ThingManager {
             let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
             let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
 
-            owner.set_required(snapshot, self, storage_counters.clone());
-            attribute.set_required(snapshot, self, storage_counters.clone());
+            owner.set_required(snapshot, self, storage_counters.clone())?;
+            attribute.set_required(snapshot, self, storage_counters.clone())?;
             snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             Ok(())
@@ -2603,7 +2602,7 @@ impl ThingManager {
         attribute: &Attribute,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let owner_status = owner.get_status(snapshot, self, storage_counters.clone());
+        let owner_status = owner.get_status(snapshot, self, storage_counters.clone())?;
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex()).into_storage_key();
         let has_array = has.clone().into_owned_array();
         let has_reverse_array =
@@ -2616,10 +2615,7 @@ impl ThingManager {
         }
 
         if owner_status != ConceptStatus::Inserted {
-            if self
-                .owner_has_attribute(snapshot, owner, attribute, storage_counters)
-                .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
-            {
+            if self.owner_has_attribute(snapshot, owner, attribute, storage_counters)? {
                 snapshot.delete(has_array);
                 snapshot.delete(has_reverse_array);
             }
@@ -2672,8 +2668,8 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let count: u64 = 1;
-        relation.set_required(snapshot, self, storage_counters.clone());
-        player.set_required(snapshot, self, storage_counters.clone());
+        relation.set_required(snapshot, self, storage_counters.clone())?;
+        player.set_required(snapshot, self, storage_counters.clone())?;
 
         // must be idempotent, so no lock required -- cannot fail
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
@@ -2729,8 +2725,8 @@ impl ThingManager {
             let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
             let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
 
-            relation.set_required(snapshot, self, storage_counters.clone());
-            player.set_required(snapshot, self, storage_counters.clone());
+            relation.set_required(snapshot, self, storage_counters.clone())?;
+            player.set_required(snapshot, self, storage_counters.clone())?;
 
             snapshot.put_val(links.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
@@ -2752,7 +2748,7 @@ impl ThingManager {
         role_type: RoleType,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let relation_status = relation.get_status(&*snapshot, self, storage_counters.clone());
+        let relation_status = relation.get_status(&*snapshot, self, storage_counters.clone())?;
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex()).into_storage_key();
         let links_array = links.clone().into_owned_array();
         let links_reverse_array = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex())
@@ -2766,20 +2762,13 @@ impl ThingManager {
         }
 
         if relation_status != ConceptStatus::Inserted {
-            if self
-                .has_role_player(snapshot, relation, player, role_type, storage_counters.clone())
-                .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
-            {
+            if self.has_role_player(snapshot, relation, player, role_type, storage_counters.clone())? {
                 snapshot.delete(links_array);
                 snapshot.delete(links_reverse_array);
             }
         }
 
-        if relation
-            .type_()
-            .relation_index_available(snapshot, self.type_manager())
-            .map_err(|error| ConceptWriteError::ConceptRead { typedb_source: error })?
-        {
+        if relation.type_().relation_index_available(snapshot, self.type_manager())? {
             self.relation_index_player_remove(snapshot, relation, player, role_type, storage_counters)?;
         }
         Ok(())

@@ -36,7 +36,6 @@ use ir::{
 };
 use itertools::chain;
 use storage::snapshot::ReadableSnapshot;
-use tokio::io::AsyncReadExt;
 
 #[derive(Debug)]
 pub struct AnalysedQuery {
@@ -120,9 +119,12 @@ pub fn build_pipeline_annotations(
     let mut pipeline_annotations = Vec::with_capacity(structure.parametrised_structure.conjunctions.len());
     pipeline_annotations.resize(structure.parametrised_structure.conjunctions.len(), BTreeMap::new());
     stages.iter().enumerate().for_each(|(index, stage)| match stage {
-        AnnotatedStage::Put { block, match_annotations: block_annotations, .. }
-        | AnnotatedStage::Match { block, block_annotations, .. } => {
-            block_annotations.type_annotations().iter().for_each(|(scope_id, annotations)| {
+        | AnnotatedStage::Match { block, block_annotations, .. }
+        | AnnotatedStage::Put { block, match_annotations: block_annotations, .. }
+        | AnnotatedStage::Insert { block, annotations: block_annotations, .. }
+        | AnnotatedStage::Update { block, annotations: block_annotations, .. }
+        | AnnotatedStage::Delete { block, annotations: block_annotations, .. } => {
+            block_annotations.type_annotations().iter().for_each(|(_scope_id, _annotations)| {
                 insert_pipeline_annotations_recursive(
                     variable_registry,
                     structure,
@@ -132,16 +134,6 @@ pub fn build_pipeline_annotations(
                     &mut pipeline_annotations,
                 )
             })
-        }
-        AnnotatedStage::Insert { block, annotations, .. }
-        | AnnotatedStage::Update { block, annotations, .. }
-        | AnnotatedStage::Delete { block, annotations, .. } => {
-            debug_assert!(block.conjunction().nested_patterns().is_empty());
-            let block_id = structure
-                .parametrised_structure
-                .resolve_conjunction_id(StageIndex(index), block.conjunction().scope_id());
-            let annotations = variable_annotations_for_block(variable_registry, annotations);
-            pipeline_annotations[block_id.0 as usize] = enrich_annotations(block.conjunction(), annotations);
         }
         AnnotatedStage::Select(_)
         | AnnotatedStage::Sort(_)
@@ -158,7 +150,7 @@ fn variable_annotations_for_block<'a>(
     variable_registry: &'a VariableRegistry,
     annotations_for_block: &'a TypeAnnotations,
 ) -> impl Iterator<Item = (Variable, PipelineVariableAnnotation)> + 'a {
-    let mut concept_annotations = annotations_for_block.vertex_annotations().iter().filter_map(|(vertex, annos)| {
+    let concept_annotations = annotations_for_block.vertex_annotations().iter().filter_map(|(vertex, annos)| {
         let variable = vertex.as_variable()?;
         let category = variable_registry.get_variable_category(variable).unwrap();
         let annotations = match category.is_category_type() {
@@ -312,9 +304,9 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
                     unreachable!("Expected either type annotations or value annotations to be present");
                 }
             }
-            AnnotatedFetchSome::ListAttributesAsList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
-            | AnnotatedFetchSome::ListAttributesFromList(var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
-            | AnnotatedFetchSome::SingleAttribute(var, attribute_type) => {
+            AnnotatedFetchSome::ListAttributesAsList(_var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
+            | AnnotatedFetchSome::ListAttributesFromList(_var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
+            | AnnotatedFetchSome::SingleAttribute(_var, attribute_type) => {
                 // TODO: Refine based on owner?
                 let subtypes = attribute_type.get_subtypes(snapshot, type_manager)?;
                 let attribute_types = chain!([*attribute_type].into_iter(), subtypes.iter().copied());
@@ -383,14 +375,13 @@ pub fn get_last_stage_annotations(stages: &[AnnotatedStage]) -> &TypeAnnotations
     stages
         .iter()
         .filter_map(|stage| match stage {
-            AnnotatedStage::Match { block_annotations, block, .. }
-            | AnnotatedStage::Put { match_annotations: block_annotations, block, .. } => {
+            | AnnotatedStage::Match { block_annotations, block, .. }
+            | AnnotatedStage::Put { match_annotations: block_annotations, block, .. }
+            | AnnotatedStage::Insert { annotations: block_annotations, block, .. }
+            | AnnotatedStage::Update { annotations: block_annotations, block, .. } => {
                 Some(block_annotations.type_annotations_of(block.conjunction()).unwrap())
             }
-            AnnotatedStage::Insert { annotations, .. } | AnnotatedStage::Update { annotations, .. } => {
-                Some(annotations)
-            }
-            AnnotatedStage::Delete { .. }
+            | AnnotatedStage::Delete { .. }
             | AnnotatedStage::Select(_)
             | AnnotatedStage::Sort(_)
             | AnnotatedStage::Offset(_)

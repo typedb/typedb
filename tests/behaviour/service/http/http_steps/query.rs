@@ -12,22 +12,21 @@ use itertools::{Either, Itertools};
 use macro_rules_attribute::apply;
 use params::{self, check_boolean, ContainsOrDoesnt};
 use server::service::{
-    AnswerType,
     http::message::query::{
-        QueryAnswerResponse,
         annotations::bdd::{encode_fetch_annotations_as_functor, encode_query_annotations_as_functor},
         query_structure::bdd::encode_query_structure_as_functor,
+        QueryAnswerResponse,
     },
+    AnswerType,
 };
 
 use crate::{
     generic_step,
-    message::{query, transactions_query, ConceptResponse},
+    message::{query, transactions_analyze, transactions_query, ConceptResponse},
     params::{ConceptKind, IsByVarIndex, IsOrNot, QueryAnswerType, TokenMode, Var, WithCommit},
     util::{iter_table, list_contains_json, parse_json},
     Context, HttpBehaviourTestError,
 };
-use crate::message::transactions_analyze;
 
 fn get_answers_column_names(answer: &serde_json::Value) -> Vec<String> {
     if let serde_json::Value::Object(answers) = answer {
@@ -512,7 +511,9 @@ pub async fn answer_get_row_get_variable_get_type_is_kind(
     check_concept_is_kind(&type_, checked_kind, is_kind);
 }
 
-#[cucumber::then(expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) try get label {is_or_not} none")]
+#[cucumber::then(
+    expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) try get label {is_or_not} none"
+)]
 pub async fn answer_get_row_get_variable_try_get_label_is_none(
     context: &mut Context,
     index: usize,
@@ -563,7 +564,9 @@ pub async fn answer_get_row_get_variable_get_label(
     assert_eq!(label.as_str(), concept.get_label());
 }
 
-#[cucumber::then(expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) get type get label: {word}")]
+#[cucumber::then(
+    expr = r"answer get row\({int}\) get {concept_kind}{is_by_var_index}\({var}\) get type get label: {word}"
+)]
 pub async fn answer_get_row_get_variable_get_type_get_label(
     context: &mut Context,
     index: usize,
@@ -1023,19 +1026,18 @@ pub async fn answer_contains_document(
 }
 
 #[cucumber::when("get answers of typeql analyze")]
-pub async fn get_answers_of_typeql_analyze(
-    context: &mut Context,
-    step: &Step,
-) {
+pub async fn get_answers_of_typeql_analyze(context: &mut Context, step: &Step) {
     context.analyzed = None;
     context.analyzed = Some(
-            transactions_analyze(
-                context.http_client(),
-                context.auth_token(),
-                context.transaction(),
-                step.docstring().unwrap(),
-            ).await.unwrap()
+        transactions_analyze(
+            context.http_client(),
+            context.auth_token(),
+            context.transaction(),
+            step.docstring().unwrap(),
         )
+        .await
+        .unwrap(),
+    )
 }
 
 #[cucumber::then(expr = r"typeql analyze{typeql_may_error}")]
@@ -1051,7 +1053,8 @@ async fn typeql_analyze_may_error(context: &mut Context, may_error: params::Type
         context.auth_token(),
         context.transaction(),
         step.docstring().unwrap(),
-    ).await;
+    )
+    .await;
     may_error.check_logic(result);
 }
 

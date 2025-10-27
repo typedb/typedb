@@ -4,44 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
-    sync::Arc,
-};
+use std::{collections::HashSet, sync::Arc};
 
-use answer::variable::Variable;
 use compiler::{
-    annotation::{
-        fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
-        function::{AnnotatedFunctionSignature, FunctionParameterAnnotation},
-        pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline, AnnotatedStage},
-        type_annotations::{BlockAnnotations, TypeAnnotations},
-    },
+    annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
     executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
-    query_structure::{
-        extract_pipeline_structure_from, extract_query_structure_from, ParametrisedPipelineStructure,
-        PipelineStructure, PipelineStructureAnnotations, QueryStructure, QueryStructureConjunctionID,
-        StructureVariableId,
-    },
+    query_structure::{extract_pipeline_structure_from, extract_query_structure_from},
     transformation::transform::apply_transformations,
-    VariablePosition,
 };
-use concept::{
-    error::ConceptReadError,
-    thing::thing_manager::ThingManager,
-    type_::{attribute_type::AttributeType, type_manager::TypeManager, OwnerAPI},
-};
-use encoding::value::value_type::ValueType;
-use executor::{
-    document::ConceptDocument,
-    pipeline::{
-        pipeline::Pipeline,
-        stage::{ReadPipelineStage, WritePipelineStage},
-    },
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use executor::pipeline::{
+    pipeline::Pipeline,
+    stage::{ReadPipelineStage, WritePipelineStage},
 };
 use function::function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
-    pattern::{ParameterID, Scope, Vertex},
     pipeline::{
         fetch::FetchObject,
         function::Function,
@@ -50,20 +27,17 @@ use ir::{
     },
     translation::pipeline::{TranslatedPipeline, TranslatedStage},
 };
-use itertools::chain;
 use resource::{
     perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
     profile::{CompileProfile, QueryProfile},
 };
-use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
 
 use crate::{
-    analyse,
     analyse::{
-        AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
+        self, AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
     },
     define,
     error::QueryError,
@@ -398,7 +372,7 @@ fn translate_pipeline<Snapshot: ReadableSnapshot>(
     );
     let all_function_signatures =
         ReadThroughFunctionSignatureIndex::new(snapshot, function_manager, preamble_signatures);
-    ir::translation::pipeline::translate_pipeline(snapshot, &all_function_signatures, query).map_err(|err| {
+    ir::translation::pipeline::translate_pipeline(&all_function_signatures, query).map_err(|err| {
         Box::new(QueryError::Representation { source_query: source_query.to_string(), typedb_source: err })
     })
 }

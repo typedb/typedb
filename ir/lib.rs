@@ -244,6 +244,21 @@ typedb_error! {
             source_span: Option<Span>,
             _rest: Vec<Option<Span>>,
         ),
+        IllegalStatementForInsert(
+            45,
+            "Illegal statement provided for an insert stage. Only 'has', 'links' and 'isa' constraints are allowed.",
+            source_span: Option<Span>,
+        ),
+        IllegalNestedPatternForInsert(
+            46,
+            "Illegal nested pattern provided for an insert stage. Only 'try {{}}' blocks are allowed.",
+            source_span: Option<Span>,
+        ),
+        IllegalNestedPatternForUpdate(
+            47,
+            "Illegal nested pattern provided for an update stage. Only 'try {{}}' blocks are allowed.",
+            source_span: Option<Span>,
+        ),
         RegexExpectedStringLiteral(
             50,
             "Expected a string literal as regex.",

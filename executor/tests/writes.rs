@@ -198,12 +198,11 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         false,
     )
     .unwrap();
-    let entry_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
 
     let insert_plan = compiler::executable::insert::executable::compile(
-        block.conjunction().constraints(),
+        &block,
         &input_row_format,
-        &entry_annotations,
+        &block_annotations,
         &translation_context.variable_registry,
         None,
         None,
@@ -253,7 +252,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
-    let (block, block_annotations) = {
+    let block_annotations = {
         let typeql_match = typeql::parse_query(mock_match_string_for_annotations)
             .unwrap()
             .into_structure()
@@ -273,7 +272,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         .unwrap();
         let variable_registry = &translation_context.variable_registry;
         let previous_stage_variable_annotations = &BTreeMap::new();
-        let block_annotations = infer_types(
+        infer_types(
             &snapshot,
             &block,
             variable_registry,
@@ -282,10 +281,8 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
             &EmptyAnnotatedFunctionSignatures,
             false,
         )
-        .unwrap();
-        (block, block_annotations)
+        .unwrap()
     };
-    let entry_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
 
     let typeql_delete =
         typeql::parse_query(delete_str).unwrap().into_structure().into_pipeline().stages.pop().unwrap().into_delete();
@@ -295,14 +292,14 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let delete_plan = compiler::executable::delete::executable::compile(
         &input_row_format,
-        &entry_annotations,
+        &block_annotations,
         &translation_context.variable_registry,
-        block.conjunction().constraints(),
+        &block,
         &deleted_concepts,
         None,
     )

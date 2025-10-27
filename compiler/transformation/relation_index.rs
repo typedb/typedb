@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use concept::type_::type_manager::TypeManager;
 use ir::pattern::{
     conjunction::Conjunction,
     constraint::{Comparator, Constraint, IndexedRelation, Links},

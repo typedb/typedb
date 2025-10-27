@@ -7,7 +7,7 @@
 use std::{collections::HashMap, iter, str::FromStr};
 
 use answer::{variable_value::VariableValue, Thing};
-use compiler::{query_structure::QueryStructure, VariablePosition};
+use compiler::VariablePosition;
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, object::ObjectAPI, ThingAPI},
@@ -26,7 +26,6 @@ use executor::{
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
-use params;
 use query::{analyse::AnalysedQuery, error::QueryError};
 use resource::profile::StorageCounters;
 use server::service::http::message::query::{
@@ -39,7 +38,6 @@ use test_utils::assert_matches;
 
 use crate::{
     generic_step,
-    json::JSON,
     query_answer_context::{with_rows_answer, QueryAnswer},
     transaction_context::{
         with_read_tx, with_schema_tx, with_write_tx_deconstructed,
@@ -273,8 +271,8 @@ async fn typeql_write_query(context: &mut Context, may_error: params::TypeQLMayE
     }
 }
 
-#[cucumber::given("get answers of typeql write query")]
-#[cucumber::when("get answers of typeql write query")]
+#[apply(generic_step)]
+#[step(expr = "get answers of typeql write query")]
 async fn get_answers_of_typeql_write_query(context: &mut Context, step: &Step) {
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let query = typeql::parse_query(query_str).unwrap();
@@ -303,13 +301,14 @@ fn record_answers_of_typeql_read_query(context: &mut Context, query_str: &str) {
     }
 }
 
-#[cucumber::given("get answers of typeql read query")]
-#[cucumber::when("get answers of typeql read query")]
+#[apply(generic_step)]
+#[step("get answers of typeql read query")]
 async fn get_answers_of_typeql_read_query(context: &mut Context, step: &Step) {
     record_answers_of_typeql_read_query(context, step.docstring.as_ref().unwrap().as_str());
 }
 
 #[cucumber::when("get answers of templated typeql read query")]
+#[cucumber::then("get answers of templated typeql read query")]
 async fn get_answers_of_templated_typeql_read_query(context: &mut Context, step: &Step) {
     let rows = context.query_answer.as_ref().unwrap().as_rows();
     let [answer] = rows else { panic!("Expected single answer, found {}", rows.len()) };
@@ -332,7 +331,7 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
             for answer_row in query_answer {
                 let table_row_within_answer =
                     row.iter().all(|(&var, &spec)| does_var_in_row_match_spec(context, answer_row, var, spec));
-                if table_row_within_answer && row.len() == answer_row.len() {
+                if table_row_within_answer {
                     num_matches += 1;
                 }
             }
@@ -530,7 +529,7 @@ async fn answer_contains_document(context: &mut Context, contains_or_doesnt: par
 }
 
 #[cucumber::then(expr = "answers do not contain variable: {word}")]
-async fn answers_do_not_contain_variable(context: &mut Context, variable: String, step: &Step) {
+async fn answers_do_not_contain_variable(context: &mut Context, variable: String) {
     context.query_answer.as_ref().unwrap().as_rows().iter().all(|row| !row.contains_key(&variable));
 }
 
@@ -647,7 +646,7 @@ async fn typeql_analyze_may_error(context: &mut Context, may_error: params::Type
 async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
-    let (actual_functor, _preamble) = encode_query_structure_as_functor(&analyzed);
+    let (actual_functor, _preamble) = encode_query_structure_as_functor(analyzed);
     assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
@@ -655,7 +654,7 @@ async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
 async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
-    let (_pipeline, preamble_functors) = encode_query_structure_as_functor(&analyzed);
+    let (_pipeline, preamble_functors) = encode_query_structure_as_functor(analyzed);
 
     assert!(
         preamble_functors.iter().any(|actual_functor| {
@@ -671,7 +670,7 @@ async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
 async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
-    let (actual_functor, _preamble) = encode_query_annotations_as_functor(&analyzed);
+    let (actual_functor, _preamble) = encode_query_annotations_as_functor(analyzed);
     assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
@@ -679,7 +678,7 @@ async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
 async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
-    let (_pipeline, preamble_functors) = encode_query_annotations_as_functor(&analyzed);
+    let (_pipeline, preamble_functors) = encode_query_annotations_as_functor(analyzed);
 
     assert!(
         preamble_functors.iter().any(|actual_functor| {
@@ -695,12 +694,12 @@ async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &St
 async fn analyzed_fetch_annotations_are(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed_query.as_ref().unwrap();
-    let actual_functor = encode_fetch_annotations_as_functor(&analyzed);
+    let actual_functor = encode_fetch_annotations_as_functor(analyzed);
 
     assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
-fn normalize_functor_for_compare(functor: &String) -> String {
+fn normalize_functor_for_compare(functor: &str) -> String {
     let mut normalized = functor.to_lowercase();
     normalized.retain(|c| !c.is_whitespace());
     normalized

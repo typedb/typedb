@@ -88,6 +88,5 @@ fn add_optional(
     let parent_scope = parent_conjunction.conjunction.scope_id();
     let mut optional_builder = parent_conjunction.add_optional(optional.span)?;
     add_patterns(function_index, &mut optional_builder, &optional.patterns)?;
-    let ConjunctionBuilder { conjunction, context } = optional_builder;
     Ok(())
 }

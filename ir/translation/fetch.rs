@@ -10,7 +10,6 @@ use answer::variable::Variable;
 use encoding::value::label::Label;
 use error::typedb_error;
 use primitive::maybe_owns::MaybeOwns;
-use storage::snapshot::ReadableSnapshot;
 use typeql::{
     common::{Span, Spanned},
     expression::{FunctionCall, FunctionName},
@@ -55,19 +54,17 @@ use crate::{
 };
 
 pub(super) fn translate_fetch(
-    snapshot: &impl ReadableSnapshot,
     parent_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     fetch: &TypeQLFetch,
 ) -> Result<FetchObject, Box<FetchRepresentationError>> {
-    translate_fetch_object(snapshot, parent_context, value_parameters, function_index, &fetch.object)
+    translate_fetch_object(parent_context, value_parameters, function_index, &fetch.object)
 }
 
 // This function returns a specific `FetchObject`, rather than the FetchSome` higher-level enum
 // This gives us a simpler entry point for the fetch stage translation
 fn translate_fetch_object(
-    snapshot: &impl ReadableSnapshot,
     parent_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
@@ -93,10 +90,7 @@ fn translate_fetch_object(
                     entry.span().expect("Parser did not provide Fetch key-value text range."),
                 );
                 source_spans.insert(key_id, entry.span());
-                object.insert(
-                    key_id,
-                    translate_fetch_some(snapshot, parent_context, value_parameters, function_index, value)?,
-                );
+                object.insert(key_id, translate_fetch_some(parent_context, value_parameters, function_index, value)?);
             }
             Ok(FetchObject::Entries(object, source_spans))
         }
@@ -108,7 +102,6 @@ fn translate_fetch_object(
 }
 
 fn translate_fetch_some(
-    snapshot: &impl ReadableSnapshot,
     parent_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
@@ -116,20 +109,15 @@ fn translate_fetch_some(
 ) -> Result<FetchSome, Box<FetchRepresentationError>> {
     match fetch_some {
         TypeQLFetchSome::Object(object) => {
-            translate_fetch_object(snapshot, parent_context, value_parameters, function_index, object)
+            translate_fetch_object(parent_context, value_parameters, function_index, object)
                 .map(|object| FetchSome::Object(Box::new(object)))
         }
-        TypeQLFetchSome::List(list) => {
-            translate_fetch_list(snapshot, parent_context, value_parameters, function_index, list)
-        }
-        TypeQLFetchSome::Single(some) => {
-            translate_fetch_single(snapshot, parent_context, value_parameters, function_index, some)
-        }
+        TypeQLFetchSome::List(list) => translate_fetch_list(parent_context, value_parameters, function_index, list),
+        TypeQLFetchSome::Single(some) => translate_fetch_single(parent_context, value_parameters, function_index, some),
     }
 }
 
 fn translate_fetch_list(
-    snapshot: &impl ReadableSnapshot,
     parent_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
@@ -168,7 +156,7 @@ fn translate_fetch_list(
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
             let (translated_stages, subfetch) =
-                translate_pipeline_stages(snapshot, function_index, &mut local_context, value_parameters, stages)
+                translate_pipeline_stages(function_index, &mut local_context, value_parameters, stages)
                     .map_err(|err| FetchRepresentationError::SubFetchRepresentation { typedb_source: err })?;
             if let Some(subfetch) = subfetch {
                 let input_variables = find_sub_fetch_inputs(parent_context, &translated_stages, &subfetch);
@@ -185,7 +173,7 @@ fn translate_fetch_list(
         FetchStream::SubQueryFunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
-            let body = translate_function_block(snapshot, function_index, &mut local_context, value_parameters, block)
+            let body = translate_function_block(function_index, &mut local_context, value_parameters, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
             if !body.return_operation.is_scalar()
                 && !matches!(body.return_operation, ReturnOperation::ReduceReducer(_, _))
@@ -202,7 +190,6 @@ fn translate_fetch_list(
 
 // Note: TypeQL fetch-single can turn either into a List or a Single IR
 fn translate_fetch_single(
-    snapshot: &impl ReadableSnapshot,
     parent_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
@@ -252,7 +239,7 @@ fn translate_fetch_single(
         FetchSingle::FunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
-            let body = translate_function_block(snapshot, function_index, &mut local_context, value_parameters, block)
+            let body = translate_function_block(function_index, &mut local_context, value_parameters, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
             if body.return_operation().is_stream() {
                 return Err(Box::new(FetchRepresentationError::ExpectedSingleFunctionBlock {

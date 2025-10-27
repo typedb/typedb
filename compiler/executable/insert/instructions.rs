@@ -6,13 +6,29 @@
 
 use std::fmt;
 
-use super::{ThingPosition, TypeSource, ValueSource};
+use crate::executable::insert::{ThingPosition, TypeSource, ValueSource};
+
+#[derive(Debug)]
+pub enum InsertInstruction {
+    Concept(ConceptInstruction),
+    Connection(ConnectionInstruction),
+}
+
+impl fmt::Display for InsertInstruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            InsertInstruction::Concept(inner) => fmt::Display::fmt(inner, f),
+            InsertInstruction::Connection(inner) => fmt::Display::fmt(inner, f),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum ConceptInstruction {
     PutObject(PutObject),
     PutAttribute(PutAttribute),
 }
+
 impl ConceptInstruction {
     pub(crate) fn inserted_type(&self) -> &TypeSource {
         match self {
@@ -20,13 +36,15 @@ impl ConceptInstruction {
             ConceptInstruction::PutAttribute(inner) => &inner.type_,
         }
     }
-    pub(crate) fn inserted_position(&self) -> &ThingPosition {
+
+    pub(crate) fn inserted_position(&self) -> ThingPosition {
         match self {
-            ConceptInstruction::PutObject(inner) => &inner.write_to,
-            ConceptInstruction::PutAttribute(inner) => &inner.write_to,
+            ConceptInstruction::PutObject(inner) => inner.write_to,
+            ConceptInstruction::PutAttribute(inner) => inner.write_to,
         }
     }
 }
+
 impl fmt::Display for ConceptInstruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

@@ -88,7 +88,7 @@ impl FunctionManager {
         // Prepare ir
         let function_index =
             HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
-        let mut translated = Self::translate_functions(snapshot, &functions, &function_index)?;
+        let mut translated = Self::translate_functions(&functions, &function_index)?;
 
         // Run type-inference
         let translated_refs = translated.iter().map(|(id, f)| (id.clone(), f)).collect();
@@ -128,7 +128,7 @@ impl FunctionManager {
             HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let function_index = ReadThroughFunctionSignatureIndex::new(snapshot, self, buffered);
         // Translate to ensure the function calls are valid references. Type-inference is done at commit-time.
-        Self::translate_functions(snapshot, &functions, &function_index)?;
+        Self::translate_functions(&functions, &function_index)?;
         for (function, definition) in zip(functions.iter(), definitions.clone()) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let definition_key = &function.function_id;
@@ -171,7 +171,7 @@ impl FunctionManager {
             HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let function_index = ReadThroughFunctionSignatureIndex::new(snapshot, self, buffered);
         // Translate to ensure the function calls are valid references. Type-inference is done at commit-time.
-        Self::translate_functions(snapshot, &functions, &function_index)?;
+        Self::translate_functions(&functions, &function_index)?;
         for (function, definition) in zip(functions.iter(), [definition].iter()) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let definition_key = &function.function_id;
@@ -186,18 +186,16 @@ impl FunctionManager {
     }
 
     pub(crate) fn translate_functions(
-        snapshot: &impl ReadableSnapshot,
         functions: &[SchemaFunction],
         function_index: &impl FunctionSignatureIndex,
     ) -> Result<HashMap<DefinitionKey, ir::pipeline::function::Function>, FunctionError> {
         functions
             .iter()
             .map(|function| {
-                translate_typeql_function(snapshot, function_index, &function.parsed)
-                    .map(|translated| (function.function_id.clone(), translated))
+                Ok((function.function_id.clone(), translate_typeql_function(function_index, &function.parsed)?))
             })
             .try_collect()
-            .map_err(|err| FunctionError::FunctionTranslation { typedb_source: *err })
+            .map_err(|err: Box<_>| FunctionError::FunctionTranslation { typedb_source: *err })
     }
 
     pub fn get_function_key(
