@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_test", "rustfmt_test")
 
 rust_test(
     name = "test_http_driver_concept",
@@ -63,6 +63,18 @@ rust_test(
     ],
     data = ["@typedb_behaviour//driver:user.feature"],
     crate_features = ["bazel"],
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":test_http_driver_concept",
+        ":test_http_driver_connection",
+        ":test_http_driver_http",
+        ":test_http_driver_query",
+        ":test_http_driver_user",
+    ],
+    size = "small",
 )
 
 checkstyle_test(

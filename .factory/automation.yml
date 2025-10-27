@@ -29,6 +29,7 @@ build:
         bazel build //... 
         bazel run @typedb_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
+        bazel test $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config
 
 #    build-dependency:
 #      image: typedb-ubuntu-22.04
@@ -85,17 +86,17 @@ build:
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //compiler/tests/... --test_output=streamed
-        bazel test //concept/tests/... --test_output=streamed
-        bazel test //database/tests/... --test_output=streamed
-        bazel test //durability/tests/... --test_output=streamed
-        bazel test //encoding/tests/... --test_output=streamed
-        bazel test //executor/tests/... --test_output=streamed
-        bazel test //function/tests/... --test_output=streamed
-        bazel test //ir/tests/... --test_output=streamed
-        bazel test //query/tests/... --test_output=streamed
+        bazel test $(bazel query 'kind(rust_test, //compiler/tests/...)') --test_output=streamed
+        bazel test $(bazel query 'kind(rust_test, //concept/tests/...)') --test_output=streamed
+        bazel test $(bazel query 'kind(rust_test, //database/tests/...)') --test_output=streamed
+        bazel test $(bazel query 'kind(rust_test, //durability/tests/...)') --test_output=streamed
+        bazel test $(bazel query 'kind(rust_test, //encoding/tests/...)') --test_output=streamed
+        bazel test $(bazel query 'kind(rust_test, //executor/tests/...)') --test_output=streamed
+        bazel test $(bazel query 'kind(rust_test, //function/tests/...)') --test_output=streamed
+        bazel test $(bazel query 'kind(rust_test, //ir/tests/...)') --test_output=streamed
+        bazel test $(bazel query 'kind(rust_test, //query/tests/...)') --test_output=streamed
         # TODO: Uncomment!
-        # bazel test //storage/tests/... --test_output=streamed
+        # bazel test $(bazel query 'kind(rust_test, //storage/tests/...)') --test_output=streamed
         bazel test //storage/tests:test_mvcc //storage/tests:test_snapshot //storage/tests:test_isolation //storage/tests:test_storage --test_output=streamed
 
 #    tests-commented-out-which-fail:
@@ -166,7 +167,7 @@ build:
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/service/... --test_output=streamed --jobs=1
+        bazel test $(bazel query 'kind(rust_test, //tests/behaviour/service/...)') --test_output=streamed --jobs=1
 
 release:
   filter:
