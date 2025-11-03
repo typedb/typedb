@@ -1089,7 +1089,7 @@ impl TransactionService {
             tokio::spawn(async move {
                 let encoding_profile = EncodingProfile::new(tracing::enabled!(Level::TRACE));
                 match answer.answer {
-                    Either::Left((output_descriptor, batch, _pipeline_structure)) => {
+                    Either::Left((output_descriptor, batch, pipeline_structure)) => {
                         Self::submit_write_query_batch_answer(
                             snapshot,
                             type_manager,
@@ -1097,6 +1097,7 @@ impl TransactionService {
                             output_descriptor,
                             answer.query_options,
                             batch,
+                            pipeline_structure.map_or(false, |s| s.parametrised_structure.involved_blocks_is_valid),
                             sender,
                             timeout_at,
                             interrupt,
@@ -1130,6 +1131,7 @@ impl TransactionService {
         output_descriptor: StreamQueryOutputDescriptor,
         query_options: QueryOptions,
         batch: Batch,
+        include_involved_blocks: bool,
         sender: Sender<StreamQueryResponse>,
         timeout_at: Instant,
         mut interrupt: ExecutionInterrupt,
@@ -1163,6 +1165,7 @@ impl TransactionService {
                 &type_manager,
                 &thing_manager,
                 query_options.include_instance_types,
+                include_involved_blocks,
                 storage_counters.clone(),
             );
             match encoded_row {
@@ -1358,6 +1361,8 @@ impl TransactionService {
             }
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
+            let include_involved_blocks =
+                pipeline.pipeline_structure().map_or(false, |s| s.parametrised_structure.involved_blocks_is_valid);
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
             let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read);
             Self::submit_response_sync(sender, initial_response);
@@ -1401,6 +1406,7 @@ impl TransactionService {
                     type_manager,
                     &thing_manager,
                     query_options.include_instance_types,
+                    include_involved_blocks,
                     encoding_profile.storage_counters(),
                 );
                 match encoded_row {

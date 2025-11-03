@@ -20,6 +20,7 @@ pub(crate) fn encode_row(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_instance_types: bool,
+    include_involved_blocks: bool,
     storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::ConceptRow, Box<ConceptReadError>> {
     // TODO: multiplicity?
@@ -36,7 +37,8 @@ pub(crate) fn encode_row(
         )?;
         encoded_row.push(typedb_protocol::RowEntry { entry: Some(row_entry) });
     }
-    let involved_blocks = row.provenance().0.to_be_bytes().iter().copied().collect();
+    let involved_blocks =
+        if include_involved_blocks { row.provenance().0.to_le_bytes().iter().copied().collect() } else { Vec::new() };
     Ok(typedb_protocol::ConceptRow { row: encoded_row, involved_blocks })
 }
 

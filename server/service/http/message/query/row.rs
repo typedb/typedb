@@ -10,6 +10,7 @@ use answer::variable_value::VariableValue;
 use compiler::{query_structure::QueryStructureConjunctionID, VariablePosition};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::row::MaybeOwnedRow;
+use itertools::chain;
 use resource::profile::StorageCounters;
 use serde::Serialize;
 use serde_json::json;
@@ -31,6 +32,7 @@ pub fn encode_row<'a>(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_instance_types: bool,
+    include_involved_blocks: bool,
     storage_counters: StorageCounters,
     must_have_been_satisfied_conjunctions: Option<&Vec<QueryStructureConjunctionID>>,
 ) -> Result<serde_json::Value, Box<ConceptReadError>> {
@@ -48,12 +50,16 @@ pub fn encode_row<'a>(
         )?;
         encoded_row.insert(variable.as_str(), row_entry);
     }
-    let involved_blocks = row
-        .provenance()
-        .branch_ids()
-        .map(|b| b.0)
-        .chain(must_have_been_satisfied_conjunctions.unwrap_or(&vec![]).iter().map(|b| b.0))
-        .collect();
+    let involved_blocks = if include_involved_blocks {
+        let empty_vec = Vec::new();
+        chain!(
+            row.provenance().branch_ids().map(|b| b.0),
+            must_have_been_satisfied_conjunctions.unwrap_or(&empty_vec).iter().map(|b| b.0)
+        )
+        .collect()
+    } else {
+        Vec::new()
+    };
     Ok(json!(EncodedRow { data: encoded_row, involved_blocks }))
 }
 

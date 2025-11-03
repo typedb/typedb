@@ -162,6 +162,7 @@ pub struct ParametrisedPipelineStructure {
     pub resolved_labels: HashMap<Label, answer::Type>,
     pub calls_syntax: HashMap<Constraint<Variable>, String>,
     pub scope_to_conjunction_id: HashMap<(StageIndex, ScopeId), QueryStructureConjunctionID>,
+    pub involved_blocks_is_valid: bool,
 }
 
 impl ParametrisedPipelineStructure {
@@ -289,6 +290,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 resolved_labels: HashMap::new(),
                 calls_syntax: HashMap::new(),
                 scope_to_conjunction_id: HashMap::new(),
+                involved_blocks_is_valid: branch_ids_allocated < 64,
             },
         }
     }
