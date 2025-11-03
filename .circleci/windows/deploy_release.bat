@@ -14,5 +14,5 @@ copy target\release\typedb_server_bin.exe  .\
 SET DEPLOY_ARTIFACT_USERNAME=%REPO_TYPEDB_USERNAME%
 SET DEPLOY_ARTIFACT_PASSWORD=%REPO_TYPEDB_PASSWORD%
 set /p VER=<VERSION
-bazel --windows_enable_symlinks run --define version=%VER% --//server:mode=published --enable_runfiles //:deploy-typedb-server -- release
+bazel --windows_enable_symlinks run --define version=%VER% --//server:mode=published --compilation_mode=opt --enable_runfiles //:deploy-typedb-server -- release
 
