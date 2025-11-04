@@ -17,7 +17,7 @@ use crate::{
         control_instruction::{
             CollectingStage, ControlInstruction, ExecuteDisjunctionBranch, ExecuteImmediate, ExecuteInlinedFunction,
             ExecuteNegation, ExecuteOptional, ExecuteStreamModifier, ExecuteTabledCall, MapBatchToRowsForNested,
-            PatternStart, ReshapeForReturn, RestoreSuspension, StreamCollected, Yield,
+            PatternStart, ReshapeForReturn, RestoreSuspension, SetBlockID, StreamCollected, Yield,
         },
         nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor, OptionalExecutor},
         step_executor::StepExecutors,
@@ -74,7 +74,7 @@ impl PatternExecutor {
                 StepExecutors::InlinedCall(inner) => inner.reset(),
                 StepExecutors::StreamModifier(inner) => inner.reset(),
                 StepExecutors::CollectingStage(inner) => inner.reset(),
-                StepExecutors::TabledCall(_) | StepExecutors::ReshapeForReturn(_) => {}
+                StepExecutors::TabledCall(_) | StepExecutors::ReshapeForReturn(_) | StepExecutors::SetBlockID(_) => {}
             }
         }
         self.control_stack.push(PatternStart { input_batch }.into());
@@ -110,6 +110,12 @@ impl PatternExecutor {
             match control_stack.pop().unwrap() {
                 ControlInstruction::PatternStart(PatternStart { input_batch }) => {
                     self.push_next_instruction(context, ExecutorIndex(0), input_batch)?;
+                }
+                ControlInstruction::SetBlockID(SetBlockID { mut input_batch, block_id, index }) => {
+                    (0..input_batch.len()).for_each(|row_index| {
+                        input_batch.get_row_mut(row_index).set_branch_id_in_provenance(block_id);
+                    });
+                    self.push_next_instruction(context, index.next(), input_batch)?;
                 }
                 ControlInstruction::RestoreSuspension(RestoreSuspension { depth }) => {
                     debug_assert!(depth == suspensions.current_depth()); // Smell. The depth in the step is redundant
@@ -173,7 +179,7 @@ impl PatternExecutor {
                     let batch_opt = may_push_nested(suspensions, index, branch_index, &input, |suspensions| {
                         branch.batch_continue(context, interrupt, tabled_functions, suspensions)
                     })?;
-                    if let Some(mapped) = batch_opt.map(|unmapped| disjunction.map_output(branch_index, unmapped)) {
+                    if let Some(mapped) = batch_opt.map(|unmapped| disjunction.map_output(unmapped)) {
                         control_stack.push(ExecuteDisjunctionBranch { index, branch_index, input }.into());
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
@@ -270,6 +276,9 @@ impl PatternExecutor {
                 StepExecutors::ReshapeForReturn(_) => {
                     self.control_stack.push(ReshapeForReturn { index: next_index, to_reshape: batch }.into());
                 }
+                StepExecutors::SetBlockID(executor) => self
+                    .control_stack
+                    .push(SetBlockID { index: next_index, block_id: executor.block_id, input_batch: batch }.into()),
             }
         }
         Ok(())
@@ -427,6 +436,7 @@ fn restore_suspension(
                     control_stack.push(ExecuteStreamModifier { index, mapper, input: input_row.into_owned() }.into())
                 }
                 StepExecutors::Immediate(_)
+                | StepExecutors::SetBlockID(_)
                 | StepExecutors::CollectingStage(_)
                 | StepExecutors::TabledCall(_)
                 | StepExecutors::ReshapeForReturn(_) => unreachable!("Illegal for AtPattern suspension"),

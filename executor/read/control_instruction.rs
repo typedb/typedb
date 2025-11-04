@@ -5,6 +5,7 @@
  */
 
 use compiler::VariablePosition;
+use ir::pattern::BranchID;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
@@ -20,6 +21,7 @@ use crate::{
 pub(super) enum ControlInstruction {
     // Control instructions
     PatternStart(PatternStart),
+    SetBlockID(SetBlockID), // TODO: Rename type to BlockID
     RestoreSuspension(RestoreSuspension),
     ReshapeForReturn(ReshapeForReturn),
     Yield(Yield),
@@ -41,6 +43,13 @@ pub(super) enum ControlInstruction {
 
 #[derive(Debug)]
 pub(super) struct PatternStart {
+    pub(super) input_batch: FixedBatch,
+}
+
+#[derive(Debug)]
+pub(super) struct SetBlockID {
+    pub(super) index: ExecutorIndex,
+    pub(super) block_id: BranchID,
     pub(super) input_batch: FixedBatch,
 }
 
@@ -145,6 +154,7 @@ macro_rules! impl_control_instruction_from_inner {
 }
 impl_control_instruction_from_inner!(
     PatternStart,
+    SetBlockID,
     RestoreSuspension,
     ReshapeForReturn,
     Yield,

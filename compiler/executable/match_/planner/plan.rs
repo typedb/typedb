@@ -132,7 +132,6 @@ fn make_builder<'a>(
                     .chain(disjunction.required_inputs(block_context))
                     .collect::<Vec<_>>();
                 let planner = DisjunctionPlanBuilder::new(
-                    disjunction.conjunctions_by_branch_id().map(|(id, _)| *id).collect(),
                     disjunction
                         .conjunctions()
                         .iter()
@@ -183,7 +182,6 @@ fn make_builder<'a>(
                     .filter(|var| !parent_bound_variables.contains(&var))
                     .collect();
                 optional_subplans.push(OptionalPlan::new(
-                    optional.branch_id(),
                     optional_vars,
                     make_builder(
                         optional.conjunction(),
@@ -207,6 +205,7 @@ fn make_builder<'a>(
         conjunction.required_inputs(block_context).collect(),
         conjunction_annotations,
         statistics,
+        conjunction.branch_id(),
     );
 
     let optional_variables = optional_subplans.iter().flat_map(|optional| optional.optional_variables.iter()).copied();
@@ -279,6 +278,7 @@ pub(super) struct ConjunctionPlanBuilder<'a> {
     local_annotations: &'a TypeAnnotations,
     statistics: &'a Statistics,
     planner_statistics: PlannerStatistics,
+    branch_id: Option<BranchID>,
 }
 
 impl fmt::Debug for ConjunctionPlanBuilder<'_> {
@@ -288,13 +288,19 @@ impl fmt::Debug for ConjunctionPlanBuilder<'_> {
 }
 
 impl<'a> ConjunctionPlanBuilder<'a> {
-    fn new(required_inputs: Vec<Variable>, local_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
+    fn new(
+        required_inputs: Vec<Variable>,
+        local_annotations: &'a TypeAnnotations,
+        statistics: &'a Statistics,
+        branch_id: Option<BranchID>,
+    ) -> Self {
         Self {
             graph: Graph::default(),
             local_annotations,
             statistics,
             planner_statistics: PlannerStatistics::new(),
             required_inputs,
+            branch_id,
         }
     }
 
@@ -729,10 +735,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
-        let Self { graph, local_annotations: type_annotations, mut planner_statistics, .. } = self;
+        let Self { graph, local_annotations: type_annotations, branch_id, mut planner_statistics, .. } = self;
 
         planner_statistics.finalize(cost);
         Ok(ConjunctionPlan {
+            branch_id,
             graph,
             local_annotations: type_annotations,
             ordering,
@@ -1275,6 +1282,7 @@ pub(crate) struct ConjunctionPlan<'a> {
     metadata: HashMap<PatternVertexId, CostMetaData>,
     element_to_order: HashMap<VertexId, usize>,
     pub(crate) planner_statistics: PlannerStatistics,
+    branch_id: Option<BranchID>,
 }
 
 impl fmt::Debug for ConjunctionPlan<'_> {
@@ -1291,10 +1299,9 @@ impl ConjunctionPlan<'_> {
         selected_variables: HashSet<Variable>,
         already_assigned_positions: &HashMap<Variable, ExecutorVariable>,
         variable_registry: &VariableRegistry,
-        branch_id: Option<BranchID>,
     ) -> Result<ConjunctionExecutableBuilder, QueryPlanningError> {
         let mut conjunction_builder = ConjunctionExecutableBuilder::new(
-            branch_id,
+            self.branch_id,
             already_assigned_positions,
             selected_variables.clone(),
             input_variables.clone().into_iter().collect(),
@@ -1465,7 +1472,6 @@ impl ConjunctionPlan<'_> {
                         conjunction_builder.current_outputs.clone(),
                         conjunction_builder.position_mapping(),
                         variable_registry,
-                        Some(optional.plan.branch_id),
                     )?);
                     let variable_positions: HashMap<Variable, ExecutorVariable> =
                         optional_executable_builder.optional.index.clone();
@@ -1540,7 +1546,6 @@ impl ConjunctionPlan<'_> {
                     conjunction_builder.selected_variables.clone(),
                     conjunction_builder.position_mapping(),
                     variable_registry,
-                    None,
                 )?;
                 let variable_positions: HashMap<Variable, ExecutorVariable> = negation
                     .index
@@ -1629,7 +1634,6 @@ impl ConjunctionPlan<'_> {
                     conjunction_builder.selected_variables.clone(),
                     conjunction_builder.position_mapping(),
                     variable_registry,
-                    Some(optional.plan.branch_id),
                 )?;
                 let variable_positions: HashMap<Variable, ExecutorVariable> = optional
                     .index
@@ -2031,18 +2035,13 @@ impl ConjunctionPlan<'_> {
 
 #[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlanBuilder<'a> {
-    pub(super) branch_ids: Vec<BranchID>,
     pub(super) branches: Vec<ConjunctionPlanBuilder<'a>>,
     pub(super) required_inputs: Vec<Variable>,
 }
 
 impl<'a> DisjunctionPlanBuilder<'a> {
-    fn new(
-        branch_ids: Vec<BranchID>,
-        branches: Vec<ConjunctionPlanBuilder<'a>>,
-        required_inputs: Vec<Variable>,
-    ) -> Self {
-        Self { branch_ids, branches, required_inputs }
+    fn new(branches: Vec<ConjunctionPlanBuilder<'a>>, required_inputs: Vec<Variable>) -> Self {
+        Self { branches, required_inputs }
     }
 
     pub(super) fn branches(&self) -> &[ConjunctionPlanBuilder<'a>] {
@@ -2052,14 +2051,13 @@ impl<'a> DisjunctionPlanBuilder<'a> {
 
 #[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlan<'a> {
-    branch_ids: Vec<BranchID>,
     branches: Vec<ConjunctionPlan<'a>>,
     _cost: Cost,
 }
 
 impl<'a> DisjunctionPlan<'a> {
-    pub(crate) fn new(branch_ids: Vec<BranchID>, branches: Vec<ConjunctionPlan<'a>>, _cost: Cost) -> Self {
-        Self { branch_ids, branches, _cost }
+    pub(crate) fn new(branches: Vec<ConjunctionPlan<'a>>, _cost: Cost) -> Self {
+        Self { branches, _cost }
     }
 
     fn lower(
@@ -2073,32 +2071,30 @@ impl<'a> DisjunctionPlan<'a> {
         let mut branches: Vec<_> = Vec::with_capacity(self.branches.len());
         let mut assigned_positions = assigned_positions.clone();
         let disjunction_inputs: Vec<_> = disjunction_inputs.into_iter().collect();
-        for (branch_id, branch) in self.branch_ids.iter().zip(self.branches.iter()) {
+        for branch in self.branches.iter() {
             let lowered_branch = branch.lower(
                 input_variable_annotations,
                 disjunction_inputs.iter().copied(),
                 selected_variables.clone(),
                 &assigned_positions,
                 variable_registry,
-                Some(*branch_id),
             )?;
             assigned_positions = lowered_branch.position_mapping().clone();
             branches.push(lowered_branch);
         }
-        Ok(DisjunctionBuilder::new(self.branch_ids.clone(), branches))
+        Ok(DisjunctionBuilder::new(branches))
     }
 }
 
 #[derive(Clone, Debug)]
 pub(super) struct OptionalPlan<'a> {
-    branch_id: BranchID,
     optional_variables: Vec<Variable>,
     plan: ConjunctionPlan<'a>,
 }
 
 impl<'a> OptionalPlan<'a> {
-    fn new(branch_id: BranchID, optional_variables: Vec<Variable>, plan: ConjunctionPlan<'a>) -> Self {
-        Self { branch_id, optional_variables, plan }
+    fn new(optional_variables: Vec<Variable>, plan: ConjunctionPlan<'a>) -> Self {
+        Self { optional_variables, plan }
     }
 
     pub(crate) fn plan(&self) -> &ConjunctionPlan<'a> {

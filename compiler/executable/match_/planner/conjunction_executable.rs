@@ -24,6 +24,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct ConjunctionExecutable {
     executable_id: u64,
+    branch_id: Option<BranchID>,
     pub(crate) steps: Vec<ExecutionStep>,
     variable_positions: HashMap<Variable, VariablePosition>,
     variable_reverse_map: HashMap<ExecutorVariable, Variable>,
@@ -33,16 +34,21 @@ pub struct ConjunctionExecutable {
 impl ConjunctionExecutable {
     pub fn new(
         executable_id: u64,
+        branch_id: Option<BranchID>,
         steps: Vec<ExecutionStep>,
         variable_positions: HashMap<Variable, VariablePosition>,
         variable_reverse_map: HashMap<ExecutorVariable, Variable>,
         planner_statistics: PlannerStatistics,
     ) -> Self {
-        Self { executable_id, steps, variable_positions, variable_reverse_map, planner_statistics }
+        Self { executable_id, branch_id, steps, variable_positions, variable_reverse_map, planner_statistics }
     }
 
     pub fn executable_id(&self) -> u64 {
         self.executable_id
+    }
+
+    pub fn branch_id(&self) -> Option<BranchID> {
+        self.branch_id.clone()
     }
 
     pub fn steps(&self) -> &[ExecutionStep] {
@@ -419,7 +425,6 @@ impl fmt::Display for VarMappedCheckStep<'_> {
 
 #[derive(Clone, Debug)]
 pub struct DisjunctionStep {
-    pub branch_ids: Vec<BranchID>,
     pub branches: Vec<ConjunctionExecutable>,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
@@ -427,12 +432,11 @@ pub struct DisjunctionStep {
 
 impl DisjunctionStep {
     pub fn new(
-        branch_ids: Vec<BranchID>,
         branches: Vec<ConjunctionExecutable>,
         selected_variables: Vec<VariablePosition>,
         output_width: u32,
     ) -> Self {
-        Self { branch_ids, branches, selected_variables, output_width }
+        Self { branches, selected_variables, output_width }
     }
 
     pub fn output_width(&self) -> u32 {
@@ -483,17 +487,11 @@ pub struct OptionalStep {
     pub optional: ConjunctionExecutable,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
-    pub branch_id: BranchID,
 }
 
 impl OptionalStep {
-    pub fn new(
-        optional: ConjunctionExecutable,
-        selected_variables: Vec<VariablePosition>,
-        output_width: u32,
-        branch_id: BranchID,
-    ) -> Self {
-        Self { optional, selected_variables, output_width, branch_id }
+    pub fn new(optional: ConjunctionExecutable, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
+        Self { optional, selected_variables, output_width }
     }
 
     pub fn output_width(&self) -> u32 {

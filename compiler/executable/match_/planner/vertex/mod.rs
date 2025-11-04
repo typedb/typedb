@@ -675,13 +675,13 @@ impl<'a> DisjunctionVertex<'a> {
     ) -> Result<DisjunctionPlan<'a>, QueryPlanningError> {
         // TODO: would be nice if we can do this without cloning
         //  however, we do need to manipulate each branch's graph based on the available input
-        let DisjunctionPlanBuilder { branch_ids, branches, .. } = self.builder.clone();
+        let DisjunctionPlanBuilder { branches, .. } = self.builder.clone();
         let branches = branches
             .into_iter()
             .map(|branch| branch.set_to_input(input_variables.clone()).plan())
             .collect::<Result<Vec<_>, _>>()?;
         let cost = branches.iter().map(ConjunctionPlan::cost).fold(Cost::EMPTY, Cost::combine_parallel);
-        Ok(DisjunctionPlan::new(branch_ids, branches, cost))
+        Ok(DisjunctionPlan::new(branches, cost))
     }
 }
 

@@ -24,14 +24,14 @@ pub struct Negation {
 
 impl Negation {
     pub fn new(scope_id: ScopeId) -> Self {
-        Self { conjunction: Conjunction::new(scope_id) }
+        Self { conjunction: Conjunction::new(scope_id, None) }
     }
 
     pub(super) fn new_builder<'cx, 'reg>(
         context: &'cx mut BlockBuilderContext<'reg>,
         negation: &'cx mut Negation,
     ) -> ConjunctionBuilder<'cx, 'reg> {
-        ConjunctionBuilder::new(context, &mut negation.conjunction)
+        ConjunctionBuilder::new(context, &mut negation.conjunction, false)
     }
 
     pub fn conjunction(&self) -> &Conjunction {

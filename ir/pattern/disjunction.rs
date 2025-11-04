@@ -17,7 +17,7 @@ use typeql::common::Span;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        BranchID, Pattern, Scope, ScopeId, VariableBindingMode,
+        Pattern, Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
 };
@@ -25,17 +25,12 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct Disjunction {
     conjunctions: Vec<Conjunction>,
-    branch_ids: Vec<BranchID>,
     scope_id: ScopeId,
 }
 
 impl Disjunction {
     pub fn new(scope_id: ScopeId) -> Self {
-        Self { conjunctions: Vec::new(), branch_ids: Vec::new(), scope_id }
-    }
-
-    pub fn conjunctions_by_branch_id(&self) -> impl Iterator<Item = (&BranchID, &Conjunction)> {
-        self.branch_ids.iter().zip(self.conjunctions.iter())
+        Self { conjunctions: Vec::new(), scope_id }
     }
 
     pub fn conjunctions(&self) -> &[Conjunction] {
@@ -62,13 +57,6 @@ impl Disjunction {
     }
 
     pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
-        let unsatisfiable_branch_ids = self
-            .conjunctions
-            .iter()
-            .zip(self.branch_ids.iter())
-            .filter_map(|(conj, branch_id)| unsatisfiable.contains(&conj.scope_id()).then_some(*branch_id))
-            .collect::<Vec<_>>();
-        self.branch_ids.retain(|branch_id| !unsatisfiable_branch_ids.contains(branch_id));
         self.conjunctions.retain(|conj| !unsatisfiable.contains(&conj.scope_id()))
     }
 }
@@ -140,6 +128,7 @@ pub struct DisjunctionBuilder<'cx, 'reg> {
     context: &'cx mut BlockBuilderContext<'reg>,
     disjunction: &'cx mut Disjunction,
     scope_id: ScopeId,
+    needs_branch_id: bool,
 }
 
 impl<'cx, 'reg> DisjunctionBuilder<'cx, 'reg> {
@@ -147,14 +136,15 @@ impl<'cx, 'reg> DisjunctionBuilder<'cx, 'reg> {
         context: &'cx mut BlockBuilderContext<'reg>,
         scope_id: ScopeId,
         disjunction: &'cx mut Disjunction,
+        needs_branch_id: bool,
     ) -> Self {
-        Self { context, disjunction, scope_id }
+        Self { context, disjunction, scope_id, needs_branch_id }
     }
 
     pub fn add_conjunction(&mut self) -> ConjunctionBuilder<'_, 'reg> {
         let conj_scope_id = self.context.create_child_scope(self.scope_id, ScopeType::Conjunction);
-        self.disjunction.conjunctions.push(Conjunction::new(conj_scope_id));
-        self.disjunction.branch_ids.push(self.context.next_branch_id());
-        ConjunctionBuilder::new(self.context, self.disjunction.conjunctions.last_mut().unwrap())
+        let branch_id = self.needs_branch_id.then(|| self.context.next_branch_id());
+        self.disjunction.conjunctions.push(Conjunction::new(conj_scope_id, branch_id));
+        ConjunctionBuilder::new(self.context, self.disjunction.conjunctions.last_mut().unwrap(), self.needs_branch_id)
     }
 }

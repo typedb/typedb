@@ -98,7 +98,8 @@ pub struct BlockBuilder<'reg> {
 
 impl<'reg> BlockBuilder<'reg> {
     fn new(context: BlockBuilderContext<'reg>) -> Self {
-        Self { conjunction: Conjunction::new(ScopeId::ROOT), context }
+        let conjunction = Conjunction::new(ScopeId::ROOT, Some(context.variable_registry.next_branch_id()));
+        Self { conjunction, context }
     }
 
     pub fn finish(self) -> Result<Block, Box<RepresentationError>> {
@@ -116,7 +117,7 @@ impl<'reg> BlockBuilder<'reg> {
     }
 
     pub fn conjunction_mut(&mut self) -> ConjunctionBuilder<'_, 'reg> {
-        ConjunctionBuilder::new(&mut self.context, &mut self.conjunction)
+        ConjunctionBuilder::new(&mut self.context, &mut self.conjunction, true)
     }
 
     pub fn context_mut(&mut self) -> &mut BlockBuilderContext<'reg> {

@@ -84,7 +84,6 @@ pub fn compile(
         selected_variables,
         &assigned_identities,
         variable_registry,
-        None,
     )
     .map_err(|source| ConjunctionCompilationError::PlanningError { typedb_source: source })?
     .finish(variable_registry);
@@ -146,13 +145,12 @@ impl OptionalBuilder {
 
 #[derive(Debug)]
 struct DisjunctionBuilder {
-    branch_ids: Vec<BranchID>,
     branches: Vec<ConjunctionExecutableBuilder>,
 }
 
 impl DisjunctionBuilder {
-    fn new(branch_ids: Vec<BranchID>, branches: Vec<ConjunctionExecutableBuilder>) -> Self {
-        Self { branch_ids, branches }
+    fn new(branches: Vec<ConjunctionExecutableBuilder>) -> Self {
+        Self { branches }
     }
 }
 
@@ -265,18 +263,15 @@ impl StepBuilder {
                 NegationStep::new(negation.finish(variable_registry), selected_variables, output_width),
             ),
             StepInstructionsBuilder::Optional(builder) => {
-                let branch_id = builder.branch_id();
                 let OptionalBuilder { optional } = builder;
                 ExecutionStep::Optional(OptionalStep::new(
                     optional.finish(variable_registry),
                     selected_variables,
                     output_width,
-                    branch_id,
                 ))
             }
-            StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branch_ids, branches }) => {
+            StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branches }) => {
                 ExecutionStep::Disjunction(DisjunctionStep::new(
-                    branch_ids,
                     branches.into_iter().map(|builder| builder.finish(variable_registry)).collect(),
                     selected_variables,
                     output_width,
@@ -519,6 +514,7 @@ impl ConjunctionExecutableBuilder {
             .collect();
         ConjunctionExecutable::new(
             next_executable_id(),
+            self.branch_id,
             steps,
             self.index.into_iter().filter_map(|(var, id)| Some((var, id.as_position()?))).collect(),
             self.reverse_index,

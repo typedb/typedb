@@ -298,23 +298,23 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
     pub fn add_stage(&mut self, stage: &AnnotatedStage, stage_index: StageIndex) {
         match stage {
             AnnotatedStage::Match { block, block_annotations, .. } => {
-                let conjunction = self.add_conjunction(stage_index, None, block.conjunction(), &block_annotations);
+                let conjunction = self.add_conjunction(stage_index, block.conjunction(), &block_annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Match { block: conjunction });
             }
             AnnotatedStage::Insert { block, annotations, .. } => {
-                let block = self.add_conjunction(stage_index, None, block.conjunction(), &annotations);
+                let block = self.add_conjunction(stage_index, block.conjunction(), &annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Insert { block });
             }
             AnnotatedStage::Put { block, insert_annotations: annotations, .. } => {
-                let block = self.add_conjunction(stage_index, None, block.conjunction(), &annotations);
+                let block = self.add_conjunction(stage_index, block.conjunction(), &annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Put { block });
             }
             AnnotatedStage::Update { block, annotations, .. } => {
-                let block = self.add_conjunction(stage_index, None, block.conjunction(), &annotations);
+                let block = self.add_conjunction(stage_index, block.conjunction(), &annotations);
                 self.pipeline_structure.stages.push(QueryStructureStage::Update { block });
             }
             AnnotatedStage::Delete { block, deleted_variables, annotations, .. } => {
-                let block = self.add_conjunction(stage_index, None, block.conjunction(), &annotations);
+                let block = self.add_conjunction(stage_index, block.conjunction(), &annotations);
                 self.pipeline_structure
                     .stages
                     .push(QueryStructureStage::Delete { block, deleted_variables: vec_from(deleted_variables.iter()) });
@@ -348,7 +348,6 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
     fn add_conjunction(
         &mut self,
         stage_index: StageIndex,
-        existing_branch_id: Option<BranchID>,
         conjunction: &Conjunction,
         block_annotations: &BlockAnnotations,
     ) -> QueryStructureConjunctionID {
@@ -356,29 +355,25 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
         conjunction.nested_patterns().iter().for_each(|nested| match nested {
             NestedPattern::Disjunction(disjunction) => {
                 let branches = disjunction
-                    .conjunctions_by_branch_id()
-                    .map(|(id, branch)| self.add_conjunction(stage_index, Some(*id), branch, block_annotations))
+                    .conjunctions()
+                    .iter()
+                    .map(|branch| self.add_conjunction(stage_index, branch, block_annotations))
                     .collect::<Vec<_>>();
                 nested_patterns.push(QueryStructureNestedPattern::Or { branches });
             }
             NestedPattern::Negation(negation) => {
-                let conj = self.add_conjunction(stage_index, None, negation.conjunction(), block_annotations);
+                let conj = self.add_conjunction(stage_index, negation.conjunction(), block_annotations);
                 nested_patterns.push(QueryStructureNestedPattern::Not { conjunction: conj });
             }
             NestedPattern::Optional(optional) => {
-                let conj = self.add_conjunction(
-                    stage_index,
-                    Some(optional.branch_id()),
-                    optional.conjunction(),
-                    block_annotations,
-                );
+                let conj = self.add_conjunction(stage_index, optional.conjunction(), block_annotations);
                 nested_patterns.push(QueryStructureNestedPattern::Try { conjunction: conj });
             }
         });
         self.add_conjunction_to_structure(
             stage_index,
             conjunction.scope_id(),
-            existing_branch_id,
+            conjunction.branch_id(),
             Vec::from(conjunction.constraints()),
             nested_patterns,
             block_annotations.type_annotations_of(conjunction).unwrap(),

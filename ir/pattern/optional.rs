@@ -20,27 +20,23 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Optional {
     conjunction: Conjunction,
-    branch_id: BranchID,
 }
 
 impl Optional {
-    pub fn new(scope_id: ScopeId, branch_id: BranchID) -> Self {
-        Self { conjunction: Conjunction::new(scope_id), branch_id }
+    pub fn new(scope_id: ScopeId, branch_id: Option<BranchID>) -> Self {
+        Self { conjunction: Conjunction::new(scope_id, branch_id) }
     }
 
     pub(super) fn new_builder<'cx, 'reg>(
         context: &'cx mut BlockBuilderContext<'reg>,
         optional: &'cx mut Optional,
+        needs_branch_id: bool,
     ) -> ConjunctionBuilder<'cx, 'reg> {
-        ConjunctionBuilder::new(context, &mut optional.conjunction)
+        ConjunctionBuilder::new(context, &mut optional.conjunction, needs_branch_id)
     }
 
     pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
-    }
-
-    pub fn branch_id(&self) -> BranchID {
-        self.branch_id
     }
 
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {

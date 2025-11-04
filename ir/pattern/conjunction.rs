@@ -23,7 +23,7 @@ use crate::{
         negation::Negation,
         nested_pattern::NestedPattern,
         optional::Optional,
-        Pattern, Scope, ScopeId, VariableBindingMode,
+        BranchID, Pattern, Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
     RepresentationError,
@@ -32,13 +32,18 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct Conjunction {
     scope_id: ScopeId,
+    branch_id: Option<BranchID>,
     constraints: Constraints,
     nested_patterns: Vec<NestedPattern>,
 }
 
 impl Conjunction {
-    pub fn new(scope_id: ScopeId) -> Self {
-        Self { scope_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new() }
+    pub fn new(scope_id: ScopeId, branch_id: Option<BranchID>) -> Self {
+        Self { scope_id, branch_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new() }
+    }
+
+    pub fn branch_id(&self) -> Option<BranchID> {
+        self.branch_id.clone()
     }
 
     pub fn constraints(&self) -> &[Constraint<Variable>] {
@@ -58,7 +63,7 @@ impl Conjunction {
     }
 
     pub fn set_unsatisfiable(&mut self) {
-        let mut swapped_conjunction = Self::new(self.scope_id);
+        let mut swapped_conjunction = Self::new(self.scope_id, self.branch_id);
         std::mem::swap(self, &mut swapped_conjunction);
         self.constraints.constraints_mut().push(Constraint::Unsatisfiable(Unsatisfiable::new(swapped_conjunction)));
     }
@@ -164,11 +169,16 @@ impl fmt::Display for Conjunction {
 pub struct ConjunctionBuilder<'cx, 'reg> {
     pub(crate) context: &'cx mut BlockBuilderContext<'reg>,
     pub(crate) conjunction: &'cx mut Conjunction,
+    needs_branch_id: bool,
 }
 
 impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
-    pub fn new(context: &'cx mut BlockBuilderContext<'reg>, conjunction: &'cx mut Conjunction) -> Self {
-        Self { context, conjunction }
+    pub fn new(
+        context: &'cx mut BlockBuilderContext<'reg>,
+        conjunction: &'cx mut Conjunction,
+        needs_branch_id: bool,
+    ) -> Self {
+        Self { context, conjunction, needs_branch_id }
     }
 
     pub fn constraints_mut(&mut self) -> ConstraintsBuilder<'_, 'reg> {
@@ -180,7 +190,7 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
         self.conjunction.nested_patterns.push(NestedPattern::Disjunction(Disjunction::new(nested_scope_id)));
         let disjunction =
             self.conjunction.nested_patterns.last_mut().and_then(NestedPattern::as_disjunction_mut).unwrap();
-        DisjunctionBuilder::new(self.context, nested_scope_id, disjunction)
+        DisjunctionBuilder::new(self.context, nested_scope_id, disjunction, self.needs_branch_id)
     }
 
     pub fn add_negation(&mut self) -> ConjunctionBuilder<'_, 'reg> {
@@ -198,13 +208,14 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
         source_span: Option<Span>,
     ) -> Result<ConjunctionBuilder<'_, 'reg>, RepresentationError> {
         let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id, ScopeType::Optional);
-        let optional = Optional::new(nested_scope_id, self.context.next_branch_id());
+        let branch_id = self.needs_branch_id.then(|| self.context.next_branch_id());
+        let optional = Optional::new(nested_scope_id, branch_id);
         self.validate_optional_not_in_negation(&optional, source_span)?;
         self.conjunction.nested_patterns.push(NestedPattern::Optional(optional));
         let Some(NestedPattern::Optional(optional)) = self.conjunction.nested_patterns.last_mut() else {
             unreachable!()
         };
-        Ok(Optional::new_builder(self.context, optional))
+        Ok(Optional::new_builder(self.context, optional, self.needs_branch_id))
     }
 
     fn validate_optional_not_in_negation(

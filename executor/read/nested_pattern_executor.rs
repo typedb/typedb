@@ -19,20 +19,17 @@ use crate::{
 #[derive(Debug)]
 pub struct DisjunctionExecutor {
     pub branches: Vec<PatternExecutor>,
-    pub branch_ids: Vec<BranchID>,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
 impl DisjunctionExecutor {
     pub(crate) fn new(
-        branch_ids: Vec<BranchID>,
         branches: Vec<PatternExecutor>,
         selected_variables: Vec<VariablePosition>,
         output_width: u32,
     ) -> Self {
-        debug_assert!(branch_ids.len() == branches.len());
-        Self { branches, branch_ids, selected_variables, output_width }
+        Self { branches, selected_variables, output_width }
     }
 
     pub(crate) fn output_width(&self) -> u32 {
@@ -43,12 +40,11 @@ impl DisjunctionExecutor {
         self.branches.iter_mut().for_each(|branch| branch.reset())
     }
 
-    pub(crate) fn map_output(&self, source_branch_index: BranchIndex, unmapped: FixedBatch) -> FixedBatch {
+    pub(crate) fn map_output(&self, unmapped: FixedBatch) -> FixedBatch {
         let mut uniform_batch = FixedBatch::new(self.output_width);
         unmapped.into_iter().for_each(|row| {
             uniform_batch.append(|mut output_row| {
                 output_row.copy_mapped(row, self.selected_variables.iter().map(|&pos| (pos, pos)));
-                output_row.set_branch_id_in_provenance(self.branch_ids[*source_branch_index]);
             })
         });
         uniform_batch
@@ -58,19 +54,13 @@ impl DisjunctionExecutor {
 #[derive(Debug)]
 pub struct OptionalExecutor {
     pub inner: PatternExecutor,
-    pub branch_id: BranchID,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
 impl OptionalExecutor {
-    pub(crate) fn new(
-        branch_id: BranchID,
-        inner: PatternExecutor,
-        selected_variables: Vec<VariablePosition>,
-        output_width: u32,
-    ) -> Self {
-        Self { inner, branch_id, selected_variables, output_width }
+    pub(crate) fn new(inner: PatternExecutor, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
+        Self { inner, selected_variables, output_width }
     }
 
     pub(crate) fn output_width(&self) -> u32 {
@@ -86,7 +76,6 @@ impl OptionalExecutor {
         unmapped.into_iter().for_each(|row| {
             output.append(|mut output_row| {
                 output_row.copy_mapped(row, self.selected_variables.iter().map(|&pos| (pos, pos)));
-                output_row.set_branch_id_in_provenance(self.branch_id);
             })
         });
         output

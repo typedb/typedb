@@ -10,10 +10,11 @@ use compiler::executable::{
     function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use ir::pattern::BranchID;
 use resource::profile::QueryProfile;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::read::pattern_executor::PatternExecutor;
+use crate::read::{pattern_executor::PatternExecutor, step_executor::StepExecutors};
 
 mod collecting_stage_executor;
 pub(super) mod control_instruction;
@@ -69,4 +70,22 @@ pub(super) fn create_pattern_executor_for_conjunction(
         conjunction_executable,
     )?;
     Ok(PatternExecutor::new(conjunction_executable.executable_id(), executors))
+}
+
+#[derive(Debug)]
+pub(super) struct SetBlockIDExecutor {
+    block_id: BranchID,
+    output_width: u32,
+}
+
+impl SetBlockIDExecutor {
+    pub(crate) fn output_width(&self) -> u32 {
+        self.output_width
+    }
+}
+
+impl From<SetBlockIDExecutor> for StepExecutors {
+    fn from(val: SetBlockIDExecutor) -> Self {
+        StepExecutors::SetBlockID(val)
+    }
 }

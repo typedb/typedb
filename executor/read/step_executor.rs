@@ -20,6 +20,7 @@ use compiler::{
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::UnimplementedFeature;
+use ir::pattern::BranchID;
 use itertools::Itertools;
 use resource::profile::QueryProfile;
 use storage::snapshot::ReadableSnapshot;
@@ -34,11 +35,13 @@ use crate::{
         pattern_executor::PatternExecutor,
         stream_modifier::StreamModifierExecutor,
         tabled_call_executor::TabledCallExecutor,
+        SetBlockIDExecutor,
     },
 };
 
 #[derive(Debug)]
 pub enum StepExecutors {
+    SetBlockID(SetBlockIDExecutor),
     Immediate(ImmediateExecutor),
     Disjunction(DisjunctionExecutor),
     Optional(OptionalExecutor),
@@ -53,6 +56,7 @@ pub enum StepExecutors {
 impl StepExecutors {
     pub(crate) fn output_width(&self) -> u32 {
         match self {
+            StepExecutors::SetBlockID(inner) => inner.output_width(),
             StepExecutors::Immediate(inner) => inner.output_width(),
             StepExecutors::Disjunction(inner) => inner.output_width(),
             StepExecutors::Optional(inner) => inner.output_width(),
@@ -159,7 +163,7 @@ pub(crate) fn create_executors_for_conjunction(
         || format!("Match\n  ~ {}", conjunction_executable.planner_statistics()),
         conjunction_executable.executable_id(),
     );
-    let mut steps = Vec::with_capacity(conjunction_executable.steps().len());
+    let mut steps: Vec<StepExecutors> = Vec::with_capacity(1 + conjunction_executable.steps().len());
     for (index, step) in conjunction_executable.steps().iter().enumerate() {
         match step {
             ExecutionStep::Intersection(inner) => {
@@ -189,17 +193,12 @@ pub(crate) fn create_executors_for_conjunction(
             ExecutionStep::Negation(negation_step) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
                 let _step_profile = stage_profile.extend_or_get(index, || format!("{}", negation_step));
-                let inner = create_executors_for_conjunction(
-                    snapshot,
-                    thing_manager,
-                    function_registry,
-                    query_profile,
-                    &negation_step.negation,
-                )?;
+                let inner = &negation_step.negation;
+                let inner_steps =
+                    create_executors_for_conjunction(snapshot, thing_manager, function_registry, query_profile, inner)?;
                 // I shouldn't need to pass recursive here since it's stratified
-                steps.push(
-                    NegationExecutor::new(PatternExecutor::new(negation_step.negation.executable_id(), inner)).into(),
-                )
+                let inner_executor = PatternExecutor::new(inner.executable_id(), inner_steps);
+                steps.push(NegationExecutor::new(inner_executor).into())
             }
             ExecutionStep::FunctionCall(function_call) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
@@ -235,24 +234,19 @@ pub(crate) fn create_executors_for_conjunction(
                 let branches: Vec<PatternExecutor> = step
                     .branches
                     .iter()
-                    .map(|branch_executable| {
+                    .map(|branch| {
                         let executors = create_executors_for_conjunction(
                             snapshot,
                             thing_manager,
                             function_registry,
                             query_profile,
-                            branch_executable,
+                            branch,
                         )?;
-                        Ok::<_, Box<_>>(PatternExecutor::new(branch_executable.executable_id(), executors))
+                        Ok::<_, Box<_>>(PatternExecutor::new(branch.executable_id(), executors))
                     })
                     .try_collect()?;
-                let inner_step = DisjunctionExecutor::new(
-                    step.branch_ids.clone(),
-                    branches,
-                    step.selected_variables.clone(),
-                    step.output_width,
-                )
-                .into();
+                let inner_step =
+                    DisjunctionExecutor::new(branches, step.selected_variables.clone(), step.output_width).into();
                 // Hack: wrap it in a distinct
                 let step = StepExecutors::StreamModifier(StreamModifierExecutor::new_distinct(PatternExecutor::new(
                     next_executable_id(),
@@ -263,23 +257,23 @@ pub(crate) fn create_executors_for_conjunction(
             ExecutionStep::Optional(step) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
                 let _step_profile = stage_profile.extend_or_get(index, || format!("{}", step));
-                let inner = create_executors_for_conjunction(
+                let inner = &step.optional;
+                let inner_steps = create_executors_for_conjunction(
                     snapshot,
                     thing_manager,
                     function_registry,
                     query_profile,
                     &step.optional,
                 )?;
-                let inner_executor = PatternExecutor::new(step.optional.executable_id(), inner);
-                let inner_step = OptionalExecutor::new(
-                    step.branch_id,
-                    inner_executor,
-                    step.selected_variables.clone(),
-                    step.output_width,
-                );
+                let inner_executor = PatternExecutor::new(inner.executable_id(), inner_steps);
+                let inner_step =
+                    OptionalExecutor::new(inner_executor, step.selected_variables.clone(), step.output_width);
                 steps.push(inner_step.into())
             }
         };
+        if let (Some(last), Some(block_id)) = (steps.last(), conjunction_executable.branch_id()) {
+            steps.push(SetBlockIDExecutor { block_id, output_width: last.output_width() }.into());
+        }
     }
     Ok(steps)
 }
