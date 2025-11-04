@@ -15,6 +15,7 @@ rust_library(
     ]),
     deps = [
         "@crates//:tokio",
+        "@crates//:tokio-test",
         "@crates//:tokio-util",
     ],
 )

@@ -19,6 +19,11 @@ features = {}
 		version = "1.47.1"
 		default-features = false
 
+	[dependencies.tokio-test]
+		features = []
+		version = "0.4.4"
+		default-features = false
+
 	[dependencies.tokio-util]
 		features = ["codec", "compat", "default", "full", "futures-io", "futures-util", "hashbrown", "io", "io-util", "join-map", "net", "rt", "slab", "time"]
 		version = "0.7.16"

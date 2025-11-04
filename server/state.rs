@@ -14,8 +14,6 @@ use database::{
     Database,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use futures::{StreamExt, TryFutureExt};
-use itertools::Itertools;
 use options::TransactionOptions;
 use resource::{
     constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo, profile::CommitProfile,
@@ -118,6 +116,8 @@ pub trait ServerState: Debug {
     async fn diagnostics_manager(&self) -> Arc<DiagnosticsManager>;
 
     async fn shutdown_receiver(&self) -> Receiver<()>;
+
+    async fn background_task_spawner(&self) -> TokioTaskSpawner;
 }
 
 #[derive(Debug)]
@@ -131,8 +131,9 @@ pub struct LocalServerState {
     credential_verifier: Option<Arc<CredentialVerifier>>,
     token_manager: Arc<TokenManager>,
     diagnostics_manager: Arc<DiagnosticsManager>,
-    _database_diagnostics_updater: IntervalRunner,
     shutdown_receiver: Receiver<()>,
+    background_task_spawner: TokioTaskSpawner,
+    _database_diagnostics_updater: IntervalRunner,
 }
 
 impl LocalServerState {
@@ -142,12 +143,12 @@ impl LocalServerState {
         server_id: String,
         deployment_id: Option<String>,
         shutdown_receiver: Receiver<()>,
-        background_tasks: TokioTaskSpawner,
+        background_task_spawner: TokioTaskSpawner,
     ) -> Result<Self, ServerOpenError> {
         let database_manager = DatabaseManager::new(&config.storage.data_directory)
             .map_err(|err| ServerOpenError::DatabaseOpen { typedb_source: err })?;
         let token_manager = Arc::new(
-            TokenManager::new(config.server.authentication.token_expiration, background_tasks.clone())
+            TokenManager::new(config.server.authentication.token_expiration, background_task_spawner.clone())
                 .map_err(|err| ServerOpenError::TokenConfiguration { typedb_source: err })?,
         );
 
@@ -160,7 +161,7 @@ impl LocalServerState {
                 &config.diagnostics,
                 config.storage.data_directory.clone(),
                 config.development_mode.enabled,
-                background_tasks,
+                background_task_spawner.clone(),
             )
             .await,
         );
@@ -182,11 +183,12 @@ impl LocalServerState {
             credential_verifier: None,
             token_manager,
             diagnostics_manager: diagnostics_manager.clone(),
+            shutdown_receiver,
+            background_task_spawner,
             _database_diagnostics_updater: IntervalRunner::new(
                 move || Self::synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
                 DATABASE_METRICS_UPDATE_INTERVAL,
             ),
-            shutdown_receiver,
         })
     }
 
@@ -537,5 +539,9 @@ impl ServerState for LocalServerState {
 
     async fn shutdown_receiver(&self) -> Receiver<()> {
         self.shutdown_receiver.clone()
+    }
+
+    async fn background_task_spawner(&self) -> TokioTaskSpawner {
+        self.background_task_spawner.clone()
     }
 }

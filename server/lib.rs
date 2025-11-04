@@ -39,11 +39,12 @@ pub struct ServerBuilder {
     server_state: Option<ArcServerState>,
     shutdown_channel: Option<(Sender<()>, Receiver<()>)>,
     storage_server_id: Option<String>,
+    background_tasks_tracker: Option<TokioTaskTracker>,
 }
 
 impl Default for ServerBuilder {
     fn default() -> Self {
-        Self { distribution_info: None, server_state: None, shutdown_channel: None, storage_server_id: None }
+        Self { distribution_info: None, server_state: None, shutdown_channel: None, storage_server_id: None, background_tasks_tracker: None }
     }
 }
 
@@ -67,11 +68,16 @@ impl ServerBuilder {
         self
     }
 
+    pub fn background_tasks_tracker(mut self, background_tasks_tracker: TokioTaskTracker) -> Self {
+        self.background_tasks_tracker = Some(background_tasks_tracker);
+        self
+    }
+
     pub async fn build(mut self, config: Config) -> Result<Server, ServerOpenError> {
         let server_id = self.initialise_storage(&config.storage)?.to_string();
         let distribution_info = self.distribution_info.unwrap_or(DISTRIBUTION_INFO);
         let (shutdown_sender, shutdown_receiver) = self.shutdown_channel.unwrap_or_else(|| channel(()));
-        let background_tasks_tracker = TokioTaskTracker::new(shutdown_receiver.clone());
+        let background_tasks_tracker = self.background_tasks_tracker.unwrap_or_else(|| TokioTaskTracker::new(shutdown_receiver.clone()));
 
         let server_state = match self.server_state {
             Some(server_state) => server_state,
@@ -225,7 +231,6 @@ impl Server {
         }
 
         self.background_tasks_tracker.join().await;
-        println!("Successfully awaited background tassk!");
         Ok(())
     }
 
