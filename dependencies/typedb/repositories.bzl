@@ -8,7 +8,7 @@ def typedb_bazel_distribution():
     git_repository(
         name = "typedb_bazel_distribution",
         remote = "https://github.com/typedb/bazel-distribution",
-        commit = "056a8d7ede9b552d23dcfdc2d47b9395510652f4",
+        commit = "a9a587849ca17b4eea54cc66d6ec0f28cf935da7",
     )
 
 def typedb_dependencies():

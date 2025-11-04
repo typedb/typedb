@@ -30,8 +30,8 @@ executors:
 
   mac-arm64:
     macos:
-      xcode: "13.4.1"
-    resource_class: macos.m1.medium.gen1
+      xcode: "16.4.0"
+    resource_class: m4pro.medium
     working_directory: ~/typedb
 
   win-x86_64:
@@ -53,21 +53,8 @@ commands:
         type: string
     steps:
       - run: |
-          amazon-linux-extras install python3.8 java-openjdk11 docker -y
+          amazon-linux-extras install java-openjdk11 docker -y
           yum install -y git tar gcc gcc-c++ file lsof which procps llvm-devel clang-devel wget
-          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.bazel-arch>>"
-          mv "bazelisk-linux-<<parameters.bazel-arch>>" /usr/local/bin/bazel
-          chmod a+x /usr/local/bin/bazel
-
-  install-deps-apt:
-    parameters:
-      bazel-arch:
-        type: string
-    steps:
-      - run: |
-          apt update -y
-          DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends tzdata
-          apt install -y curl build-essential git python3 python3-pip default-jre lsof cmake file wget libclang-dev
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.bazel-arch>>"
           mv "bazelisk-linux-<<parameters.bazel-arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
@@ -78,8 +65,6 @@ commands:
         type: string
     steps:
       - run: |
-          # Plain brew install failed the postinstall step, but doing them separately works.
-          brew install --skip-post-install python@3.9  && brew postinstall python@3.9  
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
           sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
