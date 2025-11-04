@@ -15,6 +15,7 @@ pub mod system_init;
 use std::{fs, future::Future, net::SocketAddr, path::Path, pin::Pin, sync::Arc};
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
+use concurrency::{TokioTaskSpawner, TokioTaskTracker};
 use database::database_manager::DatabaseManager;
 use rand::prelude::SliceRandom;
 use resource::{
@@ -25,7 +26,7 @@ use resource::{
     distribution_info::DistributionInfo,
 };
 use tokio::sync::watch::{channel, Receiver, Sender};
-use concurrency::{TokioTaskSpawner, TokioTaskTracker};
+
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig, StorageConfig},
@@ -44,7 +45,13 @@ pub struct ServerBuilder {
 
 impl Default for ServerBuilder {
     fn default() -> Self {
-        Self { distribution_info: None, server_state: None, shutdown_channel: None, storage_server_id: None, background_tasks_tracker: None }
+        Self {
+            distribution_info: None,
+            server_state: None,
+            shutdown_channel: None,
+            storage_server_id: None,
+            background_tasks_tracker: None,
+        }
     }
 }
 
@@ -77,7 +84,8 @@ impl ServerBuilder {
         let server_id = self.initialise_storage(&config.storage)?.to_string();
         let distribution_info = self.distribution_info.unwrap_or(DISTRIBUTION_INFO);
         let (shutdown_sender, shutdown_receiver) = self.shutdown_channel.unwrap_or_else(|| channel(()));
-        let background_tasks_tracker = self.background_tasks_tracker.unwrap_or_else(|| TokioTaskTracker::new(shutdown_receiver.clone()));
+        let background_tasks_tracker =
+            self.background_tasks_tracker.unwrap_or_else(|| TokioTaskTracker::new(shutdown_receiver.clone()));
 
         let server_state = match self.server_state {
             Some(server_state) => server_state,
@@ -99,7 +107,14 @@ impl ServerBuilder {
             }
         };
 
-        Ok(Server::new(distribution_info, config, server_state, shutdown_sender, shutdown_receiver, background_tasks_tracker))
+        Ok(Server::new(
+            distribution_info,
+            config,
+            server_state,
+            shutdown_sender,
+            shutdown_receiver,
+            background_tasks_tracker,
+        ))
     }
 
     pub fn initialise_storage(&mut self, storage_config: &StorageConfig) -> Result<&str, ServerOpenError> {
@@ -269,7 +284,12 @@ impl Server {
         background_tasks: TokioTaskSpawner,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());
-        let service = http::typedb_service::HTTPTypeDBService::new(distribution_info, address, server_state.clone(), background_tasks);
+        let service = http::typedb_service::HTTPTypeDBService::new(
+            distribution_info,
+            address,
+            server_state.clone(),
+            background_tasks,
+        );
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);
         let router_service = http::typedb_service::HTTPTypeDBService::create_protected_router(http_service.clone())

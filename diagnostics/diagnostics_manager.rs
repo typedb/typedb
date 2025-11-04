@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, hash::Hash, sync::Arc};
+
 use concurrency::TokioTaskSpawner;
 use resource::constants::database::INTERNAL_DATABASE_PREFIX;
 
@@ -50,7 +51,13 @@ impl DiagnosticsManager {
         let reporter = if is_development_mode {
             None
         } else {
-            Some(Reporter::new(deployment_id, diagnostics.clone(), data_directory, is_reporting_enabled, background_tasks))
+            Some(Reporter::new(
+                deployment_id,
+                diagnostics.clone(),
+                data_directory,
+                is_reporting_enabled,
+                background_tasks,
+            ))
         };
 
         let monitoring_server = if is_monitoring_enabled {

@@ -8,11 +8,7 @@ use std::{fmt::Debug, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 use concurrency::{IntervalRunner, TokioTaskSpawner};
-use database::{
-    database_manager::DatabaseManager,
-    transaction::{TransactionRead},
-    Database,
-};
+use database::{database_manager::DatabaseManager, transaction::TransactionRead, Database};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use options::TransactionOptions;
 use resource::{
@@ -22,12 +18,9 @@ use storage::{
     durability_client::{DurabilityClient, WALClient},
     isolation_manager::CommitRecord,
 };
-use system::concepts::{User};
+use system::concepts::User;
 use tokio::{net::lookup_host, sync::watch::Receiver};
-use user::{
-    permission_manager::PermissionManager,
-    user_manager::UserManager,
-};
+use user::{permission_manager::PermissionManager, user_manager::UserManager};
 
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},

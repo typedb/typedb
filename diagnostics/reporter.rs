@@ -24,7 +24,6 @@ use hyper::{
     http, Body, Client, Request,
 };
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
-use tokio::sync::watch::Receiver;
 use logger::{debug, trace};
 use resource::constants::{
     common::SECONDS_IN_MINUTE,
@@ -33,6 +32,7 @@ use resource::constants::{
         REPORT_INTERVAL, REPORT_MAX_RETRY_NUM, REPORT_ONCE_DELAY, REPORT_RETRY_DELAY_EXPONENTIAL_MULTIPLIER,
     },
 };
+use tokio::sync::watch::Receiver;
 
 use crate::{hash_string_consistently, Diagnostics};
 

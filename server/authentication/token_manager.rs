@@ -27,7 +27,10 @@ pub struct TokenManager {
 impl TokenManager {
     const TOKENS_CLEANUP_INTERVAL_MULTIPLIER: u32 = 2;
 
-    pub fn new(tokens_expiration_time: Duration, background_tasks: TokioTaskSpawner) -> Result<Self, TokenManagerError> {
+    pub fn new(
+        tokens_expiration_time: Duration,
+        background_tasks: TokioTaskSpawner,
+    ) -> Result<Self, TokenManagerError> {
         Self::validate_tokens_expiration_time(tokens_expiration_time)?;
 
         let token_owners = Arc::new(RwLock::new(HashMap::new()));
@@ -49,7 +52,7 @@ impl TokenManager {
                     Self::cleanup_expired_tokens(secret_key.as_ref(), token_owners).await;
                 }
             },
-            IntervalTaskParameters::new_no_delay(tokens_cleanup_interval, false)
+            IntervalTaskParameters::new_no_delay(tokens_cleanup_interval, false),
         );
         Ok(Self { token_owners, tokens_expiration_time, secret_key })
     }

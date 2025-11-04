@@ -68,6 +68,7 @@ build:
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test //common/concurrency:test_crate_concurrency --test_output=streamed
         bazel test //compiler:test_crate_compiler --test_output=streamed
         bazel test //concept:test_crate_concept --test_output=streamed
         bazel test //database:test_crate_database --test_output=streamed
