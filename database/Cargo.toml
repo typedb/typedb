@@ -133,10 +133,10 @@ features = {}
 		default-features = false
 
 [[test]]
-	path = "tests/transaction.rs"
-	name = "test_transaction"
-
-[[test]]
 	path = "tests/database.rs"
 	name = "test_database"
+
+[[test]]
+	path = "tests/transaction.rs"
+	name = "test_transaction"
 

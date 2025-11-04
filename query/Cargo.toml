@@ -148,20 +148,20 @@ features = {}
 		default-features = false
 
 [[bench]]
-	name = "bench_insert_queries_multithreaded"
-	harness = false
-
-[[bench]]
 	name = "bench_insert_queries"
 	harness = false
 
-[[test]]
-	path = "tests/unimplemented.rs"
-	name = "test_unimplemented"
+[[bench]]
+	name = "bench_insert_queries_multithreaded"
+	harness = false
 
 [[test]]
 	path = "tests/fetch.rs"
 	name = "test_fetch"
+
+[[test]]
+	path = "tests/unimplemented.rs"
+	name = "test_unimplemented"
 
 [[test]]
 	path = "tests/define.rs"

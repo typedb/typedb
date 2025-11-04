@@ -25,7 +25,7 @@ use resource::{
     distribution_info::DistributionInfo,
 };
 use tokio::sync::watch::{channel, Receiver, Sender};
-
+use concurrency::{TokioTaskSpawner, TokioTaskTracker};
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig, StorageConfig},
@@ -71,6 +71,7 @@ impl ServerBuilder {
         let server_id = self.initialise_storage(&config.storage)?.to_string();
         let distribution_info = self.distribution_info.unwrap_or(DISTRIBUTION_INFO);
         let (shutdown_sender, shutdown_receiver) = self.shutdown_channel.unwrap_or_else(|| channel(()));
+        let background_tasks_tracker = TokioTaskTracker::new(shutdown_receiver.clone());
 
         let server_state = match self.server_state {
             Some(server_state) => server_state,
@@ -81,6 +82,7 @@ impl ServerBuilder {
                     server_id,
                     None,
                     shutdown_receiver.clone(),
+                    background_tasks_tracker.get_spawner(),
                 )
                 .await?;
                 server_state
@@ -91,7 +93,7 @@ impl ServerBuilder {
             }
         };
 
-        Ok(Server::new(distribution_info, config, server_state, shutdown_sender, shutdown_receiver))
+        Ok(Server::new(distribution_info, config, server_state, shutdown_sender, shutdown_receiver, background_tasks_tracker))
     }
 
     pub fn initialise_storage(&mut self, storage_config: &StorageConfig) -> Result<&str, ServerOpenError> {
@@ -162,6 +164,7 @@ pub struct Server {
     server_state: ArcServerState,
     shutdown_sender: Sender<()>,
     shutdown_receiver: Receiver<()>,
+    background_tasks_tracker: TokioTaskTracker,
 }
 
 impl Server {
@@ -171,8 +174,9 @@ impl Server {
         server_state: ArcServerState,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
+        background_tasks_tracker: TokioTaskTracker,
     ) -> Self {
-        Self { distribution_info, config, server_state, shutdown_sender, shutdown_receiver }
+        Self { distribution_info, config, server_state, shutdown_sender, shutdown_receiver, background_tasks_tracker }
     }
 
     pub async fn serve(self) -> Result<(), ServerOpenError> {
@@ -195,6 +199,7 @@ impl Server {
                 &self.config.server.encryption,
                 server_state.clone(),
                 self.shutdown_receiver,
+                self.background_tasks_tracker.get_spawner(),
             );
             Some(server)
         } else {
@@ -218,6 +223,9 @@ impl Server {
         } else {
             grpc_server.await?;
         }
+
+        self.background_tasks_tracker.join().await;
+        println!("Successfully awaited background tassk!");
         Ok(())
     }
 
@@ -253,9 +261,10 @@ impl Server {
         encryption_config: &EncryptionConfig,
         server_state: ArcServerState,
         mut shutdown_receiver: Receiver<()>,
+        background_tasks: TokioTaskSpawner,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());
-        let service = http::typedb_service::HTTPTypeDBService::new(distribution_info, address, server_state.clone());
+        let service = http::typedb_service::HTTPTypeDBService::new(distribution_info, address, server_state.clone(), background_tasks);
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);
         let router_service = http::typedb_service::HTTPTypeDBService::create_protected_router(http_service.clone())

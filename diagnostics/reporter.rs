@@ -10,13 +10,13 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
+        Arc,
     },
     time::Duration,
 };
 
 use chrono::{Timelike, Utc};
-use concurrency::TokioIntervalRunner;
+use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
 use error::{typedb_error, TypeDBError};
 use hyper::{
     client::HttpConnector,
@@ -24,6 +24,7 @@ use hyper::{
     http, Body, Client, Request,
 };
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
+use tokio::sync::watch::Receiver;
 use logger::{debug, trace};
 use resource::constants::{
     common::SECONDS_IN_MINUTE,
@@ -41,7 +42,7 @@ pub struct Reporter {
     diagnostics: Arc<Diagnostics>,
     data_directory: PathBuf,
     is_posthog_enabled: Arc<AtomicBool>,
-    _reporting_job: Arc<Mutex<Option<TokioIntervalRunner>>>,
+    background_tasks: TokioTaskSpawner,
 }
 
 impl Reporter {
@@ -50,13 +51,14 @@ impl Reporter {
         diagnostics: Arc<Diagnostics>,
         data_directory: PathBuf,
         is_enabled: bool,
+        background_tasks: TokioTaskSpawner,
     ) -> Self {
         Self {
             deployment_id,
             diagnostics,
             data_directory,
             is_posthog_enabled: Arc::new(AtomicBool::new(is_enabled)),
-            _reporting_job: Arc::new(Mutex::new(None)),
+            background_tasks,
         }
     }
 
@@ -73,7 +75,7 @@ impl Reporter {
         let is_posthog_enabled = self.is_posthog_enabled.clone();
         let diagnostics = self.diagnostics.clone();
 
-        let reporting_job = TokioIntervalRunner::new_with_initial_delay(
+        self.background_tasks.spawn_interval(
             move || {
                 let is_posthog_enabled = is_posthog_enabled.clone();
                 let diagnostics = diagnostics.clone();
@@ -81,11 +83,8 @@ impl Reporter {
                     Self::report(is_posthog_enabled, false, diagnostics).await;
                 }
             },
-            REPORT_INTERVAL,
-            self.calculate_initial_delay(),
-            true,
+            IntervalTaskParameters::new_with_delay(REPORT_INTERVAL, self.calculate_initial_delay(), true),
         );
-        *self._reporting_job.lock().expect("Expected reporting job exclusive lock acquisition") = Some(reporting_job);
     }
 
     fn report_once_if_needed(&self) {

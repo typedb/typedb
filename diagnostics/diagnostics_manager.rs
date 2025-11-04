@@ -5,7 +5,7 @@
  */
 
 use std::{collections::HashSet, hash::Hash, sync::Arc};
-
+use concurrency::TokioTaskSpawner;
 use resource::constants::database::INTERNAL_DATABASE_PREFIX;
 
 use crate::{
@@ -40,6 +40,7 @@ impl DiagnosticsManager {
         monitoring_port: u16,
         is_monitoring_enabled: bool,
         is_development_mode: bool,
+        background_tasks: TokioTaskSpawner,
     ) -> Self {
         let deployment_id = diagnostics.server_properties.deployment_id().to_owned();
         let data_directory = diagnostics.server_metrics.data_directory().clone();
@@ -49,7 +50,7 @@ impl DiagnosticsManager {
         let reporter = if is_development_mode {
             None
         } else {
-            Some(Reporter::new(deployment_id, diagnostics.clone(), data_directory, is_reporting_enabled))
+            Some(Reporter::new(deployment_id, diagnostics.clone(), data_directory, is_reporting_enabled, background_tasks))
         };
 
         let monitoring_server = if is_monitoring_enabled {

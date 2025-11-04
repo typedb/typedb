@@ -92,6 +92,7 @@ rust_library(
         "@crates//:tokio",
         "@crates//:tokio-rustls",
         "@crates//:tokio-stream",
+        "@crates//:tokio-util",
         "@crates//:tonic",
         "@crates//:tonic-types",
         "@crates//:tower",

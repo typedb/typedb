@@ -7,17 +7,14 @@
 use std::{fmt::Debug, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
-use concurrency::IntervalRunner;
+use concurrency::{IntervalRunner, TokioTaskSpawner};
 use database::{
-    database::DatabaseCreateError,
     database_manager::DatabaseManager,
-    transaction::{DataCommitError, SchemaCommitError, TransactionError, TransactionRead},
-    Database, DatabaseDeleteError,
+    transaction::{TransactionRead},
+    Database,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use error::typedb_error;
 use futures::{StreamExt, TryFutureExt};
-use ir::pipeline::FunctionReadError;
 use itertools::Itertools;
 use options::TransactionOptions;
 use resource::{
@@ -27,10 +24,9 @@ use storage::{
     durability_client::{DurabilityClient, WALClient},
     isolation_manager::CommitRecord,
 };
-use system::concepts::{Credential, User};
+use system::concepts::{User};
 use tokio::{net::lookup_host, sync::watch::Receiver};
 use user::{
-    errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError},
     permission_manager::PermissionManager,
     user_manager::UserManager,
 };
@@ -146,11 +142,12 @@ impl LocalServerState {
         server_id: String,
         deployment_id: Option<String>,
         shutdown_receiver: Receiver<()>,
+        background_tasks: TokioTaskSpawner,
     ) -> Result<Self, ServerOpenError> {
         let database_manager = DatabaseManager::new(&config.storage.data_directory)
             .map_err(|err| ServerOpenError::DatabaseOpen { typedb_source: err })?;
         let token_manager = Arc::new(
-            TokenManager::new(config.server.authentication.token_expiration)
+            TokenManager::new(config.server.authentication.token_expiration, background_tasks.clone())
                 .map_err(|err| ServerOpenError::TokenConfiguration { typedb_source: err })?,
         );
 
@@ -163,6 +160,7 @@ impl LocalServerState {
                 &config.diagnostics,
                 config.storage.data_directory.clone(),
                 config.development_mode.enabled,
+                background_tasks,
             )
             .await,
         );
@@ -233,6 +231,7 @@ impl LocalServerState {
         config: &DiagnosticsConfig,
         storage_directory: PathBuf,
         is_development_mode: bool,
+        background_tasks: TokioTaskSpawner,
     ) -> DiagnosticsManager {
         let diagnostics = Diagnostics::new(
             deployment_id,
@@ -247,6 +246,7 @@ impl LocalServerState {
             config.monitoring.port,
             config.monitoring.enabled,
             is_development_mode,
+            background_tasks,
         );
         diagnostics_manager.may_start_monitoring().await;
         diagnostics_manager.may_start_reporting().await;
