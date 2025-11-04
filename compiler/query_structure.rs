@@ -174,7 +174,7 @@ impl ParametrisedPipelineStructure {
         PipelineStructure { parametrised_structure: self, parameters, variable_names }
     }
 
-    pub fn must_have_been_satisfied_conjunctions(&self) -> Vec<QueryStructureConjunctionID> {
+    pub fn always_involved_blocks(&self) -> Vec<QueryStructureConjunctionID> {
         self.stages
             .iter()
             .filter_map(|stage| match stage {

@@ -60,7 +60,7 @@ use crate::service::{
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
     },
-    QueryType, TransactionType,
+    IncludeInvolvedBlocks, QueryType, TransactionType,
 };
 
 macro_rules! respond_error_and_return_break {
@@ -837,8 +837,7 @@ impl TransactionService {
             .as_ref()
             .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs, false))
             .transpose();
-        let always_taken_blocks =
-            pipeline_structure.map(|qs| qs.parametrised_structure.must_have_been_satisfied_conjunctions());
+        let include_involved_blocks = IncludeInvolvedBlocks::build(pipeline_structure.as_ref());
         let pipeline_structure_response = match encode_pipeline_structure_result {
             Ok(structure_opt) => structure_opt,
             Err(typedb_source) => {
@@ -868,8 +867,8 @@ impl TransactionService {
                 &type_manager,
                 &thing_manager,
                 query_options.include_instance_types,
+                &include_involved_blocks,
                 storage_counters.clone(),
-                always_taken_blocks.as_ref(),
             );
             match encoded_row {
                 Ok(encoded_row) => result.push(encoded_row),
@@ -1073,9 +1072,7 @@ impl TransactionService {
                 .pipeline_structure()
                 .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs, false))
                 .transpose();
-            let must_have_been_satisfied_conjunctions = pipeline
-                .pipeline_structure()
-                .map(|qs| qs.parametrised_structure.must_have_been_satisfied_conjunctions());
+            let include_involved_blocks = IncludeInvolvedBlocks::build(pipeline.pipeline_structure());
             let pipeline_structure_response = match encode_pipeline_structure_result {
                 Ok(structure_opt) => structure_opt,
                 Err(typedb_source) => {
@@ -1124,8 +1121,8 @@ impl TransactionService {
                     type_manager,
                     &thing_manager,
                     query_options.include_instance_types,
+                    &include_involved_blocks,
                     storage_counters.clone(),
-                    must_have_been_satisfied_conjunctions.as_ref(),
                 );
                 match encoded_row {
                     Ok(encoded_row) => result.push(encoded_row),
