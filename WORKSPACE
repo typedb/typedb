@@ -84,7 +84,7 @@ typedb_bazel_distribution()
 
 # Load @typedb_bazel_distribution_uploader
 load("@typedb_bazel_distribution//common/uploader:deps.bzl", "typedb_bazel_distribution_uploader")
-typedb_bazel_distribution_uploader("@" + python_toolchain_for_uploader + "_host//:python")
+typedb_bazel_distribution_uploader()
 load("@typedb_bazel_distribution_uploader//:requirements.bzl", install_uploader_deps = "install_deps")
 install_uploader_deps()
 
