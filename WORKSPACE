@@ -28,8 +28,8 @@ load("@typedb_dependencies//builder/python:deps.bzl", "rules_python")
 rules_python()
 load("@rules_python//python:repositories.bzl", "py_repositories", "python_register_toolchains")
 py_repositories()
-python_toolchain_for_uploader = "python_for_uploader"
-python_register_toolchains(name=python_toolchain_for_uploader, python_version="3.9", ignore_root_user_error = True)
+# Registering a toolchain makes pip_parse and python binaries use it instead of the system python
+python_register_toolchains(name="python39_for_uploader", python_version="3.9", ignore_root_user_error = True)
 
 # Load //builder/kotlin
 load("@typedb_dependencies//builder/kotlin:deps.bzl", "io_bazel_rules_kotlin")
@@ -84,7 +84,7 @@ typedb_bazel_distribution()
 
 # Load @typedb_bazel_distribution_uploader
 load("@typedb_bazel_distribution//common/uploader:deps.bzl", "typedb_bazel_distribution_uploader")
-typedb_bazel_distribution_uploader("@" + python_toolchain_for_uploader + "_host//:python")
+typedb_bazel_distribution_uploader()
 load("@typedb_bazel_distribution_uploader//:requirements.bzl", install_uploader_deps = "install_deps")
 install_uploader_deps()
 
