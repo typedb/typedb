@@ -123,7 +123,7 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "b220659baa0a3ec70b5298bd71a7fe66fec9348d"
+		rev = "170183b8c1fa2f4d61b11828b17f2a711e3c35f6"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 

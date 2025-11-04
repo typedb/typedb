@@ -287,7 +287,7 @@ fn query_structure_constraint(
             constraints.push(conjunction_proto::Constraint {
                 span,
                 constraint: Some(structure_constraint::Constraint::Isa(structure_constraint::Isa {
-                    thing: Some(encode_structure_vertex_variable(isa.thing())?),
+                    instance: Some(encode_structure_vertex_variable(isa.thing())?),
                     r#type: Some(encode_structure_vertex_label_or_variable(context, isa.type_())?),
                     exactness: encode_exactness(isa.isa_kind() == IsaKind::Exact) as i32,
                 })),
@@ -607,7 +607,7 @@ fn encode_conjunction_annotations(
         .map(|(variable_id, annotation)| {
             let encoded = match &annotation.annotations {
                 PipelineVariableAnnotation::Thing(types) => {
-                    conjunction_proto::variable_annotations::Annotations::Thing(
+                    conjunction_proto::variable_annotations::Annotations::Instance(
                         encode_types_to_concept_variable_annotations(snapshot, type_manager, types.iter())?,
                     )
                 }
@@ -679,7 +679,7 @@ fn encode_function_parameter_annotations(
     let annotations = match parameter {
         FunctionParameterAnnotation::Concept(types) => {
             let annotations = encode_types_to_concept_variable_annotations(snapshot, type_manager, types.iter())?;
-            conjunction_proto::variable_annotations::Annotations::Thing(annotations)
+            conjunction_proto::variable_annotations::Annotations::Instance(annotations)
         }
         FunctionParameterAnnotation::Value(value) => {
             conjunction_proto::variable_annotations::Annotations::ValueAnnotations(encode_value_type(
