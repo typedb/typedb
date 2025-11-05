@@ -835,7 +835,7 @@ impl TransactionService {
         let mut warning = None;
         let encode_pipeline_structure_result = pipeline_structure
             .as_ref()
-            .map(|qs| encode_analyzed_pipeline(&*snapshot, &type_manager, qs, &Vec::new(), false))
+            .map(|qs| encode_analyzed_pipeline(&*snapshot, &type_manager, qs, &Vec::new()))
             .transpose();
         let always_taken_blocks =
             pipeline_structure.map(|qs| qs.parametrised_structure.must_have_been_satisfied_conjunctions());
@@ -1071,7 +1071,7 @@ impl TransactionService {
 
             let encode_pipeline_structure_result = pipeline
                 .pipeline_structure()
-                .map(|qs| encode_analyzed_pipeline(&*snapshot, &type_manager, qs, &Vec::new(), false))
+                .map(|qs| encode_analyzed_pipeline(&*snapshot, &type_manager, qs, &Vec::new()))
                 .transpose();
             let must_have_been_satisfied_conjunctions = pipeline
                 .pipeline_structure()

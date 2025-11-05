@@ -12,8 +12,8 @@ use compiler::{
     annotation::type_inference::get_type_annotation_from_label,
     query_structure::{
         ConjunctionAnnotations, FunctionReturnStructure, ParametrisedPipelineStructure, PipelineStructure,
-        PipelineStructureAnnotations, QueryStructureConjunctionID, QueryStructureNestedPattern, QueryStructureStage,
-        StructureVariableId,
+        PipelineStructureAnnotations, QueryStructureConjunction, QueryStructureConjunctionID,
+        QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
     },
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
@@ -25,6 +25,7 @@ use ir::pattern::{
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, FromInto};
 use storage::snapshot::ReadableSnapshot;
+use typeql::common::Span;
 
 use crate::service::http::message::query::{
     annotations::{
@@ -35,7 +36,7 @@ use crate::service::http::message::query::{
 };
 
 struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
-    pipeline_structure: &'a PipelineStructure,
+    structure: &'a PipelineStructure,
     snapshot: &'a Snapshot,
     type_manager: &'a TypeManager,
     role_names: HashMap<Variable, String>,
@@ -45,23 +46,23 @@ struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
 impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
     pub fn get_parameter_value(&self, param: &ParameterID) -> Option<Value<'static>> {
         debug_assert!(matches!(param, ParameterID::Value(_, _)));
-        self.pipeline_structure.parameters.value(*param).cloned()
+        self.structure.parameters.value(*param).cloned()
     }
 
     pub fn get_parameter_iid(&self, param: &ParameterID) -> Option<&[u8]> {
-        self.pipeline_structure.parameters.iid(*param).map(|iid| iid.as_ref())
+        self.structure.parameters.iid(*param).map(|iid| iid.as_ref())
     }
 
     pub fn get_variable_name(&self, variable: &StructureVariableId) -> Option<String> {
-        self.pipeline_structure.variable_names.get(&variable).cloned()
+        self.structure.variable_names.get(&variable).cloned()
     }
 
     pub fn get_type(&self, label: &Label) -> Option<answer::Type> {
-        self.pipeline_structure.parametrised_structure.resolved_labels.get(label).cloned()
+        self.structure.parametrised_structure.resolved_labels.get(label).cloned()
     }
 
     fn get_call_syntax(&self, constraint: &Constraint<Variable>) -> Option<&String> {
-        self.pipeline_structure.parametrised_structure.calls_syntax.get(constraint)
+        self.structure.parametrised_structure.calls_syntax.get(constraint)
     }
 
     fn get_role_type(&self, variable: &Variable) -> Option<&str> {
@@ -84,13 +85,6 @@ pub struct AnalyzedFunctionResponse {
     pub(super) returns: FunctionReturnStructure,
     pub(super) argument_annotations: Vec<TypeAnnotationResponse>,
     pub(super) return_annotations: FunctionReturnAnnotationsResponse,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct QueryStructureResponse {
-    pub(super) query: AnalyzedPipelineResponse,
-    pub(super) preamble: Vec<AnalyzedFunctionResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -123,7 +117,8 @@ impl From<AnalyzedPipelineResponse> for PipelineStructureResponseForStudio {
         let AnalyzedPipelineResponse { variables, outputs, conjunctions, .. } = value;
         let blocks = conjunctions
             .into_iter()
-            .map(|conjunction| StructureBlockForStudio { constraints: conjunction.constraints })
+            .map(|conjunction| conjunction.constraints.into_iter().filter(|c| c.constraint.is_subpattern()).collect())
+            .map(|constraints| StructureBlockForStudio { constraints })
             .collect();
         PipelineStructureResponseForStudio { variables, outputs, blocks }
     }
@@ -245,12 +240,24 @@ struct StructureConstraintSpan {
     end: usize,
 }
 
+impl From<typeql::common::Span> for StructureConstraintSpan {
+    fn from(value: Span) -> Self {
+        StructureConstraintSpan { begin: value.begin_offset, end: value.end_offset }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct StructureConstraintWithSpan {
     text_span: Option<StructureConstraintSpan>,
     #[serde(flatten)]
     pub(super) constraint: StructureConstraint,
+}
+
+impl StructureConstraint {
+    pub(crate) fn is_subpattern(&self) -> bool {
+        matches!(self, Self::Or { .. } | Self::Not { .. } | Self::Try { .. })
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -266,76 +273,55 @@ pub(crate) fn encode_analyzed_pipeline(
     type_manager: &TypeManager,
     structure: &PipelineStructure,
     annotations: &PipelineStructureAnnotations,
-    include_nested_patterns: bool,
 ) -> Result<AnalyzedPipelineResponse, Box<ConceptReadError>> {
     let mut variables = HashMap::new();
     let ParametrisedPipelineStructure { stages, conjunctions, .. } = &*structure.parametrised_structure;
+    let role_names = conjunctions
+        .iter()
+        .flat_map(|c| c.constraints.iter())
+        .filter_map(|constraint| constraint.as_role_name())
+        .map(|rolename| (rolename.type_().as_variable().unwrap(), rolename.name().to_owned()))
+        .collect();
+    let mut context =
+        PipelineStructureContext { structure, snapshot, type_manager, role_names, variables: &mut variables };
     let encoded_conjunctions = conjunctions
         .iter()
         .zip(annotations.iter())
         .map(|(conj_structure, conj_annotations)| {
-            encode_analyzed_conjunction(
-                snapshot,
-                type_manager,
-                &structure,
-                &mut variables,
-                conj_structure.constraints.as_slice(),
-                if include_nested_patterns { conj_structure.nested.as_slice() } else { &[] },
-                conj_annotations,
-            )
+            encode_analyzed_conjunction(&mut context, conj_structure, conj_annotations)
         })
         .collect::<Result<Vec<_>, _>>()?;
     // Ensure reduced variables are added to variables
-    record_reducer_variables(snapshot, type_manager, structure, &mut variables);
+    record_reducer_variables(&mut context);
     let outputs = structure.parametrised_structure.output_variables.clone();
     Ok(AnalyzedPipelineResponse { conjunctions: encoded_conjunctions, outputs, variables, stages: stages.clone() })
 }
 
-fn record_reducer_variables(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    pipeline_structure: &PipelineStructure,
-    variables: &mut HashMap<StructureVariableId, StructureVariableInfo>,
-) {
-    let mut context =
-        PipelineStructureContext { pipeline_structure, snapshot, type_manager, role_names: HashMap::new(), variables };
-    pipeline_structure
-        .parametrised_structure
-        .stages
-        .iter()
-        .filter_map(|stage| match stage {
-            QueryStructureStage::Reduce { reducers, .. } => Some(reducers),
-            _ => None,
-        })
-        .for_each(|reducers| {
+fn record_reducer_variables<'a>(context: &mut PipelineStructureContext<'a, impl ReadableSnapshot>) {
+    context.structure.parametrised_structure.stages.iter().for_each(|stage| {
+        if let QueryStructureStage::Reduce { reducers, .. } = stage {
             reducers.iter().for_each(|reducer| context.record_variable(reducer.assigned));
-        });
+        }
+    });
 }
 
-fn encode_analyzed_conjunction(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    pipeline_structure: &PipelineStructure,
-    variables: &mut HashMap<StructureVariableId, StructureVariableInfo>,
-    constraints: &[Constraint<Variable>],
-    nested: &[QueryStructureNestedPattern],
+fn encode_analyzed_conjunction<'a>(
+    context: &mut PipelineStructureContext<'a, impl ReadableSnapshot>,
+    structure: &QueryStructureConjunction,
     annotations: &ConjunctionAnnotations,
 ) -> Result<AnalyzedConjunctionResponse, Box<ConceptReadError>> {
     let mut encoded_constraints = Vec::new();
-    let role_names = constraints
-        .iter()
-        .filter_map(|constraint| constraint.as_role_name())
-        .map(|rolename| (rolename.type_().as_variable().unwrap(), rolename.name().to_owned()))
-        .collect();
-    let mut context = PipelineStructureContext { pipeline_structure, snapshot, type_manager, role_names, variables };
-    constraints.iter().enumerate().try_for_each(|(index, constraint)| {
-        encode_structure_constraint(&mut context, constraint, &mut encoded_constraints, index)
+    structure.constraints.iter().enumerate().try_for_each(|(index, constraint)| {
+        encode_structure_constraint(context, constraint, &mut encoded_constraints, index)
     })?;
-    nested.iter().try_for_each(|nested| encode_structure_nested_pattern(nested, &mut encoded_constraints))?;
+    structure.nested.iter().try_for_each(|nested| encode_structure_nested_pattern(nested, &mut encoded_constraints))?;
     let variable_annotations = annotations
         .into_iter()
         .map(|(var_id, annotations)| {
-            Ok((var_id.clone(), encode_variable_type_annotations_and_modifiers(snapshot, type_manager, annotations)?))
+            Ok((
+                var_id.clone(),
+                encode_variable_type_annotations_and_modifiers(context.snapshot, context.type_manager, annotations)?,
+            ))
         })
         .collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
     let encoded_annotations = ConjunctionAnnotationsResponse { variable_annotations };
@@ -348,85 +334,103 @@ fn encode_structure_constraint(
     constraints: &mut Vec<StructureConstraintWithSpan>,
     index: usize,
 ) -> Result<(), Box<ConceptReadError>> {
-    let span =
-        constraint.source_span().map(|span| StructureConstraintSpan { begin: span.begin_offset, end: span.end_offset });
+    let text_span = constraint.source_span().map(Into::into);
+    let mut push = |constraint: StructureConstraint| {
+        constraints.push(StructureConstraintWithSpan { text_span, constraint });
+    };
     match constraint {
-        Constraint::Links(links) => {
-            constraints.push(StructureConstraintWithSpan {
-                text_span: span,
-                constraint: StructureConstraint::Links {
-                    relation: encode_structure_vertex(context, links.relation())?,
-                    player: encode_structure_vertex(context, links.player())?,
-                    role: encode_role_type_as_vertex(context, links.role_type())?,
-                },
-            });
-        }
-        Constraint::Has(has) => {
-            constraints.push(StructureConstraintWithSpan {
-                text_span: span,
-                constraint: StructureConstraint::Has {
-                    owner: encode_structure_vertex(context, has.owner())?,
-                    attribute: encode_structure_vertex(context, has.attribute())?,
-                },
-            });
-        }
-
+        Constraint::Links(links) => push(StructureConstraint::Links {
+            relation: encode_structure_vertex(context, links.relation())?,
+            player: encode_structure_vertex(context, links.player())?,
+            role: encode_role_type_as_vertex(context, links.role_type())?,
+        }),
+        Constraint::Has(has) => push(StructureConstraint::Has {
+            owner: encode_structure_vertex(context, has.owner())?,
+            attribute: encode_structure_vertex(context, has.attribute())?,
+        }),
         Constraint::Isa(isa) => {
             let instance = encode_structure_vertex(context, isa.thing())?;
             let r#type = encode_structure_vertex(context, isa.type_())?;
-            constraints.push(StructureConstraintWithSpan {
-                text_span: span,
-                constraint: match isa.isa_kind() {
-                    IsaKind::Exact => StructureConstraint::IsaExact { instance, r#type },
-                    IsaKind::Subtype => StructureConstraint::Isa { instance, r#type },
-                },
+            push(match isa.isa_kind() {
+                IsaKind::Exact => StructureConstraint::IsaExact { instance, r#type },
+                IsaKind::Subtype => StructureConstraint::Isa { instance, r#type },
             })
         }
         Constraint::Sub(sub) => {
             let subtype = encode_structure_vertex(context, sub.subtype())?;
             let supertype = encode_structure_vertex(context, sub.supertype())?;
-            constraints.push(StructureConstraintWithSpan {
-                text_span: span,
-                constraint: match sub.sub_kind() {
-                    SubKind::Exact => StructureConstraint::SubExact { subtype, supertype },
-                    SubKind::Subtype => StructureConstraint::Sub { subtype, supertype },
-                },
+            push(match sub.sub_kind() {
+                SubKind::Exact => StructureConstraint::SubExact { subtype, supertype },
+                SubKind::Subtype => StructureConstraint::Sub { subtype, supertype },
             })
         }
-        Constraint::Owns(owns) => constraints.push(StructureConstraintWithSpan {
-            text_span: span,
-            constraint: StructureConstraint::Owns {
-                owner: encode_structure_vertex(context, owns.owner())?,
-                attribute: encode_structure_vertex(context, owns.attribute())?,
-            },
+        Constraint::Owns(owns) => push(StructureConstraint::Owns {
+            owner: encode_structure_vertex(context, owns.owner())?,
+            attribute: encode_structure_vertex(context, owns.attribute())?,
         }),
-        Constraint::Relates(relates) => {
-            constraints.push(StructureConstraintWithSpan {
-                text_span: span,
-                constraint: StructureConstraint::Relates {
-                    relation: encode_structure_vertex(context, relates.relation())?,
-                    role: encode_role_type_as_vertex(context, relates.role_type())?,
-                },
-            });
-        }
+        Constraint::Relates(relates) => push(StructureConstraint::Relates {
+            relation: encode_structure_vertex(context, relates.relation())?,
+            role: encode_role_type_as_vertex(context, relates.role_type())?,
+        }),
         Constraint::Plays(plays) => {
-            constraints.push(StructureConstraintWithSpan {
-                text_span: span,
-                constraint: StructureConstraint::Plays {
-                    player: encode_structure_vertex(context, plays.player())?,
-                    role: encode_structure_vertex(context, plays.role_type())?, // Doesn't have to be encode_role_type
-                },
-            });
+            push(StructureConstraint::Plays {
+                player: encode_structure_vertex(context, plays.player())?,
+                role: encode_structure_vertex(context, plays.role_type())?, // Doesn't have to be encode_role_type
+            })
         }
+        Constraint::ExpressionBinding(expr) => push({
+            let text =
+                context.get_call_syntax(constraint).map_or_else(|| format!("Expression#{index}"), |text| text.clone());
+            let assigned = encode_structure_vertex(context, expr.left())?;
+            let arguments = encode_structure_vertices(context, expr.expression_ids())?;
+            StructureConstraint::Expression { text, assigned, arguments }
+        }),
+        Constraint::FunctionCallBinding(function_call) => push({
+            let text =
+                context.get_call_syntax(constraint).map_or_else(|| format!("Function#{index}"), |text| text.clone());
+            let assigned = encode_structure_vertices(context, function_call.ids_assigned())?;
+            let arguments = encode_structure_vertices(context, function_call.function_call().argument_ids())?;
+
+            StructureConstraint::FunctionCall { name: text, assigned, arguments }
+        }),
+        Constraint::Is(is) => push({
+            StructureConstraint::Is {
+                lhs: encode_structure_vertex(context, is.lhs())?,
+                rhs: encode_structure_vertex(context, is.rhs())?,
+            }
+        }),
+        Constraint::Iid(iid) => push({
+            let concept = encode_structure_vertex(context, iid.var())?;
+            let iid_bytes = context.get_parameter_iid(iid.iid().as_parameter().as_ref().unwrap()).unwrap();
+            let iid = HexBytesFormatter::borrowed(iid_bytes).format_iid();
+            StructureConstraint::Iid { concept, iid }
+        }),
+        Constraint::Comparison(comparison) => push(StructureConstraint::Comparison {
+            lhs: encode_structure_vertex(context, comparison.lhs())?,
+            rhs: encode_structure_vertex(context, comparison.rhs())?,
+            comparator: comparison.comparator().name().to_owned(),
+        }),
+        Constraint::Kind(kind) => push(StructureConstraint::Kind {
+            kind: kind.kind().name().to_owned(),
+            r#type: encode_structure_vertex(context, kind.type_())?,
+        }),
+        Constraint::Label(label) => push(StructureConstraint::Label {
+            r#type: encode_structure_vertex(context, label.type_())?,
+            label: label
+                .type_label()
+                .as_label()
+                .expect("Expected constant label in label constraint")
+                .scoped_name()
+                .as_str()
+                .to_owned(),
+        }),
+        Constraint::Value(value) => push(StructureConstraint::Value {
+            attribute_type: encode_structure_vertex(context, value.attribute_type())?,
+            value_type: value.value_type().to_string(),
+        }),
         Constraint::IndexedRelation(indexed) => {
-            let span_1 = indexed
-                .source_span_1()
-                .map(|span| StructureConstraintSpan { begin: span.begin_offset, end: span.end_offset });
-            let span_2 = indexed
-                .source_span_2()
-                .map(|span| StructureConstraintSpan { begin: span.begin_offset, end: span.end_offset });
             constraints.push(StructureConstraintWithSpan {
-                text_span: span_1,
+                text_span: indexed.source_span_1().map(Into::into),
                 constraint: StructureConstraint::Links {
                     relation: encode_structure_vertex(context, indexed.relation())?,
                     player: encode_structure_vertex(context, indexed.player_1())?,
@@ -434,7 +438,7 @@ fn encode_structure_constraint(
                 },
             });
             constraints.push(StructureConstraintWithSpan {
-                text_span: span_2,
+                text_span: indexed.source_span_2().map(Into::into),
                 constraint: StructureConstraint::Links {
                     relation: encode_structure_vertex(context, indexed.relation())?,
                     player: encode_structure_vertex(context, indexed.player_2())?,
@@ -442,91 +446,6 @@ fn encode_structure_constraint(
                 },
             });
         }
-        Constraint::ExpressionBinding(expr) => {
-            let text =
-                context.get_call_syntax(constraint).map_or_else(|| format!("Expression#{index}"), |text| text.clone());
-            let assigned = encode_structure_vertex(context, expr.left())?;
-            let arguments = expr
-                .expression_ids()
-                .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
-                .collect::<Result<Vec<_>, _>>()?;
-            constraints.push(StructureConstraintWithSpan {
-                text_span: span,
-                constraint: StructureConstraint::Expression { text, assigned, arguments },
-            });
-        }
-        Constraint::FunctionCallBinding(function_call) => {
-            let text =
-                context.get_call_syntax(constraint).map_or_else(|| format!("Function#{index}"), |text| text.clone());
-            let assigned = function_call
-                .ids_assigned()
-                .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
-                .collect::<Result<Vec<_>, _>>()?;
-            let arguments = function_call
-                .function_call()
-                .argument_ids()
-                .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
-                .collect::<Result<Vec<_>, _>>()?;
-            constraints.push(StructureConstraintWithSpan {
-                text_span: span,
-                constraint: StructureConstraint::FunctionCall { name: text, assigned, arguments },
-            });
-        }
-        Constraint::Is(is) => {
-            constraints.push(StructureConstraintWithSpan {
-                text_span: span,
-                constraint: StructureConstraint::Is {
-                    lhs: encode_structure_vertex(context, is.lhs())?,
-                    rhs: encode_structure_vertex(context, is.rhs())?,
-                },
-            });
-        }
-        Constraint::Iid(iid) => {
-            let iid_bytes = context.get_parameter_iid(iid.iid().as_parameter().as_ref().unwrap()).unwrap();
-            let iid_hex = HexBytesFormatter::borrowed(iid_bytes).format_iid();
-            constraints.push(StructureConstraintWithSpan {
-                text_span: span,
-                constraint: StructureConstraint::Iid {
-                    concept: encode_structure_vertex(context, iid.var())?,
-                    iid: iid_hex,
-                },
-            });
-        }
-        Constraint::Comparison(comparison) => constraints.push(StructureConstraintWithSpan {
-            text_span: span,
-            constraint: StructureConstraint::Comparison {
-                lhs: encode_structure_vertex(context, comparison.lhs())?,
-                rhs: encode_structure_vertex(context, comparison.rhs())?,
-                comparator: comparison.comparator().name().to_owned(),
-            },
-        }),
-        Constraint::Kind(kind) => constraints.push(StructureConstraintWithSpan {
-            text_span: span,
-            constraint: StructureConstraint::Kind {
-                kind: kind.kind().name().to_owned(),
-                r#type: encode_structure_vertex(context, kind.type_())?,
-            },
-        }),
-        Constraint::Label(label) => constraints.push(StructureConstraintWithSpan {
-            text_span: span,
-            constraint: StructureConstraint::Label {
-                r#type: encode_structure_vertex(context, label.type_())?,
-                label: label
-                    .type_label()
-                    .as_label()
-                    .expect("Expected constant label in label constraint")
-                    .scoped_name()
-                    .as_str()
-                    .to_owned(),
-            },
-        }),
-        Constraint::Value(value) => constraints.push(StructureConstraintWithSpan {
-            text_span: span,
-            constraint: StructureConstraint::Value {
-                attribute_type: encode_structure_vertex(context, value.attribute_type())?,
-                value_type: value.value_type().to_string(),
-            },
-        }),
         // Constraints that probably don't need to be handled
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
         // Optimisations don't represent the structure
@@ -548,6 +467,13 @@ fn encode_structure_nested_pattern(
     Ok(())
 }
 
+fn encode_structure_vertices(
+    context: &mut PipelineStructureContext<'_, impl ReadableSnapshot>,
+    vertices: impl Iterator<Item = impl Into<Vertex<Variable>>>,
+) -> Result<Vec<StructureVertex>, Box<ConceptReadError>> {
+    vertices.map(|v| encode_structure_vertex(context, &v.into())).collect()
+}
+
 fn encode_structure_vertex(
     context: &mut PipelineStructureContext<'_, impl ReadableSnapshot>,
     vertex: &Vertex<Variable>,
@@ -558,18 +484,16 @@ fn encode_structure_vertex(
             StructureVertex::Variable { id: variable.into() }
         }
         Vertex::Label(label) => {
-            if let Some(type_) = context.get_type(label) {
-                let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
-                StructureVertex::Label { r#type }
+            let r#type = if let Some(type_) = context.get_type(label) {
+                encode_type_concept(&type_, context.snapshot, context.type_manager)?
             } else if let Some(type_) = get_type_annotation_from_label(context.snapshot, context.type_manager, label)? {
-                let r#type = encode_type_concept(&type_, context.snapshot, context.type_manager)?;
-                StructureVertex::Label { r#type }
+                encode_type_concept(&type_, context.snapshot, context.type_manager)?
             } else {
                 debug_assert!(false, "This should be unreachable, but we don't want crashes");
                 let label = format!("ERROR_UNRESOLVED:{}", label.scoped_name.as_str());
-                let r#type = serde_json::json!(EntityTypeResponse { label });
-                StructureVertex::Label { r#type }
-            }
+                serde_json::json!(EntityTypeResponse { label })
+            };
+            StructureVertex::Label { r#type }
         }
         Vertex::Parameter(param) => {
             let value = context.get_parameter_value(param).unwrap();

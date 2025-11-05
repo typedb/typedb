@@ -179,7 +179,7 @@ pub fn encode_analyzed_query(
         .zip(annotations.preamble.into_iter())
         .map(|(structure, annotations)| encode_analyzed_function(snapshot, type_manager, structure, annotations))
         .collect::<Result<Vec<_>, _>>()?;
-    let query = encode_analyzed_pipeline(snapshot, type_manager, &structure.query, &annotations.query, true)?;
+    let query = encode_analyzed_pipeline(snapshot, type_manager, &structure.query, &annotations.query)?;
     let fetch = annotations
         .fetch
         .map(|fetch| {

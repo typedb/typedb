@@ -180,7 +180,7 @@ pub(super) fn encode_analyzed_function(
 ) -> Result<AnalyzedFunctionResponse, Box<ConceptReadError>> {
     let arguments = structure.arguments;
     let returns = structure.return_;
-    let body = encode_analyzed_pipeline(snapshot, type_manager, &structure.body, &annotations.body, true)?;
+    let body = encode_analyzed_pipeline(snapshot, type_manager, &structure.body, &annotations.body)?;
     let argument_annotations = annotations
         .signature
         .arguments
@@ -208,8 +208,8 @@ pub(super) fn encode_analyzed_fetch(
     fetch_structure_annotations
         .into_iter()
         .map(|(key, object)| {
-            encode_fetch_object_structure_annotations(snapshot, type_manager, object)
-                .map(|value| FetchStructureFieldAnnotationsResponse { key, value })
+            let value = encode_fetch_object_structure_annotations(snapshot, type_manager, object)?;
+            Ok(FetchStructureFieldAnnotationsResponse { key, value })
         })
         .collect::<Result<Vec<_>, _>>()
 }
