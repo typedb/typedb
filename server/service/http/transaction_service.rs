@@ -54,9 +54,8 @@ use uuid::Uuid;
 use crate::service::{
     http::message::{
         analyze::{
-            encode_analyzed_query,
-            structure::{encode_analyzed_pipeline, AnalyzedPipelineResponse},
-            AnalysedQueryResponse,
+            encode_analyzed_pipeline_for_studio, encode_analyzed_query, structure::AnalyzedPipelineResponse,
+            AnalysedQueryResponse, PipelineStructureResponseForStudio,
         },
         query::{document::encode_document, row::encode_row},
     },
@@ -171,7 +170,9 @@ pub(crate) enum TransactionServiceResponse {
 #[derive(Debug)]
 pub(crate) enum QueryAnswer {
     ResOk(QueryType),
-    ResRows((QueryType, Vec<serde_json::Value>, Option<AnalyzedPipelineResponse>, Option<QueryAnswerWarning>)),
+    ResRows(
+        (QueryType, Vec<serde_json::Value>, Option<PipelineStructureResponseForStudio>, Option<QueryAnswerWarning>),
+    ),
     ResDocuments((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
 }
 
@@ -838,7 +839,7 @@ impl TransactionService {
         let mut warning = None;
         let encode_pipeline_structure_result = pipeline_structure
             .as_ref()
-            .map(|qs| encode_analyzed_pipeline(&*snapshot, &type_manager, qs, &Vec::new()))
+            .map(|qs| encode_analyzed_pipeline_for_studio(&*snapshot, &type_manager, qs))
             .transpose();
         let always_taken_blocks =
             pipeline_structure.map(|qs| qs.parametrised_structure.must_have_been_satisfied_conjunctions());
@@ -1074,7 +1075,7 @@ impl TransactionService {
 
             let encode_pipeline_structure_result = pipeline
                 .pipeline_structure()
-                .map(|qs| encode_analyzed_pipeline(&*snapshot, &type_manager, qs, &Vec::new()))
+                .map(|qs| encode_analyzed_pipeline_for_studio(&*snapshot, &type_manager, qs))
                 .transpose();
             let must_have_been_satisfied_conjunctions = pipeline
                 .pipeline_structure()

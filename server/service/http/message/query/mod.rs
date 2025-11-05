@@ -13,11 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::service::{
     http::{
-        message::{
-            analyze::{structure::AnalyzedPipelineResponse, PipelineStructureResponseForStudio},
-            body::JsonBody,
-            transaction::TransactionOpenPayload,
-        },
+        message::{analyze::PipelineStructureResponseForStudio, body::JsonBody, transaction::TransactionOpenPayload},
         transaction_service::QueryAnswer,
     },
     AnswerType, QueryType,
@@ -88,14 +84,14 @@ pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerRespon
 pub(crate) fn encode_query_rows_answer(
     query_type: QueryType,
     rows: Vec<serde_json::Value>,
-    pipeline_structure: Option<AnalyzedPipelineResponse>,
+    pipeline_structure: Option<PipelineStructureResponseForStudio>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
     QueryAnswerResponse {
         answer_type: AnswerType::ConceptRows,
         query_type,
         answers: Some(rows),
-        query: pipeline_structure.map(|structure| structure.into()),
+        query: pipeline_structure,
         warning,
     }
 }

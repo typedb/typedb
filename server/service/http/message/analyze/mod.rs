@@ -4,18 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use ::concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use annotations::{encode_analyzed_fetch, encode_analyzed_function, FetchStructureAnnotationsResponse};
 use axum::response::{IntoResponse, Response};
-use compiler::query_structure::StructureVariableId;
+use compiler::query_structure::{PipelineStructure, StructureVariableId};
 use http::StatusCode;
 use query::analyse::AnalysedQuery;
 use serde::{Deserialize, Serialize};
 use storage::snapshot::ReadableSnapshot;
 use structure::{encode_analyzed_pipeline, AnalyzedFunctionResponse, AnalyzedPipelineResponse};
-use tracing::Value;
 
 use crate::service::http::message::{
     analyze::structure::{
@@ -70,6 +69,24 @@ pub fn encode_analyzed_query(
 }
 
 // Backwards compatibility
+pub fn encode_analyzed_pipeline_for_studio(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    structure: &PipelineStructure,
+) -> Result<PipelineStructureResponseForStudio, Box<ConceptReadError>> {
+    let dummy_annotations = vec![BTreeMap::new(); structure.parametrised_structure.conjunctions.len()];
+    encode_analyzed_pipeline(snapshot, type_manager, structure, &dummy_annotations)
+        .map(|analyzed| PipelineStructureResponseForStudio::from(analyzed))
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PipelineStructureResponseForStudio {
+    blocks: Vec<StructureBlockForStudio>,
+    variables: HashMap<StructureVariableId, StructureVariableInfo>,
+    outputs: Vec<StructureVariableId>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct StructureBlockForStudio {
@@ -85,27 +102,7 @@ struct StructureConstraintWithSpanForStudio {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PipelineStructureResponseForStudio {
-    blocks: Vec<StructureBlockForStudio>,
-    variables: HashMap<StructureVariableId, StructureVariableInfo>,
-    outputs: Vec<StructureVariableId>,
-}
-
-impl From<AnalyzedPipelineResponse> for PipelineStructureResponseForStudio {
-    fn from(value: AnalyzedPipelineResponse) -> Self {
-        let AnalyzedPipelineResponse { variables, outputs, conjunctions, .. } = value;
-        let blocks = conjunctions
-            .into_iter()
-            .map(|conjunction| conjunction.constraints.into_iter().filter_map(|c| c.try_into().ok()).collect())
-            .map(|constraints| StructureBlockForStudio { constraints })
-            .collect();
-        PipelineStructureResponseForStudio { variables, outputs, blocks }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", tag = "tag")]
 pub enum StructureConstraintForStudio {
     Normal(StructureConstraint),
     Expression {
@@ -118,6 +115,18 @@ pub enum StructureConstraintForStudio {
         player: StructureVertex,
         role: StructureVertex, // Is a NamedRole in analyze, but Label here
     },
+}
+
+impl From<AnalyzedPipelineResponse> for PipelineStructureResponseForStudio {
+    fn from(value: AnalyzedPipelineResponse) -> Self {
+        let AnalyzedPipelineResponse { variables, outputs, conjunctions, .. } = value;
+        let blocks = conjunctions
+            .into_iter()
+            .map(|conjunction| conjunction.constraints.into_iter().filter_map(|c| c.try_into().ok()).collect())
+            .map(|constraints| StructureBlockForStudio { constraints })
+            .collect();
+        PipelineStructureResponseForStudio { variables, outputs, blocks }
+    }
 }
 
 impl TryFrom<StructureConstraintWithSpan> for StructureConstraintWithSpanForStudio {
