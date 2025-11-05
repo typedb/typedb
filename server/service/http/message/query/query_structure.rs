@@ -195,7 +195,7 @@ pub(super) enum StructureConstraint {
     Expression {
         text: String,
         #[serde_as(as = "FromInto<Singleton<StructureVertex>>")]
-        assigned: StructureVertex, // TODO: Serialize as is. Breaking change.
+        assigned: StructureVertex, // TODO: Serialize as is. Breaking change
         arguments: Vec<StructureVertex>,
     },
     Is {
