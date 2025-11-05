@@ -27,12 +27,12 @@ use serde_with::{serde_as, FromInto};
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
-use crate::service::http::message::query::{
-    annotations::{
-        encode_variable_type_annotations_and_modifiers, ConjunctionAnnotationsResponse,
-        FunctionReturnAnnotationsResponse, TypeAnnotationResponse,
-    },
-    concept::{encode_type_concept, encode_value, EntityTypeResponse, RoleTypeResponse, ValueResponse},
+use super::annotations::{
+    encode_variable_type_annotations_and_modifiers, ConjunctionAnnotationsResponse, FunctionReturnAnnotationsResponse,
+    TypeAnnotationResponse,
+};
+use crate::service::http::message::query::concept::{
+    encode_type_concept, encode_value, EntityTypeResponse, RoleTypeResponse, ValueResponse,
 };
 
 struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
@@ -80,18 +80,18 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalyzedFunctionResponse {
-    pub(super) body: AnalyzedPipelineResponse,
-    pub(super) arguments: Vec<StructureVariableId>,
-    pub(super) returns: FunctionReturnStructure,
-    pub(super) argument_annotations: Vec<TypeAnnotationResponse>,
-    pub(super) return_annotations: FunctionReturnAnnotationsResponse,
+    pub body: AnalyzedPipelineResponse,
+    pub arguments: Vec<StructureVariableId>,
+    pub returns: FunctionReturnStructure,
+    pub argument_annotations: Vec<TypeAnnotationResponse>,
+    pub return_annotations: FunctionReturnAnnotationsResponse,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalyzedPipelineResponse {
-    pub(super) conjunctions: Vec<AnalyzedConjunctionResponse>,
-    pub(super) stages: Vec<QueryStructureStage>,
+    pub conjunctions: Vec<AnalyzedConjunctionResponse>,
+    pub stages: Vec<QueryStructureStage>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
     outputs: Vec<StructureVariableId>,
 }
@@ -99,14 +99,14 @@ pub struct AnalyzedPipelineResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalyzedConjunctionResponse {
-    pub(super) constraints: Vec<StructureConstraintWithSpan>,
-    pub(super) annotations: ConjunctionAnnotationsResponse,
+    pub constraints: Vec<StructureConstraintWithSpan>,
+    pub annotations: ConjunctionAnnotationsResponse,
 }
 
 // Kept for backwards compatibility
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct PipelineStructureResponseForStudio {
+pub struct PipelineStructureResponseForStudio {
     blocks: Vec<StructureBlockForStudio>,
     variables: HashMap<StructureVariableId, StructureVariableInfo>,
     outputs: Vec<StructureVariableId>,
@@ -139,7 +139,7 @@ pub struct StructureVariableInfo {
 #[serde_as]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-pub(super) enum StructureConstraint {
+pub enum StructureConstraint {
     Isa {
         instance: StructureVertex,
         r#type: StructureVertex,
@@ -248,14 +248,14 @@ impl From<typeql::common::Span> for StructureConstraintSpan {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct StructureConstraintWithSpan {
+pub struct StructureConstraintWithSpan {
     text_span: Option<StructureConstraintSpan>,
     #[serde(flatten)]
-    pub(super) constraint: StructureConstraint,
+    pub constraint: StructureConstraint,
 }
 
 impl StructureConstraint {
-    pub(crate) fn is_subpattern(&self) -> bool {
+    pub fn is_subpattern(&self) -> bool {
         matches!(self, Self::Or { .. } | Self::Not { .. } | Self::Try { .. })
     }
 }
@@ -268,7 +268,7 @@ enum StructureVertex {
     Value(ValueResponse),
 }
 
-pub(crate) fn encode_analyzed_pipeline(
+pub fn encode_analyzed_pipeline(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     structure: &PipelineStructure,
@@ -540,13 +540,13 @@ pub mod bdd {
     use itertools::Itertools;
     use serde_json::Value;
 
-    use crate::service::http::message::query::{
+    use crate::service::http::message::analyze::{
         bdd::{
             functor_macros,
             functor_macros::{encode_functor_impl, impl_functor_for, impl_functor_for_impl, impl_functor_for_multi},
             FunctorContext, FunctorEncoded,
         },
-        query_structure::{
+        structure::{
             AnalyzedFunctionResponse, AnalyzedPipelineResponse, StructureConstraint, StructureConstraintWithSpan,
             StructureVertex,
         },

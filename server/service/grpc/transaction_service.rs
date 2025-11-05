@@ -61,11 +61,11 @@ use uuid::Uuid;
 
 use crate::service::{
     grpc::{
+        analyze::encode_analyzed_query,
         diagnostics::run_with_diagnostics_async,
         document::encode_document,
         error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
         options::{query_options_from_proto, transaction_options_from_proto},
-        query_structure::encode_analyzed_query,
         response_builders::transaction::{
             query_initial_res_from_error, query_initial_res_from_query_res_ok,
             query_initial_res_ok_from_query_res_ok_ok, query_res_ok_concept_document_stream,

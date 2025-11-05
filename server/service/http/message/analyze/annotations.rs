@@ -18,17 +18,15 @@ use query::analyse::{FetchStructureAnnotations, FetchStructureAnnotationsFields,
 use serde::{Deserialize, Serialize};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::service::http::message::query::{
-    concept::{
-        encode_attribute_type, encode_entity_type, encode_relation_type, encode_role_type, encode_value_type,
-        AttributeTypeResponse, EntityTypeResponse, RelationTypeResponse, RoleTypeResponse,
-    },
-    query_structure::{encode_analyzed_pipeline, AnalyzedFunctionResponse},
+use super::structure::{encode_analyzed_pipeline, AnalyzedFunctionResponse};
+use crate::service::http::message::query::concept::{
+    encode_attribute_type, encode_entity_type, encode_relation_type, encode_role_type, encode_value_type,
+    AttributeTypeResponse, EntityTypeResponse, RelationTypeResponse, RoleTypeResponse,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", untagged)]
-pub(super) enum SingleTypeAnnotationResponse {
+pub enum SingleTypeAnnotationResponse {
     Entity(EntityTypeResponse),
     Relation(RelationTypeResponse),
     Attribute(AttributeTypeResponse),
@@ -48,7 +46,7 @@ impl SingleTypeAnnotationResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct VariableAnnotationsResponse {
+pub struct VariableAnnotationsResponse {
     is_optional: bool,
     #[serde(flatten)]
     annotations: TypeAnnotationResponse,
@@ -56,7 +54,7 @@ pub(super) struct VariableAnnotationsResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-pub(super) enum TypeAnnotationResponse {
+pub enum TypeAnnotationResponse {
     Thing {
         annotations: Vec<SingleTypeAnnotationResponse>,
     },
@@ -71,13 +69,13 @@ pub(super) enum TypeAnnotationResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct ConjunctionAnnotationsResponse {
-    pub(super) variable_annotations: HashMap<StructureVariableId, VariableAnnotationsResponse>,
+pub struct ConjunctionAnnotationsResponse {
+    pub variable_annotations: HashMap<StructureVariableId, VariableAnnotationsResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-pub(super) enum FunctionReturnAnnotationsResponse {
+pub enum FunctionReturnAnnotationsResponse {
     Single { annotations: Vec<TypeAnnotationResponse> },
     Stream { annotations: Vec<TypeAnnotationResponse> },
 }
@@ -121,7 +119,7 @@ fn encode_function_parameter_annotations(
     })
 }
 
-pub(super) fn encode_variable_type_annotations_and_modifiers(
+pub fn encode_variable_type_annotations_and_modifiers(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     annotations_modifiers: &PipelineVariableAnnotationAndModifier,
@@ -172,7 +170,7 @@ fn encode_type_annotation(
     }
 }
 
-pub(super) fn encode_analyzed_function(
+pub fn encode_analyzed_function(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     structure: FunctionStructure,
@@ -200,7 +198,7 @@ pub(super) fn encode_analyzed_function(
     Ok(AnalyzedFunctionResponse { arguments, returns, body, argument_annotations, return_annotations })
 }
 
-pub(super) fn encode_analyzed_fetch(
+pub fn encode_analyzed_fetch(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     fetch_structure_annotations: FetchStructureAnnotationsFields,
@@ -248,16 +246,16 @@ pub mod bdd {
     use itertools::Itertools;
 
     use super::{FetchStructureAnnotationsResponse, FunctionReturnAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse, ConjunctionAnnotationsResponse, VariableAnnotationsResponse};
-    use crate::service::http::message::query::{
+    use crate::service::http::message::analyze::{
         bdd::{
             functor_macros,
             functor_macros::{encode_functor_impl, impl_functor_for, impl_functor_for_multi},
             FunctorContext, FunctorEncoded,
         },
-        query_structure::StructureConstraint,
+        structure::StructureConstraint,
         AnalysedQueryResponse,
     };
-    use crate::service::http::message::query::query_structure::{AnalyzedFunctionResponse, AnalyzedPipelineResponse};
+    use crate::service::http::message::analyze::structure::{AnalyzedFunctionResponse, AnalyzedPipelineResponse};
 
     pub fn encode_pipeline_annotations_as_functor(pipeline: &AnalyzedPipelineResponse) -> String {
         PipelineAnnotationsToEncode.encode_as_functor(&FunctorContext { pipeline })

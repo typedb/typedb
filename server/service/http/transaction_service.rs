@@ -51,11 +51,14 @@ use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
-use super::message::query::query_structure::encode_analyzed_pipeline;
 use crate::service::{
-    http::message::query::{
-        document::encode_document, encode_analyzed_query, query_structure::AnalyzedPipelineResponse, row::encode_row,
-        AnalysedQueryResponse,
+    http::message::{
+        analyze::{
+            encode_analyzed_query,
+            structure::{encode_analyzed_pipeline, AnalyzedPipelineResponse},
+            AnalysedQueryResponse,
+        },
+        query::{document::encode_document, row::encode_row},
     },
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,

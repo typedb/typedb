@@ -35,10 +35,11 @@ use crate::{
             diagnostics::{run_with_diagnostics, run_with_diagnostics_async},
             error::HttpServiceError,
             message::{
+                analyze::AnalysedQueryResponse,
                 authentication::{encode_token, SigninPayload},
                 body::{JsonBody, PlainTextBody},
                 database::{encode_database, encode_databases, DatabasePath},
-                query::{AnalysedQueryResponse, QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
+                query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},
                 user::{encode_user, encode_users, CreateUserPayload, UpdateUserPayload, UserPath},
                 version::{encode_server_version, ProtocolVersion, PROTOCOL_VERSION_LATEST},
