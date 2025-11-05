@@ -474,7 +474,7 @@ impl From<Variable> for StructureVariableId {
 #[serde(rename_all = "camelCase")]
 pub struct StructureSortVariable {
     pub variable: StructureVariableId,
-    pub ascending: bool,
+    pub ascending: bool, // TODO: Do we want to encode this as tag: Ascending | Descending?
 }
 
 impl From<&SortVariable> for StructureSortVariable {

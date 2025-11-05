@@ -208,7 +208,7 @@ pub mod bdd {
 
     pub mod functor_macros {
         macro_rules! encode_args {
-        ($context:ident, { $( $arg:ident, )* } )   => {
+        ($context:expr, { $( $arg:expr, )* } )   => {
             {
                 let arr: Vec<&dyn FunctorEncoded> = vec![ $($arg,)* ];
                 arr.into_iter().map(|s| s.encode_as_functor($context)).join(", ")
@@ -216,10 +216,10 @@ pub mod bdd {
         }
     }
         macro_rules! encode_functor_impl {
-        ($context:ident, $func:ident $args:tt) => {
+        ($context:expr, $func:ident $args:tt) => {
             std::format!("{}({})", std::stringify!($func), functor_macros::encode_args!($context, $args))
         };
-        ($context:ident, ( $( $arg:ident, )* ) ) => {
+        ($context:expr, ( $( $arg:ident, )* ) ) => {
             functor_macros::encode_args!($context, { $( $arg, )* } )
         };
     }

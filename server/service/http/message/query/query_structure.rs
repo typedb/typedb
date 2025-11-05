@@ -640,6 +640,8 @@ pub mod bdd {
         (query, preamble)
     }
 
+    impl_functor_for!(struct AnalyzedPipelineResponse { stages, } named Pipeline);
+    impl_functor_for!(struct AnalyzedFunctionResponse { arguments, returns, body, } named Function);
     impl_functor_for!(struct StructureReduceAssign { assigned, reducer,  } named ReduceAssign);
     impl_functor_for!(struct StructureReducer { reducer, arguments, } named Reducer);
 
@@ -700,11 +702,6 @@ pub mod bdd {
         }
         QueryStructureConjunctionID => { context.pipeline.conjunctions[self.0 as usize].constraints.encode_as_functor(context) }
         StructureConstraintWithSpan => { self.constraint.encode_as_functor(context) }
-        AnalyzedPipelineResponse => { let pipeline = &self.stages; encode_functor_impl!(context, Pipeline { pipeline, }) }
-        AnalyzedFunctionResponse => {
-            let AnalyzedFunctionResponse { arguments, returns, body, .. } = self;
-            encode_functor_impl!(context, Function { arguments, returns, body, })
-        }
         StructureSortVariable => {
             let Self { ascending, variable } = self;
             match ascending {
