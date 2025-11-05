@@ -51,10 +51,10 @@ use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
-use super::message::query::query_structure::encode_pipeline_structure;
+use super::message::query::query_structure::encode_analyzed_pipeline;
 use crate::service::{
     http::message::query::{
-        document::encode_document, encode_analyzed_query, query_structure::PipelineStructureResponse, row::encode_row,
+        document::encode_document, encode_analyzed_query, query_structure::AnalyzedPipelineResponse, row::encode_row,
         AnalysedQueryResponse,
     },
     transaction_service::{
@@ -168,7 +168,7 @@ pub(crate) enum TransactionServiceResponse {
 #[derive(Debug)]
 pub(crate) enum QueryAnswer {
     ResOk(QueryType),
-    ResRows((QueryType, Vec<serde_json::Value>, Option<PipelineStructureResponse>, Option<QueryAnswerWarning>)),
+    ResRows((QueryType, Vec<serde_json::Value>, Option<AnalyzedPipelineResponse>, Option<QueryAnswerWarning>)),
     ResDocuments((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
 }
 
@@ -835,7 +835,7 @@ impl TransactionService {
         let mut warning = None;
         let encode_pipeline_structure_result = pipeline_structure
             .as_ref()
-            .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs, false))
+            .map(|qs| encode_analyzed_pipeline(&*snapshot, &type_manager, qs, &Vec::new(), false))
             .transpose();
         let always_taken_blocks =
             pipeline_structure.map(|qs| qs.parametrised_structure.must_have_been_satisfied_conjunctions());
@@ -1071,7 +1071,7 @@ impl TransactionService {
 
             let encode_pipeline_structure_result = pipeline
                 .pipeline_structure()
-                .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs, false))
+                .map(|qs| encode_analyzed_pipeline(&*snapshot, &type_manager, qs, &Vec::new(), false))
                 .transpose();
             let must_have_been_satisfied_conjunctions = pipeline
                 .pipeline_structure()

@@ -10,8 +10,7 @@ use answer::Type;
 use compiler::{
     annotation::function::FunctionParameterAnnotation,
     query_structure::{
-        PipelineStructureAnnotations, PipelineVariableAnnotation, PipelineVariableAnnotationAndModifier,
-        StructureVariableId,
+        FunctionStructure, PipelineVariableAnnotation, PipelineVariableAnnotationAndModifier, StructureVariableId,
     },
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
@@ -19,14 +18,17 @@ use query::analyse::{FetchStructureAnnotations, FetchStructureAnnotationsFields,
 use serde::{Deserialize, Serialize};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::service::http::message::query::concept::{
-    encode_attribute_type, encode_entity_type, encode_relation_type, encode_role_type, encode_value_type,
-    AttributeTypeResponse, EntityTypeResponse, RelationTypeResponse, RoleTypeResponse,
+use crate::service::http::message::query::{
+    concept::{
+        encode_attribute_type, encode_entity_type, encode_relation_type, encode_role_type, encode_value_type,
+        AttributeTypeResponse, EntityTypeResponse, RelationTypeResponse, RoleTypeResponse,
+    },
+    query_structure::{encode_analyzed_pipeline, AnalyzedFunctionResponse},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", untagged)]
-enum SingleTypeAnnotationResponse {
+pub(super) enum SingleTypeAnnotationResponse {
     Entity(EntityTypeResponse),
     Relation(RelationTypeResponse),
     Attribute(AttributeTypeResponse),
@@ -46,7 +48,7 @@ impl SingleTypeAnnotationResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct VariableAnnotationsResponse {
+pub(super) struct VariableAnnotationsResponse {
     is_optional: bool,
     #[serde(flatten)]
     annotations: TypeAnnotationResponse,
@@ -54,7 +56,7 @@ struct VariableAnnotationsResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-enum TypeAnnotationResponse {
+pub(super) enum TypeAnnotationResponse {
     Thing {
         annotations: Vec<SingleTypeAnnotationResponse>,
     },
@@ -69,29 +71,15 @@ enum TypeAnnotationResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct VariableAnnotationsByConjunctionResponse {
-    variable_annotations: HashMap<StructureVariableId, VariableAnnotationsResponse>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(super) struct PipelineStructureAnnotationsResponse {
-    annotations_by_conjunction: Vec<VariableAnnotationsByConjunctionResponse>,
+pub(super) struct ConjunctionAnnotationsResponse {
+    pub(super) variable_annotations: HashMap<StructureVariableId, VariableAnnotationsResponse>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-enum FunctionReturnAnnotationsResponse {
+pub(super) enum FunctionReturnAnnotationsResponse {
     Single { annotations: Vec<TypeAnnotationResponse> },
     Stream { annotations: Vec<TypeAnnotationResponse> },
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FunctionStructureAnnotationsResponse {
-    arguments: Vec<TypeAnnotationResponse>,
-    returns: FunctionReturnAnnotationsResponse,
-    pub(super) body: PipelineStructureAnnotationsResponse,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -118,13 +106,6 @@ pub struct FetchStructureFieldAnnotationsResponse {
     value: FetchStructureAnnotationsResponse,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct QueryStructureAnnotationsResponse {
-    pub(super) preamble: Vec<FunctionStructureAnnotationsResponse>,
-    pub(super) query: PipelineStructureAnnotationsResponse,
-    pub(super) fetch: Option<FetchStructureAnnotationsResponse>, // Will always be the 'Object' variant
-}
-
 fn encode_function_parameter_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
@@ -140,7 +121,7 @@ fn encode_function_parameter_annotations(
     })
 }
 
-fn encode_variable_type_annotations_and_modifiers(
+pub(super) fn encode_variable_type_annotations_and_modifiers(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     annotations_modifiers: &PipelineVariableAnnotationAndModifier,
@@ -191,58 +172,35 @@ fn encode_type_annotation(
     }
 }
 
-pub(super) fn encode_pipeline_structure_annotations(
+pub(super) fn encode_analyzed_function(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    pipeline_structure_annotations: PipelineStructureAnnotations,
-) -> Result<PipelineStructureAnnotationsResponse, Box<ConceptReadError>> {
-    let mut annotations_by_conjunction = Vec::with_capacity(pipeline_structure_annotations.len());
-    annotations_by_conjunction.resize_with(pipeline_structure_annotations.len(), || {
-        VariableAnnotationsByConjunctionResponse { variable_annotations: HashMap::new() };
-    });
-    let annotations_by_conjunction = pipeline_structure_annotations
-        .iter()
-        .map(|var_annotations| {
-            let variable_annotations = var_annotations
-                .into_iter()
-                .map(|(var_id, annotations)| {
-                    Ok((
-                        var_id.clone(),
-                        encode_variable_type_annotations_and_modifiers(snapshot, type_manager, annotations)?,
-                    ))
-                })
-                .collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
-            Ok(VariableAnnotationsByConjunctionResponse { variable_annotations })
-        })
-        .collect::<Result<Vec<_>, Box<ConceptReadError>>>()?;
-    Ok(PipelineStructureAnnotationsResponse { annotations_by_conjunction })
-}
-
-pub(super) fn encode_function_structure_annotations(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    function_structure_annotations: FunctionStructureAnnotations,
-) -> Result<FunctionStructureAnnotationsResponse, Box<ConceptReadError>> {
-    let FunctionStructureAnnotations { body: pipeline, signature: sig } = function_structure_annotations;
-    let arguments = sig
+    structure: FunctionStructure,
+    annotations: FunctionStructureAnnotations,
+) -> Result<AnalyzedFunctionResponse, Box<ConceptReadError>> {
+    let arguments = structure.arguments;
+    let returns = structure.return_;
+    let body = encode_analyzed_pipeline(snapshot, type_manager, &structure.body, &annotations.body, true)?;
+    let argument_annotations = annotations
+        .signature
         .arguments
         .into_iter()
         .map(|arg| encode_function_parameter_annotations(snapshot, type_manager, arg))
         .collect::<Result<Vec<_>, _>>()?;
-    let return_types = sig
+    let return_types = annotations
+        .signature
         .returns
         .into_iter()
         .map(|arg| encode_function_parameter_annotations(snapshot, type_manager, arg))
         .collect::<Result<Vec<_>, _>>()?;
-    let body = encode_pipeline_structure_annotations(snapshot, type_manager, pipeline)?;
-    let returns = match sig.is_stream {
+    let return_annotations = match annotations.signature.is_stream {
         true => FunctionReturnAnnotationsResponse::Stream { annotations: return_types },
         false => FunctionReturnAnnotationsResponse::Single { annotations: return_types },
     };
-    Ok(FunctionStructureAnnotationsResponse { arguments, returns, body })
+    Ok(AnalyzedFunctionResponse { arguments, returns, body, argument_annotations, return_annotations })
 }
 
-pub(super) fn encode_fetch_structure_annotations(
+pub(super) fn encode_analyzed_fetch(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     fetch_structure_annotations: FetchStructureAnnotationsFields,
@@ -271,7 +229,7 @@ fn encode_fetch_object_structure_annotations(
             FetchStructureAnnotationsResponse::Value { value_types }
         }
         FetchStructureAnnotations::Object(object) => FetchStructureAnnotationsResponse::Object {
-            possible_fields: encode_fetch_structure_annotations(snapshot, type_manager, object)?,
+            possible_fields: encode_analyzed_fetch(snapshot, type_manager, object)?,
         },
         FetchStructureAnnotations::List(boxed_list_annotations) => {
             let elements = encode_fetch_object_structure_annotations(snapshot, type_manager, *boxed_list_annotations)?;
@@ -289,11 +247,7 @@ pub mod bdd {
     use compiler::query_structure::{QueryStructureConjunctionID, QueryStructureStage};
     use itertools::Itertools;
 
-    use super::{
-        FetchStructureAnnotationsResponse, FunctionReturnAnnotationsResponse, FunctionStructureAnnotationsResponse,
-        PipelineStructureAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse,
-        VariableAnnotationsByConjunctionResponse, VariableAnnotationsResponse,
-    };
+    use super::{FetchStructureAnnotationsResponse, FunctionReturnAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse, ConjunctionAnnotationsResponse, VariableAnnotationsResponse};
     use crate::service::http::message::query::{
         bdd::{
             functor_macros,
@@ -304,30 +258,26 @@ pub mod bdd {
         query_structure::StructureConstraint,
         AnalysedQueryResponse,
     };
+    use crate::service::http::message::query::query_structure::AnalyzedFunctionResponse;
 
     pub fn encode_query_annotations_as_functor(analyzed: &AnalysedQueryResponse) -> (String, Vec<String>) {
-        let context = FunctorContext { structure: &analyzed.structure.query, annotations: &analyzed.annotations.query };
-        let query = analyzed.annotations.query.encode_as_functor(&context);
-        let preamble = analyzed
-            .annotations
-            .preamble
-            .iter()
-            .zip(analyzed.structure.preamble.iter())
-            .map(|(annotations, structure)| {
-                let context = FunctorContext { structure: &structure.body, annotations: &annotations.body };
-                annotations.encode_as_functor(&context)
-            })
-            .collect();
+        let query = PipelineAnnotationsToEncode.encode_as_functor(&FunctorContext { pipeline: &analyzed.query });
+        let preamble = analyzed.preamble.iter().map(|func| {
+            let AnalyzedFunctionResponse { body, argument_annotations, return_annotations, ..} = func;
+            let context_ = FunctorContext { pipeline: &body };
+            let context = &context_;
+            let dummy_ = PipelineAnnotationsToEncode;
+            let dummy = &dummy_;
+            encode_functor_impl!(context, Function { argument_annotations, return_annotations, dummy, })
+        })
+        .collect();
         (query, preamble)
     }
 
-    impl FunctorEncoded for PipelineStructureAnnotationsResponse {
+    impl FunctorEncoded for PipelineAnnotationsToEncode {
         fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            let encoded_stages = context
-                .structure
-                .pipeline
-                .iter()
-                .map(|stage| match stage {
+            let encoded_stages = context.pipeline.stages.iter().map(|stage| {
+                match stage {
                     QueryStructureStage::Match { block } => {
                         let block = &BlockAnnotationToEncode(block.as_u32() as usize);
                         encode_functor_impl!(context, Match { block, })
@@ -355,19 +305,21 @@ pub mod bdd {
                     QueryStructureStage::Require { .. } => encode_functor_impl!(context, Require {}),
                     QueryStructureStage::Distinct => encode_functor_impl!(context, Select {}),
                     QueryStructureStage::Reduce { .. } => encode_functor_impl!(context, Reduce {}),
-                })
-                .collect::<Vec<_>>();
+                }
+            }).collect::<Vec<_>>();
             let encoded_stages_ref = &encoded_stages;
             encode_functor_impl!(context, Pipeline { encoded_stages_ref, }) // Not ideal to encode the elements again
         }
     }
 
-    impl_functor_for!(struct FunctionStructureAnnotationsResponse { arguments, returns, body, } named Function);
     impl_functor_for!(enum FunctionReturnAnnotationsResponse [ Single { annotations, } | Stream { annotations, } | ]);
 
     #[derive(Debug, Clone, Copy)]
     struct TrunkAnnotationToEncode(usize);
 
+    struct PipelineAnnotationsToEncode;
+
+    struct FunctionAnnotationsToEncode<'a>(&'a AnalyzedFunctionResponse);
     #[derive(Debug, Clone, Copy)]
     struct BlockAnnotationToEncode(usize);
     impl From<QueryStructureConjunctionID> for BlockAnnotationToEncode {
@@ -385,7 +337,7 @@ pub mod bdd {
     impl FunctorEncoded for BlockAnnotationToEncode {
         fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
             let trunk = TrunkAnnotationToEncode(self.0);
-            let subpatterns = context.structure.conjunctions[self.0]
+            let subpatterns = context.pipeline.conjunctions[self.0].constraints
                 .iter()
                 .filter_map(|c| match &c.constraint {
                     StructureConstraint::Or { branches } => {
@@ -410,9 +362,9 @@ pub mod bdd {
     impl_functor_for!(enum TypeAnnotationResponse [ Thing { annotations, } | Type { annotations, } | Value { value_types, } | ]);
     impl_functor_for_multi!(|self, context| [
         TrunkAnnotationToEncode => {
-            context.annotations.annotations_by_conjunction[self.0].encode_as_functor(context)
+            context.pipeline.conjunctions[self.0].annotations.encode_as_functor(context)
         }
-        VariableAnnotationsByConjunctionResponse => {
+        ConjunctionAnnotationsResponse => {
             self.variable_annotations.encode_as_functor(context)
         }
         SingleTypeAnnotationResponse =>  {
@@ -433,8 +385,8 @@ pub mod bdd {
 
     // Fetch
     pub fn encode_fetch_annotations_as_functor(analyzed: &AnalysedQueryResponse) -> String {
-        let context = FunctorContext { structure: &analyzed.structure.query, annotations: &analyzed.annotations.query };
-        analyzed.annotations.fetch.encode_as_functor(&context)
+        let context = FunctorContext { pipeline: &analyzed.query };
+        analyzed.fetch.encode_as_functor(&context)
     }
 
     impl FunctorEncoded for FetchStructureAnnotationsResponse {

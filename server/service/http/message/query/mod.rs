@@ -5,11 +5,10 @@
  */
 
 use ::concept::{error::ConceptReadError, type_::type_manager::TypeManager};
-use annotations::QueryStructureAnnotationsResponse;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use options::QueryOptions;
-use query::analyse::{AnalysedQuery, QueryStructureAnnotations};
+use query::analyse::AnalysedQuery;
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
 };
@@ -22,13 +21,10 @@ use crate::service::{
         message::{
             body::JsonBody,
             query::{
-                annotations::{
-                    encode_fetch_structure_annotations, encode_function_structure_annotations,
-                    encode_pipeline_structure_annotations, FetchStructureAnnotationsResponse,
-                },
+                annotations::{encode_analyzed_fetch, encode_analyzed_function, FetchStructureAnnotationsResponse},
                 query_structure::{
-                    encode_query_structure, PipelineStructureResponse, PipelineStructureResponseForStudio,
-                    QueryStructureResponse,
+                    encode_analyzed_pipeline, AnalyzedFunctionResponse, AnalyzedPipelineResponse,
+                    PipelineStructureResponseForStudio,
                 },
             },
             transaction::TransactionOpenPayload,
@@ -105,7 +101,7 @@ pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerRespon
 pub(crate) fn encode_query_rows_answer(
     query_type: QueryType,
     rows: Vec<serde_json::Value>,
-    pipeline_structure: Option<PipelineStructureResponse>,
+    pipeline_structure: Option<AnalyzedPipelineResponse>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
     QueryAnswerResponse {
@@ -158,8 +154,9 @@ impl IntoResponse for QueryAnswer {
 #[serde(rename_all = "camelCase")]
 pub struct AnalysedQueryResponse {
     pub source: String,
-    pub structure: QueryStructureResponse,
-    pub annotations: QueryStructureAnnotationsResponse,
+    pub(super) query: AnalyzedPipelineResponse,
+    pub(super) preamble: Vec<AnalyzedFunctionResponse>,
+    pub(super) fetch: Option<FetchStructureAnnotationsResponse>,
 }
 
 impl IntoResponse for AnalysedQueryResponse {
@@ -175,22 +172,22 @@ pub fn encode_analyzed_query(
     type_manager: &TypeManager,
     analysed_query: AnalysedQuery,
 ) -> Result<AnalysedQueryResponse, Box<ConceptReadError>> {
-    let AnalysedQuery { source, structure, annotations: analysed_query_annotations } = analysed_query;
-    let QueryStructureAnnotations { query: pipeline, preamble, fetch } = analysed_query_annotations;
-    let preamble = preamble
+    let AnalysedQuery { source, structure, annotations } = analysed_query;
+    let preamble = structure
+        .preamble
         .into_iter()
-        .map(|function| encode_function_structure_annotations(snapshot, type_manager, function))
+        .zip(annotations.preamble.into_iter())
+        .map(|(structure, annotations)| encode_analyzed_function(snapshot, type_manager, structure, annotations))
         .collect::<Result<Vec<_>, _>>()?;
-    let pipeline = encode_pipeline_structure_annotations(snapshot, type_manager, pipeline)?;
-    let fetch = fetch
+    let query = encode_analyzed_pipeline(snapshot, type_manager, &structure.query, &annotations.query, true)?;
+    let fetch = annotations
+        .fetch
         .map(|fetch| {
-            encode_fetch_structure_annotations(snapshot, type_manager, fetch)
+            encode_analyzed_fetch(snapshot, type_manager, fetch)
                 .map(|fields| FetchStructureAnnotationsResponse::Object { possible_fields: fields })
         })
         .transpose()?;
-    let annotations = QueryStructureAnnotationsResponse { preamble, query: pipeline, fetch };
-    let structure = encode_query_structure(snapshot, type_manager, structure)?;
-    Ok(AnalysedQueryResponse { source, structure, annotations })
+    Ok(AnalysedQueryResponse { source, query, preamble, fetch })
 }
 
 #[cfg(debug_assertions)]
@@ -199,13 +196,10 @@ pub mod bdd {
 
     use itertools::Itertools;
 
-    use crate::service::http::message::query::{
-        annotations::PipelineStructureAnnotationsResponse, query_structure::PipelineStructureResponse,
-    };
+    use crate::service::http::message::query::query_structure::AnalyzedPipelineResponse;
 
     pub(crate) struct FunctorContext<'a> {
-        pub(super) structure: &'a PipelineStructureResponse,
-        pub(super) annotations: &'a PipelineStructureAnnotationsResponse,
+        pub(super) pipeline: &'a AnalyzedPipelineResponse,
     }
 
     pub(crate) trait FunctorEncoded {
