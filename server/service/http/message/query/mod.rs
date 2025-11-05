@@ -208,45 +208,45 @@ pub mod bdd {
 
     pub mod functor_macros {
         macro_rules! encode_args {
-        ($context:expr, { $( $arg:expr, )* } )   => {
-            {
-                let arr: Vec<&dyn FunctorEncoded> = vec![ $($arg,)* ];
-                arr.into_iter().map(|s| s.encode_as_functor($context)).join(", ")
+            ($context:expr, { $( $arg:expr, )* } )   => {
+                {
+                    let arr: Vec<&dyn FunctorEncoded> = vec![ $($arg,)* ];
+                    arr.into_iter().map(|s| s.encode_as_functor($context)).join(", ")
+                }
             }
         }
-    }
         macro_rules! encode_functor_impl {
-        ($context:expr, $func:ident $args:tt) => {
-            std::format!("{}({})", std::stringify!($func), functor_macros::encode_args!($context, $args))
-        };
-        ($context:expr, ( $( $arg:ident, )* ) ) => {
-            functor_macros::encode_args!($context, { $( $arg, )* } )
-        };
-    }
+            ($context:expr, $func:ident $args:tt) => {
+                std::format!("{}({})", std::stringify!($func), functor_macros::encode_args!($context, $args))
+            };
+            ($context:expr, ( $( $arg:ident, )* ) ) => {
+                functor_macros::encode_args!($context, { $( $arg, )* } )
+            };
+        }
 
         macro_rules! add_ignored_fields {
-        ($qualified:path : { $( $arg:ident, )* }) => { $qualified { $( $arg, )* .. } };
-        ($qualified:path : ($( $arg:ident, )*)) => { $qualified ( $( $arg, )* .. ) };
-    }
+            ($qualified:path : { $( $arg:ident, )* }) => { $qualified { $( $arg, )* .. } };
+            ($qualified:path : ($( $arg:ident, )*)) => { $qualified ( $( $arg, )* .. ) };
+        }
 
         macro_rules! encode_functor {
-        ($context:ident, $what:ident as struct $struct_name:ident  $fields:tt) => {
-            functor_macros::encode_functor!($context, $what => [ $struct_name => $struct_name $fields, ])
-        };
-        ($context:ident, $what:ident as struct $struct_name:ident $fields:tt named $renamed:ident ) => {
-            functor_macros::encode_functor!($context, $what => [ $struct_name => $renamed $fields, ])
-        };
-        ($context:ident, $what:ident as enum $enum_name:ident [ $($variant:ident $fields:tt |)* ]) => {
-            functor_macros::encode_functor!($context, $what => [ $( $enum_name::$variant => $variant $fields ,)* ])
-        };
-        ($context:ident, $what:ident => [ $($qualified:path => $func:ident $fields:tt, )* ]) => {
-            match $what {
-                $( functor_macros::add_ignored_fields!($qualified : $fields) => {
-                    functor_macros::encode_functor_impl!($context, $func $fields)
-                })*
-            }
-        };
-    }
+            ($context:ident, $what:ident as struct $struct_name:ident  $fields:tt) => {
+                functor_macros::encode_functor!($context, $what => [ $struct_name => $struct_name $fields, ])
+            };
+            ($context:ident, $what:ident as struct $struct_name:ident $fields:tt named $renamed:ident ) => {
+                functor_macros::encode_functor!($context, $what => [ $struct_name => $renamed $fields, ])
+            };
+            ($context:ident, $what:ident as enum $enum_name:ident [ $($variant:ident $fields:tt |)* ]) => {
+                functor_macros::encode_functor!($context, $what => [ $( $enum_name::$variant => $variant $fields ,)* ])
+            };
+            ($context:ident, $what:ident => [ $($qualified:path => $func:ident $fields:tt, )* ]) => {
+                match $what {
+                    $( functor_macros::add_ignored_fields!($qualified : $fields) => {
+                        functor_macros::encode_functor_impl!($context, $func $fields)
+                    })*
+                }
+            };
+        }
 
         macro_rules! impl_functor_for_impl {
             ($which:ident => |$self:ident, $context:ident| $block:block) => {
@@ -259,28 +259,28 @@ pub mod bdd {
         }
 
         macro_rules! impl_functor_for {
-        (struct $struct_name:ident $fields:tt) => {
-            functor_macros::impl_functor_for!(struct $struct_name $fields named $struct_name);
-        };
-        (struct $struct_name:ident $fields:tt named $renamed:ident) => {
-            functor_macros::impl_functor_for_impl!($struct_name => |self, context| {
-                functor_macros::encode_functor!(context, self as struct $struct_name $fields named $renamed)
-            });
-        };
-        (enum $enum_name:ident [ $($func:ident $fields:tt |)* ]) => {
-            functor_macros::impl_functor_for_impl!($enum_name => |self, context| {
-                functor_macros::encode_functor!(context, self as enum $enum_name [ $($func $fields |)* ])
-            });
-        };
-        (primitive $primitive:ident) => {
-            functor_macros::impl_functor_for_impl!($primitive => |self, _context| { self.to_string() });
-        };
-    }
+            (struct $struct_name:ident $fields:tt) => {
+                functor_macros::impl_functor_for!(struct $struct_name $fields named $struct_name);
+            };
+            (struct $struct_name:ident $fields:tt named $renamed:ident) => {
+                functor_macros::impl_functor_for_impl!($struct_name => |self, context| {
+                    functor_macros::encode_functor!(context, self as struct $struct_name $fields named $renamed)
+                });
+            };
+            (enum $enum_name:ident [ $($func:ident $fields:tt |)* ]) => {
+                functor_macros::impl_functor_for_impl!($enum_name => |self, context| {
+                    functor_macros::encode_functor!(context, self as enum $enum_name [ $($func $fields |)* ])
+                });
+            };
+            (primitive $primitive:ident) => {
+                functor_macros::impl_functor_for_impl!($primitive => |self, _context| { self.to_string() });
+            };
+        }
         macro_rules! impl_functor_for_multi {
-        (|$self:ident, $context:ident| [ $( $type_name:ident => $block:block )* ]) => {
-            $ (functor_macros::impl_functor_for_impl!($type_name => |$self, $context| $block); )*
-        };
-    }
+            (|$self:ident, $context:ident| [ $( $type_name:ident => $block:block )* ]) => {
+                $ (functor_macros::impl_functor_for_impl!($type_name => |$self, $context| $block); )*
+            };
+        }
 
         pub(crate) use add_ignored_fields;
         pub(crate) use encode_args;
