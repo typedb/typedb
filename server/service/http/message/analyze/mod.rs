@@ -4,9 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashMap;
+
 use ::concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use annotations::{encode_analyzed_fetch, encode_analyzed_function, FetchStructureAnnotationsResponse};
 use axum::response::{IntoResponse, Response};
+use compiler::query_structure::StructureVariableId;
 use http::StatusCode;
 use query::analyse::AnalysedQuery;
 use serde::{Deserialize, Serialize};
@@ -14,7 +17,14 @@ use storage::snapshot::ReadableSnapshot;
 use structure::{encode_analyzed_pipeline, AnalyzedFunctionResponse, AnalyzedPipelineResponse};
 use tracing::Value;
 
-use crate::service::http::message::body::JsonBody;
+use crate::service::http::message::{
+    analyze::structure::{
+        StructureConstraint, StructureConstraintSpan, StructureConstraintWithSpan, StructureVariableInfo,
+        StructureVertex,
+    },
+    body::JsonBody,
+    query::concept::RoleTypeResponse,
+};
 
 pub mod annotations;
 pub mod structure;
@@ -57,6 +67,89 @@ pub fn encode_analyzed_query(
         })
         .transpose()?;
     Ok(AnalysedQueryResponse { source, query, preamble, fetch })
+}
+
+// Backwards compatibility
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StructureBlockForStudio {
+    constraints: Vec<StructureConstraintWithSpanForStudio>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StructureConstraintWithSpanForStudio {
+    text_span: Option<StructureConstraintSpan>,
+    #[serde(flatten)]
+    pub constraint: StructureConstraintForStudio,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PipelineStructureResponseForStudio {
+    blocks: Vec<StructureBlockForStudio>,
+    variables: HashMap<StructureVariableId, StructureVariableInfo>,
+    outputs: Vec<StructureVariableId>,
+}
+
+impl From<AnalyzedPipelineResponse> for PipelineStructureResponseForStudio {
+    fn from(value: AnalyzedPipelineResponse) -> Self {
+        let AnalyzedPipelineResponse { variables, outputs, conjunctions, .. } = value;
+        let blocks = conjunctions
+            .into_iter()
+            .map(|conjunction| conjunction.constraints.into_iter().filter_map(|c| c.try_into().ok()).collect())
+            .map(|constraints| StructureBlockForStudio { constraints })
+            .collect();
+        PipelineStructureResponseForStudio { variables, outputs, blocks }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StructureConstraintForStudio {
+    Normal(StructureConstraint),
+    Expression {
+        text: String,
+        assigned: Vec<StructureVertex>, // In just StructureVertex in analyze
+        arguments: Vec<StructureVertex>,
+    },
+    Links {
+        relation: StructureVertex,
+        player: StructureVertex,
+        role: StructureVertex, // Is a NamedRole in analyze, but Label here
+    },
+}
+
+impl TryFrom<StructureConstraintWithSpan> for StructureConstraintWithSpanForStudio {
+    type Error = ();
+
+    fn try_from(value: StructureConstraintWithSpan) -> Result<Self, Self::Error> {
+        Ok(Self { text_span: value.text_span, constraint: value.constraint.try_into()? })
+    }
+}
+
+impl TryFrom<StructureConstraint> for StructureConstraintForStudio {
+    type Error = ();
+    fn try_from(value: StructureConstraint) -> Result<Self, Self::Error> {
+        match value {
+            StructureConstraint::Links { relation, player, role } => {
+                let role = if let StructureVertex::NamedRole { name, .. } = role {
+                    StructureVertex::Label { r#type: serde_json::json!(RoleTypeResponse { label: name.to_owned() }) }
+                } else {
+                    role
+                };
+                Ok(StructureConstraintForStudio::Links { relation, player, role })
+            }
+            StructureConstraint::Expression { text, assigned, arguments } => {
+                let assigned = vec![assigned];
+                Ok(StructureConstraintForStudio::Expression { text, assigned, arguments })
+            }
+            StructureConstraint::Or { .. } | StructureConstraint::Not { .. } | StructureConstraint::Try { .. } => {
+                Err(())
+            }
+            c => Ok(StructureConstraintForStudio::Normal(c)),
+        }
+    }
 }
 
 #[cfg(debug_assertions)]

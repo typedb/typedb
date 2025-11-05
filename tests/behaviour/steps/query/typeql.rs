@@ -28,13 +28,13 @@ use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 use query::{analyse::AnalysedQuery, error::QueryError};
 use resource::profile::StorageCounters;
-use server::service::http::message::query::{
+use server::service::http::message::analyze::{
     annotations::bdd::{
         encode_fetch_annotations_as_functor, encode_function_annotations_as_functor,
         encode_pipeline_annotations_as_functor,
     },
     encode_analyzed_query,
-    query_structure::bdd::{encode_function_structure_as_functor, encode_pipeline_structure_as_functor},
+    structure::bdd::{encode_function_structure_as_functor, encode_pipeline_structure_as_functor},
 };
 use storage::snapshot::SnapshotDropGuard;
 use test_utils::assert_matches;

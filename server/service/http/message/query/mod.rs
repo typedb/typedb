@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::service::{
     http::{
         message::{
-            analyze::structure::{AnalyzedPipelineResponse, PipelineStructureResponseForStudio},
+            analyze::{structure::AnalyzedPipelineResponse, PipelineStructureResponseForStudio},
             body::JsonBody,
             transaction::TransactionOpenPayload,
         },

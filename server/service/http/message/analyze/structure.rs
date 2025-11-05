@@ -23,7 +23,6 @@ use ir::pattern::{
     ParameterID, Vertex,
 };
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, FromInto};
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
@@ -32,50 +31,8 @@ use super::annotations::{
     TypeAnnotationResponse,
 };
 use crate::service::http::message::query::concept::{
-    encode_type_concept, encode_value, EntityTypeResponse, RoleTypeResponse, ValueResponse,
+    encode_type_concept, encode_value, EntityTypeResponse, ValueResponse,
 };
-
-struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
-    structure: &'a PipelineStructure,
-    snapshot: &'a Snapshot,
-    type_manager: &'a TypeManager,
-    role_names: HashMap<Variable, String>,
-    variables: &'a mut HashMap<StructureVariableId, StructureVariableInfo>,
-}
-
-impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
-    pub fn get_parameter_value(&self, param: &ParameterID) -> Option<Value<'static>> {
-        debug_assert!(matches!(param, ParameterID::Value(_, _)));
-        self.structure.parameters.value(*param).cloned()
-    }
-
-    pub fn get_parameter_iid(&self, param: &ParameterID) -> Option<&[u8]> {
-        self.structure.parameters.iid(*param).map(|iid| iid.as_ref())
-    }
-
-    pub fn get_variable_name(&self, variable: &StructureVariableId) -> Option<String> {
-        self.structure.variable_names.get(&variable).cloned()
-    }
-
-    pub fn get_type(&self, label: &Label) -> Option<answer::Type> {
-        self.structure.parametrised_structure.resolved_labels.get(label).cloned()
-    }
-
-    fn get_call_syntax(&self, constraint: &Constraint<Variable>) -> Option<&String> {
-        self.structure.parametrised_structure.calls_syntax.get(constraint)
-    }
-
-    fn get_role_type(&self, variable: &Variable) -> Option<&str> {
-        self.role_names.get(variable).map(|name| name.as_str())
-    }
-
-    fn record_variable(&mut self, variable: StructureVariableId) {
-        if !self.variables.contains_key(&variable) {
-            let info = StructureVariableInfo { name: self.get_variable_name(&variable) };
-            self.variables.insert(variable, info);
-        }
-    }
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -90,10 +47,10 @@ pub struct AnalyzedFunctionResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalyzedPipelineResponse {
-    pub conjunctions: Vec<AnalyzedConjunctionResponse>,
-    pub stages: Vec<QueryStructureStage>,
-    variables: HashMap<StructureVariableId, StructureVariableInfo>,
-    outputs: Vec<StructureVariableId>,
+    pub(super) conjunctions: Vec<AnalyzedConjunctionResponse>,
+    pub(super) stages: Vec<QueryStructureStage>,
+    pub(super) variables: HashMap<StructureVariableId, StructureVariableInfo>,
+    pub(super) outputs: Vec<StructureVariableId>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -103,40 +60,12 @@ pub struct AnalyzedConjunctionResponse {
     pub annotations: ConjunctionAnnotationsResponse,
 }
 
-// Kept for backwards compatibility
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PipelineStructureResponseForStudio {
-    blocks: Vec<StructureBlockForStudio>,
-    variables: HashMap<StructureVariableId, StructureVariableInfo>,
-    outputs: Vec<StructureVariableId>,
-}
-
-impl From<AnalyzedPipelineResponse> for PipelineStructureResponseForStudio {
-    fn from(value: AnalyzedPipelineResponse) -> Self {
-        let AnalyzedPipelineResponse { variables, outputs, conjunctions, .. } = value;
-        let blocks = conjunctions
-            .into_iter()
-            .map(|conjunction| conjunction.constraints.into_iter().filter(|c| c.constraint.is_subpattern()).collect())
-            .map(|constraints| StructureBlockForStudio { constraints })
-            .collect();
-        PipelineStructureResponseForStudio { variables, outputs, blocks }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct StructureBlockForStudio {
-    constraints: Vec<StructureConstraintWithSpan>,
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StructureVariableInfo {
     name: Option<String>,
 }
 
-#[serde_as]
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum StructureConstraint {
@@ -189,8 +118,7 @@ pub enum StructureConstraint {
     },
     Expression {
         text: String,
-        #[serde_as(as = "FromInto<Singleton<StructureVertex>>")]
-        assigned: StructureVertex, // TODO: Serialize as is. Breaking change
+        assigned: StructureVertex,
         arguments: Vec<StructureVertex>,
     },
     Is {
@@ -235,7 +163,7 @@ pub enum StructureConstraint {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct StructureConstraintSpan {
+pub(super) struct StructureConstraintSpan {
     begin: usize,
     end: usize,
 }
@@ -249,9 +177,9 @@ impl From<typeql::common::Span> for StructureConstraintSpan {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StructureConstraintWithSpan {
-    text_span: Option<StructureConstraintSpan>,
+    pub(super) text_span: Option<StructureConstraintSpan>,
     #[serde(flatten)]
-    pub constraint: StructureConstraint,
+    pub(super) constraint: StructureConstraint,
 }
 
 impl StructureConstraint {
@@ -262,10 +190,53 @@ impl StructureConstraint {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-enum StructureVertex {
+pub(super) enum StructureVertex {
     Variable { id: StructureVariableId },
     Label { r#type: serde_json::Value },
     Value(ValueResponse),
+    NamedRole { variable: StructureVariableId, name: String },
+}
+
+struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
+    structure: &'a PipelineStructure,
+    snapshot: &'a Snapshot,
+    type_manager: &'a TypeManager,
+    role_names: HashMap<Variable, String>,
+    variables: &'a mut HashMap<StructureVariableId, StructureVariableInfo>,
+}
+
+impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
+    pub fn get_parameter_value(&self, param: &ParameterID) -> Option<Value<'static>> {
+        debug_assert!(matches!(param, ParameterID::Value(_, _)));
+        self.structure.parameters.value(*param).cloned()
+    }
+
+    pub fn get_parameter_iid(&self, param: &ParameterID) -> Option<&[u8]> {
+        self.structure.parameters.iid(*param).map(|iid| iid.as_ref())
+    }
+
+    pub fn get_variable_name(&self, variable: &StructureVariableId) -> Option<String> {
+        self.structure.variable_names.get(&variable).cloned()
+    }
+
+    pub fn get_type(&self, label: &Label) -> Option<answer::Type> {
+        self.structure.parametrised_structure.resolved_labels.get(label).cloned()
+    }
+
+    fn get_call_syntax(&self, constraint: &Constraint<Variable>) -> Option<&String> {
+        self.structure.parametrised_structure.calls_syntax.get(constraint)
+    }
+
+    fn get_role_type(&self, variable: &Variable) -> Option<&str> {
+        self.role_names.get(variable).map(|name| name.as_str())
+    }
+
+    fn record_variable(&mut self, variable: StructureVariableId) {
+        if !self.variables.contains_key(&variable) {
+            let info = StructureVariableInfo { name: self.get_variable_name(&variable) };
+            self.variables.insert(variable, info);
+        }
+    }
 }
 
 pub fn encode_analyzed_pipeline(
@@ -507,27 +478,13 @@ fn encode_role_type_as_vertex(
     context: &mut PipelineStructureContext<'_, impl ReadableSnapshot>,
     role_type: &Vertex<Variable>,
 ) -> Result<StructureVertex, Box<ConceptReadError>> {
-    if let Some(label) = context.get_role_type(&role_type.as_variable().unwrap()) {
-        // TODO: Make consistent with GRPC API by introducing StructureVertex::NamedRole
-        // At present rolename could resolve to multiple types - Manually encode.
-        Ok(StructureVertex::Label { r#type: serde_json::json!(RoleTypeResponse { label: label.to_owned() }) })
+    if let Some(name) = context.get_role_type(&role_type.as_variable().unwrap()) {
+        Ok(StructureVertex::NamedRole {
+            variable: StructureVariableId::from(role_type.as_variable().unwrap()),
+            name: name.to_owned(),
+        })
     } else {
         encode_structure_vertex(context, role_type)
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-struct Singleton<T>(Vec<T>);
-
-impl From<Singleton<StructureVertex>> for StructureVertex {
-    fn from(mut value: Singleton<StructureVertex>) -> Self {
-        value.0.pop().unwrap()
-    }
-}
-
-impl From<StructureVertex> for Singleton<StructureVertex> {
-    fn from(value: StructureVertex) -> Self {
-        Self(vec![value])
     }
 }
 
@@ -607,6 +564,7 @@ pub mod bdd {
         match self {
             StructureVertex::Variable { id } => { id.encode_as_functor(context) }
             StructureVertex::Label { r#type } => { r#type.as_object().unwrap()["label"].as_str().unwrap().to_owned() }
+            StructureVertex::NamedRole{ name, .. } => { name.to_owned() },
             StructureVertex::Value(v) => {
                 match &v.value {
                     Value::String(s) => std::format!("\"{}\"", s.to_string()),

@@ -12,13 +12,15 @@ use itertools::{Either, Itertools};
 use macro_rules_attribute::apply;
 use params::{self, check_boolean, ContainsOrDoesnt};
 use server::service::{
-    http::message::query::{
-        annotations::bdd::{
-            encode_fetch_annotations_as_functor, encode_function_annotations_as_functor,
-            encode_pipeline_annotations_as_functor,
+    http::message::{
+        analyze::{
+            annotations::bdd::{
+                encode_fetch_annotations_as_functor, encode_function_annotations_as_functor,
+                encode_pipeline_annotations_as_functor,
+            },
+            structure::bdd::{encode_function_structure_as_functor, encode_pipeline_structure_as_functor},
         },
-        query_structure::bdd::{encode_function_structure_as_functor, encode_pipeline_structure_as_functor},
-        QueryAnswerResponse,
+        query::QueryAnswerResponse,
     },
     AnswerType,
 };
@@ -1050,7 +1052,7 @@ async fn typeql_analyze_may_error(context: &mut Context, may_error: params::Type
     if let Either::Right(_) = may_error.check_parsing(parse_result.as_ref()) {
         return;
     }
-    let query = parse_result.unwrap();
+    let _query = parse_result.unwrap();
     let result = transactions_analyze(
         context.http_client(),
         context.auth_token(),

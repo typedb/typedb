@@ -12,6 +12,7 @@ use hyper::{
 };
 use serde_json::json;
 use server::service::http::message::{
+    analyze::AnalysedQueryResponse,
     authentication::TokenResponse,
     database::{DatabaseResponse, DatabasesResponse},
     query::{
@@ -19,7 +20,7 @@ use server::service::http::message::{
             AttributeResponse, AttributeTypeResponse, EntityResponse, EntityTypeResponse, RelationResponse,
             RelationTypeResponse, RoleTypeResponse, ValueResponse,
         },
-        AnalysedQueryResponse, QueryAnswerResponse, QueryOptionsPayload,
+        QueryAnswerResponse, QueryOptionsPayload,
     },
     transaction::{TransactionOptionsPayload, TransactionResponse},
     user::{UserResponse, UsersResponse},
