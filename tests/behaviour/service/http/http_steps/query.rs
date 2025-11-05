@@ -13,8 +13,11 @@ use macro_rules_attribute::apply;
 use params::{self, check_boolean, ContainsOrDoesnt};
 use server::service::{
     http::message::query::{
-        annotations::bdd::{encode_fetch_annotations_as_functor, encode_query_annotations_as_functor},
-        query_structure::bdd::encode_query_structure_as_functor,
+        annotations::bdd::{
+            encode_fetch_annotations_as_functor, encode_function_annotations_as_functor,
+            encode_pipeline_annotations_as_functor,
+        },
+        query_structure::bdd::{encode_function_structure_as_functor, encode_pipeline_structure_as_functor},
         QueryAnswerResponse,
     },
     AnswerType,
@@ -1062,23 +1065,27 @@ async fn typeql_analyze_may_error(context: &mut Context, may_error: params::Type
 async fn analyzed_query_pipeline_is(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed.as_ref().unwrap();
-    let (actual_functor, _preamble) = encode_query_structure_as_functor(&analyzed);
-    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
+    let actual_functor = encode_pipeline_structure_as_functor(&analyzed.query);
+
+    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(&expected_functor));
 }
 
 #[cucumber::then("analyzed query preamble contains:")]
 async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
-    let expected_functor = step.docstring().unwrap();
+    let expected_functor = normalize_functor_for_compare(step.docstring().unwrap());
     let analyzed = context.analyzed.as_ref().unwrap();
-    let (_pipeline, preamble_functors) = encode_query_structure_as_functor(&analyzed);
+    let preamble_functors = analyzed
+        .preamble
+        .iter()
+        .map(encode_function_structure_as_functor)
+        .map(|s| normalize_functor_for_compare(s.as_str()))
+        .collect::<Vec<_>>();
 
     assert!(
-        preamble_functors.iter().any(|actual_functor| {
-            normalize_functor_for_compare(actual_functor) == normalize_functor_for_compare(expected_functor)
-        }),
+        preamble_functors.contains(&expected_functor),
         "Looking for\n\t{}\nin any of:\n\t{}",
-        normalize_functor_for_compare(expected_functor),
-        preamble_functors.iter().map(|s| normalize_functor_for_compare(s)).join("\n\t")
+        expected_functor,
+        preamble_functors.iter().join("\n\t")
     );
 }
 
@@ -1086,23 +1093,27 @@ async fn analyzed_query_preamble_contains(context: &mut Context, step: &Step) {
 async fn analyzed_query_annotations_is(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed.as_ref().unwrap();
-    let (actual_functor, _preamble) = encode_query_annotations_as_functor(&analyzed);
+    let actual_functor = encode_pipeline_annotations_as_functor(&analyzed.query);
+
     assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
 #[cucumber::then("analyzed preamble annotations contains:")]
 async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &Step) {
-    let expected_functor = step.docstring().unwrap();
+    let expected_functor = normalize_functor_for_compare(step.docstring().unwrap());
     let analyzed = context.analyzed.as_ref().unwrap();
-    let (_pipeline, preamble_functors) = encode_query_annotations_as_functor(&analyzed);
+    let preamble_functors = analyzed
+        .preamble
+        .iter()
+        .map(encode_function_annotations_as_functor)
+        .map(|s| normalize_functor_for_compare(s.as_str()))
+        .collect::<Vec<_>>();
 
     assert!(
-        preamble_functors.iter().any(|actual_functor| {
-            normalize_functor_for_compare(actual_functor) == normalize_functor_for_compare(expected_functor)
-        }),
+        preamble_functors.contains(&expected_functor),
         "Looking for\n\t{}\nin any of:\n\t{}",
-        normalize_functor_for_compare(expected_functor),
-        preamble_functors.iter().map(|s| normalize_functor_for_compare(s)).join("\n\t")
+        expected_functor,
+        preamble_functors.iter().join("\n\t")
     );
 }
 
@@ -1110,12 +1121,12 @@ async fn analyzed_preamble_annotations_contains(context: &mut Context, step: &St
 async fn analyzed_fetch_annotations_are(context: &mut Context, step: &Step) {
     let expected_functor = step.docstring().unwrap();
     let analyzed = context.analyzed.as_ref().unwrap();
-    let actual_functor = encode_fetch_annotations_as_functor(&analyzed);
+    let actual_functor = encode_fetch_annotations_as_functor(analyzed);
 
-    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
+    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(&expected_functor));
 }
 
-fn normalize_functor_for_compare(functor: &String) -> String {
+fn normalize_functor_for_compare(functor: &str) -> String {
     let mut normalized = functor.to_lowercase();
     normalized.retain(|c| !c.is_whitespace());
     normalized

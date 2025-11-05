@@ -626,18 +626,14 @@ pub mod bdd {
             AnalyzedFunctionResponse, AnalyzedPipelineResponse, StructureConstraint, StructureConstraintWithSpan,
             StructureVertex,
         },
-        AnalysedQueryResponse,
     };
 
-    pub fn encode_query_structure_as_functor(analyzed: &AnalysedQueryResponse) -> (String, Vec<String>) {
-        let context = FunctorContext { pipeline: &analyzed.query };
-        let query = analyzed.query.encode_as_functor(&context);
-        let preamble = analyzed
-            .preamble
-            .iter()
-            .map(|func| func.encode_as_functor(&FunctorContext { pipeline: &func.body }))
-            .collect();
-        (query, preamble)
+    pub fn encode_pipeline_structure_as_functor(pipeline: &AnalyzedPipelineResponse) -> String {
+        pipeline.encode_as_functor(&FunctorContext { pipeline })
+    }
+
+    pub fn encode_function_structure_as_functor(function: &AnalyzedFunctionResponse) -> String {
+        function.encode_as_functor(&FunctorContext { pipeline: &function.body })
     }
 
     impl_functor_for!(struct AnalyzedPipelineResponse { stages, } named Pipeline);

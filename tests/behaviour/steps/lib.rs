@@ -113,7 +113,7 @@ pub struct Context {
     attributes: HashMap<String, Option<Attribute>>,
     attribute_lists: HashMap<String, Vec<Attribute>>,
 
-    analyzed_query: Option<AnalysedQueryResponse>,
+    analyzed: Option<AnalysedQueryResponse>,
 }
 
 static CONTEXT_INIT: Once = Once::new();

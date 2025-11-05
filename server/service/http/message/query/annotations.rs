@@ -181,12 +181,18 @@ pub(super) fn encode_analyzed_function(
     let arguments = structure.arguments;
     let returns = structure.return_;
     let body = encode_analyzed_pipeline(snapshot, type_manager, &structure.body, &annotations.body, true)?;
-    let argument_annotations = annotations.signature.arguments.into_iter().map(|arg| {
-        encode_function_parameter_annotations(snapshot, type_manager, arg)
-    }).collect::<Result<Vec<_>, _>>()?;
-    let return_types = annotations.signature.returns.into_iter().map(|arg| {
-        encode_function_parameter_annotations(snapshot, type_manager, arg)
-    }).collect::<Result<Vec<_>, _>>()?;
+    let argument_annotations = annotations
+        .signature
+        .arguments
+        .into_iter()
+        .map(|arg| encode_function_parameter_annotations(snapshot, type_manager, arg))
+        .collect::<Result<Vec<_>, _>>()?;
+    let return_types = annotations
+        .signature
+        .returns
+        .into_iter()
+        .map(|arg| encode_function_parameter_annotations(snapshot, type_manager, arg))
+        .collect::<Result<Vec<_>, _>>()?;
     let return_annotations = match annotations.signature.is_stream {
         true => FunctionReturnAnnotationsResponse::Stream { annotations: return_types },
         false => FunctionReturnAnnotationsResponse::Single { annotations: return_types },
@@ -248,27 +254,35 @@ pub mod bdd {
             functor_macros::{encode_functor_impl, impl_functor_for, impl_functor_for_multi},
             FunctorContext, FunctorEncoded,
         },
-        concept::{AttributeTypeResponse, EntityTypeResponse, RelationTypeResponse, RoleTypeResponse},
         query_structure::StructureConstraint,
         AnalysedQueryResponse,
     };
-    use crate::service::http::message::query::query_structure::AnalyzedFunctionResponse;
+    use crate::service::http::message::query::query_structure::{AnalyzedFunctionResponse, AnalyzedPipelineResponse};
 
-    pub fn encode_query_annotations_as_functor(analyzed: &AnalysedQueryResponse) -> (String, Vec<String>) {
-        let query = PipelineAnnotationsToEncode.encode_as_functor(&FunctorContext { pipeline: &analyzed.query });
-        let preamble = analyzed.preamble.iter().map(|func| {
-            let AnalyzedFunctionResponse { body, argument_annotations, return_annotations, ..} = func;
-            encode_functor_impl!(
-                &FunctorContext { pipeline: &body },
-                Function { argument_annotations, return_annotations, &PipelineAnnotationsToEncode, }
-            )
-        })
-        .collect();
-        (query, preamble)
+    pub fn encode_pipeline_annotations_as_functor(pipeline: &AnalyzedPipelineResponse) -> String {
+        PipelineAnnotationsToEncode.encode_as_functor(&FunctorContext { pipeline })
+    }
+
+    pub fn encode_function_annotations_as_functor(func: &AnalyzedFunctionResponse) -> String {
+        let AnalyzedFunctionResponse { body, argument_annotations, return_annotations, ..} = func;
+        encode_functor_impl!(
+            &FunctorContext { pipeline: &body },
+            Function { argument_annotations, return_annotations, &PipelineAnnotationsToEncode, }
+        )
     }
 
     pub fn encode_fetch_annotations_as_functor(analyzed: &AnalysedQueryResponse) -> String {
         analyzed.fetch.encode_as_functor(&FunctorContext { pipeline: &analyzed.query })
+    }
+
+    struct PipelineAnnotationsToEncode;
+
+    struct BlockAnnotationToEncode(usize);
+
+    enum SubBlockAnnotation {
+        Or { branches: Vec<BlockAnnotationToEncode> },
+        Not { conjunction: BlockAnnotationToEncode },
+        Try { conjunction: BlockAnnotationToEncode },
     }
 
     impl FunctorEncoded for PipelineAnnotationsToEncode {
@@ -309,18 +323,11 @@ pub mod bdd {
     }
 
     impl_functor_for!(enum FunctionReturnAnnotationsResponse [ Single { annotations, } | Stream { annotations, } | ]);
-    struct PipelineAnnotationsToEncode;
-    struct BlockAnnotationToEncode(usize);
+
     impl From<QueryStructureConjunctionID> for BlockAnnotationToEncode {
         fn from(value: QueryStructureConjunctionID) -> Self {
             Self(value.as_u32() as usize)
         }
-    }
-
-    enum SubBlockAnnotation {
-        Or { branches: Vec<BlockAnnotationToEncode> },
-        Not { conjunction: BlockAnnotationToEncode },
-        Try { conjunction: BlockAnnotationToEncode },
     }
 
     impl FunctorEncoded for BlockAnnotationToEncode {

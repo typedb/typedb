@@ -154,9 +154,9 @@ impl IntoResponse for QueryAnswer {
 #[serde(rename_all = "camelCase")]
 pub struct AnalysedQueryResponse {
     pub source: String,
-    pub(super) query: AnalyzedPipelineResponse,
-    pub(super) preamble: Vec<AnalyzedFunctionResponse>,
-    pub(super) fetch: Option<FetchStructureAnnotationsResponse>,
+    pub query: AnalyzedPipelineResponse,
+    pub preamble: Vec<AnalyzedFunctionResponse>,
+    pub fetch: Option<FetchStructureAnnotationsResponse>,
 }
 
 impl IntoResponse for AnalysedQueryResponse {
