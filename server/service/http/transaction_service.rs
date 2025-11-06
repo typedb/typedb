@@ -54,8 +54,10 @@ use uuid::Uuid;
 use crate::service::{
     http::message::{
         analyze::{
-            encode_analyzed_pipeline_for_studio, encode_analyzed_query, structure::AnalyzedPipelineResponse,
-            AnalysedQueryResponse, PipelineStructureResponseForStudio,
+            encode_analyzed_query,
+            structure::AnalyzedPipelineResponse,
+            studio::{encode_analyzed_pipeline_for_studio, PipelineStructureResponseForStudio},
+            AnalysedQueryResponse,
         },
         query::{document::encode_document, row::encode_row},
     },
