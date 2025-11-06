@@ -36,7 +36,7 @@ pub(crate) fn encode_row(
         )?;
         encoded_row.push(typedb_protocol::RowEntry { entry: Some(row_entry) });
     }
-    let involved_blocks = row.provenance().0.to_be_bytes().iter().copied().collect();
+    let involved_blocks = None; // TODO: Parallel branch which introduces these changes must be merged.
     Ok(typedb_protocol::ConceptRow { row: encoded_row, involved_blocks })
 }
 

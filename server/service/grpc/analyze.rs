@@ -12,7 +12,8 @@ use compiler::{
     query_structure::{
         ConjunctionAnnotations, FunctionReturnStructure, FunctionStructure, PipelineStructure,
         PipelineStructureAnnotations, PipelineVariableAnnotation, PipelineVariableAnnotationAndModifier,
-        QueryStructureConjunction, QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
+        QueryStructureConjunction, QueryStructureNestedPattern, QueryStructureStage, StructureSortVariable,
+        StructureVariableId,
     },
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
@@ -190,9 +191,12 @@ fn encode_query_stage(stage: &QueryStructureStage) -> structure_proto::PipelineS
             let sort_variables = variables
                 .iter()
                 .map(|v| {
-                    let direction = if v.ascending { SortDirection::Asc } else { SortDirection::Desc };
+                    let (direction, variable) = match v {
+                        StructureSortVariable::Ascending { variable } => (SortDirection::Asc, variable),
+                        StructureSortVariable::Descending { variable } => (SortDirection::Desc, variable),
+                    };
                     sort::SortVariable {
-                        variable: Some(encode_structure_variable(v.variable)),
+                        variable: Some(encode_structure_variable(*variable)),
                         direction: direction as i32,
                     }
                 })

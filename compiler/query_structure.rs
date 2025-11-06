@@ -471,19 +471,19 @@ impl From<Variable> for StructureVariableId {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StructureSortVariable {
-    pub variable: StructureVariableId,
-    pub ascending: bool, // TODO: Do we want to encode this as tag: Ascending | Descending?
+#[serde(rename_all = "camelCase", tag = "tag")]
+pub enum StructureSortVariable {
+    Ascending { variable: StructureVariableId },
+    Descending { variable: StructureVariableId },
 }
 
 impl From<&SortVariable> for StructureSortVariable {
     fn from(value: &SortVariable) -> Self {
-        let ascending = match value {
-            SortVariable::Ascending(_) => true,
-            SortVariable::Descending(_) => false,
-        };
-        Self { variable: value.variable().into(), ascending }
+        let variable = value.variable().into();
+        match value {
+            SortVariable::Ascending(_) => Self::Ascending { variable },
+            SortVariable::Descending(_) => Self::Descending { variable },
+        }
     }
 }
 

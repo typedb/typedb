@@ -581,10 +581,9 @@ pub mod bdd {
         QueryStructureConjunctionID => { context.pipeline.conjunctions[self.0 as usize].constraints.encode_as_functor(context) }
         StructureConstraintWithSpan => { self.constraint.encode_as_functor(context) }
         StructureSortVariable => {
-            let Self { ascending, variable } = self;
-            match ascending {
-                true => encode_functor_impl!(context, Asc { variable, }),
-                false => encode_functor_impl!(context, Desc { variable, }),
+            match self {
+                Self::Ascending{ variable } => encode_functor_impl!(context, Asc { variable, }),
+                Self::Descending{ variable } => encode_functor_impl!(context, Desc { variable, }),
             }
         }
     ]);
