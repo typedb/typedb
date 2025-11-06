@@ -202,25 +202,44 @@ impl Server {
 
     pub async fn serve(self) -> Result<(), ServerOpenError> {
         Self::print_hello(self.distribution_info, self.config.development_mode.enabled);
+        let serve_result = Self::serve_all(
+            self.distribution_info,
+            self.config.server.encryption,
+            self.server_state,
+            self.shutdown_sender.clone(),
+            self.shutdown_receiver,
+            self.background_tasks_tracker.get_spawner(),
+        )
+        .await;
+        let _ = self.shutdown_sender.send(());
+        self.background_tasks_tracker.join().await;
+        serve_result
+    }
 
+    async fn serve_all(
+        distribution_info: DistributionInfo,
+        encryption_config: EncryptionConfig,
+        server_state: ArcServerState,
+        shutdown_sender: Sender<()>,
+        shutdown_receiver: Receiver<()>,
+        background_tasks_spawner: TokioTaskSpawner,
+    ) -> Result<(), ServerOpenError> {
         Self::install_default_encryption_provider()?;
-
-        let server_state = self.server_state;
 
         let grpc_server = Self::serve_grpc(
             server_state.grpc_address().await,
-            &self.config.server.encryption,
+            &encryption_config,
             server_state.clone(),
-            self.shutdown_receiver.clone(),
+            shutdown_receiver.clone(),
         );
         let http_server = if let Some(http_address) = server_state.http_address().await {
             let server = Self::serve_http(
-                self.distribution_info,
+                distribution_info,
                 http_address,
-                &self.config.server.encryption,
+                &encryption_config,
                 server_state.clone(),
-                self.shutdown_receiver,
-                self.background_tasks_tracker.get_spawner(),
+                shutdown_receiver,
+                background_tasks_spawner,
             );
             Some(server)
         } else {
@@ -232,21 +251,16 @@ impl Server {
                 .server_status()
                 .await
                 .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?,
-            self.distribution_info,
-            &self.config.server.encryption,
+            distribution_info,
+            &encryption_config,
         );
 
-        Self::spawn_shutdown_handler(self.shutdown_sender);
+        Self::spawn_shutdown_handler(shutdown_sender);
         if let Some(http_server) = http_server {
-            let (grpc_result, http_result) = tokio::join!(grpc_server, http_server);
-            grpc_result?;
-            http_result?;
+            tokio::try_join!(grpc_server, http_server).map(|((), ())| ())
         } else {
-            grpc_server.await?;
+            grpc_server.await
         }
-
-        self.background_tasks_tracker.join().await;
-        Ok(())
     }
 
     async fn serve_grpc(

@@ -7,7 +7,7 @@
 use std::future::Future;
 
 use tokio::{
-    sync::{oneshot, watch::Receiver},
+    sync::{oneshot, watch},
     task::JoinHandle,
     time::{self, Duration},
 };
@@ -34,14 +34,14 @@ use tokio_util::task::TaskTracker;
 #[derive(Debug)]
 pub struct TokioTaskTracker {
     tracker: TaskTracker,
-    shutdown_receiver: Receiver<()>,
+    shutdown_receiver: watch::Receiver<()>,
     done_receiver: oneshot::Receiver<()>,
     shutdown_task: JoinHandle<()>,
 }
 
 impl TokioTaskTracker {
     /// Create a new `TokioTaskTracker` wired to the provided shutdown receiver.
-    pub fn new(shutdown_receiver: Receiver<()>) -> Self {
+    pub fn new(shutdown_receiver: watch::Receiver<()>) -> Self {
         let tracker = TaskTracker::new();
         let (done_sender, done_receiver) = oneshot::channel();
 
@@ -78,7 +78,7 @@ impl TokioTaskTracker {
 #[derive(Debug, Clone)]
 pub struct TokioTaskSpawner {
     tracker: TaskTracker,
-    shutdown_receiver: Receiver<()>,
+    shutdown_receiver: watch::Receiver<()>,
 }
 
 impl TokioTaskSpawner {
@@ -96,13 +96,12 @@ impl TokioTaskSpawner {
     pub fn spawn_interval<F>(
         &self,
         mut action: impl 'static + Send + FnMut() -> F,
-        parameters: IntervalTaskParameters,
+        IntervalTaskParameters { interval, initial_delay, act_on_shutdown }: IntervalTaskParameters,
     ) -> JoinHandle<F::Output>
     where
         F: Future<Output = ()> + Send + 'static,
     {
         let mut shutdown_receiver = self.shutdown_receiver.clone();
-        let IntervalTaskParameters { interval, initial_delay, act_on_shutdown } = parameters;
 
         self.spawn(async move {
             if !initial_delay.is_zero() {
