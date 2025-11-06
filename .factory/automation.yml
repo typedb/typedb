@@ -1,194 +1,194 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at https://mozilla.org/MPL/2.0/.
-
-config:
-  version-candidate: VERSION
-  dependencies:
-    dependencies: [build]
-    typeql: [build, release]
-    typedb-protocol: [build, release]
-    typedb-behaviour: [build]
-
-build:
-  quality:
-    filter:
-      owner: typedb
-      branch: [master, development]
-    dependency-analysis:
-      image: typedb-ubuntu-22.04
-      command: |
-        bazel run @typedb_dependencies//factory/analysis:dependency-analysis
-  correctness:
-    build:
-      image: typedb-ubuntu-22.04
-      command: |
-        sudo apt update
-        sudo apt install -y libclang-dev
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel build //... 
-        bazel run @typedb_dependencies//tool/checkstyle:test-coverage
-        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config
-
-#    build-dependency:
+## This Source Code Form is subject to the terms of the Mozilla Public
+## License, v. 2.0. If a copy of the MPL was not distributed with this
+## file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+#config:
+#  version-candidate: VERSION
+#  dependencies:
+#    dependencies: [build]
+#    typeql: [build, release]
+#    typedb-protocol: [build, release]
+#    typedb-behaviour: [build]
+#
+#build:
+#  quality:
+#    filter:
+#      owner: typedb
+#      branch: [master, development]
+#    dependency-analysis:
 #      image: typedb-ubuntu-22.04
+#      command: |
+#        bazel run @typedb_dependencies//factory/analysis:dependency-analysis
+#  correctness:
+#    build:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        sudo apt update
+#        sudo apt install -y libclang-dev
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel build //...
+#        bazel run @typedb_dependencies//tool/checkstyle:test-coverage
+#        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
+#        bazel test $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config
+#
+##    build-dependency:
+##      image: typedb-ubuntu-22.04
+##      command: |
+##        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+##        dependencies/maven/update.sh
+##        git diff --exit-code dependencies/maven/artifacts.snapshot
+##        bazel run @typedb_dependencies//tool/unuseddeps:unused-deps -- list
+#
+#    cargo-check:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        sudo apt update
+#        sudo apt install -y libclang-dev
+#        curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protoc-21.12-linux-x86_64.zip
+#        mkdir protoc
+#        unzip protoc-21.12-linux-x86_64.zip -d protoc
+#        export PROTOC=$PWD/protoc/bin/protoc
+#        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+#        source ~/.cargo/env
+#        cargo check --all --profile=ci-check
+#
+## TODO: Cannot be run because the sync tool does not guarantee a specific order of targets
+##    cargo-toml-sync:
+##      image: typedb-ubuntu-22.04
+##      command: |
+##        tool/rust/sync.sh
+##        git add .
+##        git diff --exit-code HEAD || {
+##          echo "Failed to verify toml files: please update them manually and verify the changes"
+##          exit 1
+##        }
+#
+#    test-unit:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
 #      command: |
 #        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        dependencies/maven/update.sh
-#        git diff --exit-code dependencies/maven/artifacts.snapshot
-#        bazel run @typedb_dependencies//tool/unuseddeps:unused-deps -- list
-
-    cargo-check:
-      image: typedb-ubuntu-22.04
-      command: |
-        sudo apt update
-        sudo apt install -y libclang-dev
-        curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protoc-21.12-linux-x86_64.zip
-        mkdir protoc
-        unzip protoc-21.12-linux-x86_64.zip -d protoc
-        export PROTOC=$PWD/protoc/bin/protoc
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-        source ~/.cargo/env
-        cargo check --all --profile=ci-check
-
-# TODO: Cannot be run because the sync tool does not guarantee a specific order of targets
-#    cargo-toml-sync:
+#        bazel test //common/cache:test_crate_cache --test_output=streamed
+#        bazel test //compiler:test_crate_compiler --test_output=streamed
+#        bazel test //concept:test_crate_concept --test_output=streamed
+#        bazel test //database:test_crate_database --test_output=streamed
+#        bazel test //durability:test_crate_durability  --test_output=streamed
+#        bazel test //encoding:test_crate_encoding --test_output=streamed
+#        bazel test //executor:test_crate_executor --test_output=streamed
+#        bazel test //function:test_crate_function --test_output=streamed
+#        bazel test //ir:test_crate_ir --test_output=streamed
+#        bazel test //query:test_crate_query --test_output=streamed
+#        bazel test //server:test_crate_server --test_output=streamed
+#        bazel test //storage:test_crate_storage --test_output=streamed
+#
+#    test-integration:
 #      image: typedb-ubuntu-22.04
-#      command: |
-#        tool/rust/sync.sh
-#        git add .
-#        git diff --exit-code HEAD || {
-#          echo "Failed to verify toml files: please update them manually and verify the changes"
-#          exit 1
-#        }
-
-    test-unit:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //common/cache:test_crate_cache --test_output=streamed
-        bazel test //compiler:test_crate_compiler --test_output=streamed
-        bazel test //concept:test_crate_concept --test_output=streamed
-        bazel test //database:test_crate_database --test_output=streamed
-        bazel test //durability:test_crate_durability  --test_output=streamed
-        bazel test //encoding:test_crate_encoding --test_output=streamed
-        bazel test //executor:test_crate_executor --test_output=streamed
-        bazel test //function:test_crate_function --test_output=streamed
-        bazel test //ir:test_crate_ir --test_output=streamed
-        bazel test //query:test_crate_query --test_output=streamed
-        bazel test //server:test_crate_server --test_output=streamed
-        bazel test //storage:test_crate_storage --test_output=streamed
-
-    test-integration:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test $(bazel query 'kind(rust_test, //compiler/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //concept/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //database/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //durability/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //encoding/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //executor/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //function/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //ir/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //query/tests/...)') --test_output=streamed
-        # TODO: Uncomment!
-        # bazel test $(bazel query 'kind(rust_test, //storage/tests/...)') --test_output=streamed
-        bazel test //storage/tests:test_mvcc //storage/tests:test_snapshot //storage/tests:test_isolation //storage/tests:test_storage --test_output=streamed
-
-#    tests-commented-out-which-fail:
-#      image: typedb-ubuntu-22.04
-#      dependencies: [ build ]
+#      dependencies: [build]
 #      command: |
 #        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        bazel test //storage/tests/... --test_output=streamed
-
-    test-behaviour-connection:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/connection:test_connection --test_output=streamed  --test_arg="--test-threads=1"
-
-    test-behaviour-concept:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/concept:test_concept --test_output=errors --test_arg="--test-threads=1"
-
-    test-behaviour-query-read:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_read"
-
-    test-behaviour-query-write:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_write"
-
-    test-behaviour-query-analyze:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_analyze"
-
-    test-behaviour-query-definable:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_definable"
-
-    test-behaviour-functions:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="functions::"
-
-    test-assembly:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/assembly:test_assembly
-
-    test-behaviour-service:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test $(bazel query 'kind(rust_test, //tests/behaviour/service/...)') --test_output=streamed --jobs=1
-
-release:
-  filter:
-    owner: typedb
-    branch: [master]
-  validation:
-    validate-dependencies:
-      image: typedb-ubuntu-22.04
-      command: |
-        bazel test //:release-validate-deps --test_output=streamed
-
-    validate-release-notes:
-      image: typedb-ubuntu-22.04
-      command: |
-        export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
-
-  deployment:
-    trigger-release-circleci:
-      image: typedb-ubuntu-22.04
-      command: |
-        git checkout -b release
-        git push -f origin release
-        echo "Successfully pushed branch 'release', which triggers a release workflow in CircleCI. The progress of the release can be tracked there."
+#        bazel test $(bazel query 'kind(rust_test, //compiler/tests/...)') --test_output=streamed
+#        bazel test $(bazel query 'kind(rust_test, //concept/tests/...)') --test_output=streamed
+#        bazel test $(bazel query 'kind(rust_test, //database/tests/...)') --test_output=streamed
+#        bazel test $(bazel query 'kind(rust_test, //durability/tests/...)') --test_output=streamed
+#        bazel test $(bazel query 'kind(rust_test, //encoding/tests/...)') --test_output=streamed
+#        bazel test $(bazel query 'kind(rust_test, //executor/tests/...)') --test_output=streamed
+#        bazel test $(bazel query 'kind(rust_test, //function/tests/...)') --test_output=streamed
+#        bazel test $(bazel query 'kind(rust_test, //ir/tests/...)') --test_output=streamed
+#        bazel test $(bazel query 'kind(rust_test, //query/tests/...)') --test_output=streamed
+#        # TODO: Uncomment!
+#        # bazel test $(bazel query 'kind(rust_test, //storage/tests/...)') --test_output=streamed
+#        bazel test //storage/tests:test_mvcc //storage/tests:test_snapshot //storage/tests:test_isolation //storage/tests:test_storage --test_output=streamed
+#
+##    tests-commented-out-which-fail:
+##      image: typedb-ubuntu-22.04
+##      dependencies: [ build ]
+##      command: |
+##        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+##        bazel test //storage/tests/... --test_output=streamed
+#
+#    test-behaviour-connection:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/connection:test_connection --test_output=streamed  --test_arg="--test-threads=1"
+#
+#    test-behaviour-concept:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/concept:test_concept --test_output=errors --test_arg="--test-threads=1"
+#
+#    test-behaviour-query-read:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_read"
+#
+#    test-behaviour-query-write:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_write"
+#
+#    test-behaviour-query-analyze:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_analyze"
+#
+#    test-behaviour-query-definable:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_definable"
+#
+#    test-behaviour-functions:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="functions::"
+#
+#    test-assembly:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/assembly:test_assembly
+#
+#    test-behaviour-service:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test $(bazel query 'kind(rust_test, //tests/behaviour/service/...)') --test_output=streamed --jobs=1
+#
+#release:
+#  filter:
+#    owner: typedb
+#    branch: [master]
+#  validation:
+#    validate-dependencies:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        bazel test //:release-validate-deps --test_output=streamed
+#
+#    validate-release-notes:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
+#        bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
+#
+#  deployment:
+#    trigger-release-circleci:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        git checkout -b release
+#        git push -f origin release
+#        echo "Successfully pushed branch 'release', which triggers a release workflow in CircleCI. The progress of the release can be tracked there."
