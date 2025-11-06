@@ -25,7 +25,7 @@ use crate::service::{
 #[serde(rename_all = "camelCase")]
 struct EncodedRow<'a> {
     data: HashMap<&'a str, serde_json::Value>,
-    involved_blocks: Vec<u16>, // TODO: Rename if we break studio compatibility
+    involved_blocks: Option<Vec<u16>>, // TODO: Rename if we break studio compatibility
 }
 
 pub fn encode_row<'a>(
@@ -52,10 +52,11 @@ pub fn encode_row<'a>(
         )?;
         encoded_row.insert(variable.as_str(), row_entry);
     }
-    let involved_blocks = if let IncludeInvolvedBlocks::True { always_involved } = include_involved_blocks {
-        chain!(row.provenance().branch_ids().map(|b| b.0), always_involved.iter().map(|b| b.0)).collect()
-    } else {
-        Vec::new()
+    let involved_blocks = match include_involved_blocks {
+        IncludeInvolvedBlocks::False => None,
+        IncludeInvolvedBlocks::True { always_involved } => {
+            Some(chain!(row.provenance().branch_ids().map(|b| b.0), always_involved.iter().map(|b| b.0)).collect())
+        }
     };
 
     Ok(json!(EncodedRow { data: encoded_row, involved_blocks }))

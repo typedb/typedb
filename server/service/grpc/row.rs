@@ -41,22 +41,23 @@ pub(crate) fn encode_row(
         )?;
         encoded_row.push(typedb_protocol::RowEntry { entry: Some(row_entry) });
     }
-    let involved_blocks = if let IncludeInvolvedBlocks::True { always_involved } = include_involved_blocks {
-        // TODO: Eventually: row.provenance().0.to_le_bytes().iter().copied().collect()
-        let mut involved_blocks = Vec::new();
-        chain!(row.provenance().branch_ids().map(|b| b.0), always_involved.iter().map(|b| b.0)).for_each(
-            |block_index| {
-                let byte_index = block_index as usize / 64;
-                let bit_index = block_index % 64;
-                if byte_index >= involved_blocks.len() {
-                    involved_blocks.resize(byte_index + 1, 0);
-                }
-                involved_blocks[byte_index] |= 1 << bit_index;
-            },
-        );
-        involved_blocks
-    } else {
-        Vec::new()
+    let involved_blocks = match include_involved_blocks {
+        IncludeInvolvedBlocks::False => None,
+        IncludeInvolvedBlocks::True { always_involved } => {
+            // TODO: Eventually: row.provenance().0.to_le_bytes().iter().copied().collect()
+            let mut involved_blocks = Vec::new();
+            chain!(row.provenance().branch_ids().map(|b| b.0), always_involved.iter().map(|b| b.0)).for_each(
+                |block_index| {
+                    let byte_index = block_index as usize / 64;
+                    let bit_index = block_index % 64;
+                    if byte_index >= involved_blocks.len() {
+                        involved_blocks.resize(byte_index + 1, 0);
+                    }
+                    involved_blocks[byte_index] |= 1 << bit_index;
+                },
+            );
+            Some(involved_blocks)
+        }
     };
 
     Ok(typedb_protocol::ConceptRow { row: encoded_row, involved_blocks })
