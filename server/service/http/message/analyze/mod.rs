@@ -102,7 +102,7 @@ struct StructureConstraintWithSpanForStudio {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", tag = "none")]
+#[serde(rename_all = "camelCase", untagged)]
 pub enum StructureConstraintForStudio {
     Normal(StructureConstraint),
     StudioOnly(StudioOnlyConstraint),
