@@ -28,6 +28,19 @@ use crate::service::http::message::{
 pub mod annotations;
 pub mod structure;
 
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct AnalyzeOptionsPayload {
+    pub include_plan: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct TransactionAnalyzePayload {
+    pub options: Option<AnalyzeOptionsPayload>,
+    pub query: String,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnalysedQueryResponse {

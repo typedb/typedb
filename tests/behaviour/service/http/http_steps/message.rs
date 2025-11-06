@@ -361,6 +361,7 @@ pub async fn query(
         send_request(http_client, auth_token, Method::POST, &url, Some(json!(json_map).to_string().as_str())).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
+
 pub async fn transactions_analyze(
     http_client: &Client<HttpConnector>,
     auth_token: Option<impl AsRef<str>>,
