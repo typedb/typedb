@@ -102,9 +102,15 @@ struct StructureConstraintWithSpanForStudio {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", tag = "tag")]
+#[serde(rename_all = "camelCase", tag = "none")]
 pub enum StructureConstraintForStudio {
     Normal(StructureConstraint),
+    StudioOnly(StudioOnlyConstraint),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "tag")]
+pub enum StudioOnlyConstraint {
     Expression {
         text: String,
         assigned: Vec<StructureVertex>, // In just StructureVertex in analyze
@@ -147,11 +153,15 @@ impl TryFrom<StructureConstraint> for StructureConstraintForStudio {
                 } else {
                     role
                 };
-                Ok(StructureConstraintForStudio::Links { relation, player, role })
+                Ok(StructureConstraintForStudio::StudioOnly(StudioOnlyConstraint::Links { relation, player, role }))
             }
             StructureConstraint::Expression { text, assigned, arguments } => {
                 let assigned = vec![assigned];
-                Ok(StructureConstraintForStudio::Expression { text, assigned, arguments })
+                Ok(StructureConstraintForStudio::StudioOnly(StudioOnlyConstraint::Expression {
+                    text,
+                    assigned,
+                    arguments,
+                }))
             }
             StructureConstraint::Or { .. } | StructureConstraint::Not { .. } | StructureConstraint::Try { .. } => {
                 Err(())
