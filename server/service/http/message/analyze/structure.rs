@@ -534,7 +534,7 @@ pub mod bdd {
         Limit { limit, } |
         Require { variables, } |
         Distinct { } |
-        Reduce { reducers, groupby, } | // TODO
+        Reduce { reducers, groupby, } |
     ]);
 
     impl_functor_for!(enum StructureConstraint [
