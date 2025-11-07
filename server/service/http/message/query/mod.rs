@@ -14,9 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::service::{
     http::{
-        message::{
-            analyze::studio::PipelineStructureResponseForStudio, body::JsonBody, transaction::TransactionOpenPayload,
-        },
+        message::{analyze::structure::AnalyzedPipelineResponse, body::JsonBody, transaction::TransactionOpenPayload},
         transaction_service::QueryAnswer,
     },
     AnswerType, QueryType,
@@ -31,12 +29,12 @@ pub mod row;
 pub struct QueryOptionsPayload {
     pub include_instance_types: Option<bool>,
     pub answer_count_limit: Option<u64>,
-    pub include_structure: Option<bool>,
+    pub include_query_structure: Option<bool>,
 }
 
 impl Default for QueryOptionsPayload {
     fn default() -> Self {
-        Self { include_instance_types: None, answer_count_limit: None, include_structure: None }
+        Self { include_instance_types: None, answer_count_limit: None, include_query_structure: None }
     }
 }
 
@@ -49,7 +47,7 @@ impl Into<QueryOptions> for QueryOptionsPayload {
                 .map(|option| Some(option as usize))
                 .unwrap_or(DEFAULT_ANSWER_COUNT_LIMIT_HTTP),
             prefetch_size: DEFAULT_PREFETCH_SIZE as usize,
-            include_query_structure: self.include_structure.unwrap_or(DEFAULT_INCLUDE_STRUCTURE_HTTP),
+            include_query_structure: self.include_query_structure.unwrap_or(DEFAULT_INCLUDE_STRUCTURE_HTTP),
         }
     }
 }
@@ -78,7 +76,7 @@ pub struct QueryAnswerResponse {
     pub query_type: QueryType,
     pub answer_type: AnswerType,
     pub answers: Option<Vec<serde_json::Value>>,
-    pub query: Option<PipelineStructureResponseForStudio>,
+    pub query: Option<AnalyzedPipelineResponse>,
     pub warning: Option<String>,
 }
 
@@ -89,7 +87,7 @@ pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerRespon
 pub(crate) fn encode_query_rows_answer(
     query_type: QueryType,
     rows: Vec<serde_json::Value>,
-    pipeline_structure: Option<PipelineStructureResponseForStudio>,
+    pipeline_structure: Option<AnalyzedPipelineResponse>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
     QueryAnswerResponse {

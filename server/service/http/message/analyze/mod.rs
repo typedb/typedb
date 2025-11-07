@@ -17,7 +17,6 @@ use crate::service::http::message::body::JsonBody;
 
 pub mod annotations;
 pub mod structure;
-pub(crate) mod studio;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

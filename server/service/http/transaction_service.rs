@@ -55,8 +55,7 @@ use crate::service::{
     http::message::{
         analyze::{
             encode_analyzed_query,
-            structure::AnalyzedPipelineResponse,
-            studio::{encode_analyzed_pipeline_for_studio, PipelineStructureResponseForStudio},
+            structure::{encode_analyzed_pipeline_for_studio, AnalyzedPipelineResponse},
             AnalysedQueryResponse,
         },
         query::{document::encode_document, row::encode_row},
@@ -172,9 +171,7 @@ pub(crate) enum TransactionServiceResponse {
 #[derive(Debug)]
 pub(crate) enum QueryAnswer {
     ResOk(QueryType),
-    ResRows(
-        (QueryType, Vec<serde_json::Value>, Option<PipelineStructureResponseForStudio>, Option<QueryAnswerWarning>),
-    ),
+    ResRows((QueryType, Vec<serde_json::Value>, Option<AnalyzedPipelineResponse>, Option<QueryAnswerWarning>)),
     ResDocuments((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
 }
 

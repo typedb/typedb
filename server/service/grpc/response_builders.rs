@@ -164,7 +164,6 @@ pub(crate) mod database {
 }
 
 pub(crate) mod transaction {
-    use compiler::query_structure::PipelineStructure;
     use uuid::Uuid;
 
     pub(crate) fn transaction_open_res(

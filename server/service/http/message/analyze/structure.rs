@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
@@ -237,6 +237,15 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
             self.variables.insert(variable, info);
         }
     }
+}
+
+pub fn encode_analyzed_pipeline_for_studio(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    structure: &PipelineStructure,
+) -> Result<AnalyzedPipelineResponse, Box<ConceptReadError>> {
+    let dummy_annotations = vec![BTreeMap::new(); structure.parametrised_structure.conjunctions.len()];
+    encode_analyzed_pipeline(snapshot, type_manager, structure, &dummy_annotations)
 }
 
 pub fn encode_analyzed_pipeline(
