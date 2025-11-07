@@ -164,6 +164,7 @@ pub(crate) mod database {
 }
 
 pub(crate) mod transaction {
+    use compiler::query_structure::PipelineStructure;
     use uuid::Uuid;
 
     pub(crate) fn transaction_open_res(
@@ -187,11 +188,13 @@ pub(crate) mod transaction {
     pub(crate) fn query_res_ok_concept_row_stream(
         column_variable_names: Vec<String>,
         query_type: typedb_protocol::query::Type,
+        query_structure: Option<typedb_protocol::analyze::res::analyzed_query::Pipeline>,
     ) -> typedb_protocol::query::initial_res::ok::Ok {
         typedb_protocol::query::initial_res::ok::Ok::ConceptRowStream(
             typedb_protocol::query::initial_res::ok::ConceptRowStream {
                 column_variable_names,
                 query_type: query_type.into(),
+                query_structure,
             },
         )
     }
