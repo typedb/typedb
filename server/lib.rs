@@ -76,6 +76,9 @@ impl ServerBuilder {
     }
 
     pub fn background_tasks_tracker(mut self, background_tasks_tracker: TokioTaskTracker) -> Self {
+        if self.background_tasks_tracker.is_some() {
+            panic!("Tried to override an already existing background tasks tracker which could already have running not awaited tasks.");
+        }
         self.background_tasks_tracker = Some(background_tasks_tracker);
         self
     }
