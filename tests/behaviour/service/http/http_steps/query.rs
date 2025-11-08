@@ -20,7 +20,7 @@ use server::service::{
             },
             structure::bdd::{encode_function_structure_as_functor, encode_pipeline_structure_as_functor},
         },
-        query::QueryAnswerResponse,
+        query::{QueryAnswerResponse, QueryOptionsPayload},
     },
     AnswerType,
 };
@@ -286,6 +286,12 @@ pub async fn set_query_option_include_instance_types(context: &mut Context, valu
 pub async fn set_query_option_answer_count_limit(context: &mut Context, value: u64) {
     context.init_query_options_if_needed();
     context.query_options.as_mut().unwrap().answer_count_limit = Some(value);
+}
+
+#[cucumber::given(expr = "set query option include_query_structure to: {boolean}")]
+async fn set_query_option_include_query_structure(context: &mut Context, set_to: params::Boolean, step: &Step) {
+    context.init_query_options_if_needed();
+    context.query_options.as_mut().unwrap().include_query_structure = Some(set_to.to_bool());
 }
 
 #[apply(generic_step)]
@@ -1126,6 +1132,14 @@ async fn analyzed_fetch_annotations_are(context: &mut Context, step: &Step) {
     let actual_functor = encode_fetch_annotations_as_functor(analyzed);
 
     assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(&expected_functor));
+}
+
+#[cucumber::then("answers have query structure:")]
+pub async fn answer_has_structure(context: &mut Context, step: &Step) {
+    let expected_functor = step.docstring().unwrap();
+    let pipeline = context.get_answer().unwrap().query.as_ref().unwrap();
+    let actual_functor = encode_pipeline_structure_as_functor(pipeline);
+    assert_eq!(normalize_functor_for_compare(&actual_functor), normalize_functor_for_compare(expected_functor));
 }
 
 fn normalize_functor_for_compare(functor: &str) -> String {

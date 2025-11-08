@@ -55,7 +55,7 @@ pub struct VariableAnnotationsResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum TypeAnnotationResponse {
-    Thing {
+    Instance {
         annotations: Vec<SingleTypeAnnotationResponse>,
     },
     Type {
@@ -110,7 +110,7 @@ fn encode_function_parameter_annotations(
     annotation: FunctionParameterAnnotation,
 ) -> Result<TypeAnnotationResponse, Box<ConceptReadError>> {
     Ok(match annotation {
-        FunctionParameterAnnotation::Concept(types) => TypeAnnotationResponse::Thing {
+        FunctionParameterAnnotation::Concept(types) => TypeAnnotationResponse::Instance {
             annotations: encode_type_annotation_vec(snapshot, type_manager, types.iter())?,
         },
         FunctionParameterAnnotation::Value(v) => {
@@ -128,7 +128,7 @@ pub fn encode_variable_type_annotations_and_modifiers(
         PipelineVariableAnnotation::Type(types) => TypeAnnotationResponse::Type {
             annotations: encode_type_annotation_vec(snapshot, type_manager, types.iter())?,
         },
-        PipelineVariableAnnotation::Thing(types) => TypeAnnotationResponse::Thing {
+        PipelineVariableAnnotation::Instance(types) => TypeAnnotationResponse::Instance {
             annotations: encode_type_annotation_vec(snapshot, type_manager, types.iter())?,
         },
         PipelineVariableAnnotation::Value(v) => {
@@ -351,7 +351,7 @@ pub mod bdd {
     }
 
     impl_functor_for!(enum SubBlockAnnotation [ Or { branches, } | Not { conjunction, } | Try { conjunction, } | ]);
-    impl_functor_for!(enum TypeAnnotationResponse [ Thing { annotations, } | Type { annotations, } | Value { value_types, } | ]);
+    impl_functor_for!(enum TypeAnnotationResponse [ Instance { annotations, } | Type { annotations, } | Value { value_types, } | ]);
     impl_functor_for_multi!(|self, context| [
         ConjunctionAnnotationsResponse => { self.variable_annotations.encode_as_functor(context) }
         SingleTypeAnnotationResponse =>  { self.label().to_owned().encode_as_functor(context) }

@@ -137,7 +137,7 @@ pub fn extract_pipeline_structure_from(
 
 #[derive(Debug, Clone)]
 pub enum PipelineVariableAnnotation {
-    Thing(Vec<answer::Type>),
+    Instance(Vec<answer::Type>),
     Type(Vec<answer::Type>),
     Value(ValueType),
 }

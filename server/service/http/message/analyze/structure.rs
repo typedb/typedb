@@ -601,6 +601,6 @@ pub mod bdd {
         Stream { variables, } |
         Single { selector, variables, }  |
         Check { }  |
-        Reduce {} |
+        Reduce { reducers, } |
     ]);
 }

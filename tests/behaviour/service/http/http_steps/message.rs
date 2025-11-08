@@ -373,7 +373,6 @@ pub async fn transactions_analyze(
     json_map.insert("query".to_string(), json!(query));
     let response =
         send_request(http_client, auth_token, Method::POST, &url, Some(json!(json_map).to_string().as_str())).await?;
-    eprintln!("RESPONSE: {}", response);
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 

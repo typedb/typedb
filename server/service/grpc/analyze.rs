@@ -619,7 +619,7 @@ fn encode_conjunction_annotations(
         .iter()
         .map(|(variable_id, annotation)| {
             let encoded = match &annotation.annotations {
-                PipelineVariableAnnotation::Thing(types) => {
+                PipelineVariableAnnotation::Instance(types) => {
                     conjunction_proto::variable_annotations::Annotations::Instance(
                         encode_types_to_concept_variable_annotations(snapshot, type_manager, types.iter())?,
                     )
