@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{authentication::Accessor, service::http::error::HttpServiceError};
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct SigninPayload {
     pub username: String,
     pub password: String,

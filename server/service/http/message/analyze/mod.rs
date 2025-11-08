@@ -19,13 +19,13 @@ pub mod annotations;
 pub mod structure;
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct AnalyzeOptionsPayload {
     pub include_plan: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionAnalyzePayload {
     pub options: Option<AnalyzeOptionsPayload>,
     pub query: String,
