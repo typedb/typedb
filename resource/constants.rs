@@ -53,7 +53,7 @@ pub mod server {
     pub const DEFAULT_INCLUDE_INSTANCE_TYPES_FETCH: bool = false;
     pub const DEFAULT_ANSWER_COUNT_LIMIT_GRPC: Option<usize> = None;
     pub const DEFAULT_ANSWER_COUNT_LIMIT_HTTP: Option<usize> = Some(10_000);
-    pub const DEFAULT_INCLUDE_STRUCTURE_HTTP: bool = true;
+    pub const DEFAULT_INCLUDE_STRUCTURE_HTTP: bool = true; // True for studio backwards compatibility
     pub const DEFAULT_INCLUDE_STRUCTURE_GRPC: bool = false;
 
     pub const PERF_COUNTERS_ENABLED: bool = true;
