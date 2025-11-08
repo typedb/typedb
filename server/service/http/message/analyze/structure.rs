@@ -28,7 +28,7 @@ use typeql::common::Span;
 
 use super::annotations::{
     encode_variable_type_annotations_and_modifiers, ConjunctionAnnotationsResponse, FunctionReturnAnnotationsResponse,
-    TypeAnnotationResponse,
+    VariableAnnotationsResponse,
 };
 use crate::service::http::message::query::concept::{
     encode_type_concept, encode_value, EntityTypeResponse, ValueResponse,
@@ -40,7 +40,7 @@ pub struct AnalyzedFunctionResponse {
     pub body: AnalyzedPipelineResponse,
     pub arguments: Vec<StructureVariableId>,
     pub returns: FunctionReturnStructure,
-    pub argument_annotations: Vec<TypeAnnotationResponse>,
+    pub argument_annotations: Vec<VariableAnnotationsResponse>,
     pub return_annotations: FunctionReturnAnnotationsResponse,
 }
 

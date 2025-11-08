@@ -76,8 +76,8 @@ pub struct ConjunctionAnnotationsResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum FunctionReturnAnnotationsResponse {
-    Single { annotations: Vec<TypeAnnotationResponse> },
-    Stream { annotations: Vec<TypeAnnotationResponse> },
+    Single { annotations: Vec<VariableAnnotationsResponse> },
+    Stream { annotations: Vec<VariableAnnotationsResponse> },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -108,15 +108,16 @@ fn encode_function_parameter_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     annotation: FunctionParameterAnnotation,
-) -> Result<TypeAnnotationResponse, Box<ConceptReadError>> {
-    Ok(match annotation {
+) -> Result<VariableAnnotationsResponse, Box<ConceptReadError>> {
+    let annotations = match annotation {
         FunctionParameterAnnotation::Concept(types) => TypeAnnotationResponse::Instance {
             annotations: encode_type_annotation_vec(snapshot, type_manager, types.iter())?,
         },
         FunctionParameterAnnotation::Value(v) => {
             TypeAnnotationResponse::Value { value_types: vec![encode_value_type(v, snapshot, type_manager)?] }
         }
-    })
+    };
+    Ok(VariableAnnotationsResponse { is_optional: false, annotations })
 }
 
 pub fn encode_variable_type_annotations_and_modifiers(
