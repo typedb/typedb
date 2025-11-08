@@ -12,7 +12,8 @@ use compiler::{
     query_structure::{
         ConjunctionAnnotations, FunctionReturnStructure, FunctionStructure, PipelineStructure,
         PipelineStructureAnnotations, PipelineVariableAnnotation, PipelineVariableAnnotationAndModifier,
-        QueryStructureConjunction, QueryStructureNestedPattern, QueryStructureStage, StructureVariableId,
+        QueryStructureConjunction, QueryStructureNestedPattern, QueryStructureStage, StructureSortVariable,
+        StructureVariableId,
     },
 };
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
@@ -74,7 +75,7 @@ pub fn encode_analyzed_query(
     analyzed_query: AnalysedQuery,
 ) -> Result<typedb_protocol::analyze::res::AnalyzedQuery, Box<ConceptReadError>> {
     let AnalysedQuery { structure, annotations, source } = analyzed_query;
-    let query = encode_pipeline(snapshot, type_manager, &structure.query, &annotations.query)?;
+    let query = encode_analyzed_pipeline(snapshot, type_manager, &structure.query, &annotations.query)?;
     let preamble = std::iter::zip(structure.preamble.iter(), annotations.preamble.iter())
         .map(|(structure, annotations)| encode_function(snapshot, type_manager, structure, annotations))
         .collect::<Result<_, _>>()?;
@@ -96,7 +97,7 @@ fn encode_function(
     annotations: &FunctionStructureAnnotations,
 ) -> Result<analyze_proto::Function, Box<ConceptReadError>> {
     use analyze_proto::function as function_proto;
-    let body = encode_pipeline(snapshot, type_manager, &structure.body, &annotations.body)?;
+    let body = encode_analyzed_pipeline(snapshot, type_manager, &structure.body, &annotations.body)?;
     let arguments = structure.arguments.iter().map(|v| encode_structure_variable(*v)).collect();
     let return_operation_variant = match &structure.return_ {
         FunctionReturnStructure::Stream { variables } => {
@@ -150,7 +151,16 @@ fn encode_function(
     })
 }
 
-fn encode_pipeline(
+pub(crate) fn encode_analyzed_pipeline_for_query(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    structure: &PipelineStructure,
+) -> Result<analyze_proto::Pipeline, Box<ConceptReadError>> {
+    let dummy_annotations = &vec![BTreeMap::new(); structure.parametrised_structure.conjunctions.len()];
+    encode_analyzed_pipeline(snapshot, type_manager, structure, &dummy_annotations)
+}
+
+fn encode_analyzed_pipeline(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     structure: &PipelineStructure,
@@ -190,9 +200,12 @@ fn encode_query_stage(stage: &QueryStructureStage) -> structure_proto::PipelineS
             let sort_variables = variables
                 .iter()
                 .map(|v| {
-                    let direction = if v.ascending { SortDirection::Asc } else { SortDirection::Desc };
+                    let (direction, variable) = match v {
+                        StructureSortVariable::Ascending { variable } => (SortDirection::Asc, variable),
+                        StructureSortVariable::Descending { variable } => (SortDirection::Desc, variable),
+                    };
                     sort::SortVariable {
-                        variable: Some(encode_structure_variable(v.variable)),
+                        variable: Some(encode_structure_variable(*variable)),
                         direction: direction as i32,
                     }
                 })
@@ -287,7 +300,7 @@ fn query_structure_constraint(
             constraints.push(conjunction_proto::Constraint {
                 span,
                 constraint: Some(structure_constraint::Constraint::Isa(structure_constraint::Isa {
-                    thing: Some(encode_structure_vertex_variable(isa.thing())?),
+                    instance: Some(encode_structure_vertex_variable(isa.thing())?),
                     r#type: Some(encode_structure_vertex_label_or_variable(context, isa.type_())?),
                     exactness: encode_exactness(isa.isa_kind() == IsaKind::Exact) as i32,
                 })),
@@ -606,8 +619,8 @@ fn encode_conjunction_annotations(
         .iter()
         .map(|(variable_id, annotation)| {
             let encoded = match &annotation.annotations {
-                PipelineVariableAnnotation::Thing(types) => {
-                    conjunction_proto::variable_annotations::Annotations::Thing(
+                PipelineVariableAnnotation::Instance(types) => {
+                    conjunction_proto::variable_annotations::Annotations::Instance(
                         encode_types_to_concept_variable_annotations(snapshot, type_manager, types.iter())?,
                     )
                 }
@@ -679,7 +692,7 @@ fn encode_function_parameter_annotations(
     let annotations = match parameter {
         FunctionParameterAnnotation::Concept(types) => {
             let annotations = encode_types_to_concept_variable_annotations(snapshot, type_manager, types.iter())?;
-            conjunction_proto::variable_annotations::Annotations::Thing(annotations)
+            conjunction_proto::variable_annotations::Annotations::Instance(annotations)
         }
         FunctionParameterAnnotation::Value(value) => {
             conjunction_proto::variable_annotations::Annotations::ValueAnnotations(encode_value_type(

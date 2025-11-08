@@ -4,44 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use ::concept::{error::ConceptReadError, type_::type_manager::TypeManager};
-use annotations::QueryStructureAnnotationsResponse;
 use axum::response::{IntoResponse, Response};
-use http::StatusCode;
 use options::QueryOptions;
-use query::analyse::{AnalysedQuery, QueryStructureAnnotations};
 use resource::constants::server::{
-    DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
+    DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_INCLUDE_STRUCTURE_HTTP,
+    DEFAULT_PREFETCH_SIZE,
 };
 use serde::{Deserialize, Serialize};
-use storage::snapshot::ReadableSnapshot;
-use tracing::Value;
 
 use crate::service::{
     http::{
-        message::{
-            body::JsonBody,
-            query::{
-                annotations::{
-                    encode_fetch_structure_annotations, encode_function_structure_annotations,
-                    encode_pipeline_structure_annotations, FetchStructureAnnotationsResponse,
-                },
-                query_structure::{
-                    encode_query_structure, PipelineStructureResponse, PipelineStructureResponseForStudio,
-                    QueryStructureResponse,
-                },
-            },
-            transaction::TransactionOpenPayload,
-        },
+        message::{analyze::structure::AnalyzedPipelineResponse, body::JsonBody, transaction::TransactionOpenPayload},
         transaction_service::QueryAnswer,
     },
     AnswerType, QueryType,
 };
 
-pub mod annotations;
 pub mod concept;
 pub mod document;
-pub mod query_structure;
 pub mod row;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -49,11 +29,12 @@ pub mod row;
 pub struct QueryOptionsPayload {
     pub include_instance_types: Option<bool>,
     pub answer_count_limit: Option<u64>,
+    pub include_query_structure: Option<bool>,
 }
 
 impl Default for QueryOptionsPayload {
     fn default() -> Self {
-        Self { include_instance_types: None, answer_count_limit: None }
+        Self { include_instance_types: None, answer_count_limit: None, include_query_structure: None }
     }
 }
 
@@ -66,6 +47,7 @@ impl Into<QueryOptions> for QueryOptionsPayload {
                 .map(|option| Some(option as usize))
                 .unwrap_or(DEFAULT_ANSWER_COUNT_LIMIT_HTTP),
             prefetch_size: DEFAULT_PREFETCH_SIZE as usize,
+            include_query_structure: self.include_query_structure.unwrap_or(DEFAULT_INCLUDE_STRUCTURE_HTTP),
         }
     }
 }
@@ -94,7 +76,7 @@ pub struct QueryAnswerResponse {
     pub query_type: QueryType,
     pub answer_type: AnswerType,
     pub answers: Option<Vec<serde_json::Value>>,
-    pub query: Option<PipelineStructureResponseForStudio>,
+    pub query: Option<AnalyzedPipelineResponse>,
     pub warning: Option<String>,
 }
 
@@ -105,14 +87,14 @@ pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerRespon
 pub(crate) fn encode_query_rows_answer(
     query_type: QueryType,
     rows: Vec<serde_json::Value>,
-    pipeline_structure: Option<PipelineStructureResponse>,
+    pipeline_structure: Option<AnalyzedPipelineResponse>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
     QueryAnswerResponse {
         answer_type: AnswerType::ConceptRows,
         query_type,
         answers: Some(rows),
-        query: pipeline_structure.map(|structure| structure.into()),
+        query: pipeline_structure,
         warning,
     }
 }
@@ -151,177 +133,5 @@ impl IntoResponse for QueryAnswer {
             )),
         };
         (code, body).into_response()
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnalysedQueryResponse {
-    pub source: String,
-    pub structure: QueryStructureResponse,
-    pub annotations: QueryStructureAnnotationsResponse,
-}
-
-impl IntoResponse for AnalysedQueryResponse {
-    fn into_response(self) -> Response {
-        let code = StatusCode::OK;
-        let body = JsonBody(self);
-        (code, body).into_response()
-    }
-}
-
-pub fn encode_analyzed_query(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    analysed_query: AnalysedQuery,
-) -> Result<AnalysedQueryResponse, Box<ConceptReadError>> {
-    let AnalysedQuery { source, structure, annotations: analysed_query_annotations } = analysed_query;
-    let QueryStructureAnnotations { query: pipeline, preamble, fetch } = analysed_query_annotations;
-    let preamble = preamble
-        .into_iter()
-        .map(|function| encode_function_structure_annotations(snapshot, type_manager, function))
-        .collect::<Result<Vec<_>, _>>()?;
-    let pipeline = encode_pipeline_structure_annotations(snapshot, type_manager, pipeline)?;
-    let fetch = fetch
-        .map(|fetch| {
-            encode_fetch_structure_annotations(snapshot, type_manager, fetch)
-                .map(|fields| FetchStructureAnnotationsResponse::Object { possible_fields: fields })
-        })
-        .transpose()?;
-    let annotations = QueryStructureAnnotationsResponse { preamble, query: pipeline, fetch };
-    let structure = encode_query_structure(snapshot, type_manager, structure)?;
-    Ok(AnalysedQueryResponse { source, structure, annotations })
-}
-
-#[cfg(debug_assertions)]
-pub mod bdd {
-    use std::collections::HashMap;
-
-    use itertools::Itertools;
-
-    use crate::service::http::message::query::{
-        annotations::PipelineStructureAnnotationsResponse, query_structure::PipelineStructureResponse,
-    };
-
-    pub(crate) struct FunctorContext<'a> {
-        pub(super) structure: &'a PipelineStructureResponse,
-        pub(super) annotations: &'a PipelineStructureAnnotationsResponse,
-    }
-
-    pub(crate) trait FunctorEncoded {
-        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String;
-    }
-
-    pub mod functor_macros {
-        macro_rules! encode_args {
-        ($context:ident, { $( $arg:ident, )* } )   => {
-            {
-                let arr: Vec<&dyn FunctorEncoded> = vec![ $($arg,)* ];
-                arr.into_iter().map(|s| s.encode_as_functor($context)).join(", ")
-            }
-        }
-    }
-        macro_rules! encode_functor_impl {
-        ($context:ident, $func:ident $args:tt) => {
-            std::format!("{}({})", std::stringify!($func), functor_macros::encode_args!($context, $args))
-        };
-        ($context:ident, ( $( $arg:ident, )* ) ) => {
-            functor_macros::encode_args!($context, { $( $arg, )* } )
-        };
-    }
-
-        macro_rules! add_ignored_fields {
-        ($qualified:path : { $( $arg:ident, )* }) => { $qualified { $( $arg, )* .. } };
-        ($qualified:path : ($( $arg:ident, )*)) => { $qualified ( $( $arg, )* .. ) };
-    }
-
-        macro_rules! encode_functor {
-        ($context:ident, $what:ident as struct $struct_name:ident  $fields:tt) => {
-            functor_macros::encode_functor!($context, $what => [ $struct_name => $struct_name $fields, ])
-        };
-        ($context:ident, $what:ident as struct $struct_name:ident $fields:tt named $renamed:ident ) => {
-            functor_macros::encode_functor!($context, $what => [ $struct_name => $renamed $fields, ])
-        };
-        ($context:ident, $what:ident as enum $enum_name:ident [ $($variant:ident $fields:tt |)* ]) => {
-            functor_macros::encode_functor!($context, $what => [ $( $enum_name::$variant => $variant $fields ,)* ])
-        };
-        ($context:ident, $what:ident => [ $($qualified:path => $func:ident $fields:tt, )* ]) => {
-            match $what {
-                $( functor_macros::add_ignored_fields!($qualified : $fields) => {
-                    functor_macros::encode_functor_impl!($context, $func $fields)
-                })*
-            }
-        };
-    }
-
-        macro_rules! impl_functor_for_impl {
-            ($which:ident => |$self:ident, $context:ident| $block:block) => {
-                impl FunctorEncoded for $which {
-                    fn encode_as_functor<'a>($self: &Self, $context: &FunctorContext<'a>) -> String {
-                        $block
-                    }
-                }
-            };
-        }
-
-        macro_rules! impl_functor_for {
-        (struct $struct_name:ident $fields:tt) => {
-            functor_macros::impl_functor_for!(struct $struct_name $fields named $struct_name);
-        };
-        (struct $struct_name:ident $fields:tt named $renamed:ident) => {
-            functor_macros::impl_functor_for_impl!($struct_name => |self, context| {
-                functor_macros::encode_functor!(context, self as struct $struct_name $fields named $renamed)
-            });
-        };
-        (enum $enum_name:ident [ $($func:ident $fields:tt |)* ]) => {
-            functor_macros::impl_functor_for_impl!($enum_name => |self, context| {
-                functor_macros::encode_functor!(context, self as enum $enum_name [ $($func $fields |)* ])
-            });
-        };
-        (primitive $primitive:ident) => {
-            functor_macros::impl_functor_for_impl!($primitive => |self, _context| { self.to_string() });
-        };
-    }
-        macro_rules! impl_functor_for_multi {
-        (|$self:ident, $context:ident| [ $( $type_name:ident => $block:block )* ]) => {
-            $ (functor_macros::impl_functor_for_impl!($type_name => |$self, $context| $block); )*
-        };
-    }
-
-        pub(crate) use add_ignored_fields;
-        pub(crate) use encode_args;
-        pub(crate) use encode_functor;
-        pub(crate) use encode_functor_impl;
-        pub(crate) use impl_functor_for;
-        pub(crate) use impl_functor_for_impl;
-        pub(crate) use impl_functor_for_multi;
-    }
-
-    functor_macros::impl_functor_for!(primitive String);
-    functor_macros::impl_functor_for!(primitive u64);
-    impl<T: FunctorEncoded> FunctorEncoded for Vec<T> {
-        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            std::format!("[{}]", self.iter().map(|v| v.encode_as_functor(context)).join(", "))
-        }
-    }
-
-    impl<K: FunctorEncoded, V: FunctorEncoded> FunctorEncoded for HashMap<K, V> {
-        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            std::format!(
-                "{{ {} }}",
-                self.iter()
-                    .map(|(k, v)| {
-                        std::format!("{}: {}", k.encode_as_functor(context), v.encode_as_functor(context))
-                    })
-                    .sorted_by(|a, b| a.cmp(b))
-                    .join(", ")
-            )
-        }
-    }
-
-    impl<T: FunctorEncoded> FunctorEncoded for Option<T> {
-        fn encode_as_functor<'a>(&self, context: &FunctorContext<'a>) -> String {
-            self.as_ref().map(|inner| inner.encode_as_functor(context)).unwrap_or("<NONE>".to_owned())
-        }
     }
 }

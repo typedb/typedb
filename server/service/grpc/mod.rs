@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod analyze;
 pub(crate) mod authenticator;
 pub(crate) mod concept;
 mod diagnostics;
@@ -12,7 +13,6 @@ pub(crate) mod encryption;
 mod error;
 mod migration;
 mod options;
-pub mod query_structure;
 mod request_parser;
 mod response_builders;
 mod row;

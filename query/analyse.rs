@@ -155,7 +155,7 @@ fn variable_annotations_for_block<'a>(
         let category = variable_registry.get_variable_category(variable).unwrap();
         let annotations = match category.is_category_type() {
             true => PipelineVariableAnnotation::Type(annos.iter().copied().collect()),
-            false => PipelineVariableAnnotation::Thing(annos.iter().copied().collect()),
+            false => PipelineVariableAnnotation::Instance(annos.iter().copied().collect()),
         };
         Some((variable, annotations))
     });

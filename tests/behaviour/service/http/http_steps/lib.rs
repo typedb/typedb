@@ -52,8 +52,7 @@ macro_rules! in_background {
 }
 pub(crate) use in_background;
 use server::service::http::message::{
-    query::{AnalysedQueryResponse, QueryOptionsPayload},
-    transaction::TransactionOptionsPayload,
+    analyze::AnalysedQueryResponse, query::QueryOptionsPayload, transaction::TransactionOptionsPayload,
 };
 
 use crate::{params::TokenMode, util::random_uuid};

@@ -14,6 +14,7 @@ use std::{
     time::Duration,
 };
 
+use compiler::query_structure::PipelineStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
@@ -61,11 +62,11 @@ use uuid::Uuid;
 
 use crate::service::{
     grpc::{
+        analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
         diagnostics::run_with_diagnostics_async,
         document::encode_document,
         error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
         options::{query_options_from_proto, transaction_options_from_proto},
-        query_structure::encode_analyzed_query,
         response_builders::transaction::{
             query_initial_res_from_error, query_initial_res_from_query_res_ok,
             query_initial_res_ok_from_query_res_ok_ok, query_res_ok_concept_document_stream,
@@ -81,6 +82,7 @@ use crate::service::{
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
     },
+    IncludeInvolvedBlocks,
 };
 
 macro_rules! unwrap_or_execute_and_return {
@@ -180,9 +182,13 @@ enum StreamQueryResponse {
 }
 
 impl StreamQueryResponse {
-    fn init_ok_rows(columns: &StreamQueryOutputDescriptor, query_type: typedb_protocol::query::Type) -> Self {
+    fn init_ok_rows(
+        columns: &StreamQueryOutputDescriptor,
+        query_type: typedb_protocol::query::Type,
+        query_structure: Option<typedb_protocol::analyze::res::analyzed_query::Pipeline>,
+    ) -> Self {
         let columns = columns.iter().map(|(name, _)| name.to_string()).collect();
-        let message = query_res_ok_concept_row_stream(columns, query_type);
+        let message = query_res_ok_concept_row_stream(columns, query_type, query_structure);
         Self::InitOk(query_initial_res_ok_from_query_res_ok_ok(message))
     }
 
@@ -1089,7 +1095,7 @@ impl TransactionService {
             tokio::spawn(async move {
                 let encoding_profile = EncodingProfile::new(tracing::enabled!(Level::TRACE));
                 match answer.answer {
-                    Either::Left((output_descriptor, batch, _pipeline_structure)) => {
+                    Either::Left((output_descriptor, batch, pipeline_structure)) => {
                         Self::submit_write_query_batch_answer(
                             snapshot,
                             type_manager,
@@ -1097,6 +1103,7 @@ impl TransactionService {
                             output_descriptor,
                             answer.query_options,
                             batch,
+                            pipeline_structure.as_ref(),
                             sender,
                             timeout_at,
                             interrupt,
@@ -1130,12 +1137,26 @@ impl TransactionService {
         output_descriptor: StreamQueryOutputDescriptor,
         query_options: QueryOptions,
         batch: Batch,
+        pipeline_structure: Option<&PipelineStructure>,
         sender: Sender<StreamQueryResponse>,
         timeout_at: Instant,
         mut interrupt: ExecutionInterrupt,
         storage_counters: StorageCounters,
     ) {
-        Self::submit_response_async(&sender, StreamQueryResponse::init_ok_rows(&output_descriptor, Write)).await;
+        let encoded_structure_result = pipeline_structure
+            .map(|qs| encode_analyzed_pipeline_for_query(snapshot.as_ref(), type_manager.as_ref(), qs))
+            .transpose();
+        let encoded_structure = unwrap_or_execute_and_return!(encoded_structure_result, |err| {
+            Self::submit_response_sync(
+                &sender,
+                StreamQueryResponse::init_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
+            );
+        });
+        Self::submit_response_async(
+            &sender,
+            StreamQueryResponse::init_ok_rows(&output_descriptor, Write, encoded_structure),
+        )
+        .await;
         let mut batch_iterator = batch.into_iterator();
 
         while let Some(row) = batch_iterator.next() {
@@ -1163,6 +1184,7 @@ impl TransactionService {
                 &type_manager,
                 &thing_manager,
                 query_options.include_instance_types,
+                &IncludeInvolvedBlocks::build(pipeline_structure),
                 storage_counters.clone(),
             );
             match encoded_row {
@@ -1358,8 +1380,19 @@ impl TransactionService {
             }
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
+            let include_involved_blocks = IncludeInvolvedBlocks::build(pipeline.pipeline_structure());
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-            let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read);
+            let encoded_structure_result = pipeline
+                .pipeline_structure()
+                .map(|qs| encode_analyzed_pipeline_for_query(snapshot.as_ref(), type_manager, qs))
+                .transpose();
+            let encoded_structure = unwrap_or_execute_and_return!(encoded_structure_result, |err| {
+                Self::submit_response_sync(
+                    &sender,
+                    StreamQueryResponse::init_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
+                )
+            });
+            let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read, encoded_structure);
             Self::submit_response_sync(sender, initial_response);
             let (mut iterator, context) =
                 unwrap_or_execute_and_return!(pipeline.into_rows_iterator(interrupt.clone()), |(err, _)| {
@@ -1401,6 +1434,7 @@ impl TransactionService {
                     type_manager,
                     &thing_manager,
                     query_options.include_instance_types,
+                    &include_involved_blocks,
                     encoding_profile.storage_counters(),
                 );
                 match encoded_row {

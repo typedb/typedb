@@ -35,10 +35,11 @@ use crate::{
             diagnostics::{run_with_diagnostics, run_with_diagnostics_async},
             error::HttpServiceError,
             message::{
+                analyze::{AnalysedQueryResponse, TransactionAnalyzePayload},
                 authentication::{encode_token, SigninPayload},
                 body::{JsonBody, PlainTextBody},
                 database::{encode_database, encode_databases, DatabasePath},
-                query::{AnalysedQueryResponse, QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
+                query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},
                 user::{encode_user, encode_users, CreateUserPayload, UpdateUserPayload, UserPath},
                 version::{encode_server_version, ProtocolVersion, PROTOCOL_VERSION_LATEST},
@@ -210,7 +211,7 @@ impl TypeDBService {
             .route("/:version/transactions/:transaction-id/commit", post(Self::transactions_commit))
             .route("/:version/transactions/:transaction-id/close", post(Self::transactions_close))
             .route("/:version/transactions/:transaction-id/rollback", post(Self::transactions_rollback))
-            .route("/:version/transactions/:transaction-id/analyze", post(Self::transactions_analyse_query))
+            .route("/:version/transactions/:transaction-id/analyze", post(Self::transactions_analyse))
             .route("/:version/transactions/:transaction-id/query", post(Self::transactions_query))
             .route("/:version/query", post(Self::query))
             .with_state(service)
@@ -562,12 +563,12 @@ impl TypeDBService {
         .await
     }
 
-    async fn transactions_analyse_query(
+    async fn transactions_analyse(
         _version: ProtocolVersion,
         State(service): State<Arc<TypeDBService>>,
         Accessor(accessor): Accessor,
         path: TransactionPath,
-        JsonBody(payload): JsonBody<TransactionQueryPayload>,
+        JsonBody(payload): JsonBody<TransactionAnalyzePayload>,
     ) -> impl IntoResponse {
         let uuid = path.transaction_id;
         let senders = service.transaction_services.read().await;

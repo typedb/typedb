@@ -12,6 +12,7 @@ use hyper::{
 };
 use serde_json::json;
 use server::service::http::message::{
+    analyze::AnalysedQueryResponse,
     authentication::TokenResponse,
     database::{DatabaseResponse, DatabasesResponse},
     query::{
@@ -19,7 +20,7 @@ use server::service::http::message::{
             AttributeResponse, AttributeTypeResponse, EntityResponse, EntityTypeResponse, RelationResponse,
             RelationTypeResponse, RoleTypeResponse, ValueResponse,
         },
-        AnalysedQueryResponse, QueryAnswerResponse, QueryOptionsPayload,
+        QueryAnswerResponse, QueryOptionsPayload,
     },
     transaction::{TransactionOptionsPayload, TransactionResponse},
     user::{UserResponse, UsersResponse},
@@ -360,6 +361,7 @@ pub async fn query(
         send_request(http_client, auth_token, Method::POST, &url, Some(json!(json_map).to_string().as_str())).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
+
 pub async fn transactions_analyze(
     http_client: &Client<HttpConnector>,
     auth_token: Option<impl AsRef<str>>,
@@ -371,7 +373,6 @@ pub async fn transactions_analyze(
     json_map.insert("query".to_string(), json!(query));
     let response =
         send_request(http_client, auth_token, Method::POST, &url, Some(json!(json_map).to_string().as_str())).await?;
-    eprintln!("RESPONSE: {}", response);
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 

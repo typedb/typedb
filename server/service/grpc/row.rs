@@ -8,10 +8,14 @@ use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::row::MaybeOwnedRow;
+use itertools::chain;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::service::grpc::concept::{encode_thing_concept, encode_type_concept, encode_value};
+use crate::service::{
+    grpc::concept::{encode_thing_concept, encode_type_concept, encode_value},
+    IncludeInvolvedBlocks,
+};
 
 pub(crate) fn encode_row(
     row: MaybeOwnedRow<'_>,
@@ -20,6 +24,7 @@ pub(crate) fn encode_row(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_instance_types: bool,
+    include_involved_blocks: &IncludeInvolvedBlocks,
     storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::ConceptRow, Box<ConceptReadError>> {
     // TODO: multiplicity?
@@ -36,7 +41,24 @@ pub(crate) fn encode_row(
         )?;
         encoded_row.push(typedb_protocol::RowEntry { entry: Some(row_entry) });
     }
-    let involved_blocks = row.provenance().0.to_be_bytes().iter().copied().collect();
+    let involved_blocks = match include_involved_blocks {
+        IncludeInvolvedBlocks::False => None,
+        IncludeInvolvedBlocks::True { always_involved } => {
+            // TODO: Eventually: row.provenance().0.to_le_bytes().iter().copied().collect()
+            let mut involved_blocks = Vec::new();
+            chain!(row.provenance().branch_ids().map(|b| b.0), always_involved.iter().map(|b| b.0)).for_each(
+                |block_index| {
+                    let byte_index = block_index as usize / 64;
+                    let bit_index = block_index % 64;
+                    if byte_index >= involved_blocks.len() {
+                        involved_blocks.resize(byte_index + 1, 0);
+                    }
+                    involved_blocks[byte_index] |= 1 << bit_index;
+                },
+            );
+            Some(involved_blocks)
+        }
+    };
     Ok(typedb_protocol::ConceptRow { row: encoded_row, involved_blocks })
 }
 

@@ -51,16 +51,19 @@ use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
-use super::message::query::query_structure::encode_pipeline_structure;
 use crate::service::{
-    http::message::query::{
-        document::encode_document, encode_analyzed_query, query_structure::PipelineStructureResponse, row::encode_row,
-        AnalysedQueryResponse,
+    http::message::{
+        analyze::{
+            encode_analyzed_query,
+            structure::{encode_analyzed_pipeline_for_studio, AnalyzedPipelineResponse},
+            AnalysedQueryResponse,
+        },
+        query::{document::encode_document, row::encode_row},
     },
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
     },
-    QueryType, TransactionType,
+    IncludeInvolvedBlocks, QueryType, TransactionType,
 };
 
 macro_rules! respond_error_and_return_break {
@@ -168,7 +171,7 @@ pub(crate) enum TransactionServiceResponse {
 #[derive(Debug)]
 pub(crate) enum QueryAnswer {
     ResOk(QueryType),
-    ResRows((QueryType, Vec<serde_json::Value>, Option<PipelineStructureResponse>, Option<QueryAnswerWarning>)),
+    ResRows((QueryType, Vec<serde_json::Value>, Option<AnalyzedPipelineResponse>, Option<QueryAnswerWarning>)),
     ResDocuments((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
 }
 
@@ -835,10 +838,9 @@ impl TransactionService {
         let mut warning = None;
         let encode_pipeline_structure_result = pipeline_structure
             .as_ref()
-            .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs, false))
+            .map(|qs| encode_analyzed_pipeline_for_studio(&*snapshot, &type_manager, qs))
             .transpose();
-        let always_taken_blocks =
-            pipeline_structure.map(|qs| qs.parametrised_structure.must_have_been_satisfied_conjunctions());
+        let include_involved_blocks = IncludeInvolvedBlocks::build(pipeline_structure.as_ref());
         let pipeline_structure_response = match encode_pipeline_structure_result {
             Ok(structure_opt) => structure_opt,
             Err(typedb_source) => {
@@ -868,8 +870,8 @@ impl TransactionService {
                 &type_manager,
                 &thing_manager,
                 query_options.include_instance_types,
+                &include_involved_blocks,
                 storage_counters.clone(),
-                always_taken_blocks.as_ref(),
             );
             match encoded_row {
                 Ok(encoded_row) => result.push(encoded_row),
@@ -1071,11 +1073,9 @@ impl TransactionService {
 
             let encode_pipeline_structure_result = pipeline
                 .pipeline_structure()
-                .map(|qs| encode_pipeline_structure(&*snapshot, &type_manager, qs, false))
+                .map(|qs| encode_analyzed_pipeline_for_studio(&*snapshot, &type_manager, qs))
                 .transpose();
-            let must_have_been_satisfied_conjunctions = pipeline
-                .pipeline_structure()
-                .map(|qs| qs.parametrised_structure.must_have_been_satisfied_conjunctions());
+            let include_involved_blocks = IncludeInvolvedBlocks::build(pipeline.pipeline_structure());
             let pipeline_structure_response = match encode_pipeline_structure_result {
                 Ok(structure_opt) => structure_opt,
                 Err(typedb_source) => {
@@ -1124,8 +1124,8 @@ impl TransactionService {
                     type_manager,
                     &thing_manager,
                     query_options.include_instance_types,
+                    &include_involved_blocks,
                     storage_counters.clone(),
-                    must_have_been_satisfied_conjunctions.as_ref(),
                 );
                 match encoded_row {
                     Ok(encoded_row) => result.push(encoded_row),

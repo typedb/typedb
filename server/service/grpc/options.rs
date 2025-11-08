@@ -34,5 +34,6 @@ pub(crate) fn query_options_from_proto(proto: Option<QueryOptionsProto>) -> Quer
         include_instance_types: proto.include_instance_types.unwrap_or(DEFAULT_INCLUDE_INSTANCE_TYPES),
         answer_count_limit: DEFAULT_ANSWER_COUNT_LIMIT_GRPC,
         prefetch_size: proto.prefetch_size.map(|value| value as usize).unwrap_or(DEFAULT_PREFETCH_SIZE),
+        include_query_structure: proto.include_query_structure.unwrap_or(false),
     }
 }

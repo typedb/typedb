@@ -137,7 +137,7 @@ pub fn extract_pipeline_structure_from(
 
 #[derive(Debug, Clone)]
 pub enum PipelineVariableAnnotation {
-    Thing(Vec<answer::Type>),
+    Instance(Vec<answer::Type>),
     Type(Vec<answer::Type>),
     Value(ValueType),
 }
@@ -174,7 +174,7 @@ impl ParametrisedPipelineStructure {
         PipelineStructure { parametrised_structure: self, parameters, variable_names }
     }
 
-    pub fn must_have_been_satisfied_conjunctions(&self) -> Vec<QueryStructureConjunctionID> {
+    pub fn always_involved_blocks(&self) -> Vec<QueryStructureConjunctionID> {
         self.stages
             .iter()
             .filter_map(|stage| match stage {
@@ -471,19 +471,19 @@ impl From<Variable> for StructureVariableId {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StructureSortVariable {
-    pub variable: StructureVariableId,
-    pub ascending: bool,
+#[serde(rename_all = "camelCase", tag = "tag")]
+pub enum StructureSortVariable {
+    Ascending { variable: StructureVariableId },
+    Descending { variable: StructureVariableId },
 }
 
 impl From<&SortVariable> for StructureSortVariable {
     fn from(value: &SortVariable) -> Self {
-        let ascending = match value {
-            SortVariable::Ascending(_) => true,
-            SortVariable::Descending(_) => false,
-        };
-        Self { variable: value.variable().into(), ascending }
+        let variable = value.variable().into();
+        match value {
+            SortVariable::Ascending(_) => Self::Ascending { variable },
+            SortVariable::Descending(_) => Self::Descending { variable },
+        }
     }
 }
 
