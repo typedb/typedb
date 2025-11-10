@@ -24,11 +24,6 @@ features = {}
 		features = []
 		default-features = false
 
-	[dev-dependencies.durability]
-		path = "../durability"
-		features = []
-		default-features = false
-
 	[dev-dependencies.query]
 		path = "../query"
 		features = []
@@ -36,6 +31,11 @@ features = {}
 
 	[dev-dependencies.function]
 		path = "../function"
+		features = []
+		default-features = false
+
+	[dev-dependencies.durability]
+		path = "../durability"
 		features = []
 		default-features = false
 
@@ -47,7 +47,7 @@ features = {}
 [dependencies]
 
 	[dependencies.tokio]
-		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
+		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
 		version = "1.47.1"
 		default-features = false
 
@@ -158,8 +158,12 @@ features = {}
 		default-features = false
 
 [[test]]
-	path = "tests/execute_select.rs"
-	name = "test_select"
+	path = "tests/execute_function.rs"
+	name = "test_functions"
+
+[[test]]
+	path = "tests/execute_expression.rs"
+	name = "test_execute_expression"
 
 [[test]]
 	path = "tests/efficiency.rs"
@@ -170,34 +174,30 @@ features = {}
 	name = "test_execute_has"
 
 [[test]]
-	path = "tests/execute_expression.rs"
-	name = "test_execute_expression"
+	path = "tests/pipelines.rs"
+	name = "test_pipelines"
 
 [[test]]
-	path = "tests/execute_links.rs"
-	name = "test_execute_links"
-
-[[test]]
-	path = "tests/compile_execute.rs"
-	name = "test_compile_execute"
+	path = "tests/execute_select.rs"
+	name = "test_select"
 
 [[test]]
 	path = "tests/execute_relation_index.rs"
 	name = "test_execute_relation_index"
 
 [[test]]
-	path = "tests/pipelines.rs"
-	name = "test_pipelines"
-
-[[test]]
 	path = "tests/writes.rs"
 	name = "test_writes"
 
 [[test]]
-	path = "tests/execute_function.rs"
-	name = "test_functions"
+	path = "tests/compile_execute.rs"
+	name = "test_compile_execute"
 
 [[test]]
 	path = "tests/execute_isa.rs"
 	name = "test_execute_isa"
+
+[[test]]
+	path = "tests/execute_links.rs"
+	name = "test_execute_links"
 
