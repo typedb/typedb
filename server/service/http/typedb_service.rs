@@ -12,7 +12,7 @@ use axum::{
     routing::{delete, get, post, put},
     Router,
 };
-use concurrency::TokioIntervalRunner;
+use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
 use diagnostics::metrics::ActionKind;
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
@@ -22,7 +22,9 @@ use system::concepts::{Credential, User};
 use tokio::{
     sync::{
         mpsc::{channel, Sender},
-        oneshot, RwLock,
+        oneshot,
+        watch::Receiver,
+        RwLock,
     },
     time::timeout,
 };
@@ -56,7 +58,6 @@ use crate::{
         QueryType,
     },
     state::ArcServerState,
-    system_init::SYSTEM_DB,
 };
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
@@ -75,36 +76,35 @@ pub(crate) struct HTTPTypeDBService {
     address: SocketAddr,
     server_state: ArcServerState,
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
-    _transaction_cleanup_job: Arc<TokioIntervalRunner>,
 }
 
 impl HTTPTypeDBService {
     const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
     const QUERY_ENDPOINT_COMMIT_DEFAULT: bool = true;
 
-    pub(crate) fn new(distribution_info: DistributionInfo, address: SocketAddr, server_state: ArcServerState) -> Self {
+    pub(crate) fn new(
+        distribution_info: DistributionInfo,
+        address: SocketAddr,
+        server_state: ArcServerState,
+        background_tasks: TokioTaskSpawner,
+    ) -> Self {
         let transaction_request_senders = Arc::new(RwLock::new(HashMap::new()));
-
         let controlled_transactions = transaction_request_senders.clone();
-        let transaction_cleanup_job = Arc::new(TokioIntervalRunner::new_with_initial_delay(
+        background_tasks.spawn_interval(
             move || {
                 let transactions = controlled_transactions.clone();
                 async move {
                     Self::cleanup_closed_transactions(transactions).await;
                 }
             },
-            Self::TRANSACTION_CHECK_INTERVAL,
-            Self::TRANSACTION_CHECK_INTERVAL,
-            false,
-        ));
+            IntervalTaskParameters::new_with_delay(
+                Self::TRANSACTION_CHECK_INTERVAL,
+                Self::TRANSACTION_CHECK_INTERVAL,
+                false,
+            ),
+        );
 
-        Self {
-            distribution_info,
-            address,
-            server_state,
-            transaction_services: transaction_request_senders,
-            _transaction_cleanup_job: transaction_cleanup_job,
-        }
+        Self { distribution_info, address, server_state, transaction_services: transaction_request_senders }
     }
 
     async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>) {

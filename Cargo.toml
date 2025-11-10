@@ -80,7 +80,7 @@ features = {}
 [dependencies]
 
 	[dependencies.tokio]
-		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
+		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
 		version = "1.47.1"
 		default-features = false
 
@@ -123,28 +123,36 @@ features = {}
 	name = "bench_iam"
 
 [[test]]
-	path = "tests/behaviour/query/main.rs"
-	name = "test_query"
+	path = "tests/behaviour/connection/main.rs"
+	name = "test_connection"
 
 [[test]]
 	path = "tests/behaviour/concept/main.rs"
 	name = "test_concept"
 
 [[test]]
-	path = "tests/behaviour/service/http/driver/user.rs"
-	name = "test_http_driver_user"
+	path = "tests/behaviour/service/http/connection/database.rs"
+	name = "test_http_database"
+
+[[test]]
+	path = "tests/behaviour/service/http/connection/transaction.rs"
+	name = "test_http_transaction"
 
 [[test]]
 	path = "tests/behaviour/service/http/driver/concept.rs"
 	name = "test_http_driver_concept"
 
 [[test]]
+	path = "tests/behaviour/service/http/driver/http.rs"
+	name = "test_http_driver_http"
+
+[[test]]
 	path = "tests/behaviour/service/http/driver/query.rs"
 	name = "test_http_driver_query"
 
 [[test]]
-	path = "tests/behaviour/service/http/driver/http.rs"
-	name = "test_http_driver_http"
+	path = "tests/behaviour/service/http/driver/user.rs"
+	name = "test_http_driver_user"
 
 [[test]]
 	path = "tests/behaviour/service/http/driver/connection.rs"
@@ -155,20 +163,12 @@ features = {}
 	name = "test_http_debug"
 
 [[test]]
-	path = "tests/behaviour/service/http/connection/transaction.rs"
-	name = "test_http_transaction"
-
-[[test]]
-	path = "tests/behaviour/service/http/connection/database.rs"
-	name = "test_http_database"
+	path = "tests/behaviour/query/main.rs"
+	name = "test_query"
 
 [[test]]
 	path = "tests/behaviour/debug/debug.rs"
 	name = "test_debug"
-
-[[test]]
-	path = "tests/behaviour/connection/main.rs"
-	name = "test_connection"
 
 [[bin]]
 	path = "main.rs"
@@ -177,5 +177,5 @@ features = {}
 
 [workspace]
 	resolver = "2"
-	members = ["query", "ir", "system", "function", "concept", "concept/tests", "storage", "storage/tests", "diagnostics", "resource", "answer", "user", "compiler", "encoding", "encoding/tests", "database", "database/tools", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps/params", "tests/behaviour/steps", "util/test", "util/project", "server", "executor", "durability", "durability/tests/crash/recoverer", "durability/tests/crash/streamer", "durability/tests/common", "common/primitive", "common/structural_equality", "common/lending_iterator", "common/iterator", "common/concurrency", "common/cache", "common/logger", "common/bytes", "common/error", "common/options"]
+	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "encoding/tests", "encoding", "server", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/cache", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
 
