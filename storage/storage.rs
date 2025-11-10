@@ -33,7 +33,7 @@ use tracing::trace;
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     error::{MVCCStorageError, MVCCStorageErrorKind},
-    isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
+    isolation_manager::{IsolationManager, ValidatedCommit},
     iterator::MVCCRangeIterator,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
@@ -41,6 +41,7 @@ use crate::{
         iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError,
         KeyspaceSet, Keyspaces,
     },
+    record::{CommitRecord, StatusRecord},
     recovery::{
         checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
@@ -56,6 +57,7 @@ pub mod iterator;
 pub mod key_range;
 pub mod key_value;
 pub mod keyspace;
+pub mod record;
 pub mod recovery;
 pub mod sequence_number;
 pub mod snapshot;
@@ -220,11 +222,18 @@ impl<Durability> MVCCStorage<Durability> {
         &self,
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
-    ) -> Result<SequenceNumber, StorageCommitError>
+    ) -> Result<Option<SequenceNumber>, StorageCommitError>
     where
         Durability: DurabilityClient,
     {
         use StorageCommitError::{Durability, Internal, Keyspace};
+
+        if self
+            .record_exists(&commit_record)
+            .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?
+        {
+            return Ok(None);
+        }
 
         commit_profile.snapshot_commit_record_created();
 
@@ -262,7 +271,7 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 commit_profile.snapshot_durable_write_commit_status_submitted();
 
-                Ok(commit_sequence_number)
+                Ok(Some(commit_sequence_number))
             }
             Ok(ValidatedCommit::Conflict(conflict)) => {
                 sync_notifier.recv().unwrap();
@@ -279,6 +288,18 @@ impl<Durability> MVCCStorage<Durability> {
                 Err(Durability { name: self.name.clone(), typedb_source: error })
             }
         }
+    }
+
+    fn record_exists(&self, commit_record: &CommitRecord) -> Result<bool, DurabilityClientError>
+    where
+        Durability: DurabilityClient,
+    {
+        // TODO: Find the actual record... Somehow...
+        self.durability_client
+            .iter_sequenced_type_from::<CommitRecord>(self.durability_client.previous())?
+            .map(|result| result.map(|(_, previous_record)| commit_record.commit_id() <= previous_record.commit_id()))
+            .next()
+            .unwrap_or(Ok(false))
     }
 
     fn persist_commit_status(
@@ -616,9 +637,9 @@ mod tests {
 
     use crate::{
         durability_client::{DurabilityClient, WALClient},
-        isolation_manager::{CommitRecord, CommitType},
         key_value::StorageKeyArray,
         keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
+        record::{CommitRecord, CommitType},
         snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
         MVCCStorage,
