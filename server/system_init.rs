@@ -11,13 +11,12 @@ use resource::{
     internal_database_prefix,
     profile::TransactionProfile,
 };
-use storage::{durability_client::WALClient, isolation_manager::CommitRecord, snapshot::CommittableSnapshot};
+use storage::{durability_client::WALClient, record::CommitRecord, snapshot::CommittableSnapshot};
 use system::{
     concepts::{Credential, PasswordHash, User},
     repositories::SCHEMA,
     util::transaction_util::TransactionUtil,
 };
-use user::errors::UserCreateError;
 
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},

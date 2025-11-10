@@ -21,7 +21,7 @@ use query::query_manager::QueryManager;
 use resource::profile::TransactionProfile;
 use storage::{
     durability_client::{DurabilityClient, WALClient},
-    isolation_manager::CommitRecord,
+    record::CommitRecord,
     snapshot::{
         CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotDropGuard, SnapshotError, WritableSnapshot,
         WriteSnapshot,

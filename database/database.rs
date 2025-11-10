@@ -44,7 +44,7 @@ use resource::{
 };
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    isolation_manager::CommitRecord,
+    record::CommitRecord,
     recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
     sequence_number::SequenceNumber,
     snapshot::{CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
@@ -292,12 +292,11 @@ impl<D: DurabilityClient> Database<D> {
 
         if let Some(commit_record) = commit_record_opt {
             let sequence_number = match self.storage.commit(commit_record, commit_profile) {
-                Ok(sequence_number) => Some(sequence_number),
+                Ok(sequence_number) => sequence_number,
                 Err(error) => {
-                    let error = SnapshotError {
+                    return Err(SnapshotError {
                         typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error },
-                    };
-                    return Err(error);
+                    })
                 }
             };
 
