@@ -24,10 +24,10 @@ features = {}
 		workspace = true
 
 [[bin]]
-	path = "read_wal.rs"
-	name = "read_wal"
-
-[[bin]]
 	path = "replay_wal.rs"
 	name = "replay_wal"
+
+[[bin]]
+	path = "read_wal.rs"
+	name = "read_wal"
 

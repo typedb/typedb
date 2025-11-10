@@ -15,81 +15,128 @@ features = {}
 [dev-dependencies]
 
 	[dev-dependencies.test_utils]
-		workspace = true
+		path = "../util/test"
+		features = []
+		default-features = false
 
 [dependencies]
 
 	[dependencies.tokio]
-		workspace = true
+		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
+		version = "1.47.1"
+		default-features = false
 
 	[dependencies.tracing]
-		workspace = true
+		features = ["attributes", "default", "log", "std", "tracing-attributes"]
+		version = "0.1.41"
+		default-features = false
 
 	[dependencies.cache]
-		workspace = true
+		path = "../common/cache"
+		features = []
+		default-features = false
 
 	[dependencies.resource]
-		workspace = true
+		path = "../resource"
+		features = []
+		default-features = false
 
 	[dependencies.query]
-		workspace = true
+		path = "../query"
+		features = []
+		default-features = false
 
 	[dependencies.concept]
-		workspace = true
+		path = "../concept"
+		features = []
+		default-features = false
 
 	[dependencies.logger]
-		workspace = true
+		path = "../common/logger"
+		features = []
+		default-features = false
 
 	[dependencies.durability]
-		workspace = true
+		path = "../durability"
+		features = []
+		default-features = false
 
 	[dependencies.ir]
-		workspace = true
+		path = "../ir"
+		features = []
+		default-features = false
 
 	[dependencies.storage]
-		workspace = true
+		path = "../storage"
+		features = []
+		default-features = false
 
 	[dependencies.encoding]
-		workspace = true
+		path = "../encoding"
+		features = []
+		default-features = false
 
 	[dependencies.error]
-		workspace = true
+		path = "../common/error"
+		features = []
+		default-features = false
 
 	[dependencies.itertools]
-		workspace = true
+		features = ["default", "use_alloc", "use_std"]
+		version = "0.10.5"
+		default-features = false
 
 	[dependencies.concurrency]
-		workspace = true
+		path = "../common/concurrency"
+		features = []
+		default-features = false
 
 	[dependencies.diagnostics]
-		workspace = true
+		path = "../diagnostics"
+		features = []
+		default-features = false
 
 	[dependencies.executor]
-		workspace = true
+		path = "../executor"
+		features = []
+		default-features = false
 
 	[dependencies.bytes]
-		workspace = true
+		path = "../common/bytes"
+		features = []
+		default-features = false
 
 	[dependencies.function]
-		workspace = true
+		path = "../function"
+		features = []
+		default-features = false
 
 	[dependencies.options]
-		workspace = true
+		path = "../common/options"
+		features = []
+		default-features = false
 
 	[dependencies.rocksdb]
-		workspace = true
+		features = ["bindgen-runtime", "lz4"]
+		version = "0.23.0"
+		default-features = false
 
 	[dependencies.typeql]
-		workspace = true
+		features = []
+		git = "https://github.com/typedb/typeql"
+		tag = "3.8.0"
+		default-features = false
 
 	[dependencies.compiler]
-		workspace = true
-
-[[test]]
-	path = "tests/transaction.rs"
-	name = "test_transaction"
+		path = "../compiler"
+		features = []
+		default-features = false
 
 [[test]]
 	path = "tests/database.rs"
 	name = "test_database"
+
+[[test]]
+	path = "tests/transaction.rs"
+	name = "test_transaction"
 

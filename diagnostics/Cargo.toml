@@ -15,53 +15,88 @@ features = {}
 [dependencies]
 
 	[dependencies.tokio]
-		workspace = true
+		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
+		version = "1.47.1"
+		default-features = false
 
 	[dependencies.serde]
-		workspace = true
+		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
+		version = "1.0.219"
+		default-features = false
 
 	[dependencies.resource]
-		workspace = true
+		path = "../resource"
+		features = []
+		default-features = false
 
 	[dependencies.logger]
-		workspace = true
+		path = "../common/logger"
+		features = []
+		default-features = false
 
 	[dependencies.futures]
-		workspace = true
+		features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
+		version = "0.3.31"
+		default-features = false
 
 	[dependencies.error]
-		workspace = true
+		path = "../common/error"
+		features = []
+		default-features = false
 
 	[dependencies.concurrency]
-		workspace = true
+		path = "../common/concurrency"
+		features = []
+		default-features = false
 
 	[dependencies.tonic-types]
-		workspace = true
+		features = []
+		version = "0.12.3"
+		default-features = false
 
 	[dependencies.sysinfo]
-		workspace = true
+		features = ["component", "default", "disk", "multithread", "network", "system", "user"]
+		version = "0.33.1"
+		default-features = false
 
 	[dependencies.xxhash-rust]
-		workspace = true
+		features = ["xxh3"]
+		version = "0.8.15"
+		default-features = false
 
 	[dependencies.typeql]
-		workspace = true
+		features = []
+		git = "https://github.com/typedb/typeql"
+		tag = "3.8.0"
+		default-features = false
 
 	[dependencies.tonic]
-		workspace = true
+		features = ["channel", "codegen", "default", "prost", "router", "server", "tls", "tls-native-roots", "tls-roots", "transport"]
+		version = "0.12.3"
+		default-features = false
 
 	[dependencies.chrono]
-		workspace = true
+		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
+		version = "0.4.41"
+		default-features = false
 
 	[dependencies.hyper]
-		workspace = true
+		features = ["client", "default", "full", "h2", "http1", "http2", "runtime", "server", "socket2", "stream", "tcp"]
+		version = "0.14.32"
+		default-features = false
 
 	[dependencies.serde_json]
-		workspace = true
+		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
+		version = "1.0.143"
+		default-features = false
 
 	[dependencies.hyper-rustls]
-		workspace = true
+		features = ["acceptor", "default", "http1", "log", "logging", "native-tokio", "ring", "rustls-native-certs", "tls12", "tokio-runtime"]
+		version = "0.25.0"
+		default-features = false
 
 	[dependencies.sentry]
-		workspace = true
+		features = ["backtrace", "contexts", "httpdate", "panic", "rustls", "sentry-backtrace", "sentry-contexts", "sentry-panic", "ureq", "webpki-roots"]
+		version = "0.36.0"
+		default-features = false
 

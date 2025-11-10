@@ -9,7 +9,7 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use concurrency::TokioIntervalRunner;
+use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
 use error::typedb_error;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rand::{self, Rng};
@@ -22,13 +22,15 @@ pub struct TokenManager {
     token_owners: Arc<RwLock<HashMap<String, String>>>,
     tokens_expiration_time: Duration,
     secret_key: String,
-    _tokens_cleanup_job: Arc<TokioIntervalRunner>,
 }
 
 impl TokenManager {
     const TOKENS_CLEANUP_INTERVAL_MULTIPLIER: u32 = 2;
 
-    pub fn new(tokens_expiration_time: Duration) -> Result<Self, TokenManagerError> {
+    pub fn new(
+        tokens_expiration_time: Duration,
+        background_tasks: TokioTaskSpawner,
+    ) -> Result<Self, TokenManagerError> {
         Self::validate_tokens_expiration_time(tokens_expiration_time)?;
 
         let token_owners = Arc::new(RwLock::new(HashMap::new()));
@@ -42,7 +44,7 @@ impl TokenManager {
         let secret_key_clone = secret_key.clone();
 
         let tokens_cleanup_interval = tokens_expiration_time * Self::TOKENS_CLEANUP_INTERVAL_MULTIPLIER;
-        let tokens_cleanup_job = Arc::new(TokioIntervalRunner::new(
+        background_tasks.spawn_interval(
             move || {
                 let token_owners = token_owners_clone.clone();
                 let secret_key = secret_key_clone.clone();
@@ -50,10 +52,9 @@ impl TokenManager {
                     Self::cleanup_expired_tokens(secret_key.as_ref(), token_owners).await;
                 }
             },
-            tokens_cleanup_interval,
-            false,
-        ));
-        Ok(Self { token_owners, tokens_expiration_time, secret_key, _tokens_cleanup_job: tokens_cleanup_job })
+            IntervalTaskParameters::new_no_delay(tokens_cleanup_interval, false),
+        );
+        Ok(Self { token_owners, tokens_expiration_time, secret_key })
     }
 
     pub async fn new_token(&self, username: String) -> String {
