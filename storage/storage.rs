@@ -294,10 +294,13 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityClient,
     {
-        // TODO: Find the actual record... Somehow...
         self.durability_client
             .iter_sequenced_type_from::<CommitRecord>(self.durability_client.previous())?
-            .map(|result| result.map(|(_, previous_record)| commit_record.commit_id() <= previous_record.commit_id()))
+            .map(|result| {
+                result.map(|(_, previous_record)| {
+                    commit_record.global_causality_number() <= previous_record.global_causality_number()
+                })
+            })
             .next()
             .unwrap_or(Ok(false))
     }
