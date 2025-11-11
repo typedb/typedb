@@ -232,6 +232,7 @@ impl<Durability> MVCCStorage<Durability> {
             .record_exists(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?
         {
+            println!("SKipped commit record: {commit_record:?}");
             return Ok(None);
         }
 
