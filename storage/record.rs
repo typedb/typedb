@@ -16,10 +16,11 @@ pub struct CommitRecord {
     // TODO: this could read-through to the WAL if we have to save memory?
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
+    commit_type: CommitType,
+
     #[serde(default)]
     #[serde(skip_serializing_if = "is_zero")]
-    commit_id: u64,
-    commit_type: CommitType,
+    global_causality_number: u64,
 }
 
 // TODO: Test
@@ -33,6 +34,7 @@ impl fmt::Debug for CommitRecord {
             .field("open_sequence_number", &self.open_sequence_number)
             .field("commit_type", &self.commit_type)
             .field("operations", &self.operations)
+            .field("global_causality_number", &self.global_causality_number)
             .finish()
     }
 }
@@ -55,8 +57,13 @@ impl CommitRecord {
         open_sequence_number: SequenceNumber,
         commit_type: CommitType,
     ) -> CommitRecord {
-        const DEFAULT_COMMIT_ID: u64 = 0;
-        CommitRecord { operations, open_sequence_number, commit_id: DEFAULT_COMMIT_ID, commit_type }
+        const DEFAULT_CAUSALITY_NUMBER: u64 = 0;
+        CommitRecord {
+            operations,
+            open_sequence_number,
+            commit_type,
+            global_causality_number: DEFAULT_CAUSALITY_NUMBER,
+        }
     }
 
     pub fn operations(&self) -> &OperationsBuffer {
@@ -75,12 +82,12 @@ impl CommitRecord {
         self.open_sequence_number
     }
 
-    pub fn set_commit_id(&mut self, commit_id: u64) {
-        self.commit_id = commit_id;
+    pub fn set_global_causality_number(&mut self, commit_id: u64) {
+        self.global_causality_number = commit_id;
     }
 
-    pub fn commit_id(&self) -> u64 {
-        self.commit_id
+    pub fn global_causality_number(&self) -> u64 {
+        self.global_causality_number
     }
 
     fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)
