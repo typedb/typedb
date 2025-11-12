@@ -100,6 +100,7 @@ impl CommitRecord {
         // TODO: Maybe make it optional?
         // assert_ne!(global_causality_number, 0, "Default global causality number is 0 by default ..");
         self.global_causality_number = global_causality_number;
+        println!("Set global causality number: {}", self.global_causality_number);
     }
 
     pub fn global_causality_number(&self) -> u64 {
