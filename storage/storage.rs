@@ -235,6 +235,7 @@ impl<Durability> MVCCStorage<Durability> {
             println!("SKipped commit record: {commit_record:?}");
             return Ok(None);
         }
+        println!("Applied commit record: {commit_record:?}");
 
         commit_profile.snapshot_commit_record_created();
 
@@ -299,7 +300,7 @@ impl<Durability> MVCCStorage<Durability> {
         if new_causality_number == CommitRecord::DEFAULT_CAUSALITY_NUMBER {
             return Ok(false);
         }
-
+        println!("Checking previous dur client number: {:?}", self.durability_client.previous());
         self.durability_client
             .iter_sequenced_type_from::<CommitRecord>(self.durability_client.previous())?
             .map(|result| {
