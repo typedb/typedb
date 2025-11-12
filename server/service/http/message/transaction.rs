@@ -21,7 +21,7 @@ use crate::service::{
 };
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionOpenPayload {
     pub database_name: String,
     pub transaction_type: TransactionType,
@@ -29,7 +29,7 @@ pub struct TransactionOpenPayload {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionOptionsPayload {
     // pub parallel: Option<bool>, // TODO: Uncomment when introduced
     pub schema_lock_acquire_timeout_millis: Option<u64>,

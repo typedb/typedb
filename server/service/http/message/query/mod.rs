@@ -25,7 +25,7 @@ pub mod document;
 pub mod row;
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct QueryOptionsPayload {
     pub include_instance_types: Option<bool>,
     pub answer_count_limit: Option<u64>,
@@ -53,14 +53,14 @@ impl Into<QueryOptions> for QueryOptionsPayload {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionQueryPayload {
     pub query_options: Option<QueryOptionsPayload>,
     pub query: String,
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct QueryPayload {
     pub query_options: Option<QueryOptionsPayload>,
     pub query: String,

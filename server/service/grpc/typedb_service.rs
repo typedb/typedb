@@ -76,7 +76,9 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             || async {
                 let receive_time = Instant::now();
                 let message = request.into_inner();
-                if message.version != typedb_protocol::Version::Version as i32 {
+                let versions_compatible = message.version == typedb_protocol::Version::Version as i32
+                    && message.extension_version <= typedb_protocol::ExtensionVersion::Extension as i32;
+                if !versions_compatible {
                     let err = ProtocolError::IncompatibleProtocolVersion {
                         server_protocol_version: typedb_protocol::Version::Version as i32,
                         driver_protocol_version: message.version,
