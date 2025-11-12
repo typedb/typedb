@@ -295,12 +295,15 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityClient,
     {
+        let new_causality_number = commit_record.global_causality_number();
+        if new_causality_number == CommitRecord::DEFAULT_CAUSALITY_NUMBER {
+            return Ok(false);
+        }
+
         self.durability_client
             .iter_sequenced_type_from::<CommitRecord>(self.durability_client.previous())?
             .map(|result| {
-                result.map(|(_, previous_record)| {
-                    commit_record.global_causality_number() <= previous_record.global_causality_number()
-                })
+                result.map(|(_, previous_record)| new_causality_number <= previous_record.global_causality_number())
             })
             .next()
             .unwrap_or(Ok(false))
