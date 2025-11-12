@@ -18,14 +18,27 @@ pub struct CommitRecord {
     open_sequence_number: SequenceNumber,
     commit_type: CommitType,
 
+    /// An optional field used by extensions of TypeDB to provide external causality numbers.
+    /// Records with the same causality numbers are considered identical, and only the first record
+    /// is processed, ensuring idempotency.
+    /// Each new record expected to be applied must have a new causality number bigger than all the
+    /// causality numbers already saved in the storage. Otherwise, it will be ignored.
+    /// Defaults to 0 (meaning that every record is unique).
     #[serde(default)]
-    #[serde(skip_serializing_if = "is_zero")]
     global_causality_number: u64,
 }
 
-// TODO: Test
-fn is_zero(commit_id: &u64) -> bool {
-    commit_id.eq(&0)
+#[derive(Serialize, Deserialize)]
+struct LegacyCommitRecordV1 {
+    operations: OperationsBuffer,
+    open_sequence_number: SequenceNumber,
+    commit_type: CommitType,
+}
+
+impl From<LegacyCommitRecordV1> for CommitRecord {
+    fn from(legacy: LegacyCommitRecordV1) -> Self {
+        CommitRecord::new(legacy.operations, legacy.open_sequence_number, legacy.commit_type)
+    }
 }
 
 impl fmt::Debug for CommitRecord {
@@ -52,17 +65,18 @@ pub struct StatusRecord {
 }
 
 impl CommitRecord {
+    pub const DEFAULT_CAUSALITY_NUMBER: u64 = 0;
+
     pub(crate) fn new(
         operations: OperationsBuffer,
         open_sequence_number: SequenceNumber,
         commit_type: CommitType,
     ) -> CommitRecord {
-        const DEFAULT_CAUSALITY_NUMBER: u64 = 0;
         CommitRecord {
             operations,
             open_sequence_number,
             commit_type,
-            global_causality_number: DEFAULT_CAUSALITY_NUMBER,
+            global_causality_number: Self::DEFAULT_CAUSALITY_NUMBER,
         }
     }
 
@@ -82,8 +96,10 @@ impl CommitRecord {
         self.open_sequence_number
     }
 
-    pub fn set_global_causality_number(&mut self, commit_id: u64) {
-        self.global_causality_number = commit_id;
+    pub fn set_global_causality_number(&mut self, global_causality_number: u64) {
+        // TODO: Maybe make it optional?
+        // assert_ne!(global_causality_number, 0, "Default global causality number is 0 by default ..");
+        self.global_causality_number = global_causality_number;
     }
 
     pub fn global_causality_number(&self) -> u64 {
@@ -178,8 +194,14 @@ impl DurabilityRecord for CommitRecord {
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
         // https://github.com/bincode-org/bincode/issues/633
         let mut buf = Vec::new();
-        reader.read_to_end(&mut buf).unwrap();
-        bincode::deserialize(&buf)
+        reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
+        match bincode::deserialize::<CommitRecord>(&buf) {
+            Ok(record) => Ok(record),
+            Err(_error) => {
+                // fallback to legacy
+                bincode::deserialize::<LegacyCommitRecordV1>(&buf).map(|legacy| CommitRecord::from(legacy))
+            }
+        }
     }
 }
 
