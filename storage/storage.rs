@@ -265,8 +265,8 @@ impl<Durability> MVCCStorage<Durability> {
                 self.keyspaces
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
-                panic!("crashhhh");
                 commit_profile.snapshot_storage_written();
+                panic!("crashhhh");
 
                 // Inform the isolation manager and increment the watermark
                 self.isolation_manager
