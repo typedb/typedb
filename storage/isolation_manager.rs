@@ -562,7 +562,6 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
         if let SlotMarker::Empty = status {
             CommitStatus::Empty
         } else {
-            println!("All commit records: {:?}, index: {index}, seqnum: {sequence_number}", self.commit_records);
             let record = self.commit_records[index].get().unwrap();
             match status {
                 SlotMarker::Empty => unreachable!(),
