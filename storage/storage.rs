@@ -41,14 +41,15 @@ use crate::{
         iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError,
         KeyspaceSet, Keyspaces,
     },
+    number::SequenceNumber,
     record::{CommitRecord, StatusRecord},
     recovery::{
         checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
-    sequence_number::SequenceNumber,
     snapshot::{ReadSnapshot, SchemaSnapshot, WriteSnapshot},
 };
+use crate::number::CausalityNumber;
 
 pub mod durability_client;
 pub mod error;
@@ -57,9 +58,9 @@ pub mod iterator;
 pub mod key_range;
 pub mod key_value;
 pub mod keyspace;
+pub mod number;
 pub mod record;
 pub mod recovery;
-pub mod sequence_number;
 pub mod snapshot;
 mod write_batches;
 
@@ -179,13 +180,13 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        WriteSnapshot::new_with_open_sequence_number(self, open_sequence_number, CommitRecord::DEFAULT_CAUSALITY_NUMBER)
+        WriteSnapshot::new_with_open_sequence_number(self, open_sequence_number, CausalityNumber::None)
     }
 
     pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability> {
         // guarantee external consistency: await this sequence number to be behind the watermark
         self.wait_for_watermark(sequence_number);
-        WriteSnapshot::new_with_open_sequence_number(self, sequence_number, CommitRecord::DEFAULT_CAUSALITY_NUMBER)
+        WriteSnapshot::new_with_open_sequence_number(self, sequence_number, CausalityNumber::None)
     }
 
     pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability> {
@@ -207,7 +208,7 @@ impl<Durability> MVCCStorage<Durability> {
         SchemaSnapshot::new_with_open_sequence_number(
             self,
             open_sequence_number,
-            CommitRecord::DEFAULT_CAUSALITY_NUMBER,
+            CausalityNumber::None,
         )
     }
 
@@ -236,10 +237,9 @@ impl<Durability> MVCCStorage<Durability> {
             .record_exists(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?
         {
-            println!("SKipped commit record: {commit_record:?}");
+            debug_assert_ne!(commit_record.global_causality_number, None);
             return Ok(None);
         }
-        println!("Applied commit record: {commit_record:?}");
 
         commit_profile.snapshot_commit_record_created();
 
@@ -276,7 +276,6 @@ impl<Durability> MVCCStorage<Durability> {
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 commit_profile.snapshot_durable_write_commit_status_submitted();
-                panic!("crashhhh");
 
                 Ok(Some(commit_sequence_number))
             }
@@ -301,15 +300,14 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityClient,
     {
-        let new_causality_number = commit_record.global_causality_number();
-        if new_causality_number == CommitRecord::DEFAULT_CAUSALITY_NUMBER {
+        let new_causality_number = commit_record.global_causality_number;
+        if new_causality_number.is_none() {
             return Ok(false);
         }
-        println!("Checking previous dur client number: {:?}", self.durability_client.previous());
         self.durability_client
             .iter_sequenced_type_from::<CommitRecord>(self.durability_client.previous())?
             .map(|result| {
-                result.map(|(_, previous_record)| new_causality_number <= previous_record.global_causality_number())
+                result.map(|(_, previous_record)| new_causality_number <= previous_record.global_causality_number)
             })
             .next()
             .unwrap_or(Ok(false))
@@ -702,12 +700,7 @@ mod tests {
             let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
             durability_client.register_record_type::<CommitRecord>();
             let seq = durability_client
-                .sequenced_write(&CommitRecord::new(
-                    full_operations,
-                    durability_client.previous(),
-                    CommitType::Data,
-                    CommitRecord::DEFAULT_CAUSALITY_NUMBER,
-                ))
+                .sequenced_write(&CommitRecord::new(full_operations, durability_client.previous(), CommitType::Data))
                 .unwrap();
 
             let partial_commit = WriteBatches::from_operations(seq, &partial_operations);

@@ -24,8 +24,8 @@ use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
+    number::SequenceNumber,
     record::{CommitRecord, StatusRecord},
-    sequence_number::SequenceNumber,
     write_batches::WriteBatches,
 };
 
@@ -661,8 +661,8 @@ mod tests {
     use crate::{
         isolation_manager::{CommitStatus, Timeline, TIMELINE_WINDOW_SIZE},
         keyspace::{KeyspaceId, KeyspaceSet},
+        number::SequenceNumber,
         record::{CommitRecord, CommitType},
-        sequence_number::SequenceNumber,
         snapshot::buffer::OperationsBuffer,
     };
     macro_rules! test_keyspace_set {
@@ -747,12 +747,7 @@ mod tests {
     }
 
     fn _record(read_sequence_number: SequenceNumber) -> CommitRecord {
-        CommitRecord::new(
-            OperationsBuffer::new(),
-            read_sequence_number,
-            CommitType::Data,
-            CommitRecord::DEFAULT_CAUSALITY_NUMBER,
-        )
+        CommitRecord::new(OperationsBuffer::new(), read_sequence_number, CommitType::Data)
     }
 
     #[test]
