@@ -747,7 +747,12 @@ mod tests {
     }
 
     fn _record(read_sequence_number: SequenceNumber) -> CommitRecord {
-        CommitRecord::new(OperationsBuffer::new(), read_sequence_number, CommitType::Data)
+        CommitRecord::new(
+            OperationsBuffer::new(),
+            read_sequence_number,
+            CommitType::Data,
+            CommitRecord::DEFAULT_CAUSALITY_NUMBER,
+        )
     }
 
     #[test]

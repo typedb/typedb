@@ -349,13 +349,17 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
 pub struct WriteSnapshot<D> {
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
+    global_causality_number: u64,
     iterator_pool: IteratorPool, // Pool must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
 }
 
 impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct(type_name::<Self>()).field("open_sequence_number", &self.open_sequence_number).finish()
+        f.debug_struct(type_name::<Self>())
+            .field("open_sequence_number", &self.open_sequence_number)
+            .field("global_causality_number", &self.global_causality_number)
+            .finish()
     }
 }
 
@@ -363,26 +367,31 @@ impl<D> WriteSnapshot<D> {
     pub(crate) fn new_with_open_sequence_number(
         storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
+        global_causality_number: u64,
     ) -> Self {
-        Self::new(storage, OperationsBuffer::new(), open_sequence_number)
+        Self::new(storage, OperationsBuffer::new(), open_sequence_number, global_causality_number)
     }
 
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
-        Self::new(storage, commit_record.into_operations(), open_sequence_number)
+        let global_causality_number = commit_record.global_causality_number();
+        Self::new(storage, commit_record.into_operations(), open_sequence_number, global_causality_number)
     }
 
-    pub fn new_with_operations(
+    fn new(
         storage: Arc<MVCCStorage<D>>,
-        open_sequence_number: SequenceNumber,
         operations: OperationsBuffer,
+        open_sequence_number: SequenceNumber,
+        global_causality_number: u64,
     ) -> Self {
-        Self::new(storage, operations, open_sequence_number)
-    }
-
-    fn new(storage: Arc<MVCCStorage<D>>, operations: OperationsBuffer, open_sequence_number: SequenceNumber) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
-        WriteSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new() }
+        WriteSnapshot {
+            storage,
+            operations,
+            open_sequence_number,
+            global_causality_number,
+            iterator_pool: IteratorPool::new(),
+        }
     }
 }
 
@@ -515,7 +524,12 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
                 SnapshotError::Commit { typedb_source: MVCCRead { name: self.storage.name.clone(), source: error } }
             })?;
             commit_profile.snapshot_put_statuses_checked();
-            let commit_record = CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Data);
+            let commit_record = CommitRecord::new(
+                self.operations,
+                self.open_sequence_number,
+                CommitType::Data,
+                self.global_causality_number,
+            );
             Ok(Some(commit_record))
         }
     }
@@ -524,13 +538,17 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
 pub struct SchemaSnapshot<D> {
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
+    global_causality_number: u64,
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
 }
 
 impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct(type_name::<Self>()).field("open_sequence_number", &self.open_sequence_number).finish()
+        f.debug_struct(type_name::<Self>())
+            .field("open_sequence_number", &self.open_sequence_number)
+            .field("global_causality_number", &self.global_causality_number)
+            .finish()
     }
 }
 
@@ -538,26 +556,31 @@ impl<D> SchemaSnapshot<D> {
     pub(crate) fn new_with_open_sequence_number(
         storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
+        global_causality_number: u64,
     ) -> Self {
-        Self::new(storage, OperationsBuffer::new(), open_sequence_number)
+        Self::new(storage, OperationsBuffer::new(), open_sequence_number, global_causality_number)
     }
 
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
-        Self::new(storage, commit_record.into_operations(), open_sequence_number)
+        let global_causality_number = commit_record.global_causality_number();
+        Self::new(storage, commit_record.into_operations(), open_sequence_number, global_causality_number)
     }
 
-    pub fn new_with_operations(
+    fn new(
         storage: Arc<MVCCStorage<D>>,
         operations: OperationsBuffer,
         open_sequence_number: SequenceNumber,
-    ) -> impl ReadableSnapshot {
-        Self::new(storage, operations, open_sequence_number)
-    }
-
-    fn new(storage: Arc<MVCCStorage<D>>, operations: OperationsBuffer, open_sequence_number: SequenceNumber) -> Self {
+        global_causality_number: u64,
+    ) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
-        SchemaSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new() }
+        SchemaSnapshot {
+            storage,
+            operations,
+            open_sequence_number,
+            global_causality_number,
+            iterator_pool: IteratorPool::new(),
+        }
     }
 }
 
@@ -691,7 +714,12 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
                 SnapshotError::Commit { typedb_source: MVCCRead { name: self.storage.name.clone(), source: error } }
             })?;
             commit_profile.snapshot_put_statuses_checked();
-            Ok(Some(CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Schema)))
+            Ok(Some(CommitRecord::new(
+                self.operations,
+                self.open_sequence_number,
+                CommitType::Schema,
+                self.global_causality_number,
+            )))
         }
     }
 }
