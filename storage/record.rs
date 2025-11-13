@@ -37,7 +37,12 @@ struct LegacyCommitRecordV1 {
 
 impl From<LegacyCommitRecordV1> for CommitRecord {
     fn from(legacy: LegacyCommitRecordV1) -> Self {
-        CommitRecord::new(legacy.operations, legacy.open_sequence_number, legacy.commit_type)
+        CommitRecord::new(
+            legacy.operations,
+            legacy.open_sequence_number,
+            legacy.commit_type,
+            CommitRecord::DEFAULT_CAUSALITY_NUMBER,
+        )
     }
 }
 
@@ -45,9 +50,9 @@ impl fmt::Debug for CommitRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("CommitRecord")
             .field("open_sequence_number", &self.open_sequence_number)
+            .field("global_causality_number", &self.global_causality_number)
             .field("commit_type", &self.commit_type)
             .field("operations", &self.operations)
-            .field("global_causality_number", &self.global_causality_number)
             .finish()
     }
 }
@@ -71,13 +76,9 @@ impl CommitRecord {
         operations: OperationsBuffer,
         open_sequence_number: SequenceNumber,
         commit_type: CommitType,
+        global_causality_number: u64,
     ) -> CommitRecord {
-        CommitRecord {
-            operations,
-            open_sequence_number,
-            commit_type,
-            global_causality_number: Self::DEFAULT_CAUSALITY_NUMBER,
-        }
+        CommitRecord { operations, open_sequence_number, commit_type, global_causality_number }
     }
 
     pub fn operations(&self) -> &OperationsBuffer {
