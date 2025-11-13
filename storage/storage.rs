@@ -272,11 +272,11 @@ impl<Durability> MVCCStorage<Durability> {
                     .applied(commit_sequence_number)
                     .map_err(|error| Internal { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_isolation_manager_notified();
-                panic!("crashhhh");
 
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 commit_profile.snapshot_durable_write_commit_status_submitted();
+                panic!("crashhhh");
 
                 Ok(Some(commit_sequence_number))
             }
