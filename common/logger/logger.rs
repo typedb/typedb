@@ -15,6 +15,7 @@ use tracing_subscriber::{
     fmt::{writer::Tee, SubscriberBuilder},
     EnvFilter,
 };
+
 use crate::tracing_panic::log_panic;
 
 pub mod result;

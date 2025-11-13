@@ -91,11 +91,14 @@ pub fn log_panic(panic_info: &PanicInfo) {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        io,
+        sync::{Arc, Mutex, MutexGuard, TryLockError},
+    };
+
     use tracing::subscriber::DefaultGuard;
 
     use super::log_panic;
-    use std::io;
-    use std::sync::{Arc, Mutex, MutexGuard, TryLockError};
 
     #[test]
     fn test_static_panic_message() {
@@ -153,9 +156,7 @@ mod tests {
     }
 
     fn init_subscriber(buffer: Arc<Mutex<Vec<u8>>>) -> DefaultGuard {
-        let subscriber = tracing_subscriber::fmt()
-            .with_writer(move || MockWriter::new(buffer.clone()))
-            .finish();
+        let subscriber = tracing_subscriber::fmt().with_writer(move || MockWriter::new(buffer.clone())).finish();
         tracing::subscriber::set_default(subscriber)
     }
 
