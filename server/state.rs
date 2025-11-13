@@ -16,7 +16,7 @@ use resource::{
 };
 use storage::{
     durability_client::{DurabilityClient, WALClient},
-    isolation_manager::CommitRecord,
+    record::CommitRecord,
 };
 use system::concepts::User;
 use tokio::{net::lookup_host, sync::watch::Receiver};
