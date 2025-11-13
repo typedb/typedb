@@ -276,6 +276,7 @@ impl<Durability> MVCCStorage<Durability> {
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 commit_profile.snapshot_durable_write_commit_status_submitted();
+                panic!("crashhhh");
 
                 Ok(Some(commit_sequence_number))
             }
