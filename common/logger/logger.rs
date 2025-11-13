@@ -16,10 +16,10 @@ use tracing_subscriber::{
     EnvFilter,
 };
 
-use crate::tracing_panic::log_panic;
+use crate::log_panic::log_panic;
 
 pub mod result;
-mod tracing_panic;
+mod log_panic;
 
 pub fn initialise_logging_global(logdir: &PathBuf) {
     debug_assert!(logdir.is_absolute());
