@@ -240,7 +240,6 @@ impl Database<WALClient> {
         use DatabaseOpenError::{
             DirectoryCreate, Encoding, FunctionCacheInitialise, StorageOpen, TypeCacheInitialise, WALOpen,
         };
-        panic!("TESTING PANIC!");
 
         let name = name.as_ref();
 
