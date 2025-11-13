@@ -44,9 +44,9 @@ use resource::{
 };
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
+    number::SequenceNumber,
     record::CommitRecord,
     recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
-    sequence_number::SequenceNumber,
     snapshot::{CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };

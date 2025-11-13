@@ -39,9 +39,9 @@ use storage::{
     iterator::MVCCReadError,
     key_value::{StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
+    number::SequenceNumber,
     record::CommitType,
     recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
-    sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
     MVCCStorage,
 };
