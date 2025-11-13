@@ -255,13 +255,13 @@ impl<Durability> MVCCStorage<Durability> {
         let validate_result =
             self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
         commit_profile.snapshot_isolation_validated();
-        panic!("crashhhh");
 
         match validate_result {
             Ok(ValidatedCommit::Write(write_batches)) => {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
                                                // Write to the k-v store
                 commit_profile.snapshot_durable_write_data_confirmed();
+                panic!("crashhhh");
 
                 self.keyspaces
                     .write(write_batches)
