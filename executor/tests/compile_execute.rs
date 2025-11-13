@@ -38,7 +38,7 @@ use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
     durability_client::WALClient,
-    sequence_number::SequenceNumber,
+    number::SequenceNumber,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
     MVCCStorage,
 };

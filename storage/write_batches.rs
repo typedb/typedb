@@ -15,7 +15,7 @@ use rocksdb::WriteBatch;
 use super::{MVCCKey, StorageOperation};
 use crate::{
     keyspace::KEYSPACE_MAXIMUM_COUNT,
-    sequence_number::SequenceNumber,
+    number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
 };
 
