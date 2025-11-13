@@ -242,13 +242,14 @@ impl<Durability> MVCCStorage<Durability> {
         println!("Applied commit record: {commit_record:?}");
 
         commit_profile.snapshot_commit_record_created();
+
         commit_profile.commit_size(commit_record.operations().len());
-        panic!("crashhhh");
 
         let commit_sequence_number = self
             .durability_client
             .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
+        panic!("crashhhh");
         commit_profile.snapshot_durable_write_data_submitted();
 
         let sync_notifier = self.durability_client.request_sync();
