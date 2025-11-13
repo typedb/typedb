@@ -37,7 +37,15 @@ checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),
     exclude = glob([
+        "log_panic.rs",
         "Cargo.*",
     ]),
     license_type = "mpl-header",
+)
+
+checkstyle_test(
+    name = "checkstyle-copies",
+    include = ["log_panic.rs"],
+    exclude = [],
+    license_type = "apache-header",
 )

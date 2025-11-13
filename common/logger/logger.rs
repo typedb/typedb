@@ -18,8 +18,8 @@ use tracing_subscriber::{
 
 use crate::log_panic::log_panic;
 
-pub mod result;
 mod log_panic;
+pub mod result;
 
 pub fn initialise_logging_global(logdir: &PathBuf) {
     debug_assert!(logdir.is_absolute());
