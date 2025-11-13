@@ -41,7 +41,7 @@ use crate::{
         iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError,
         KeyspaceSet, Keyspaces,
     },
-    number::SequenceNumber,
+    number::{CausalityNumber, SequenceNumber},
     record::{CommitRecord, StatusRecord},
     recovery::{
         checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
@@ -49,7 +49,6 @@ use crate::{
     },
     snapshot::{ReadSnapshot, SchemaSnapshot, WriteSnapshot},
 };
-use crate::number::CausalityNumber;
 
 pub mod durability_client;
 pub mod error;
@@ -205,11 +204,7 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        SchemaSnapshot::new_with_open_sequence_number(
-            self,
-            open_sequence_number,
-            CausalityNumber::None,
-        )
+        SchemaSnapshot::new_with_open_sequence_number(self, open_sequence_number, CausalityNumber::None)
     }
 
     fn wait_for_watermark(&self, target: SequenceNumber) -> SequenceNumber {
@@ -237,11 +232,9 @@ impl<Durability> MVCCStorage<Durability> {
             .record_exists(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?
         {
-            println!("Ignored record: {commit_record:?}");
             debug_assert_ne!(commit_record.global_causality_number, None);
             return Ok(None);
         }
-        println!("Applied record: {commit_record:?}");
 
         commit_profile.snapshot_commit_record_created();
         panic!("crashhhh");
