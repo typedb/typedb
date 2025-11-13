@@ -9,6 +9,7 @@ use std::{
     error::Error,
     fmt,
     iter::empty,
+    num::NonZeroU64,
     ops::Deref,
     sync::{atomic::Ordering, Arc},
 };
@@ -27,8 +28,8 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
+    number::{CausalityNumber, SequenceNumber},
     record::{CommitRecord, CommitType},
-    sequence_number::SequenceNumber,
     snapshot::{
         buffer::{BufferRangeIterator, OperationsBuffer},
         iterator::SnapshotRangeIterator,
@@ -353,7 +354,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
 pub struct WriteSnapshot<D> {
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
-    global_causality_number: u64,
+    global_causality_number: CausalityNumber,
     iterator_pool: IteratorPool, // Pool must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
 }
@@ -371,14 +372,14 @@ impl<D> WriteSnapshot<D> {
     pub(crate) fn new_with_open_sequence_number(
         storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
-        global_causality_number: u64,
+        global_causality_number: CausalityNumber,
     ) -> Self {
         Self::new(storage, OperationsBuffer::new(), open_sequence_number, global_causality_number)
     }
 
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
-        let global_causality_number = commit_record.global_causality_number();
+        let global_causality_number = commit_record.global_causality_number;
         Self::new(storage, commit_record.into_operations(), open_sequence_number, global_causality_number)
     }
 
@@ -386,7 +387,7 @@ impl<D> WriteSnapshot<D> {
         storage: Arc<MVCCStorage<D>>,
         operations: OperationsBuffer,
         open_sequence_number: SequenceNumber,
-        global_causality_number: u64,
+        global_causality_number: CausalityNumber,
     ) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
         WriteSnapshot {
@@ -528,7 +529,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
                 SnapshotError::Commit { typedb_source: MVCCRead { name: self.storage.name.clone(), source: error } }
             })?;
             commit_profile.snapshot_put_statuses_checked();
-            let commit_record = CommitRecord::new(
+            let commit_record = CommitRecord::new_with_causality_number(
                 self.operations,
                 self.open_sequence_number,
                 CommitType::Data,
@@ -542,7 +543,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
 pub struct SchemaSnapshot<D> {
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
-    global_causality_number: u64,
+    global_causality_number: CausalityNumber,
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
 }
@@ -560,14 +561,14 @@ impl<D> SchemaSnapshot<D> {
     pub(crate) fn new_with_open_sequence_number(
         storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
-        global_causality_number: u64,
+        global_causality_number: CausalityNumber,
     ) -> Self {
         Self::new(storage, OperationsBuffer::new(), open_sequence_number, global_causality_number)
     }
 
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
-        let global_causality_number = commit_record.global_causality_number();
+        let global_causality_number = commit_record.global_causality_number;
         Self::new(storage, commit_record.into_operations(), open_sequence_number, global_causality_number)
     }
 
@@ -575,7 +576,7 @@ impl<D> SchemaSnapshot<D> {
         storage: Arc<MVCCStorage<D>>,
         operations: OperationsBuffer,
         open_sequence_number: SequenceNumber,
-        global_causality_number: u64,
+        global_causality_number: CausalityNumber,
     ) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
         SchemaSnapshot {
@@ -718,7 +719,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
                 SnapshotError::Commit { typedb_source: MVCCRead { name: self.storage.name.clone(), source: error } }
             })?;
             commit_profile.snapshot_put_statuses_checked();
-            Ok(Some(CommitRecord::new(
+            Ok(Some(CommitRecord::new_with_causality_number(
                 self.operations,
                 self.open_sequence_number,
                 CommitType::Schema,

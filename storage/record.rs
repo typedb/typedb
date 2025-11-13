@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, io::Read};
+use std::{fmt, io::Read, num::NonZeroU64};
 
 use durability::DurabilityRecordType;
 use logger::result::ResultExt;
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     durability_client::{DurabilityRecord, SequencedDurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::{CommitDependency, DependentPut, IsolationConflict},
-    sequence_number::SequenceNumber,
+    number::{CausalityNumber, SequenceNumber},
     snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},
 };
 
@@ -31,7 +31,7 @@ pub struct CommitRecord {
     /// causality numbers already saved in the storage. Otherwise, it will be ignored.
     /// Defaults to 0 (meaning that every record is unique).
     #[serde(default)]
-    global_causality_number: u64,
+    pub global_causality_number: CausalityNumber,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -43,12 +43,7 @@ struct LegacyCommitRecordV1 {
 
 impl From<LegacyCommitRecordV1> for CommitRecord {
     fn from(legacy: LegacyCommitRecordV1) -> Self {
-        CommitRecord::new(
-            legacy.operations,
-            legacy.open_sequence_number,
-            legacy.commit_type,
-            CommitRecord::DEFAULT_CAUSALITY_NUMBER,
-        )
+        CommitRecord::new(legacy.operations, legacy.open_sequence_number, legacy.commit_type)
     }
 }
 
@@ -76,13 +71,19 @@ pub struct StatusRecord {
 }
 
 impl CommitRecord {
-    pub const DEFAULT_CAUSALITY_NUMBER: u64 = 0;
-
     pub(crate) fn new(
         operations: OperationsBuffer,
         open_sequence_number: SequenceNumber,
         commit_type: CommitType,
-        global_causality_number: u64,
+    ) -> CommitRecord {
+        Self::new_with_causality_number(operations, open_sequence_number, commit_type, None)
+    }
+
+    pub(crate) fn new_with_causality_number(
+        operations: OperationsBuffer,
+        open_sequence_number: SequenceNumber,
+        commit_type: CommitType,
+        global_causality_number: CausalityNumber,
     ) -> CommitRecord {
         CommitRecord { operations, open_sequence_number, commit_type, global_causality_number }
     }
@@ -101,17 +102,6 @@ impl CommitRecord {
 
     pub fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
-    }
-
-    pub fn set_global_causality_number(&mut self, global_causality_number: u64) {
-        // TODO: Maybe make it optional?
-        // assert_ne!(global_causality_number, 0, "Default global causality number is 0 by default ..");
-        self.global_causality_number = global_causality_number;
-        println!("Set global causality number: {}", self.global_causality_number);
-    }
-
-    pub fn global_causality_number(&self) -> u64 {
-        self.global_causality_number
     }
 
     fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)
