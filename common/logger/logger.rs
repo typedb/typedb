@@ -15,8 +15,10 @@ use tracing_subscriber::{
     fmt::{writer::Tee, SubscriberBuilder},
     EnvFilter,
 };
+use crate::tracing_panic::log_panic;
 
 pub mod result;
+mod tracing_panic;
 
 pub fn initialise_logging_global(logdir: &PathBuf) {
     debug_assert!(logdir.is_absolute());
@@ -45,7 +47,13 @@ pub fn initialise_logging_global(logdir: &PathBuf) {
         .with_line_number(true)
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber).unwrap()
+    let result = tracing::subscriber::set_global_default(subscriber).unwrap();
+    let old_panic_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic_info| {
+        log_panic(panic_info);
+        old_panic_hook(panic_info)
+    }));
+    result
 }
 
 pub fn initialise_logging() -> DefaultGuard {

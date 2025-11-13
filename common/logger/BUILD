@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library", "rustfmt_test")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rustfmt_test", "rust_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -26,6 +26,11 @@ rustfmt_test(
         ":logger",
     ],
     size = "small",
+)
+
+rust_test(
+    name = "test_crate_logger",
+    crate = ":logger",
 )
 
 checkstyle_test(
