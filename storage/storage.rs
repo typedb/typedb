@@ -237,9 +237,11 @@ impl<Durability> MVCCStorage<Durability> {
             .record_exists(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?
         {
+            println!("Ignored record: {commit_record:?}");
             debug_assert_ne!(commit_record.global_causality_number, None);
             return Ok(None);
         }
+        println!("Applied record: {commit_record:?}");
 
         commit_profile.snapshot_commit_record_created();
         panic!("crashhhh");
