@@ -242,7 +242,7 @@ impl<Durability> MVCCStorage<Durability> {
         println!("Applied commit record: {commit_record:?}");
 
         commit_profile.snapshot_commit_record_created();
-
+        panic!("crashhhh");
         commit_profile.commit_size(commit_record.operations().len());
 
         let commit_sequence_number = self
