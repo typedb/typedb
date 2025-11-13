@@ -249,8 +249,8 @@ impl<Durability> MVCCStorage<Durability> {
             .durability_client
             .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
-        panic!("crashhhh");
         commit_profile.snapshot_durable_write_data_submitted();
+        panic!("crashhhh");
 
         let sync_notifier = self.durability_client.request_sync();
         let validate_result =
