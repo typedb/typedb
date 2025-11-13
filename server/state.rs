@@ -482,7 +482,6 @@ impl ServerState for LocalServerState {
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError> {
-        println!("DATABASE SCHEMA COMMIT: {commit_record:?}");
         let Some(database) = self.databases_get_unrestricted(name).await? else {
             return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
         };
