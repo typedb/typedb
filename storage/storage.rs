@@ -261,11 +261,11 @@ impl<Durability> MVCCStorage<Durability> {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
                                                // Write to the k-v store
                 commit_profile.snapshot_durable_write_data_confirmed();
-                panic!("crashhhh");
 
                 self.keyspaces
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
+                panic!("crashhhh");
                 commit_profile.snapshot_storage_written();
 
                 // Inform the isolation manager and increment the watermark
