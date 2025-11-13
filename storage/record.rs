@@ -27,9 +27,9 @@ pub struct CommitRecord {
     /// An optional field used by extensions of TypeDB to provide external causality numbers.
     /// Records with the same causality numbers are considered identical, and only the first record
     /// is processed, ensuring idempotency.
-    /// Each new record expected to be applied must have a new causality number bigger than all the
+    /// WARNING: each new record expected to be applied MUST have a new causality number bigger than all the
     /// causality numbers already saved in the storage. Otherwise, it will be ignored.
-    /// Defaults to 0 (meaning that every record is unique).
+    /// Defaults to None (meaning that every record is unique).
     #[serde(default)]
     pub global_causality_number: CausalityNumber,
 }
