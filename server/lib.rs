@@ -21,6 +21,7 @@ use tokio::{
     sync::watch::{channel, Receiver, Sender},
 };
 use tracing::info;
+
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
