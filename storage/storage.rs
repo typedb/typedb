@@ -266,13 +266,13 @@ impl<Durability> MVCCStorage<Durability> {
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_storage_written();
-                panic!("crashhhh");
 
                 // Inform the isolation manager and increment the watermark
                 self.isolation_manager
                     .applied(commit_sequence_number)
                     .map_err(|error| Internal { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_isolation_manager_notified();
+                panic!("crashhhh");
 
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
