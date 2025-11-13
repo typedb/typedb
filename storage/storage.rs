@@ -254,8 +254,8 @@ impl<Durability> MVCCStorage<Durability> {
         let sync_notifier = self.durability_client.request_sync();
         let validate_result =
             self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
-        panic!("crashhhh");
         commit_profile.snapshot_isolation_validated();
+        panic!("crashhhh");
 
         match validate_result {
             Ok(ValidatedCommit::Write(write_batches)) => {
