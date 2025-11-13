@@ -179,13 +179,13 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        WriteSnapshot::new_with_open_sequence_number(self, open_sequence_number)
+        WriteSnapshot::new_with_open_sequence_number(self, open_sequence_number, CommitRecord::DEFAULT_CAUSALITY_NUMBER)
     }
 
     pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability> {
         // guarantee external consistency: await this sequence number to be behind the watermark
         self.wait_for_watermark(sequence_number);
-        WriteSnapshot::new_with_open_sequence_number(self, sequence_number)
+        WriteSnapshot::new_with_open_sequence_number(self, sequence_number, CommitRecord::DEFAULT_CAUSALITY_NUMBER)
     }
 
     pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability> {
@@ -204,7 +204,11 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        SchemaSnapshot::new_with_open_sequence_number(self, open_sequence_number)
+        SchemaSnapshot::new_with_open_sequence_number(
+            self,
+            open_sequence_number,
+            CommitRecord::DEFAULT_CAUSALITY_NUMBER,
+        )
     }
 
     fn wait_for_watermark(&self, target: SequenceNumber) -> SequenceNumber {
@@ -697,7 +701,12 @@ mod tests {
             let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
             durability_client.register_record_type::<CommitRecord>();
             let seq = durability_client
-                .sequenced_write(&CommitRecord::new(full_operations, durability_client.previous(), CommitType::Data))
+                .sequenced_write(&CommitRecord::new(
+                    full_operations,
+                    durability_client.previous(),
+                    CommitType::Data,
+                    CommitRecord::DEFAULT_CAUSALITY_NUMBER,
+                ))
                 .unwrap();
 
             let partial_commit = WriteBatches::from_operations(seq, &partial_operations);
