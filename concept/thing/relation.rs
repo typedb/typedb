@@ -444,7 +444,10 @@ impl ThingAPI for Relation {
                 .get_indexed_relations(snapshot, thing_manager, self.type_(), storage_counters.clone())
                 .is_ok_and(|mut iterator| iterator.any(|result| {
                     match result {
-                        Ok(((start, _, _, _, start_role, _), _)) => start == player && start_role == role,
+                        Ok(((start, _, relation_type, relation_id, start_role, _), _)) => start == player
+                            && start_role == role
+                            && relation_type == self.type_().vertex().type_id_()
+                            && relation_id == self.vertex().object_id(),
                         Err(_) => false,
                     }
                 })));
