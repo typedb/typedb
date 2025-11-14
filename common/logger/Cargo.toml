@@ -3,6 +3,7 @@
 # Do not modify this file.
 
 features = {}
+dev-dependencies = {}
 
 [package]
 	name = "logger"

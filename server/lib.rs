@@ -20,6 +20,7 @@ use tokio::{
     net::lookup_host,
     sync::watch::{channel, Receiver, Sender},
 };
+use tracing::info;
 
 use crate::{
     error::ServerOpenError,
@@ -248,7 +249,8 @@ impl Server {
             println!("WARNING: TLS NOT ENABLED. This means connections are insecure and transmit username/password credentials unencrypted over the network.");
             println!("**To allow driver connections, drivers must also be configured to *not* use TLS**")
         }
-        println!("\nReady!");
+        println!();
+        info!("\nReady!");
     }
 
     fn spawn_shutdown_handler(shutdown_sender: Sender<()>) {
