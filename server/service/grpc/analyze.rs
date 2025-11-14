@@ -514,19 +514,17 @@ fn encode_named_role_as_vertex(
     context: &PipelineStructureContext<'_, impl ReadableSnapshot>,
     role_type: &Vertex<Variable>,
 ) -> Result<conjunction_proto::ConstraintVertex, Box<ConceptReadError>> {
-    debug_assert!(role_type.is_variable());
-    let role_var = role_type.as_variable().expect("Expected role_type to be variable");
-    if context.get_role_type(&role_type.as_variable().unwrap()).is_none() {}
-    let vertex = if let Some(name) = context.get_role_type(&role_type.as_variable().unwrap()) {
+    if let Some(name) = role_type.as_variable().and_then(|v| context.get_role_type(&v)) {
+        let role_var = role_type.as_variable().unwrap();
         let named_role_vertex = constraint_vertex::NamedRole {
             name: name.to_owned(),
             variable: Some(encode_structure_variable(StructureVariableId::from(role_var))),
         };
-        constraint_vertex::Vertex::NamedRole(named_role_vertex)
+        let vertex = constraint_vertex::Vertex::NamedRole(named_role_vertex);
+        Ok(conjunction_proto::ConstraintVertex { vertex: Some(vertex) })
     } else {
-        constraint_vertex::Vertex::Variable(encode_structure_variable(StructureVariableId::from(role_var)))
-    };
-    Ok(conjunction_proto::ConstraintVertex { vertex: Some(vertex) })
+        encode_structure_vertex_label_or_variable(context, role_type)
+    }
 }
 
 fn encode_structure_vertex_variable(
