@@ -836,6 +836,7 @@ impl AssignExecutor {
                 .map_err(|typedb_source| ReadExecutionError::ExpressionEvaluate { typedb_source })?;
             output.append(|mut row| {
                 row.set_multiplicity(input_row.multiplicity());
+                row.set_provenance(input_row.provenance());
                 for &position in &self.selected_variables {
                     if position.as_usize() < input_row.len() {
                         row.set(position, input_row.get(position).clone().into_owned());
