@@ -346,6 +346,7 @@ fn construct_error_message_for_unsatisfiable_edge(
         right_variable,
         left_types,
         right_types,
+        constraint_type: edge.constraint.name().to_owned(),
         source_span: edge.constraint.source_span(),
     }
 }
