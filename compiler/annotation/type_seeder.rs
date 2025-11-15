@@ -330,7 +330,12 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     // Phase 2: Use constraints to infer annotations on other vertices
     fn propagate_vertex_annotations(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<bool, Box<ConceptReadError>> {
         let mut is_modified = false;
-        for c in graph.conjunction.constraints() {
+        // Prioritise `isa` constraints
+        for c in graph.conjunction.constraints().iter().filter(|c| matches!(c, Constraint::Isa(_))) {
+            is_modified |= self.try_propagating_vertex_annotation(c, &mut graph.vertices)?;
+        }
+
+        for c in graph.conjunction.constraints().iter().filter(|c| !matches!(c, Constraint::Isa(_))) {
             is_modified |= self.try_propagating_vertex_annotation(c, &mut graph.vertices)?;
         }
 

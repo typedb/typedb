@@ -204,11 +204,12 @@ typedb_error!(
         ),
         DetectedUnsatisfiableEdge(
             11,
-            "Type-inference was unable to find compatible types for the pair of variables '{left_variable}' & '{right_variable}' across a constraint. Types were:\n- {left_variable}: [{left_types}]\n- {right_variable}: [{right_types}]",
+            "Type-inference was unable to find compatible types for the pair of variables '{left_variable}' & '{right_variable}' across a '{constraint_type}' constraint. Types were:\n- {left_variable}: [{left_types}]\n- {right_variable}: [{right_types}]",
             left_variable: String,
             right_variable: String,
             left_types: String,
             right_types: String,
+            constraint_type: String,
             source_span: Option<Span>,
         ),
         OptionalTypesUnsupported(255, "Optional types are not yet supported."),
