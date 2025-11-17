@@ -17,25 +17,19 @@ use diagnostics::metrics::ActionKind;
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
 use resource::{constants::common::SECONDS_IN_MINUTE, distribution_info::DistributionInfo};
-use storage::snapshot::CommittableSnapshot;
 use system::concepts::{Credential, User};
 use tokio::{
     sync::{
         mpsc::{channel, Sender},
-        oneshot,
-        watch::Receiver,
-        RwLock,
+        oneshot, RwLock,
     },
     time::timeout,
 };
-use tonic::Response;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
 use crate::{
     authentication::Accessor,
-    error::LocalServerStateError,
-    http::diagnostics::run_with_diagnostics,
     service::{
         http::{
             diagnostics::run_with_diagnostics_async,
@@ -373,7 +367,7 @@ impl HTTPTypeDBService {
             || async {
                 service
                     .server_state
-                    .database_schema(database_path.database_name.clone())
+                    .database_schema(&database_path.database_name)
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
@@ -394,7 +388,7 @@ impl HTTPTypeDBService {
             || async {
                 service
                     .server_state
-                    .database_type_schema(database_path.database_name.clone())
+                    .database_type_schema(&database_path.database_name)
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })

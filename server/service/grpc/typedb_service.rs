@@ -4,12 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
+use std::{net::SocketAddr, pin::Pin, time::Instant};
 
 use diagnostics::metrics::ActionKind;
-use itertools::Itertools;
-use resource::profile::CommitProfile;
-use storage::snapshot::CommittableSnapshot;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
@@ -20,7 +17,6 @@ use typedb_protocol::{
     database_manager::import::Server as DatabasesImportServerProto,
     transaction::{Client as TransactionClientProto, Server as TransactionServerProto},
 };
-use user::{errors::UserCreateError, permission_manager::PermissionManager};
 use uuid::Uuid;
 
 use crate::{
@@ -54,7 +50,6 @@ use crate::{
         typedb_service::TypeDBService,
     },
     state::ArcServerState,
-    system_init::SYSTEM_DB,
 };
 
 #[derive(Debug)]
@@ -369,7 +364,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             Some(name.clone()),
             ActionKind::DatabaseSchema,
             || async {
-                match self.server_state.database_schema(name).await {
+                match self.server_state.database_schema(&name).await {
                     Ok(schema) => Ok(Response::new(database_schema_res(schema))),
                     Err(err) => Err(err.into_error_message().into_status()),
                 }
@@ -388,7 +383,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             Some(name.clone()),
             ActionKind::DatabaseTypeSchema,
             || async {
-                match self.server_state.database_type_schema(name).await {
+                match self.server_state.database_type_schema(&name).await {
                     Ok(schema) => Ok(Response::new(database_type_schema_res(schema))),
                     Err(err) => Err(err.into_error_message().into_status()),
                 }

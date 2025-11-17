@@ -11,8 +11,8 @@ pub mod transaction_util {
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::{
         transaction::{
-            DataCommitError, DataCommitIntent, DatabaseDropGuard, SchemaCommitError, SchemaCommitIntent,
-            TransactionRead, TransactionSchema, TransactionWrite,
+            DataCommitError, DataCommitIntent, SchemaCommitError, SchemaCommitIntent, TransactionRead,
+            TransactionSchema, TransactionWrite,
         },
         Database,
     };
@@ -50,7 +50,7 @@ pub mod transaction_util {
                 profile,
             } = TransactionSchema::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
             let mut snapshot: SchemaSnapshot<WALClient> = snapshot.into_inner();
-            let result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
+            let _result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
             let tx = TransactionSchema::from_parts(
                 Arc::new(snapshot),
                 type_manager,
@@ -123,7 +123,7 @@ pub mod transaction_util {
                 transaction_options,
                 profile,
             } = TransactionWrite::open(self.database.clone(), TransactionOptions::default()).unwrap();
-            let (rows, snapshot) = fn_(
+            let (_rows, snapshot) = fn_(
                 snapshot.into_inner(),
                 type_manager.clone(),
                 thing_manager.clone(),

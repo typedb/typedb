@@ -46,9 +46,7 @@ use tokio::{
 use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 
-use super::message::query::query_structure::{
-    encode_pipeline_structure, encode_query_structure, PipelineStructureResponse,
-};
+use super::message::query::query_structure::{encode_pipeline_structure, PipelineStructureResponse};
 use crate::{
     error::{LocalServerStateError, ServerStateError},
     service::{

@@ -33,7 +33,7 @@ pub trait ServerStatus: Debug {
 
 impl ServerStatus for LocalServerStatus {
     fn to_proto(&self) -> typedb_protocol::Server {
-        typedb_protocol::Server { address: self.grpc_address.clone(), replica_status: None }
+        typedb_protocol::Server { address: Some(self.grpc_address.clone()), replica_status: None }
     }
 
     fn grpc_address(&self) -> &str {

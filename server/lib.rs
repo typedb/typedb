@@ -12,7 +12,7 @@ pub mod state;
 pub mod status;
 pub mod system_init;
 
-use std::{fs, future::Future, net::SocketAddr, path::Path, pin::Pin, sync::Arc};
+use std::{fs, net::SocketAddr, path::Path, sync::Arc};
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};

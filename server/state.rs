@@ -70,9 +70,9 @@ pub trait ServerState: Debug {
 
     async fn databases_create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError>;
 
-    async fn database_schema(&self, name: String) -> Result<String, ArcServerStateError>;
+    async fn database_schema(&self, name: &str) -> Result<String, ArcServerStateError>;
 
-    async fn database_type_schema(&self, name: String) -> Result<String, ArcServerStateError>;
+    async fn database_type_schema(&self, name: &str) -> Result<String, ArcServerStateError>;
 
     async fn database_schema_commit(
         &self,
@@ -409,17 +409,17 @@ impl ServerState for LocalServerState {
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: err }))
     }
 
-    async fn database_schema(&self, name: String) -> Result<String, ArcServerStateError> {
-        match self.database_manager.database(&name) {
+    async fn database_schema(&self, name: &str) -> Result<String, ArcServerStateError> {
+        match self.database_manager.database(name) {
             Some(db) => Self::get_database_schema(db),
-            None => Err(LocalServerStateError::DatabaseNotFound { name }),
+            None => Err(LocalServerStateError::DatabaseNotFound { name: name.to_string() }),
         }
         .map_err(|err| arc_server_state_err(err))
     }
 
-    async fn database_type_schema(&self, name: String) -> Result<String, ArcServerStateError> {
-        match self.database_manager.database(&name) {
-            None => Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.clone() })),
+    async fn database_type_schema(&self, name: &str) -> Result<String, ArcServerStateError> {
+        match self.database_manager.database(name) {
+            None => Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() })),
             Some(database) => match Self::get_database_type_schema(database) {
                 Ok(type_schema) => Ok(type_schema),
                 Err(err) => Err(Arc::new(err)),
