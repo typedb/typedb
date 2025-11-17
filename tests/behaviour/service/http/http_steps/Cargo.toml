@@ -106,8 +106,8 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "170183b8c1fa2f4d61b11828b17f2a711e3c35f6"
 		git = "https://github.com/typedb/typeql"
+		tag = "3.7.0-rc0"
 		default-features = false
 
 	[dependencies.chrono]
