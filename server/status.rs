@@ -26,7 +26,7 @@ impl LocalServerStatus {
 pub trait ServerStatus: Debug {
     fn to_proto(&self) -> typedb_protocol::Server;
 
-    fn grpc_address(&self) -> &str;
+    fn grpc_address(&self) -> Option<&str>;
 
     fn http_address(&self) -> Option<&str>;
 }
@@ -36,8 +36,8 @@ impl ServerStatus for LocalServerStatus {
         typedb_protocol::Server { address: Some(self.grpc_address.clone()), replica_status: None }
     }
 
-    fn grpc_address(&self) -> &str {
-        &self.grpc_address
+    fn grpc_address(&self) -> Option<&str> {
+        Some(&self.grpc_address)
     }
 
     fn http_address(&self) -> Option<&str> {

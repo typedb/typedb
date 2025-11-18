@@ -345,7 +345,7 @@ impl Server {
         distribution_info: DistributionInfo,
         encryption_config: &EncryptionConfig,
     ) {
-        print!("Serving gRPC on {}", server_status.grpc_address());
+        print!("Serving gRPC on {}", server_status.grpc_address().unwrap_or_else(|| "<UNKNOWN ADDRESS>"));
         if let Some(http_address) = server_status.http_address() {
             print!(" and HTTP on {http_address}");
         }
