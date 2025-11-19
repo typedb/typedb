@@ -33,7 +33,10 @@ use crate::annotation::expression::{
         },
         op_codes::ExpressionOpCode,
         operators,
-        unary::{MathAbsDouble, MathAbsInteger, MathCeilDouble, MathFloorDouble, MathRoundDouble},
+        unary::{
+            MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble, MathFloorDecimal,
+            MathFloorDouble, MathRoundDecimal, MathRoundDouble,
+        },
         CompilableExpression, ExpressionInstruction,
     },
     ExpressionCompileError,
@@ -488,7 +491,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                 match self.peek_type_single()?.category() {
                     ValueTypeCategory::Integer => MathAbsInteger::validate_and_append(self)?,
                     ValueTypeCategory::Double => MathAbsDouble::validate_and_append(self)?,
-                    // TODO: ValueTypeCategory::Decimal ?
+                    ValueTypeCategory::Decimal => MathAbsDecimal::validate_and_append(self)?,
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                         function: builtin.builtin_id(),
                         category: self.peek_type_single()?.category(),
@@ -500,7 +503,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                 self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
                 match self.peek_type_single()?.category() {
                     ValueTypeCategory::Double => MathCeilDouble::validate_and_append(self)?,
-                    // TODO: ValueTypeCategory::Decimal ?
+                    ValueTypeCategory::Decimal => MathCeilDecimal::validate_and_append(self)?,
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                         function: builtin.builtin_id(),
                         category: self.peek_type_single()?.category(),
@@ -512,7 +515,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                 self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
                 match self.peek_type_single()?.category() {
                     ValueTypeCategory::Double => MathFloorDouble::validate_and_append(self)?,
-                    // TODO: ValueTypeCategory::Decimal ?
+                    ValueTypeCategory::Decimal => MathFloorDecimal::validate_and_append(self)?,
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                         function: builtin.builtin_id(),
                         category: self.peek_type_single()?.category(),
@@ -524,7 +527,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                 self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
                 match self.peek_type_single()?.category() {
                     ValueTypeCategory::Double => MathRoundDouble::validate_and_append(self)?,
-                    // TODO: ValueTypeCategory::Decimal ?
+                    ValueTypeCategory::Decimal => MathRoundDecimal::validate_and_append(self)?,
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                         function: builtin.builtin_id(),
                         category: self.peek_type_single()?.category(),

@@ -5,6 +5,7 @@
  */
 
 use std::{
+    cmp::Ordering,
     fmt,
     num::ParseIntError,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -52,12 +53,42 @@ impl Decimal {
         Self::new(integer, fractional_parts_ceil)
     }
 
-    pub fn integer_part(&self) -> i64 {
+    pub fn integer_part(self) -> i64 {
         self.integer
     }
 
-    pub fn fractional_part(&self) -> u64 {
+    pub fn fractional_part(self) -> u64 {
         self.fractional
+    }
+
+    pub fn abs(self) -> Self {
+        if self.integer >= 0 {
+            self
+        } else if self.fractional == 0 {
+            Self { integer: -self.integer, fractional: 0 }
+        } else {
+            Self { integer: -self.integer - 1, fractional: FRACTIONAL_PART_DENOMINATOR - self.fractional }
+        }
+    }
+
+    pub fn floor(self) -> i64 {
+        self.integer
+    }
+
+    pub fn ceil(self) -> i64 {
+        if self.fractional == 0 {
+            self.integer
+        } else {
+            self.integer + 1
+        }
+    }
+
+    pub fn round(self) -> i64 {
+        match Ord::cmp(&self.fractional, &(FRACTIONAL_PART_DENOMINATOR / 2)) {
+            Ordering::Less => self.integer,
+            Ordering::Equal => self.integer + self.integer % 2, // round ties to even
+            Ordering::Greater => self.integer + 1,
+        }
     }
 
     pub fn to_f64(self) -> f64 {

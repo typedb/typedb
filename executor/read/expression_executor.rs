@@ -21,7 +21,8 @@ use compiler::annotation::expression::{
         op_codes::ExpressionOpCode,
         operators,
         unary::{
-            MathAbsDouble, MathAbsInteger, MathCeilDouble, MathFloorDouble, MathRoundDouble, Unary, UnaryExpression,
+            MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble, MathFloorDecimal,
+            MathFloorDouble, MathRoundDecimal, MathRoundDouble, Unary, UnaryExpression,
         },
         ExpressionEvaluationError,
     },
@@ -202,12 +203,19 @@ fn evaluate_instruction(
         ExpressionOpCode::OpDecimalSubtractDecimal => operators::OpDecimalSubtractDecimal::evaluate(state),
         ExpressionOpCode::OpDecimalMultiplyDecimal => operators::OpDecimalMultiplyDecimal::evaluate(state),
 
+        ExpressionOpCode::MathAbsDouble => MathAbsDouble::evaluate(state),
+        ExpressionOpCode::MathAbsDecimal => MathAbsDecimal::evaluate(state),
+        ExpressionOpCode::MathAbsInteger => MathAbsInteger::evaluate(state),
+
         ExpressionOpCode::MathRemainderInteger => MathRemainderInteger::evaluate(state),
+
         ExpressionOpCode::MathRoundDouble => MathRoundDouble::evaluate(state),
         ExpressionOpCode::MathCeilDouble => MathCeilDouble::evaluate(state),
         ExpressionOpCode::MathFloorDouble => MathFloorDouble::evaluate(state),
-        ExpressionOpCode::MathAbsInteger => MathAbsInteger::evaluate(state),
-        ExpressionOpCode::MathAbsDouble => MathAbsDouble::evaluate(state),
+
+        ExpressionOpCode::MathRoundDecimal => MathRoundDecimal::evaluate(state),
+        ExpressionOpCode::MathCeilDecimal => MathCeilDecimal::evaluate(state),
+        ExpressionOpCode::MathFloorDecimal => MathFloorDecimal::evaluate(state),
     }
 }
 
