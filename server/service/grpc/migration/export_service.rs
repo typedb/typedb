@@ -108,7 +108,7 @@ impl DatabaseExportService {
 
     pub(crate) async fn export(mut self) {
         let start = Instant::now();
-        event!(Level::DEBUG, "Exporting '{}' from TypeDB {}.", self.database.name(), self.server_info.version);
+        event!(Level::DEBUG, "Exporting '{}' from TypeDB {}.", self.database.name(), self.distribution_info.version);
         let Some(transaction) = self.open_transaction().await else {
             return;
         };
