@@ -69,10 +69,11 @@ use crate::{
                 query_initial_res_from_error, query_initial_res_from_query_res_ok,
                 query_initial_res_ok_from_query_res_ok_ok, query_res_ok_concept_document_stream,
                 query_res_ok_concept_row_stream, query_res_ok_done, query_res_part_from_concept_documents,
-                query_res_part_from_concept_rows, transaction_open_res, transaction_server_res_commit_res,
-                transaction_server_res_part_stream_signal_continue, transaction_server_res_part_stream_signal_done,
-                transaction_server_res_part_stream_signal_error, transaction_server_res_parts_query_part,
-                transaction_server_res_query_res, transaction_server_res_rollback_res,
+                query_res_part_from_concept_rows, transaction_open_res, transaction_server_res_analyze_res,
+                transaction_server_res_commit_res, transaction_server_res_part_stream_signal_continue,
+                transaction_server_res_part_stream_signal_done, transaction_server_res_part_stream_signal_error,
+                transaction_server_res_parts_query_part, transaction_server_res_query_res,
+                transaction_server_res_rollback_res,
             },
             row::encode_row,
         },
@@ -80,8 +81,8 @@ use crate::{
             init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction,
             TransactionServiceError,
         },
+        IncludeInvolvedBlocks,
     },
-    IncludeInvolvedBlocks,
     state::ArcServerState,
 };
 
@@ -138,7 +139,7 @@ pub(crate) struct TransactionService {
     running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
 }
 
-impl TransactionService {\
+impl TransactionService {
     pub(crate) fn new(
         server_state: ArcServerState,
         request_stream: Streaming<typedb_protocol::transaction::Client>,
@@ -307,7 +308,7 @@ impl TransactionService {\
             }
             (true, typedb_protocol::transaction::req::Req::AnalyzeReq(analyze_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     self.get_database_name().map(|name| name.to_owned()),
                     ActionKind::TransactionAnalyse,
                     || async { self.handle_analyse_query(request_id, analyze_req).await },
@@ -1503,9 +1504,13 @@ enum StreamQueryResponse {
 }
 
 impl StreamQueryResponse {
-    fn init_ok_rows(columns: &StreamQueryOutputDescriptor, query_type: typedb_protocol::query::Type) -> Self {
+    fn init_ok_rows(
+        columns: &StreamQueryOutputDescriptor,
+        query_type: typedb_protocol::query::Type,
+        query_structure: Option<typedb_protocol::analyze::res::analyzed_query::Pipeline>,
+    ) -> Self {
         let columns = columns.iter().map(|(name, _)| name.to_string()).collect();
-        let message = query_res_ok_concept_row_stream(columns, query_type);
+        let message = query_res_ok_concept_row_stream(columns, query_type, query_structure);
         Self::InitOk(query_initial_res_ok_from_query_res_ok_ok(message))
     }
 

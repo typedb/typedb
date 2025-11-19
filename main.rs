@@ -52,7 +52,8 @@ impl ServerApplication {
 
     fn run(self) {
         self.runtime.block_on(async {
-            let server = ServerBuilder::default().server_info(DISTRIBUTION_INFO).build(self.config).await.unwrap();
+            let server =
+                ServerBuilder::default().distribution_info(DISTRIBUTION_INFO).build(self.config).await.unwrap();
             match server.serve().await {
                 Ok(_) => println!("Exited."),
                 Err(err) => println!("Exited with error: {:?}", err),

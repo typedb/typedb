@@ -24,7 +24,7 @@ dev-dependencies = {}
 
 	[dependencies.uuid]
 		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-		version = "1.18.0"
+		version = "1.18.1"
 		default-features = false
 
 	[dependencies.rand]
@@ -39,7 +39,7 @@ dev-dependencies = {}
 
 	[dependencies.tokio-rustls]
 		features = ["logging", "ring", "tls12"]
-		version = "0.26.2"
+		version = "0.26.4"
 		default-features = false
 
 	[dependencies.executor]
@@ -69,7 +69,7 @@ dev-dependencies = {}
 
 	[dependencies.serde_with]
 		features = ["alloc", "default", "macros", "std"]
-		version = "3.14.0"
+		version = "3.16.0"
 		default-features = false
 
 	[dependencies.typeql]
@@ -100,9 +100,8 @@ dev-dependencies = {}
 
 	[dependencies.typedb-protocol]
 		features = []
-		rev = "d5b41223533feb485be7723ab961bb8c89b2fe9c"
+		rev = "aa011f69af9ef8d41a6882e8b3bb148264774632"
 		git = "https://github.com/typedb/typedb-protocol"
-		tag = "3.7.0-rc0"
 		default-features = false
 
 	[dependencies.resource]
@@ -127,7 +126,7 @@ dev-dependencies = {}
 
 	[dependencies.regex]
 		features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
-		version = "1.11.1"
+		version = "1.12.2"
 		default-features = false
 
 	[dependencies.system]
@@ -157,7 +156,7 @@ dev-dependencies = {}
 
 	[dependencies.yaml-rust2]
 		features = ["default", "encoding"]
-		version = "0.10.3"
+		version = "0.10.4"
 		default-features = false
 
 	[dependencies.concept]
@@ -172,7 +171,7 @@ dev-dependencies = {}
 
 	[dependencies.moka]
 		features = ["default", "sync"]
-		version = "0.12.10"
+		version = "0.12.11"
 		default-features = false
 
 	[dependencies.storage]
@@ -202,7 +201,7 @@ dev-dependencies = {}
 
 	[dependencies.chrono-tz]
 		features = ["case-insensitive", "default", "std"]
-		version = "0.9.0"
+		version = "0.10.3"
 		default-features = false
 
 	[dependencies.async-trait]
@@ -222,7 +221,7 @@ dev-dependencies = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
-		version = "1.47.1"
+		version = "1.48.0"
 		default-features = false
 
 	[dependencies.tokio-util]
@@ -231,13 +230,13 @@ dev-dependencies = {}
 		default-features = false
 
 	[dependencies.tower-http]
-		features = ["cors", "default"]
+		features = ["cors", "default", "follow-redirect", "futures-util", "iri-string", "tower"]
 		version = "0.6.6"
 		default-features = false
 
 	[dependencies.serde]
 		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.219"
+		version = "1.0.228"
 		default-features = false
 
 	[dependencies.tokio-stream]
@@ -272,7 +271,7 @@ dev-dependencies = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.45"
+		version = "4.5.52"
 		default-features = false
 
 	[dependencies.bytes]
@@ -282,12 +281,12 @@ dev-dependencies = {}
 
 	[dependencies.axum-server]
 		features = ["arc-swap", "default", "rustls", "rustls-pemfile", "rustls-pki-types", "tls-rustls-no-provider", "tokio-rustls"]
-		version = "0.7.2"
+		version = "0.7.3"
 		default-features = false
 
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-		version = "0.4.41"
+		version = "0.4.40"
 		default-features = false
 
 	[dependencies.user]
@@ -297,6 +296,6 @@ dev-dependencies = {}
 
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.143"
+		version = "1.0.145"
 		default-features = false
 

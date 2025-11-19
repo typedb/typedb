@@ -47,9 +47,6 @@ use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
-use super::message::query::query_structure::{
-    encode_pipeline_structure, encode_query_structure, PipelineStructureResponse,
-};
 use crate::{
     error::{LocalServerStateError, ServerStateError},
     service::{
