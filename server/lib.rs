@@ -7,27 +7,6 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{net::SocketAddr, sync::Arc};
-
-use axum_server::{tls_rustls::RustlsConfig, Handle};
-use database::database_manager::DatabaseManager;
-use resource::{
-    constants::server::{GRPC_CONNECTION_KEEPALIVE, SERVER_INFO},
-    server_info::ServerInfo,
-};
-use tokio::{
-    net::lookup_host,
-    sync::watch::{channel, Receiver, Sender},
-};
-use tracing::info;
-
-use crate::{
-    error::ServerOpenError,
-    parameters::config::{Config, EncryptionConfig},
-    service::{grpc, http},
-    state::{BoxServerState, LocalServerState},
-};
-
 use std::{fs, future::Future, net::SocketAddr, path::Path, pin::Pin, sync::Arc};
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
@@ -42,6 +21,7 @@ use resource::{
     distribution_info::DistributionInfo,
 };
 use tokio::sync::watch::{channel, Receiver, Sender};
+use tracing::info;
 
 use crate::{
     error::ServerOpenError,

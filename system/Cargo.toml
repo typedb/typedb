@@ -15,47 +15,78 @@ features = {}
 [dependencies]
 
 	[dependencies.resource]
-		workspace = true
+		path = "../resource"
+		features = []
+		default-features = false
 
 	[dependencies.query]
-		workspace = true
+		path = "../query"
+		features = []
+		default-features = false
 
 	[dependencies.concept]
-		workspace = true
+		path = "../concept"
+		features = []
+		default-features = false
 
 	[dependencies.pwhash]
-		workspace = true
+		features = []
+		version = "1.0.0"
+		default-features = false
 
 	[dependencies.storage]
-		workspace = true
+		path = "../storage"
+		features = []
+		default-features = false
 
 	[dependencies.error]
-		workspace = true
+		path = "../common/error"
+		features = []
+		default-features = false
 
 	[dependencies.uuid]
-		workspace = true
+		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
+		version = "1.18.1"
+		default-features = false
 
 	[dependencies.database]
-		workspace = true
+		path = "../database"
+		features = []
+		default-features = false
 
 	[dependencies.answer]
-		workspace = true
+		path = "../answer"
+		features = []
+		default-features = false
 
 	[dependencies.executor]
-		workspace = true
+		path = "../executor"
+		features = []
+		default-features = false
 
 	[dependencies.function]
-		workspace = true
+		path = "../function"
+		features = []
+		default-features = false
 
 	[dependencies.options]
-		workspace = true
+		path = "../common/options"
+		features = []
+		default-features = false
 
 	[dependencies.typeql]
-		workspace = true
+		features = []
+		git = "https://github.com/typedb/typeql"
+		tag = "3.8.0"
+		default-features = false
 
 	[dependencies.compiler]
-		workspace = true
+		path = "../compiler"
+		features = []
+		default-features = false
 
 	[dependencies.lending_iterator]
-		workspace = true
+		path = "../common/lending_iterator"
+		features = []
+		default-features = false
 
