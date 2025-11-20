@@ -51,11 +51,18 @@ pub enum ExpressionOpCode {
 
     // BuiltIns, maybe by domain?
     MathAbsDouble,
+    MathAbsDecimal,
     MathAbsInteger,
+
     MathRemainderInteger,
+
     MathRoundDouble,
     MathCeilDouble,
     MathFloorDouble,
+
+    MathRoundDecimal,
+    MathCeilDecimal,
+    MathFloorDecimal,
 }
 
 impl fmt::Display for ExpressionOpCode {
@@ -90,12 +97,16 @@ impl fmt::Display for ExpressionOpCode {
             ExpressionOpCode::OpDecimalAddDecimal => write!(f, "add-decimal"),
             ExpressionOpCode::OpDecimalSubtractDecimal => write!(f, "subtract-decimal"),
             ExpressionOpCode::OpDecimalMultiplyDecimal => write!(f, "multiply-decimal"),
+            ExpressionOpCode::MathAbsDouble => write!(f, "abs-double"),
+            ExpressionOpCode::MathAbsDecimal => write!(f, "abs-decimal"),
             ExpressionOpCode::MathAbsInteger => write!(f, "abs-integer"),
             ExpressionOpCode::MathRemainderInteger => write!(f, "remainder-integer"),
-            ExpressionOpCode::MathAbsDouble => write!(f, "abs-double"),
             ExpressionOpCode::MathRoundDouble => write!(f, "round-double"),
             ExpressionOpCode::MathCeilDouble => write!(f, "ceil-double"),
             ExpressionOpCode::MathFloorDouble => write!(f, "floor-double"),
+            ExpressionOpCode::MathRoundDecimal => write!(f, "round-decimal"),
+            ExpressionOpCode::MathCeilDecimal => write!(f, "ceil-decimal"),
+            ExpressionOpCode::MathFloorDecimal => write!(f, "floor-decimal"),
         }
     }
 }
