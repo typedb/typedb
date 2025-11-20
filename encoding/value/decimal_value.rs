@@ -86,7 +86,7 @@ impl Decimal {
     pub fn round(self) -> i64 {
         match Ord::cmp(&self.fractional, &(FRACTIONAL_PART_DENOMINATOR / 2)) {
             Ordering::Less => self.integer,
-            Ordering::Equal => self.integer + self.integer % 2, // round ties to even
+            Ordering::Equal => self.integer + self.integer.rem_euclid(2), // round ties to even
             Ordering::Greater => self.integer + 1,
         }
     }
