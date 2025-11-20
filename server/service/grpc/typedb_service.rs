@@ -167,19 +167,6 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         .await
     }
 
-    async fn server_version(
-        &self,
-        _request: Request<typedb_protocol::server::version::Req>,
-    ) -> Result<Response<typedb_protocol::server::version::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager().await,
-            None::<&str>,
-            ActionKind::ServerVersion,
-            || async { Ok(Response::new(server_version_res(self.server_state.distribution_info().await))) },
-        )
-        .await
-    }
-
     async fn servers_all(
         &self,
         _request: Request<typedb_protocol::server_manager::all::Req>,
@@ -258,204 +245,15 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         .await
     }
 
-    async fn databases_all(
+    async fn server_version(
         &self,
-        _request: Request<typedb_protocol::database_manager::all::Req>,
-    ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
+        _request: Request<typedb_protocol::server::version::Req>,
+    ) -> Result<Response<typedb_protocol::server::version::Res>, Status> {
         run_with_diagnostics_async(
             self.server_state.diagnostics_manager().await,
             None::<&str>,
-            ActionKind::DatabasesAll,
-            || async {
-                self.server_state
-                    .databases_all()
-                    .await
-                    .map(|dbs| Response::new(database_all_res(dbs)))
-                    .map_err(|err| err.into_error_message().into_status())
-            },
-        )
-        .await
-    }
-
-    async fn databases_get(
-        &self,
-        request: Request<typedb_protocol::database_manager::get::Req>,
-    ) -> Result<Response<typedb_protocol::database_manager::get::Res>, Status> {
-        let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager().await,
-            Some(name.clone()),
-            ActionKind::DatabasesGet,
-            || async {
-                match self.server_state.databases_get(&name).await {
-                    Ok(Some(db)) => Ok(Response::new(database_get_res(db.name().to_string()))),
-                    Ok(None) => {
-                        Err(LocalServerStateError::DatabaseNotFound { name }.into_error_message().into_status())
-                    }
-                    Err(err) => Err(err.into_error_message().into_status()),
-                }
-            },
-        )
-        .await
-    }
-
-    async fn databases_contains(
-        &self,
-        request: Request<typedb_protocol::database_manager::contains::Req>,
-    ) -> Result<Response<typedb_protocol::database_manager::contains::Res>, Status> {
-        let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager().await,
-            Some(name.clone()),
-            ActionKind::DatabasesContains,
-            || async {
-                let contains = self
-                    .server_state
-                    .databases_contains(&name)
-                    .await
-                    .map_err(|err| err.into_error_message().into_status())?;
-                Ok(Response::new(database_contains_res(contains)))
-            },
-        )
-        .await
-    }
-
-    async fn databases_create(
-        &self,
-        request: Request<typedb_protocol::database_manager::create::Req>,
-    ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
-        let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager().await,
-            Some(name.clone()),
-            ActionKind::DatabasesCreate,
-            || async {
-                self.server_state
-                    .databases_create(&name)
-                    .await
-                    .map(|_| Response::new(database_create_res(name)))
-                    .map_err(|err| err.into_error_message().into_status())
-            },
-        )
-        .await
-    }
-
-    type databases_importStream = Pin<Box<ReceiverStream<Result<DatabasesImportServerProto, Status>>>>;
-
-    async fn databases_import(
-        &self,
-        request: Request<Streaming<typedb_protocol::database_manager::import::Client>>,
-    ) -> Result<Response<Self::databases_importStream>, Status> {
-        // diagnostics are inside the service
-        let request_stream = request.into_inner();
-        let (response_sender, response_receiver) = channel(IMPORT_RESPONSE_BUFFER_SIZE);
-        let service = DatabaseImportService::new(
-            self.server_state.database_manager().await,
-            self.server_state.diagnostics_manager().await,
-            request_stream,
-            response_sender,
-            self.server_state.shutdown_receiver().await,
-        );
-        tokio::spawn(async move { service.listen().await });
-        let stream: ReceiverStream<Result<DatabasesImportServerProto, Status>> = ReceiverStream::new(response_receiver);
-        Ok(Response::new(Box::pin(stream)))
-    }
-
-    async fn database_schema(
-        &self,
-        request: Request<typedb_protocol::database::schema::Req>,
-    ) -> Result<Response<typedb_protocol::database::schema::Res>, Status> {
-        let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager().await,
-            Some(name.clone()),
-            ActionKind::DatabaseSchema,
-            || async {
-                match self.server_state.database_schema(name).await {
-                    Ok(schema) => Ok(Response::new(database_schema_res(schema))),
-                    Err(err) => Err(err.into_error_message().into_status()),
-                }
-            },
-        )
-        .await
-    }
-
-    async fn database_type_schema(
-        &self,
-        request: Request<typedb_protocol::database::type_schema::Req>,
-    ) -> Result<Response<typedb_protocol::database::type_schema::Res>, Status> {
-        let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager().await,
-            Some(name.clone()),
-            ActionKind::DatabaseTypeSchema,
-            || async {
-                match self.server_state.database_type_schema(name).await {
-                    Ok(schema) => Ok(Response::new(database_type_schema_res(schema))),
-                    Err(err) => Err(err.into_error_message().into_status()),
-                }
-            },
-        )
-        .await
-    }
-
-    type database_exportStream = Pin<Box<ReceiverStream<Result<DatabaseExportServerProto, Status>>>>;
-
-    async fn database_export(
-        &self,
-        request: Request<typedb_protocol::database::export::Req>,
-    ) -> Result<Response<Self::database_exportStream>, Status> {
-        let database_name = request
-            .into_inner()
-            .req
-            .ok_or_else(|| {
-                GrpcServiceError::UnexpectedMissingField { field: "req".to_string() }.into_error_message().into_status()
-            })?
-            .name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager().await,
-            Some(database_name.clone()),
-            ActionKind::DatabaseExport,
-            || async {
-                match self.server_state.database_manager().await.database(&database_name) {
-                    None => Err(LocalServerStateError::DatabaseNotFound { name: database_name }
-                        .into_error_message()
-                        .into_status()),
-                    Some(database) => {
-                        let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
-                        let service = DatabaseExportService::new(
-                            self.server_state.distribution_info().await,
-                            database,
-                            response_sender,
-                            self.server_state.shutdown_receiver().await,
-                        );
-                        tokio::spawn(async move { service.export().await });
-                        let stream: ReceiverStream<Result<DatabaseExportServerProto, Status>> =
-                            ReceiverStream::new(response_receiver);
-                        Ok(Response::new(Box::pin(stream)))
-                    }
-                }
-            },
-        )
-        .await
-    }
-
-    async fn database_delete(
-        &self,
-        request: Request<typedb_protocol::database::delete::Req>,
-    ) -> Result<Response<typedb_protocol::database::delete::Res>, Status> {
-        let name = request.into_inner().name;
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager().await,
-            Some(name.clone()),
-            ActionKind::DatabaseDelete,
-            || async {
-                self.server_state
-                    .database_delete(&name)
-                    .await
-                    .map(|_| Response::new(database_delete_res()))
-                    .map_err(|err| err.into_error_message().into_status())
-            },
+            ActionKind::ServerVersion,
+            || async { Ok(Response::new(server_version_res(self.server_state.distribution_info().await))) },
         )
         .await
     }
@@ -586,6 +384,208 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .await
                     .map(|_| Response::new(users_delete_res()))
                     .map_err(|err| err.into_error_message().into_status())
+            },
+        )
+        .await
+    }
+
+    async fn databases_get(
+        &self,
+        request: Request<typedb_protocol::database_manager::get::Req>,
+    ) -> Result<Response<typedb_protocol::database_manager::get::Res>, Status> {
+        let name = request.into_inner().name;
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager().await,
+            Some(name.clone()),
+            ActionKind::DatabasesGet,
+            || async {
+                match self.server_state.databases_get(&name).await {
+                    Ok(Some(db)) => Ok(Response::new(database_get_res(db.name().to_string()))),
+                    Ok(None) => {
+                        Err(LocalServerStateError::DatabaseNotFound { name }.into_error_message().into_status())
+                    }
+                    Err(err) => Err(err.into_error_message().into_status()),
+                }
+            },
+        )
+        .await
+    }
+
+    async fn databases_all(
+        &self,
+        _request: Request<typedb_protocol::database_manager::all::Req>,
+    ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager().await,
+            None::<&str>,
+            ActionKind::DatabasesAll,
+            || async {
+                self.server_state
+                    .databases_all()
+                    .await
+                    .map(|dbs| Response::new(database_all_res(dbs)))
+                    .map_err(|err| err.into_error_message().into_status())
+            },
+        )
+        .await
+    }
+
+    async fn databases_contains(
+        &self,
+        request: Request<typedb_protocol::database_manager::contains::Req>,
+    ) -> Result<Response<typedb_protocol::database_manager::contains::Res>, Status> {
+        let name = request.into_inner().name;
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager().await,
+            Some(name.clone()),
+            ActionKind::DatabasesContains,
+            || async {
+                let contains = self
+                    .server_state
+                    .databases_contains(&name)
+                    .await
+                    .map_err(|err| err.into_error_message().into_status())?;
+                Ok(Response::new(database_contains_res(contains)))
+            },
+        )
+        .await
+    }
+
+    async fn databases_create(
+        &self,
+        request: Request<typedb_protocol::database_manager::create::Req>,
+    ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
+        let name = request.into_inner().name;
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager().await,
+            Some(name.clone()),
+            ActionKind::DatabasesCreate,
+            || async {
+                self.server_state
+                    .databases_create(&name)
+                    .await
+                    .map(|_| Response::new(database_create_res(name)))
+                    .map_err(|err| err.into_error_message().into_status())
+            },
+        )
+        .await
+    }
+
+    type databases_importStream = Pin<Box<ReceiverStream<Result<DatabasesImportServerProto, Status>>>>;
+
+    async fn databases_import(
+        &self,
+        request: Request<Streaming<typedb_protocol::database_manager::import::Client>>,
+    ) -> Result<Response<Self::databases_importStream>, Status> {
+        // diagnostics are inside the service
+        let request_stream = request.into_inner();
+        let (response_sender, response_receiver) = channel(IMPORT_RESPONSE_BUFFER_SIZE);
+        let service = DatabaseImportService::new(
+            self.server_state.database_manager().await,
+            self.server_state.diagnostics_manager().await,
+            request_stream,
+            response_sender,
+            self.server_state.shutdown_receiver().await,
+        );
+        tokio::spawn(async move { service.listen().await });
+        let stream: ReceiverStream<Result<DatabasesImportServerProto, Status>> = ReceiverStream::new(response_receiver);
+        Ok(Response::new(Box::pin(stream)))
+    }
+
+    async fn database_schema(
+        &self,
+        request: Request<typedb_protocol::database::schema::Req>,
+    ) -> Result<Response<typedb_protocol::database::schema::Res>, Status> {
+        let name = request.into_inner().name;
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager().await,
+            Some(name.clone()),
+            ActionKind::DatabaseSchema,
+            || async {
+                match self.server_state.database_schema(&name).await {
+                    Ok(schema) => Ok(Response::new(database_schema_res(schema))),
+                    Err(err) => Err(err.into_error_message().into_status()),
+                }
+            },
+        )
+        .await
+    }
+
+    async fn database_type_schema(
+        &self,
+        request: Request<typedb_protocol::database::type_schema::Req>,
+    ) -> Result<Response<typedb_protocol::database::type_schema::Res>, Status> {
+        let name = request.into_inner().name;
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager().await,
+            Some(name.clone()),
+            ActionKind::DatabaseTypeSchema,
+            || async {
+                match self.server_state.database_type_schema(&name).await {
+                    Ok(schema) => Ok(Response::new(database_type_schema_res(schema))),
+                    Err(err) => Err(err.into_error_message().into_status()),
+                }
+            },
+        )
+        .await
+    }
+
+    async fn database_delete(
+        &self,
+        request: Request<typedb_protocol::database::delete::Req>,
+    ) -> Result<Response<typedb_protocol::database::delete::Res>, Status> {
+        let name = request.into_inner().name;
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager().await,
+            Some(name.clone()),
+            ActionKind::DatabaseDelete,
+            || async {
+                self.server_state
+                    .database_delete(&name)
+                    .await
+                    .map(|_| Response::new(database_delete_res()))
+                    .map_err(|err| err.into_error_message().into_status())
+            },
+        )
+        .await
+    }
+
+    type database_exportStream = Pin<Box<ReceiverStream<Result<DatabaseExportServerProto, Status>>>>;
+
+    async fn database_export(
+        &self,
+        request: Request<typedb_protocol::database::export::Req>,
+    ) -> Result<Response<Self::database_exportStream>, Status> {
+        let database_name = request
+            .into_inner()
+            .req
+            .ok_or_else(|| {
+                GrpcServiceError::UnexpectedMissingField { field: "req".to_string() }.into_error_message().into_status()
+            })?
+            .name;
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager().await,
+            Some(database_name.clone()),
+            ActionKind::DatabaseExport,
+            || async {
+                match self.server_state.database_manager().await.database(&database_name) {
+                    None => Err(LocalServerStateError::DatabaseNotFound { name: database_name }
+                        .into_error_message()
+                        .into_status()),
+                    Some(database) => {
+                        let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
+                        let service = DatabaseExportService::new(
+                            self.server_state.distribution_info().await,
+                            database,
+                            response_sender,
+                            self.server_state.shutdown_receiver().await,
+                        );
+                        tokio::spawn(async move { service.export().await });
+                        let stream: ReceiverStream<Result<DatabaseExportServerProto, Status>> =
+                            ReceiverStream::new(response_receiver);
+                        Ok(Response::new(Box::pin(stream)))
+                    }
+                }
             },
         )
         .await
