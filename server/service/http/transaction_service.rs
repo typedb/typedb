@@ -707,7 +707,7 @@ impl TransactionService {
                     match result {
                         Ok(_) => return Ok(TransactionServiceResponse::Query(QueryAnswer::ResOk(QueryType::Schema))),
                         Err(err) => {
-                            return Err(TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: *err })
+                            return Err(TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: *err });
                         }
                     }
                 }
@@ -836,27 +836,18 @@ impl TransactionService {
         let mut result = vec![];
         let mut batch_iterator = batch.into_iterator();
         let mut warning = None;
-        let (encoded_structure, include_involved_blocks) = if query_options.include_query_structure {
-            let encode_pipeline_structure_result = pipeline_structure
-                .as_ref()
-                .map(|qs| encode_analyzed_pipeline_for_studio(&*snapshot, &type_manager, qs))
-                .transpose();
-            let encoded_structure = match encode_pipeline_structure_result {
-                Ok(structure_opt) => structure_opt,
-                Err(typedb_source) => {
-                    respond_error_and_return_break!(
-                        responder,
-                        TransactionServiceError::PipelineExecution {
-                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
-                        }
-                    );
+        let may_encode_result = IncludeInvolvedBlocks::may_encode_pipeline_structure(
+            &query_options,
+            pipeline_structure.as_ref(),
+            |structure| encode_analyzed_pipeline_for_studio(snapshot.as_ref(), &type_manager, structure),
+        );
+        let (encoded_structure, include_involved_blocks) =
+            unwrap_or_execute_else_respond_error_and_return_break!(may_encode_result, responder, |typedb_source| {
+                TransactionServiceError::PipelineExecution {
+                    typedb_source: PipelineExecutionError::ConceptRead { typedb_source },
                 }
-            };
-            let include_involved_blocks = IncludeInvolvedBlocks::build(pipeline_structure.as_ref());
-            (encoded_structure, include_involved_blocks)
-        } else {
-            (None, IncludeInvolvedBlocks::False)
-        };
+            });
+
         while let Some(row) = batch_iterator.next() {
             check_timeout_else_respond_error_and_return_break!(timeout_at, responder);
             check_interrupt_else_respond_error_and_return_break!(interrupt, responder);
@@ -1075,27 +1066,17 @@ impl TransactionService {
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-            let (encoded_structure, include_involved_blocks) = if query_options.include_query_structure {
-                let encode_pipeline_structure_result = pipeline
-                    .pipeline_structure()
-                    .map(|qs| encode_analyzed_pipeline_for_studio(&*snapshot, &type_manager, qs))
-                    .transpose();
-                let pipeline_structure_response = match encode_pipeline_structure_result {
-                    Ok(structure_opt) => structure_opt,
-                    Err(typedb_source) => {
-                        respond_error_and_return_break!(
-                            responder,
-                            TransactionServiceError::PipelineExecution {
-                                typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
-                            }
-                        );
+            let may_encode_result = IncludeInvolvedBlocks::may_encode_pipeline_structure(
+                &query_options,
+                pipeline.pipeline_structure(),
+                |structure| encode_analyzed_pipeline_for_studio(snapshot.as_ref(), &type_manager, structure),
+            );
+            let (encoded_structure, include_involved_blocks) =
+                unwrap_or_execute_else_respond_error_and_return_break!(may_encode_result, responder, |typedb_source| {
+                    TransactionServiceError::PipelineExecution {
+                        typedb_source: PipelineExecutionError::ConceptRead { typedb_source },
                     }
-                };
-                let include_involved_blocks = IncludeInvolvedBlocks::build(pipeline.pipeline_structure());
-                (pipeline_structure_response, include_involved_blocks)
-            } else {
-                (None, IncludeInvolvedBlocks::False)
-            };
+                });
             let (mut iterator, context) = unwrap_or_execute_else_respond_error_and_return_break!(
                 pipeline.into_rows_iterator(interrupt.clone()),
                 responder,

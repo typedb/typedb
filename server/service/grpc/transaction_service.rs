@@ -1143,10 +1143,11 @@ impl TransactionService {
         mut interrupt: ExecutionInterrupt,
         storage_counters: StorageCounters,
     ) {
-        let encoded_structure_result = pipeline_structure
-            .map(|qs| encode_analyzed_pipeline_for_query(snapshot.as_ref(), type_manager.as_ref(), qs))
-            .transpose();
-        let encoded_structure = unwrap_or_execute_and_return!(encoded_structure_result, |err| {
+        let may_encode_result =
+            IncludeInvolvedBlocks::may_encode_pipeline_structure(&query_options, pipeline_structure, |structure| {
+                encode_analyzed_pipeline_for_query(snapshot.as_ref(), &type_manager, structure)
+            });
+        let (encoded_structure, include_involved_blocks) = unwrap_or_execute_and_return!(may_encode_result, |err| {
             Self::submit_response_sync(
                 &sender,
                 StreamQueryResponse::init_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
@@ -1184,7 +1185,7 @@ impl TransactionService {
                 &type_manager,
                 &thing_manager,
                 query_options.include_instance_types,
-                &IncludeInvolvedBlocks::build(pipeline_structure),
+                &include_involved_blocks,
                 storage_counters.clone(),
             );
             match encoded_row {
@@ -1381,22 +1382,19 @@ impl TransactionService {
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-            let (encoded_structure, include_involved_blocks) = if query_options.include_query_structure {
-                let include_involved_blocks = IncludeInvolvedBlocks::build(pipeline.pipeline_structure());
-                let encoded_structure_result = pipeline
-                    .pipeline_structure()
-                    .map(|qs| encode_analyzed_pipeline_for_query(snapshot.as_ref(), type_manager, qs))
-                    .transpose();
-                let encoded_structure = unwrap_or_execute_and_return!(encoded_structure_result, |err| {
+            let may_encode_result = IncludeInvolvedBlocks::may_encode_pipeline_structure(
+                &query_options,
+                pipeline.pipeline_structure(),
+                |structure| encode_analyzed_pipeline_for_query(snapshot.as_ref(), type_manager, structure),
+            );
+            let (encoded_structure, include_involved_blocks) =
+                unwrap_or_execute_and_return!(may_encode_result, |err| {
                     Self::submit_response_sync(
                         &sender,
                         StreamQueryResponse::init_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
                     )
                 });
-                (encoded_structure, include_involved_blocks)
-            } else {
-                (None, IncludeInvolvedBlocks::False)
-            };
+
             let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read, encoded_structure);
             Self::submit_response_sync(sender, initial_response);
             let (mut iterator, context) =
