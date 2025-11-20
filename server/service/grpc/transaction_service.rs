@@ -79,6 +79,7 @@ use crate::service::{
         },
         row::encode_row,
     },
+    may_encode_pipeline_structure,
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
     },
@@ -1143,10 +1144,9 @@ impl TransactionService {
         mut interrupt: ExecutionInterrupt,
         storage_counters: StorageCounters,
     ) {
-        let may_encode_result =
-            IncludeInvolvedBlocks::may_encode_pipeline_structure(&query_options, pipeline_structure, |structure| {
-                encode_analyzed_pipeline_for_query(snapshot.as_ref(), &type_manager, structure)
-            });
+        let may_encode_result = may_encode_pipeline_structure(&query_options, pipeline_structure, |structure| {
+            encode_analyzed_pipeline_for_query(snapshot.as_ref(), &type_manager, structure)
+        });
         let (encoded_structure, include_involved_blocks) = unwrap_or_execute_and_return!(may_encode_result, |err| {
             Self::submit_response_sync(
                 &sender,
@@ -1382,11 +1382,10 @@ impl TransactionService {
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-            let may_encode_result = IncludeInvolvedBlocks::may_encode_pipeline_structure(
-                &query_options,
-                pipeline.pipeline_structure(),
-                |structure| encode_analyzed_pipeline_for_query(snapshot.as_ref(), type_manager, structure),
-            );
+            let may_encode_result =
+                may_encode_pipeline_structure(&query_options, pipeline.pipeline_structure(), |structure| {
+                    encode_analyzed_pipeline_for_query(snapshot.as_ref(), type_manager, structure)
+                });
             let (encoded_structure, include_involved_blocks) =
                 unwrap_or_execute_and_return!(may_encode_result, |err| {
                     Self::submit_response_sync(

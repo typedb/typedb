@@ -60,6 +60,7 @@ use crate::service::{
         },
         query::{document::encode_document, row::encode_row},
     },
+    may_encode_pipeline_structure,
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
     },
@@ -836,11 +837,10 @@ impl TransactionService {
         let mut result = vec![];
         let mut batch_iterator = batch.into_iterator();
         let mut warning = None;
-        let may_encode_result = IncludeInvolvedBlocks::may_encode_pipeline_structure(
-            &query_options,
-            pipeline_structure.as_ref(),
-            |structure| encode_analyzed_pipeline_for_studio(snapshot.as_ref(), &type_manager, structure),
-        );
+        let may_encode_result =
+            may_encode_pipeline_structure(&query_options, pipeline_structure.as_ref(), |structure| {
+                encode_analyzed_pipeline_for_studio(snapshot.as_ref(), &type_manager, structure)
+            });
         let (encoded_structure, include_involved_blocks) =
             unwrap_or_execute_else_respond_error_and_return_break!(may_encode_result, responder, |typedb_source| {
                 TransactionServiceError::PipelineExecution {
@@ -1066,11 +1066,10 @@ impl TransactionService {
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-            let may_encode_result = IncludeInvolvedBlocks::may_encode_pipeline_structure(
-                &query_options,
-                pipeline.pipeline_structure(),
-                |structure| encode_analyzed_pipeline_for_studio(snapshot.as_ref(), &type_manager, structure),
-            );
+            let may_encode_result =
+                may_encode_pipeline_structure(&query_options, pipeline.pipeline_structure(), |structure| {
+                    encode_analyzed_pipeline_for_studio(snapshot.as_ref(), &type_manager, structure)
+                });
             let (encoded_structure, include_involved_blocks) =
                 unwrap_or_execute_else_respond_error_and_return_break!(may_encode_result, responder, |typedb_source| {
                     TransactionServiceError::PipelineExecution {
