@@ -92,7 +92,7 @@ pub trait ServerState: Debug {
 
     async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError>;
 
-    async fn users_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
+    async fn users_contains(&self, name: &str, accessor: Accessor) -> Result<bool, ArcServerStateError>;
 
     async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ArcServerStateError>;
 
@@ -470,7 +470,11 @@ impl ServerState for LocalServerState {
         }
     }
 
-    async fn users_contains(&self, name: &str) -> Result<bool, ArcServerStateError> {
+    async fn users_contains(&self, name: &str, accessor: Accessor) -> Result<bool, ArcServerStateError> {
+        if !PermissionManager::exec_user_get_permitted(accessor.as_str(), name) {
+            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
+        }
+
         match self.get_user_manager() {
             Ok(user_manager) => match user_manager.contains(name) {
                 Ok(bool) => Ok(bool),

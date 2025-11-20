@@ -310,9 +310,11 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             None::<&str>,
             ActionKind::UsersContains,
             || async {
+                let accessor = Accessor::from_extensions(&request.extensions())
+                    .map_err(|err| err.into_error_message().into_status())?;
                 let name = request.into_inner().name;
                 self.server_state
-                    .users_contains(name.as_str())
+                    .users_contains(name.as_str(), accessor)
                     .await
                     .map(|contains| Response::new(users_contains_res(contains)))
                     .map_err(|err| err.into_error_message().into_status())
