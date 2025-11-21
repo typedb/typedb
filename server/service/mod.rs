@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use compiler::query_structure::{PipelineStructure, QueryStructureConjunctionID};
+use concept::error::ConceptReadError;
+use options::QueryOptions;
 use serde::{Deserialize, Serialize};
 
 pub(crate) mod export_service;
@@ -41,14 +43,18 @@ pub(crate) enum IncludeInvolvedBlocks {
     False,
 }
 
-impl IncludeInvolvedBlocks {
-    pub(crate) fn build(pipeline_structure: Option<&PipelineStructure>) -> Self {
-        match pipeline_structure {
-            None => IncludeInvolvedBlocks::False,
-            Some(structure) => {
-                let always_involved = structure.parametrised_structure.always_involved_blocks();
-                IncludeInvolvedBlocks::True { always_involved }
-            }
+pub(crate) fn may_encode_pipeline_structure<T>(
+    options: &QueryOptions,
+    pipeline: Option<&PipelineStructure>,
+    encoder: impl Fn(&PipelineStructure) -> Result<T, Box<ConceptReadError>>,
+) -> Result<(Option<T>, IncludeInvolvedBlocks), Box<ConceptReadError>> {
+    match (&options.include_query_structure, pipeline) {
+        (false, _) | (true, None) => Ok((None, IncludeInvolvedBlocks::False)),
+        (true, Some(structure)) => {
+            let include_involved_blocks = IncludeInvolvedBlocks::True {
+                always_involved: structure.parametrised_structure.always_involved_blocks(),
+            };
+            encoder(structure).map(|encoded| (Some(encoded), include_involved_blocks))
         }
     }
 }
