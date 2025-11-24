@@ -17,10 +17,15 @@ use resource::{
 use storage::{
     durability_client::{DurabilityClient, WALClient},
     isolation_manager::CommitRecord,
+    snapshot::CommittableSnapshot,
 };
-use system::concepts::User;
+use system::concepts::{Credential, User};
 use tokio::{net::lookup_host, sync::watch::Receiver};
-use user::{permission_manager::PermissionManager, user_manager::UserManager};
+use user::{
+    errors::{UserCreateError, UserDeleteError, UserUpdateError},
+    permission_manager::PermissionManager,
+    user_manager::UserManager,
+};
 
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
@@ -95,6 +100,23 @@ pub trait ServerState: Debug {
     async fn users_contains(&self, name: &str, accessor: Accessor) -> Result<bool, ArcServerStateError>;
 
     async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ArcServerStateError>;
+
+    async fn users_create(
+        &self,
+        accessor: Accessor,
+        user: User,
+        credential: Credential,
+    ) -> Result<(), ArcServerStateError>;
+
+    async fn users_update(
+        &self,
+        accessor: Accessor,
+        username: &str,
+        user_update: Option<User>,
+        credential_update: Option<Credential>,
+    ) -> Result<(), ArcServerStateError>;
+
+    async fn users_delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError>;
 
     async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError>;
 
@@ -499,6 +521,93 @@ impl ServerState for LocalServerState {
             },
             Err(err) => Err(Arc::new(err)),
         }
+    }
+
+    async fn users_create(
+        &self,
+        accessor: Accessor,
+        user: User,
+        credential: Credential,
+    ) -> Result<(), ArcServerStateError> {
+        if !PermissionManager::exec_user_create_permitted(accessor.as_str()) {
+            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
+        }
+
+        let user_manager = self.user_manager().await.ok_or(LocalServerStateError::NotInitialised {})?;
+
+        let (mut transaction_profile, commit_intent) = user_manager
+            .create(&user, &credential)
+            .map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeCreated { typedb_source })?;
+
+        let commit_profile = transaction_profile.commit_profile();
+        let commit_record = commit_intent.write_snapshot.finalise(commit_profile).map_err(|_error| {
+            LocalServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected {} }
+        })?;
+
+        if let Some(commit_record) = commit_record {
+            let commit_profile = transaction_profile.commit_profile();
+            self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn users_update(
+        &self,
+        accessor: Accessor,
+        username: &str,
+        user_update: Option<User>,
+        credential_update: Option<Credential>,
+    ) -> Result<(), ArcServerStateError> {
+        if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username) {
+            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
+        }
+
+        let user_manager = self.user_manager().await.ok_or(LocalServerStateError::NotInitialised {})?;
+
+        let (mut transaction_profile, commit_intent_result) =
+            user_manager.update(username, &user_update, &credential_update);
+
+        let commit_intent = commit_intent_result
+            .map_err(|typedb_source| LocalServerStateError::UserCannotBeUpdated { typedb_source })?;
+
+        let commit_profile = transaction_profile.commit_profile();
+        let commit_record = commit_intent.write_snapshot.finalise(commit_profile).map_err(|_error| {
+            LocalServerStateError::UserCannotBeUpdated { typedb_source: UserUpdateError::Unexpected {} }
+        })?;
+
+        if let Some(commit_record) = commit_record {
+            let commit_profile = transaction_profile.commit_profile();
+            self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
+            self.token_manager.invalidate_user(username).await;
+        }
+
+        Ok(())
+    }
+
+    async fn users_delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError> {
+        if !PermissionManager::exec_user_delete_allowed(accessor.as_str(), username) {
+            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
+        }
+
+        let user_manager = self.user_manager().await.ok_or(LocalServerStateError::NotInitialised {})?;
+
+        let (mut transaction_profile, commit_intent) = user_manager
+            .delete(username)
+            .map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeDeleted { typedb_source })?;
+
+        let commit_profile = transaction_profile.commit_profile();
+        let commit_record = commit_intent.write_snapshot.finalise(commit_profile).map_err(|_error| {
+            LocalServerStateError::UserCannotBeDeleted { typedb_source: UserDeleteError::Unexpected {} }
+        })?;
+
+        if let Some(commit_record) = commit_record {
+            let commit_profile = transaction_profile.commit_profile();
+            self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
+            self.token_manager.invalidate_user(username).await;
+        }
+
+        Ok(())
     }
 
     async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError> {

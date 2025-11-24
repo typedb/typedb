@@ -51,10 +51,8 @@ use crate::{
             ConnectionID,
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
-        typedb_service::TypeDBService,
     },
     state::ArcServerState,
-    system_init::SYSTEM_DB,
 };
 
 #[derive(Debug)]
@@ -337,7 +335,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                 let (user, credential) =
                     users_create_req(request).map_err(|err| err.into_error_message().into_status())?;
 
-                TypeDBService::create_user(&self.server_state, accessor, user, credential)
+                self.server_state
+                    .users_create(accessor, user, credential)
                     .await
                     .map(|_| Response::new(user_create_res()))
                     .map_err(|err| err.into_error_message().into_status())
@@ -360,7 +359,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                 let (username, user_update, credential_update) =
                     users_update_req(request).map_err(|err| err.into_error_message().into_status())?;
 
-                TypeDBService::update_user(&self.server_state, accessor, &username, user_update, credential_update)
+                self.server_state
+                    .users_update(accessor, &username, user_update, credential_update)
                     .await
                     .map(|_| Response::new(user_update_res()))
                     .map_err(|err| err.into_error_message().into_status())
@@ -382,7 +382,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .map_err(|err| err.into_error_message().into_status())?;
                 let name = request.into_inner().name;
 
-                TypeDBService::delete_user(&self.server_state, accessor, &name)
+                self.server_state
+                    .users_delete(accessor, &name)
                     .await
                     .map(|_| Response::new(users_delete_res()))
                     .map_err(|err| err.into_error_message().into_status())

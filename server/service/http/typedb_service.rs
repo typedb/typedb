@@ -49,7 +49,6 @@ use crate::{
             },
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
-        typedb_service::TypeDBService,
         QueryType,
     },
     state::ArcServerState,
@@ -456,7 +455,9 @@ impl HTTPTypeDBService {
                 let user = User { name: user_path.username };
                 let credential = Credential::new_password(payload.password.as_str());
 
-                TypeDBService::create_user(&service.server_state, accessor, user, credential)
+                service
+                    .server_state
+                    .users_create(accessor, user, credential)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -480,7 +481,9 @@ impl HTTPTypeDBService {
                 let credential_update = Some(Credential::new_password(&payload.password));
                 let username = user_path.username.as_str();
 
-                TypeDBService::update_user(&service.server_state, accessor, username, user_update, credential_update)
+                service
+                    .server_state
+                    .users_update(accessor, username, user_update, credential_update)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -501,7 +504,9 @@ impl HTTPTypeDBService {
             || async {
                 let username = user_path.username.as_str();
 
-                TypeDBService::delete_user(&service.server_state, accessor, username)
+                service
+                    .server_state
+                    .users_delete(accessor, username)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
