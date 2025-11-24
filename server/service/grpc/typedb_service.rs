@@ -4,12 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
+use std::{net::SocketAddr, pin::Pin, time::Instant};
 
 use diagnostics::metrics::ActionKind;
-use itertools::Itertools;
-use resource::profile::CommitProfile;
-use storage::snapshot::CommittableSnapshot;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
@@ -20,7 +17,7 @@ use typedb_protocol::{
     database_manager::import::Server as DatabasesImportServerProto,
     transaction::{Client as TransactionClientProto, Server as TransactionServerProto},
 };
-use user::{errors::UserCreateError, permission_manager::PermissionManager};
+use user::{permission_manager::PermissionManager};
 use uuid::Uuid;
 
 use crate::{
@@ -206,13 +203,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             || async {
                 let request = request.into_inner();
 
-                let typedb_protocol::server_manager::register::Req { address, replica_id } = request else {
-                    return Err(ProtocolError::MissingField {
-                        name: "req",
-                        description: "No server information provided.",
-                    }
-                    .into_status());
-                };
+                let typedb_protocol::server_manager::register::Req { address, replica_id } = request;
                 self.server_state
                     .servers_register(replica_id, address)
                     .await
@@ -269,7 +260,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .map_err(|err| err.into_error_message().into_status())?;
                 let name = request.into_inner().name;
                 self.server_state
-                    .users_get(&name, accessor)
+                    .users_get(accessor, &name)
                     .await
                     .map(|user| Ok(Response::new(users_get_res(user))))
                     .map_err(|err| err.into_error_message().into_status())?
@@ -312,7 +303,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .map_err(|err| err.into_error_message().into_status())?;
                 let name = request.into_inner().name;
                 self.server_state
-                    .users_contains(name.as_str(), accessor)
+                    .users_contains(accessor, name.as_str())
                     .await
                     .map(|contains| Response::new(users_contains_res(contains)))
                     .map_err(|err| err.into_error_message().into_status())

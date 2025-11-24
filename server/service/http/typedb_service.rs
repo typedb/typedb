@@ -431,7 +431,7 @@ impl HTTPTypeDBService {
             || async {
                 service
                     .server_state
-                    .users_get(&user_path.username, accessor)
+                    .users_get(accessor, &user_path.username)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
                     .map(|user| JsonBody(encode_user(&user)))

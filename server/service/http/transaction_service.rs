@@ -14,7 +14,7 @@ use std::{
     sync::Arc,
 };
 
-use compiler::{executable::ExecutableCompilationError, query_structure::PipelineStructure};
+use compiler::{query_structure::PipelineStructure};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     query::{
@@ -45,10 +45,9 @@ use tokio::{
 };
 use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
-use uuid::Uuid;
 
 use crate::{
-    error::{LocalServerStateError, ServerStateError},
+    error::{LocalServerStateError},
     service::{
         http::message::{
             analyze::{
