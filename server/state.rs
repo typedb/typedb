@@ -97,9 +97,9 @@ pub trait ServerState: Debug {
 
     async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError>;
 
-    async fn users_contains(&self, name: &str, accessor: Accessor) -> Result<bool, ArcServerStateError>;
+    async fn users_contains(&self, accessor: Accessor, name: &str) -> Result<bool, ArcServerStateError>;
 
-    async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ArcServerStateError>;
+    async fn users_get(&self, accessor: Accessor, name: &str) -> Result<User, ArcServerStateError>;
 
     async fn users_create(
         &self,
@@ -492,7 +492,7 @@ impl ServerState for LocalServerState {
         }
     }
 
-    async fn users_contains(&self, name: &str, accessor: Accessor) -> Result<bool, ArcServerStateError> {
+    async fn users_contains(&self, accessor: Accessor, name: &str) -> Result<bool, ArcServerStateError> {
         if !PermissionManager::exec_user_get_permitted(accessor.as_str(), name) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
@@ -506,7 +506,7 @@ impl ServerState for LocalServerState {
         }
     }
 
-    async fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, ArcServerStateError> {
+    async fn users_get(&self, accessor: Accessor, name: &str) -> Result<User, ArcServerStateError> {
         if !PermissionManager::exec_user_get_permitted(accessor.as_str(), name) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
