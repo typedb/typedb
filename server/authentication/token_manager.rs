@@ -84,6 +84,7 @@ impl TokenManager {
     }
 
     pub async fn invalidate_user(&self, username: &str) {
+        println!("Invalidate user: {username:?}");
         let mut write_guard = self.token_owners.write().await;
         write_guard.retain(|_, token_username| token_username != username);
     }
