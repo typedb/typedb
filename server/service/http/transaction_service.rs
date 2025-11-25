@@ -14,7 +14,7 @@ use std::{
     sync::Arc,
 };
 
-use compiler::{query_structure::PipelineStructure};
+use compiler::query_structure::PipelineStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     query::{
@@ -47,7 +47,7 @@ use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
-    error::{LocalServerStateError},
+    error::LocalServerStateError,
     service::{
         http::message::{
             analyze::{

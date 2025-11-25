@@ -17,7 +17,7 @@ use typedb_protocol::{
     database_manager::import::Server as DatabasesImportServerProto,
     transaction::{Client as TransactionClientProto, Server as TransactionServerProto},
 };
-use user::{permission_manager::PermissionManager};
+use user::permission_manager::PermissionManager;
 use uuid::Uuid;
 
 use crate::{

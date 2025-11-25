@@ -131,7 +131,7 @@ impl CommitProfile {
             false => Self { data: None },
         }
     }
-    
+
     pub fn enabled(&self) -> bool {
         self.data.is_some()
     }
