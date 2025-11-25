@@ -131,6 +131,10 @@ impl CommitProfile {
             false => Self { data: None },
         }
     }
+    
+    pub fn enabled(&self) -> bool {
+        self.data.is_some()
+    }
 
     pub fn start(&mut self) {
         if let Some(data) = &mut self.data {
