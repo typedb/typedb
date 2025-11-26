@@ -12,9 +12,10 @@ use tracing::{event, Level};
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
-    isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
+    isolation_manager::{IsolationManager, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
-    sequence_number::SequenceNumber,
+    number::SequenceNumber,
+    record::{CommitRecord, StatusRecord},
     write_batches::WriteBatches,
     MVCCStorage,
 };
