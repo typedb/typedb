@@ -11,4 +11,5 @@ use durability::DurabilitySequenceNumber;
 //       passing through to the Durability sequence number
 pub type SequenceNumber = DurabilitySequenceNumber;
 
+// Option<NonZeroU64> takes 8 bytes, while Option<u64> takes 9 bytes (1 for the option flag + the value)
 pub type CausalityNumber = Option<NonZeroU64>;
