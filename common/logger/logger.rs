@@ -24,7 +24,7 @@ pub mod result;
 pub fn initialise_logging_global(logdir: &PathBuf) {
     debug_assert!(logdir.is_absolute());
     let filter = EnvFilter::from_default_env()
-        .add_directive(LevelFilter::INFO.into())
+        .add_directive(LevelFilter::TRACE.into())
         // .add_directive("database=trace".parse().unwrap())
         // .add_directive("server=trace".parse().unwrap())
         // .add_directive("storage=trace".parse().unwrap())
