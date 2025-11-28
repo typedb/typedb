@@ -19,18 +19,13 @@ use concept::{
 use encoding::value::{value::Value, value_type::ValueType, ValueEncodable};
 use error::unimplemented_feature;
 use resource::profile::StorageCounters;
-use serde::{ser::SerializeStruct, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
 
 // TODO: Should probably be merged with JSON from behaviour/steps/query_answer_context.rs.
 // Now, it's easier to have symmetry between two services, and we don't have the capacity to merge
 // these (BDDs will check if this code is correct)
-
-macro_rules! count_fields {
-    () => { 0 };
-    ($head:ident $(, $tail:ident)*) => { 1 + count_fields!($($tail),*) };
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "kind", rename = "entity")]
