@@ -13,7 +13,6 @@ pub(crate) mod grpc;
 pub mod http;
 mod import_service;
 mod transaction_service;
-pub mod typedb_service;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]

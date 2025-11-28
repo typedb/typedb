@@ -7,7 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{fs, future::Future, net::SocketAddr, path::Path, pin::Pin, sync::Arc};
+use std::{fs, net::SocketAddr, path::Path, sync::Arc};
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};
@@ -349,7 +349,7 @@ impl Server {
         distribution_info: DistributionInfo,
         encryption_config: &EncryptionConfig,
     ) {
-        print!("Serving gRPC on {}", server_status.grpc_address());
+        print!("Serving gRPC on {}", server_status.grpc_address().unwrap_or_else(|| "<UNKNOWN ADDRESS>"));
         if let Some(http_address) = server_status.http_address() {
             print!(" and HTTP on {http_address}");
         }

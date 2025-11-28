@@ -138,7 +138,7 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
             query_str,
         )
         .unwrap();
-    let (rows, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (rows, _context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     rows.collect_owned().unwrap()
 }
