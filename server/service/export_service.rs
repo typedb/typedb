@@ -39,7 +39,7 @@ fn get_functions_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -
 }
 
 typedb_error! {
-    pub(crate) DatabaseExportError(component = "Database export", prefix = "DBE") {
+    pub DatabaseExportError(component = "Database export", prefix = "DBE") {
         TransactionFailed(1, "Transaction failed.", typedb_source: TransactionError),
         ConceptRead(2, "Error reading concepts.", typedb_source: Box<ConceptReadError>),
         FunctionRead(3, "Error reading functions.", typedb_source: FunctionReadError),

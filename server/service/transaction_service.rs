@@ -68,7 +68,7 @@ pub(crate) fn init_transaction_timeout(transaction_timeout_millis: Option<u64>) 
 }
 
 typedb_error! {
-    pub(crate) TransactionServiceError(component = "Transaction service", prefix = "TSV") {
+    pub TransactionServiceError(component = "Transaction service", prefix = "TSV") {
         DatabaseNotFound(1, "Database '{name}' not found.", name: String),
         CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
         CannotRollbackReadTransaction(3, "Read transactions cannot be rolled back, since they never contain writes."),
