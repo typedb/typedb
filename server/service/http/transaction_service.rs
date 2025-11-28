@@ -14,7 +14,7 @@ use std::{
     sync::Arc,
 };
 
-use compiler::{executable::ExecutableCompilationError, query_structure::PipelineStructure};
+use compiler::query_structure::PipelineStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     query::{
@@ -45,10 +45,9 @@ use tokio::{
 };
 use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
-use uuid::Uuid;
 
 use crate::{
-    error::{LocalServerStateError, ServerStateError},
+    error::LocalServerStateError,
     service::{
         may_encode_pipeline_structure,
         http::message::{
@@ -813,7 +812,6 @@ impl TransactionService {
         debug_assert!(self.running_write_query.is_none());
         debug_assert!(self.transaction.is_some());
         let interrupt = self.query_interrupt_receiver.clone();
-        println!("Spawn blocking execute write query!");
         match self.transaction.take() {
             Some(Transaction::Schema(schema_transaction)) => Ok(spawn_blocking(move || {
                 let (transaction, result) =

@@ -17,25 +17,19 @@ use diagnostics::metrics::ActionKind;
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
 use resource::{constants::common::SECONDS_IN_MINUTE, distribution_info::DistributionInfo};
-use storage::snapshot::CommittableSnapshot;
 use system::concepts::{Credential, User};
 use tokio::{
     sync::{
         mpsc::{channel, Sender},
-        oneshot,
-        watch::Receiver,
-        RwLock,
+        oneshot, RwLock,
     },
     time::timeout,
 };
-use tonic::Response;
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
 use crate::{
     authentication::Accessor,
-    error::LocalServerStateError,
-    http::diagnostics::run_with_diagnostics,
     service::{
         http::{
             diagnostics::run_with_diagnostics_async,
@@ -55,7 +49,6 @@ use crate::{
             },
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
-        typedb_service::TypeDBService,
         QueryType,
     },
     state::ArcServerState,
@@ -374,7 +367,7 @@ impl HTTPTypeDBService {
             || async {
                 service
                     .server_state
-                    .database_schema(database_path.database_name.clone())
+                    .database_schema(&database_path.database_name)
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
@@ -395,7 +388,7 @@ impl HTTPTypeDBService {
             || async {
                 service
                     .server_state
-                    .database_type_schema(database_path.database_name.clone())
+                    .database_type_schema(&database_path.database_name)
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
@@ -438,7 +431,7 @@ impl HTTPTypeDBService {
             || async {
                 service
                     .server_state
-                    .users_get(&user_path.username, accessor)
+                    .users_get(accessor, &user_path.username)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
                     .map(|user| JsonBody(encode_user(&user)))
@@ -462,7 +455,9 @@ impl HTTPTypeDBService {
                 let user = User { name: user_path.username };
                 let credential = Credential::new_password(payload.password.as_str());
 
-                TypeDBService::create_user(&service.server_state, accessor, user, credential)
+                service
+                    .server_state
+                    .users_create(accessor, user, credential)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -486,7 +481,9 @@ impl HTTPTypeDBService {
                 let credential_update = Some(Credential::new_password(&payload.password));
                 let username = user_path.username.as_str();
 
-                TypeDBService::update_user(&service.server_state, accessor, username, user_update, credential_update)
+                service
+                    .server_state
+                    .users_update(accessor, username, user_update, credential_update)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -507,7 +504,9 @@ impl HTTPTypeDBService {
             || async {
                 let username = user_path.username.as_str();
 
-                TypeDBService::delete_user(&service.server_state, accessor, username)
+                service
+                    .server_state
+                    .users_delete(accessor, username)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },

@@ -163,6 +163,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn finalise(self) -> (TransactionProfile, Result<DataCommitIntent<D>, DataCommitError>) {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
+        commit_profile.start();
 
         let mut snapshot = match self.snapshot.try_into_inner() {
             None => return (profile, Err(DataCommitError::SnapshotInUse {})),
@@ -182,8 +183,6 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
     // TODO: remove this method and update the test accordingly
     pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
-        self.profile.commit_profile().start();
-
         let (mut profile, (database, snapshot)) = match self.finalise() {
             (profile, Ok(DataCommitIntent { database_drop_guard, write_snapshot })) => {
                 (profile, (database_drop_guard, write_snapshot))
@@ -276,8 +275,9 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
-        let mut snapshot = self.snapshot.into_inner();
+        commit_profile.start();
 
+        let mut snapshot = self.snapshot.into_inner();
         if let Err(errs) = self.type_manager.validate(&snapshot) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
@@ -312,8 +312,6 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
     // TODO: remove this method and update the test accordingly
     pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
-        self.profile.commit_profile().start();
-
         let (mut profile, commit_intent) = match self.finalise() {
             (profile, Ok(commit_intent)) => (profile, commit_intent),
             (profile, Err(error)) => return (profile, Err(error)),
