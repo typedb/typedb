@@ -13,7 +13,7 @@ mod diagnostics;
 mod document;
 pub(crate) mod encryption;
 mod error;
-mod migration;
+pub(crate) mod migration;
 mod options;
 mod request_parser;
 mod response_builders;
