@@ -5,13 +5,13 @@
  */
 
 use compiler::query_structure::{PipelineStructure, QueryStructureConjunctionID};
-pub use grpc::{IntoGrpcStatus, IntoProtocolErrorMessage};
+pub use grpc::{migration::import_service::DatabaseImportService, IntoGrpcStatus, IntoProtocolErrorMessage};
 use serde::{Deserialize, Serialize};
 
 pub(crate) mod export_service;
 pub(crate) mod grpc;
 pub mod http;
-pub(crate) mod import_service;
+pub mod import_service;
 mod transaction_service;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]

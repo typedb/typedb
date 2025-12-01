@@ -470,7 +470,6 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<Streaming<typedb_protocol::database_manager::import::Client>>,
     ) -> Result<Response<Self::databases_importStream>, Status> {
-        println!("IMPORT!");
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(IMPORT_RESPONSE_BUFFER_SIZE);
         let service = DatabaseImportService::new(
