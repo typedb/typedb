@@ -181,7 +181,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot }))
     }
 
-    // TODO: remove this method and update the test accordingly
+    // TODO: substitute this method by "finalise()" + "data_commit_with_snapshot()" in usages
     pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
         let (mut profile, (database, snapshot)) = match self.finalise() {
             (profile, Ok(DataCommitIntent { database_drop_guard, write_snapshot })) => {
@@ -310,7 +310,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot }))
     }
 
-    // TODO: remove this method and update the test accordingly
+    // TODO: substitute this method by "finalise()" + "schema_commit_with_snapshot()" in usages
     pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
         let (mut profile, commit_intent) = match self.finalise() {
             (profile, Ok(commit_intent)) => (profile, commit_intent),

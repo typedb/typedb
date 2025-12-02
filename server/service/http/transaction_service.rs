@@ -405,7 +405,7 @@ impl TransactionService {
                     LoadKind::WriteTransactions,
                 );
                 unwrap_or_execute_else_respond_error_and_return_break!(
-                    transaction.commit().1,
+                    transaction.commit().1, // TODO: Adapt to cluster
                     responder,
                     |typedb_source| {
                         TransactionServiceError::DataCommitFailed {
@@ -426,7 +426,7 @@ impl TransactionService {
                 );
 
                 unwrap_or_execute_else_respond_error_and_return_break!(
-                    transaction.commit().1,
+                    transaction.commit().1, // TODO: Adapt to cluster
                     responder,
                     |typedb_source| {
                         TransactionServiceError::SchemaCommitFailed {
