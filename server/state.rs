@@ -20,7 +20,7 @@ use storage::{
     snapshot::CommittableSnapshot,
 };
 use system::concepts::{Credential, User};
-use tokio::{net::lookup_host, sync::watch::Receiver};
+use tokio::{net::lookup_host, sync::watch::Receiver, task::JoinHandle};
 use user::{
     errors::{UserCreateError, UserDeleteError, UserUpdateError},
     permission_manager::PermissionManager,
@@ -31,7 +31,10 @@ use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
     error::{arc_server_state_err, ArcServerStateError, LocalServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
-    service::export_service::{get_transaction_schema, get_transaction_type_schema},
+    service::{
+        export_service::{get_transaction_schema, get_transaction_type_schema},
+        grpc::migration::import_service::DatabaseImportService,
+    },
     status::{LocalServerStatus, ServerStatus},
     system_init::SYSTEM_DB,
 };
@@ -74,6 +77,8 @@ pub trait ServerState: Debug {
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError>;
 
     async fn databases_create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError>;
+
+    async fn databases_import(&self, service: DatabaseImportService) -> Result<JoinHandle<()>, ArcServerStateError>;
 
     async fn database_schema(&self, name: &str) -> Result<String, ArcServerStateError>;
 
@@ -427,6 +432,10 @@ impl ServerState for LocalServerState {
         self.database_manager
             .put_database_unrestricted(name)
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: err }))
+    }
+
+    async fn databases_import(&self, service: DatabaseImportService) -> Result<JoinHandle<()>, ArcServerStateError> {
+        Ok(self.background_task_spawner.spawn(async move { service.listen().await }))
     }
 
     async fn database_schema(&self, name: &str) -> Result<String, ArcServerStateError> {
