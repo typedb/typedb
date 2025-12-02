@@ -7,12 +7,13 @@
 use compiler::query_structure::{PipelineStructure, QueryStructureConjunctionID};
 use concept::error::ConceptReadError;
 use options::QueryOptions;
+pub use grpc::{migration::import_service::DatabaseImportService, IntoGrpcStatus, IntoProtocolErrorMessage};
 use serde::{Deserialize, Serialize};
 
 pub(crate) mod export_service;
 pub(crate) mod grpc;
 pub mod http;
-mod import_service;
+pub mod import_service;
 mod transaction_service;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]

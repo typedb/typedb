@@ -17,7 +17,6 @@ use typedb_protocol::{
     database_manager::import::Server as DatabasesImportServerProto,
     transaction::{Client as TransactionClientProto, Server as TransactionServerProto},
 };
-use user::permission_manager::PermissionManager;
 use uuid::Uuid;
 
 use crate::{
@@ -471,7 +470,6 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<Streaming<typedb_protocol::database_manager::import::Client>>,
     ) -> Result<Response<Self::databases_importStream>, Status> {
-        // diagnostics are inside the service
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(IMPORT_RESPONSE_BUFFER_SIZE);
         let service = DatabaseImportService::new(
@@ -481,7 +479,17 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             response_sender,
             self.server_state.shutdown_receiver().await,
         );
-        tokio::spawn(async move { service.listen().await });
+
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager().await,
+            None::<&str>,
+            ActionKind::DatabasesImport,
+            || async {
+                self.server_state.databases_import(service).await.map_err(|err| err.into_error_message().into_status())
+            },
+        )
+        .await?;
+
         let stream: ReceiverStream<Result<DatabasesImportServerProto, Status>> = ReceiverStream::new(response_receiver);
         Ok(Response::new(Box::pin(stream)))
     }

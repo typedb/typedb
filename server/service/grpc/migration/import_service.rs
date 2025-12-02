@@ -49,7 +49,7 @@ const ITEMS_LOG_INTERVAL: u64 = 1_000_000;
 type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 
 #[derive(Debug)]
-pub(crate) struct DatabaseImportService {
+pub struct DatabaseImportService {
     database_manager: Arc<DatabaseManager>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     request_stream: Streaming<ProtocolClient>,
