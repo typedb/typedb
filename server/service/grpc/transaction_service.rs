@@ -21,7 +21,7 @@ use database::{
         execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
         WriteQueryAnswer, WriteQueryResult,
     },
-    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::metrics::{ActionKind, ClientEndpoint, LoadKind};
 use executor::{
@@ -35,8 +35,8 @@ use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::QueryOptions;
 use query::error::QueryError;
-use resource::profile::{EncodingProfile, QueryProfile, StorageCounters, TransactionProfile};
-use storage::snapshot::{CommittableSnapshot, ReadableSnapshot};
+use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
+use storage::snapshot::ReadableSnapshot;
 use tokio::{
     spawn,
     sync::{
@@ -57,7 +57,7 @@ use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
 use crate::{
-    error::{ArcServerStateError, LocalServerStateError},
+    error::LocalServerStateError,
     service::{
         grpc::{
             analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
