@@ -6,13 +6,15 @@
 
 use std::time::Duration;
 
-use database::transaction::{TransactionError, TransactionRead, TransactionSchema, TransactionWrite};
+use database::transaction::{
+    DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema, TransactionWrite,
+};
 use diagnostics::metrics::LoadKind;
 use error::typedb_error;
 use executor::{pipeline::PipelineExecutionError, InterruptType};
 use query::error::QueryError;
-use resource::constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS;
-use storage::durability_client::WALClient;
+use resource::{constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS, profile::TransactionProfile};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot};
 use tokio::time::Instant;
 use typeql::query::stage::Stage;
 use uuid::Uuid;
@@ -37,7 +39,10 @@ macro_rules! with_readable_transaction {
 }
 pub(crate) use with_readable_transaction;
 
-use crate::error::ArcServerStateError;
+use crate::{
+    error::{ArcServerStateError, LocalServerStateError},
+    state::ArcServerState,
+};
 
 impl Transaction {
     pub fn load_kind(&self) -> LoadKind {
@@ -65,6 +70,62 @@ pub(crate) fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
 
 pub(crate) fn init_transaction_timeout(transaction_timeout_millis: Option<u64>) -> Instant {
     Instant::now() + Duration::from_millis(transaction_timeout_millis.unwrap_or(DEFAULT_TRANSACTION_TIMEOUT_MILLIS))
+}
+
+pub(crate) async fn commit_schema_transaction(
+    server_state: ArcServerState,
+    transaction: TransactionSchema<WALClient>,
+) -> (TransactionProfile, Result<(), ArcServerStateError>) {
+    let (mut profile, into_commit_record_result) = match transaction.finalise() {
+        (mut profile, Ok(commit_intent)) => {
+            let into_commit_record_result = commit_intent
+                .schema_snapshot
+                .finalise(profile.commit_profile())
+                .map(|commit_record_opt| (commit_intent.database_drop_guard, commit_record_opt))
+                .map_err(|error| SchemaCommitError::SnapshotError { typedb_source: error });
+            (profile, into_commit_record_result)
+        }
+        (profile, Err(error)) => (profile, Err(error)),
+    };
+
+    match into_commit_record_result {
+        Ok((database, Some(commit_record))) => {
+            let commit_result =
+                server_state.database_schema_commit(database.name(), commit_record, profile.commit_profile()).await;
+            (profile, commit_result)
+        }
+        Ok((_, None)) => (profile, Ok(())),
+        Err(typedb_source) => {
+            (profile, Err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }.into()))
+        }
+    }
+}
+
+pub(crate) async fn commit_write_transaction(
+    server_state: ArcServerState,
+    transaction: TransactionWrite<WALClient>,
+) -> (TransactionProfile, Result<(), ArcServerStateError>) {
+    let (mut profile, into_commit_record_result) = match transaction.finalise() {
+        (mut profile, Ok(commit_intent)) => {
+            let into_commit_record_result = commit_intent
+                .write_snapshot
+                .finalise(profile.commit_profile())
+                .map(|commit_record_opt| (commit_intent.database_drop_guard, commit_record_opt))
+                .map_err(|typedb_source| DataCommitError::SnapshotError { typedb_source });
+            (profile, into_commit_record_result)
+        }
+        (profile, Err(error)) => (profile, Err(error)),
+    };
+
+    match into_commit_record_result {
+        Ok((database, Some(commit_record))) => {
+            let commit_result =
+                server_state.database_data_commit(database.name(), commit_record, profile.commit_profile()).await;
+            (profile, commit_result)
+        }
+        Ok((_, None)) => (profile, Ok(())),
+        Err(error) => (profile, Err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source: error }.into())),
+    }
 }
 
 typedb_error! {

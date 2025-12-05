@@ -39,6 +39,7 @@ use query::error::QueryError;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
+    spawn,
     sync::{broadcast, mpsc::Receiver, oneshot},
     task::{spawn_blocking, JoinHandle},
     time::Instant,
@@ -47,7 +48,6 @@ use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
-    error::LocalServerStateError,
     service::{
         http::message::{
             analyze::{
@@ -58,8 +58,8 @@ use crate::{
             query::{document::encode_document, row::encode_row},
         },
         transaction_service::{
-            init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction,
-            TransactionServiceError,
+            commit_schema_transaction, commit_write_transaction, init_transaction_timeout, is_write_pipeline,
+            with_readable_transaction, Transaction, TransactionServiceError,
         },
         IncludeInvolvedBlocks, QueryType, TransactionType,
     },
@@ -393,32 +393,29 @@ impl TransactionService {
         }
 
         let diagnostics_manager = self.server_state.diagnostics_manager().await;
+        let server_state = self.server_state.clone();
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
                 respond_error_and_return_break!(responder, TransactionServiceError::CannotCommitReadTransaction {});
             }
-            Transaction::Write(transaction) => spawn_blocking(move || {
+            Transaction::Write(transaction) => spawn(async move {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
                 );
                 unwrap_or_execute_else_respond_error_and_return_break!(
-                    transaction.commit().1, // TODO: Adapt to cluster
+                    commit_write_transaction(server_state, transaction).await.1, // TODO: Use profile
                     responder,
-                    |typedb_source| {
-                        TransactionServiceError::DataCommitFailed {
-                            typedb_source: LocalServerStateError::DatabaseDataCommitFailed { typedb_source }.into(),
-                        }
-                    }
+                    |typedb_source| { TransactionServiceError::DataCommitFailed { typedb_source } }
                 );
                 respond_else_return_break!(responder, TransactionServiceResponse::Ok);
                 Break(())
             })
             .await
             .expect("Expected write transaction commit completion"),
-            Transaction::Schema(transaction) => spawn_blocking(move || {
+            Transaction::Schema(transaction) => spawn(async move {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
@@ -426,13 +423,9 @@ impl TransactionService {
                 );
 
                 unwrap_or_execute_else_respond_error_and_return_break!(
-                    transaction.commit().1, // TODO: Adapt to cluster
+                    commit_schema_transaction(server_state, transaction).await.1, // TODO: Use profile
                     responder,
-                    |typedb_source| {
-                        TransactionServiceError::SchemaCommitFailed {
-                            typedb_source: LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }.into(),
-                        }
-                    }
+                    |typedb_source| { TransactionServiceError::SchemaCommitFailed { typedb_source } }
                 );
                 respond_else_return_break!(responder, TransactionServiceResponse::Ok);
                 Break(())
