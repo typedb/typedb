@@ -41,13 +41,13 @@ use crate::{
         iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError,
         KeyspaceSet, Keyspaces,
     },
-    number::{CausalityNumber, SequenceNumber},
     record::{CommitRecord, StatusRecord},
     recovery::{
         checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     snapshot::{ReadSnapshot, SchemaSnapshot, WriteSnapshot},
+    uniqueness::{SequenceNumber, TransactionId},
 };
 
 pub mod durability_client;
@@ -57,10 +57,10 @@ pub mod iterator;
 pub mod key_range;
 pub mod key_value;
 pub mod keyspace;
-pub mod number;
 pub mod record;
 pub mod recovery;
 pub mod snapshot;
+pub mod uniqueness;
 mod write_batches;
 
 #[derive(Debug)]
@@ -179,13 +179,13 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        WriteSnapshot::new_with_open_sequence_number(self, open_sequence_number, CausalityNumber::None)
+        WriteSnapshot::new_with_open_sequence_number(self, open_sequence_number)
     }
 
     pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability> {
         // guarantee external consistency: await this sequence number to be behind the watermark
         self.wait_for_watermark(sequence_number);
-        WriteSnapshot::new_with_open_sequence_number(self, sequence_number, CausalityNumber::None)
+        WriteSnapshot::new_with_open_sequence_number(self, sequence_number)
     }
 
     pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability> {
@@ -204,7 +204,7 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        SchemaSnapshot::new_with_open_sequence_number(self, open_sequence_number, CausalityNumber::None)
+        SchemaSnapshot::new_with_open_sequence_number(self, open_sequence_number)
     }
 
     fn wait_for_watermark(&self, target: SequenceNumber) -> SequenceNumber {
@@ -227,14 +227,6 @@ impl<Durability> MVCCStorage<Durability> {
         Durability: DurabilityClient,
     {
         use StorageCommitError::{Durability, Internal, Keyspace};
-
-        if self
-            .record_exists(&commit_record)
-            .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?
-        {
-            debug_assert_ne!(commit_record.global_causality_number, None);
-            return Ok(None);
-        }
 
         commit_profile.snapshot_commit_record_created();
         commit_profile.commit_size(commit_record.operations().len());
@@ -290,21 +282,25 @@ impl<Durability> MVCCStorage<Durability> {
         }
     }
 
-    fn record_exists(&self, commit_record: &CommitRecord) -> Result<bool, DurabilityClientError>
+    pub fn record_exists(&self, transaction_id: TransactionId) -> Result<bool, DurabilityClientError>
     where
         Durability: DurabilityClient,
     {
-        let new_causality_number = commit_record.global_causality_number;
-        if new_causality_number.is_none() {
-            return Ok(false);
+        let open_sequence_number = transaction_id.open_sequence_number();
+        let mut iter = self.durability_client.iter_sequenced_type_from::<CommitRecord>(open_sequence_number)?;
+
+        while let Some(entry) = iter.next() {
+            let (iter_sequence, iter_record) = entry?;
+            if iter_sequence > open_sequence_number {
+                break;
+            }
+            if let Some(prev_id) = iter_record.transaction_id() {
+                if prev_id == transaction_id {
+                    return Ok(true);
+                }
+            }
         }
-        self.durability_client
-            .iter_sequenced_type_from::<CommitRecord>(self.durability_client.previous())?
-            .map(|result| {
-                result.map(|(_, previous_record)| new_causality_number <= previous_record.global_causality_number)
-            })
-            .next()
-            .unwrap_or(Ok(false))
+        Ok(false)
     }
 
     fn persist_commit_status(
@@ -635,18 +631,15 @@ impl StorageOperation {
 
 #[cfg(test)]
 mod tests {
-    use std::num::NonZeroU64;
-
     use bytes::byte_array::ByteArray;
     use durability::wal::WAL;
-    use resource::profile::{CommitProfile, StorageCounters};
+    use resource::profile::StorageCounters;
     use test_utils::{create_tmp_storage_dir, init_logging};
 
     use crate::{
         durability_client::{DurabilityClient, WALClient},
         key_value::StorageKeyArray,
         keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
-        number::SequenceNumber,
         record::{CommitRecord, CommitType},
         snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
@@ -722,96 +715,5 @@ mod tests {
         );
     }
 
-    fn run_casuality_test(init_casuality: Option<u64>, new_casuality: Option<u64>, expected_new_write: bool) {
-        init_logging();
-        let storage_path = create_tmp_storage_dir();
-
-        test_keyspace_set! {
-            PersistedKeyspace => 0: "write",
-        }
-
-        fn commit_record_with_sequence_and_casuality<const A: usize>(
-            open_sequence_number: SequenceNumber,
-            casuality: Option<u64>,
-            data: &[u8; A],
-        ) -> CommitRecord {
-            let key_1 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, data));
-            let mut operations = OperationsBuffer::new();
-            operations.writes_in_mut(key_1.keyspace_id()).insert(key_1.byte_array().clone(), ByteArray::empty());
-
-            let mut record = CommitRecord::new(operations, open_sequence_number, CommitType::Data);
-            if let Some(value) = casuality {
-                record.global_causality_number = NonZeroU64::new(value);
-            }
-            record
-        }
-
-        fn storage_with_existing_commit(
-            storage_path: std::path::PathBuf,
-            existing_causality: Option<u64>,
-        ) -> MVCCStorage<WALClient> {
-            let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
-            durability_client.register_record_type::<CommitRecord>();
-            let storage =
-                MVCCStorage::<WALClient>::create::<TestKeyspaceSet>("storage", &storage_path, durability_client)
-                    .unwrap();
-
-            let existing =
-                commit_record_with_sequence_and_casuality(SequenceNumber::from(0), existing_causality, b"hello");
-            let mut profile = CommitProfile::DISABLED;
-            let seqnum = storage.commit(existing, &mut profile).unwrap();
-            debug_assert_eq!(seqnum, Some(SequenceNumber::from(1)), "Expected to be the first record in the WAL");
-            storage
-        }
-
-        let storage = storage_with_existing_commit(storage_path.to_path_buf(), init_casuality);
-        // TODO: If we use SequenceNumber::from(1) instead, it crashes
-        let new_record = commit_record_with_sequence_and_casuality(SequenceNumber::from(0), new_casuality, b"world");
-        let mut profile = CommitProfile::DISABLED;
-        let seqnum = storage.commit(new_record, &mut profile).unwrap();
-        match expected_new_write {
-            true => {
-                assert!(
-                    seqnum.is_some(),
-                    "Expected a new write, but the record was ignored due to a big causality number"
-                );
-            }
-            false => {
-                assert!(
-                    seqnum.is_none(),
-                    "Expected no new writes, but the record was applied due to a small causality number"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn test_causality_bigger_than_previous_is_not_ignored() {
-        run_casuality_test(Some(10), Some(11), true)
-    }
-
-    #[test]
-    fn test_causality_smaller_than_previous_is_ignored() {
-        run_casuality_test(Some(10), Some(9), false)
-    }
-
-    #[test]
-    fn test_causality_same_as_previous_is_ignored() {
-        run_casuality_test(Some(10), Some(10), false)
-    }
-
-    #[test]
-    fn test_causality_number_after_none_is_not_ignored() {
-        run_casuality_test(None, Some(9), true)
-    }
-
-    #[test]
-    fn test_causality_none_after_some_is_not_ignored() {
-        run_casuality_test(Some(11), None, true)
-    }
-
-    #[test]
-    fn test_causality_none_after_none_is_not_ignored() {
-        run_casuality_test(None, None, true)
-    }
+    // TODO: Write tests that every new opened snapshot has a unique transacton id
 }

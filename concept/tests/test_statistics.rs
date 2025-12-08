@@ -21,8 +21,8 @@ use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
-    number::SequenceNumber,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
+    uniqueness::SequenceNumber,
     MVCCStorage,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};

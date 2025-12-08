@@ -44,10 +44,10 @@ use resource::{
 };
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    number::SequenceNumber,
     record::CommitRecord,
     recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
     snapshot::{CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
+    uniqueness::SequenceNumber,
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 use tracing::{event, Level};
