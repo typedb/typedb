@@ -14,7 +14,7 @@ use error::typedb_error;
 use itertools::Itertools;
 use resource::constants::storage::COMMIT_WAIT_FOR_FSYNC;
 
-use crate::number::SequenceNumber;
+use crate::uniqueness::SequenceNumber;
 
 pub trait DurabilityRecord: Sized {
     const RECORD_TYPE: DurabilityRecordType;

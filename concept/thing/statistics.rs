@@ -39,10 +39,10 @@ use storage::{
     iterator::MVCCReadError,
     key_value::{StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
-    number::SequenceNumber,
     record::CommitType,
     recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
     snapshot::{buffer::OperationsBuffer, write::Write},
+    uniqueness::SequenceNumber,
     MVCCStorage,
 };
 use tracing::{event, Level};

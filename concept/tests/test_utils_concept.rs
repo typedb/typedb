@@ -17,7 +17,7 @@ use encoding::graph::{
 };
 use storage::{
     durability_client::{DurabilityClient, WALClient},
-    number::SequenceNumber,
+    uniqueness::SequenceNumber,
     MVCCStorage,
 };
 

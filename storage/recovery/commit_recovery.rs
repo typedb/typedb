@@ -14,8 +14,8 @@ use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
     isolation_manager::{IsolationManager, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
-    number::SequenceNumber,
     record::{CommitRecord, StatusRecord},
+    uniqueness::SequenceNumber,
     write_batches::WriteBatches,
     MVCCStorage,
 };

@@ -12,10 +12,10 @@ use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
-    number::SequenceNumber,
     snapshot::{
         buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::Write, ReadableSnapshot, SnapshotGetError,
     },
+    uniqueness::SequenceNumber,
 };
 
 #[derive(Default)]

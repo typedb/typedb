@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     durability_client::{DurabilityRecord, SequencedDurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::{CommitDependency, DependentPut, IsolationConflict},
-    number::{CausalityNumber, SequenceNumber},
     snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},
+    uniqueness::{SequenceNumber, TransactionId},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -24,14 +24,10 @@ pub struct CommitRecord {
     open_sequence_number: SequenceNumber,
     commit_type: CommitType,
 
-    /// An optional field used by extensions of TypeDB to provide external causality numbers.
-    /// Records with the same causality numbers are considered identical, and only the first record
-    /// is processed, ensuring idempotency.
-    /// WARNING: each new record expected to be applied MUST have a new causality number bigger than all the
-    /// causality numbers already saved in the storage. Otherwise, it will be ignored.
-    /// Defaults to None (meaning that every record is unique).
+    /// Optional transaction identifier used for efficient referencing to commit records in the WAL,
+    /// avoiding excessive lookups through the whole filesystem.
     #[serde(default)]
-    pub global_causality_number: CausalityNumber,
+    transaction_id: Option<TransactionId>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -51,7 +47,7 @@ impl fmt::Debug for CommitRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("CommitRecord")
             .field("open_sequence_number", &self.open_sequence_number)
-            .field("global_causality_number", &self.global_causality_number)
+            .field("transaction_id", &self.transaction_id)
             .field("commit_type", &self.commit_type)
             .field("operations", &self.operations)
             .finish()
@@ -76,16 +72,8 @@ impl CommitRecord {
         open_sequence_number: SequenceNumber,
         commit_type: CommitType,
     ) -> CommitRecord {
-        Self::new_with_causality_number(operations, open_sequence_number, commit_type, None)
-    }
-
-    pub(crate) fn new_with_causality_number(
-        operations: OperationsBuffer,
-        open_sequence_number: SequenceNumber,
-        commit_type: CommitType,
-        global_causality_number: CausalityNumber,
-    ) -> CommitRecord {
-        CommitRecord { operations, open_sequence_number, commit_type, global_causality_number }
+        let transaction_id = Some(TransactionId::new(open_sequence_number));
+        CommitRecord { operations, open_sequence_number, commit_type, transaction_id }
     }
 
     pub fn operations(&self) -> &OperationsBuffer {
@@ -102,6 +90,10 @@ impl CommitRecord {
 
     pub fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
+    }
+
+    pub fn transaction_id(&self) -> Option<TransactionId> {
+        self.transaction_id
     }
 
     fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)
