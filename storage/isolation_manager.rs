@@ -25,7 +25,7 @@ use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     record::{CommitRecord, StatusRecord},
-    uniqueness::SequenceNumber,
+    sequence_number::SequenceNumber,
     write_batches::WriteBatches,
 };
 
@@ -663,8 +663,8 @@ mod tests {
         isolation_manager::{CommitStatus, Timeline, TIMELINE_WINDOW_SIZE},
         keyspace::{KeyspaceId, KeyspaceSet},
         record::{CommitRecord, CommitType},
+        sequence_number::SequenceNumber,
         snapshot::buffer::OperationsBuffer,
-        uniqueness::SequenceNumber,
     };
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {

@@ -46,8 +46,8 @@ use crate::{
         checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
-    snapshot::{ReadSnapshot, SchemaSnapshot, WriteSnapshot},
-    uniqueness::{SequenceNumber, TransactionId},
+    sequence_number::SequenceNumber,
+    snapshot::{snapshot_id::SnapshotId, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
 };
 
 pub mod durability_client;
@@ -59,8 +59,8 @@ pub mod key_value;
 pub mod keyspace;
 pub mod record;
 pub mod recovery;
+pub mod sequence_number;
 pub mod snapshot;
-pub mod uniqueness;
 mod write_batches;
 
 #[derive(Debug)]
@@ -222,7 +222,7 @@ impl<Durability> MVCCStorage<Durability> {
         &self,
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
-    ) -> Result<Option<SequenceNumber>, StorageCommitError>
+    ) -> Result<SequenceNumber, StorageCommitError>
     where
         Durability: DurabilityClient,
     {
@@ -263,7 +263,7 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 commit_profile.snapshot_durable_write_commit_status_submitted();
 
-                Ok(Some(commit_sequence_number))
+                Ok(commit_sequence_number)
             }
             Ok(ValidatedCommit::Conflict(conflict)) => {
                 sync_notifier.recv().unwrap();
@@ -282,11 +282,11 @@ impl<Durability> MVCCStorage<Durability> {
         }
     }
 
-    pub fn record_exists(&self, transaction_id: TransactionId) -> Result<bool, DurabilityClientError>
+    pub fn commit_record_exists(&self, snapshot_id: SnapshotId) -> Result<bool, DurabilityClientError>
     where
         Durability: DurabilityClient,
     {
-        let open_sequence_number = transaction_id.open_sequence_number();
+        let open_sequence_number = snapshot_id.open_sequence_number();
         let mut iter = self.durability_client.iter_sequenced_type_from::<CommitRecord>(open_sequence_number)?;
 
         while let Some(entry) = iter.next() {
@@ -294,8 +294,8 @@ impl<Durability> MVCCStorage<Durability> {
             if iter_sequence > open_sequence_number {
                 break;
             }
-            if let Some(prev_id) = iter_record.transaction_id() {
-                if prev_id == transaction_id {
+            if let Some(prev_id) = iter_record.snapshot_id() {
+                if prev_id == snapshot_id {
                     return Ok(true);
                 }
             }

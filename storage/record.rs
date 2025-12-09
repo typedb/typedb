@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, io::Read, num::NonZeroU64};
+use std::{fmt, io::Read};
 
 use durability::DurabilityRecordType;
 use logger::result::ResultExt;
@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     durability_client::{DurabilityRecord, SequencedDurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::{CommitDependency, DependentPut, IsolationConflict},
-    snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},
-    uniqueness::{SequenceNumber, TransactionId},
+    sequence_number::SequenceNumber,
+    snapshot::{buffer::OperationsBuffer, lock::LockType, snapshot_id::SnapshotId, write::Write},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -24,10 +24,11 @@ pub struct CommitRecord {
     open_sequence_number: SequenceNumber,
     commit_type: CommitType,
 
-    /// Optional transaction identifier used for efficient referencing to commit records in the WAL,
+    /// Transaction identifier used for efficient referencing to commit records in the WAL,
     /// avoiding excessive lookups through the whole filesystem.
+    /// Should be set for all new commit records, but is set to None for old loaded records.
     #[serde(default)]
-    transaction_id: Option<TransactionId>,
+    snapshot_id: Option<SnapshotId>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -47,7 +48,7 @@ impl fmt::Debug for CommitRecord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("CommitRecord")
             .field("open_sequence_number", &self.open_sequence_number)
-            .field("transaction_id", &self.transaction_id)
+            .field("snapshot_id", &self.snapshot_id)
             .field("commit_type", &self.commit_type)
             .field("operations", &self.operations)
             .finish()
@@ -72,8 +73,8 @@ impl CommitRecord {
         open_sequence_number: SequenceNumber,
         commit_type: CommitType,
     ) -> CommitRecord {
-        let transaction_id = Some(TransactionId::new(open_sequence_number));
-        CommitRecord { operations, open_sequence_number, commit_type, transaction_id }
+        let snapshot_id = Some(SnapshotId::new(open_sequence_number));
+        CommitRecord { operations, open_sequence_number, commit_type, snapshot_id: snapshot_id }
     }
 
     pub fn operations(&self) -> &OperationsBuffer {
@@ -92,8 +93,8 @@ impl CommitRecord {
         self.open_sequence_number
     }
 
-    pub fn transaction_id(&self) -> Option<TransactionId> {
-        self.transaction_id
+    pub fn snapshot_id(&self) -> Option<SnapshotId> {
+        self.snapshot_id
     }
 
     fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)

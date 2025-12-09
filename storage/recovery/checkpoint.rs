@@ -23,7 +23,7 @@ use crate::{
     durability_client::DurabilityClient,
     keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces},
     recovery::commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
-    uniqueness::SequenceNumber,
+    sequence_number::SequenceNumber,
 };
 
 const TEMP_FILE_EXTENSION: &'static str = "tmp";
