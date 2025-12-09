@@ -38,8 +38,8 @@ use query::query_manager::QueryManager;
 use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
     durability_client::WALClient,
+    sequence_number::SequenceNumber,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
-    uniqueness::SequenceNumber,
     MVCCStorage,
 };
 use test_utils::assert_matches;

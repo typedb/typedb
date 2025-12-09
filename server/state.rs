@@ -18,7 +18,7 @@ use resource::{
 use storage::{
     durability_client::{DurabilityClient, WALClient},
     record::CommitRecord,
-    snapshot::CommittableSnapshot,
+    snapshot::{snapshot_id::SnapshotId, CommittableSnapshot},
 };
 use system::concepts::{Credential, User};
 use tokio::{net::lookup_host, sync::watch::Receiver, task::JoinHandle};
@@ -101,6 +101,12 @@ pub trait ServerState: Debug {
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError>;
+
+    async fn database_commit_record_exists(
+        &self,
+        name: &str,
+        snapshot_id: SnapshotId,
+    ) -> Result<bool, ArcServerStateError>;
 
     async fn database_delete(&self, name: &str) -> Result<(), ArcServerStateError>;
 
@@ -501,6 +507,19 @@ impl ServerState for LocalServerState {
         };
         database.data_commit_with_commit_record(commit_record, commit_profile).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
+        })
+    }
+
+    async fn database_commit_record_exists(
+        &self,
+        name: &str,
+        snapshot_id: SnapshotId,
+    ) -> Result<bool, ArcServerStateError> {
+        let Some(database) = self.databases_get_unrestricted(name).await? else {
+            return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
+        };
+        database.commit_record_exists(snapshot_id).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseCommitRecordExistsFailed { typedb_source })
         })
     }
 

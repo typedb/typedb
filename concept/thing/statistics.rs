@@ -41,8 +41,8 @@ use storage::{
     keyspace::IteratorPool,
     record::CommitType,
     recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
+    sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
-    uniqueness::SequenceNumber,
     MVCCStorage,
 };
 use tracing::{event, Level};

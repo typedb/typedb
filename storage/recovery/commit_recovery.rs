@@ -15,7 +15,7 @@ use crate::{
     isolation_manager::{IsolationManager, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
     record::{CommitRecord, StatusRecord},
-    uniqueness::SequenceNumber,
+    sequence_number::SequenceNumber,
     write_batches::WriteBatches,
     MVCCStorage,
 };

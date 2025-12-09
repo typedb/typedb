@@ -10,7 +10,7 @@ use compiler::annotation::function::{annotate_stored_functions, AnnotatedFunctio
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::pipeline::function_signature::{FunctionSignatureIndex, HashMapFunctionSignatureIndex};
-use storage::{snapshot::ReadableSnapshot, uniqueness::SequenceNumber, MVCCStorage};
+use storage::{sequence_number::SequenceNumber, snapshot::ReadableSnapshot, MVCCStorage};
 
 use crate::{
     function::SchemaFunction,

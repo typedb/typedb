@@ -46,8 +46,8 @@ use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
     record::CommitRecord,
     recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
-    snapshot::{CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
-    uniqueness::SequenceNumber,
+    sequence_number::SequenceNumber,
+    snapshot::{snapshot_id::SnapshotId, CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 use tracing::{event, Level};
@@ -292,7 +292,7 @@ impl<D: DurabilityClient> Database<D> {
 
         if let Some(commit_record) = commit_record_opt {
             let sequence_number = match self.storage.commit(commit_record, commit_profile) {
-                Ok(sequence_number) => sequence_number,
+                Ok(sequence_number) => Some(sequence_number),
                 Err(error) => {
                     return Err(SnapshotError {
                         typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error },
@@ -338,6 +338,12 @@ impl<D: DurabilityClient> Database<D> {
         } else {
             Ok(())
         }
+    }
+
+    pub fn commit_record_exists(&self, snapshot_id: SnapshotId) -> Result<bool, DatabaseOpenError> {
+        self.storage
+            .commit_record_exists(snapshot_id)
+            .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })
     }
 }
 

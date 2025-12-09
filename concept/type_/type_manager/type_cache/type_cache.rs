@@ -14,7 +14,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use storage::{uniqueness::SequenceNumber, MVCCStorage};
+use storage::{sequence_number::SequenceNumber, MVCCStorage};
 
 use crate::type_::{
     attribute_type::AttributeType,

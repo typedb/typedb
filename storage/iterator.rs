@@ -15,7 +15,7 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{iterator::KeyspaceRangeIterator, IteratorPool, KeyspaceError, KeyspaceId},
-    uniqueness::SequenceNumber,
+    sequence_number::SequenceNumber,
 };
 
 pub(crate) struct MVCCRangeIterator {

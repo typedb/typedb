@@ -14,4 +14,5 @@ pub mod iterator;
 pub mod lock;
 pub(crate) mod pool;
 mod snapshot;
+pub mod snapshot_id;
 pub mod write;
