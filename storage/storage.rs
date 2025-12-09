@@ -286,16 +286,18 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityClient,
     {
-        let open_sequence_number = snapshot_id.open_sequence_number();
-        let mut iter = self.durability_client.iter_sequenced_type_from::<CommitRecord>(open_sequence_number)?;
+        let start_sequence_number = snapshot_id.sequence_number();
+        let mut iter = self.durability_client.iter_sequenced_type_from::<CommitRecord>(start_sequence_number)?;
 
         while let Some(entry) = iter.next() {
             let (iter_sequence, iter_record) = entry?;
-            if iter_sequence > open_sequence_number {
+            if iter_sequence > start_sequence_number {
+                println!("Iter seq: {iter_sequence}, start seqnum: {start_sequence_number}, BREAK");
                 break;
             }
-            if let Some(prev_id) = iter_record.snapshot_id() {
-                if prev_id == snapshot_id {
+            if let Some(iter_record_id) = iter_record.snapshot_id() {
+                println!("Iter record id check: {iter_record_id:?}, snapshot_id: {snapshot_id:?}");
+                if iter_record_id == snapshot_id {
                     return Ok(true);
                 }
             }

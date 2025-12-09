@@ -28,7 +28,7 @@ impl SnapshotId {
         Self { sequence_number, unique_id }
     }
 
-    pub fn open_sequence_number(&self) -> SequenceNumber {
+    pub fn sequence_number(&self) -> SequenceNumber {
         self.sequence_number
     }
 
