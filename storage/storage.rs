@@ -282,6 +282,7 @@ impl<Durability> MVCCStorage<Durability> {
         }
     }
 
+    // Warning: this method scans the whole WAL starting from the snapshot_id's sequence number
     pub fn commit_record_exists(&self, snapshot_id: SnapshotId) -> Result<bool, DurabilityClientError>
     where
         Durability: DurabilityClient,
@@ -290,13 +291,8 @@ impl<Durability> MVCCStorage<Durability> {
         let mut iter = self.durability_client.iter_sequenced_type_from::<CommitRecord>(start_sequence_number)?;
 
         while let Some(entry) = iter.next() {
-            let (iter_sequence, iter_record) = entry?;
-            if iter_sequence > start_sequence_number {
-                println!("Iter seq: {iter_sequence}, start seqnum: {start_sequence_number}, BREAK");
-                break;
-            }
+            let (_, iter_record) = entry?;
             if let Some(iter_record_id) = iter_record.snapshot_id() {
-                println!("Iter record id check: {iter_record_id:?}, snapshot_id: {snapshot_id:?}");
                 if iter_record_id == snapshot_id {
                     return Ok(true);
                 }
