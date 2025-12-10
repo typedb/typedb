@@ -664,8 +664,9 @@ mod tests {
         keyspace::{KeyspaceId, KeyspaceSet},
         record::{CommitRecord, CommitType},
         sequence_number::SequenceNumber,
-        snapshot::buffer::OperationsBuffer,
+        snapshot::{buffer::OperationsBuffer, snapshot_id::SnapshotId},
     };
+
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
             #[derive(Clone, Copy)]
@@ -748,7 +749,7 @@ mod tests {
     }
 
     fn _record(read_sequence_number: SequenceNumber) -> CommitRecord {
-        CommitRecord::new(OperationsBuffer::new(), read_sequence_number, CommitType::Data)
+        CommitRecord::new(OperationsBuffer::new(), read_sequence_number, CommitType::Data, SnapshotId::new())
     }
 
     #[test]

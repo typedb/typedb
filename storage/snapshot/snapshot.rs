@@ -528,8 +528,8 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
                 SnapshotError::Commit { typedb_source: MVCCRead { name: self.storage.name.clone(), source: error } }
             })?;
             commit_profile.snapshot_put_statuses_checked();
-            let open_sequence_number = self.open_sequence_number;
-            let commit_record = CommitRecord::new(self.operations, open_sequence_number, CommitType::Data);
+            let commit_record =
+                CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Data, self.snapshot_id);
             Ok(Some(commit_record))
         }
     }
@@ -713,7 +713,12 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
                 SnapshotError::Commit { typedb_source: MVCCRead { name: self.storage.name.clone(), source: error } }
             })?;
             commit_profile.snapshot_put_statuses_checked();
-            Ok(Some(CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Schema)))
+            Ok(Some(CommitRecord::new(
+                self.operations,
+                self.open_sequence_number,
+                CommitType::Schema,
+                self.snapshot_id,
+            )))
         }
     }
 }
