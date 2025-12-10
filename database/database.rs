@@ -26,7 +26,7 @@ use concept::{
 };
 use concurrency::IntervalRunner;
 use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
-use durability::{wal::WAL, DurabilityServiceError};
+use durability::{wal::WAL, DurabilitySequenceNumber, DurabilityServiceError};
 use encoding::{
     error::EncodingError,
     graph::{
@@ -340,9 +340,13 @@ impl<D: DurabilityClient> Database<D> {
         }
     }
 
-    pub fn commit_record_exists(&self, snapshot_id: SnapshotId) -> Result<bool, DatabaseOpenError> {
+    pub fn commit_record_exists(
+        &self,
+        open_sequence_number: DurabilitySequenceNumber,
+        snapshot_id: SnapshotId,
+    ) -> Result<bool, DatabaseOpenError> {
         self.storage
-            .commit_record_exists(snapshot_id)
+            .commit_record_exists(open_sequence_number, snapshot_id)
             .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })
     }
 }

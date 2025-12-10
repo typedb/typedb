@@ -59,6 +59,7 @@ rust_library(
         "//concept",
         "//database",
         "//diagnostics",
+        "//durability",
         "//encoding",
         "//executor",
         "//function",

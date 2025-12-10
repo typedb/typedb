@@ -19,6 +19,7 @@ use std::{
 
 use ::error::typedb_error;
 use bytes::{byte_array::ByteArray, Bytes};
+use durability::DurabilitySequenceNumber;
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use keyspace::KeyspaceDeleteError;
@@ -284,24 +285,23 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     // Warning: this method scans the whole WAL starting from the snapshot_id's sequence number
-    pub fn commit_record_exists(&self, snapshot_id: SnapshotId) -> Result<bool, DurabilityClientError>
+    pub fn commit_record_exists(
+        &self,
+        open_sequence_number: DurabilitySequenceNumber,
+        snapshot_id: SnapshotId,
+    ) -> Result<bool, DurabilityClientError>
     where
         Durability: DurabilityClient,
     {
-        let start_sequence_number = snapshot_id.sequence_number();
-        let mut iter = self.durability_client.iter_sequenced_type_from::<CommitRecord>(start_sequence_number)?;
-
+        let mut iter = self.durability_client.iter_sequenced_type_from::<CommitRecord>(open_sequence_number)?;
         while let Some(entry) = iter.next() {
             let (_, iter_record) = entry?;
-            println!("Iter record: {iter_record:?}");
             if let Some(iter_record_id) = iter_record.snapshot_id() {
                 if iter_record_id == snapshot_id {
-                    println!("RETURN TRUE");
                     return Ok(true);
                 }
             }
         }
-        println!("RETURN FALSE");
         Ok(false)
     }
 

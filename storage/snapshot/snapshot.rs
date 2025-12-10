@@ -373,21 +373,27 @@ impl<D> WriteSnapshot<D> {
         storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
     ) -> Self {
-        Self::new(storage, OperationsBuffer::new(), open_sequence_number)
+        Self::new(storage, OperationsBuffer::new(), open_sequence_number, None)
     }
 
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
-        Self::new(storage, commit_record.into_operations(), open_sequence_number)
+        let snapshot_id = commit_record.snapshot_id();
+        Self::new(storage, commit_record.into_operations(), open_sequence_number, snapshot_id)
     }
 
-    fn new(storage: Arc<MVCCStorage<D>>, operations: OperationsBuffer, open_sequence_number: SequenceNumber) -> Self {
+    fn new(
+        storage: Arc<MVCCStorage<D>>,
+        operations: OperationsBuffer,
+        open_sequence_number: SequenceNumber,
+        snapshot_id: Option<SnapshotId>,
+    ) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
         WriteSnapshot {
             storage,
             operations,
             open_sequence_number,
-            snapshot_id: SnapshotId::new(open_sequence_number),
+            snapshot_id: snapshot_id.unwrap_or_else(|| SnapshotId::new()),
             iterator_pool: IteratorPool::new(),
         }
     }
@@ -551,21 +557,27 @@ impl<D> SchemaSnapshot<D> {
         storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
     ) -> Self {
-        Self::new(storage, OperationsBuffer::new(), open_sequence_number)
+        Self::new(storage, OperationsBuffer::new(), open_sequence_number, None)
     }
 
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
-        Self::new(storage, commit_record.into_operations(), open_sequence_number)
+        let snapshot_id = commit_record.snapshot_id();
+        Self::new(storage, commit_record.into_operations(), open_sequence_number, snapshot_id)
     }
 
-    fn new(storage: Arc<MVCCStorage<D>>, operations: OperationsBuffer, open_sequence_number: SequenceNumber) -> Self {
+    fn new(
+        storage: Arc<MVCCStorage<D>>,
+        operations: OperationsBuffer,
+        open_sequence_number: SequenceNumber,
+        snapshot_id: Option<SnapshotId>,
+    ) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
         SchemaSnapshot {
             storage,
             operations,
             open_sequence_number,
-            snapshot_id: SnapshotId::new(open_sequence_number),
+            snapshot_id: snapshot_id.unwrap_or_else(|| SnapshotId::new()),
             iterator_pool: IteratorPool::new(),
         }
     }
@@ -575,7 +587,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     const IMMUTABLE_SCHEMA: bool = false;
 
     fn open_sequence_number(&self) -> SequenceNumber {
-        self.snapshot_id.sequence_number()
+        self.open_sequence_number
     }
 
     /// Get the Value for the key, returning an empty Option if it does not exist
@@ -701,8 +713,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
                 SnapshotError::Commit { typedb_source: MVCCRead { name: self.storage.name.clone(), source: error } }
             })?;
             commit_profile.snapshot_put_statuses_checked();
-            let open_sequence_number = self.snapshot_id.sequence_number();
-            Ok(Some(CommitRecord::new(self.operations, open_sequence_number, CommitType::Schema)))
+            Ok(Some(CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Schema)))
         }
     }
 }

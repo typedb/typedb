@@ -187,10 +187,7 @@ impl DurabilityRecord for CommitRecord {
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
         match bincode::deserialize::<CommitRecord>(&buf) {
-            Ok(record) => {
-                println!("DESERIALISE RECORDS: {record:?}");
-                Ok(record)
-            },
+            Ok(record) => Ok(record),
             Err(_error) => {
                 // fallback to legacy
                 bincode::deserialize::<LegacyCommitRecordV1>(&buf).map(|legacy| CommitRecord::from(legacy))
