@@ -290,7 +290,7 @@ docker_container_image(
     operating_system = "linux",
     architecture = "amd64",
     base = "@typedb-ubuntu-x86_64//image",
-    cmd = ["/opt/typedb-server-linux-x86_64/typedb", "server"],
+    cmd = ["/opt/typedb-server-linux-x86_64/typedb", "server", "--storage.data-directory=/var/lib/typedb/data"],
     directory = "opt",
     env = {
         "LANG": "C.UTF-8",
@@ -299,7 +299,7 @@ docker_container_image(
     ports = ["1729", "8000"],
     tars = [":assemble-server-linux-x86_64-targz"],
     visibility = ["//test:__subpackages__"],
-    volumes = ["/opt/typedb-server-linux-x86_64/server/data/"],
+    volumes = ["/var/lib/typedb/data/"],
     workdir = "/opt/typedb-server-linux-x86_64",
     target_compatible_with = constraint_linux_x86_64,
 )
@@ -309,7 +309,7 @@ docker_container_image(
     operating_system = "linux",
     architecture = "arm64",
     base = "@typedb-ubuntu-arm64//image",
-    cmd = ["/opt/typedb-server-linux-arm64/typedb", "server"],
+    cmd = ["/opt/typedb-server-linux-arm64/typedb", "server", "--storage.data-directory=/var/lib/typedb/data"],
     directory = "opt",
     env = {
         "LANG": "C.UTF-8",
@@ -318,7 +318,7 @@ docker_container_image(
     ports = ["1729", "8000"],
     tars = [":assemble-server-linux-arm64-targz"],
     visibility = ["//test:__subpackages__"],
-    volumes = ["/opt/typedb-server-linux-arm64/server/data/"],
+    volumes = ["/var/lib/typedb/data/"],
     workdir = "/opt/typedb-server-linux-arm64",
     target_compatible_with = constraint_linux_arm64,
 )
