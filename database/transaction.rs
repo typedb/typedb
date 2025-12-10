@@ -217,7 +217,9 @@ pub struct TransactionSchema<D> {
 
 impl<D: DurabilityClient> TransactionSchema<D> {
     pub fn open(database: Arc<Database<D>>, transaction_options: TransactionOptions) -> Result<Self, TransactionError> {
+        println!("Reserving schema tx...");
         database.reserve_schema_transaction(transaction_options.schema_lock_acquire_timeout_millis)?;
+        println!("SUCCESS RESERVE!!");
 
         let snapshot: SchemaSnapshot<D> = database.storage.clone().open_snapshot_schema();
         let type_manager = Arc::new(TypeManager::new(
