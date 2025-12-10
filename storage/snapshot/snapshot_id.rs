@@ -8,31 +8,19 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::{Deserialize, Serialize};
 
-use crate::sequence_number::SequenceNumber;
-
 static UNIQUE_ID_GEN: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SnapshotId {
-    /// Sequence number at which the snapshot was opened.
-    /// This lets us efficiently seek into the WAL when checking idempotency.
-    sequence_number: SequenceNumber,
-
-    /// Per-open-sequence unique value (can be an external monotonic counter).
-    unique_id: u64,
+    number: u64,
 }
 
 impl SnapshotId {
-    pub fn new(sequence_number: SequenceNumber) -> Self {
-        let unique_id = UNIQUE_ID_GEN.fetch_add(1, Ordering::Relaxed);
-        Self { sequence_number, unique_id }
+    pub fn new() -> Self {
+        Self { number: UNIQUE_ID_GEN.fetch_add(1, Ordering::Relaxed) }
     }
 
-    pub fn sequence_number(&self) -> SequenceNumber {
-        self.sequence_number
-    }
-
-    pub fn unique_id(&self) -> u64 {
-        self.unique_id
+    pub fn number(&self) -> u64 {
+        self.number
     }
 }

@@ -11,6 +11,7 @@ use concurrency::{IntervalRunner, TokioTaskSpawner};
 use database::{database_manager::DatabaseManager, transaction::TransactionRead, Database};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use itertools::Itertools;
+use durability::DurabilitySequenceNumber;
 use options::TransactionOptions;
 use resource::{
     constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo, profile::CommitProfile,
@@ -105,6 +106,7 @@ pub trait ServerState: Debug {
     async fn database_commit_record_exists(
         &self,
         name: &str,
+        open_sequence_number: DurabilitySequenceNumber,
         snapshot_id: SnapshotId,
     ) -> Result<bool, ArcServerStateError>;
 
@@ -513,12 +515,13 @@ impl ServerState for LocalServerState {
     async fn database_commit_record_exists(
         &self,
         name: &str,
+        open_sequence_number: DurabilitySequenceNumber,
         snapshot_id: SnapshotId,
     ) -> Result<bool, ArcServerStateError> {
         let Some(database) = self.databases_get_unrestricted(name).await? else {
             return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
         };
-        database.commit_record_exists(snapshot_id).map_err(|typedb_source| {
+        database.commit_record_exists(open_sequence_number, snapshot_id).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::DatabaseCommitRecordExistsFailed { typedb_source })
         })
     }
