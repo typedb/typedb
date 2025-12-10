@@ -77,8 +77,9 @@ impl CommitRecord {
         operations: OperationsBuffer,
         open_sequence_number: SequenceNumber,
         commit_type: CommitType,
+        snapshot_id: SnapshotId,
     ) -> CommitRecord {
-        CommitRecord { operations, open_sequence_number, commit_type, snapshot_id: Some(SnapshotId::new()) }
+        CommitRecord { operations, open_sequence_number, commit_type, snapshot_id: Some(snapshot_id) }
     }
 
     pub fn operations(&self) -> &OperationsBuffer {

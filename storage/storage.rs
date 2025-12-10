@@ -645,7 +645,7 @@ mod tests {
         record::{CommitRecord, CommitType},
         snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
-        MVCCStorage,
+        MVCCStorage, SnapshotId,
     };
 
     macro_rules! test_keyspace_set {
@@ -692,7 +692,12 @@ mod tests {
             let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
             durability_client.register_record_type::<CommitRecord>();
             let seq = durability_client
-                .sequenced_write(&CommitRecord::new(full_operations, durability_client.previous(), CommitType::Data))
+                .sequenced_write(&CommitRecord::new(
+                    full_operations,
+                    durability_client.previous(),
+                    CommitType::Data,
+                    SnapshotId::new(),
+                ))
                 .unwrap();
 
             let partial_commit = WriteBatches::from_operations(seq, &partial_operations);
