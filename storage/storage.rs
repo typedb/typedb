@@ -292,12 +292,15 @@ impl<Durability> MVCCStorage<Durability> {
 
         while let Some(entry) = iter.next() {
             let (_, iter_record) = entry?;
+            println!("Iter record: {iter_record:?}");
             if let Some(iter_record_id) = iter_record.snapshot_id() {
                 if iter_record_id == snapshot_id {
+                    println!("RETURN TRUE");
                     return Ok(true);
                 }
             }
         }
+        println!("RETURN FALSE");
         Ok(false)
     }
 
