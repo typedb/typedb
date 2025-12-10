@@ -40,7 +40,12 @@ struct LegacyCommitRecordV1 {
 
 impl From<LegacyCommitRecordV1> for CommitRecord {
     fn from(legacy: LegacyCommitRecordV1) -> Self {
-        CommitRecord::new(legacy.operations, legacy.open_sequence_number, legacy.commit_type)
+        CommitRecord {
+            operations: legacy.operations,
+            open_sequence_number: legacy.open_sequence_number,
+            commit_type: legacy.commit_type,
+            snapshot_id: None,
+        }
     }
 }
 
@@ -73,8 +78,7 @@ impl CommitRecord {
         open_sequence_number: SequenceNumber,
         commit_type: CommitType,
     ) -> CommitRecord {
-        let snapshot_id = Some(SnapshotId::new(open_sequence_number));
-        CommitRecord { operations, open_sequence_number, commit_type, snapshot_id: snapshot_id }
+        CommitRecord { operations, open_sequence_number, commit_type, snapshot_id: Some(SnapshotId::new()) }
     }
 
     pub fn operations(&self) -> &OperationsBuffer {
