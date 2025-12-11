@@ -36,6 +36,7 @@ use crate::{
     service::{
         export_service::{get_transaction_schema, get_transaction_type_schema},
         grpc::migration::import_service::DatabaseImportService,
+        TransactionType,
     },
     status::{LocalServerStatus, ServerStatus},
     system_init::SYSTEM_DB,
@@ -77,6 +78,12 @@ pub trait ServerState: Debug {
     async fn databases_get_unrestricted(
         &self,
         name: &str,
+    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
+
+    async fn databases_get_for_transaction(
+        &self,
+        name: &str,
+        transaction_type: TransactionType,
     ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
 
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError>;
@@ -448,6 +455,15 @@ impl ServerState for LocalServerState {
         name: &str,
     ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
         Ok(self.database_manager.database_unrestricted(name))
+    }
+
+    async fn databases_get_for_transaction(
+        &self,
+        name: &str,
+        _transaction_type: TransactionType,
+    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
+        // TODO: get unrestricted or restricted?
+        self.databases_get_unrestricted(name).await
     }
 
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError> {

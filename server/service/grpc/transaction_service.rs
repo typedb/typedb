@@ -81,7 +81,7 @@ use crate::{
             commit_schema_transaction, commit_write_transaction, init_transaction_timeout, is_write_pipeline,
             with_readable_transaction, Transaction, TransactionServiceError,
         },
-        IncludeInvolvedBlocks,
+        IncludeInvolvedBlocks, TransactionType,
     },
     state::ArcServerState,
 };
@@ -408,13 +408,15 @@ impl TransactionService {
         let transaction_options = transaction_options_from_proto(open_req.options);
         let transaction_timeout_millis = transaction_options.transaction_timeout_millis;
 
-        let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type)
-            .map_err(|_| ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status())?;
+        let transaction_type =
+            decode_transaction_type(typedb_protocol::transaction::Type::try_from(open_req.r#type).map_err(|_| {
+                ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status()
+            })?);
 
         let database_name = open_req.database;
         let database = self
             .server_state
-            .databases_get_unrestricted(database_name.as_ref())
+            .databases_get_for_transaction(database_name.as_ref(), transaction_type)
             .await
             .map_err(|typedb_source| typedb_source.into_error_message().into_status())?
             .ok_or_else(|| {
@@ -424,7 +426,7 @@ impl TransactionService {
             })?;
 
         let transaction = match transaction_type {
-            typedb_protocol::transaction::Type::Read => {
+            TransactionType::Read => {
                 let transaction = spawn_blocking(move || {
                     TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
@@ -434,7 +436,7 @@ impl TransactionService {
                 .unwrap()?;
                 Transaction::Read(transaction)
             }
-            typedb_protocol::transaction::Type::Write => {
+            TransactionType::Write => {
                 let transaction = spawn_blocking(move || {
                     TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
@@ -444,7 +446,7 @@ impl TransactionService {
                 .unwrap()?;
                 Transaction::Write(transaction)
             }
-            typedb_protocol::transaction::Type::Schema => {
+            TransactionType::Schema => {
                 let transaction = spawn_blocking(move || {
                     TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
@@ -1411,6 +1413,14 @@ impl TransactionService {
 
     fn get_database_name(&self) -> Option<&str> {
         self.transaction.as_ref().map(Transaction::database_name)
+    }
+}
+
+fn decode_transaction_type(transaction_type: typedb_protocol::transaction::Type) -> TransactionType {
+    match transaction_type {
+        typedb_protocol::transaction::Type::Read => TransactionType::Read,
+        typedb_protocol::transaction::Type::Write => TransactionType::Write,
+        typedb_protocol::transaction::Type::Schema => TransactionType::Schema,
     }
 }
 
