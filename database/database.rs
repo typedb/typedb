@@ -40,7 +40,7 @@ use query::query_cache::QueryCache;
 use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
+    recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError, CheckpointWriter},
     sequence_number::SequenceNumber,
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
@@ -318,7 +318,7 @@ impl Database<WALClient> {
         wal_client.register_record_type::<Statistics>();
 
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
-        let checkpoint = Checkpoint::open_latest(path)
+        let checkpoint = Checkpoint::open_latest::<EncodingKeyspace>(path)
             .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
         let storage = Arc::new(
             MVCCStorage::load::<EncodingKeyspace>(&name, path, wal_client, &checkpoint)
@@ -400,7 +400,7 @@ impl Database<WALClient> {
     }
 
     fn checkpoint(&self) -> Result<(), CheckpointCreateError> {
-        let checkpoint = Checkpoint::new(&self.path)?;
+        let checkpoint = CheckpointWriter::new(&self.path)?;
         self.storage.checkpoint(&checkpoint)?;
         checkpoint.finish()?;
         Ok(())
@@ -494,7 +494,7 @@ fn make_checkpoint_fn(
     move || {
         let watermark = storage.snapshot_watermark();
         if prev_checkpoint < watermark {
-            let checkpoint = Checkpoint::new(&path).unwrap();
+            let checkpoint = CheckpointWriter::new(&path).unwrap();
             storage.checkpoint(&checkpoint).unwrap();
             checkpoint.finish().unwrap();
             prev_checkpoint = watermark;

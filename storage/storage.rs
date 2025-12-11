@@ -42,7 +42,7 @@ use crate::{
         KeyspaceSet, Keyspaces,
     },
     recovery::{
-        checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
+        checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError, CheckpointWriter},
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
@@ -348,7 +348,7 @@ impl<Durability> MVCCStorage<Durability> {
         self.keyspaces.get(keyspace_id)
     }
 
-    pub fn checkpoint(&self, checkpoint: &Checkpoint) -> Result<(), CheckpointCreateError> {
+    pub fn checkpoint(&self, checkpoint: &CheckpointWriter) -> Result<(), CheckpointCreateError> {
         checkpoint.add_storage(&self.keyspaces, self.snapshot_watermark())
     }
 
