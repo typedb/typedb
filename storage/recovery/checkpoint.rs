@@ -26,6 +26,10 @@ use crate::{
     sequence_number::SequenceNumber,
 };
 
+const CHECKPOINT_DIR_NAME: &str = "checkpoint";
+const STORAGE_METADATA_FILE_NAME: &str = "STORAGE_METADATA";
+const TEMP_FILE_EXTENSION: &str = "tmp";
+
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
 /// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
 /// have to reapply commits to the keyspaces from the WAL.
@@ -34,85 +38,36 @@ pub struct Checkpoint {
 }
 
 impl Checkpoint {
-    const CHECKPOINT_DIR_NAME: &'static str = "checkpoint";
-    const STORAGE_METADATA_FILE_NAME: &'static str = "STORAGE_METADATA";
+    pub fn open_latest<KS: KeyspaceSet>(storage_path: &Path) -> Result<Option<Self>, CheckpointLoadError> {
+        use CheckpointLoadError::CheckpointRead;
 
-    pub fn new(storage_path: &Path) -> Result<Self, CheckpointCreateError> {
-        use CheckpointCreateError::CheckpointDirCreate;
-
-        let checkpoint_dir = storage_path.join(Self::CHECKPOINT_DIR_NAME);
+        let checkpoint_dir = storage_path.join(CHECKPOINT_DIR_NAME);
         if !checkpoint_dir.exists() {
-            fs::create_dir_all(&checkpoint_dir)
-                .map_err(|error| CheckpointDirCreate { dir: checkpoint_dir.clone(), source: Arc::new(error) })?
+            return Ok(None);
         }
 
-        let current_checkpoint_dir = checkpoint_dir.join(format!("{}", Utc::now().timestamp_micros()));
-        fs::create_dir_all(&current_checkpoint_dir)
-            .map_err(|error| CheckpointDirCreate { dir: checkpoint_dir.clone(), source: Arc::new(error) })?;
+        fs::read_dir(&checkpoint_dir)
+            .and_then(|mut entries| {
+                entries.try_fold(None, |cur, entry| {
+                    let path = entry?.path();
+                    if path.extension() == Some(TEMP_FILE_EXTENSION.as_ref()) {
+                        // skip unfinished checkpoint
+                        return Ok(cur);
+                    }
 
-        Ok(Checkpoint { directory: current_checkpoint_dir })
-    }
+                    if cur.as_ref().is_some_and(|cur: &Checkpoint| cur.directory > path) {
+                        return Ok(cur);
+                    }
 
-    pub fn add_storage(&self, keyspaces: &Keyspaces, watermark: SequenceNumber) -> Result<(), CheckpointCreateError> {
-        use CheckpointCreateError::{KeyspaceCheckpoint, MetadataFileCreate, MetadataWrite};
-        keyspaces
-            .checkpoint(&self.directory)
-            .map_err(|error| KeyspaceCheckpoint { dir: self.directory.clone(), source: error })?;
-
-        let metadata_file_path = self.directory.join(Self::STORAGE_METADATA_FILE_NAME);
-        let mut metadata_file = File::create(&metadata_file_path)
-            .map_err(|error| MetadataFileCreate { file_path: metadata_file_path.clone(), source: Arc::new(error) })?;
-        metadata_file
-            .write_all(watermark.number().to_string().as_bytes())
-            .and_then(|()| metadata_file.sync_all())
-            .map_err(|error| MetadataWrite { file_path: metadata_file_path.clone(), source: Arc::new(error) })?;
-        Ok(())
-    }
-
-    pub fn add_extension<T: CheckpointAdditionalData>(&self, data: &T) -> Result<(), CheckpointCreateError> {
-        use CheckpointCreateError::{ExtensionDuplicate, ExtensionIO, ExtensionSerialise};
-        let file_name = T::NAME;
-        let path = self.directory.join(file_name);
-        if path.exists() {
-            return Err(ExtensionDuplicate { name: T::NAME.to_string() });
-        }
-
-        let mut file =
-            File::create(path).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
-
-        data.serialise_into(&mut file)
-            .map_err(|err| ExtensionSerialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
-
-        Ok(())
-    }
-
-    pub fn finish(&self) -> Result<(), CheckpointCreateError> {
-        use CheckpointCreateError::{CheckpointDirRead, MissingStorageData, OldCheckpointRemove};
-
-        if !self.directory.join(Self::STORAGE_METADATA_FILE_NAME).exists() {
-            return Err(MissingStorageData { dir: self.directory.clone() });
-        }
-
-        let previous_checkpoints: Vec<_> = fs::read_dir(self.directory.parent().unwrap())
-            .and_then(|entries| {
-                entries
-                    .map_ok(|entry| entry.path())
-                    .filter(|path| path.is_ok() && path.as_ref().unwrap() != &self.directory)
-                    .try_collect()
+                    let checkpoint = Checkpoint { directory: path };
+                    if checkpoint.is_consistent::<KS>()? {
+                        Ok(Some(checkpoint))
+                    } else {
+                        Ok(cur)
+                    }
+                })
             })
-            .map_err(|error| CheckpointDirRead { dir: self.directory.clone(), source: Arc::new(error) })?;
-
-        for previous_checkpoint in previous_checkpoints {
-            fs::remove_dir_all(&previous_checkpoint)
-                .map_err(|error| OldCheckpointRemove { dir: previous_checkpoint, source: Arc::new(error) })?
-        }
-
-        Ok(())
-    }
-
-    pub fn open_latest(storage_path: &Path) -> Result<Option<Self>, CheckpointLoadError> {
-        let checkpoint_dir = storage_path.join(Self::CHECKPOINT_DIR_NAME);
-        find_latest_checkpoint(&checkpoint_dir).map(|path| path.map(|p| Checkpoint { directory: p }))
+            .map_err(|error| CheckpointRead { dir: checkpoint_dir, source: Arc::new(error) })
     }
 
     pub fn get_additional_data<T: CheckpointAdditionalData>(&self) -> Result<T, CheckpointLoadError> {
@@ -169,12 +124,29 @@ impl Checkpoint {
     pub fn read_sequence_number(&self) -> Result<SequenceNumber, CheckpointLoadError> {
         use CheckpointLoadError::MetadataRead;
 
-        let metadata_file_path = self.directory.join(Self::STORAGE_METADATA_FILE_NAME);
+        let metadata_file_path = self.directory.join(STORAGE_METADATA_FILE_NAME);
         let metadata = fs::read_to_string(metadata_file_path)
             .map_err(|error| MetadataRead { dir: self.directory.clone(), source: Arc::new(error) })?;
         Ok(SequenceNumber::new(
             metadata.parse().expect("Could not read METADATA file (could try to restore from previous checkpoint)"),
         ))
+    }
+
+    fn is_consistent<KS: KeyspaceSet>(&self) -> io::Result<bool> {
+        if !self.directory.is_dir() {
+            return Ok(false);
+        }
+        if !self.directory.join(STORAGE_METADATA_FILE_NAME).exists() {
+            return Ok(false);
+        }
+        for keyspace in KS::iter() {
+            let keyspace_checkpoint_dir = self.directory.join(keyspace.name());
+            if !fs::exists(keyspace_checkpoint_dir)? {
+                return Ok(false);
+            }
+        }
+        let metadata_file_path = self.directory.join(STORAGE_METADATA_FILE_NAME);
+        fs::exists(metadata_file_path)
     }
 }
 
@@ -193,24 +165,114 @@ fn restore_storage_from_checkpoint(keyspace_dir: PathBuf, keyspace_checkpoint_di
         let checkpoint_file = entry?.path();
         let storage_file = keyspace_dir.join(checkpoint_file.file_name().unwrap());
         if !storage_file.exists() || !is_same_file(&storage_file, &checkpoint_file)? {
-            fs::copy(checkpoint_file, storage_file)?;
+            copy_file(&checkpoint_file, &storage_file)?;
         }
     }
 
     Ok(())
 }
 
-fn find_latest_checkpoint(checkpoint_dir: &Path) -> Result<Option<PathBuf>, CheckpointLoadError> {
-    if !checkpoint_dir.exists() {
-        return Ok(None);
+/// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
+/// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
+/// have to reapply commits to the keyspaces from the WAL.
+pub struct CheckpointWriter {
+    pub checkpoint_directory: PathBuf,
+    pub temporary_directory: PathBuf,
+}
+
+impl CheckpointWriter {
+    pub fn new(storage_path: &Path) -> Result<Self, CheckpointCreateError> {
+        use CheckpointCreateError::CheckpointDirCreate;
+
+        let checkpoint_dir = storage_path.join(CHECKPOINT_DIR_NAME);
+        if !checkpoint_dir.exists() {
+            fs::create_dir_all(&checkpoint_dir)
+                .map_err(|error| CheckpointDirCreate { dir: checkpoint_dir.clone(), source: Arc::new(error) })?
+        }
+
+        let checkpoint_directory = checkpoint_dir.join(format!("{}", Utc::now().timestamp_micros(),));
+        let temporary_directory = checkpoint_directory.with_extension(TEMP_FILE_EXTENSION);
+        fs::create_dir_all(&temporary_directory)
+            .map_err(|error| CheckpointDirCreate { dir: checkpoint_dir.clone(), source: Arc::new(error) })?;
+
+        Ok(Self { checkpoint_directory, temporary_directory })
     }
 
-    fs::read_dir(checkpoint_dir)
-        .and_then(|mut entries| entries.try_fold(None, |cur, entry| Ok(cur.max(Some(entry?.path())))))
-        .map_err(|error| CheckpointLoadError::CheckpointRead {
-            dir: checkpoint_dir.to_owned(),
-            source: Arc::new(error),
-        })
+    pub fn add_storage(&self, keyspaces: &Keyspaces, watermark: SequenceNumber) -> Result<(), CheckpointCreateError> {
+        use CheckpointCreateError::{KeyspaceCheckpoint, MetadataWrite};
+
+        keyspaces
+            .checkpoint(&self.temporary_directory)
+            .map_err(|error| KeyspaceCheckpoint { dir: self.temporary_directory.clone(), source: error })?;
+
+        let metadata_file_path = self.temporary_directory.join(STORAGE_METADATA_FILE_NAME);
+        write_file(&metadata_file_path, watermark.number().to_string().as_bytes())
+            .map_err(|e| MetadataWrite { file_path: metadata_file_path, source: Arc::new(e) })?;
+
+        Ok(())
+    }
+
+    pub fn add_extension<T: CheckpointAdditionalData>(&self, data: &T) -> Result<(), CheckpointCreateError> {
+        use CheckpointCreateError::{ExtensionDuplicate, ExtensionIO, ExtensionSerialise};
+        let file_name = T::NAME;
+        let path = self.temporary_directory.join(file_name);
+        if path.exists() {
+            return Err(ExtensionDuplicate { name: T::NAME.to_string() });
+        }
+
+        let tmp = path.with_extension(TEMP_FILE_EXTENSION);
+        {
+            let mut file =
+                File::create(&tmp).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
+            data.serialise_into(&mut file)
+                .map_err(|err| ExtensionSerialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
+        }
+        fs::rename(&tmp, &path).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
+
+        Ok(())
+    }
+
+    pub fn finish(self) -> Result<(), CheckpointCreateError> {
+        use CheckpointCreateError::{CheckpointDirCreate, CheckpointDirRead, MissingStorageData, OldCheckpointRemove};
+
+        if !self.temporary_directory.join(STORAGE_METADATA_FILE_NAME).exists() {
+            return Err(MissingStorageData { dir: self.temporary_directory.clone() });
+        }
+
+        let previous_checkpoints: Vec<_> = fs::read_dir(self.temporary_directory.parent().unwrap())
+            .and_then(|entries| {
+                entries
+                    .map_ok(|entry| entry.path())
+                    .filter(|path| path.is_ok() && path.as_ref().unwrap() != &self.temporary_directory)
+                    .try_collect()
+            })
+            .map_err(|error| CheckpointDirRead { dir: self.temporary_directory.clone(), source: Arc::new(error) })?;
+
+        for previous_checkpoint in previous_checkpoints {
+            fs::remove_dir_all(&previous_checkpoint)
+                .map_err(|error| OldCheckpointRemove { dir: previous_checkpoint, source: Arc::new(error) })?
+        }
+
+        fs::rename(self.temporary_directory, &self.checkpoint_directory)
+            .map_err(|error| CheckpointDirCreate { dir: self.checkpoint_directory, source: Arc::new(error) })?;
+
+        Ok(())
+    }
+}
+
+fn write_file(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    let mut file = File::create(path)?;
+    file.write_all(bytes)?;
+    file.sync_all()?;
+    Ok(())
+}
+
+fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
+    let mut source_file = File::open(source)?;
+    let mut destination_file = File::create(destination)?;
+    io::copy(&mut source_file, &mut destination_file)?;
+    destination_file.sync_all()?;
+    Ok(())
 }
 
 pub trait CheckpointAdditionalData: Sized {
