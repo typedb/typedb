@@ -20,11 +20,43 @@ Feature: Debugging Space
 
     Given connection open write transaction for database: typedb
 
-  Scenario: Debug test
-    When typeql read query
+  Scenario: Min and Max with integers, decimals, and doubles
+    When get answers of typeql read query
       """
-      match 
-      let $x = min(10, 12);
-      let $y = max(10, 12);
-      select $x, $y;
+      match
+        let $a = max(2, -3);
+        let $b = min(2, -3);
+        let $c = max(10.2dec, 13.5dec);
+        let $d = min(10.2dec, 13.5dec);
+        let $e = max(10.2, 13.5);
+        let $f = min(10.2, 13.5);
+      select
+        $a, $b, $c, $d, $e, $f;
+      """
+    Then uniquely identify answer concepts
+      | a                | b                 | c                  | d                  | e                | f                |
+      | value:integer:2  | value:integer:-3  | value:decimal:13.5dec | value:decimal:10.2dec | value:double:13.5 | value:double:10.2 |
+    Then typeql read query; fails with a message containing: "Built-in expression function 'min' expects '2' arguments but received '0' arguments."
+      """
+      match let $x = min();
+      """
+    Then typeql read query; fails with a message containing: "Built-in expression function 'min' expects '2' arguments but received '1' arguments."
+      """
+      match let $x = min(10);
+      """
+    Then typeql read query; fails with a message containing: "Built-in expression function 'min' expects '2' arguments but received '3' arguments."
+      """
+      match let $x = min(10, 12, 14);
+      """
+    Then typeql read query; fails with a message containing: "Built-in expression function 'max' expects '2' arguments but received '0' arguments."
+      """
+      match let $x = max();
+      """
+    Then typeql read query; fails with a message containing: "Built-in expression function 'max' expects '2' arguments but received '1' arguments."
+      """
+      match let $x = max(10);
+      """
+    Then typeql read query; fails with a message containing: "Built-in expression function 'max' expects '2' arguments but received '3' arguments."
+      """
+      match let $x = max(10, 12, 14);
       """

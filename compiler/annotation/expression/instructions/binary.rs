@@ -91,11 +91,11 @@ pub(crate) use binary_instruction;
 
 binary_instruction! {
     MathRemainderInteger = MathRemainderIntegerImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }
-    
+
     MathMinIntegerInteger = MathMinIntegerIntegerImpl(a1: i64, a2: i64) -> i64 { Ok(cmp::min(a1, a2)) }
     MathMinDoubleDouble = MathMinDoubleDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(f64::min(a1, a2)) }
     MathMinDecimalDecimal = MathMinDecimalDecimalImpl(a1: Decimal, a2: Decimal) -> Decimal { Ok(cmp::min(a1, a2)) }
-    
+
     MathMaxIntegerInteger = MathMaxIntegerIntegerImpl(a1: i64, a2: i64) -> i64 { Ok(cmp::max(a1, a2)) }
     MathMaxDoubleDouble = MathMaxDoubleDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(f64::max(a1, a2)) }
     MathMaxDecimalDecimal = MathMaxDecimalDecimalImpl(a1: Decimal, a2: Decimal) -> Decimal { Ok(cmp::max(a1, a2)) }
