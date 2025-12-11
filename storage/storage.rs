@@ -297,7 +297,7 @@ impl<Durability> MVCCStorage<Durability> {
         while let Some(entry) = iter.next() {
             let (_, iter_record) = entry?;
             if let Some(iter_record_id) = iter_record.snapshot_id() {
-                if iter_record_id == snapshot_id {
+                if iter_record_id == snapshot_id && iter_record.open_sequence_number() == open_sequence_number {
                     return Ok(true);
                 }
             }

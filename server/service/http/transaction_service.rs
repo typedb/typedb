@@ -254,9 +254,9 @@ impl TransactionService {
 
         let database = self
             .server_state
-            .database_manager()
+            .databases_get_for_transaction(database_name.as_str(), type_)
             .await
-            .database(database_name.as_ref())
+            .map_err(|typedb_source | TransactionServiceError::CannotOpen { typedb_source })?
             .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name.clone() })?;
 
         let transaction = match type_ {
