@@ -26,6 +26,10 @@ use typeql::common::Span;
 use crate::annotation::expression::{
     compiled_expression::{ExecutableExpression, ExpressionValueType},
     instructions::{
+        binary::{
+            MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger, MathMinDecimalDecimal,
+            MathMinDoubleDouble, MathMinIntegerInteger,
+        },
         list_operations,
         load_cast::{
             CastLeftDecimalToDouble, CastLeftIntegerToDecimal, CastLeftIntegerToDouble, CastRightDecimalToDouble,
@@ -531,6 +535,66 @@ impl<'this> ExpressionCompilationContext<'this> {
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                         function: builtin.builtin_id(),
                         category: self.peek_type_single()?.category(),
+                        source_span: builtin.source_span(),
+                    })?,
+                }
+            }
+            BuiltInFunctionID::Min => {
+                // Compile second argument first (it's on the stack first)
+                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[1]))?;
+                // Compile first argument
+                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
+                // Peek at both arguments without popping (arg2 is on top, arg1 is below)
+                let arg2_category = self.peek_type_single()?.category();
+                let arg2_type = self.pop_type()?;
+                let arg1_category = self.peek_type_single()?.category();
+                // Push arg2 back
+                self.type_stack.push(arg2_type);
+                // Both arguments must have the same type category
+                if arg1_category != arg2_category {
+                    return Err(Box::new(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
+                        function: builtin.builtin_id(),
+                        category: arg1_category,
+                        source_span: builtin.source_span(),
+                    }));
+                }
+                match arg1_category {
+                    ValueTypeCategory::Integer => MathMinIntegerInteger::validate_and_append(self)?,
+                    ValueTypeCategory::Double => MathMinDoubleDouble::validate_and_append(self)?,
+                    ValueTypeCategory::Decimal => MathMinDecimalDecimal::validate_and_append(self)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
+                        function: builtin.builtin_id(),
+                        category: arg1_category,
+                        source_span: builtin.source_span(),
+                    })?,
+                }
+            }
+            BuiltInFunctionID::Max => {
+                // Compile second argument first (it's on the stack first)
+                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[1]))?;
+                // Compile first argument
+                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
+                // Peek at both arguments without popping (arg2 is on top, arg1 is below)
+                let arg2_category = self.peek_type_single()?.category();
+                let arg2_type = self.pop_type()?;
+                let arg1_category = self.peek_type_single()?.category();
+                // Push arg2 back
+                self.type_stack.push(arg2_type);
+                // Both arguments must have the same type category
+                if arg1_category != arg2_category {
+                    return Err(Box::new(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
+                        function: builtin.builtin_id(),
+                        category: arg1_category,
+                        source_span: builtin.source_span(),
+                    }));
+                }
+                match arg1_category {
+                    ValueTypeCategory::Integer => MathMaxIntegerInteger::validate_and_append(self)?,
+                    ValueTypeCategory::Double => MathMaxDoubleDouble::validate_and_append(self)?,
+                    ValueTypeCategory::Decimal => MathMaxDecimalDecimal::validate_and_append(self)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
+                        function: builtin.builtin_id(),
+                        category: arg1_category,
                         source_span: builtin.source_span(),
                     })?,
                 }

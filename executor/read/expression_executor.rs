@@ -10,7 +10,10 @@ use answer::{variable_value::VariableValue, Thing};
 use compiler::annotation::expression::{
     compiled_expression::ExecutableExpression,
     instructions::{
-        binary::{Binary, BinaryExpression, MathRemainderInteger},
+        binary::{
+            Binary, BinaryExpression, MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger,
+            MathMinDecimalDecimal, MathMinDoubleDouble, MathMinIntegerInteger, MathRemainderInteger,
+        },
         list_operations::{ListConstructor, ListIndex, ListIndexRange},
         load_cast::{
             CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftIntegerToDecimal,
@@ -216,6 +219,14 @@ fn evaluate_instruction(
         ExpressionOpCode::MathRoundDecimal => MathRoundDecimal::evaluate(state),
         ExpressionOpCode::MathCeilDecimal => MathCeilDecimal::evaluate(state),
         ExpressionOpCode::MathFloorDecimal => MathFloorDecimal::evaluate(state),
+
+        ExpressionOpCode::MathMinIntegerInteger => MathMinIntegerInteger::evaluate(state),
+        ExpressionOpCode::MathMinDoubleDouble => MathMinDoubleDouble::evaluate(state),
+        ExpressionOpCode::MathMinDecimalDecimal => MathMinDecimalDecimal::evaluate(state),
+
+        ExpressionOpCode::MathMaxIntegerInteger => MathMaxIntegerInteger::evaluate(state),
+        ExpressionOpCode::MathMaxDoubleDouble => MathMaxDoubleDouble::evaluate(state),
+        ExpressionOpCode::MathMaxDecimalDecimal => MathMaxDecimalDecimal::evaluate(state),
     }
 }
 

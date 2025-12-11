@@ -281,9 +281,9 @@ pub enum BuiltInFunctionID {
     Ceil,
     Floor,
     Round,
+    Max,
+    Min,
     // TODO: The below
-    // Max,
-    // Min,
     // Length
 }
 
@@ -304,6 +304,8 @@ impl fmt::Display for BuiltInFunctionID {
             BuiltInFunctionID::Ceil => fmt::Display::fmt(&typeql::token::Function::Ceil, f),
             BuiltInFunctionID::Floor => fmt::Display::fmt(&typeql::token::Function::Floor, f),
             BuiltInFunctionID::Round => fmt::Display::fmt(&typeql::token::Function::Round, f),
+            BuiltInFunctionID::Max => fmt::Display::fmt(&typeql::token::Function::Max, f),
+            BuiltInFunctionID::Min => fmt::Display::fmt(&typeql::token::Function::Min, f),
         }
     }
 }

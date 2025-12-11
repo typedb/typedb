@@ -4,5 +4,27 @@
 
 Feature: Debugging Space
 
-  # Paste any scenarios below for debugging.
-  # Do not commit any changes to this file.
+  Background: Open connection and create a simple extensible schema
+    Given typedb starts
+    Given connection opens with default authentication
+    Given connection is open: true
+    Given connection reset database: typedb
+    Given connection open schema transaction for database: typedb
+
+    Given typeql schema query
+      """
+      define
+      entity person;
+      """
+    Given transaction commits
+
+    Given connection open write transaction for database: typedb
+
+  Scenario: Debug test
+    When typeql read query
+      """
+      match 
+      let $x = min(10, 12);
+      let $y = max(10, 12);
+      select $x, $y;
+      """
