@@ -82,13 +82,21 @@ typedb_error! {
             category: ValueTypeCategory,
             source_span: Option<Span>,
         ),
-        ListIndexMustBeInteger(
+        UnsupportedDifferentArgumentForBuiltin(
             13,
+            "Built-in function '{function}' received one argument of type '{arg_1_category}' but another of type '{arg_2_category}'.",
+            function: BuiltInFunctionID,
+            arg_1_category: ValueTypeCategory,
+            arg_2_category: ValueTypeCategory,
+            source_span: Option<Span>,
+        ),
+        ListIndexMustBeInteger(
+            14,
             "List indices must be of integer type.",
             source_span: Option<Span>,
         ),
         HeterogeneusListConstructor(
-            14,
+            15,
             "Values in a constructed list must have the same types.",
             source_span: Option<Span>,
         ),
