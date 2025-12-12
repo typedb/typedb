@@ -20,9 +20,8 @@ features = {}
 		default-features = false
 
 [dependencies]
-serde = { version = "1.0.228", features = ["derive"] }
 
-[dependencies.tokio]
+	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
 		version = "1.48.0"
 		default-features = false

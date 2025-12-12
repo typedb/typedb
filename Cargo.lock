@@ -1218,7 +1218,6 @@ dependencies = [
  "query",
  "resource",
  "rocksdb",
- "serde",
  "storage",
  "test_utils",
  "tokio",
