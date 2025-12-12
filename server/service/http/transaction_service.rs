@@ -332,9 +332,15 @@ impl TransactionService {
                         self.do_close().await;
                         return;
                     }
-                    _ = self.close_receiver.recv() => {
-                        // TODO: what if None?
-                        event!(Level::TRACE, "Transaction close signal received, closing transaction service.");
+                    recv_message = self.close_receiver.recv() => {
+                        match recv_message {
+                            Some(()) => {
+                                event!(Level::TRACE, "Transaction close signal received, closing transaction service.");
+                            }
+                            None => {
+                                event!(Level::TRACE, "Close channel dropped; no more control possible. Closing transaction service.");
+                            }
+                        }
                         self.do_close().await;
                         return;
                     }

@@ -4,8 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt::Debug, net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
-use std::collections::HashSet;
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Debug,
+    net::SocketAddr,
+    path::PathBuf,
+    sync::Arc,
+    time::Duration,
+};
+
 use async_trait::async_trait;
 use concurrency::{IntervalRunner, IntervalTaskParameters, TokioTaskSpawner};
 use database::{
@@ -692,6 +699,8 @@ impl ServerState for LocalServerState {
             let commit_profile = transaction_profile.commit_profile();
             self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
             self.token_manager.invalidate_user(username).await;
+            // TODO: Store users as owners of transactions in TransactionInfo and close transactions
+            // when the user is invalidated!
         }
 
         Ok(())
@@ -717,6 +726,8 @@ impl ServerState for LocalServerState {
             let commit_profile = transaction_profile.commit_profile();
             self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
             self.token_manager.invalidate_user(username).await;
+            // TODO: Store users as owners of transactions in TransactionInfo and close transactions
+            // when the user is invalidated!
         }
 
         Ok(())
@@ -755,11 +766,8 @@ impl ServerState for LocalServerState {
     async fn transactions_close_types(&self, types: HashSet<TransactionType>) -> Result<(), ArcServerStateError> {
         let mut txs = self.transactions.write().await;
 
-        let to_close: Vec<_> = txs
-            .iter()
-            .filter(|(_, info)| types.contains(&info.transaction_type))
-            .map(|(id, _)| *id)
-            .collect();
+        let to_close: Vec<_> =
+            txs.iter().filter(|(_, info)| types.contains(&info.transaction_type)).map(|(id, _)| *id).collect();
 
         for id in to_close {
             if let Some(info) = txs.remove(&id) {

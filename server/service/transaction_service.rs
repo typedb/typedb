@@ -42,9 +42,9 @@ pub(crate) use with_readable_transaction;
 
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},
+    service::TransactionType,
     state::ArcServerState,
 };
-use crate::service::TransactionType;
 
 impl Transaction {
     pub fn id(&self) -> TransactionId {
