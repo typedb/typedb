@@ -75,7 +75,7 @@ impl Transaction {
         with_readable_transaction!(self, |transaction| { transaction.database.name() })
     }
 
-    pub fn close(self) -> () {
+    pub fn close(self) {
         match self {
             Transaction::Read(transaction) => transaction.close(),
             Transaction::Write(transaction) => transaction.close(),
