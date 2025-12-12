@@ -21,7 +21,7 @@ use database::{
         execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
         WriteQueryAnswer, WriteQueryResult,
     },
-    transaction::{SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::metrics::{ActionKind, ClientEndpoint, LoadKind};
 use executor::{
@@ -57,7 +57,6 @@ use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
 use crate::{
-    error::LocalServerStateError,
     service::{
         grpc::{
             analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
@@ -185,7 +184,7 @@ impl TransactionService {
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
-                        event!(Level::TRACE, match recv_message {
+                        event!(Level::TRACE, "{}", match recv_message {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
                         });
@@ -221,7 +220,7 @@ impl TransactionService {
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
-                        event!(Level::TRACE, match recv_message {
+                        event!(Level::TRACE, "{}", match recv_message {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
                         });

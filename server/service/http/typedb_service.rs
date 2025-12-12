@@ -30,7 +30,6 @@ use uuid::Uuid;
 
 use crate::{
     authentication::Accessor,
-    error::LocalServerStateError,
     service::{
         http::{
             diagnostics::run_with_diagnostics_async,
