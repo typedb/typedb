@@ -237,7 +237,6 @@ impl<Durability> MVCCStorage<Durability> {
             .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
         commit_profile.snapshot_durable_write_data_submitted();
-        println!("INSERTING COMMIT RECORD: {commit_record:?}");
 
         let sync_notifier = self.durability_client.request_sync();
         let validate_result =
@@ -284,7 +283,8 @@ impl<Durability> MVCCStorage<Durability> {
         }
     }
 
-    // Warning: this method scans the whole WAL starting from the snapshot_id's sequence number
+    // WARNING: this method scans the whole WAL starting from the snapshot_id's sequence number.
+    // WARNING: this method checks only the WAL, and records removed from the WAL will be missing.
     pub fn commit_record_exists(
         &self,
         open_sequence_number: DurabilitySequenceNumber,

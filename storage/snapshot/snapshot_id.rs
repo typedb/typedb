@@ -8,6 +8,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::{Deserialize, Serialize};
 
+// TODO: local generator is safe only if we don't allow opening snapshots at a not last seqnum
+// AND cluster allows only primary-bounded committable transactions.
 static UNIQUE_ID_GEN: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

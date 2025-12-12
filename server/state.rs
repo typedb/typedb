@@ -45,7 +45,6 @@ use user::{
     permission_manager::PermissionManager,
     user_manager::UserManager,
 };
-use uuid::Uuid;
 
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},

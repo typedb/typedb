@@ -333,14 +333,10 @@ impl TransactionService {
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
-                        match recv_message {
-                            Some(()) => {
-                                event!(Level::TRACE, "Transaction close signal received, closing transaction service.");
-                            }
-                            None => {
-                                event!(Level::TRACE, "Close channel dropped; no more control possible. Closing transaction service.");
-                            }
-                        }
+                        event!(Level::TRACE, match recv_message {
+                            Some(()) => "Transaction close signal received, closing transaction service.",
+                            None => "Close channel dropped; no more control possible. Closing transaction service.",
+                        });
                         self.do_close().await;
                         return;
                     }
@@ -366,6 +362,14 @@ impl TransactionService {
                 tokio::select! { biased;
                     _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
+                    recv_message = self.close_receiver.recv() => {
+                        event!(Level::TRACE, match recv_message {
+                            Some(()) => "Transaction close signal received, closing transaction service.",
+                            None => "Close channel dropped; no more control possible. Closing transaction service.",
+                        });
                         self.do_close().await;
                         return;
                     }
