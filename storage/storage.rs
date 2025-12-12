@@ -635,7 +635,7 @@ impl StorageOperation {
 mod tests {
     use bytes::byte_array::ByteArray;
     use durability::wal::WAL;
-    use resource::profile::StorageCounters;
+    use resource::profile::{CommitProfile, StorageCounters};
     use test_utils::{create_tmp_storage_dir, init_logging};
 
     use crate::{
@@ -645,7 +645,7 @@ mod tests {
         record::{CommitRecord, CommitType},
         snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
-        MVCCStorage, SnapshotId,
+        Arc, MVCCStorage, SnapshotId,
     };
 
     macro_rules! test_keyspace_set {
@@ -668,7 +668,7 @@ mod tests {
     }
 
     #[test]
-    fn test_recovery_from_partial_write() {
+    fn test_storage_recovery_from_partial_write() {
         test_keyspace_set! {
             PersistedKeyspace => 0: "write",
             FailedKeyspace => 1: "failed",
@@ -722,5 +722,108 @@ mod tests {
         );
     }
 
-    // TODO: Write tests that every new opened snapshot has a unique transacton id
+    #[test]
+    fn test_storage_snapshot_id_search() {
+        test_keyspace_set! {
+            PersistedKeyspace => 0: "write",
+            FailedKeyspace => 1: "failed",
+        }
+
+        init_logging();
+        let mut profile = CommitProfile::DISABLED;
+
+        let storage_path = create_tmp_storage_dir();
+        let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        durability_client.register_record_type::<CommitRecord>();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::create::<TestKeyspaceSet>("storage", &storage_path, durability_client).unwrap(),
+        );
+
+        // Parallel snapshot commits with the same open seqnum
+
+        let key_1 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"hello"));
+        let mut snapshot1_operations = OperationsBuffer::new();
+        snapshot1_operations.writes_in_mut(key_1.keyspace_id()).insert(key_1.byte_array().clone(), ByteArray::empty());
+        let commit_record1 = CommitRecord::new(
+            snapshot1_operations,
+            storage.durability_client.previous(),
+            CommitType::Data,
+            SnapshotId::new(),
+        );
+        let snapshot_id1 = commit_record1.snapshot_id().unwrap();
+        let seqnum1 = commit_record1.open_sequence_number();
+
+        let key_2 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"world"));
+        let mut snapshot2_operations = OperationsBuffer::new();
+        snapshot2_operations.writes_in_mut(key_2.keyspace_id()).insert(key_2.byte_array().clone(), ByteArray::empty());
+        let commit_record2 = CommitRecord::new(
+            snapshot2_operations,
+            storage.durability_client.previous(),
+            CommitType::Data,
+            SnapshotId::new(),
+        );
+        let snapshot_id2 = commit_record2.snapshot_id().unwrap();
+        let seqnum2 = commit_record2.open_sequence_number();
+
+        assert!(!storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        assert!(!storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+
+        storage.commit(commit_record1, &mut profile).unwrap();
+        assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        assert!(!storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+
+        storage.commit(commit_record2, &mut profile).unwrap();
+        assert_eq!(seqnum1, seqnum2);
+        assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+
+        // New seqnum, new Snapshot id
+
+        let key_3 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"!"));
+        let mut snapshot3_operations = OperationsBuffer::new();
+        snapshot3_operations.writes_in_mut(key_3.keyspace_id()).insert(key_3.byte_array().clone(), ByteArray::empty());
+        let commit_record3 = CommitRecord::new(
+            snapshot3_operations,
+            storage.durability_client.previous(),
+            CommitType::Schema,
+            SnapshotId::new(),
+        );
+        let snapshot_id3 = commit_record3.snapshot_id().unwrap();
+        let seqnum3 = commit_record3.open_sequence_number();
+
+        assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+        assert!(!storage.commit_record_exists(seqnum3, snapshot_id3).unwrap());
+
+        // TODO: This fails because isolation_manager tries to decrement readers while it never
+        // incremented their count (window.decrement_readers() == 0)
+
+        // storage.commit(commit_record3, &mut profile).unwrap();
+        // assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        // assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+        // assert!(storage.commit_record_exists(seqnum3, snapshot_id3).unwrap());
+
+        // New seqnum, duplicated Snapshot id
+
+        // let key_4 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"!!"));
+        // let mut snapshot4_operations = OperationsBuffer::new();
+        // snapshot4_operations
+        //     .writes_in_mut(key_4.keyspace_id())
+        //     .insert(key_4.byte_array().clone(), ByteArray::empty());
+        // let commit_record4 = CommitRecord::new(snapshot4_operations, storage.durability_client.previous(), CommitType::Schema, snapshot_id2);
+        // let snapshot_id4 = commit_record4.snapshot_id().unwrap();
+        // let seqnum4 = commit_record4.open_sequence_number();
+        //
+        // assert_eq!(snapshot_id2, snapshot_id4);
+        // assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        // assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+        // assert!(storage.commit_record_exists(seqnum3, snapshot_id3).unwrap());
+        // assert!(!storage.commit_record_exists(seqnum4, snapshot_id4).unwrap());
+        //
+        // storage.commit(commit_record4, &mut profile).unwrap();
+        // assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        // assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+        // assert!(storage.commit_record_exists(seqnum3, snapshot_id3).unwrap());
+        // assert!(storage.commit_record_exists(seqnum4, snapshot_id4).unwrap());
+    }
 }

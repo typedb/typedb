@@ -53,16 +53,13 @@ use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
     service::{
-        http::{
-            error::HttpServiceError,
-            message::{
-                analyze::{
-                    encode_analyzed_query,
-                    structure::{encode_analyzed_pipeline_for_studio, AnalyzedPipelineResponse},
-                    AnalysedQueryResponse,
-                },
-                query::{document::encode_document, row::encode_row},
+        http::message::{
+            analyze::{
+                encode_analyzed_query,
+                structure::{encode_analyzed_pipeline_for_studio, AnalyzedPipelineResponse},
+                AnalysedQueryResponse,
             },
+            query::{document::encode_document, row::encode_row},
         },
         transaction_service::{
             commit_schema_transaction, commit_write_transaction, init_transaction_timeout, is_write_pipeline,
@@ -333,7 +330,7 @@ impl TransactionService {
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
-                        event!(Level::TRACE, match recv_message {
+                        event!(Level::TRACE, "{}", match recv_message {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
                         });
@@ -366,7 +363,7 @@ impl TransactionService {
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
-                        event!(Level::TRACE, match recv_message {
+                        event!(Level::TRACE, "{}", match recv_message {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
                         });
