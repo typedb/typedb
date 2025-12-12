@@ -137,6 +137,9 @@ pub(crate) struct TransactionService {
     query_queue: VecDeque<(Uuid, QueueOptions, typeql::query::Pipeline, String)>,
     query_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
+
+    close_sender: Sender<()>,
+    close_receiver: Receiver<()>,
 }
 
 impl TransactionService {
@@ -146,6 +149,7 @@ impl TransactionService {
         response_sender: Sender<Result<ProtocolServer, Status>>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
+        let (close_sender, close_receiver) = channel(1);
 
         Self {
             server_state,
@@ -164,16 +168,25 @@ impl TransactionService {
             query_queue: VecDeque::with_capacity(20),
             query_responders: HashMap::new(),
             running_write_query: None,
+
+            close_sender,
+            close_receiver,
         }
     }
 
     pub(crate) async fn listen(&mut self) {
-        let mut shutdown_receiver = self.server_state.shutdown_receiver().await;
+        let mut global_shutdown_receiver = self.server_state.shutdown_receiver().await;
         loop {
             let result = if let Some((req_id, write_query_worker)) = &mut self.running_write_query {
                 tokio::select! { biased;
-                    _ = shutdown_receiver.changed() => {
+                    _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
+                    _ = self.close_receiver.recv() => {
+                        // TODO: what if None?
+                        event!(Level::TRACE, "Transaction close signal received, closing transaction service.");
                         self.do_close().await;
                         return;
                     }
@@ -200,7 +213,7 @@ impl TransactionService {
                 }
             } else {
                 tokio::select! { biased;
-                    _ = shutdown_receiver.changed() => {
+                    _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
                         self.do_close().await;
                         return;
@@ -457,6 +470,14 @@ impl TransactionService {
                 Transaction::Schema(transaction)
             }
         };
+
+        let transaction_add_result =
+            self.server_state.transactions_add(transaction.id(), transaction.type_(), self.close_sender.clone()).await;
+        if let Err(typedb_source) = transaction_add_result {
+            transaction.close();
+            return Err(typedb_source.into_error_message().into_status());
+        }
+
         self.server_state.diagnostics_manager().await.increment_load_count(
             ClientEndpoint::Grpc,
             &database_name,
