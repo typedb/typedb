@@ -4,23 +4,41 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt::Debug, net::SocketAddr, path::PathBuf, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Debug,
+    net::SocketAddr,
+    path::PathBuf,
+    sync::Arc,
+    time::Duration,
+};
 
 use async_trait::async_trait;
-use concurrency::{IntervalRunner, TokioTaskSpawner};
-use database::{database_manager::DatabaseManager, transaction::TransactionRead, Database};
+use concurrency::{IntervalRunner, IntervalTaskParameters, TokioTaskSpawner};
+use database::{
+    database_manager::DatabaseManager,
+    transaction::{TransactionId, TransactionRead},
+    Database,
+};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
+use durability::DurabilitySequenceNumber;
 use options::TransactionOptions;
 use resource::{
-    constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo, profile::CommitProfile,
+    constants::{common::SECONDS_IN_MINUTE, server::DATABASE_METRICS_UPDATE_INTERVAL},
+    distribution_info::DistributionInfo,
+    profile::CommitProfile,
 };
 use storage::{
     durability_client::{DurabilityClient, WALClient},
-    isolation_manager::CommitRecord,
-    snapshot::CommittableSnapshot,
+    record::CommitRecord,
+    snapshot::{snapshot_id::SnapshotId, CommittableSnapshot},
 };
 use system::concepts::{Credential, User};
-use tokio::{net::lookup_host, sync::watch::Receiver, task::JoinHandle};
+use tokio::{
+    net::lookup_host,
+    sync::{mpsc::Sender, watch::Receiver, RwLock},
+    task::JoinHandle,
+};
 use user::{
     errors::{UserCreateError, UserDeleteError, UserUpdateError},
     permission_manager::PermissionManager,
@@ -34,6 +52,7 @@ use crate::{
     service::{
         export_service::{get_transaction_schema, get_transaction_type_schema},
         grpc::migration::import_service::DatabaseImportService,
+        TransactionType,
     },
     status::{LocalServerStatus, ServerStatus},
     system_init::SYSTEM_DB,
@@ -74,6 +93,12 @@ pub trait ServerState: Debug {
         name: &str,
     ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
 
+    async fn databases_get_for_transaction(
+        &self,
+        name: &str,
+        transaction_type: TransactionType,
+    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
+
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError>;
 
     async fn databases_create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError>;
@@ -97,6 +122,13 @@ pub trait ServerState: Debug {
         commit_record: CommitRecord,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError>;
+
+    async fn database_commit_record_exists(
+        &self,
+        name: &str,
+        open_sequence_number: DurabilitySequenceNumber,
+        snapshot_id: SnapshotId,
+    ) -> Result<bool, ArcServerStateError>;
 
     async fn database_delete(&self, name: &str) -> Result<(), ArcServerStateError>;
 
@@ -129,6 +161,15 @@ pub trait ServerState: Debug {
 
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 
+    async fn transactions_add(
+        &self,
+        transaction_id: TransactionId,
+        transaction_type: TransactionType,
+        close_sender: Sender<()>,
+    ) -> Result<(), ArcServerStateError>;
+
+    async fn transactions_close_types(&self, types: HashSet<TransactionType>) -> Result<(), ArcServerStateError>;
+
     async fn database_manager(&self) -> Arc<DatabaseManager>;
 
     async fn user_manager(&self) -> Option<Arc<UserManager>>;
@@ -151,12 +192,15 @@ pub struct LocalServerState {
     credential_verifier: Option<Arc<CredentialVerifier>>,
     token_manager: Arc<TokenManager>,
     diagnostics_manager: Arc<DiagnosticsManager>,
+    transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>,
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
     _database_diagnostics_updater: IntervalRunner,
 }
 
 impl LocalServerState {
+    const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
+
     pub async fn new(
         distribution_info: DistributionInfo,
         config: Config,
@@ -193,6 +237,22 @@ impl LocalServerState {
             None
         };
 
+        let transactions = Arc::new(RwLock::new(HashMap::new()));
+        let controlled_transactions = transactions.clone();
+        background_task_spawner.spawn_interval(
+            move || {
+                let transactions = controlled_transactions.clone();
+                async move {
+                    Self::cleanup_closed_transactions(transactions).await;
+                }
+            },
+            IntervalTaskParameters::new_with_delay(
+                Self::TRANSACTION_CHECK_INTERVAL,
+                Self::TRANSACTION_CHECK_INTERVAL,
+                false,
+            ),
+        );
+
         Ok(Self {
             distribution_info,
             server_status: LocalServerStatus::from_addresses(grpc_address, http_address),
@@ -203,6 +263,7 @@ impl LocalServerState {
             credential_verifier: None,
             token_manager,
             diagnostics_manager: diagnostics_manager.clone(),
+            transactions: Arc::new(RwLock::new(HashMap::new())),
             shutdown_receiver,
             background_task_spawner,
             _database_diagnostics_updater: IntervalRunner::new(
@@ -363,6 +424,11 @@ impl LocalServerState {
             .next()
             .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP address", address))
     }
+
+    async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>) {
+        let mut transactions = transactions.write().await;
+        transactions.retain(|_, info| !info.close_sender.is_closed());
+    }
 }
 
 #[async_trait]
@@ -422,6 +488,14 @@ impl ServerState for LocalServerState {
         Ok(self.database_manager.database_unrestricted(name))
     }
 
+    async fn databases_get_for_transaction(
+        &self,
+        name: &str,
+        _transaction_type: TransactionType,
+    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
+        self.databases_get(name).await
+    }
+
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager
             .put_database(name)
@@ -456,6 +530,7 @@ impl ServerState for LocalServerState {
         }
     }
 
+    // TODO: It's bad that the system database is allowed here. Come up with a better design
     async fn database_schema_commit(
         &self,
         name: &str,
@@ -481,6 +556,20 @@ impl ServerState for LocalServerState {
         };
         database.data_commit_with_commit_record(commit_record, commit_profile).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
+        })
+    }
+
+    async fn database_commit_record_exists(
+        &self,
+        name: &str,
+        open_sequence_number: DurabilitySequenceNumber,
+        snapshot_id: SnapshotId,
+    ) -> Result<bool, ArcServerStateError> {
+        let Some(database) = self.databases_get_unrestricted(name).await? else {
+            return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
+        };
+        database.commit_record_exists(open_sequence_number, snapshot_id).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseCommitRecordExistsFailed { typedb_source })
         })
     }
 
@@ -589,6 +678,8 @@ impl ServerState for LocalServerState {
             let commit_profile = transaction_profile.commit_profile();
             self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
             self.token_manager.invalidate_user(username).await;
+            // TODO: Store users as owners of transactions in TransactionInfo and close transactions
+            // when the user is invalidated!
         }
 
         Ok(())
@@ -614,6 +705,8 @@ impl ServerState for LocalServerState {
             let commit_profile = transaction_profile.commit_profile();
             self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
             self.token_manager.invalidate_user(username).await;
+            // TODO: Store users as owners of transactions in TransactionInfo and close transactions
+            // when the user is invalidated!
         }
 
         Ok(())
@@ -638,6 +731,31 @@ impl ServerState for LocalServerState {
         self.token_manager.get_valid_token_owner(token).await
     }
 
+    async fn transactions_add(
+        &self,
+        transaction_id: TransactionId,
+        transaction_type: TransactionType,
+        close_sender: Sender<()>,
+    ) -> Result<(), ArcServerStateError> {
+        let mut transactions_lock = self.transactions.write().await;
+        transactions_lock.insert(transaction_id, TransactionInfo { transaction_type, close_sender });
+        Ok(())
+    }
+
+    async fn transactions_close_types(&self, types: HashSet<TransactionType>) -> Result<(), ArcServerStateError> {
+        let mut txs = self.transactions.write().await;
+
+        let to_close: Vec<_> =
+            txs.iter().filter(|(_, info)| types.contains(&info.transaction_type)).map(|(id, _)| *id).collect();
+
+        for id in to_close {
+            if let Some(info) = txs.remove(&id) {
+                let _ = info.close_sender.send(());
+            }
+        }
+        Ok(())
+    }
+
     async fn database_manager(&self) -> Arc<DatabaseManager> {
         self.database_manager.clone()
     }
@@ -657,4 +775,10 @@ impl ServerState for LocalServerState {
     async fn background_task_spawner(&self) -> TokioTaskSpawner {
         self.background_task_spawner.clone()
     }
+}
+
+#[derive(Debug)]
+struct TransactionInfo {
+    transaction_type: TransactionType,
+    close_sender: Sender<()>,
 }
