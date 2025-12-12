@@ -84,7 +84,7 @@ typedb_error! {
         ),
         UnsupportedDifferentArgumentForBuiltin(
             13,
-            "Built-in function '{function}' received one argument of type '{arg_1_category}' but another of type '{arg_2_category}'.",
+            "Built-in function '{function}' expects matching argument types, but received one argument of type '{arg_1_category}' but another of type '{arg_2_category}'.",
             function: BuiltInFunctionID,
             arg_1_category: ValueTypeCategory,
             arg_2_category: ValueTypeCategory,
