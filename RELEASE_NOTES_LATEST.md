@@ -8,14 +8,26 @@
 
 
 ## New Features
-
+- **Implement min and max expressions**
+  
+  Implement min and max for expressions, usable for numerical types (`integer`, `double`, and `decimal`). Works for exactly 2 arguments:
+  
+  ```
+  match 
+  let $x = min(10, 12);
+  let $y = max(10, 12);
+  ```
+  
 
 ## Bugs Fixed
-- **Fix docker container cmd**
+
+- **Fix docker container build**
 
 ## Code Refactors
 
 
 ## Other Improvements
+- **Update VERSION for release**
+
 
     
