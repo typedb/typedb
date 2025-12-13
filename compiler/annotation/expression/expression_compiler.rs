@@ -26,6 +26,10 @@ use typeql::common::Span;
 use crate::annotation::expression::{
     compiled_expression::{ExecutableExpression, ExpressionValueType},
     instructions::{
+        binary::{
+            MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger, MathMinDecimalDecimal,
+            MathMinDoubleDouble, MathMinIntegerInteger,
+        },
         list_operations,
         load_cast::{
             CastLeftDecimalToDouble, CastLeftIntegerToDecimal, CastLeftIntegerToDouble, CastRightDecimalToDouble,
@@ -195,9 +199,9 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_op(&mut self, operation: &Operation) -> Result<(), Box<ExpressionCompileError>> {
         let operator = operation.operator();
-        let right_expression = self.expression_tree.get(operation.right_expression_id());
         self.compile_recursive(self.expression_tree.get(operation.left_expression_id()))?;
         let left_category = self.peek_type_single()?.category();
+        let right_expression = self.expression_tree.get(operation.right_expression_id());
         match left_category {
             ValueTypeCategory::Boolean => self.compile_op_boolean(operator, right_expression, operation.source_span()),
             ValueTypeCategory::Integer => self.compile_op_integer(operator, right_expression, operation.source_span()),
@@ -531,6 +535,56 @@ impl<'this> ExpressionCompilationContext<'this> {
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                         function: builtin.builtin_id(),
                         category: self.peek_type_single()?.category(),
+                        source_span: builtin.source_span(),
+                    })?,
+                }
+            }
+            BuiltInFunctionID::Min => {
+                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
+                let arg_1_category = self.peek_type_single()?.category();
+                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[1]))?;
+                let arg_2_category = self.peek_type_single()?.category();
+                // Both arguments must have the same type category
+                if arg_1_category != arg_2_category {
+                    return Err(Box::new(ExpressionCompileError::UnsupportedDifferentArgumentForBuiltin {
+                        function: builtin.builtin_id(),
+                        arg_1_category,
+                        arg_2_category,
+                        source_span: builtin.source_span(),
+                    }));
+                }
+                match arg_1_category {
+                    ValueTypeCategory::Integer => MathMinIntegerInteger::validate_and_append(self)?,
+                    ValueTypeCategory::Double => MathMinDoubleDouble::validate_and_append(self)?,
+                    ValueTypeCategory::Decimal => MathMinDecimalDecimal::validate_and_append(self)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
+                        function: builtin.builtin_id(),
+                        category: arg_1_category,
+                        source_span: builtin.source_span(),
+                    })?,
+                }
+            }
+            BuiltInFunctionID::Max => {
+                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
+                let arg_1_category = self.peek_type_single()?.category();
+                self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[1]))?;
+                let arg_2_category = self.peek_type_single()?.category();
+                // Both arguments must have the same type category
+                if arg_1_category != arg_2_category {
+                    return Err(Box::new(ExpressionCompileError::UnsupportedDifferentArgumentForBuiltin {
+                        function: builtin.builtin_id(),
+                        arg_1_category,
+                        arg_2_category,
+                        source_span: builtin.source_span(),
+                    }));
+                }
+                match arg_1_category {
+                    ValueTypeCategory::Integer => MathMaxIntegerInteger::validate_and_append(self)?,
+                    ValueTypeCategory::Double => MathMaxDoubleDouble::validate_and_append(self)?,
+                    ValueTypeCategory::Decimal => MathMaxDecimalDecimal::validate_and_append(self)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
+                        function: builtin.builtin_id(),
+                        category: arg_1_category,
                         source_span: builtin.source_span(),
                     })?,
                 }

@@ -232,6 +232,14 @@ fn to_builtin_id(
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
             Ok(BuiltInFunctionID::Round)
         }
+        Function::Max => {
+            check_builtin_arg_count(token, args.len(), 2, typeql_id.span())?;
+            Ok(BuiltInFunctionID::Max)
+        }
+        Function::Min => {
+            check_builtin_arg_count(token, args.len(), 2, typeql_id.span())?;
+            Ok(BuiltInFunctionID::Min)
+        }
         _ => Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
             feature: UnimplementedFeature::BuiltinFunction(token.to_string()),
         })),

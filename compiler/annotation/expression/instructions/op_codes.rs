@@ -63,6 +63,14 @@ pub enum ExpressionOpCode {
     MathRoundDecimal,
     MathCeilDecimal,
     MathFloorDecimal,
+
+    MathMinIntegerInteger,
+    MathMinDoubleDouble,
+    MathMinDecimalDecimal,
+
+    MathMaxIntegerInteger,
+    MathMaxDoubleDouble,
+    MathMaxDecimalDecimal,
 }
 
 impl fmt::Display for ExpressionOpCode {
@@ -107,6 +115,12 @@ impl fmt::Display for ExpressionOpCode {
             ExpressionOpCode::MathRoundDecimal => write!(f, "round-decimal"),
             ExpressionOpCode::MathCeilDecimal => write!(f, "ceil-decimal"),
             ExpressionOpCode::MathFloorDecimal => write!(f, "floor-decimal"),
+            ExpressionOpCode::MathMinIntegerInteger => write!(f, "min-integer-integer"),
+            ExpressionOpCode::MathMinDoubleDouble => write!(f, "min-double-double"),
+            ExpressionOpCode::MathMinDecimalDecimal => write!(f, "min-decimal-decimal"),
+            ExpressionOpCode::MathMaxIntegerInteger => write!(f, "max-integer-integer"),
+            ExpressionOpCode::MathMaxDoubleDouble => write!(f, "max-double-double"),
+            ExpressionOpCode::MathMaxDecimalDecimal => write!(f, "max-decimal-decimal"),
         }
     }
 }
