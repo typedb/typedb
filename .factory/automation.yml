@@ -28,7 +28,7 @@ build:
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel build //... 
         bazel run @typedb_dependencies//tool/checkstyle:test-coverage
-        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
+        bazel test $(bazel query 'kind(checkstyle_test, //...)') 
         bazel test $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config
 
 #    build-dependency:
