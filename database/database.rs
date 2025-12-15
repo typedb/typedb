@@ -482,7 +482,6 @@ impl Database<WALClient> {
                 storage_in_bytes: self.storage.estimate_size_in_bytes().expect("Expected storage size in bytes"),
                 storage_key_count: self.storage.estimate_key_count().expect("Expected storage key count"),
             },
-            is_primary_server: true, // TODO: Should be retrieved differently for Cloud
         }
     }
 }

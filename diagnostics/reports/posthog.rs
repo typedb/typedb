@@ -384,7 +384,7 @@ pub(crate) fn to_full_posthog_reporting_json(diagnostics: &Diagnostics, api_key:
     builder.init_report_if_needed(None);
 
     for (database_hash, metrics) in diagnostics.lock_load_metrics_read().iter() {
-        match metrics.to_peak_report(database_hash, diagnostics.is_owned(database_hash)) {
+        match metrics.to_peak_report(database_hash) {
             Some(load_report) => {
                 let report_builder = builder.get_or_init_report(Some(*database_hash));
                 report_builder.set_load(load_report);

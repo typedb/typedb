@@ -172,7 +172,6 @@ pub struct DatabaseMetrics {
     pub database_name: String,
     pub schema: SchemaLoadMetrics,
     pub data: DataLoadMetrics,
-    pub is_primary_server: bool,
 }
 
 #[derive(Debug)]
@@ -231,24 +230,20 @@ impl LoadMetrics {
         self.connection.restore_snapshot()
     }
 
-    pub fn to_peak_report(&self, database_hash: &DatabaseHash, is_owned: bool) -> Option<LoadReport> {
+    pub fn to_peak_report(&self, database_hash: &DatabaseHash) -> Option<LoadReport> {
         if !self.is_deleted || !self.connection.is_empty() {
             let mut report = LoadReport::new(*database_hash);
             report.connection = Some(self.connection.to_peak_report());
-
-            if is_owned {
-                report.schema = Some(self.schema.to_state_report());
-                report.data = Some(self.data.to_state_report());
-            }
-
+            report.schema = Some(self.schema.to_state_report());
+            report.data = Some(self.data.to_state_report());
             Some(report)
         } else {
             None
         }
     }
 
-    pub fn to_state_report(&self, database_hash: &DatabaseHash, is_owned: bool) -> Option<LoadReport> {
-        if is_owned && !self.is_deleted {
+    pub fn to_state_report(&self, database_hash: &DatabaseHash) -> Option<LoadReport> {
+        if !self.is_deleted {
             let mut report = LoadReport::new(*database_hash);
             report.schema = Some(self.schema.to_state_report());
             report.data = Some(self.data.to_state_report());
