@@ -73,7 +73,7 @@ impl DatabaseManager {
             }
 
             let database_name = entry_path.file_name().unwrap().to_string_lossy();
-            if Self::is_internal_database(&database_name) {
+            if Self::validate_user_database_name(&database_name).is_err() {
                 continue;
             }
 
@@ -133,7 +133,7 @@ impl DatabaseManager {
     }
 
     pub fn put_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
-        Self::validate_database_name(name.as_ref())?;
+        Self::validate_user_database_name(name.as_ref())?;
         self.put_database_unrestricted(name)
     }
 
@@ -184,7 +184,7 @@ impl DatabaseManager {
             })?;
         }
 
-        Self::validate_database_name(&name)?;
+        Self::validate_user_database_name(&name)?;
 
         let databases = self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
         if self.exists_public(&databases, &name) {
@@ -336,7 +336,7 @@ impl DatabaseManager {
         path.file_name().unwrap_or("".as_ref()).to_string_lossy().to_string()
     }
 
-    fn validate_database_name(name: &str) -> Result<(), DatabaseCreateError> {
+    fn validate_user_database_name(name: &str) -> Result<(), DatabaseCreateError> {
         if Self::is_internal_database(name) {
             return Err(DatabaseCreateError::InternalDatabaseCreationProhibited {});
         }
