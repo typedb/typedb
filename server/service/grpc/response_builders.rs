@@ -12,14 +12,14 @@ pub(crate) mod connection {
     pub(crate) fn connection_open_res(
         connection_id: ConnectionID,
         receive_time: Instant,
-        servers_all_res: typedb_protocol::server_manager::all::Res,
+        servers_get_res: typedb_protocol::server_manager::get::Res,
         token_create_res: typedb_protocol::authentication::token::create::Res,
     ) -> typedb_protocol::connection::open::Res {
         let processing_millis = Instant::now().duration_since(receive_time).as_millis();
         typedb_protocol::connection::open::Res {
             connection_id: Some(typedb_protocol::ConnectionId { id: Vec::from(connection_id) }),
             server_duration_millis: processing_millis as u64,
-            servers_all: Some(servers_all_res),
+            server: Some(servers_get_res),
             authentication: Some(token_create_res),
         }
     }
