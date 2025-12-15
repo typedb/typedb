@@ -272,9 +272,7 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
         .lock_load_metrics_read()
         .iter()
         .filter_map(|(database_hash, metrics)| {
-            metrics
-                .to_state_report(database_hash, diagnostics.is_owned(database_hash))
-                .map(|load_report| load_report.into())
+            metrics.to_state_report(database_hash).map(|load_report| load_report.into())
         })
         .collect();
 

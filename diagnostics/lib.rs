@@ -47,7 +47,6 @@ pub struct Diagnostics {
     error_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ErrorMetrics>>>,
 
     is_full_reporting: bool,
-    owned_databases: RwLock<HashSet<DatabaseHash>>,
 }
 
 impl Diagnostics {
@@ -67,7 +66,6 @@ impl Diagnostics {
             error_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
 
             is_full_reporting: is_reporting_enabled,
-            owned_databases: RwLock::new(HashSet::new()),
         }
     }
 
@@ -82,8 +80,6 @@ impl Diagnostics {
             let database_load = loads.entry(database_hash).or_insert(LoadMetrics::new());
             database_load.set_schema(metrics.schema);
             database_load.set_data(metrics.data);
-
-            self.update_owned_databases(database_hash, metrics.is_primary_server);
         }
 
         for database_hash in deleted_databases {
@@ -183,19 +179,6 @@ impl Diagnostics {
 
     fn hash_database_opt(database_name: Option<impl AsRef<str> + Hash>) -> DatabaseHashOpt {
         database_name.map(Self::hash_database)
-    }
-
-    fn update_owned_databases(&self, database_hash: DatabaseHash, is_primary_server: bool) {
-        let mut owned_databases = self.owned_databases.write().expect("Expected owned databases lock acquisition");
-        if is_primary_server {
-            owned_databases.insert(database_hash);
-        } else {
-            owned_databases.remove(&database_hash);
-        }
-    }
-
-    fn is_owned(&self, database_hash: &DatabaseHash) -> bool {
-        self.owned_databases.read().expect("Expected owned databases lock acquisition").contains(database_hash)
     }
 }
 

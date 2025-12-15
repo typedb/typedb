@@ -153,7 +153,7 @@ pub mod encoding {
 pub mod diagnostics {
     use std::time::Duration;
 
-    use crate::constants::common::SECONDS_IN_HOUR;
+    use crate::constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE};
 
     pub const UNKNOWN_STR: &str = "Unknown";
 
@@ -162,6 +162,7 @@ pub mod diagnostics {
     pub const POSTHOG_API_KEY: &str = "phc_pYoyROZCtNDL8obeJfLZ8cP0UKzIAxmd0JcQQ03i07T";
 
     pub const REPORT_INTERVAL: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
+    pub const REPORT_INTERVAL_MIN_DELAY: Duration = Duration::from_secs(20 * SECONDS_IN_MINUTE);
     pub const REPORT_ONCE_DELAY: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
 
     pub const REPORT_INITIAL_RETRY_DELAY: Duration = Duration::from_millis(500);

@@ -29,7 +29,8 @@ use resource::constants::{
     common::SECONDS_IN_MINUTE,
     diagnostics::{
         DISABLED_REPORTING_FILE_NAME, POSTHOG_API_KEY, POSTHOG_BATCH_REPORTING_URI, REPORT_INITIAL_RETRY_DELAY,
-        REPORT_INTERVAL, REPORT_MAX_RETRY_NUM, REPORT_ONCE_DELAY, REPORT_RETRY_DELAY_EXPONENTIAL_MULTIPLIER,
+        REPORT_INTERVAL, REPORT_INTERVAL_MIN_DELAY, REPORT_MAX_RETRY_NUM, REPORT_ONCE_DELAY,
+        REPORT_RETRY_DELAY_EXPONENTIAL_MULTIPLIER,
     },
 };
 
@@ -218,6 +219,7 @@ impl Reporter {
         }
     }
 
+    // Delay is calculated based on deployment id (same for every server in the same deployment)
     fn calculate_initial_delay(&self) -> Duration {
         let report_interval_secs = REPORT_INTERVAL.as_secs();
         assert!(report_interval_secs == 3600, "Modify the algorithm if you change the interval!");
@@ -226,11 +228,16 @@ impl Reporter {
         let scheduled_minute =
             hash_string_consistently(&self.deployment_id) % (report_interval_secs / SECONDS_IN_MINUTE);
 
-        let delay_secs = if current_minute > scheduled_minute {
+        let mut delay_secs = if current_minute > scheduled_minute {
             report_interval_secs - current_minute * SECONDS_IN_MINUTE + scheduled_minute * SECONDS_IN_MINUTE
         } else {
             (scheduled_minute - current_minute) * SECONDS_IN_MINUTE
         };
+
+        if delay_secs < REPORT_INTERVAL_MIN_DELAY.as_secs() {
+            // Skip this interval's report if the delay is too short to avoid CI reports
+            delay_secs += REPORT_INTERVAL.as_secs();
+        }
         Duration::from_secs(delay_secs)
     }
 
