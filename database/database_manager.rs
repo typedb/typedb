@@ -20,7 +20,6 @@ use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, Databa
 
 type DatabasesMap = HashMap<String, Arc<Database<WALClient>>>;
 type Databases = RwLock<DatabasesMap>;
-type DatabasesReadLock<'a> = RwLockReadGuard<'a, DatabasesMap>;
 type DatabasesWriteLock<'a> = RwLockWriteGuard<'a, DatabasesMap>;
 
 #[derive(Debug)]
@@ -275,7 +274,7 @@ impl DatabaseManager {
     }
 
     pub fn database_names(&self) -> Vec<String> {
-        self.databases.read().unwrap().keys().cloned().filter(|db| Self::is_user_database(db)).collect()
+        self.databases.read().unwrap().keys().filter(|&db| Self::is_user_database(db)).cloned().collect()
     }
 
     pub fn databases(&self) -> RwLockReadGuard<'_, HashMap<String, Arc<Database<WALClient>>>> {
@@ -332,7 +331,7 @@ impl DatabaseManager {
             .map_err(|source| DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) })
     }
 
-    fn file_name_lossy(path: &PathBuf) -> String {
+    fn file_name_lossy(path: &Path) -> String {
         path.file_name().unwrap_or("".as_ref()).to_string_lossy().to_string()
     }
 
