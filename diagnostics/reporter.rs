@@ -26,7 +26,7 @@ use hyper::{
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use logger::{debug, trace};
 use resource::constants::{
-    common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE},
+    common::SECONDS_IN_MINUTE,
     diagnostics::{
         DISABLED_REPORTING_FILE_NAME, POSTHOG_API_KEY, POSTHOG_BATCH_REPORTING_URI, REPORT_INITIAL_RETRY_DELAY,
         REPORT_INTERVAL, REPORT_INTERVAL_MIN_DELAY, REPORT_MAX_RETRY_NUM, REPORT_ONCE_DELAY,
