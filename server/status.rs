@@ -43,9 +43,12 @@ pub trait ServerStatus: Debug {
 }
 
 impl ServerStatus for LocalServerStatus {
-    // Exposed to the client
     fn to_proto(&self) -> typedb_protocol::Server {
-        typedb_protocol::Server { address: Some(self.grpc_connection_address.clone()), replica_status: None }
+        typedb_protocol::Server {
+            serving_address: Some(self.grpc_serving_address.clone()),
+            connection_address: Some(self.grpc_connection_address.clone()),
+            replica_status: None,
+        }
     }
 
     fn grpc_serving_address(&self) -> Option<&str> {
