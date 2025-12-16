@@ -239,22 +239,22 @@ impl CheckpointWriter {
             return Err(MissingStorageData { dir: self.temporary_directory.clone() });
         }
 
-        let previous_checkpoints: Vec<_> = fs::read_dir(self.temporary_directory.parent().unwrap())
+        fs::rename(&self.temporary_directory, &self.checkpoint_directory)
+            .map_err(|error| CheckpointDirCreate { dir: self.checkpoint_directory.clone(), source: Arc::new(error) })?;
+
+        let previous_checkpoints: Vec<_> = fs::read_dir(self.checkpoint_directory.parent().unwrap())
             .and_then(|entries| {
                 entries
                     .map_ok(|entry| entry.path())
-                    .filter(|path| path.is_ok() && path.as_ref().unwrap() != &self.temporary_directory)
+                    .filter(|path| path.is_ok() && path.as_ref().unwrap() != &self.checkpoint_directory)
                     .try_collect()
             })
-            .map_err(|error| CheckpointDirRead { dir: self.temporary_directory.clone(), source: Arc::new(error) })?;
+            .map_err(|error| CheckpointDirRead { dir: self.checkpoint_directory.clone(), source: Arc::new(error) })?;
 
         for previous_checkpoint in previous_checkpoints {
             fs::remove_dir_all(&previous_checkpoint)
                 .map_err(|error| OldCheckpointRemove { dir: previous_checkpoint, source: Arc::new(error) })?
         }
-
-        fs::rename(self.temporary_directory, &self.checkpoint_directory)
-            .map_err(|error| CheckpointDirCreate { dir: self.checkpoint_directory.clone(), source: Arc::new(error) })?;
 
         Ok(Checkpoint { directory: self.checkpoint_directory })
     }
