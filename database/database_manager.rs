@@ -14,7 +14,7 @@ use std::{
 use cache::CACHE_DB_NAME_PREFIX;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
-use tracing::{event, Level};
+use tracing::{event, warn, Level};
 
 use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
 
@@ -76,7 +76,14 @@ impl DatabaseManager {
                 continue;
             }
 
-            let database = Database::<WALClient>::open(&entry_path)?;
+            let database = match Database::<WALClient>::open(&entry_path) {
+                Ok(database) => database,
+                Err(DatabaseOpenError::NotADatabase { .. }) => {
+                    warn!("{entry_path:?} is not a database, skipping");
+                    continue;
+                }
+                Err(err) => return Err(err),
+            };
             assert!(!databases.contains_key(database.name()));
             databases.insert(database.name().to_owned(), Arc::new(database));
         }
