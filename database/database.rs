@@ -25,7 +25,10 @@ use concept::{
 };
 use concurrency::IntervalRunner;
 use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
-use durability::{wal::WAL, DurabilityServiceError};
+use durability::{
+    wal::{WALError, WAL},
+    DurabilityServiceError,
+};
 use encoding::{
     error::EncodingError,
     graph::{
@@ -298,8 +301,8 @@ impl Database<WALClient> {
 
     fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
-            CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, StatisticsInitialise, StorageOpen,
-            TypeCacheInitialise, WALOpen,
+            CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, NotADatabase, StatisticsInitialise,
+            StorageOpen, TypeCacheInitialise, WALOpen,
         };
         let name = name.as_ref();
         event!(
@@ -311,7 +314,14 @@ impl Database<WALClient> {
         );
 
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
-        let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
+        let wal = match WAL::load(path) {
+            Ok(wal) => wal,
+            Err(DurabilityServiceError::WAL { source: WALError::LoadErrorDirectoryMissing { .. } }) => {
+                return Err(NotADatabase { name: name.to_owned() })
+            }
+            Err(err) => return Err(WALOpen { source: err }),
+        };
+
         let wal_last_sequence_number = wal.previous();
 
         let mut wal_client = WALClient::new(wal);
@@ -536,6 +546,7 @@ typedb_error! {
         FunctionCacheInitialise(13, "Error initialising function cache.", typedb_source: FunctionError),
         FileDelete(14, "Error while deleting file for '{name}'", name: String, source: Arc<io::Error>),
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
+        NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
     }
 }
 
