@@ -8,8 +8,10 @@ use std::{path::Path, sync::Arc};
 
 use durability::wal::WAL;
 use storage::{
-    durability_client::WALClient, keyspace::KeyspaceSet, recovery::checkpoint::Checkpoint, MVCCStorage,
-    StorageOpenError,
+    durability_client::WALClient,
+    keyspace::KeyspaceSet,
+    recovery::checkpoint::{Checkpoint, CheckpointWriter},
+    MVCCStorage, StorageOpenError,
 };
 
 pub mod mock_snapshot;
@@ -41,10 +43,9 @@ pub fn create_storage<KS: KeyspaceSet>(path: &Path) -> Result<Arc<MVCCStorage<WA
 }
 
 pub fn checkpoint_storage(storage: &MVCCStorage<WALClient>) -> Checkpoint {
-    let checkpoint = Checkpoint::new(storage.path().parent().unwrap()).unwrap();
+    let checkpoint = CheckpointWriter::new(storage.path().parent().unwrap()).unwrap();
     storage.checkpoint(&checkpoint).unwrap();
-    checkpoint.finish().unwrap();
-    checkpoint
+    checkpoint.finish().unwrap()
 }
 
 pub fn load_storage<KS: KeyspaceSet>(
