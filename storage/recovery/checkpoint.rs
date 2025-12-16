@@ -232,7 +232,7 @@ impl CheckpointWriter {
         Ok(())
     }
 
-    pub fn finish(self) -> Result<(), CheckpointCreateError> {
+    pub fn finish(self) -> Result<Checkpoint, CheckpointCreateError> {
         use CheckpointCreateError::{CheckpointDirCreate, CheckpointDirRead, MissingStorageData, OldCheckpointRemove};
 
         if !self.temporary_directory.join(STORAGE_METADATA_FILE_NAME).exists() {
@@ -254,9 +254,9 @@ impl CheckpointWriter {
         }
 
         fs::rename(self.temporary_directory, &self.checkpoint_directory)
-            .map_err(|error| CheckpointDirCreate { dir: self.checkpoint_directory, source: Arc::new(error) })?;
+            .map_err(|error| CheckpointDirCreate { dir: self.checkpoint_directory.clone(), source: Arc::new(error) })?;
 
-        Ok(())
+        Ok(Checkpoint { directory: self.checkpoint_directory })
     }
 }
 
