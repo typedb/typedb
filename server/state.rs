@@ -127,6 +127,8 @@ pub trait ServerState: Debug {
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError>;
 
+    // TODO: Instead of `open_sequence_number` + `snapshot_id`, it could be better to use `TransactionId`
+    // if we don't want to expose storage entities like `CommitRecord`
     async fn database_commit_record_exists(
         &self,
         name: &str,
@@ -698,7 +700,7 @@ impl ServerState for LocalServerState {
             let commit_profile = transaction_profile.commit_profile();
             self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
             self.token_manager.invalidate_user(username).await;
-            // TODO: Store users as owners of transactions in TransactionInfo and close transactions
+            // TODO #7430: Store users as owners of transactions in TransactionInfo and close transactions
             // when the user is invalidated!
         }
 
@@ -725,7 +727,7 @@ impl ServerState for LocalServerState {
             let commit_profile = transaction_profile.commit_profile();
             self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
             self.token_manager.invalidate_user(username).await;
-            // TODO: Store users as owners of transactions in TransactionInfo and close transactions
+            // TODO #7430: Store users as owners of transactions in TransactionInfo and close transactions
             // when the user is invalidated!
         }
 
