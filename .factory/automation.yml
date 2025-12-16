@@ -170,7 +170,6 @@ build:
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test $(bazel query 'kind(rust_test, //tests/behaviour/service/...)') --test_output=streamed --jobs=1
 
-  randomized-tests:
     crash:
       image: typedb-ubuntu-22.04
       command: |
