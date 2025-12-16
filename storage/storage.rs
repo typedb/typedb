@@ -127,25 +127,24 @@ impl<Durability> MVCCStorage<Durability> {
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
 
         Self::register_durability_record_types(&mut durability_client);
-        let (keyspaces, next_sequence_number) = match checkpoint {
-            None => {
-                fs::remove_dir_all(&storage_dir)
-                    .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
-                fs::create_dir_all(&storage_dir)
-                    .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
-                let keyspaces = Self::create_keyspaces::<KS>(name, &storage_dir)?;
-                trace!("No checkpoint found, loading from WAL");
-                let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client, usize::MAX)
-                    .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
-                let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
-                apply_recovered(commits, &durability_client, &keyspaces)
-                    .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
-                trace!("Finished applying commits from WAL.");
-                (keyspaces, next_sequence_number)
-            }
-            Some(checkpoint) => checkpoint
+        let (keyspaces, next_sequence_number) = if let Some(checkpoint) = checkpoint {
+            checkpoint
                 .recover_storage::<KS, _>(&storage_dir, &durability_client)
-                .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?,
+                .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
+        } else {
+            fs::remove_dir_all(&storage_dir)
+                .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
+            fs::create_dir_all(&storage_dir)
+                .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
+            let keyspaces = Self::create_keyspaces::<KS>(name, &storage_dir)?;
+            trace!("No checkpoint found, loading from WAL");
+            let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client, usize::MAX)
+                .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
+            let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
+            apply_recovered(commits, &durability_client, &keyspaces)
+                .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
+            trace!("Finished applying commits from WAL.");
+            (keyspaces, next_sequence_number)
         };
 
         let isolation_manager = IsolationManager::new(next_sequence_number);
