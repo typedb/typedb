@@ -4247,6 +4247,7 @@ dependencies = [
  "concurrency",
  "database",
  "diagnostics",
+ "durability",
  "encoding",
  "error",
  "executor",

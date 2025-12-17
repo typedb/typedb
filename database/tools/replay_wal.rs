@@ -11,7 +11,7 @@ use concept::thing::statistics::Statistics;
 use durability::{wal::WAL, DurabilitySequenceNumber};
 use storage::{
     durability_client::{DurabilityClient, DurabilityRecord, WALClient},
-    isolation_manager::{CommitRecord, StatusRecord},
+    record::{CommitRecord, StatusRecord},
 };
 
 #[derive(Parser)]

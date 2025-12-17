@@ -26,7 +26,7 @@ use concept::{
 };
 use concurrency::IntervalRunner;
 use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
-use durability::{wal::WAL, DurabilityServiceError};
+use durability::{wal::WAL, DurabilitySequenceNumber, DurabilityServiceError};
 use encoding::{
     error::EncodingError,
     graph::{
@@ -44,10 +44,10 @@ use resource::{
 };
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    isolation_manager::CommitRecord,
+    record::CommitRecord,
     recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
     sequence_number::SequenceNumber,
-    snapshot::{CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::{snapshot_id::SnapshotId, CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 use tracing::{event, Level};
@@ -294,10 +294,9 @@ impl<D: DurabilityClient> Database<D> {
             let sequence_number = match self.storage.commit(commit_record, commit_profile) {
                 Ok(sequence_number) => Some(sequence_number),
                 Err(error) => {
-                    let error = SnapshotError {
+                    return Err(SnapshotError {
                         typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error },
-                    };
-                    return Err(error);
+                    })
                 }
             };
 
@@ -339,6 +338,16 @@ impl<D: DurabilityClient> Database<D> {
         } else {
             Ok(())
         }
+    }
+
+    pub fn commit_record_exists(
+        &self,
+        open_sequence_number: DurabilitySequenceNumber,
+        snapshot_id: SnapshotId,
+    ) -> Result<bool, DatabaseOpenError> {
+        self.storage
+            .commit_record_exists(open_sequence_number, snapshot_id)
+            .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })
     }
 }
 

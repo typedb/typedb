@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use axum::{
     extract::State,
@@ -68,6 +68,7 @@ struct TransactionInfo {
 pub(crate) struct HTTPTypeDBService {
     distribution_info: DistributionInfo,
     server_state: ArcServerState,
+    // TODO: If TransactionId proves itself to be stable, we could substitute Uuid with it
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
 }
 
@@ -80,8 +81,8 @@ impl HTTPTypeDBService {
         server_state: ArcServerState,
         background_tasks: TokioTaskSpawner,
     ) -> Self {
-        let transaction_request_senders = Arc::new(RwLock::new(HashMap::new()));
-        let controlled_transactions = transaction_request_senders.clone();
+        let transaction_services = Arc::new(RwLock::new(HashMap::new()));
+        let controlled_transactions = transaction_services.clone();
         background_tasks.spawn_interval(
             move || {
                 let transactions = controlled_transactions.clone();
@@ -96,7 +97,7 @@ impl HTTPTypeDBService {
             ),
         );
 
-        Self { distribution_info, server_state, transaction_services: transaction_request_senders }
+        Self { distribution_info, server_state, transaction_services }
     }
 
     async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>) {
