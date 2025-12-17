@@ -231,7 +231,7 @@ impl Server {
         Self::install_default_encryption_provider()?;
 
         let grpc_server = Self::serve_grpc(
-            server_state.grpc_address().await,
+            server_state.grpc_serving_address().await,
             &encryption_config,
             server_state.clone(),
             shutdown_receiver.clone(),
@@ -274,7 +274,7 @@ impl Server {
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
-        let service = grpc::typedb_service::GRPCTypeDBService::new(address.clone(), server_state.clone());
+        let service = grpc::typedb_service::GRPCTypeDBService::new(server_state.clone());
         let mut grpc_server =
             tonic::transport::Server::builder().http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE));
         if let Some(tls_config) = grpc::encryption::prepare_tls_config(encryption_config)? {
@@ -302,12 +302,8 @@ impl Server {
         background_tasks: TokioTaskSpawner,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());
-        let service = http::typedb_service::HTTPTypeDBService::new(
-            distribution_info,
-            address,
-            server_state.clone(),
-            background_tasks,
-        );
+        let service =
+            http::typedb_service::HTTPTypeDBService::new(distribution_info, server_state.clone(), background_tasks);
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);
         let router_service = http::typedb_service::HTTPTypeDBService::create_protected_router(http_service.clone())
@@ -337,10 +333,11 @@ impl Server {
 
     fn print_hello(distribution_info: DistributionInfo, is_development_mode_enabled: bool) {
         println!("{}", distribution_info.logo); // very important
+        let version = distribution_info.version.trim();
         if is_development_mode_enabled {
-            println!("Running {} {} in development mode.", distribution_info.distribution, distribution_info.version);
+            println!("Running {} {} in development mode.", distribution_info.distribution, version);
         } else {
-            println!("Running {} {}.", distribution_info.distribution, distribution_info.version);
+            println!("Running {} {}.", distribution_info.distribution, version);
         }
     }
 
@@ -349,7 +346,13 @@ impl Server {
         distribution_info: DistributionInfo,
         encryption_config: &EncryptionConfig,
     ) {
-        print!("Serving gRPC on {}", server_status.grpc_address().unwrap_or_else(|| "<UNKNOWN ADDRESS>"));
+        const UNKNOWN: &str = "<UNKNOWN ADDRESS>";
+        let grpc_serving_address = server_status.grpc_serving_address().unwrap_or(UNKNOWN);
+        let grpc_connection_address = server_status.grpc_connection_address().unwrap_or(UNKNOWN);
+        print!("Serving gRPC on {grpc_serving_address}");
+        if grpc_connection_address != grpc_serving_address {
+            print!(" (connect through {grpc_connection_address})");
+        }
         if let Some(http_address) = server_status.http_address() {
             print!(" and HTTP on {http_address}");
         }
