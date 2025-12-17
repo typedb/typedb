@@ -60,7 +60,7 @@ impl Checkpoint {
                     }
 
                     let checkpoint = Checkpoint { directory: path };
-                    if checkpoint.is_consistent::<KS>()? {
+                    if checkpoint.is_complete::<KS>()? {
                         Ok(Some(checkpoint))
                     } else {
                         Ok(cur)
@@ -132,7 +132,7 @@ impl Checkpoint {
         ))
     }
 
-    fn is_consistent<KS: KeyspaceSet>(&self) -> io::Result<bool> {
+    fn is_complete<KS: KeyspaceSet>(&self) -> io::Result<bool> {
         if !self.directory.is_dir() {
             return Ok(false);
         }
