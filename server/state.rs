@@ -21,8 +21,8 @@ use database::{
     Database,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use itertools::Itertools;
 use durability::DurabilitySequenceNumber;
+use itertools::Itertools;
 use options::TransactionOptions;
 use resource::{
     constants::{common::SECONDS_IN_MINUTE, server::DATABASE_METRICS_UPDATE_INTERVAL},
