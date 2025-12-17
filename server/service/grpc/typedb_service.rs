@@ -53,13 +53,18 @@ use crate::{
 
 #[derive(Debug)]
 pub(crate) struct GRPCTypeDBService {
-    address: SocketAddr,
     server_state: ArcServerState,
 }
 
 impl GRPCTypeDBService {
-    pub(crate) fn new(address: SocketAddr, server_state: ArcServerState) -> Self {
-        Self { address, server_state }
+    pub(crate) fn new(server_state: ArcServerState) -> Self {
+        Self { server_state }
+    }
+
+    async fn servers_statuses(&self) -> Result<Vec<typedb_protocol::Server>, Status> {
+        let statuses =
+            self.server_state.servers_statuses().await.map_err(|err| err.into_error_message().into_status())?;
+        Ok(statuses.into_iter().map(|status| status.to_proto()).collect())
     }
 }
 
@@ -102,8 +107,6 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                 else {
                     return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status());
                 };
-                let status =
-                    self.server_state.server_status().await.map_err(|err| err.into_error_message().into_status())?;
                 let token = self
                     .server_state
                     .token_create(password_credentials.username, password_credentials.password)
@@ -120,7 +123,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                 Ok(Response::new(connection_open_res(
                     generate_connection_id(),
                     receive_time,
-                    servers_get_res(status.to_proto()),
+                    servers_all_res(self.servers_statuses().await?),
                     token_create_res(token),
                 )))
             },
@@ -164,12 +167,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             self.server_state.diagnostics_manager().await,
             None::<&str>,
             ActionKind::ServersAll,
-            || async {
-                let statuses =
-                    self.server_state.servers_statuses().await.map_err(|err| err.into_error_message().into_status())?;
-                let statuses_proto = statuses.into_iter().map(|status| status.to_proto()).collect();
-                Ok(Response::new(servers_all_res(statuses_proto)))
-            },
+            || async { Ok(Response::new(servers_all_res(self.servers_statuses().await?))) },
         )
         .await
     }
