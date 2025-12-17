@@ -1,3 +1,8 @@
 database create foo
 database list
-database delete foo
+transaction schema foo
+define entity person, owns name; attribute name, value string; end;
+commit
+transaction write foo
+put $_ isa person, has name "John"; end;
+commit
