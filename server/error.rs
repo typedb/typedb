@@ -39,7 +39,7 @@ typedb_error! {
         TokenConfiguration(7, "Token configuration error.", typedb_source: TokenManagerError),
         MissingTLSCertificate(8, "TLS certificate path must be specified when encryption is enabled."),
         MissingTLSCertificateKey(9, "TLS certificate key path must be specified when encryption is enabled."),
-        GrpcHttpConflictingAddress(10, "Configuring HTTP and gRPC on the same address {address} is not supported.", address: SocketAddr),
+        HttpConflictingAddress(10, "Configuring HTTP and gRPC on the same address {address} is not supported.", address: SocketAddr),
         GrpcServe(11, "Could not serve gRPC on {address}.", address: SocketAddr, source: Arc<tonic::transport::Error>),
         GrpcCouldNotReadTlsCertificate(12, "Could not read TLS certificate from '{path}' for the gRPC server.", path: String, source: Arc<io::Error>),
         GrpcCouldNotReadTlsCertificateKey(13, "Could not read TLS certificate key from '{path}' for the gRPC server.", path: String, source: Arc<io::Error>),
