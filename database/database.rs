@@ -43,7 +43,7 @@ use query::query_cache::QueryCache;
 use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError, CheckpointWriter},
+    recovery::checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
     sequence_number::SequenceNumber,
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
@@ -328,7 +328,7 @@ impl Database<WALClient> {
         wal_client.register_record_type::<Statistics>();
 
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
-        let checkpoint = Checkpoint::open_latest::<EncodingKeyspace>(path)
+        let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
             .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
         let storage = Arc::new(
             MVCCStorage::load::<EncodingKeyspace>(&name, path, wal_client, &checkpoint)
