@@ -33,11 +33,11 @@ const TEMP_FILE_EXTENSION: &str = "tmp";
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
 /// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
 /// have to reapply commits to the keyspaces from the WAL.
-pub struct Checkpoint {
+pub struct CheckpointReader {
     pub directory: PathBuf,
 }
 
-impl Checkpoint {
+impl CheckpointReader {
     pub fn open_latest<KS: KeyspaceSet>(storage_path: &Path) -> Result<Option<Self>, CheckpointLoadError> {
         use CheckpointLoadError::CheckpointRead;
 
@@ -55,11 +55,11 @@ impl Checkpoint {
                         return Ok(cur);
                     }
 
-                    if cur.as_ref().is_some_and(|cur: &Checkpoint| cur.directory > path) {
+                    if cur.as_ref().is_some_and(|cur: &CheckpointReader| cur.directory > path) {
                         return Ok(cur);
                     }
 
-                    let checkpoint = Checkpoint { directory: path };
+                    let checkpoint = CheckpointReader { directory: path };
                     if checkpoint.is_complete::<KS>()? {
                         Ok(Some(checkpoint))
                     } else {
@@ -232,7 +232,7 @@ impl CheckpointWriter {
         Ok(())
     }
 
-    pub fn finish(self) -> Result<Checkpoint, CheckpointCreateError> {
+    pub fn finish(self) -> Result<CheckpointReader, CheckpointCreateError> {
         use CheckpointCreateError::{CheckpointDirCreate, CheckpointDirRead, MissingStorageData, OldCheckpointRemove};
 
         if !self.temporary_directory.join(STORAGE_METADATA_FILE_NAME).exists() {
@@ -256,7 +256,7 @@ impl CheckpointWriter {
                 .map_err(|error| OldCheckpointRemove { dir: previous_checkpoint, source: Arc::new(error) })?
         }
 
-        Ok(Checkpoint { directory: self.checkpoint_directory })
+        Ok(CheckpointReader { directory: self.checkpoint_directory })
     }
 }
 

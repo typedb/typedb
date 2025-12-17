@@ -42,7 +42,7 @@ use crate::{
         KeyspaceSet, Keyspaces,
     },
     recovery::{
-        checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError, CheckpointWriter},
+        checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
@@ -116,7 +116,7 @@ impl<Durability> MVCCStorage<Durability> {
         name: impl AsRef<str>,
         path: &Path,
         mut durability_client: Durability,
-        checkpoint: &Option<Checkpoint>,
+        checkpoint: &Option<CheckpointReader>,
     ) -> Result<Self, StorageOpenError>
     where
         Durability: DurabilityClient,
