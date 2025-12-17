@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{net::SocketAddr, pin::Pin, time::Instant};
+use std::{pin::Pin, time::Instant};
 
 use diagnostics::metrics::ActionKind;
 use tokio::sync::mpsc::channel;
