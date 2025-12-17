@@ -78,7 +78,8 @@ typedb_error! {
         DatabaseExport(16, "Database export error", typedb_source: DatabaseExportError),
         DatabaseSchemaCommitFailed(17, "Schema commit failed.", typedb_source: SchemaCommitError),
         DatabaseDataCommitFailed(18, "Data commit failed.", typedb_source: DataCommitError),
-        NotSupportedByDistribution(19, "Not supported by this distribution: {description}", description: String),
+        DatabaseCommitRecordExistsFailed(19, "Commit record check failed.", typedb_source: DatabaseOpenError),
+        NotSupportedByDistribution(20, "Not supported by this distribution: {description}", description: String),
     }
 }
 

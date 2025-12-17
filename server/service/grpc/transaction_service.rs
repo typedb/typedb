@@ -21,7 +21,7 @@ use database::{
         execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
         WriteQueryAnswer, WriteQueryResult,
     },
-    transaction::{SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::metrics::{ActionKind, ClientEndpoint, LoadKind};
 use executor::{
@@ -57,7 +57,6 @@ use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
 use crate::{
-    error::LocalServerStateError,
     service::{
         grpc::{
             analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
@@ -82,7 +81,7 @@ use crate::{
             with_readable_transaction, Transaction, TransactionServiceError,
         },
         may_encode_pipeline_structure,
-        IncludeInvolvedBlocks,
+        IncludeInvolvedBlocks, TransactionType,
     },
     state::ArcServerState,
 };
@@ -138,6 +137,9 @@ pub(crate) struct TransactionService {
     query_queue: VecDeque<(Uuid, QueueOptions, typeql::query::Pipeline, String)>,
     query_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
+
+    close_sender: Sender<()>,
+    close_receiver: Receiver<()>,
 }
 
 impl TransactionService {
@@ -147,6 +149,7 @@ impl TransactionService {
         response_sender: Sender<Result<ProtocolServer, Status>>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
+        let (close_sender, close_receiver) = channel(1);
 
         Self {
             server_state,
@@ -165,16 +168,27 @@ impl TransactionService {
             query_queue: VecDeque::with_capacity(20),
             query_responders: HashMap::new(),
             running_write_query: None,
+
+            close_sender,
+            close_receiver,
         }
     }
 
     pub(crate) async fn listen(&mut self) {
-        let mut shutdown_receiver = self.server_state.shutdown_receiver().await;
+        let mut global_shutdown_receiver = self.server_state.shutdown_receiver().await;
         loop {
             let result = if let Some((req_id, write_query_worker)) = &mut self.running_write_query {
                 tokio::select! { biased;
-                    _ = shutdown_receiver.changed() => {
+                    _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
+                    recv_message = self.close_receiver.recv() => {
+                        event!(Level::TRACE, "{}", match recv_message {
+                            Some(()) => "Transaction close signal received, closing transaction service.",
+                            None => "Close channel dropped; no more control possible. Closing transaction service.",
+                        });
                         self.do_close().await;
                         return;
                     }
@@ -201,8 +215,16 @@ impl TransactionService {
                 }
             } else {
                 tokio::select! { biased;
-                    _ = shutdown_receiver.changed() => {
+                    _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
+                    recv_message = self.close_receiver.recv() => {
+                        event!(Level::TRACE, "{}", match recv_message {
+                            Some(()) => "Transaction close signal received, closing transaction service.",
+                            None => "Close channel dropped; no more control possible. Closing transaction service.",
+                        });
                         self.do_close().await;
                         return;
                     }
@@ -409,13 +431,15 @@ impl TransactionService {
         let transaction_options = transaction_options_from_proto(open_req.options);
         let transaction_timeout_millis = transaction_options.transaction_timeout_millis;
 
-        let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type)
-            .map_err(|_| ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status())?;
+        let transaction_type =
+            decode_transaction_type(typedb_protocol::transaction::Type::try_from(open_req.r#type).map_err(|_| {
+                ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status()
+            })?);
 
         let database_name = open_req.database;
         let database = self
             .server_state
-            .databases_get_unrestricted(database_name.as_ref())
+            .databases_get_for_transaction(database_name.as_ref(), transaction_type)
             .await
             .map_err(|typedb_source| typedb_source.into_error_message().into_status())?
             .ok_or_else(|| {
@@ -425,7 +449,7 @@ impl TransactionService {
             })?;
 
         let transaction = match transaction_type {
-            typedb_protocol::transaction::Type::Read => {
+            TransactionType::Read => {
                 let transaction = spawn_blocking(move || {
                     TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
@@ -435,7 +459,7 @@ impl TransactionService {
                 .unwrap()?;
                 Transaction::Read(transaction)
             }
-            typedb_protocol::transaction::Type::Write => {
+            TransactionType::Write => {
                 let transaction = spawn_blocking(move || {
                     TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
@@ -445,7 +469,7 @@ impl TransactionService {
                 .unwrap()?;
                 Transaction::Write(transaction)
             }
-            typedb_protocol::transaction::Type::Schema => {
+            TransactionType::Schema => {
                 let transaction = spawn_blocking(move || {
                     TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
@@ -456,6 +480,14 @@ impl TransactionService {
                 Transaction::Schema(transaction)
             }
         };
+
+        let transaction_add_result =
+            self.server_state.transactions_add(transaction.id(), transaction.type_(), self.close_sender.clone()).await;
+        if let Err(typedb_source) = transaction_add_result {
+            transaction.close();
+            return Err(typedb_source.into_error_message().into_status());
+        }
+
         self.server_state.diagnostics_manager().await.increment_load_count(
             ClientEndpoint::Grpc,
             &database_name,
@@ -1413,6 +1445,14 @@ impl TransactionService {
 
     fn get_database_name(&self) -> Option<&str> {
         self.transaction.as_ref().map(Transaction::database_name)
+    }
+}
+
+fn decode_transaction_type(transaction_type: typedb_protocol::transaction::Type) -> TransactionType {
+    match transaction_type {
+        typedb_protocol::transaction::Type::Read => TransactionType::Read,
+        typedb_protocol::transaction::Type::Write => TransactionType::Write,
+        typedb_protocol::transaction::Type::Schema => TransactionType::Schema,
     }
 }
 

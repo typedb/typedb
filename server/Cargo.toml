@@ -115,6 +115,11 @@ dev-dependencies = {}
 		features = []
 		default-features = false
 
+	[dependencies.durability]
+		path = "../durability"
+		features = []
+		default-features = false
+
 	[dependencies.ir]
 		path = "../ir"
 		features = []
