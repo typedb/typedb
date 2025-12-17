@@ -67,7 +67,6 @@ struct TransactionInfo {
 #[derive(Clone, Debug)]
 pub(crate) struct HTTPTypeDBService {
     distribution_info: DistributionInfo,
-    address: SocketAddr,
     server_state: ArcServerState,
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
 }
@@ -78,7 +77,6 @@ impl HTTPTypeDBService {
 
     pub(crate) fn new(
         distribution_info: DistributionInfo,
-        address: SocketAddr,
         server_state: ArcServerState,
         background_tasks: TokioTaskSpawner,
     ) -> Self {
@@ -98,16 +96,12 @@ impl HTTPTypeDBService {
             ),
         );
 
-        Self { distribution_info, address, server_state, transaction_services: transaction_request_senders }
+        Self { distribution_info, server_state, transaction_services: transaction_request_senders }
     }
 
     async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>) {
         let mut transactions = transactions.write().await;
         transactions.retain(|_, info| !info.request_sender.is_closed());
-    }
-
-    pub(crate) fn address(&self) -> &SocketAddr {
-        &self.address
     }
 
     async fn transaction_new(

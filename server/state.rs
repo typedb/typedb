@@ -4,12 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt::Debug, net::SocketAddr, path::PathBuf, sync::Arc};
+use std::{collections::HashSet, fmt::Debug, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 use concurrency::{IntervalRunner, TokioTaskSpawner};
 use database::{database_manager::DatabaseManager, transaction::TransactionRead, Database};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
+use itertools::Itertools;
 use options::TransactionOptions;
 use resource::{
     constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo, profile::CommitProfile,
@@ -49,8 +50,11 @@ pub trait ServerState: Debug {
     async fn distribution_info(&self) -> DistributionInfo;
 
     // TODO: grpc_address and http_address don't really suit "ServerState"
-    async fn grpc_address(&self) -> SocketAddr;
+    async fn grpc_serving_address(&self) -> SocketAddr;
 
+    async fn grpc_connection_address(&self) -> SocketAddr;
+
+    // TODO: HTTP could probably expose two addresses, too
     async fn http_address(&self) -> Option<SocketAddr>;
 
     // TODO: Name server_status -> servers_get and servers_statuses -> servers_all like in GRPC?
@@ -143,7 +147,8 @@ pub trait ServerState: Debug {
 #[derive(Debug)]
 pub struct LocalServerState {
     distribution_info: DistributionInfo,
-    grpc_address: SocketAddr,
+    grpc_serving_address: SocketAddr,
+    grpc_connection_address: SocketAddr,
     http_address: Option<SocketAddr>,
     server_status: LocalServerStatus,
     database_manager: Arc<DatabaseManager>,
@@ -186,17 +191,28 @@ impl LocalServerState {
             .await,
         );
 
-        let grpc_address = Self::resolve_address(&config.server.address).await;
+        let grpc_serving_address = Self::resolve_address(&config.server.address).await;
+        let grpc_connection_address = match &config.server.connection_address {
+            Some(connection_address) => Self::resolve_address(connection_address).await,
+            None => grpc_serving_address,
+        };
+        let reserved_addresses = HashSet::from([grpc_serving_address, grpc_connection_address]);
+        let reserved_addresses = reserved_addresses.into_iter();
         let http_address = if config.server.http.enabled {
-            Some(Self::validate_and_resolve_http_address(&config.server.http.address, grpc_address).await?)
+            Some(Self::validate_and_resolve_http_address(&config.server.http.address, reserved_addresses).await?)
         } else {
             None
         };
 
         Ok(Self {
             distribution_info,
-            server_status: LocalServerStatus::from_addresses(grpc_address, http_address),
-            grpc_address,
+            server_status: LocalServerStatus::from_addresses(
+                grpc_serving_address,
+                grpc_connection_address,
+                http_address,
+            ),
+            grpc_serving_address,
+            grpc_connection_address,
             http_address,
             database_manager: database_manager.clone(),
             user_manager: None,
@@ -347,11 +363,11 @@ impl LocalServerState {
 
     async fn validate_and_resolve_http_address(
         http_address: &str,
-        grpc_address: SocketAddr,
+        mut reserved_addresses: impl Iterator<Item = SocketAddr>,
     ) -> Result<SocketAddr, ServerOpenError> {
         let http_address = Self::resolve_address(http_address).await;
-        if grpc_address == http_address {
-            return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
+        if reserved_addresses.contains(&http_address) {
+            return Err(ServerOpenError::HttpConflictingAddress { address: http_address });
         }
         Ok(http_address)
     }
@@ -371,8 +387,12 @@ impl ServerState for LocalServerState {
         self.distribution_info
     }
 
-    async fn grpc_address(&self) -> SocketAddr {
-        self.grpc_address
+    async fn grpc_serving_address(&self) -> SocketAddr {
+        self.grpc_serving_address
+    }
+
+    async fn grpc_connection_address(&self) -> SocketAddr {
+        self.grpc_connection_address
     }
 
     async fn http_address(&self) -> Option<SocketAddr> {
