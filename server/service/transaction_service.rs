@@ -7,7 +7,8 @@
 use std::time::Duration;
 
 use database::transaction::{
-    DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema, TransactionWrite,
+    DataCommitError, SchemaCommitError, TransactionError, TransactionId, TransactionRead, TransactionSchema,
+    TransactionWrite,
 };
 use diagnostics::metrics::LoadKind;
 use error::typedb_error;
@@ -41,10 +42,27 @@ pub(crate) use with_readable_transaction;
 
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},
+    service::TransactionType,
     state::ArcServerState,
 };
 
 impl Transaction {
+    pub fn id(&self) -> TransactionId {
+        match self {
+            Transaction::Read(transaction) => transaction.id(),
+            Transaction::Write(transaction) => transaction.id(),
+            Transaction::Schema(transaction) => transaction.id(),
+        }
+    }
+
+    pub fn type_(&self) -> TransactionType {
+        match self {
+            Transaction::Read(_) => TransactionType::Read,
+            Transaction::Write(_) => TransactionType::Write,
+            Transaction::Schema(_) => TransactionType::Schema,
+        }
+    }
+
     pub fn load_kind(&self) -> LoadKind {
         match self {
             Transaction::Read(_) => LoadKind::ReadTransactions,
@@ -55,6 +73,14 @@ impl Transaction {
 
     pub fn database_name(&self) -> &str {
         with_readable_transaction!(self, |transaction| { transaction.database.name() })
+    }
+
+    pub fn close(self) {
+        match self {
+            Transaction::Read(transaction) => transaction.close(),
+            Transaction::Write(transaction) => transaction.close(),
+            Transaction::Schema(transaction) => transaction.close(),
+        }
     }
 }
 
@@ -157,5 +183,6 @@ typedb_error! {
         InvalidPrefetchSize(18, "Invalid query option: prefetch size should be >= 1, got {value} instead.", value: usize),
         AnalyseQueryExpectsPipeline(19, "Query analyse received a schema query.Only query pipeline can be analysed."),
         AnalyseQueryFailed(20, "Analysing the query failed.", typedb_source: QueryError),
+        CannotOpen(21, "Could not open transaction.", typedb_source: ArcServerStateError),
     }
 }

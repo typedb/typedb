@@ -40,7 +40,11 @@ use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
     spawn,
-    sync::{broadcast, mpsc::Receiver, oneshot},
+    sync::{
+        broadcast,
+        mpsc::{Receiver, Sender},
+        oneshot,
+    },
     task::{spawn_blocking, JoinHandle},
     time::Instant,
 };
@@ -157,6 +161,9 @@ pub(crate) struct TransactionService {
     transaction: Option<Transaction>,
     query_queue: VecDeque<(TransactionResponder, QueueOptions, typeql::query::Pipeline, String)>,
     running_write_query: Option<(TransactionResponder, JoinHandle<(Transaction, WriteQueryResult)>)>,
+
+    close_sender: Sender<()>,
+    close_receiver: Receiver<()>,
 }
 
 #[derive(Debug)]
@@ -228,6 +235,7 @@ impl TransactionService {
         request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
+        let (close_sender, close_receiver) = tokio::sync::mpsc::channel(1);
         Self {
             server_state,
 
@@ -241,6 +249,9 @@ impl TransactionService {
             transaction: None,
             query_queue: VecDeque::with_capacity(20),
             running_write_query: None,
+
+            close_sender,
+            close_receiver,
         }
     }
 
@@ -255,9 +266,9 @@ impl TransactionService {
 
         let database = self
             .server_state
-            .database_manager()
+            .databases_get_for_transaction(database_name.as_str(), type_)
             .await
-            .database(database_name.as_ref())
+            .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?
             .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name.clone() })?;
 
         let transaction = match type_ {
@@ -289,6 +300,14 @@ impl TransactionService {
                 Transaction::Schema(transaction)
             }
         };
+
+        let transaction_add_result =
+            self.server_state.transactions_add(transaction.id(), transaction.type_(), self.close_sender.clone()).await;
+        if let Err(typedb_source) = transaction_add_result {
+            transaction.close();
+            return Err(TransactionServiceError::CannotOpen { typedb_source });
+        }
+
         self.server_state.diagnostics_manager().await.increment_load_count(
             ClientEndpoint::Http,
             &database_name,
@@ -302,12 +321,20 @@ impl TransactionService {
     }
 
     pub(crate) async fn listen(&mut self) {
-        let mut shutdown_receiver = self.server_state.shutdown_receiver().await;
+        let mut global_shutdown_receiver = self.server_state.shutdown_receiver().await;
         loop {
             let control = if let Some((_, write_query_worker)) = &mut self.running_write_query {
                 tokio::select! { biased;
-                    _ = shutdown_receiver.changed() => {
+                    _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
+                    recv_message = self.close_receiver.recv() => {
+                        event!(Level::TRACE, "{}", match recv_message {
+                            Some(()) => "Transaction close signal received, closing transaction service.",
+                            None => "Close channel dropped; no more control possible. Closing transaction service.",
+                        });
                         self.do_close().await;
                         return;
                     }
@@ -331,8 +358,16 @@ impl TransactionService {
                 }
             } else {
                 tokio::select! { biased;
-                    _ = shutdown_receiver.changed() => {
+                    _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
+                    recv_message = self.close_receiver.recv() => {
+                        event!(Level::TRACE, "{}", match recv_message {
+                            Some(()) => "Transaction close signal received, closing transaction service.",
+                            None => "Close channel dropped; no more control possible. Closing transaction service.",
+                        });
                         self.do_close().await;
                         return;
                     }

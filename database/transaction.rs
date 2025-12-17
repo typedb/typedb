@@ -14,6 +14,7 @@ use concept::{
     thing::{statistics::StatisticsError, thing_manager::ThingManager},
     type_::type_manager::{type_cache::TypeCacheCreateError, TypeManager},
 };
+use durability::DurabilitySequenceNumber;
 use error::typedb_error;
 use function::{function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
@@ -21,7 +22,10 @@ use query::query_manager::QueryManager;
 use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
+    snapshot::{
+        snapshot_id::SnapshotId, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError,
+        WritableSnapshot, WriteSnapshot,
+    },
 };
 use tracing::Level;
 
@@ -85,6 +89,10 @@ impl<D: DurabilityClient> TransactionRead<D> {
 
     pub fn close(self) {
         drop(self)
+    }
+
+    pub fn id(&self) -> TransactionId {
+        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
     }
 }
 
@@ -196,6 +204,10 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
     pub fn close(self) {
         drop(self)
+    }
+
+    pub fn id(&self) -> TransactionId {
+        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
     }
 }
 
@@ -325,6 +337,30 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
     pub fn close(self) {
         drop(self)
+    }
+
+    pub fn id(&self) -> TransactionId {
+        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct TransactionId {
+    sequence_number: DurabilitySequenceNumber,
+    snapshot_id: SnapshotId,
+}
+
+impl TransactionId {
+    fn new(sequence_number: DurabilitySequenceNumber, snapshot_id: SnapshotId) -> Self {
+        Self { sequence_number, snapshot_id }
+    }
+
+    pub fn sequence_number(&self) -> DurabilitySequenceNumber {
+        self.sequence_number
+    }
+
+    pub fn snapshot_id(&self) -> SnapshotId {
+        self.snapshot_id
     }
 }
 
