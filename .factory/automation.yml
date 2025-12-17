@@ -176,8 +176,9 @@ build:
         sudo apt update
         sudo apt install -y libclang-dev
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel build //:assemble-docker-x86_64.tar //:assemble-all-linux-x86_64-targz
+        bazel build //:assemble-all-linux-x86_64-targz
         tar -xf bazel-bin/typedb-all-linux-x86_64.tar.gz
+        bazel build //:assemble-docker-x86_64.tar
         docker load -i bazel-bin/assemble-docker-x86_64.tar
         tool/test/simulate-crash.sh
 
