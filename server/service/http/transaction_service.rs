@@ -53,7 +53,6 @@ use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
     service::{
-        may_encode_pipeline_structure,
         http::message::{
             analyze::{
                 encode_analyzed_query,
@@ -62,6 +61,7 @@ use crate::{
             },
             query::{document::encode_document, row::encode_row},
         },
+        may_encode_pipeline_structure,
         transaction_service::{
             commit_schema_transaction, commit_write_transaction, init_transaction_timeout, is_write_pipeline,
             with_readable_transaction, Transaction, TransactionServiceError,
