@@ -130,8 +130,9 @@ commands:
           export DOCKER_REPO="typedb-snapshot"
           docker manifest create $DOCKER_ORG/$DOCKER_REPO:$VERSION --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
           docker manifest push $DOCKER_ORG/$DOCKER_REPO:$VERSION
-          docker manifest create $DOCKER_ORG/$DOCKER_REPO:latest --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
-          docker manifest push $DOCKER_ORG/$DOCKER_REPO:latest
+          # TODO: Uncomment. Do not override LATEST in a non-master branch!
+          # docker manifest create $DOCKER_ORG/$DOCKER_REPO:latest --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
+          # docker manifest push $DOCKER_ORG/$DOCKER_REPO:latest
 
   deploy-docker-release-for-arch:
     parameters:
@@ -154,8 +155,9 @@ commands:
           export DOCKER_REPO="typedb"
           docker manifest create $DOCKER_ORG/$DOCKER_REPO:$VERSION --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
           docker manifest push $DOCKER_ORG/$DOCKER_REPO:$VERSION
-          docker manifest create $DOCKER_ORG/$DOCKER_REPO:latest --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
-          docker manifest push $DOCKER_ORG/$DOCKER_REPO:latest
+          # TODO: Uncomment. Do not override LATEST in a non-master branch!
+          # docker manifest create $DOCKER_ORG/$DOCKER_REPO:latest --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
+          # docker manifest push $DOCKER_ORG/$DOCKER_REPO:latest
 
 jobs:
   # per platform snapshot deployment
@@ -289,37 +291,39 @@ jobs:
       - run: .circleci\windows\prepare.bat
       - run: .circleci\windows\deploy_release.bat
 
-  deploy-release-brew:
-    executor: linux-x86_64-amazonlinux-2
-    steps:
-      - run: yum install -y tar gzip
-      - attach_workspace:
-          at: ~/dist
-      - checkout
-      - install-deps-yum:
-          bazel-arch: amd64
-      - run: |
-          export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=$REPO_GITHUB_USERNAME DEPLOY_BREW_EMAIL=$REPO_GITHUB_EMAIL
-          sha256sum ~/dist/typedb-all-mac-arm64.zip  | awk '{print $1}' > checksum-arm64
-          sha256sum ~/dist/typedb-all-mac-x86_64.zip | awk '{print $1}' > checksum-x86_64
-          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-brew --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
+# TODO: Uncomment. Do not deploy brew in a non-master branch!
+#  deploy-release-brew:
+#    executor: linux-x86_64-amazonlinux-2
+#    steps:
+#      - run: yum install -y tar gzip
+#      - attach_workspace:
+#          at: ~/dist
+#      - checkout
+#      - install-deps-yum:
+#          bazel-arch: amd64
+#      - run: |
+#          export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=$REPO_GITHUB_USERNAME DEPLOY_BREW_EMAIL=$REPO_GITHUB_EMAIL
+#          sha256sum ~/dist/typedb-all-mac-arm64.zip  | awk '{print $1}' > checksum-arm64
+#          sha256sum ~/dist/typedb-all-mac-x86_64.zip | awk '{print $1}' > checksum-x86_64
+#          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#          bazel run --define version=$(cat VERSION) //:deploy-brew --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
 
-  deploy-release-apt-x86_64:
-    executor: linux-x86_64-amazonlinux-2
-    steps:
-      - checkout
-      - install-deps-yum:
-          bazel-arch: amd64
-      - deploy-release-apt
-
-  deploy-release-apt-arm64:
-    executor: linux-arm64-amazonlinux-2
-    steps:
-      - checkout
-      - install-deps-yum:
-          bazel-arch: arm64
-      - deploy-release-apt
+# TODO: Uncomment. Do not deploy apt in a non-master branch!
+#  deploy-release-apt-x86_64:
+#    executor: linux-x86_64-amazonlinux-2
+#    steps:
+#      - checkout
+#      - install-deps-yum:
+#          bazel-arch: amd64
+#      - deploy-release-apt
+#
+#  deploy-release-apt-arm64:
+#    executor: linux-arm64-amazonlinux-2
+#    steps:
+#      - checkout
+#      - install-deps-yum:
+#          bazel-arch: arm64
+#      - deploy-release-apt
 
   deploy-docker-release-x86_64:
     executor: linux-x86_64-amazonlinux-2
@@ -365,21 +369,22 @@ jobs:
               -r ${CIRCLE_PROJECT_REPONAME} -n "TypeDB $(cat VERSION)" -b "$(cat ./RELEASE_NOTES_LATEST.md)" \
               -c ${CIRCLE_SHA1} -delete $(cat VERSION)
 
-  sync-to-typedb-benchmark:
-    machine:
-      image: ubuntu-2204:2024.11.1
-    steps:
-      - run:
-          name: "Sync this commit to TypeDB Benchmark"
-          command: |
-            git clone https://typedb-bot:$REPO_GITHUB_TOKEN@github.com/typedb/typedb-benchmark.git
-            cd typedb-benchmark
-            git config user.name "TypeDB Bot"
-            git config user.email "bot@typedb.com"
-            ./tool/update-typedb-core-version.sh "$CIRCLE_SHA1"
-            git add .
-            git commit -m "Update TypeDB Core version to $CIRCLE_SHA1"
-            git push origin development
+# TODO: Uncomment. Do not sync the benchmark in a non-master branch!
+#  sync-to-typedb-benchmark:
+#    machine:
+#      image: ubuntu-2204:2024.11.1
+#    steps:
+#      - run:
+#          name: "Sync this commit to TypeDB Benchmark"
+#          command: |
+#            git clone https://typedb-bot:$REPO_GITHUB_TOKEN@github.com/typedb/typedb-benchmark.git
+#            cd typedb-benchmark
+#            git config user.name "TypeDB Bot"
+#            git config user.email "bot@typedb.com"
+#            ./tool/update-typedb-core-version.sh "$CIRCLE_SHA1"
+#            git add .
+#            git commit -m "Update TypeDB Core version to $CIRCLE_SHA1"
+#            git push origin development
 
   # generic
   release-cleanup:
@@ -471,29 +476,30 @@ workflows:
             branches:
               only: [ release ]
 
-      - deploy-release-brew:
-          filters:
-            branches:
-              only: [ release ]
-          requires:
-            - deploy-release-mac-arm64
-            - deploy-release-mac-x86_64
-
-      - deploy-release-apt-x86_64:
-          filters:
-            branches:
-              only: [ release ]
-          requires:
-            - deploy-release-linux-x86_64
-            - deploy-release-linux-arm64
-
-      - deploy-release-apt-arm64:
-          filters:
-            branches:
-              only: [ release ]
-          requires:
-            - deploy-release-linux-x86_64
-            - deploy-release-linux-arm64
+# TODO: Uncomment. Do not deploy brew / apt in a non-master branch!
+#      - deploy-release-brew:
+#          filters:
+#            branches:
+#              only: [ release ]
+#          requires:
+#            - deploy-release-mac-arm64
+#            - deploy-release-mac-x86_64
+#
+#      - deploy-release-apt-x86_64:
+#          filters:
+#            branches:
+#              only: [ release ]
+#          requires:
+#            - deploy-release-linux-x86_64
+#            - deploy-release-linux-arm64
+#
+#      - deploy-release-apt-arm64:
+#          filters:
+#            branches:
+#              only: [ release ]
+#          requires:
+#            - deploy-release-linux-x86_64
+#            - deploy-release-linux-arm64
 
       - deploy-docker-release-x86_64:
           filters:
@@ -523,9 +529,10 @@ workflows:
             - deploy-release-mac-x86_64
             - deploy-release-mac-arm64
             - deploy-release-windows-x86_64
-            - deploy-release-brew
-            - deploy-release-apt-x86_64
-            - deploy-release-apt-arm64
+# TODO: Uncomment. Do not deploy brew/apt in a non-master branch!
+#            - deploy-release-brew
+#            - deploy-release-apt-x86_64
+#            - deploy-release-apt-arm64
             - deploy-docker-release-multiarch
 
       - release-cleanup:
