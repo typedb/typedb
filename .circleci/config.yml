@@ -443,12 +443,13 @@ workflows:
             - deploy-docker-snapshot-x86_64
             - deploy-docker-snapshot-arm64
 
-      - sync-to-typedb-benchmark:
-          filters:
-            branches:
-              only: [ master ]
-          requires:
-            - test-deploy-snapshot-linux-x86_64
+# TODO: Uncomment. Do not sync benchmarks in Cluster branch
+#      - sync-to-typedb-benchmark:
+#          filters:
+#            branches:
+#              only: [ master ]
+#          requires:
+#            - test-deploy-snapshot-linux-x86_64
   release:
     jobs:
       - deploy-release-linux-x86_64:
