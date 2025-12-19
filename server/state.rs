@@ -71,7 +71,7 @@ pub trait ServerState: Debug {
     // TODO: grpc_address and http_address don't really suit "ServerState"
     async fn grpc_serving_address(&self) -> SocketAddr;
 
-    async fn grpc_connection_address(&self) -> SocketAddr;
+    async fn grpc_connection_address(&self) -> String;
 
     // TODO: HTTP could probably expose two addresses, too
     async fn http_address(&self) -> Option<SocketAddr>;
@@ -191,7 +191,7 @@ pub trait ServerState: Debug {
 pub struct LocalServerState {
     distribution_info: DistributionInfo,
     grpc_serving_address: SocketAddr,
-    grpc_connection_address: SocketAddr,
+    grpc_connection_address: String, // reference info (can be an alias), do not resolve!
     http_address: Option<SocketAddr>,
     server_status: LocalServerStatus,
     database_manager: Arc<DatabaseManager>,
@@ -238,9 +238,9 @@ impl LocalServerState {
         );
 
         let grpc_serving_address = Self::resolve_address(&config.server.address).await;
-        let grpc_connection_address = match &config.server.connection_address {
-            Some(connection_address) => Self::resolve_address(connection_address).await,
-            None => grpc_serving_address,
+        let (grpc_connection_address, grpc_connection_address_str) = match config.server.connection_address {
+            Some(connection_address) => (Self::resolve_address(&connection_address).await, connection_address),
+            None => (grpc_serving_address, grpc_serving_address.to_string()),
         };
         let reserved_addresses = HashSet::from([grpc_serving_address, grpc_connection_address]);
         let reserved_addresses = reserved_addresses.into_iter();
@@ -270,11 +270,11 @@ impl LocalServerState {
             distribution_info,
             server_status: LocalServerStatus::from_addresses(
                 grpc_serving_address,
-                grpc_connection_address,
+                grpc_connection_address_str.clone(),
                 http_address,
             ),
             grpc_serving_address,
-            grpc_connection_address,
+            grpc_connection_address: grpc_connection_address_str,
             http_address,
             database_manager: database_manager.clone(),
             user_manager: None,
@@ -459,8 +459,8 @@ impl ServerState for LocalServerState {
         self.grpc_serving_address
     }
 
-    async fn grpc_connection_address(&self) -> SocketAddr {
-        self.grpc_connection_address
+    async fn grpc_connection_address(&self) -> String {
+        self.grpc_connection_address.clone()
     }
 
     async fn http_address(&self) -> Option<SocketAddr> {
