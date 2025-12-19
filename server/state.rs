@@ -438,9 +438,9 @@ impl LocalServerState {
     pub async fn resolve_address(address: &str) -> SocketAddr {
         lookup_host(address)
             .await
-            .unwrap()
+            .expect(&format!("Invalid address '{}'", address))
             .next()
-            .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP address", address))
+            .expect(&format!("Unable to map address '{}' to any IP address", address))
     }
 
     async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>) {
