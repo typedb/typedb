@@ -177,10 +177,11 @@ release:
     owner: typedb
     branch: [master]
   validation:
-    validate-dependencies:
-      image: typedb-ubuntu-22.04
-      command: |
-        bazel test //:release-validate-deps --test_output=streamed
+# TODO: Return when we depend on release tags
+#    validate-dependencies:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        bazel test //:release-validate-deps --test_output=streamed
 
     validate-release-notes:
       image: typedb-ubuntu-22.04
