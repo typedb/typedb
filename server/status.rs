@@ -21,12 +21,12 @@ impl LocalServerStatus {
 
     pub fn from_addresses(
         grpc_serving_address: SocketAddr,
-        grpc_connection_address: SocketAddr,
+        grpc_connection_address: String, // reference info (can be an alias), do not resolve!
         http_address: Option<SocketAddr>,
     ) -> Self {
         Self::new(
             grpc_serving_address.to_string(),
-            grpc_connection_address.to_string(),
+            grpc_connection_address,
             http_address.map(|address| address.to_string()),
         )
     }
