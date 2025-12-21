@@ -33,6 +33,7 @@ use encoding::{
 };
 use itertools::{Either, Itertools};
 use regex::Regex;
+use ir::translation::literal::FromTypeQLLiteral;
 use storage::snapshot::ReadableSnapshot;
 use test_utils::assert_matches;
 
@@ -565,69 +566,76 @@ impl Value {
     }
 
     pub fn into_typedb(self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
-        match value_type {
-            TypeDBValueType::Boolean => TypeDBValue::Boolean(self.raw_value.parse().unwrap()),
-            TypeDBValueType::Integer => TypeDBValue::Integer(self.raw_value.parse().unwrap()),
-            TypeDBValueType::Double => TypeDBValue::Double(self.raw_value.parse().unwrap()),
-            TypeDBValueType::Decimal => {
-                let trimmed_value = if self.raw_value.ends_with("dec") {
-                    self.raw_value.trim_end_matches("dec")
-                } else {
-                    self.raw_value.as_str()
-                };
-                let (integer, fractional) = trimmed_value.split_once(".").unwrap_or((trimmed_value, "0"));
-
-                let integer_parsed: i64 = integer.trim().parse().unwrap();
-                let integer_parsed_abs = integer_parsed.abs();
-                let fractional_parsed = Self::parse_decimal_fraction_part(fractional);
-
-                TypeDBValue::Decimal(match integer.starts_with('-') {
-                    false => Decimal::new(integer_parsed_abs, fractional_parsed),
-                    true => -Decimal::new(integer_parsed_abs, fractional_parsed),
-                })
-            }
-            TypeDBValueType::Date => {
-                TypeDBValue::Date(NaiveDate::parse_from_str(&self.raw_value, Self::DATE_FORMAT).unwrap())
-            }
-            TypeDBValueType::DateTime => {
-                let (datetime, remainder) = Self::parse_date_time_and_remainder(self.raw_value.as_str());
-                assert!(
-                    remainder.is_empty(),
-                    "Unexpected remainder when parsing {:?} with result of {:?}",
-                    self.raw_value,
-                    datetime
-                );
-                TypeDBValue::DateTime(datetime)
-            }
-            TypeDBValueType::DateTimeTZ => {
-                let (datetime, timezone) = Self::parse_date_time_and_remainder(self.raw_value.as_str());
-
-                assert!(!timezone.is_empty(), "No timezone when parsing {:?}", self.raw_value);
-
-                if timezone.ends_with('Z') {
-                    TypeDBValue::DateTimeTZ(datetime.and_local_timezone(TimeZone::Fixed(Utc.fix())).unwrap())
-                } else if timezone.starts_with(['+', '-']) {
-                    TypeDBValue::DateTimeTZ(
-                        datetime.and_local_timezone(TimeZone::Fixed(timezone.parse().unwrap())).unwrap(),
-                    )
-                } else {
-                    TypeDBValue::DateTimeTZ(
-                        datetime.and_local_timezone(TimeZone::IANA(timezone.parse().unwrap())).unwrap(),
-                    )
-                }
-            }
-            TypeDBValueType::Duration => TypeDBValue::Duration(self.raw_value.parse().unwrap()),
-            TypeDBValueType::String => {
-                let value = if self.raw_value.starts_with('"') && self.raw_value.ends_with('"') {
-                    &self.raw_value[1..&self.raw_value.len() - 1]
-                } else {
-                    self.raw_value.as_str()
-                };
-                TypeDBValue::String(Cow::Owned(value.to_string()))
-            }
-            // TODO: Could compare string representations like in driver
-            TypeDBValueType::Struct(_) => todo!(),
+        if value_type == TypeDBValueType::String {
+            let value = if self.raw_value.starts_with('"') && self.raw_value.ends_with('"') {
+                &self.raw_value[1..&self.raw_value.len() - 1]
+            } else {
+                self.raw_value.as_str()
+            };
+            TypeDBValue::String(Cow::Owned(value.to_string()))
+        } else {
+            let parsed_literal = typeql::parse_value(self.as_str()).unwrap();
+            let value = TypeDBValue::from_typeql_literal(&parsed_literal, None).expect("Unable to parse TypeQL literal into TypeDB Value");
+            value.cast(value_type.category()).expect(&format!("Could not convert {} into expected value type {:?}", self.as_str(), value_type))
         }
+        // match value_type {
+        //     TypeDBValueType::Boolean => TypeDBValue::Boolean(self.raw_value.parse().unwrap()),
+        //     TypeDBValueType::Integer => TypeDBValue::Integer(self.raw_value.parse().unwrap()),
+        //     TypeDBValueType::Double => TypeDBValue::Double(self.raw_value.parse().unwrap()),
+        //     TypeDBValueType::Decimal => {
+        //         let trimmed_value = if self.raw_value.ends_with("dec") {
+        //             self.raw_value.trim_end_matches("dec")
+        //         } else {
+        //             self.raw_value.as_str()
+        //         };
+        //         let (integer, fractional) = trimmed_value.split_once(".").unwrap_or((trimmed_value, "0"));
+        //
+        //         let integer_parsed: i64 = integer.trim().parse().unwrap();
+        //         let integer_parsed_abs = integer_parsed.abs();
+        //         let fractional_parsed = Self::parse_decimal_fraction_part(fractional);
+        //
+        //         TypeDBValue::Decimal(match integer.starts_with('-') {
+        //             false => Decimal::new(integer_parsed_abs, fractional_parsed),
+        //             true => -Decimal::new(integer_parsed_abs, fractional_parsed),
+        //         })
+        //     }
+        //     TypeDBValueType::Date => {
+        //         TypeDBValue::Date(NaiveDate::parse_from_str(&self.raw_value, Self::DATE_FORMAT).unwrap())
+        //     }
+        //     TypeDBValueType::DateTime => {
+        //         let (datetime, remainder) = Self::parse_date_time_and_remainder(self.raw_value.as_str());
+        //         assert!(
+        //             remainder.is_empty(),
+        //             "Unexpected remainder when parsing {:?} with result of {:?}",
+        //             self.raw_value,
+        //             datetime
+        //         );
+        //         TypeDBValue::DateTime(datetime)
+        //     }
+        //     TypeDBValueType::DateTimeTZ => {
+        //         let (datetime, timezone) = Self::parse_date_time_and_remainder(self.raw_value.as_str());
+        //
+        //         assert!(!timezone.is_empty(), "No timezone when parsing {:?}", self.raw_value);
+        //
+        //         if timezone.ends_with('Z') {
+        //             TypeDBValue::DateTimeTZ(datetime.and_local_timezone(TimeZone::Fixed(Utc.fix())).unwrap())
+        //         } else if timezone.starts_with(['+', '-']) {
+        //             TypeDBValue::DateTimeTZ(
+        //                 datetime.and_local_timezone(TimeZone::Fixed(timezone.parse().unwrap())).unwrap(),
+        //             )
+        //         } else {
+        //             TypeDBValue::DateTimeTZ(
+        //                 datetime.and_local_timezone(TimeZone::IANA(timezone.parse().unwrap())).unwrap(),
+        //             )
+        //         }
+        //     }
+        //     TypeDBValueType::Duration => TypeDBValue::Duration(self.raw_value.parse().unwrap()),
+        //     TypeDBValueType::String => {
+        //
+        //     }
+        //     // TODO: Could compare string representations like in driver
+        //     TypeDBValueType::Struct(_) => todo!(),
+        // }
     }
 
     fn parse_decimal_fraction_part(value: &str) -> u64 {
