@@ -384,18 +384,7 @@ impl AnnotationRange {
             None => true,
             Some(start) => match &value {
                 None => false,
-                Some(value) => match value {
-                    Value::Boolean(value) => &start.unwrap_boolean() <= value,
-                    Value::Integer(value) => &start.unwrap_integer() <= value,
-                    Value::Double(value) => &start.unwrap_double() <= value,
-                    Value::Decimal(value) => &start.unwrap_decimal() <= value,
-                    Value::Date(value) => &start.unwrap_date() <= value,
-                    Value::DateTime(value) => &start.unwrap_date_time() <= value,
-                    Value::DateTimeTZ(value) => &start.unwrap_date_time_tz() <= value,
-                    Value::String(value) => &start.unwrap_string() <= value,
-                    Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
-                    Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
-                },
+                Some(value) => start.partial_cmp(value).is_some_and(|ord| ord.is_le()),
             },
         }
     }
@@ -405,18 +394,7 @@ impl AnnotationRange {
             None => true,
             Some(end) => match &value {
                 None => false,
-                Some(value) => match value {
-                    Value::Boolean(value) => &end.unwrap_boolean() >= value,
-                    Value::Integer(value) => &end.unwrap_integer() >= value,
-                    Value::Double(value) => &end.unwrap_double() >= value,
-                    Value::Decimal(value) => &end.unwrap_decimal() >= value,
-                    Value::Date(value) => &end.unwrap_date() >= value,
-                    Value::DateTime(value) => &end.unwrap_date_time() >= value,
-                    Value::DateTimeTZ(value) => &end.unwrap_date_time_tz() >= value,
-                    Value::String(value) => &end.unwrap_string() >= value,
-                    Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
-                    Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
-                },
+                Some(value) => end.partial_cmp(value).is_some_and(|ord| ord.is_ge()),
             },
         }
     }

@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #noinspection CucumberUndefinedStep
-Feature: TypeQL Query with Expressions
+Feature: Debugging
 
   Background: Open connection and create a simple extensible schema
     Given typedb starts
@@ -20,9 +20,3 @@ Feature: TypeQL Query with Expressions
     Given transaction commits
 
     Given connection open write transaction for database: typedb
-
-  Scenario: Min and Max with integers, decimals, and doubles
-    When get answers of typeql read query
-      """
-      match let $a = 10;
-      """
