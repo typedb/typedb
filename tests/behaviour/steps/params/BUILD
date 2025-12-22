@@ -14,6 +14,7 @@ rust_library(
     deps = [
         "//concept:concept",
         "//encoding:encoding",
+        "//ir:ir",
         "//storage:storage",
         "//util/test:test_utils",
 
