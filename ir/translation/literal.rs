@@ -51,7 +51,7 @@ impl FromTypeQLLiteral for Value<'static> {
         source_span: Option<Span>,
     ) -> Result<Self, LiteralParseError> {
         // We don't know the final type yet. Zip with value-type annotations when constructing the executor.
-        match literal{
+        match literal {
             ValueLiteral::Boolean(boolean) => Ok(Value::Boolean(bool::from_typeql_literal(boolean, source_span)?)),
             ValueLiteral::Integer(integer) => Ok(Value::Integer(i64::from_typeql_literal(integer, source_span)?)),
             ValueLiteral::Decimal(decimal) => Ok(Value::Decimal(Decimal::from_typeql_literal(decimal, source_span)?)),
