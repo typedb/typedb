@@ -31,9 +31,9 @@ use encoding::{
         value_type::ValueType as TypeDBValueType,
     },
 };
+use ir::translation::literal::FromTypeQLLiteral;
 use itertools::{Either, Itertools};
 use regex::Regex;
-use ir::translation::literal::FromTypeQLLiteral;
 use storage::snapshot::ReadableSnapshot;
 use test_utils::assert_matches;
 
@@ -575,8 +575,13 @@ impl Value {
             TypeDBValue::String(Cow::Owned(value.to_string()))
         } else {
             let parsed_literal = typeql::parse_value(self.as_str()).unwrap();
-            let value = TypeDBValue::from_typeql_literal(&parsed_literal, None).expect("Unable to parse TypeQL literal into TypeDB Value");
-            value.cast(value_type.category()).expect(&format!("Could not convert {} into expected value type {:?}", self.as_str(), value_type))
+            let value = TypeDBValue::from_typeql_literal(&parsed_literal, None)
+                .expect("Unable to parse TypeQL literal into TypeDB Value");
+            value.cast(value_type.category()).expect(&format!(
+                "Could not convert {} into expected value type {:?}",
+                self.as_str(),
+                value_type
+            ))
         }
         // match value_type {
         //     TypeDBValueType::Boolean => TypeDBValue::Boolean(self.raw_value.parse().unwrap()),
