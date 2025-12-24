@@ -46,9 +46,8 @@ use crate::{
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
-    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, WriteSnapshot},
 };
-use crate::snapshot::ReadableSnapshot;
 
 pub mod durability_client;
 pub mod error;

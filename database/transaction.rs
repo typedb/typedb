@@ -171,7 +171,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 
     pub fn try_commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
-        let Self { mut profile, mut snapshot, thing_manager, type_manager, .. }  = self;
+        let Self { mut profile, mut snapshot, thing_manager, type_manager, .. } = self;
         let commit_profile = profile.commit_profile();
         let snapshot_mut_ref = snapshot.as_mut().expect("Expected snapshot to be uniquely owned");
         if let Err(errs) = thing_manager.finalise(snapshot_mut_ref, commit_profile.storage_counters()) {
@@ -359,8 +359,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
                 database.type_vertex_generator.clone(),
                 Some(schema.type_cache.clone()),
             );
-            let function_cache = match FunctionCache::new(database.storage.clone(), &type_manager, sequence_number)
-            {
+            let function_cache = match FunctionCache::new(database.storage.clone(), &type_manager, sequence_number) {
                 Ok(function_cache) => function_cache,
                 Err(typedb_source) => return (profile, Err(SchemaCommitError::FunctionError { typedb_source })),
             };
