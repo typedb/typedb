@@ -171,20 +171,21 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 
     pub fn try_commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
-        let mut profile = self.profile;
+        let Self { mut profile, mut snapshot, thing_manager, type_manager, .. }  = self;
         let commit_profile = profile.commit_profile();
-        let mut snapshot = match self.snapshot.try_into_inner() {
-            None => return (profile, Err(DataCommitError::SnapshotInUse {})),
-            Some(snapshot) => snapshot,
-        };
-        if let Err(errs) = self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
+        let snapshot_mut_ref = snapshot.as_mut().expect("Expected snapshot to be uniquely owned");
+        if let Err(errs) = thing_manager.finalise(snapshot_mut_ref, commit_profile.storage_counters()) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
             let error = errs.into_iter().next().unwrap();
             return (profile, Err(DataCommitError::ConceptWriteErrorsFirst { typedb_source: Box::new(error) }));
         };
         commit_profile.things_finalised();
-        drop(self.type_manager);
+        drop(type_manager);
+        let mut snapshot = match snapshot.try_into_inner() {
+            None => return (profile, Err(DataCommitError::SnapshotInUse {})),
+            Some(snapshot) => snapshot,
+        };
         match snapshot.commit(commit_profile) {
             Ok(_) => (profile, Ok(())),
             Err(err) => (profile, Err(DataCommitError::SnapshotError { typedb_source: err })),
