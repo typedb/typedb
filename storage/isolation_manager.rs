@@ -104,8 +104,8 @@ impl IsolationManager {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
         let CommitStatus::Pending(commit_record) = window.get_status(sequence_number) else { unreachable!() };
-        let isolation_conflict = self.validate_all_concurrent(sequence_number, &commit_record, durability_client)?;
-        if isolation_conflict.is_none() {
+        let validation_result = self.validate_all_concurrent(sequence_number, &commit_record, durability_client);
+        if let Ok(None) = validation_result {
             window.set_validated(sequence_number);
             // We can't increment watermark here till the status is "applied", but we do update the latest validated number
             self.highest_validated_sequence_number.fetch_max(sequence_number.number(), Ordering::SeqCst);
@@ -114,7 +114,7 @@ impl IsolationManager {
             self.timeline.may_increment_watermark(sequence_number);
         }
         self.timeline.remove_reader(commit_record.open_sequence_number);
-        match isolation_conflict {
+        match validation_result? {
             Some(conflict) => Ok(ValidatedCommit::Conflict(conflict)),
             None => {
                 let commit_record = match window.get_status(sequence_number) {

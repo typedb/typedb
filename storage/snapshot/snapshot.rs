@@ -447,6 +447,7 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
 impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         if self.operations.is_writes_empty() && self.operations.locks_empty() {
+            self.close_resources();
             Ok(None)
         } else {
             match self.storage.clone().snapshot_commit(self, commit_profile) {
@@ -606,6 +607,7 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     // TODO: extract these two methods into separate trait
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         if self.operations.is_writes_empty() && self.operations.locks_empty() {
+            self.close_resources();
             Ok(None)
         } else {
             match self.storage.clone().snapshot_commit(self, commit_profile) {
