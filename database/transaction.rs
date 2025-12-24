@@ -287,13 +287,13 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 
     fn try_commit(self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
+        let Self { database, mut snapshot, type_manager, thing_manager, function_manager, mut profile, .. } = self;
         use SchemaCommitError::{
             ConceptWriteErrorsFirst, FunctionError, SnapshotError, StatisticsError, TypeCacheUpdateError,
         };
-        let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
-        let mut snapshot = self.snapshot.into_inner();
-        if let Err(errs) = self.type_manager.validate(&snapshot) {
+        let snapshot_mut_ref = snapshot.as_mut().expect("Expected snapshot");
+        if let Err(errs) = type_manager.validate(snapshot_mut_ref) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
             return (
@@ -303,7 +303,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         };
         commit_profile.types_validated();
 
-        if let Err(errs) = self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
+        if let Err(errs) = thing_manager.finalise(snapshot_mut_ref, commit_profile.storage_counters()) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
             return (
@@ -312,53 +312,53 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             );
         };
         commit_profile.things_finalised();
-        drop(self.thing_manager);
+        drop(thing_manager);
 
-        let function_manager = Arc::into_inner(self.function_manager).expect("Failed to unwrap Arc<FunctionManager>");
-        if let Err(typedb_source) = function_manager.finalise(&snapshot, &self.type_manager) {
+        let function_manager = Arc::into_inner(function_manager).expect("Failed to unwrap Arc<FunctionManager>");
+        if let Err(typedb_source) = function_manager.finalise(snapshot_mut_ref, &type_manager) {
             return (profile, Err(FunctionError { typedb_source }));
         }
         commit_profile.functions_finalised();
 
-        let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
+        let type_manager = Arc::into_inner(type_manager).expect("Failed to unwrap Arc<TypeManager>");
         drop(type_manager);
 
         // Schema commits must wait for all other data operations to finish. No new read or write
         // transaction may open until the commit completes.
-        let mut schema_commit_guard = self.database.schema.write().unwrap();
+        let mut schema_commit_guard = database.schema.write().unwrap();
         let mut schema = (*schema_commit_guard).clone();
 
         let mut thing_statistics = (*schema.thing_statistics).clone();
 
         // 1. synchronise statistics
-        if let Err(typedb_source) = thing_statistics.may_synchronise(&self.database.storage) {
+        if let Err(typedb_source) = thing_statistics.may_synchronise(&database.storage) {
             return (profile, Err(StatisticsError { typedb_source }));
         }
         // 2. flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
-        if let Err(typedb_source) = thing_statistics.durably_write(self.database.storage.durability()) {
+        if let Err(typedb_source) = thing_statistics.durably_write(database.storage.durability()) {
             return (profile, Err(StatisticsError { typedb_source }));
         }
         commit_profile.schema_update_statistics_durably_written();
 
-        let sequence_number = match snapshot.commit(commit_profile) {
+        let sequence_number = match snapshot.into_inner().commit(commit_profile) {
             Ok(sequence_number) => sequence_number,
             Err(typedb_source) => return (profile, Err(SnapshotError { typedb_source })),
         };
 
         // `None` means empty commit
         if let Some(sequence_number) = sequence_number {
-            let type_cache = match TypeCache::new(self.database.storage.clone(), sequence_number) {
+            let type_cache = match TypeCache::new(database.storage.clone(), sequence_number) {
                 Ok(type_cache) => type_cache,
                 Err(typedb_source) => return (profile, Err(TypeCacheUpdateError { typedb_source })),
             };
             // replace Schema cache
             schema.type_cache = Arc::new(type_cache);
             let type_manager = TypeManager::new(
-                self.database.definition_key_generator.clone(),
-                self.database.type_vertex_generator.clone(),
+                database.definition_key_generator.clone(),
+                database.type_vertex_generator.clone(),
                 Some(schema.type_cache.clone()),
             );
-            let function_cache = match FunctionCache::new(self.database.storage.clone(), &type_manager, sequence_number)
+            let function_cache = match FunctionCache::new(database.storage.clone(), &type_manager, sequence_number)
             {
                 Ok(function_cache) => function_cache,
                 Err(typedb_source) => return (profile, Err(SchemaCommitError::FunctionError { typedb_source })),
@@ -368,13 +368,13 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
 
         // replace statistics
-        if let Err(typedb_source) = thing_statistics.may_synchronise(&self.database.storage) {
+        if let Err(typedb_source) = thing_statistics.may_synchronise(&database.storage) {
             return (profile, Err(StatisticsError { typedb_source }));
         }
         commit_profile.schema_update_statistics_keys_updated();
 
         schema.thing_statistics = Arc::new(thing_statistics);
-        self.database.query_cache.force_reset(&schema.thing_statistics);
+        database.query_cache.force_reset(&schema.thing_statistics);
 
         *schema_commit_guard = schema;
         (profile, Ok(()))
