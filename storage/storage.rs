@@ -46,7 +46,7 @@ use crate::{
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
-    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, WriteSnapshot},
 };
 
 pub mod durability_client;
@@ -218,7 +218,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     fn snapshot_commit(
         &self,
-        snapshot: impl CommittableSnapshot<Durability>,
+        snapshot: impl CommittableSnapshot<Durability> + ReadableSnapshot,
         commit_profile: &mut CommitProfile,
     ) -> Result<SequenceNumber, StorageCommitError>
     where
@@ -226,8 +226,10 @@ impl<Durability> MVCCStorage<Durability> {
     {
         use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
 
-        self.set_initial_put_status(&snapshot, commit_profile.storage_counters())
-            .map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
+        if let Err(error) = self.set_initial_put_status(&snapshot, commit_profile.storage_counters()) {
+            snapshot.close_resources();
+            return Err(MVCCRead { name: self.name.clone(), source: error });
+        }
         commit_profile.snapshot_put_statuses_checked();
 
         let commit_record = snapshot.into_commit_record();
