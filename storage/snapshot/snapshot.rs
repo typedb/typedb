@@ -4,7 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{any::type_name, error::Error, fmt, iter::empty, ops::Deref, sync::Arc};
+use std::{
+    any::type_name,
+    error::Error,
+    fmt,
+    iter::empty,
+    mem,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
 use bytes::byte_array::ByteArray;
 use error::typedb_error;
@@ -308,6 +318,7 @@ pub struct WriteSnapshot<D> {
     open_sequence_number: SequenceNumber,
     iterator_pool: IteratorPool, // Pool must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
+    cleanup_on_drop: AtomicBool,
 }
 
 impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
@@ -324,6 +335,7 @@ impl<D> WriteSnapshot<D> {
             operations: OperationsBuffer::new(),
             open_sequence_number,
             iterator_pool: IteratorPool::new(),
+            cleanup_on_drop: AtomicBool::new(true),
         }
     }
 
@@ -332,7 +344,22 @@ impl<D> WriteSnapshot<D> {
         open_sequence_number: SequenceNumber,
         operations: OperationsBuffer,
     ) -> impl ReadableSnapshot {
-        WriteSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new() }
+        WriteSnapshot {
+            storage,
+            operations,
+            open_sequence_number,
+            iterator_pool: IteratorPool::new(),
+            cleanup_on_drop: AtomicBool::new(true),
+        }
+    }
+}
+
+impl<D> Drop for WriteSnapshot<D> {
+    fn drop(&mut self) {
+        // swap ensures close_resources is only called once even if Drop runs after explicit close_resources call
+        if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
+            self.storage.closed_snapshot_write(self.open_sequence_number);
+        }
     }
 }
 
@@ -430,7 +457,10 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     }
 
     fn close_resources(&self) {
-        self.storage.closed_snapshot_write(self.open_sequence_number());
+        // swap ensures close_resources is only called once even if called explicitly and then via Drop
+        if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
+            self.storage.closed_snapshot_write(self.open_sequence_number());
+        }
     }
 }
 
@@ -456,8 +486,11 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
         }
     }
 
-    fn into_commit_record(self) -> CommitRecord {
-        CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Data)
+    fn into_commit_record(mut self) -> CommitRecord {
+        // Disable cleanup on drop - the commit path handles cleanup via validate_commit
+        self.cleanup_on_drop.store(false, Ordering::SeqCst);
+        let operations = mem::take(&mut self.operations);
+        CommitRecord::new(operations, self.open_sequence_number, CommitType::Data)
     }
 }
 
@@ -466,6 +499,7 @@ pub struct SchemaSnapshot<D> {
     open_sequence_number: SequenceNumber,
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
+    cleanup_on_drop: AtomicBool,
 }
 
 impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
@@ -481,6 +515,7 @@ impl<D> SchemaSnapshot<D> {
             storage,
             operations: OperationsBuffer::new(),
             open_sequence_number,
+            cleanup_on_drop: AtomicBool::new(true),
             iterator_pool: IteratorPool::new(),
         }
     }
@@ -490,7 +525,22 @@ impl<D> SchemaSnapshot<D> {
         open_sequence_number: SequenceNumber,
         operations: OperationsBuffer,
     ) -> impl ReadableSnapshot {
-        SchemaSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new() }
+        SchemaSnapshot {
+            storage,
+            operations,
+            open_sequence_number,
+            iterator_pool: IteratorPool::new(),
+            cleanup_on_drop: AtomicBool::new(true),
+        }
+    }
+}
+
+impl<D> Drop for SchemaSnapshot<D> {
+    fn drop(&mut self) {
+        // swap ensures close_resources is only called once even if Drop runs after explicit close_resources call
+        if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
+            self.storage.closed_snapshot_write(self.open_sequence_number);
+        }
     }
 }
 
@@ -588,7 +638,10 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     }
 
     fn close_resources(&self) {
-        self.storage.closed_snapshot_write(self.open_sequence_number());
+        // swap ensures close_resources is only called once even if called explicitly and then via Drop
+        if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
+            self.storage.closed_snapshot_write(self.open_sequence_number());
+        }
     }
 }
 
@@ -615,75 +668,11 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
         }
     }
 
-    fn into_commit_record(self) -> CommitRecord {
-        CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Schema)
-    }
-}
-
-#[derive(Debug)]
-pub struct SnapshotDropGuard<S: ReadableSnapshot> {
-    inner: Option<Arc<S>>,
-}
-
-impl<S: ReadableSnapshot> SnapshotDropGuard<S> {
-    pub fn new(inner: S) -> Self {
-        Self::from_arc(Arc::new(inner))
-    }
-
-    pub fn from_arc(inner: Arc<S>) -> Self {
-        Self { inner: Some(inner) }
-    }
-
-    pub fn into_inner(mut self) -> S {
-        Self::unwrap_arc(Self::unwrap_optional(self.inner.take()))
-    }
-
-    pub fn try_into_inner(mut self) -> Option<S> {
-        self.inner.take().and_then(Arc::into_inner)
-    }
-
-    pub fn as_ref(&self) -> &S {
-        Self::unwrap_optional(self.inner.as_ref().map(|inner| &**inner))
-    }
-
-    pub fn as_mut(&mut self) -> Option<&mut S> {
-        self.inner.as_mut().and_then(Arc::get_mut)
-    }
-
-    // ATTENTION: Make sure to drop the clones before Self goes out of scope and drops!
-    pub fn clone_inner(&self) -> Arc<S> {
-        Self::unwrap_optional(self.inner.as_ref()).clone()
-    }
-
-    fn unwrap_arc(arc: Arc<S>) -> S {
-        Arc::into_inner(arc)
-            .unwrap_or_else(|| panic!("Arc<{}> expected a unique ownership in a guard", type_name::<Self>()))
-    }
-
-    fn unwrap_arc_ref_mut(arc: &mut Arc<S>) -> &mut S {
-        Arc::get_mut(arc).unwrap_or_else(|| {
-            panic!("Arc<{}> expected a unique ownership in a guard for mutating", type_name::<Self>())
-        })
-    }
-
-    fn unwrap_optional<T>(option: Option<T>) -> T {
-        option.unwrap_or_else(|| panic!("{} expected a unique ownership", type_name::<Self>()))
-    }
-}
-
-impl<S: ReadableSnapshot> Deref for SnapshotDropGuard<S> {
-    type Target = S;
-
-    fn deref(&self) -> &Self::Target {
-        Self::unwrap_optional(self.inner.as_ref().map(|inner| &**inner))
-    }
-}
-
-impl<S: ReadableSnapshot> Drop for SnapshotDropGuard<S> {
-    fn drop(&mut self) {
-        if let Some(inner) = self.inner.take() {
-            Self::unwrap_arc(inner).close_resources()
-        }
+    fn into_commit_record(mut self) -> CommitRecord {
+        // Disable cleanup on drop - the commit path handles cleanup manually
+        self.cleanup_on_drop.store(false, Ordering::SeqCst);
+        let operations = mem::take(&mut self.operations);
+        CommitRecord::new(operations, self.open_sequence_number, CommitType::Schema)
     }
 }
 

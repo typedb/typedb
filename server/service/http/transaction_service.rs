@@ -748,7 +748,7 @@ impl TransactionService {
     ) -> ControlFlow<(), ()> {
         // Write query is already executed, but for simplicity, we convert it to something that conform to the same API as the read path
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
-            let snapshot = transaction.snapshot.clone_inner();
+            let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
             let thing_manager = transaction.thing_manager.clone();
             let timeout_at = self.timeout_at;
@@ -953,7 +953,7 @@ impl TransactionService {
         let timeout_at = self.timeout_at;
         let interrupt = self.query_interrupt_receiver.clone();
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
-            let snapshot = transaction.snapshot.clone_inner();
+            let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
             let thing_manager = transaction.thing_manager.clone();
             let function_manager = transaction.function_manager.clone();
@@ -1176,7 +1176,7 @@ impl TransactionService {
     ) -> ControlFlow<(), ()> {
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
-            let snapshot = transaction.snapshot.clone_inner();
+            let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
             let thing_manager = transaction.thing_manager.clone();
             let function_manager = transaction.function_manager.clone();

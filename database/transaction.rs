@@ -25,8 +25,7 @@ use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{
-        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotDropGuard, SnapshotError, WritableSnapshot,
-        WriteSnapshot,
+        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot,
     },
 };
 use tracing::Level;
@@ -35,7 +34,7 @@ use crate::Database;
 
 #[derive(Debug)]
 pub struct TransactionRead<D> {
-    pub snapshot: SnapshotDropGuard<ReadSnapshot<D>>,
+    pub snapshot: Arc<ReadSnapshot<D>>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
@@ -74,7 +73,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
         drop(schema);
 
         Ok(Self {
-            snapshot: SnapshotDropGuard::new(snapshot),
+            snapshot: Arc::new(snapshot),
             type_manager,
             thing_manager,
             function_manager,
@@ -86,7 +85,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
     }
 
     pub fn snapshot(&self) -> &ReadSnapshot<D> {
-        &self.snapshot
+        &*self.snapshot
     }
 
     pub fn close(self) {
@@ -96,7 +95,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
 
 #[derive(Debug)]
 pub struct TransactionWrite<D> {
-    pub snapshot: SnapshotDropGuard<WriteSnapshot<D>>,
+    pub snapshot: Arc<WriteSnapshot<D>>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
@@ -130,7 +129,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         drop(schema);
 
         Ok(Self {
-            snapshot: SnapshotDropGuard::new(snapshot),
+            snapshot: Arc::new(snapshot),
             type_manager,
             thing_manager,
             function_manager,
@@ -152,7 +151,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         profile: TransactionProfile,
     ) -> Self {
         Self {
-            snapshot: SnapshotDropGuard::from_arc(snapshot),
+            snapshot,
             type_manager,
             thing_manager,
             function_manager,
@@ -173,9 +172,9 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn try_commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
-        let mut snapshot = match self.snapshot.try_into_inner() {
-            None => return (profile, Err(DataCommitError::SnapshotInUse {})),
-            Some(snapshot) => snapshot,
+        let mut snapshot = match Arc::try_unwrap(self.snapshot) {
+            Err(_) => return (profile, Err(DataCommitError::SnapshotInUse {})),
+            Ok(snapshot) => snapshot,
         };
         if let Err(errs) = self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
             // TODO: send all the errors, not just the first,
@@ -192,7 +191,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 
     pub fn rollback(&mut self) {
-        self.snapshot.as_mut().expect("Expected owning snapshot on rollback").clear()
+        Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
     }
 
     pub fn close(self) {
@@ -214,7 +213,7 @@ typedb_error! {
 
 #[derive(Debug)]
 pub struct TransactionSchema<D> {
-    pub snapshot: SnapshotDropGuard<SchemaSnapshot<D>>,
+    pub snapshot: Arc<SchemaSnapshot<D>>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
@@ -246,7 +245,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let query_manager = Arc::new(QueryManager::new(None));
 
         Ok(Self {
-            snapshot: SnapshotDropGuard::new(snapshot),
+            snapshot: Arc::new(snapshot),
             type_manager,
             thing_manager: Arc::new(thing_manager),
             function_manager,
@@ -268,7 +267,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         profile: TransactionProfile,
     ) -> Self {
         Self {
-            snapshot: SnapshotDropGuard::from_arc(snapshot),
+            snapshot,
             type_manager,
             thing_manager,
             function_manager,
@@ -292,7 +291,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         };
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
-        let mut snapshot = self.snapshot.into_inner();
+        let mut snapshot = Arc::try_unwrap(self.snapshot)
+            .unwrap_or_else(|_| panic!("Expected unique ownership of snapshot for schema commit"));
         if let Err(errs) = self.type_manager.validate(&snapshot) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
@@ -381,7 +381,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 
     pub fn rollback(&mut self) {
-        self.snapshot.as_mut().expect("Expected owning snapshot on rollback").clear()
+        Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
     }
 
     pub fn close(self) {
@@ -404,7 +404,8 @@ macro_rules! with_transaction_parts {
             transaction_options,
             profile,
         } = $transaction;
-        let mut $inner_snapshot = snapshot.into_inner();
+        let mut $inner_snapshot = Arc::try_unwrap(snapshot)
+            .unwrap_or_else(|_| panic!("Expected unique ownership of snapshot"));
 
         let result = $expr;
 
