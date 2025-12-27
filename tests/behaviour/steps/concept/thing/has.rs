@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+
 use concept::{
     error::ConceptWriteError,
     thing::{
@@ -29,7 +31,7 @@ pub(super) fn object_set_has_impl(
     attribute: &Attribute,
 ) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| object.set_has_unordered(
-        tx.snapshot.as_mut().unwrap(),
+        Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
         attribute,
         StorageCounters::DISABLED
@@ -43,7 +45,7 @@ pub(super) fn object_set_has_ordered_impl(
     attributes: Vec<Attribute>,
 ) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| object.set_has_ordered(
-        tx.snapshot.as_mut().unwrap(),
+        Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
         attribute_type,
         attributes,
@@ -57,7 +59,7 @@ fn object_unset_has_impl(
     key: &Attribute,
 ) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| object.unset_has_unordered(
-        tx.snapshot.as_mut().unwrap(),
+        Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
         key,
         StorageCounters::DISABLED
@@ -76,7 +78,7 @@ fn object_unset_has_ordered_impl(
             .unwrap()
             .unwrap();
         object.unset_has_ordered(
-            tx.snapshot.as_mut().unwrap(),
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.thing_manager,
             attribute_type,
             StorageCounters::DISABLED,

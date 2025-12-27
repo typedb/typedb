@@ -1987,7 +1987,7 @@ fn attribute_struct_write_read() {
             .unwrap();
         assert_eq!(attr, attr_by_id);
         assert_eq!(attr_created, attr);
-        snapshot.close_resources();
+        // snapshot.close_resources();
     }
 }
 
@@ -2071,7 +2071,7 @@ fn read_attribute_struct_by_field() {
             assert_eq!(1, attr_by_field.len());
             assert_eq!(attr, attr_by_field.first().unwrap());
         }
-        snapshot.close_resources();
+        // snapshot.close_resources();
     };
 }
 
@@ -2140,7 +2140,7 @@ fn attribute_struct_errors() {
             let err = StructValue::build(struct_key.clone(), struct_def.clone(), HashMap::from([])).unwrap_err();
             assert!(err.len() == 1 && matches!(err.first().unwrap(), EncodingError::StructMissingRequiredField { .. }));
         }
-        snapshot.close_resources();
+        // snapshot.close_resources();
     }
 }
 

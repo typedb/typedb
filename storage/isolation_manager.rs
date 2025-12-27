@@ -24,7 +24,7 @@ use logger::result::ResultExt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
-
+use error::unimplemented_feature;
 use crate::{
     durability_client::{
         DurabilityClient, DurabilityClientError, DurabilityRecord, SequencedDurabilityRecord,
@@ -38,7 +38,7 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct IsolationManager {
     initial_sequence_number: SequenceNumber,
-    timeline: Timeline,
+    timeline: Arc<Timeline>,
     highest_validated_sequence_number: AtomicU64,
 }
 
@@ -52,19 +52,19 @@ impl IsolationManager {
     pub(crate) fn new(next_sequence_number: SequenceNumber) -> IsolationManager {
         IsolationManager {
             initial_sequence_number: next_sequence_number,
-            timeline: Timeline::new(next_sequence_number),
+            timeline: Arc::new(Timeline::new(next_sequence_number)),
             highest_validated_sequence_number: AtomicU64::new(next_sequence_number.number() - 1),
         }
     }
 
-    pub(crate) fn opened_for_read(&self, sequence_number: SequenceNumber) {
+    pub(crate) fn opened_for_read(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
         debug_assert!(
             sequence_number <= self.watermark(),
             "assertion `{} <= {}` failed",
             sequence_number,
             self.watermark()
         );
-        self.timeline.record_reader(sequence_number);
+        self.timeline.clone().record_reader(sequence_number)
     }
 
     pub(crate) fn closed_for_read(&self, sequence_number: SequenceNumber) {
@@ -252,7 +252,7 @@ impl IsolationManager {
     }
 
     pub fn reset(&mut self) {
-        self.timeline = Timeline::new(self.initial_sequence_number)
+        self.timeline = Arc::new(Timeline::new(self.initial_sequence_number))
     }
 }
 
@@ -440,9 +440,12 @@ impl Timeline {
         SequenceNumber::from(self.watermark.load(Ordering::SeqCst))
     }
 
-    fn record_reader(&self, sequence_number: SequenceNumber) {
+    fn record_reader(self: Arc<Self>, sequence_number: SequenceNumber) -> ReaderDropGuard {
         if let Some(window) = self.try_get_window(sequence_number) {
             window.increment_readers();
+            ReaderDropGuard { timeline: self.clone(), sequence_number }
+        } else {
+            unimplemented_feature!(ReopenOldSnapshotMVCC)
         }
     }
 
@@ -515,6 +518,18 @@ impl Timeline {
         } else {
             None
         }
+    }
+}
+
+
+pub struct ReaderDropGuard {
+    timeline: Arc<Timeline>,
+    sequence_number: SequenceNumber,
+}
+
+impl Drop for ReaderDropGuard {
+    fn drop(&mut self) {
+        self.timeline.remove_reader(self.sequence_number)
     }
 }
 
@@ -895,12 +910,12 @@ mod tests {
         }
     }
 
-    fn create_timeline() -> Timeline {
-        Timeline::new(SequenceNumber::MIN.next())
+    fn create_timeline() -> Arc<Timeline> {
+        Arc::new(Timeline::new(SequenceNumber::MIN.next()))
     }
 
-    fn tx_open(timeline: &Timeline, read_sequence_number: SequenceNumber) {
-        timeline.record_reader(read_sequence_number);
+    fn tx_open(timeline: &Arc<Timeline>, read_sequence_number: SequenceNumber) {
+        timeline.clone().record_reader(read_sequence_number);
     }
 
     fn tx_close(timeline: &Timeline, read_sequence_number: SequenceNumber) {

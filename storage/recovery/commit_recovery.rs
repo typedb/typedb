@@ -103,7 +103,7 @@ pub(crate) fn apply_recovered(
             }
             RecoveryCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),
             RecoveryCommitStatus::Pending(commit_record) => {
-                isolation_manager.opened_for_read(commit_record.open_sequence_number());
+                let _ = isolation_manager.opened_for_read(commit_record.open_sequence_number());
                 let validated_commit = isolation_manager
                     .validate_commit(commit_sequence_number, commit_record, durability_client)
                     .map_err(|error| DurabilityClientRead { typedb_source: error })?;

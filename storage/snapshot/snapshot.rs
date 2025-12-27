@@ -40,6 +40,7 @@ use crate::{
     },
     MVCCStorage, StorageCommitError,
 };
+use crate::isolation_manager::ReaderDropGuard;
 
 macro_rules! get_mapped_method {
     ($method_name:ident, $get_func:ident) => {
@@ -106,8 +107,8 @@ pub trait ReadableSnapshot {
     ) -> SnapshotRangeIterator;
 
     fn iterator_pool(&self) -> &IteratorPool;
-
-    fn close_resources(&self);
+    //
+    // fn close_resources(&self);
 }
 
 pub trait WritableSnapshot: ReadableSnapshot {
@@ -216,7 +217,7 @@ where
 {
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
 
-    fn into_commit_record(self) -> CommitRecord;
+    fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord);
 }
 
 pub struct ReadSnapshot<D> {
@@ -310,7 +311,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         &self.iterator_pool
     }
 
-    fn close_resources(&self) {}
+    // fn close_resources(&self) {}
 }
 
 pub struct WriteSnapshot<D> {
@@ -318,7 +319,7 @@ pub struct WriteSnapshot<D> {
     open_sequence_number: SequenceNumber,
     iterator_pool: IteratorPool, // Pool must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
-    cleanup_on_drop: AtomicBool,
+    reader_guard: ReaderDropGuard,
 }
 
 impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
@@ -329,13 +330,13 @@ impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
 
 impl<D> WriteSnapshot<D> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
-        storage.isolation_manager.opened_for_read(open_sequence_number);
+        let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
         WriteSnapshot {
             storage,
             operations: OperationsBuffer::new(),
             open_sequence_number,
             iterator_pool: IteratorPool::new(),
-            cleanup_on_drop: AtomicBool::new(true),
+            reader_guard
         }
     }
 
@@ -344,24 +345,26 @@ impl<D> WriteSnapshot<D> {
         open_sequence_number: SequenceNumber,
         operations: OperationsBuffer,
     ) -> impl ReadableSnapshot {
+        // TODO: do we need this in cluster?
+        let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
         WriteSnapshot {
             storage,
             operations,
             open_sequence_number,
             iterator_pool: IteratorPool::new(),
-            cleanup_on_drop: AtomicBool::new(true),
+            reader_guard
         }
     }
 }
 
-impl<D> Drop for WriteSnapshot<D> {
-    fn drop(&mut self) {
-        // swap ensures close_resources is only called once even if Drop runs after explicit close_resources call
-        if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
-            self.storage.closed_snapshot_write(self.open_sequence_number);
-        }
-    }
-}
+// impl<D> Drop for WriteSnapshot<D> {
+//     fn drop(&mut self) {
+//         // swap ensures close_resources is only called once even if Drop runs after explicit close_resources call
+//         if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
+//             self.storage.closed_snapshot_write(self.open_sequence_number);
+//         }
+//     }
+// }
 
 impl<D> ReadableSnapshot for WriteSnapshot<D> {
     const IMMUTABLE_SCHEMA: bool = true;
@@ -456,12 +459,12 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         &self.iterator_pool
     }
 
-    fn close_resources(&self) {
-        // swap ensures close_resources is only called once even if called explicitly and then via Drop
-        if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
-            self.storage.closed_snapshot_write(self.open_sequence_number());
-        }
-    }
+    // fn close_resources(&self) {
+    //     // swap ensures close_resources is only called once even if called explicitly and then via Drop
+    //     if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
+    //         self.storage.closed_snapshot_write(self.open_sequence_number());
+    //     }
+    // }
 }
 
 impl<D> WritableSnapshot for WriteSnapshot<D> {
@@ -486,11 +489,9 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
         }
     }
 
-    fn into_commit_record(mut self) -> CommitRecord {
-        // Disable cleanup on drop - the commit path handles cleanup via validate_commit
-        self.cleanup_on_drop.store(false, Ordering::SeqCst);
-        let operations = mem::take(&mut self.operations);
-        CommitRecord::new(operations, self.open_sequence_number, CommitType::Data)
+    fn into_commit_record(mut self) -> (ReaderDropGuard, CommitRecord) {
+        let Self { operations, open_sequence_number, reader_guard, iterator_pool: _, storage: _} = self;
+        (reader_guard, CommitRecord::new(operations, self.open_sequence_number, CommitType::Data))
     }
 }
 
@@ -499,7 +500,7 @@ pub struct SchemaSnapshot<D> {
     open_sequence_number: SequenceNumber,
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
-    cleanup_on_drop: AtomicBool,
+    reader_guard: ReaderDropGuard,
 }
 
 impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
@@ -510,13 +511,13 @@ impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
 
 impl<D> SchemaSnapshot<D> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
-        storage.isolation_manager.opened_for_read(open_sequence_number);
+        let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
         SchemaSnapshot {
             storage,
             operations: OperationsBuffer::new(),
             open_sequence_number,
-            cleanup_on_drop: AtomicBool::new(true),
             iterator_pool: IteratorPool::new(),
+            reader_guard,
         }
     }
 
@@ -525,24 +526,26 @@ impl<D> SchemaSnapshot<D> {
         open_sequence_number: SequenceNumber,
         operations: OperationsBuffer,
     ) -> impl ReadableSnapshot {
+        // TODO: does cluster need this?
+        let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
         SchemaSnapshot {
             storage,
             operations,
             open_sequence_number,
             iterator_pool: IteratorPool::new(),
-            cleanup_on_drop: AtomicBool::new(true),
+            reader_guard,
         }
     }
 }
 
-impl<D> Drop for SchemaSnapshot<D> {
-    fn drop(&mut self) {
-        // swap ensures close_resources is only called once even if Drop runs after explicit close_resources call
-        if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
-            self.storage.closed_snapshot_write(self.open_sequence_number);
-        }
-    }
-}
+// impl<D> Drop for SchemaSnapshot<D> {
+//     fn drop(&mut self) {
+//         // swap ensures close_resources is only called once even if Drop runs after explicit close_resources call
+//         if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
+//             self.storage.closed_snapshot_write(self.open_sequence_number);
+//         }
+//     }
+// }
 
 impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     const IMMUTABLE_SCHEMA: bool = false;
@@ -637,12 +640,12 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         &self.iterator_pool
     }
 
-    fn close_resources(&self) {
-        // swap ensures close_resources is only called once even if called explicitly and then via Drop
-        if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
-            self.storage.closed_snapshot_write(self.open_sequence_number());
-        }
-    }
+    // fn close_resources(&self) {
+    //     // swap ensures close_resources is only called once even if called explicitly and then via Drop
+    //     if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
+    //         self.storage.closed_snapshot_write(self.open_sequence_number());
+    //     }
+    // }
 }
 
 impl<D> WritableSnapshot for SchemaSnapshot<D> {
@@ -668,11 +671,9 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
         }
     }
 
-    fn into_commit_record(mut self) -> CommitRecord {
-        // Disable cleanup on drop - the commit path handles cleanup manually
-        self.cleanup_on_drop.store(false, Ordering::SeqCst);
-        let operations = mem::take(&mut self.operations);
-        CommitRecord::new(operations, self.open_sequence_number, CommitType::Schema)
+    fn into_commit_record(mut self) -> (ReaderDropGuard, CommitRecord) {
+        let Self { operations, open_sequence_number, reader_guard, iterator_pool: _, storage: _} = self;
+        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Schema))
     }
 }
 
