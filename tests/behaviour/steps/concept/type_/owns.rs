@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+
 use concept::type_::{
     annotation, annotation::Annotation, constraint::Constraint, Capability, Ordering, OwnerAPI, TypeAPI,
 };
@@ -37,7 +39,7 @@ pub async fn set_owns_unordered(
             .unwrap()
             .unwrap();
         let res = object_type.set_owns(
-            tx.snapshot.as_mut().unwrap(),
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             attr_type,
@@ -64,7 +66,7 @@ pub async fn set_owns_ordered(
             .unwrap()
             .unwrap();
         let res = object_type.set_owns(
-            tx.snapshot.as_mut().unwrap(),
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             attr_type,
@@ -91,7 +93,7 @@ pub async fn unset_owns(
             .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
             .unwrap()
             .unwrap();
-        let res = object_type.unset_owns(tx.snapshot.as_mut().unwrap(), &tx.type_manager, &tx.thing_manager, attr_type);
+        let res = object_type.unset_owns(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, attr_type);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -113,7 +115,7 @@ pub async fn get_owns_set_annotation(
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let value_type = attr_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let res = owns.set_annotation(
-            tx.snapshot.as_mut().unwrap(),
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             annotation.into_typedb(value_type).try_into().unwrap(),
@@ -138,7 +140,7 @@ pub async fn get_owns_unset_annotation(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let res = owns.unset_annotation(
-            tx.snapshot.as_mut().unwrap(),
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             annotation_category.into_typedb(),
@@ -500,7 +502,7 @@ pub async fn get_owns_set_ordering(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let res = owns.set_ordering(
-            tx.snapshot.as_mut().unwrap(),
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             ordering.into_typedb(),

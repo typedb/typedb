@@ -92,9 +92,9 @@ fn test_reading_snapshots() {
         VALUE_0
     );
     assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_1);
-    snapshot_read_1.close_resources();
-    snapshot_read_01.close_resources();
-    snapshot_read_0.close_resources();
+    // snapshot_read_1.close_resources();
+    // snapshot_read_01.close_resources();
+    // snapshot_read_0.close_resources();
 
     // Read from further in the past.
     let snapshot_read_02 = storage.open_snapshot_read_at(watermark_0);
@@ -102,7 +102,7 @@ fn test_reading_snapshots() {
         *snapshot_read_02.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(),
         VALUE_0
     );
-    snapshot_read_02.close_resources();
+    // snapshot_read_02.close_resources();
 }
 
 #[test]
@@ -158,7 +158,7 @@ fn test_open_snapshot_write_at() {
 
     let snapshot_read_0 = storage.clone().open_snapshot_read();
     assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_0);
-    snapshot_read_0.close_resources();
+    // snapshot_read_0.close_resources();
 
     let mut snapshot_write_1 = storage.clone().open_snapshot_write_at(watermark_init);
     snapshot_write_1.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
@@ -166,5 +166,5 @@ fn test_open_snapshot_write_at() {
 
     let snapshot_read_1 = storage.open_snapshot_read();
     assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_0); // FIXME: value overwrite currently unsupported
-    snapshot_read_1.close_resources();
+    // snapshot_read_1.close_resources();
 }

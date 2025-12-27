@@ -216,7 +216,7 @@ fn multi_threaded_inserts() {
             NUM_THREADS * INTERNAL_ITERS,
             Iterator::count(thing_manager.get_entities_in(&snapshot, person_type, StorageCounters::DISABLED))
         );
-        snapshot.close_resources();
+        // snapshot.close_resources();
     }
 }
 

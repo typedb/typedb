@@ -353,6 +353,8 @@ pub enum UnimplementedFeature {
     QueryingAnnotations,
 
     NestedOptionalWrites,
+
+    ReopenOldSnapshotMVCC
 }
 impl std::fmt::Display for UnimplementedFeature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

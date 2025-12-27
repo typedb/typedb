@@ -97,7 +97,7 @@ fn test_insert() {
         .unwrap()
         .unwrap();
     assert_eq!(1, attr_age_10.get_owners(&snapshot, &context.thing_manager, StorageCounters::DISABLED).count());
-    snapshot.close_resources()
+    // snapshot.close_resources()
 }
 
 #[test]
@@ -136,7 +136,7 @@ fn test_insert_insert() {
         Iterator::count(context.thing_manager.get_relations_in(&snapshot, membership_type, StorageCounters::DISABLED)),
         1
     );
-    snapshot.close_resources()
+    // snapshot.close_resources()
 }
 
 #[test]
@@ -310,7 +310,7 @@ fn test_match_delete_has() {
             .unwrap()
             .unwrap();
         assert_eq!(1, attr_age_10.get_owners(&snapshot, &context.thing_manager, StorageCounters::DISABLED).count());
-        snapshot.close_resources()
+        // snapshot.close_resources()
     }
 
     let snapshot = context.storage.clone().open_snapshot_write();
@@ -348,7 +348,7 @@ fn test_match_delete_has() {
             .unwrap()
             .unwrap();
         assert_eq!(0, attr_age_10.get_owners(&snapshot, &context.thing_manager, StorageCounters::DISABLED).count());
-        snapshot.close_resources()
+        // snapshot.close_resources()
     }
 }
 
@@ -416,7 +416,7 @@ fn test_insert_match_insert() {
         Iterator::count(context.thing_manager.get_relations_in(&snapshot, membership_type, StorageCounters::DISABLED)),
         1
     );
-    snapshot.close_resources()
+    // snapshot.close_resources()
 }
 
 #[test]

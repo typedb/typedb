@@ -34,6 +34,12 @@ pub struct OperationsBuffer {
     locks: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, LockType>,
 }
 
+impl Default for OperationsBuffer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OperationsBuffer {
     pub(crate) fn new() -> OperationsBuffer {
         OperationsBuffer {
