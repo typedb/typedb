@@ -31,7 +31,7 @@ use crate::{
     },
 };
 
-const MIN_SCAN_SIZE: f64 = 1.0;
+const MIN_SCAN_SIZE: f64 = 0.000000001;
 const MAX_SCAN_SIZE: f64 = 10e15;
 
 #[derive(Clone, Debug)]
