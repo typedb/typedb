@@ -8,12 +8,10 @@ use std::cmp::Ordering;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::{LendingIterator, Seekable};
+use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
 use resource::profile::StorageCounters;
 
-use crate::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    keyspace::{raw_iterator, raw_iterator::DBIterator, IteratorPool, Keyspace, KeyspaceError},
-};
+use crate::keyspace::{raw_iterator, raw_iterator::DBIterator, IteratorPool, Keyspace, KeyspaceError};
 
 pub struct KeyspaceRangeIterator {
     iterator: DBIterator,

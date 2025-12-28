@@ -9,6 +9,7 @@ use std::{any::type_name, error::Error, fmt, iter::empty, ops::Deref, sync::Arc}
 use bytes::byte_array::ByteArray;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
+use primitive::key_range::KeyRange;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::{CommitProfile, StorageCounters},
@@ -18,7 +19,6 @@ use crate::{
     durability_client::DurabilityClient,
     isolation_manager::{CommitRecord, CommitType},
     iterator::MVCCReadError,
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
     sequence_number::SequenceNumber,

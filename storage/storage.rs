@@ -29,13 +29,12 @@ use resource::{
     profile::{CommitProfile, StorageCounters},
 };
 use tracing::trace;
-
+use primitive::key_range::KeyRange;
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     iterator::MVCCRangeIterator,
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
         iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError,
@@ -53,7 +52,6 @@ pub mod durability_client;
 pub mod error;
 pub mod isolation_manager;
 pub mod iterator;
-pub mod key_range;
 pub mod key_value;
 pub mod keyspace;
 pub mod recovery;
@@ -448,13 +446,13 @@ impl<Durability> MVCCStorage<Durability> {
             .unwrap_or_log()
     }
 
-    pub fn get_raw_mapped<M, V>(&self, key: StorageKeyReference<'_>, mut mapper: M) -> Option<V>
+    pub fn get_raw_mapped<M, V>(&self, key: StorageKeyReference<'_>, mapper: &mut M) -> Option<V>
     where
         M: FnMut(&[u8]) -> V,
     {
         self.keyspaces
             .get(key.keyspace_id())
-            .get(key.bytes(), |value| mapper(value))
+            .get(key.bytes(), &mut |value| mapper(value))
             .map_err(|e| MVCCStorageError {
                 storage_name: self.name(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
@@ -465,13 +463,13 @@ impl<Durability> MVCCStorage<Durability> {
             .unwrap_or_log() // TODO: unwrap_or_log may be incorrect: this could trigger if the DB is deleted for example?
     }
 
-    pub fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, mut key_value_mapper: M) -> Option<T>
+    pub fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, key_value_mapper: &mut M) -> Option<T>
     where
         M: FnMut(&MVCCKey<'_>, &[u8]) -> T,
     {
         self.keyspaces
             .get(key.keyspace_id())
-            .get_prev(key.bytes(), |raw_key, v| key_value_mapper(&MVCCKey::wrap_slice(raw_key), v))
+            .get_prev(key.bytes(), &mut |raw_key, v| key_value_mapper(&MVCCKey::wrap_slice(raw_key), v))
     }
 
     pub fn iterate_keyspace_range<'this, const PREFIX_INLINE: usize>(

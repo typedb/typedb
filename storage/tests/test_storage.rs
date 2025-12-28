@@ -10,9 +10,9 @@ use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
+use primitive::key_range::{KeyRange, RangeStart};
 use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
 use storage::{
-    key_range::{KeyRange, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{IteratorPool, KeyspaceOpenError, KeyspaceValidationError},
     StorageOpenError,

@@ -10,9 +10,9 @@ use std::sync::{
 };
 
 use bytes::{byte_array::ByteArray, Bytes};
+use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 use storage::{
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
     MVCCStorage,
@@ -113,7 +113,7 @@ impl ThingVertexGenerator {
             let next_storage_key: StorageKey<'_, { ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
             if let Some(prev_bytes) =
-                storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key()))
+                storage.get_prev_raw(next_storage_key.as_reference(), &mut |key, _| Vec::from(key.key()))
             {
                 if ObjectVertex::is_entity_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);
@@ -130,7 +130,7 @@ impl ThingVertexGenerator {
             let next_storage_key: StorageKey<'_, { ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
             if let Some(prev_bytes) =
-                storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key()))
+                storage.get_prev_raw(next_storage_key.as_reference(), &mut |key, _| Vec::from(key.key()))
             {
                 if ObjectVertex::is_relation_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);

@@ -9,6 +9,7 @@ use std::{path::Path, sync::Arc};
 use bytes::byte_array::ByteArray;
 use durability::wal::WAL;
 use lending_iterator::LendingIterator;
+use primitive::key_range::KeyRange;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::{CommitProfile, StorageCounters},
@@ -16,7 +17,6 @@ use resource::{
 use storage::{
     durability_client::{DurabilityClient, WALClient},
     isolation_manager::IsolationConflict,
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
     MVCCStorage, StorageCommitError,

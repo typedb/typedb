@@ -16,9 +16,9 @@ use itertools::Itertools;
 use resource::{constants::storage::ROCKSDB_CACHE_SIZE_MB, profile::StorageCounters};
 use rocksdb::{checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 use serde::{Deserialize, Serialize};
-
+use primitive::key_range::KeyRange;
 use super::{constants, iterator, IteratorPool};
-use crate::{key_range::KeyRange, write_batches::WriteBatches};
+use crate::write_batches::WriteBatches;
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyspaceId(pub u8);
@@ -241,7 +241,7 @@ impl Keyspace {
             .map_err(|error| KeyspaceError::Put { name: self.name, source: error })
     }
 
-    pub(crate) fn get<M, V>(&self, key: &[u8], mut mapper: M) -> Result<Option<V>, KeyspaceError>
+    pub(crate) fn get<M, V>(&self, key: &[u8], mapper: &mut M) -> Result<Option<V>, KeyspaceError>
     where
         M: FnMut(&[u8]) -> V,
     {
@@ -251,7 +251,7 @@ impl Keyspace {
             .map_err(|error| KeyspaceError::Get { name: self.name, source: error })
     }
 
-    pub(crate) fn get_prev<M, T>(&self, key: &[u8], mut mapper: M) -> Option<T>
+    pub(crate) fn get_prev<M, T>(&self, key: &[u8], mapper: &mut M) -> Option<T>
     where
         M: FnMut(&[u8], &[u8]) -> T,
     {

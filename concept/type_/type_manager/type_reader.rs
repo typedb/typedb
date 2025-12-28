@@ -23,14 +23,12 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     Keyable,
 };
+use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::StorageCounters,
 };
-use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    snapshot::ReadableSnapshot,
-};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,

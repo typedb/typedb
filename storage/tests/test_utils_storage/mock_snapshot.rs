@@ -7,9 +7,9 @@
 use std::iter::empty;
 
 use bytes::byte_array::ByteArray;
+use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 use storage::{
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
     sequence_number::SequenceNumber,

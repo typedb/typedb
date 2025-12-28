@@ -22,8 +22,9 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use lending_iterator::LendingIterator;
+use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
-use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::type_::{
     attribute_type::AttributeType,

@@ -8,11 +8,11 @@ use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 
 use bytes::byte_array::ByteArray;
 use lending_iterator::{LendingIterator, Peekable, Seekable};
+use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{iterator::KeyspaceRangeIterator, IteratorPool, KeyspaceError, KeyspaceId},
     sequence_number::SequenceNumber,

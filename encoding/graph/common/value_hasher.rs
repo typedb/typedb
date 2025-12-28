@@ -9,9 +9,9 @@ use std::sync::Arc;
 use bytes::byte_array::ByteArray;
 use lending_iterator::LendingIterator;
 use primitive::either::Either;
+use primitive::key_range::KeyRange;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
-    key_range::KeyRange,
     key_value::StorageKey,
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot},
 };
