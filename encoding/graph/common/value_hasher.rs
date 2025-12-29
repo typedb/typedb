@@ -33,7 +33,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         Self::HASH_LENGTH
     }
 
-    fn find_existing_or_next_disambiguated_hash<KV: KVStore + 'static, Snapshot>(
+    fn find_existing_or_next_disambiguated_hash<KV: KVStore, Snapshot>(
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
         keyspace: EncodingKeyspace,
@@ -66,7 +66,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     }
 
     /// return Either<Existing tail, newly allocated tail>
-    fn disambiguate<KV: KVStore + 'static, Snapshot>(
+    fn disambiguate<KV: KVStore, Snapshot>(
         snapshot: &Snapshot,
         keyspace: EncodingKeyspace,
         key_without_tail_byte: &[u8],

@@ -632,7 +632,7 @@ impl StringAttributeID {
         StringBytes::new(Bytes::Array(bytes))
     }
 
-    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
+    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &Snapshot,
@@ -646,7 +646,7 @@ impl StringAttributeID {
         }
     }
 
-    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
+    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &Snapshot,
@@ -662,7 +662,7 @@ impl StringAttributeID {
         }
     }
 
-    fn build_or_find_hashed_id<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
+    fn build_or_find_hashed_id<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &Snapshot,
@@ -809,7 +809,7 @@ impl StructAttributeID {
         &self.bytes
     }
 
-    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
+    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         type_id: TypeID,
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
@@ -839,7 +839,7 @@ impl StructAttributeID {
         Ok(Self { bytes })
     }
 
-    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
+    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         type_id: TypeID,
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,

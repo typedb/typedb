@@ -107,7 +107,7 @@ impl<'a> StructValue<'a> {
     }
 
     // Deeply nested structs may take up a lot of space with the u16 path.
-    pub fn create_index_entries<KV: KVStore + 'static>(
+    pub fn create_index_entries<KV: KVStore>(
         &self,
         snapshot: &impl WritableSnapshot<KV>,
         thing_vertex_generator: &ThingVertexGenerator,
@@ -126,7 +126,7 @@ impl<'a> StructValue<'a> {
         Ok(acc)
     }
 
-    fn create_index_entries_recursively<KV: KVStore + 'static>(
+    fn create_index_entries_recursively<KV: KVStore>(
         snapshot: &impl WritableSnapshot<KV>,
         hasher: &impl Fn(&[u8]) -> u64,
         attribute: &AttributeVertex,
@@ -206,7 +206,7 @@ impl StructIndexEntry<'static> {
     const ENCODING_TYPEID_RANGE: Range<usize> =
         Self::ENCODING_VALUE_TYPE_RANGE.end..{ Self::ENCODING_VALUE_TYPE_RANGE.end + TypeID::LENGTH };
 
-    pub fn build<KV: KVStore + 'static>(
+    pub fn build<KV: KVStore>(
         snapshot: &impl ReadableSnapshot<KV>,
         hasher: &impl Fn(&[u8]) -> u64,
         path_to_field: &[StructFieldIDUInt],
@@ -238,7 +238,7 @@ impl StructIndexEntry<'static> {
         Ok(Self { key: StructIndexEntryKey::new(Bytes::copy(buf.as_slice())), value })
     }
 
-    pub fn build_prefix_typeid_path_value<KV: KVStore + 'static>(
+    pub fn build_prefix_typeid_path_value<KV: KVStore>(
         snapshot: &impl ReadableSnapshot<KV>,
         thing_vertex_generator: &ThingVertexGenerator,
         path_to_field: &[StructFieldIDUInt],
@@ -255,7 +255,7 @@ impl StructIndexEntry<'static> {
         Ok(StorageKey::new_owned(Self::KEYSPACE, ByteArray::copy(buf.as_slice())))
     }
 
-    fn build_prefix_typeid_path_value_into_buf<KV: KVStore + 'static>(
+    fn build_prefix_typeid_path_value_into_buf<KV: KVStore>(
         snapshot: &impl ReadableSnapshot<KV>,
         hasher: &impl Fn(&[u8]) -> u64,
         path_to_field: &[StructFieldIDUInt],
@@ -303,7 +303,7 @@ impl StructIndexEntry<'_> {
     const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_HASHID_LENGTH;
     const STRING_FIELD_INLINE_LENGTH: usize = Self::STRING_FIELD_LENGTH - 1;
 
-    fn encode_string_into<const INLINE_SIZE: usize, KV: KVStore + 'static>(
+    fn encode_string_into<const INLINE_SIZE: usize, KV: KVStore>(
         snapshot: &impl ReadableSnapshot<KV>,
         hasher: &impl Fn(&[u8]) -> u64,
         string_bytes: StringBytes<INLINE_SIZE>,

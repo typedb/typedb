@@ -38,7 +38,7 @@ impl TypeVertexGenerator {
         }
     }
 
-    pub fn create_entity_type<KV: KVStore + 'static, Snapshot: WritableSnapshot<KV>>(
+    pub fn create_entity_type<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<TypeVertex, EncodingError> {
@@ -47,7 +47,7 @@ impl TypeVertexGenerator {
         Ok(vertex)
     }
 
-    pub fn create_relation_type<KV: KVStore + 'static, Snapshot: WritableSnapshot<KV>>(
+    pub fn create_relation_type<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<TypeVertex, EncodingError> {
@@ -56,7 +56,7 @@ impl TypeVertexGenerator {
         Ok(vertex)
     }
 
-    pub fn create_role_type<KV: KVStore + 'static, Snapshot: WritableSnapshot<KV>>(
+    pub fn create_role_type<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<TypeVertex, EncodingError> {
@@ -65,7 +65,7 @@ impl TypeVertexGenerator {
         Ok(vertex)
     }
 
-    pub fn create_attribute_type<KV: KVStore + 'static, Snapshot: WritableSnapshot<KV>>(
+    pub fn create_attribute_type<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<TypeVertex, EncodingError> {

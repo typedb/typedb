@@ -74,11 +74,11 @@ impl ThingVertexGenerator {
         }
     }
 
-    pub fn load<D, KV: KVStore + 'static>(storage: Arc<MVCCStorage<D, KV>>) -> Result<Self, EncodingError> {
+    pub fn load<D, KV: KVStore>(storage: Arc<MVCCStorage<D, KV>>) -> Result<Self, EncodingError> {
         Self::load_with_hasher(storage, seahash::hash)
     }
 
-    pub fn load_with_hasher<D, KV: KVStore + 'static>(
+    pub fn load_with_hasher<D, KV: KVStore>(
         storage: Arc<MVCCStorage<D, KV>>,
         large_value_hasher: fn(&[u8]) -> u64,
     ) -> Result<Self, EncodingError> {
@@ -153,7 +153,7 @@ impl ThingVertexGenerator {
         &self.large_value_hasher
     }
 
-    pub fn create_entity<KV: KVStore + 'static, Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
+    pub fn create_entity<KV: KVStore, Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
     where
         Snapshot: WritableSnapshot<KV>,
     {
@@ -163,7 +163,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_relation<KV: KVStore + 'static, Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
+    pub fn create_relation<KV: KVStore, Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
     where
         Snapshot: WritableSnapshot<KV>,
     {
@@ -173,7 +173,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_boolean<KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_boolean<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: BooleanBytes,
@@ -188,7 +188,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_integer<KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_integer<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: IntegerBytes,
@@ -203,7 +203,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_double<KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_double<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DoubleBytes,
@@ -218,7 +218,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_decimal<KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_decimal<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DecimalBytes,
@@ -233,7 +233,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_date<KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_date<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DateBytes,
@@ -248,7 +248,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_date_time<KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_date_time<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DateTimeBytes,
@@ -263,7 +263,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_date_time_tz<KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_date_time_tz<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DateTimeTZBytes,
@@ -278,7 +278,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_duration<KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_duration<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DurationBytes,
@@ -335,7 +335,7 @@ impl ThingVertexGenerator {
     /// We do not need to retain a reverse index from String -> ID, since 99.9% of the time the prefix + hash
     /// lets us retrieve the ID from the forward index by prefix (ID -> String).
     ///
-    pub fn create_attribute_string<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_string<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: StringBytes<INLINE_LENGTH>,
@@ -350,7 +350,7 @@ impl ThingVertexGenerator {
         Ok(vertex)
     }
 
-    pub fn create_attribute_id_string<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_id_string<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
@@ -371,7 +371,7 @@ impl ThingVertexGenerator {
         }
     }
 
-    pub fn find_attribute_id_string_noinline<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
+    pub fn find_attribute_id_string_noinline<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
@@ -384,7 +384,7 @@ impl ThingVertexGenerator {
         StringAttributeID::find_hashed_id(type_id, string, snapshot, &self.large_value_hasher)
     }
 
-    pub fn create_attribute_struct<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_struct<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: StructBytes<'_, INLINE_LENGTH>,
@@ -399,7 +399,7 @@ impl ThingVertexGenerator {
         Ok(vertex)
     }
 
-    pub fn create_attribute_id_struct<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
+    pub fn create_attribute_id_struct<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
@@ -417,7 +417,7 @@ impl ThingVertexGenerator {
         Ok(id)
     }
 
-    pub fn find_attribute_id_struct<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
+    pub fn find_attribute_id_struct<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,

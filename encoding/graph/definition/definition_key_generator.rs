@@ -33,7 +33,7 @@ impl DefinitionKeyGenerator {
         }
     }
 
-    pub fn create_struct<KV: KVStore + 'static, Snapshot: WritableSnapshot<KV>>(
+    pub fn create_struct<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<DefinitionKey, EncodingError> {
@@ -46,7 +46,7 @@ impl DefinitionKeyGenerator {
         self.next_struct.reset()
     }
 
-    pub fn create_function<KV: KVStore + 'static, Snapshot: WritableSnapshot<KV>>(
+    pub fn create_function<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<DefinitionKey, EncodingError> {
