@@ -14,7 +14,7 @@ use primitive::key_range::{KeyRange, RangeStart};
 use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{IteratorPool, KeyspaceOpenError, KeyspaceValidationError},
+    keyspace::KeyspacesError,
     StorageOpenError,
 };
 use test_utils::{create_tmp_dir, init_logging};
@@ -67,7 +67,7 @@ fn create_keyspaces_duplicate_name_error() {
         matches!(
             storage_result,
             Err(StorageOpenError::KeyspaceOpen {
-                source: KeyspaceOpenError::Validation { source: KeyspaceValidationError::NameExists { .. }, .. },
+                typedb_source: KeyspacesError::NameExists { .. },
                 ..
             })
         ),
@@ -90,7 +90,7 @@ fn create_keyspaces_duplicate_id_error() {
         matches!(
             storage_result,
             Err(StorageOpenError::KeyspaceOpen {
-                source: KeyspaceOpenError::Validation { source: KeyspaceValidationError::IdExists { .. }, .. },
+                typedb_source: KeyspacesError::IdExists { .. },
                 ..
             })
         ),
@@ -128,7 +128,6 @@ fn create_reopen() {
                 .unwrap();
         let items = storage
             .iterate_keyspace_range(
-                &IteratorPool::new(),
                 KeyRange::new_unbounded(RangeStart::Inclusive(StorageKey::<BUFFER_VALUE_INLINE>::Reference(
                     StorageKeyReference::from(&StorageKeyArray::<BUFFER_VALUE_INLINE>::from((
                         TestKeyspaceSet::Keyspace,
@@ -177,17 +176,16 @@ fn get_put_iterate() {
     storage.put_raw(StorageKeyReference::from(&keyspace_2_key_4), &empty_value());
 
     let first_value: Option<ByteArray<48>> =
-        storage.get_raw_mapped(StorageKeyReference::from(&keyspace_1_key_1), ByteArray::copy);
+        storage.get_raw_mapped(StorageKeyReference::from(&keyspace_1_key_1), &mut ByteArray::copy);
     assert_eq!(first_value, Some(ByteArray::empty()));
 
     let second_value: Option<ByteArray<48>> =
-        storage.get_raw_mapped(StorageKeyReference::from(&keyspace_2_key_1), ByteArray::copy);
+        storage.get_raw_mapped(StorageKeyReference::from(&keyspace_2_key_1), &mut ByteArray::copy);
     assert_eq!(second_value, Some(ByteArray::empty()));
 
     let prefix = StorageKeyArray::<BUFFER_VALUE_INLINE>::from((TestKeyspaceSet::Keyspace1, [0x1]));
     let items: Vec<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>)> = storage
         .iterate_keyspace_range(
-            &IteratorPool::new(),
             KeyRange::new_within(
                 StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&prefix)),
                 false,

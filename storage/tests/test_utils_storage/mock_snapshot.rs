@@ -4,32 +4,37 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::iter::empty;
+use std::{iter::empty, marker::PhantomData};
 
 use bytes::byte_array::ByteArray;
+use kv::KVStore;
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::IteratorPool,
     sequence_number::SequenceNumber,
     snapshot::{
         buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::Write, ReadableSnapshot, SnapshotGetError,
     },
 };
 
-#[derive(Default)]
-pub struct MockSnapshot {
-    iterator_pool: IteratorPool,
+pub struct MockSnapshot<KV: KVStore> {
+    _marker: PhantomData<KV>,
 }
 
-impl MockSnapshot {
+impl<KV: KVStore> Default for MockSnapshot<KV> {
+    fn default() -> Self {
+        Self { _marker: PhantomData }
+    }
+}
+
+impl<KV: KVStore> MockSnapshot<KV> {
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-impl ReadableSnapshot for MockSnapshot {
+impl<KV: KVStore> ReadableSnapshot<KV> for MockSnapshot<KV> {
     const IMMUTABLE_SCHEMA: bool = false;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -56,11 +61,11 @@ impl ReadableSnapshot for MockSnapshot {
         &self,
         _: &KeyRange<StorageKey<'_, PS>>,
         _: StorageCounters,
-    ) -> SnapshotRangeIterator {
+    ) -> SnapshotRangeIterator<KV> {
         SnapshotRangeIterator::new_empty()
     }
 
-    fn any_in_range<'this, const PS: usize>(&'this self, _: &KeyRange<StorageKey<'this, PS>>, _: bool) -> bool {
+    fn any_in_range<const PS: usize>(&self, _: &KeyRange<StorageKey<'_, PS>>, _: bool) -> bool {
         false
     }
 
@@ -74,23 +79,19 @@ impl ReadableSnapshot for MockSnapshot {
         empty()
     }
 
-    fn iterate_writes_range<'this, const PS: usize>(
-        &'this self,
-        _: &KeyRange<StorageKey<'this, PS>>,
+    fn iterate_writes_range<const PS: usize>(
+        &self,
+        _: &KeyRange<StorageKey<'_, PS>>,
     ) -> BufferRangeIterator {
         BufferRangeIterator::new_empty()
     }
 
-    fn iterate_storage_range<'this, const PS: usize>(
-        &'this self,
-        _: &KeyRange<StorageKey<'this, PS>>,
+    fn iterate_storage_range<const PS: usize>(
+        &self,
+        _: &KeyRange<StorageKey<'_, PS>>,
         _: StorageCounters,
-    ) -> SnapshotRangeIterator {
+    ) -> SnapshotRangeIterator<KV> {
         SnapshotRangeIterator::new_empty()
-    }
-
-    fn iterator_pool(&self) -> &IteratorPool {
-        &self.iterator_pool
     }
 
     fn close_resources(&self) {}

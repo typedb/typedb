@@ -19,6 +19,7 @@ use resource::constants::{
     encoding::StructFieldIDUInt,
     snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
 };
+use kv::KVStore;
 use storage::{
     key_value::StorageKey,
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
@@ -106,9 +107,9 @@ impl<'a> StructValue<'a> {
     }
 
     // Deeply nested structs may take up a lot of space with the u16 path.
-    pub fn create_index_entries(
+    pub fn create_index_entries<KV: KVStore + 'static>(
         &self,
-        snapshot: &impl WritableSnapshot,
+        snapshot: &impl WritableSnapshot<KV>,
         thing_vertex_generator: &ThingVertexGenerator,
         attribute: &AttributeVertex,
     ) -> Result<Vec<StructIndexEntry<'_>>, Arc<SnapshotIteratorError>> {
@@ -125,8 +126,8 @@ impl<'a> StructValue<'a> {
         Ok(acc)
     }
 
-    fn create_index_entries_recursively(
-        snapshot: &impl WritableSnapshot,
+    fn create_index_entries_recursively<KV: KVStore + 'static>(
+        snapshot: &impl WritableSnapshot<KV>,
         hasher: &impl Fn(&[u8]) -> u64,
         attribute: &AttributeVertex,
         fields: &HashMap<StructFieldIDUInt, Value<'a>>,
@@ -205,8 +206,8 @@ impl StructIndexEntry<'static> {
     const ENCODING_TYPEID_RANGE: Range<usize> =
         Self::ENCODING_VALUE_TYPE_RANGE.end..{ Self::ENCODING_VALUE_TYPE_RANGE.end + TypeID::LENGTH };
 
-    pub fn build(
-        snapshot: &impl ReadableSnapshot,
+    pub fn build<KV: KVStore + 'static>(
+        snapshot: &impl ReadableSnapshot<KV>,
         hasher: &impl Fn(&[u8]) -> u64,
         path_to_field: &[StructFieldIDUInt],
         value: &Value<'_>,
@@ -237,8 +238,8 @@ impl StructIndexEntry<'static> {
         Ok(Self { key: StructIndexEntryKey::new(Bytes::copy(buf.as_slice())), value })
     }
 
-    pub fn build_prefix_typeid_path_value(
-        snapshot: &impl ReadableSnapshot,
+    pub fn build_prefix_typeid_path_value<KV: KVStore + 'static>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_vertex_generator: &ThingVertexGenerator,
         path_to_field: &[StructFieldIDUInt],
         value: &Value<'_>,
@@ -254,8 +255,8 @@ impl StructIndexEntry<'static> {
         Ok(StorageKey::new_owned(Self::KEYSPACE, ByteArray::copy(buf.as_slice())))
     }
 
-    fn build_prefix_typeid_path_value_into_buf(
-        snapshot: &impl ReadableSnapshot,
+    fn build_prefix_typeid_path_value_into_buf<KV: KVStore + 'static>(
+        snapshot: &impl ReadableSnapshot<KV>,
         hasher: &impl Fn(&[u8]) -> u64,
         path_to_field: &[StructFieldIDUInt],
         value: &Value<'_>,
@@ -302,8 +303,8 @@ impl StructIndexEntry<'_> {
     const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_HASHID_LENGTH;
     const STRING_FIELD_INLINE_LENGTH: usize = Self::STRING_FIELD_LENGTH - 1;
 
-    fn encode_string_into<const INLINE_SIZE: usize>(
-        snapshot: &impl ReadableSnapshot,
+    fn encode_string_into<const INLINE_SIZE: usize, KV: KVStore + 'static>(
+        snapshot: &impl ReadableSnapshot<KV>,
         hasher: &impl Fn(&[u8]) -> u64,
         string_bytes: StringBytes<INLINE_SIZE>,
         buf: &mut Vec<u8>,

@@ -10,6 +10,7 @@ use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
 use error::unimplemented_feature;
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use kv::KVStore;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{KeyspaceId, KeyspaceSet},
@@ -631,28 +632,28 @@ impl StringAttributeID {
         StringBytes::new(Bytes::Array(bytes))
     }
 
-    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Self, Arc<SnapshotIteratorError>>
     where
-        Snapshot: ReadableSnapshot,
+        Snapshot: ReadableSnapshot<KV>,
     {
         match Self::build_or_find_hashed_id(type_id, string, snapshot, hasher)? {
             Either::First(hashed_id) | Either::Second(hashed_id) => Ok(hashed_id),
         }
     }
 
-    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
     where
-        Snapshot: ReadableSnapshot,
+        Snapshot: ReadableSnapshot<KV>,
     {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
         match Self::build_or_find_hashed_id(type_id, string, snapshot, hasher)? {
@@ -661,14 +662,14 @@ impl StringAttributeID {
         }
     }
 
-    fn build_or_find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+    fn build_or_find_hashed_id<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Either<Self, Self>, Arc<SnapshotIteratorError>>
     where
-        Snapshot: ReadableSnapshot,
+        Snapshot: ReadableSnapshot<KV>,
     {
         debug_assert!(!Self::is_inlineable(string.as_reference()));
 
@@ -808,14 +809,14 @@ impl StructAttributeID {
         &self.bytes
     }
 
-    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+    pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
         type_id: TypeID,
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Self, Arc<SnapshotIteratorError>>
     where
-        Snapshot: ReadableSnapshot,
+        Snapshot: ReadableSnapshot<KV>,
     {
         let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Struct);
         let attribute_prefix = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, type_id, keyspace);
@@ -838,14 +839,14 @@ impl StructAttributeID {
         Ok(Self { bytes })
     }
 
-    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
+    pub(crate) fn find_hashed_id<const INLINE_LENGTH: usize, KV: KVStore + 'static, Snapshot>(
         type_id: TypeID,
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
     ) -> Result<Option<Self>, Arc<SnapshotIteratorError>>
     where
-        Snapshot: ReadableSnapshot,
+        Snapshot: ReadableSnapshot<KV>,
     {
         let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Struct);
         let attribute_prefix = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, type_id, keyspace);

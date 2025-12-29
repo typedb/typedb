@@ -17,7 +17,7 @@ pub trait KVStoreRangeIterator: for<'a> LendingIterator<Item<'a> = KVIteratorIte
     type KVStore: KVStore;
 
     fn new<'a, const INLINE_BYTES: usize>(
-        kv_store: Self::KVStore,
+        kv_store: &Self::KVStore,
         range: &KeyRange<Bytes<'a, INLINE_BYTES>>,
         storage_counters: StorageCounters,
     ) -> Self;

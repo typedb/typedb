@@ -30,7 +30,7 @@ pub struct SnapshotRangeIterator<KV: KVStore> {
     ready_item_source: Option<ReadyItemSource>,
 }
 
-impl<KV: KVStore + 'static> SnapshotRangeIterator<KV> {
+impl<KV: KVStore> SnapshotRangeIterator<KV> {
     pub(crate) fn new(mvcc_iterator: MVCCRangeIterator<KV>, buffered_iterator: Option<BufferRangeIterator>) -> Self {
         SnapshotRangeIterator { storage_iterator: Some(mvcc_iterator), buffered_iterator, ready_item_source: None }
     }
@@ -207,7 +207,7 @@ impl<KV: KVStore + 'static> SnapshotRangeIterator<KV> {
     }
 }
 
-impl<KV: KVStore + 'static> LendingIterator for SnapshotRangeIterator<KV> {
+impl<KV: KVStore> LendingIterator for SnapshotRangeIterator<KV> {
     type Item<'a> =
         Result<(StorageKey<'a, BUFFER_KEY_INLINE>, Bytes<'a, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>;
 

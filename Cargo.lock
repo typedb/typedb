@@ -1378,6 +1378,7 @@ dependencies = [
  "durability",
  "error",
  "itertools 0.10.5",
+ "kv",
  "lending_iterator",
  "logger",
  "primitive",
@@ -4796,7 +4797,9 @@ version = "0.0.0"
 dependencies = [
  "bytes 0.0.0",
  "durability",
+ "kv",
  "logger",
+ "primitive",
  "resource",
  "storage",
 ]

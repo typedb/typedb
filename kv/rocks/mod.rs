@@ -19,6 +19,7 @@ use std::sync::Arc;
 use std::{fs, io};
 use bytes::util::MB;
 use resource::constants::storage::ROCKSDB_CACHE_SIZE_MB;
+use crate::iterator::KVStoreRangeIterator;
 use crate::rocks::iterator::RocksRangeIterator;
 use crate::rocks::iterpool::RocksRawIteratorPool;
 
@@ -175,8 +176,7 @@ impl KVStore for RocksKVStore {
         range: &KeyRange<Bytes<'_, PREFIX_INLINE_SIZE>>,
         storage_counters: StorageCounters,
     ) -> Self::RangeIterator {
-        // iterator::KeyspaceRangeIterator::new(self, iterpool, range, storage_counters)
-        todo!()
+        RocksRangeIterator::new(self, range, storage_counters)
     }
 
     fn write(&self, write_batch: Self::WriteBatch) -> Result<(), Box<dyn KVStoreError>> {
@@ -264,6 +264,16 @@ impl std::error::Error for RocksKVError {
 }
 
 impl KVStoreError for RocksKVError {}
+
+impl std::fmt::Debug for RocksKVStore {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RocksKVStore")
+            .field("path", &self.path)
+            .field("name", &self.name)
+            .field("id", &self.id)
+            .finish_non_exhaustive()
+    }
+}
 
 impl KVWriteBatch for WriteBatch {
     fn put(&mut self, key: impl AsRef<[u8]>, value: impl AsRef<[u8]>) {

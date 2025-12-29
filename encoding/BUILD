@@ -45,6 +45,7 @@ rust_library(
         "//common/primitive",
         "//common/structural_equality",
         "//durability",
+        "//kv",
         "//resource",
         "//storage",
 

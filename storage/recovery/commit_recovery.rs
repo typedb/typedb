@@ -81,7 +81,7 @@ pub fn load_commit_data_from(
     Ok(recovered_commits)
 }
 
-pub(crate) fn apply_recovered<KV: KVStore + 'static>(
+pub(crate) fn apply_recovered<KV: KVStore>(
     recovered_commits: BTreeMap<SequenceNumber, RecoveryCommitStatus>,
     durability_client: &impl DurabilityClient,
     keyspaces: &Keyspaces<KV>,

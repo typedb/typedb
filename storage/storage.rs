@@ -65,7 +65,7 @@ pub struct MVCCStorage<Durability, KV> {
     isolation_manager: IsolationManager,
 }
 
-impl<Durability, KV: KVStore + 'static> MVCCStorage<Durability, KV> {
+impl<Durability, KV: KVStore> MVCCStorage<Durability, KV> {
     pub const STORAGE_DIR_NAME: &'static str = "storage";
 
     pub fn create<KS: KeyspaceSet>(
@@ -640,6 +640,7 @@ impl StorageOperation {
 mod tests {
     use bytes::byte_array::ByteArray;
     use durability::wal::WAL;
+    use kv::rocks::RocksKVStore;
     use resource::profile::StorageCounters;
     use test_utils::{create_tmp_dir, init_logging};
 
@@ -647,7 +648,7 @@ mod tests {
         durability_client::{DurabilityClient, WALClient},
         isolation_manager::{CommitRecord, CommitType},
         key_value::StorageKeyArray,
-        keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
+        keyspace::{KeyspaceId, KeyspaceSet, Keyspaces},
         snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
         MVCCStorage,
@@ -702,7 +703,7 @@ mod tests {
 
             let partial_commit = WriteBatches::from_operations(seq, &partial_operations);
             let keyspaces =
-                Keyspaces::open::<TestKeyspaceSet>(storage_path.join(MVCCStorage::<WALClient>::STORAGE_DIR_NAME))
+                Keyspaces::<RocksKVStore>::open::<TestKeyspaceSet>(storage_path.join(MVCCStorage::<WALClient, RocksKVStore>::STORAGE_DIR_NAME))
                     .unwrap();
             keyspaces.write(partial_commit).unwrap();
 
@@ -714,10 +715,10 @@ mod tests {
         let mut durability_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
         durability_client.register_record_type::<CommitRecord>();
         let storage =
-            MVCCStorage::<WALClient>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
+            MVCCStorage::<WALClient, RocksKVStore>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
                 .unwrap();
         assert_eq!(
-            storage.get::<0>(&IteratorPool::new(), &key_2, seq, StorageCounters::DISABLED).unwrap().unwrap(),
+            storage.get::<0>(&key_2, seq, StorageCounters::DISABLED).unwrap().unwrap(),
             ByteArray::empty()
         );
     }

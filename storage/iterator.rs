@@ -31,7 +31,7 @@ pub(crate) struct MVCCRangeIterator<KV: KVStore> {
     item: Option<Result<(StorageKeyReference<'static>, &'static [u8]), MVCCReadError>>,
 }
 
-impl<KV: KVStore + 'static> MVCCRangeIterator<KV> {
+impl<KV: KVStore> MVCCRangeIterator<KV> {
     //
     // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1
     // once we find a successful key, to skip all 'older' versions of the key
@@ -94,7 +94,7 @@ impl<KV: KVStore + 'static> MVCCRangeIterator<KV> {
     }
 }
 
-impl<KV: KVStore + 'static> LendingIterator for MVCCRangeIterator<KV> {
+impl<KV: KVStore> LendingIterator for MVCCRangeIterator<KV> {
     type Item<'a> = Result<(StorageKeyReference<'a>, &'a [u8]), MVCCReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
@@ -123,7 +123,7 @@ impl<KV: KVStore + 'static> LendingIterator for MVCCRangeIterator<KV> {
     }
 }
 
-impl<KV: KVStore + 'static> Seekable<[u8]> for MVCCRangeIterator<KV> {
+impl<KV: KVStore> Seekable<[u8]> for MVCCRangeIterator<KV> {
     fn seek(&mut self, key: &[u8]) {
         if let Some(Ok((peek, _))) = self.peek() {
             if peek.bytes() < key {

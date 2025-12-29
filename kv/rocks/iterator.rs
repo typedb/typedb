@@ -85,7 +85,7 @@ impl KVStoreRangeIterator for RocksRangeIterator {
     type KVStore = RocksKVStore;
 
     fn new<'a, const INLINE_BYTES: usize>(
-        kv_store: Self::KVStore,
+        kv_store: &Self::KVStore,
         range: &KeyRange<Bytes<'a, INLINE_BYTES>>,
         storage_counters: StorageCounters,
     ) -> Self {

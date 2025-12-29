@@ -133,7 +133,7 @@ impl Checkpoint {
         Ok(deserialised)
     }
 
-    pub(crate) fn recover_storage<KS: KeyspaceSet, KV: KVStore + 'static, Durability: DurabilityClient>(
+    pub(crate) fn recover_storage<KS: KeyspaceSet, KV: KVStore, Durability: DurabilityClient>(
         &self,
         keyspaces_dir: &Path,
         durability_client: &Durability,

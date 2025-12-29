@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 mod iterator;
-mod rocks;
+pub mod rocks;
 
 use crate::iterator::KVStoreRangeIterator;
 use bytes::Bytes;
@@ -13,7 +13,7 @@ use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 use std::path::{Path, PathBuf};
 
-pub trait KVStore {
+pub trait KVStore: 'static {
     type SharedResources;
     type OpenOptions;
     type RangeIterator: KVStoreRangeIterator;
@@ -68,7 +68,7 @@ pub trait KVStore {
     fn estimate_key_count(&self) -> Result<u64, Box<dyn KVStoreError>>;
 }
 
-pub trait KVStoreError: TypeDBError + Send + Sync {}
+pub trait KVStoreError: TypeDBError + Send + Sync + std::fmt::Debug {}
 
 impl<T: KVStoreError + 'static> From<T> for Box<dyn KVStoreError> {
     fn from(value: T) -> Self {
