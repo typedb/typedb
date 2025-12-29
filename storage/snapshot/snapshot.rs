@@ -46,7 +46,7 @@ macro_rules! get_mapped_method {
     };
 }
 
-pub trait ReadableSnapshot {
+pub trait ReadableSnapshot<KV: KVStore> {
     const IMMUTABLE_SCHEMA: bool;
 
     fn open_sequence_number(&self) -> SequenceNumber;
@@ -79,7 +79,7 @@ pub trait ReadableSnapshot {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator;
+    ) -> SnapshotRangeIterator<KV>;
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool;
 
@@ -94,12 +94,12 @@ pub trait ReadableSnapshot {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator;
+    ) -> SnapshotRangeIterator<KV>;
 
     fn close_resources(&self);
 }
 
-pub trait WritableSnapshot: ReadableSnapshot {
+pub trait WritableSnapshot<KV: KVStore>: ReadableSnapshot<KV> {
     fn operations(&self) -> &OperationsBuffer;
 
     fn operations_mut(&mut self) -> &mut OperationsBuffer;
@@ -199,9 +199,10 @@ pub trait WritableSnapshot: ReadableSnapshot {
     }
 }
 
-pub trait CommittableSnapshot<D>: WritableSnapshot
+pub trait CommittableSnapshot<D, KV>: WritableSnapshot<KV>
 where
     D: DurabilityClient,
+    KV: KVStore,
 {
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
 
@@ -228,7 +229,7 @@ impl<D, KV: KVStore> ReadSnapshot<D, KV> {
     pub fn close_resources(self) {}
 }
 
-impl<D, KV: KVStore> ReadableSnapshot for ReadSnapshot<D, KV> {
+impl<D, KV: KVStore> ReadableSnapshot<KV> for ReadSnapshot<D, KV> {
     const IMMUTABLE_SCHEMA: bool = true;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -257,19 +258,14 @@ impl<D, KV: KVStore> ReadableSnapshot for ReadSnapshot<D, KV> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
+    ) -> SnapshotRangeIterator<KV> {
+        let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {
         !buffered_only
-            && self
-                .storage
-                .iterate_range(range, self.open_sequence_number, StorageCounters::DISABLED)
-                .next()
-                .is_some()
+            && self.storage.iterate_range(range, self.open_sequence_number, StorageCounters::DISABLED).next().is_some()
     }
 
     fn get_write(&self, _: StorageKeyReference<'_>) -> Option<&Write> {
@@ -288,9 +284,8 @@ impl<D, KV: KVStore> ReadableSnapshot for ReadSnapshot<D, KV> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
+    ) -> SnapshotRangeIterator<KV> {
+        let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
 
@@ -312,23 +307,19 @@ impl<D: fmt::Debug, KV> fmt::Debug for WriteSnapshot<D, KV> {
 impl<D, KV: KVStore> WriteSnapshot<D, KV> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D, KV>>, open_sequence_number: SequenceNumber) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
-        WriteSnapshot {
-            storage,
-            operations: OperationsBuffer::new(),
-            open_sequence_number,
-        }
+        WriteSnapshot { storage, operations: OperationsBuffer::new(), open_sequence_number }
     }
 
     pub fn new_with_operations(
         storage: Arc<MVCCStorage<D, KV>>,
         open_sequence_number: SequenceNumber,
         operations: OperationsBuffer,
-    ) -> impl ReadableSnapshot {
+    ) -> impl ReadableSnapshot<KV> {
         WriteSnapshot { storage, operations, open_sequence_number }
     }
 }
 
-impl<D, KV: KVStore> ReadableSnapshot for WriteSnapshot<D, KV> {
+impl<D, KV: KVStore> ReadableSnapshot<KV> for WriteSnapshot<D, KV> {
     const IMMUTABLE_SCHEMA: bool = true;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -370,13 +361,12 @@ impl<D, KV: KVStore> ReadableSnapshot for WriteSnapshot<D, KV> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
+    ) -> SnapshotRangeIterator<KV> {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
-        let storage_iterator =
-            self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
+        let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
@@ -411,9 +401,8 @@ impl<D, KV: KVStore> ReadableSnapshot for WriteSnapshot<D, KV> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
+    ) -> SnapshotRangeIterator<KV> {
+        let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
 
@@ -422,7 +411,7 @@ impl<D, KV: KVStore> ReadableSnapshot for WriteSnapshot<D, KV> {
     }
 }
 
-impl<D, KV: KVStore> WritableSnapshot for WriteSnapshot<D, KV> {
+impl<D, KV: KVStore> WritableSnapshot<KV> for WriteSnapshot<D, KV> {
     fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
@@ -432,7 +421,7 @@ impl<D, KV: KVStore> WritableSnapshot for WriteSnapshot<D, KV> {
     }
 }
 
-impl<D: DurabilityClient, KV: KVStore> CommittableSnapshot<D> for WriteSnapshot<D, KV> {
+impl<D: DurabilityClient, KV: KVStore> CommittableSnapshot<D, KV> for WriteSnapshot<D, KV> {
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         if self.operations.is_writes_empty() && self.operations.locks_empty() {
             Ok(None)
@@ -464,23 +453,19 @@ impl<D: fmt::Debug, KV> fmt::Debug for SchemaSnapshot<D, KV> {
 impl<D, KV: KVStore> SchemaSnapshot<D, KV> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D, KV>>, open_sequence_number: SequenceNumber) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
-        SchemaSnapshot {
-            storage,
-            operations: OperationsBuffer::new(),
-            open_sequence_number,
-        }
+        SchemaSnapshot { storage, operations: OperationsBuffer::new(), open_sequence_number }
     }
 
     pub fn new_with_operations(
         storage: Arc<MVCCStorage<D, KV>>,
         open_sequence_number: SequenceNumber,
         operations: OperationsBuffer,
-    ) -> impl ReadableSnapshot {
+    ) -> impl ReadableSnapshot<KV> {
         SchemaSnapshot { storage, operations, open_sequence_number }
     }
 }
 
-impl<D, KV: KVStore> ReadableSnapshot for SchemaSnapshot<D, KV> {
+impl<D, KV: KVStore> ReadableSnapshot<KV> for SchemaSnapshot<D, KV> {
     const IMMUTABLE_SCHEMA: bool = false;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -522,13 +507,12 @@ impl<D, KV: KVStore> ReadableSnapshot for SchemaSnapshot<D, KV> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
+    ) -> SnapshotRangeIterator<KV> {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
-        let storage_iterator =
-            self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
+        let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
@@ -563,9 +547,8 @@ impl<D, KV: KVStore> ReadableSnapshot for SchemaSnapshot<D, KV> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
+    ) -> SnapshotRangeIterator<KV> {
+        let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
 
@@ -574,7 +557,7 @@ impl<D, KV: KVStore> ReadableSnapshot for SchemaSnapshot<D, KV> {
     }
 }
 
-impl<D, KV: KVStore> WritableSnapshot for SchemaSnapshot<D, KV> {
+impl<D, KV: KVStore> WritableSnapshot<KV> for SchemaSnapshot<D, KV> {
     fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
@@ -584,7 +567,7 @@ impl<D, KV: KVStore> WritableSnapshot for SchemaSnapshot<D, KV> {
     }
 }
 
-impl<D: DurabilityClient, KV: KVStore> CommittableSnapshot<D> for SchemaSnapshot<D, KV> {
+impl<D: DurabilityClient, KV: KVStore> CommittableSnapshot<D, KV> for SchemaSnapshot<D, KV> {
     // TODO: extract these two methods into separate trait
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         if self.operations.is_writes_empty() && self.operations.locks_empty() {
@@ -603,11 +586,11 @@ impl<D: DurabilityClient, KV: KVStore> CommittableSnapshot<D> for SchemaSnapshot
 }
 
 #[derive(Debug)]
-pub struct SnapshotDropGuard<S: ReadableSnapshot> {
+pub struct SnapshotDropGuard<KV: KVStore, S: ReadableSnapshot<KV>> {
     inner: Option<Arc<S>>,
 }
 
-impl<S: ReadableSnapshot> SnapshotDropGuard<S> {
+impl<KV: KVStore, S: ReadableSnapshot<KV>> SnapshotDropGuard<KV, S> {
     pub fn new(inner: S) -> Self {
         Self::from_arc(Arc::new(inner))
     }
@@ -653,7 +636,7 @@ impl<S: ReadableSnapshot> SnapshotDropGuard<S> {
     }
 }
 
-impl<S: ReadableSnapshot> Deref for SnapshotDropGuard<S> {
+impl<KV: KVStore, S: ReadableSnapshot<KV>> Deref for SnapshotDropGuard<KV, S> {
     type Target = S;
 
     fn deref(&self) -> &Self::Target {
@@ -661,7 +644,7 @@ impl<S: ReadableSnapshot> Deref for SnapshotDropGuard<S> {
     }
 }
 
-impl<S: ReadableSnapshot> Drop for SnapshotDropGuard<S> {
+impl<KV: KVStore, S: ReadableSnapshot<KV>> Drop for SnapshotDropGuard<KV, S> {
     fn drop(&mut self) {
         if let Some(inner) = self.inner.take() {
             Self::unwrap_arc(inner).close_resources()

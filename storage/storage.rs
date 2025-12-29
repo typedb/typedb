@@ -213,7 +213,7 @@ impl<Durability, KV: KVStore + 'static> MVCCStorage<Durability, KV> {
 
     async fn snapshot_commit(
         &self,
-        snapshot: impl CommittableSnapshot<Durability>,
+        snapshot: impl CommittableSnapshot<Durability, KV>,
         commit_profile: &mut CommitProfile,
     ) -> Result<SequenceNumber, StorageCommitError>
     where
@@ -283,7 +283,7 @@ impl<Durability, KV: KVStore + 'static> MVCCStorage<Durability, KV> {
 
     async fn set_initial_put_status(
         &self,
-        snapshot: &impl CommittableSnapshot<Durability>,
+        snapshot: &impl CommittableSnapshot<Durability, KV>,
         storage_counters: StorageCounters,
     ) -> Result<(), MVCCReadError>
     where
@@ -429,7 +429,7 @@ impl<Durability, KV: KVStore + 'static> MVCCStorage<Durability, KV> {
             .map_err(|e| MVCCStorageError {
                 storage_name: self.name(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
-                    source: Arc::new(e),
+                    typedb_source: e,
                     keyspace_name: self.keyspaces.get(key.keyspace_id()).name(),
                 },
             })
@@ -446,7 +446,7 @@ impl<Durability, KV: KVStore + 'static> MVCCStorage<Durability, KV> {
             .map_err(|e| MVCCStorageError {
                 storage_name: self.name(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
-                    source: Arc::new(e),
+                    typedb_source: e,
                     keyspace_name: self.keyspaces.get(key.keyspace_id()).name(),
                 },
             })

@@ -14,6 +14,7 @@ use std::{
 };
 
 use bytes::{byte_array::ByteArray, Bytes};
+use kv::KVStore;
 use lending_iterator::{LendingIterator, Seekable};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
@@ -23,14 +24,14 @@ use crate::{
     snapshot::{buffer::BufferRangeIterator, write::Write},
 };
 
-pub struct SnapshotRangeIterator {
-    storage_iterator: Option<MVCCRangeIterator>,
+pub struct SnapshotRangeIterator<KV: KVStore> {
+    storage_iterator: Option<MVCCRangeIterator<KV>>,
     buffered_iterator: Option<BufferRangeIterator>,
     ready_item_source: Option<ReadyItemSource>,
 }
 
-impl SnapshotRangeIterator {
-    pub(crate) fn new(mvcc_iterator: MVCCRangeIterator, buffered_iterator: Option<BufferRangeIterator>) -> Self {
+impl<KV: KVStore> SnapshotRangeIterator<KV> {
+    pub(crate) fn new(mvcc_iterator: MVCCRangeIterator<KV>, buffered_iterator: Option<BufferRangeIterator>) -> Self {
         SnapshotRangeIterator { storage_iterator: Some(mvcc_iterator), buffered_iterator, ready_item_source: None }
     }
 
@@ -206,7 +207,7 @@ impl SnapshotRangeIterator {
     }
 }
 
-impl LendingIterator for SnapshotRangeIterator {
+impl<KV: KVStore> LendingIterator for SnapshotRangeIterator<KV> {
     type Item<'a> =
         Result<(StorageKey<'a, BUFFER_KEY_INLINE>, Bytes<'a, BUFFER_VALUE_INLINE>), Arc<SnapshotIteratorError>>;
 

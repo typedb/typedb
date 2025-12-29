@@ -38,7 +38,7 @@ pub trait KVStore {
 
     fn id(&self) -> KVStoreID;
 
-    fn name(&self) -> &str;
+    fn name(&self) -> &'static str;
 
     async fn put(&self, key: &[u8], value: &[u8]) -> Result<(), Box<dyn KVStoreError>>;
 

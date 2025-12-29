@@ -142,7 +142,7 @@ impl KVStore for RocksKVStore {
         self.id
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         self.name
     }
 

@@ -5,7 +5,7 @@
  */
 
 use std::{error::Error, fmt, sync::Arc};
-
+use error::TypeDBError;
 use crate::keyspace::KeyspacesError;
 
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub struct MVCCStorageError {
 #[derive(Debug)]
 pub enum MVCCStorageErrorKind {
     FailedToDeleteStorage { source: std::io::Error },
-    KeyspaceError { source: Arc<dyn Error + Sync + Send>, keyspace_name: &'static str },
+    KeyspaceError { typedb_source: Box<dyn TypeDBError + Sync + Send>, keyspace_name: &'static str },
     KeyspaceDeleteError { source: KeyspacesError },
 }
 
