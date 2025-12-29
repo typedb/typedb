@@ -19,13 +19,13 @@ use itertools::Itertools;
 use same_file::is_same_file;
 use tracing::trace;
 
-use kv::KVStore;
 use crate::{
     durability_client::DurabilityClient,
-    keyspace::{KeyspacesError, KeyspaceSet, Keyspaces},
+    keyspace::{KeyspaceSet, Keyspaces, KeyspacesError},
     recovery::commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     sequence_number::SequenceNumber,
 };
+use kv::KVStore;
 
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
 /// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
@@ -54,11 +54,11 @@ impl Checkpoint {
         Ok(Checkpoint { directory: current_checkpoint_dir })
     }
 
-    pub async fn add_storage<KV: KVStore>(&self, keyspaces: &Keyspaces<KV>, watermark: SequenceNumber) -> Result<(), CheckpointCreateError> {
+    pub fn add_storage<KV: KVStore>(&self, keyspaces: &Keyspaces<KV>, watermark: SequenceNumber) -> Result<(), CheckpointCreateError> {
         use CheckpointCreateError::{KeyspaceCheckpoint, MetadataFileCreate, MetadataWrite};
         keyspaces
-            .checkpoint(&self.directory).await
-            .map_err(|error| KeyspaceCheckpoint { dir: self.directory.clone(), source: Arc::new(error) })?;
+            .checkpoint(&self.directory)
+            .map_err(|error| KeyspaceCheckpoint { dir: self.directory.clone(), typedb_source: error })?;
 
         let metadata_file_path = self.directory.join(Self::STORAGE_METADATA_FILE_NAME);
         let mut metadata_file = File::create(&metadata_file_path)
@@ -133,7 +133,7 @@ impl Checkpoint {
         Ok(deserialised)
     }
 
-    pub(crate) async fn recover_storage<KS: KeyspaceSet, KV: KVStore, Durability: DurabilityClient>(
+    pub(crate) fn recover_storage<KS: KeyspaceSet, KV: KVStore + 'static, Durability: DurabilityClient>(
         &self,
         keyspaces_dir: &Path,
         durability_client: &Durability,
@@ -148,7 +148,7 @@ impl Checkpoint {
                 .map_err(|error| CheckpointRestore { dir: self.directory.clone(), source: Arc::new(error) })?;
         }
 
-        let keyspaces = Keyspaces::<KV>::open::<KS>(&keyspaces_dir).map_err(|error| KeyspacesOpen { source: error })?;
+        let keyspaces = Keyspaces::<KV>::open::<KS>(&keyspaces_dir).map_err(|error| KeyspacesOpen { typedb_source: error })?;
 
         trace!("Finished recovering keyspaces, recovering missing commits");
 
@@ -162,7 +162,7 @@ impl Checkpoint {
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
         trace!("Applying missing commits");
-        apply_recovered(recovered_commits, durability_client, &keyspaces).await
+        apply_recovered(recovered_commits, durability_client, &keyspaces)
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         Ok((keyspaces, next_sequence_number))
     }
@@ -220,45 +220,18 @@ pub trait CheckpointAdditionalData: Sized {
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self>;
 }
 
-#[derive(Debug, Clone)]
-pub enum CheckpointCreateError {
-    CheckpointDirCreate { dir: PathBuf, source: Arc<io::Error> },
-    CheckpointDirRead { dir: PathBuf, source: Arc<io::Error> },
-
-    MissingStorageData { dir: PathBuf },
-
-    KeyspaceCheckpoint { dir: PathBuf, source: Arc<KeyspacesError> },
-
-    MetadataFileCreate { file_path: PathBuf, source: Arc<io::Error> },
-    MetadataWrite { file_path: PathBuf, source: Arc<io::Error> },
-
-    ExtensionDuplicate { name: String },
-    ExtensionIO { name: String, source: Arc<io::Error> },
-    ExtensionSerialise { name: String, source: Arc<bincode::Error> },
-
-    OldCheckpointRemove { dir: PathBuf, source: Arc<io::Error> },
-}
-
-impl fmt::Display for CheckpointCreateError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
-    }
-}
-
-impl Error for CheckpointCreateError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::CheckpointDirCreate { source, .. } => Some(source),
-            Self::CheckpointDirRead { source, .. } => Some(source),
-            Self::MissingStorageData { .. } => None,
-            Self::KeyspaceCheckpoint { source, .. } => Some(source),
-            Self::MetadataFileCreate { source, .. } => Some(source),
-            Self::MetadataWrite { source, .. } => Some(source),
-            Self::ExtensionDuplicate { .. } => None,
-            Self::ExtensionIO { source, .. } => Some(source),
-            Self::ExtensionSerialise { source, .. } => Some(source),
-            Self::OldCheckpointRemove { source, .. } => Some(source),
-        }
+typedb_error! {
+    pub CheckpointCreateError(component = "Checkpoint create", prefix = "CCR") {
+        CheckpointDirCreate(1, "Failed to create checkpoint directory '{dir:?}'.", dir: PathBuf, source: Arc<io::Error>),
+        CheckpointDirRead(2, "Failed to read checkpoint directory '{dir:?}'.", dir: PathBuf, source: Arc<io::Error>),
+        MissingStorageData(3, "Missing storage data in checkpoint directory '{dir:?}'.", dir: PathBuf),
+        KeyspaceCheckpoint(4, "Failed to checkpoint keyspaces in directory '{dir:?}'.", dir: PathBuf, typedb_source: KeyspacesError),
+        MetadataFileCreate(5, "Failed to create metadata file '{file_path:?}'.", file_path: PathBuf, source: Arc<io::Error>),
+        MetadataWrite(6, "Failed to write metadata file '{file_path:?}'.", file_path: PathBuf, source: Arc<io::Error>),
+        ExtensionDuplicate(7, "Checkpoint extension '{name}' already exists.", name: String),
+        ExtensionIO(8, "IO error for checkpoint extension '{name}'.", name: String, source: Arc<io::Error>),
+        ExtensionSerialise(9, "Failed to serialise checkpoint extension '{name}'.", name: String, source: Arc<bincode::Error>),
+        OldCheckpointRemove(10, "Failed to remove old checkpoint directory '{dir:?}'.", dir: PathBuf, source: Arc<io::Error>),
     }
 }
 

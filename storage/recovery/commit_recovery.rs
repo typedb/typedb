@@ -10,15 +10,15 @@ use durability::RawRecord;
 use error::typedb_error;
 use tracing::{event, Level};
 
-use kv::KVStore;
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
-    keyspace::{KeyspacesError, Keyspaces},
+    keyspace::{Keyspaces, KeyspacesError},
     sequence_number::SequenceNumber,
     write_batches::WriteBatches,
     MVCCStorage,
 };
+use kv::KVStore;
 
 /// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.
 pub fn load_commit_data_from(
@@ -81,7 +81,7 @@ pub fn load_commit_data_from(
     Ok(recovered_commits)
 }
 
-pub(crate) async fn apply_recovered<KV: KVStore>(
+pub(crate) fn apply_recovered<KV: KVStore + 'static>(
     recovered_commits: BTreeMap<SequenceNumber, RecoveryCommitStatus>,
     durability_client: &impl DurabilityClient,
     keyspaces: &Keyspaces<KV>,
@@ -110,12 +110,12 @@ pub(crate) async fn apply_recovered<KV: KVStore>(
                     .map_err(|error| DurabilityClientRead { typedb_source: error })?;
                 match validated_commit {
                     ValidatedCommit::Write(write_batches) => {
-                        MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
+                        MVCCStorage::<_, KV>::persist_commit_status(true, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
                         pending_writes.push(write_batches);
                     }
                     ValidatedCommit::Conflict(_) => {
-                        MVCCStorage::persist_commit_status(false, commit_sequence_number, durability_client)
+                        MVCCStorage::<_, KV>::persist_commit_status(false, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
                     }
                 }
@@ -124,7 +124,7 @@ pub(crate) async fn apply_recovered<KV: KVStore>(
     }
 
     for write_batches in pending_writes {
-        keyspaces.write(write_batches).await.map_err(|error| KeyspaceWrite { source: error })?;
+        keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { typedb_source: error })?;
     }
 
     Ok(())
@@ -146,6 +146,6 @@ typedb_error! {
             "Missing initial WAL records - expected first record number '{expected_sequence_number}', but found '{first_record_sequence_number}'.",
             expected_sequence_number: SequenceNumber, first_record_sequence_number: SequenceNumber
         ),
-        KeyspaceWrite(5, "Error writing recovered commits to keyspace.", source: KeyspacesError),
+        KeyspaceWrite(5, "Error writing recovered commits to keyspace.", typedb_source: KeyspacesError),
     }
 }

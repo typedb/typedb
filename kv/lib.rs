@@ -6,19 +6,18 @@
 mod iterator;
 mod rocks;
 
+use crate::iterator::KVStoreRangeIterator;
 use bytes::Bytes;
 use error::TypeDBError;
-use lending_iterator::{LendingIterator, Seekable};
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub trait KVStore {
     type SharedResources;
     type OpenOptions;
-    type RangeIterator: LendingIterator + Seekable<[u8]>;
+    type RangeIterator: KVStoreRangeIterator;
     type WriteBatch: KVWriteBatch;
-    type CheckpointArgs<'a>;
 
     fn create_shared_resources() -> Self::SharedResources;
 
@@ -40,29 +39,29 @@ pub trait KVStore {
 
     fn name(&self) -> &'static str;
 
-    async fn put(&self, key: &[u8], value: &[u8]) -> Result<(), Box<dyn KVStoreError>>;
+    fn put(&self, key: &[u8], value: &[u8]) -> Result<(), Box<dyn KVStoreError>>;
 
-    async fn get<M, V>(&self, key: &[u8], mapper: &mut M) -> Result<Option<V>, Box<dyn KVStoreError>>
+    fn get<M, V>(&self, key: &[u8], mapper: &mut M) -> Result<Option<V>, Box<dyn KVStoreError>>
     where
         M: FnMut(&[u8]) -> V;
 
-    async fn get_prev<M, T>(&self, key: &[u8], mapper: &mut M) -> Option<T>
+    fn get_prev<M, T>(&self, key: &[u8], mapper: &mut M) -> Option<T>
     where
         M: FnMut(&[u8], &[u8]) -> T;
 
-    async fn iterate_range<const PREFIX_INLINE_SIZE: usize>(
+    fn iterate_range<const PREFIX_INLINE_SIZE: usize>(
         &self,
         range: &KeyRange<Bytes<'_, PREFIX_INLINE_SIZE>>,
         storage_counters: StorageCounters,
     ) -> Self::RangeIterator;
 
-    async fn write(&self, write_batch: Self::WriteBatch) -> Result<(), Box<dyn KVStoreError>>;
+    fn write(&self, write_batch: Self::WriteBatch) -> Result<(), Box<dyn KVStoreError>>;
 
-    async fn checkpoint<'a>(&self, args: &Self::CheckpointArgs<'a>) -> Result<(), Box<dyn KVStoreError>>;
+    fn checkpoint(&self, checkpoint_dir: &Path) -> Result<(), Box<dyn KVStoreError>>;
 
-    async fn delete(self) -> Result<(), Box<dyn KVStoreError>>;
+    fn delete(self) -> Result<(), Box<dyn KVStoreError>>;
 
-    async fn reset(&mut self) -> Result<(), Box<dyn KVStoreError>>;
+    fn reset(&mut self) -> Result<(), Box<dyn KVStoreError>>;
 
     fn estimate_size_in_bytes(&self) -> Result<u64, Box<dyn KVStoreError>>;
 

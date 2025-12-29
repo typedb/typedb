@@ -3,6 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-pub(crate) use keyspace::{Keyspaces, KeyspacesError, KeyspaceId, KeyspaceSet, KEYSPACE_MAXIMUM_COUNT};
+pub(crate) use keyspace::{KeyspaceId, KeyspaceSet, Keyspaces, KeyspacesError, KEYSPACE_MAXIMUM_COUNT};
 
 mod keyspace;

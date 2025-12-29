@@ -19,12 +19,6 @@ use std::{
     },
 };
 
-use durability::DurabilityRecordType;
-use logger::result::ResultExt;
-use primitive::maybe_owns::MaybeOwns;
-use resource::constants::storage::TIMELINE_WINDOW_SIZE;
-use serde::{Deserialize, Serialize};
-use kv::KVStore;
 use crate::{
     durability_client::{
         DurabilityClient, DurabilityClientError, DurabilityRecord, SequencedDurabilityRecord,
@@ -34,6 +28,12 @@ use crate::{
     snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},
     write_batches::WriteBatches,
 };
+use durability::DurabilityRecordType;
+use kv::KVStore;
+use logger::result::ResultExt;
+use primitive::maybe_owns::MaybeOwns;
+use resource::constants::storage::TIMELINE_WINDOW_SIZE;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
 pub(crate) struct IsolationManager {

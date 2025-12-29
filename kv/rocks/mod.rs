@@ -66,7 +66,6 @@ impl KVStore for RocksKVStore {
     type OpenOptions = (PathBuf, Options, Option<usize>);
     type RangeIterator = RocksRangeIterator;
     type WriteBatch = WriteBatch;
-    type CheckpointArgs<'a> = &'a Path;
 
     fn open<'a>(open_options: &Self::OpenOptions, name: &'static str, id: KVStoreID) -> Result<Self, Box<dyn KVStoreError>> {
         use RocksKVError::Open;
@@ -146,13 +145,13 @@ impl KVStore for RocksKVStore {
         self.name
     }
 
-    async fn put(&self, key: &[u8], value: &[u8]) -> Result<(), Box<dyn KVStoreError>> {
+    fn put(&self, key: &[u8], value: &[u8]) -> Result<(), Box<dyn KVStoreError>> {
         self.rocks
             .put_opt(key, value, &self.write_options)
             .map_err(|error| RocksKVError::Put { name: self.name, source: error }.into())
     }
 
-    async fn get<M, V>(&self, key: &[u8], mapper: &mut M) -> Result<Option<V>, Box<dyn KVStoreError>>
+    fn get<M, V>(&self, key: &[u8], mapper: &mut M) -> Result<Option<V>, Box<dyn KVStoreError>>
     where
         M: FnMut(&[u8]) -> V,
     {
@@ -162,7 +161,7 @@ impl KVStore for RocksKVStore {
             .map_err(|error| RocksKVError::Get { name: self.name, source: error }.into())
     }
 
-    async fn get_prev<M, T>(&self, key: &[u8], mapper: &mut M) -> Option<T>
+    fn get_prev<M, T>(&self, key: &[u8], mapper: &mut M) -> Option<T>
     where
         M: FnMut(&[u8], &[u8]) -> T,
     {
@@ -171,7 +170,7 @@ impl KVStore for RocksKVStore {
         iterator.item().map(|(k, v)| mapper(k, v))
     }
 
-    async fn iterate_range<const PREFIX_INLINE_SIZE: usize>(
+    fn iterate_range<const PREFIX_INLINE_SIZE: usize>(
         &self,
         range: &KeyRange<Bytes<'_, PREFIX_INLINE_SIZE>>,
         storage_counters: StorageCounters,
@@ -180,13 +179,13 @@ impl KVStore for RocksKVStore {
         todo!()
     }
 
-    async fn write(&self, write_batch: Self::WriteBatch) -> Result<(), Box<dyn KVStoreError>> {
+    fn write(&self, write_batch: Self::WriteBatch) -> Result<(), Box<dyn KVStoreError>> {
         self.rocks
             .write_opt(write_batch, &self.write_options)
             .map_err(|error| RocksKVError::BatchWrite { name: self.name, source: error }.into())
     }
 
-    async fn checkpoint<'a>(&self, checkpoint_dir: &Self::CheckpointArgs<'a>) -> Result<(), Box<dyn KVStoreError>> {
+    fn checkpoint(&self, checkpoint_dir: &Path) -> Result<(), Box<dyn KVStoreError>> {
         use RocksKVError::{CheckpointExists, CreateRocksDBCheckpoint};
 
         let checkpoint_dir = checkpoint_dir.join(self.name);
@@ -194,7 +193,6 @@ impl KVStore for RocksKVStore {
             return Err(CheckpointExists { name: self.name, dir: checkpoint_dir.display().to_string() }.into());
         }
 
-        // TODO: spawn_blocking
         Checkpoint::new(&self.rocks)
             .and_then(|checkpoint| checkpoint.create_checkpoint(&checkpoint_dir))
             .map_err(|error| CreateRocksDBCheckpoint { name: self.name, source: error })?;
@@ -202,14 +200,14 @@ impl KVStore for RocksKVStore {
         Ok(())
     }
 
-    async fn delete(self) -> Result<(), Box<dyn KVStoreError>> {
+    fn delete(self) -> Result<(), Box<dyn KVStoreError>> {
         drop(self.rocks);
         fs::remove_dir_all(self.path.clone())
             .map_err(|error| RocksKVError::DeleteErrorDirectoryRemove { name: self.name, source: Arc::new(error) })?;
         Ok(())
     }
 
-    async fn reset(&mut self) -> Result<(), Box<dyn KVStoreError>>  {
+    fn reset(&mut self) -> Result<(), Box<dyn KVStoreError>>  {
         let iterator = self.rocks.iterator(IteratorMode::Start);
         for entry in iterator {
             let (key, _) = entry.map_err(|err| RocksKVError::Iterate { name: self.name, source: err })?;
@@ -249,6 +247,19 @@ typedb_error! {
         CreateRocksDBCheckpoint(21, "RocksDB error creating checkpoint for kv store {name}.", name: &'static str, source: rocksdb::Error),
 
         DeleteErrorDirectoryRemove(30, "Failed to delete directory of kv store {name}",name: &'static str, source: Arc<io::Error>),
+    }
+}
+
+impl std::fmt::Display for RocksKVError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use error::TypeDBError;
+        write!(f, "{}", self.format_code_and_description())
+    }
+}
+
+impl std::error::Error for RocksKVError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
     }
 }
 

@@ -4,10 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
+use std::{cmp::Ordering, sync::Arc};
 
 use bytes::byte_array::ByteArray;
-use kv::KVStore;
+use error::typedb_error;
+use kv::{KVStore, KVStoreError};
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
@@ -15,7 +16,7 @@ use resource::profile::StorageCounters;
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
     key_value::{StorageKey, StorageKeyReference},
-    keyspace::{KeyspacesError, KeyspaceId},
+    keyspace::KeyspaceId,
     sequence_number::SequenceNumber,
 };
 
@@ -30,12 +31,12 @@ pub(crate) struct MVCCRangeIterator<KV: KVStore> {
     item: Option<Result<(StorageKeyReference<'static>, &'static [u8]), MVCCReadError>>,
 }
 
-impl<KV: KVStore> MVCCRangeIterator<KV> {
+impl<KV: KVStore + 'static> MVCCRangeIterator<KV> {
     //
     // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1
     // once we find a successful key, to skip all 'older' versions of the key
     //
-    pub(crate) async fn new<D, const PS: usize>(
+    pub(crate) fn new<D, const PS: usize>(
         storage: &MVCCStorage<D, KV>,
         range: &KeyRange<StorageKey<'_, PS>>,
         open_sequence_number: SequenceNumber,
@@ -44,7 +45,7 @@ impl<KV: KVStore> MVCCRangeIterator<KV> {
         let keyspace_id = range.start().get_value().keyspace_id();
         let keyspace = storage.get_keyspace(keyspace_id);
         let mapped_range = range.map(|key| key.as_bytes(), |fixed_width| fixed_width);
-        let iterator = keyspace.iterate_range(&mapped_range, storage_counters.clone()).await;
+        let iterator = keyspace.iterate_range(&mapped_range, storage_counters.clone());
         MVCCRangeIterator {
             storage_name: storage.name(),
             keyspace_id,
@@ -93,7 +94,7 @@ impl<KV: KVStore> MVCCRangeIterator<KV> {
     }
 }
 
-impl<KV: KVStore> LendingIterator for MVCCRangeIterator<KV> {
+impl<KV: KVStore + 'static> LendingIterator for MVCCRangeIterator<KV> {
     type Item<'a> = Result<(StorageKeyReference<'a>, &'a [u8]), MVCCReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
@@ -107,8 +108,8 @@ impl<KV: KVStore> LendingIterator for MVCCRangeIterator<KV> {
                 }
                 Err(error) => {
                     return Some(Err(MVCCReadError::Keyspace {
-                        storage_name: self.storage_name.clone(),
-                        source: Arc::new(error.clone()),
+                        storage_name: (*self.storage_name).clone(),
+                        typedb_source: error.into(),
                     }))
                 }
             };
@@ -122,7 +123,7 @@ impl<KV: KVStore> LendingIterator for MVCCRangeIterator<KV> {
     }
 }
 
-impl<KV: KVStore> Seekable<[u8]> for MVCCRangeIterator<KV> {
+impl<KV: KVStore + 'static> Seekable<[u8]> for MVCCRangeIterator<KV> {
     fn seek(&mut self, key: &[u8]) {
         if let Some(Ok((peek, _))) = self.peek() {
             if peek.bytes() < key {
@@ -141,21 +142,26 @@ impl<KV: KVStore> Seekable<[u8]> for MVCCRangeIterator<KV> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum MVCCReadError {
-    Keyspace { storage_name: Arc<String>, source: Arc<KeyspacesError> },
-}
+typedb_error!(
+    pub MVCCReadError(component = "MVCC Read", prefix = "MVR") {
+        Keyspace(
+            1,
+            "Error reading from keyspace in MVCC storage '{storage_name}'.",
+            storage_name: String,
+            typedb_source: Arc<dyn KVStoreError>
+        ),
+    }
+);
 
-impl fmt::Display for MVCCReadError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
+impl std::fmt::Display for MVCCReadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use error::TypeDBError;
+        write!(f, "{}", self.format_code_and_description())
     }
 }
 
-impl Error for MVCCReadError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::Keyspace { source, .. } => Some(source),
-        }
+impl std::error::Error for MVCCReadError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
     }
 }

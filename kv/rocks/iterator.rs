@@ -5,7 +5,7 @@
  */
 use crate::iterator::{ContinueCondition, KVStoreRangeIterator};
 use crate::rocks::{RocksKVError, RocksKVStore};
-use crate::{KVStoreError, KVStoreID};
+use crate::{KVStoreError};
 use bytes::byte_array::ByteArray;
 use bytes::Bytes;
 use lending_iterator::{LendingIterator, Seekable};
@@ -82,16 +82,13 @@ impl RocksRangeIterator {
 }
 
 impl KVStoreRangeIterator for RocksRangeIterator {
-    type Args = (KVStoreID, Option<usize>);
     type KVStore = RocksKVStore;
 
     fn new<'a, const INLINE_BYTES: usize>(
-        args: &Self::Args,
         kv_store: Self::KVStore,
         range: &KeyRange<Bytes<'a, INLINE_BYTES>>,
         storage_counters: StorageCounters,
     ) -> Self {
-        let (id, prefix_length) = *args;
         let start_prefix = match range.start() {
             RangeStart::Inclusive(bytes) => Bytes::Reference(bytes.as_ref()),
             RangeStart::ExcludeFirstWithPrefix(bytes) => Bytes::Reference(bytes.as_ref()),

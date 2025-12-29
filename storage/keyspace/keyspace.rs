@@ -6,13 +6,12 @@
 
 use std::{
     fmt,
-    path::Path
-    ,
+    path::Path,
+    sync::Arc,
 };
 
 use crate::write_batches::WriteBatches;
 use error::typedb_error;
-use itertools::Itertools;
 use kv::{KVStore, KVStoreError, KVStoreID};
 use serde::{Deserialize, Serialize};
 
@@ -73,7 +72,7 @@ impl<KV: KVStore> Keyspaces<KV> {
             let prefix_length = keyspace.prefix_length();
             let options = KV::create_open_options(&shared_resources, path.to_path_buf(), prefix_length);
             let kv = KVStore::open(&options, keyspace.name(), keyspace.id().into())
-                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
+                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
             keyspaces.keyspaces.push(kv);
             keyspaces.index[keyspace.id().0 as usize] = Some(KeyspaceId(keyspaces.keyspaces.len() as u8 - 1));
         }
@@ -112,28 +111,28 @@ impl<KV: KVStore> Keyspaces<KV> {
         &self.keyspaces[keyspace_index.0 as usize]
     }
 
-    pub(crate) async fn write(&self, write_batches: WriteBatches<KV>) -> Result<(), KeyspacesError> {
+    pub(crate) fn write(&self, write_batches: WriteBatches<KV>) -> Result<(), KeyspacesError> {
         for (index, write_batch) in write_batches.into_iter() {
             debug_assert!(index < KEYSPACE_MAXIMUM_COUNT);
-            self.get(KeyspaceId(index as u8)).write(write_batch).await
-                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
+            self.get(KeyspaceId(index as u8)).write(write_batch)
+                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
         }
         Ok(())
     }
 
-    pub(crate) async fn checkpoint(&self, current_checkpoint_dir: &Path) -> Result<(), KeyspacesError> {
+    pub(crate) fn checkpoint(&self, current_checkpoint_dir: &Path) -> Result<(), KeyspacesError> {
         for keyspace in &self.keyspaces {
-            keyspace.checkpoint(&current_checkpoint_dir).await
-                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
+            keyspace.checkpoint(current_checkpoint_dir)
+                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
         }
         Ok(())
     }
 
-    pub(crate) async fn delete(self) -> Result<(), Vec<KeyspacesError>> {
+    pub(crate) fn delete(self) -> Result<(), Vec<KeyspacesError>> {
         let mut errors = Vec::new();
         for keyspace in self.keyspaces {
-            if let Err(e) = keyspace.delete().await {
-                errors.push(KeyspacesError::KVStoreError { typedb_source: e });
+            if let Err(e) = keyspace.delete() {
+                errors.push(KeyspacesError::KVStoreError { typedb_source: e.into()});
             }
         }
         if !errors.is_empty() {
@@ -142,9 +141,9 @@ impl<KV: KVStore> Keyspaces<KV> {
         Ok(())
     }
 
-    pub(crate) async fn reset(&mut self) -> Result<(), KeyspacesError> {
+    pub(crate) fn reset(&mut self) -> Result<(), KeyspacesError> {
         for keyspace in self.keyspaces.iter_mut() {
-            keyspace.reset().await.map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
+            keyspace.reset().map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
         }
         Ok(())
     }
@@ -152,7 +151,7 @@ impl<KV: KVStore> Keyspaces<KV> {
     pub fn estimate_size_in_bytes(&self) -> Result<u64, KeyspacesError> {
         self.keyspaces.iter().try_fold(0, |total, keyspace| {
             let size = keyspace.estimate_size_in_bytes()
-                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
+                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
             Ok(total + size)
         })
     }
@@ -160,7 +159,7 @@ impl<KV: KVStore> Keyspaces<KV> {
     pub fn estimate_key_count(&self) -> Result<u64, KeyspacesError> {
         self.keyspaces.iter().try_fold(0, |total, keyspace| {
             let count = keyspace.estimate_key_count()
-                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
+                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
             Ok(total + count)
         })
     }
@@ -168,7 +167,7 @@ impl<KV: KVStore> Keyspaces<KV> {
 
 typedb_error!(
     pub KeyspacesError(component = "Keyspaces error", prefix = "KSE") {
-        KVStoreError(1, "KV store error.", typedb_source: Box<dyn KVStoreError>),
+        KVStoreError(1, "KV store error.", typedb_source: Arc<dyn KVStoreError>),
         IdReserved(2, "Keyspace ID {id} is reserved and cannot be used for new keyspace '{name}'.", name: &'static str, id: u8),
         IdTooLarge(3, "Keyspace ID is too large.N name: {name}, id: {id} > max allowed id: {max_id}.", name: &'static str, id: u8, max_id: u8 ),
         NameExists(4, "Keyspace name '{name}' exists and cannot be created again.", name: &'static str),
