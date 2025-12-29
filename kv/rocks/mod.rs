@@ -7,7 +7,7 @@ mod iterator;
 mod iterpool;
 pub mod pool;
 
-use crate::{KVStore, KVStoreError, KVStoreID};
+use crate::{KVStore, KVStoreError, KVStoreID, KVWriteBatch};
 use bytes::Bytes;
 use error::typedb_error;
 use primitive::key_range::KeyRange;
@@ -253,6 +253,12 @@ typedb_error! {
 }
 
 impl KVStoreError for RocksKVError {}
+
+impl KVWriteBatch for WriteBatch {
+    fn put(&mut self, key: impl AsRef<[u8]>, value: impl AsRef<[u8]>) {
+        WriteBatch::put(self, key, value)
+    }
+}
 
 
 // RocksDB properties. The full list of available properties is available here:

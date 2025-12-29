@@ -35,18 +35,19 @@ impl<KV: KVStore> MVCCRangeIterator<KV> {
     // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1
     // once we find a successful key, to skip all 'older' versions of the key
     //
-    pub(crate) fn new<D, const PS: usize>(
+    pub(crate) async fn new<D, const PS: usize>(
         storage: &MVCCStorage<D, KV>,
         range: &KeyRange<StorageKey<'_, PS>>,
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
     ) -> Self {
-        let keyspace = storage.get_keyspace(range.start().get_value().keyspace_id());
+        let keyspace_id = range.start().get_value().keyspace_id();
+        let keyspace = storage.get_keyspace(keyspace_id);
         let mapped_range = range.map(|key| key.as_bytes(), |fixed_width| fixed_width);
-        let iterator = keyspace.iterate_range(iterpool, &mapped_range, storage_counters.clone());
+        let iterator = keyspace.iterate_range(&mapped_range, storage_counters.clone()).await;
         MVCCRangeIterator {
             storage_name: storage.name(),
-            keyspace_id: keyspace.id(),
+            keyspace_id,
             iterator: Peekable::new(iterator),
             open_sequence_number,
             last_visible_key: None,
@@ -56,9 +57,13 @@ impl<KV: KVStore> MVCCRangeIterator<KV> {
     }
 
     pub(crate) fn peek(&mut self) -> Option<&Result<(StorageKeyReference<'_>, &[u8]), MVCCReadError>> {
-        type Item<'a> = <MVCCRangeIterator as LendingIterator>::Item<'a>;
         if self.item.is_none() {
-            self.item = unsafe { std::mem::transmute::<Option<Item<'_>>, Option<Item<'static>>>(self.next()) };
+            self.item = unsafe {
+                std::mem::transmute::<
+                    Option<Result<(StorageKeyReference<'_>, &[u8]), MVCCReadError>>,
+                    Option<Result<(StorageKeyReference<'static>, &'static [u8]), MVCCReadError>>,
+                >(self.next())
+            };
         }
         self.item.as_ref()
     }
@@ -88,7 +93,7 @@ impl<KV: KVStore> MVCCRangeIterator<KV> {
     }
 }
 
-impl LendingIterator for MVCCRangeIterator {
+impl<KV: KVStore> LendingIterator for MVCCRangeIterator<KV> {
     type Item<'a> = Result<(StorageKeyReference<'a>, &'a [u8]), MVCCReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
@@ -117,7 +122,7 @@ impl LendingIterator for MVCCRangeIterator {
     }
 }
 
-impl Seekable<[u8]> for MVCCRangeIterator {
+impl<KV: KVStore> Seekable<[u8]> for MVCCRangeIterator<KV> {
     fn seek(&mut self, key: &[u8]) {
         if let Some(Ok((peek, _))) = self.peek() {
             if peek.bytes() < key {
@@ -138,7 +143,7 @@ impl Seekable<[u8]> for MVCCRangeIterator {
 
 #[derive(Debug, Clone)]
 pub enum MVCCReadError {
-    Keyspace { storage_name: Arc<String>, source: Arc<KeyspaceError> },
+    Keyspace { storage_name: Arc<String>, source: Arc<KeyspacesError> },
 }
 
 impl fmt::Display for MVCCReadError {

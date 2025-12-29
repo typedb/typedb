@@ -72,7 +72,9 @@ impl<KV: KVStore> Keyspaces<KV> {
             keyspaces.validate_new_keyspace(keyspace)?;
             let prefix_length = keyspace.prefix_length();
             let options = KV::create_open_options(&shared_resources, path.to_path_buf(), prefix_length);
-            keyspaces.keyspaces.push(KVStore::open(options, keyspace.name(), keyspace.id().into()));
+            let kv = KVStore::open(&options, keyspace.name(), keyspace.id().into())
+                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
+            keyspaces.keyspaces.push(kv);
             keyspaces.index[keyspace.id().0 as usize] = Some(KeyspaceId(keyspaces.keyspaces.len() as u8 - 1));
         }
         Ok(keyspaces)
@@ -110,46 +112,55 @@ impl<KV: KVStore> Keyspaces<KV> {
         &self.keyspaces[keyspace_index.0 as usize]
     }
 
-    pub(crate) fn write(&self, write_batches: WriteBatches) -> Result<(), KeyspacesError> {
+    pub(crate) async fn write(&self, write_batches: WriteBatches<KV>) -> Result<(), KeyspacesError> {
         for (index, write_batch) in write_batches.into_iter() {
             debug_assert!(index < KEYSPACE_MAXIMUM_COUNT);
-            self.get(KeyspaceId(index as u8)).write(write_batch)?;
+            self.get(KeyspaceId(index as u8)).write(write_batch).await
+                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
         }
         Ok(())
     }
 
-    pub(crate) fn checkpoint(&self, current_checkpoint_dir: &Path) -> Result<(), KeyspacesError> {
+    pub(crate) async fn checkpoint(&self, current_checkpoint_dir: &Path) -> Result<(), KeyspacesError> {
         for keyspace in &self.keyspaces {
-            keyspace.checkpoint(current_checkpoint_dir)?;
+            keyspace.checkpoint(&current_checkpoint_dir).await
+                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
         }
         Ok(())
     }
 
-    pub(crate) fn delete(self) -> Result<(), Vec<KeyspacesError>> {
-        let errors = self.keyspaces.into_iter().filter_map(|keyspace| keyspace.delete().err()).collect_vec();
+    pub(crate) async fn delete(self) -> Result<(), Vec<KeyspacesError>> {
+        let mut errors = Vec::new();
+        for keyspace in self.keyspaces {
+            if let Err(e) = keyspace.delete().await {
+                errors.push(KeyspacesError::KVStoreError { typedb_source: e });
+            }
+        }
         if !errors.is_empty() {
             return Err(errors);
         }
         Ok(())
     }
 
-    pub(crate) fn reset(&mut self) -> Result<(), KeyspacesError> {
+    pub(crate) async fn reset(&mut self) -> Result<(), KeyspacesError> {
         for keyspace in self.keyspaces.iter_mut() {
-            keyspace.reset()?
+            keyspace.reset().await.map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
         }
         Ok(())
     }
 
     pub fn estimate_size_in_bytes(&self) -> Result<u64, KeyspacesError> {
         self.keyspaces.iter().try_fold(0, |total, keyspace| {
-            let size = keyspace.estimate_size_in_bytes()?;
+            let size = keyspace.estimate_size_in_bytes()
+                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
             Ok(total + size)
         })
     }
 
     pub fn estimate_key_count(&self) -> Result<u64, KeyspacesError> {
         self.keyspaces.iter().try_fold(0, |total, keyspace| {
-            let count = keyspace.estimate_key_count()?;
+            let count = keyspace.estimate_key_count()
+                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e })?;
             Ok(total + count)
         })
     }

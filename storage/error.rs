@@ -18,7 +18,7 @@ pub struct MVCCStorageError {
 pub enum MVCCStorageErrorKind {
     FailedToDeleteStorage { source: std::io::Error },
     KeyspaceError { source: Arc<dyn Error + Sync + Send>, keyspace_name: &'static str },
-    KeyspaceDeleteError { source: KeyspaceError },
+    KeyspaceDeleteError { source: KeyspacesError },
 }
 
 impl fmt::Display for MVCCStorageError {

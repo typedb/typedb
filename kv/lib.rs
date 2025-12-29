@@ -8,6 +8,7 @@ mod rocks;
 
 use bytes::Bytes;
 use error::TypeDBError;
+use lending_iterator::{LendingIterator, Seekable};
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 use std::path::PathBuf;
@@ -15,8 +16,8 @@ use std::path::PathBuf;
 pub trait KVStore {
     type SharedResources;
     type OpenOptions;
-    type RangeIterator;
-    type WriteBatch;
+    type RangeIterator: LendingIterator + Seekable<[u8]>;
+    type WriteBatch: KVWriteBatch;
     type CheckpointArgs<'a>;
 
     fn create_shared_resources() -> Self::SharedResources;
@@ -68,12 +69,16 @@ pub trait KVStore {
     fn estimate_key_count(&self) -> Result<u64, Box<dyn KVStoreError>>;
 }
 
-pub trait KVStoreError: TypeDBError {}
+pub trait KVStoreError: TypeDBError + Send + Sync {}
 
 impl<T: KVStoreError + 'static> From<T> for Box<dyn KVStoreError> {
     fn from(value: T) -> Self {
         Box::new(value)
     }
+}
+
+pub trait KVWriteBatch: Default {
+    fn put(&mut self, key: impl AsRef<[u8]>, value: impl AsRef<[u8]>);
 }
 
 pub type KVStoreID = usize;

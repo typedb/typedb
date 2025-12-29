@@ -42,7 +42,8 @@ use resource::{
     profile::{CommitProfile, StorageCounters},
 };
 use tracing::trace;
-use crate::keyspace::{KeyspaceSet, Keyspaces};
+use crate::keyspace::{KeyspaceId, KeyspaceSet, Keyspaces, KeyspacesError};
+use kv::KVStore;
 
 pub mod durability_client;
 pub mod error;
@@ -64,7 +65,7 @@ pub struct MVCCStorage<Durability, KV> {
     isolation_manager: IsolationManager,
 }
 
-impl<Durability, KV> MVCCStorage<Durability, KV> {
+impl<Durability, KV: KVStore + 'static> MVCCStorage<Durability, KV> {
     pub const STORAGE_DIR_NAME: &'static str = "storage";
 
     pub fn create<KS: KeyspaceSet>(
@@ -102,11 +103,11 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
         storage_dir: &Path,
     ) -> Result<Keyspaces<KV>, StorageOpenError> {
         let keyspaces = Keyspaces::open::<KS>(&storage_dir)
-            .map_err(|err| StorageOpenError::KeyspaceOpen { name: name.as_ref().to_owned(), source: err })?;
+            .map_err(|err| StorageOpenError::KeyspaceOpen { name: name.as_ref().to_owned(), typedb_source: err })?;
         Ok(keyspaces)
     }
 
-    pub fn load<KS: KeyspaceSet>(
+    pub async fn load<KS: KeyspaceSet>(
         name: impl AsRef<str>,
         path: &Path,
         mut durability_client: Durability,
@@ -132,13 +133,13 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
                 let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client, usize::MAX)
                     .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
                 let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
-                apply_recovered(commits, &durability_client, &keyspaces)
+                apply_recovered(commits, &durability_client, &keyspaces).await
                     .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
                 trace!("Finished applying commits from WAL.");
                 (keyspaces, next_sequence_number)
             }
             Some(checkpoint) => checkpoint
-                .recover_storage::<KS, _>(&storage_dir, &durability_client)
+                .recover_storage::<KS, KV, _>(&storage_dir, &durability_client).await
                 .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?,
         };
 
@@ -167,32 +168,32 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
         &mut self.durability_client
     }
 
-    pub fn open_snapshot_write(self: Arc<Self>) -> WriteSnapshot<Durability> {
+    pub fn open_snapshot_write(self: Arc<Self>) -> WriteSnapshot<Durability, KV> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
         WriteSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability> {
+    pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability, KV> {
         // guarantee external consistency: await this sequence number to be behind the watermark
         self.wait_for_watermark(sequence_number);
         WriteSnapshot::new(self, sequence_number)
     }
 
-    pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability> {
+    pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability, KV> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
         ReadSnapshot::new(self, open_sequence_number)
     }
 
-    pub fn open_snapshot_read_at(self: Arc<Self>, sequence_number: SequenceNumber) -> ReadSnapshot<Durability> {
+    pub fn open_snapshot_read_at(self: Arc<Self>, sequence_number: SequenceNumber) -> ReadSnapshot<Durability, KV> {
         self.wait_for_watermark(sequence_number);
         ReadSnapshot::new(self, sequence_number)
     }
 
-    pub fn open_snapshot_schema(self: Arc<Self>) -> SchemaSnapshot<Durability> {
+    pub fn open_snapshot_schema(self: Arc<Self>) -> SchemaSnapshot<Durability, KV> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
@@ -210,7 +211,7 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
         watermark
     }
 
-    fn snapshot_commit(
+    async fn snapshot_commit(
         &self,
         snapshot: impl CommittableSnapshot<Durability>,
         commit_profile: &mut CommitProfile,
@@ -220,7 +221,7 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
     {
         use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
 
-        self.set_initial_put_status(&snapshot, commit_profile.storage_counters())
+        self.set_initial_put_status(&snapshot, commit_profile.storage_counters()).await
             .map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
         commit_profile.snapshot_put_statuses_checked();
 
@@ -247,7 +248,7 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
                 commit_profile.snapshot_durable_write_data_confirmed();
 
                 self.keyspaces
-                    .write(write_batches)
+                    .write(write_batches).await
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_storage_written();
 
@@ -280,7 +281,7 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
         }
     }
 
-    fn set_initial_put_status(
+    async fn set_initial_put_status(
         &self,
         snapshot: &impl CommittableSnapshot<Durability>,
         storage_counters: StorageCounters,
@@ -299,21 +300,19 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
                 if known_to_exist {
                     debug_assert!(self
                         .get::<0>(
-                            snapshot.iterator_pool(),
                             wrapped,
                             snapshot.open_sequence_number(),
                             storage_counters.clone()
-                        )
+                        ).await
                         .is_ok_and(|opt| opt.is_some()));
                     reinsert.store(false, Ordering::Release);
                 } else {
                     let existing_stored = self
                         .get::<BUFFER_VALUE_INLINE>(
-                            snapshot.iterator_pool(),
                             wrapped,
                             snapshot.open_sequence_number(),
                             storage_counters.clone(),
-                        )?
+                        ).await?
                         .is_some_and(|reference| &reference == value);
                     reinsert.store(!existing_stored, Ordering::Release);
                 }
@@ -338,21 +337,21 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
         self.isolation_manager.closed_for_read(open_sequence_number)
     }
 
-    fn get_keyspace(&self, keyspace_id: KeyspaceId) -> &Keyspace {
+    pub(crate) fn get_keyspace(&self, keyspace_id: KeyspaceId) -> &KV {
         self.keyspaces.get(keyspace_id)
     }
 
-    pub fn checkpoint(&self, checkpoint: &Checkpoint) -> Result<(), CheckpointCreateError> {
-        checkpoint.add_storage(&self.keyspaces, self.snapshot_watermark())
+    pub async fn checkpoint(&self, checkpoint: &Checkpoint) -> Result<(), CheckpointCreateError> {
+        checkpoint.add_storage(&self.keyspaces, self.snapshot_watermark()).await
     }
 
-    pub fn delete_storage(self) -> Result<(), StorageDeleteError>
+    pub async fn delete_storage(self) -> Result<(), StorageDeleteError>
     where
         Durability: DurabilityClient,
     {
         use StorageDeleteError::{DirectoryDelete, DurabilityDelete, KeyspaceDelete};
 
-        self.keyspaces.delete().map_err(|errs| KeyspaceDelete { name: self.name.clone(), errors: errs })?;
+        self.keyspaces.delete().await.map_err(|errs| KeyspaceDelete { name: self.name.clone(), errors: errs })?;
 
         self.durability_client
             .delete_durability()
@@ -368,25 +367,22 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
         Ok(())
     }
 
-    pub fn get<'a, const INLINE_BYTES: usize>(
+    pub async fn get<'a, const INLINE_BYTES: usize>(
         &self,
-        iterator_pool: &IteratorPool,
         key: impl Into<StorageKeyReference<'a>>,
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, MVCCReadError> {
         self.get_mapped(
-            iterator_pool,
             key,
             open_sequence_number,
             |byte_ref| ByteArray::from(byte_ref),
             storage_counters,
-        )
+        ).await
     }
 
-    pub fn get_mapped<'a, 'pool, Mapper, V>(
+    pub async fn get_mapped<'a, Mapper, V>(
         &self,
-        iterator_pool: &IteratorPool,
         key: impl Into<StorageKeyReference<'a>>,
         open_sequence_number: SequenceNumber,
         mapper: Mapper,
@@ -397,11 +393,10 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
     {
         let key = key.into();
         let mut iterator = self.iterate_range(
-            iterator_pool,
             &KeyRange::new_within(StorageKey::<0>::Reference(key), false),
             open_sequence_number,
             storage_counters,
-        );
+        ).await;
         loop {
             match iterator.next().transpose()? {
                 None => return Ok(None),
@@ -411,14 +406,13 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
         }
     }
 
-    pub(crate) fn iterate_range<'this, const PS: usize>(
+    pub(crate) async fn iterate_range<'this, const PS: usize>(
         &'this self,
-        iterpool: &IteratorPool,
         range: &KeyRange<StorageKey<'this, PS>>,
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
-    ) -> MVCCRangeIterator {
-        MVCCRangeIterator::new(self, iterpool, range, open_sequence_number, storage_counters)
+    ) -> MVCCRangeIterator<KV> {
+        MVCCRangeIterator::new(self, range, open_sequence_number, storage_counters).await
     }
 
     pub fn snapshot_watermark(&self) -> SequenceNumber {
@@ -427,11 +421,11 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
 
     // --- direct access to storage, bypassing MVCC and returning raw key/value pairs ---
 
-    pub fn put_raw(&self, key: StorageKeyReference<'_>, value: &Bytes<'_, BUFFER_VALUE_INLINE>) {
+    pub async fn put_raw(&self, key: StorageKeyReference<'_>, value: &Bytes<'_, BUFFER_VALUE_INLINE>) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
         self.keyspaces
             .get(key.keyspace_id())
-            .put(key.bytes(), value)
+            .put(key.bytes(), value).await
             .map_err(|e| MVCCStorageError {
                 storage_name: self.name(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
@@ -442,13 +436,13 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
             .unwrap_or_log()
     }
 
-    pub fn get_raw_mapped<M, V>(&self, key: StorageKeyReference<'_>, mapper: &mut M) -> Option<V>
+    pub async fn get_raw_mapped<M, V>(&self, key: StorageKeyReference<'_>, mapper: &mut M) -> Option<V>
     where
         M: FnMut(&[u8]) -> V,
     {
         self.keyspaces
             .get(key.keyspace_id())
-            .get(key.bytes(), &mut |value| mapper(value))
+            .get(key.bytes(), &mut |value| mapper(value)).await
             .map_err(|e| MVCCStorageError {
                 storage_name: self.name(),
                 kind: MVCCStorageErrorKind::KeyspaceError {
@@ -459,35 +453,33 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
             .unwrap_or_log() // TODO: unwrap_or_log may be incorrect: this could trigger if the DB is deleted for example?
     }
 
-    pub fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, key_value_mapper: &mut M) -> Option<T>
+    pub async fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, key_value_mapper: &mut M) -> Option<T>
     where
         M: FnMut(&MVCCKey<'_>, &[u8]) -> T,
     {
         self.keyspaces
             .get(key.keyspace_id())
-            .get_prev(key.bytes(), &mut |raw_key, v| key_value_mapper(&MVCCKey::wrap_slice(raw_key), v))
+            .get_prev(key.bytes(), &mut |raw_key, v| key_value_mapper(&MVCCKey::wrap_slice(raw_key), v)).await
     }
 
-    pub fn iterate_keyspace_range<'this, const PREFIX_INLINE: usize>(
+    pub async fn iterate_keyspace_range<'this, const PREFIX_INLINE: usize>(
         &'this self,
-        iterator_pool: &IteratorPool,
         range: KeyRange<StorageKey<'this, PREFIX_INLINE>>,
         storage_counters: StorageCounters,
-    ) -> KeyspaceRangeIterator {
+    ) -> KV::RangeIterator {
         self.keyspaces.get(range.start().get_value().keyspace_id()).iterate_range(
-            iterator_pool,
             &range.map(|k| k.as_bytes(), |fixed| fixed),
             storage_counters,
-        )
+        ).await
     }
 
-    pub fn reset(&mut self) -> Result<(), StorageResetError>
+    pub async fn reset(&mut self) -> Result<(), StorageResetError>
     where
         Durability: DurabilityClient,
     {
         self.isolation_manager.reset();
         self.keyspaces
-            .reset()
+            .reset().await
             .map_err(|err| StorageResetError::KeyspaceError { name: self.name.clone(), source: err })?;
         self.durability_client
             .reset()
@@ -496,11 +488,11 @@ impl<Durability, KV> MVCCStorage<Durability, KV> {
     }
 
     pub fn estimate_size_in_bytes(&self) -> Result<u64, StorageOpenError> {
-        self.keyspaces.estimate_size_in_bytes().map_err(|source| StorageOpenError::Keyspace { source })
+        self.keyspaces.estimate_size_in_bytes().map_err(|typedb_source| StorageOpenError::Keyspace { typedb_source })
     }
 
     pub fn estimate_key_count(&self) -> Result<u64, StorageOpenError> {
-        self.keyspaces.estimate_key_count().map_err(|source| StorageOpenError::Keyspace { source })
+        self.keyspaces.estimate_key_count().map_err(|typedb_source| StorageOpenError::Keyspace { typedb_source })
     }
 }
 
@@ -514,8 +506,8 @@ typedb_error! {
         DurabilityClientRead(5, "Failed to read from durability client for database '{name}'.", name: String, typedb_source: DurabilityClientError),
         DurabilityClientWrite(6, "Failed to write to durability client for database '{name}'.", name: String, typedb_source: DurabilityClientError),
 
-        KeyspaceOpen(7, "Failed to open keyspace '{name}'.", name: String, source: KeyspaceOpenError),
-        Keyspace(8, "Failed to operate with keyspaces.", source: KeyspaceError),
+        KeyspaceOpen(7, "Failed to open keyspaces for database '{name}'.", name: String, typedb_source: KeyspacesError),
+        Keyspace(8, "Failed to operate with keyspaces.", typedb_source: KeyspacesError),
 
         CheckpointCreate(9, "Failed to create checkpoint for database '{name}'.", name: String, source: CheckpointCreateError),
 
@@ -530,7 +522,7 @@ typedb_error! {
         Isolation(2, "Commit in database '{name}' failed with isolation conflict: {conflict}", name: Arc<String>, conflict: IsolationConflict),
         IO(3, "Commit in database '{name}' failed with I/O error'.", name: Arc<String>, source: Arc<io::Error>),
         MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: Arc<String>, source: MVCCReadError),
-        Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<String>, source: Arc<KeyspaceError>),
+        Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<String>, source: Arc<KeyspacesError>),
         Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: Arc<String>, typedb_source: DurabilityClientError),
     }
 }
@@ -538,14 +530,14 @@ typedb_error! {
 typedb_error! {
     pub StorageDeleteError(component = "Storage delete", prefix = "STD") {
         DurabilityDelete(1, "Deleting storage of database '{name}' failed partway while deleting durability records.", name: Arc<String>, typedb_source: DurabilityClientError),
-        KeyspaceDelete(2, "Deleting storage of database '{name}' failed partway while deleting keyspaces: {errors:?}", name: Arc<String>, errors: Vec<KeyspaceDeleteError>),
+        KeyspaceDelete(2, "Deleting storage of database '{name}' failed partway while deleting keyspaces: {errors:?}", name: Arc<String>, errors: Vec<KeyspacesError>),
         DirectoryDelete(3, "Deleting storage of database '{name}' failed partway while deleting directory.", name: Arc<String>, source: Arc<io::Error>),
     }
 }
 
 typedb_error! {
     pub StorageResetError(component = "Storage reset", prefix = "STR") {
-        KeyspaceError(1, "Resetting storage of database '{name}' failed partway while resetting keyspace.", name: Arc<String>, source: KeyspaceError),
+        KeyspaceError(1, "Resetting storage of database '{name}' failed partway while resetting keyspace.", name: Arc<String>, source: KeyspacesError),
         Durability(2, "Resetting storage of database '{name}' failed partway while resetting durability records.", name: Arc<String>, typedb_source: DurabilityClientError),
     }
 }
