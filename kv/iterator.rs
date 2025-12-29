@@ -8,19 +8,22 @@ use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::{LendingIterator, Seekable};
 use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
 use resource::profile::StorageCounters;
+use crate::KVStore;
+use crate::rocks::pool::Poolable;
 
 pub trait KVStoreRangeIterator: LendingIterator + Seekable<[u8]> {
     type Args;
-    type Iterpool;
+    type KVStore: KVStore;
 
     fn new<'a, const INLINE_BYTES: usize>(
         args: &Self::Args,
-        kv_store_name: &'static str,
+        kv_store: Self::KVStore,
         range: &KeyRange<Bytes<'a, INLINE_BYTES>>,
-        iter_pool: &Self::Iterpool,
         storage_counters: StorageCounters,
     ) -> Self;
 }
+
+impl<T: KVStoreRangeIterator> Poolable for T {}
 
 pub(crate) enum ContinueCondition {
     ExactPrefix(ByteArray<48>),

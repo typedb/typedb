@@ -4534,6 +4534,7 @@ dependencies = [
  "durability",
  "error",
  "itertools 0.10.5",
+ "kv",
  "lending_iterator",
  "logger",
  "pprof",

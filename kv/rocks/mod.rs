@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 mod iterator;
+mod iterpool;
+pub mod pool;
 
 use crate::{KVStore, KVStoreError, KVStoreID};
 use bytes::Bytes;
@@ -11,16 +13,21 @@ use error::typedb_error;
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 use rocksdb::checkpoint::Checkpoint;
-use rocksdb::{IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
+use rocksdb::{BlockBasedIndexType, BlockBasedOptions, Cache, DBCompressionType, IteratorMode, Options, ReadOptions, SliceTransform, WriteBatch, WriteOptions, DB};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::{fs, io};
+use bytes::util::MB;
+use resource::constants::storage::ROCKSDB_CACHE_SIZE_MB;
+use crate::rocks::iterator::RocksRangeIterator;
+use crate::rocks::iterpool::RocksRawIteratorPool;
 
-struct RocksKVStore {
+pub struct RocksKVStore {
     path: PathBuf,
     name: &'static str,
     id: KVStoreID,
     rocks: DB,
+    rocks_raw_iterator_pool: RocksRawIteratorPool,
     read_options: ReadOptions,
     write_options: WriteOptions,
     prefix_length: Option<usize>,
@@ -32,29 +39,103 @@ impl RocksKVStore {
         let read_options = ReadOptions::default();
         let mut write_options = WriteOptions::default();
         write_options.disable_wal(true);
-        Self { path, name, id, rocks, read_options, write_options, prefix_length }
+        let pool = RocksRawIteratorPool::new();
+        Self { path, name, id, rocks, rocks_raw_iterator_pool: pool, read_options, write_options, prefix_length }
     }
 
-    fn new_read_options(&self) -> ReadOptions {
+    fn default_read_options(&self) -> ReadOptions {
         let mut options = ReadOptions::default();
-        options.set_total_order_seek(true); // Set this to 'false' to use bloom-filters
+        options.set_total_order_seek(true);
         options
+    }
+
+    fn bloom_read_options(&self) -> ReadOptions {
+        let mut options = ReadOptions::default();
+        options.set_prefix_same_as_start(true);
+        options.set_total_order_seek(false);
+        options
+    }
+
+    fn iterpool(&self) -> &RocksRawIteratorPool {
+        &self.rocks_raw_iterator_pool
     }
 }
 
 impl KVStore for RocksKVStore {
-    type OpenOptions<'a> = (PathBuf, &'a Options, Option<usize>);
-    type IteratorPool = ();
-    type RangeIterator = ();
+    type SharedResources = Cache;
+    type OpenOptions = (PathBuf, Options, Option<usize>);
+    type RangeIterator = RocksRangeIterator;
     type WriteBatch = WriteBatch;
     type CheckpointArgs<'a> = &'a Path;
 
-    fn open<'a>(open_options: &Self::OpenOptions<'a>, name: &'static str, id: KVStoreID) -> Result<Self, Box<dyn KVStoreError>> {
+    fn open<'a>(open_options: &Self::OpenOptions, name: &'static str, id: KVStoreID) -> Result<Self, Box<dyn KVStoreError>> {
         use RocksKVError::Open;
         let (storage_path, options, prefix_length) = open_options;
         let path = storage_path.join(name);
         let kv_storage = DB::open(options, &path).map_err(|error| Open { name, source: error })?;
         Ok(Self::new(path, name, id, kv_storage, prefix_length.to_owned()))
+    }
+
+    fn create_shared_resources() -> Self::SharedResources {
+        Cache::new_lru_cache((ROCKSDB_CACHE_SIZE_MB * MB) as usize)
+    }
+
+    fn create_open_options(shared_resources: &Self::SharedResources, path_buf: PathBuf, prefix_length: Option<usize>) -> Self::OpenOptions {
+        let cache = shared_resources;
+
+        let mut options = rocksdb::Options::default();
+
+        // Enable if we wanted to check bloom filter usage, cache hits, etc.
+        // options.enable_statistics();
+        // options.set_stats_dump_period_sec(100);
+
+        options.create_if_missing(true);
+        options.create_missing_column_families(true);
+        options.set_max_background_jobs(10);
+        options.set_target_file_size_base(64 * MB);
+        options.set_write_buffer_size(64 * MB as usize);
+        options.set_max_write_buffer_size_to_maintain(0);
+        options.set_max_write_buffer_number(2);
+        options.set_memtable_whole_key_filtering(false);
+        options.set_optimize_filters_for_hits(false); // true => don't build bloom filters for the last level
+        options.set_compression_per_level(&[
+            DBCompressionType::None,
+            DBCompressionType::None,
+            DBCompressionType::Lz4,
+            DBCompressionType::Lz4,
+            DBCompressionType::Lz4,
+            DBCompressionType::Lz4,
+            DBCompressionType::Lz4,
+        ]);
+
+        // TODO: 2.x has   enable_index_compression: 1 set to 0
+
+        let mut block_options = BlockBasedOptions::default();
+        block_options.set_block_cache(cache);
+        block_options.set_block_restart_interval(16);
+        block_options.set_index_block_restart_interval(16);
+        block_options.set_format_version(6);
+        block_options.set_block_size(16 * 1024);
+        block_options.set_whole_key_filtering(false);
+
+        block_options.set_bloom_filter(10.0, false);
+        block_options.set_partition_filters(true);
+        block_options.set_index_type(BlockBasedIndexType::TwoLevelIndexSearch);
+        block_options.set_optimize_filters_for_memory(true);
+        block_options.set_pin_top_level_index_and_filter(true);
+        block_options.set_pin_l0_filter_and_index_blocks_in_cache(true);
+        block_options.set_cache_index_and_filter_blocks(true);
+
+        if let Some(prefix_len) = prefix_length {
+            options.set_prefix_extractor(SliceTransform::create_fixed_prefix(prefix_len))
+        }
+        options.set_block_based_table_factory(&block_options);
+
+        (
+            path_buf,
+            options,
+            prefix_length
+        )
     }
 
     fn id(&self) -> KVStoreID {
@@ -64,10 +145,6 @@ impl KVStore for RocksKVStore {
     fn name(&self) -> &str {
         self.name
     }
-    //
-    // async fn prefix_length(&self) -> Option<usize> {
-    //     self.prefix_length.clone()
-    // }
 
     async fn put(&self, key: &[u8], value: &[u8]) -> Result<(), Box<dyn KVStoreError>> {
         self.rocks
@@ -89,18 +166,18 @@ impl KVStore for RocksKVStore {
     where
         M: FnMut(&[u8], &[u8]) -> T,
     {
-        let mut iterator = self.rocks.raw_iterator_opt(self.new_read_options());
+        let mut iterator = self.rocks.raw_iterator_opt(self.default_read_options());
         iterator.seek_for_prev(key);
         iterator.item().map(|(k, v)| mapper(k, v))
     }
 
     async fn iterate_range<const PREFIX_INLINE_SIZE: usize>(
         &self,
-        iterpool: &Self::IteratorPool,
         range: &KeyRange<Bytes<'_, PREFIX_INLINE_SIZE>>,
         storage_counters: StorageCounters,
     ) -> Self::RangeIterator {
         // iterator::KeyspaceRangeIterator::new(self, iterpool, range, storage_counters)
+        todo!()
     }
 
     async fn write(&self, write_batch: Self::WriteBatch) -> Result<(), Box<dyn KVStoreError>> {

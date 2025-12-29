@@ -17,29 +17,12 @@ use std::{
     time::Duration,
 };
 
-use ::error::typedb_error;
-use bytes::{byte_array::ByteArray, Bytes};
-use isolation_manager::IsolationConflict;
-use iterator::MVCCReadError;
-use keyspace::KeyspaceDeleteError;
-use lending_iterator::LendingIterator;
-use logger::{error, result::ResultExt};
-use resource::{
-    constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
-    profile::{CommitProfile, StorageCounters},
-};
-use tracing::trace;
-use primitive::key_range::KeyRange;
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     iterator::MVCCRangeIterator,
     key_value::{StorageKey, StorageKeyReference},
-    keyspace::{
-        iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError,
-        KeyspaceSet, Keyspaces,
-    },
     recovery::{
         checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
@@ -47,6 +30,19 @@ use crate::{
     sequence_number::SequenceNumber,
     snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
 };
+use bytes::{byte_array::ByteArray, Bytes};
+use ::error::typedb_error;
+use isolation_manager::IsolationConflict;
+use iterator::MVCCReadError;
+use lending_iterator::LendingIterator;
+use logger::{error, result::ResultExt};
+use primitive::key_range::KeyRange;
+use resource::{
+    constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
+    profile::{CommitProfile, StorageCounters},
+};
+use tracing::trace;
+use crate::keyspace::{KeyspaceSet, Keyspaces};
 
 pub mod durability_client;
 pub mod error;
@@ -60,15 +56,15 @@ pub mod snapshot;
 mod write_batches;
 
 #[derive(Debug)]
-pub struct MVCCStorage<Durability> {
+pub struct MVCCStorage<Durability, KV> {
     name: Arc<String>,
     path: PathBuf,
-    keyspaces: Keyspaces,
+    keyspaces: Keyspaces<KV>,
     durability_client: Durability,
     isolation_manager: IsolationManager,
 }
 
-impl<Durability> MVCCStorage<Durability> {
+impl<Durability, KV> MVCCStorage<Durability, KV> {
     pub const STORAGE_DIR_NAME: &'static str = "storage";
 
     pub fn create<KS: KeyspaceSet>(
@@ -104,7 +100,7 @@ impl<Durability> MVCCStorage<Durability> {
     fn create_keyspaces<KS: KeyspaceSet>(
         name: impl AsRef<str>,
         storage_dir: &Path,
-    ) -> Result<Keyspaces, StorageOpenError> {
+    ) -> Result<Keyspaces<KV>, StorageOpenError> {
         let keyspaces = Keyspaces::open::<KS>(&storage_dir)
             .map_err(|err| StorageOpenError::KeyspaceOpen { name: name.as_ref().to_owned(), source: err })?;
         Ok(keyspaces)

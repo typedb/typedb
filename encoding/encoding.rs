@@ -87,57 +87,6 @@ impl KeyspaceSet for EncodingKeyspace {
         }
     }
 
-    fn rocks_configuration(&self, cache: &rocksdb::Cache) -> rocksdb::Options {
-        let mut options = rocksdb::Options::default();
-
-        // Enable if we wanted to check bloom filter usage, cache hits, etc.
-        // options.enable_statistics();
-        // options.set_stats_dump_period_sec(100);
-
-        options.create_if_missing(true);
-        options.create_missing_column_families(true);
-        options.set_max_background_jobs(10);
-        options.set_target_file_size_base(64 * MB);
-        options.set_write_buffer_size(64 * MB as usize);
-        options.set_max_write_buffer_size_to_maintain(0);
-        options.set_max_write_buffer_number(2);
-        options.set_memtable_whole_key_filtering(false);
-        options.set_optimize_filters_for_hits(false); // true => don't build bloom filters for the last level
-        options.set_compression_per_level(&[
-            DBCompressionType::None,
-            DBCompressionType::None,
-            DBCompressionType::Lz4,
-            DBCompressionType::Lz4,
-            DBCompressionType::Lz4,
-            DBCompressionType::Lz4,
-            DBCompressionType::Lz4,
-        ]);
-
-        // TODO: 2.x has   enable_index_compression: 1 set to 0
-
-        let mut block_options = BlockBasedOptions::default();
-        block_options.set_block_cache(cache);
-        block_options.set_block_restart_interval(16);
-        block_options.set_index_block_restart_interval(16);
-        block_options.set_format_version(6);
-        block_options.set_block_size(16 * 1024);
-        block_options.set_whole_key_filtering(false);
-
-        block_options.set_bloom_filter(10.0, false);
-        block_options.set_partition_filters(true);
-        block_options.set_index_type(BlockBasedIndexType::TwoLevelIndexSearch);
-        block_options.set_optimize_filters_for_memory(true);
-        block_options.set_pin_top_level_index_and_filter(true);
-        block_options.set_pin_l0_filter_and_index_blocks_in_cache(true);
-        block_options.set_cache_index_and_filter_blocks(true);
-
-        if let Some(prefix_len) = self.prefix_length() {
-            options.set_prefix_extractor(SliceTransform::create_fixed_prefix(prefix_len))
-        }
-        options.set_block_based_table_factory(&block_options);
-        options
-    }
-
     fn prefix_length(&self) -> Option<usize> {
         Some(match self {
             EncodingKeyspace::DefaultOptimisedPrefix11 => 11,

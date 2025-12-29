@@ -6,7 +6,7 @@
 
 use std::{error::Error, fmt, sync::Arc};
 
-use crate::keyspace::KeyspaceError;
+use crate::keyspace::KeyspacesError;
 
 #[derive(Debug)]
 pub struct MVCCStorageError {

@@ -7,6 +7,7 @@
 use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 
 use bytes::byte_array::ByteArray;
+use kv::KVStore;
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
@@ -14,14 +15,14 @@ use resource::profile::StorageCounters;
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
     key_value::{StorageKey, StorageKeyReference},
-    keyspace::{iterator::KeyspaceRangeIterator, IteratorPool, KeyspaceError, KeyspaceId},
+    keyspace::{KeyspacesError, KeyspaceId},
     sequence_number::SequenceNumber,
 };
 
-pub(crate) struct MVCCRangeIterator {
+pub(crate) struct MVCCRangeIterator<KV: KVStore> {
     storage_name: Arc<String>,
     keyspace_id: KeyspaceId,
-    iterator: Peekable<KeyspaceRangeIterator>,
+    iterator: Peekable<KV::RangeIterator>,
     open_sequence_number: SequenceNumber,
     storage_counters: StorageCounters,
 
@@ -29,14 +30,13 @@ pub(crate) struct MVCCRangeIterator {
     item: Option<Result<(StorageKeyReference<'static>, &'static [u8]), MVCCReadError>>,
 }
 
-impl MVCCRangeIterator {
+impl<KV: KVStore> MVCCRangeIterator<KV> {
     //
     // TODO: optimisation for fixed-width keyspaces: we can skip to key[len(key) - 1] = key[len(key) - 1] + 1
     // once we find a successful key, to skip all 'older' versions of the key
     //
     pub(crate) fn new<D, const PS: usize>(
-        storage: &MVCCStorage<D>,
-        iterpool: &IteratorPool,
+        storage: &MVCCStorage<D, KV>,
         range: &KeyRange<StorageKey<'_, PS>>,
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,

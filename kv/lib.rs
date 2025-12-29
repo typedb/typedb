@@ -3,23 +3,37 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-mod rocks;
 mod iterator;
+mod rocks;
 
 use bytes::Bytes;
 use error::TypeDBError;
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
+use std::path::PathBuf;
 
 pub trait KVStore {
-    type OpenOptions<'a>;
-    type IteratorPool;
+    type SharedResources;
+    type OpenOptions;
     type RangeIterator;
     type WriteBatch;
     type CheckpointArgs<'a>;
 
-    fn open<'a>(options: &Self::OpenOptions<'a>, name: &'static str, id: KVStoreID) -> Result<Self, Box<dyn KVStoreError>>
-    where Self: Sized;
+    fn create_shared_resources() -> Self::SharedResources;
+
+    fn create_open_options(
+        shared_resources: &Self::SharedResources,
+        path_buf: PathBuf,
+        prefix_length: Option<usize>,
+    ) -> Self::OpenOptions;
+
+    fn open<'a>(
+        options: &Self::OpenOptions,
+        name: &'static str,
+        id: KVStoreID,
+    ) -> Result<Self, Box<dyn KVStoreError>>
+    where
+        Self: Sized;
 
     fn id(&self) -> KVStoreID;
 
@@ -37,7 +51,6 @@ pub trait KVStore {
 
     async fn iterate_range<const PREFIX_INLINE_SIZE: usize>(
         &self,
-        iterpool: &Self::IteratorPool,
         range: &KeyRange<Bytes<'_, PREFIX_INLINE_SIZE>>,
         storage_counters: StorageCounters,
     ) -> Self::RangeIterator;
@@ -55,13 +68,12 @@ pub trait KVStore {
     fn estimate_key_count(&self) -> Result<u64, Box<dyn KVStoreError>>;
 }
 
-pub trait KVStoreError: TypeDBError {
-}
+pub trait KVStoreError: TypeDBError {}
 
-impl<T: KVStoreError + 'static> From<T> for Box<dyn KVStoreError>  {
+impl<T: KVStoreError + 'static> From<T> for Box<dyn KVStoreError> {
     fn from(value: T) -> Self {
         Box::new(value)
     }
 }
 
-type KVStoreID = usize;
+pub type KVStoreID = usize;

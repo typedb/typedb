@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use crate::iterator::{ContinueCondition, KVStoreRangeIterator};
-use crate::rocks::RocksKVError;
+use crate::rocks::{RocksKVError, RocksKVStore};
 use crate::{KVStoreError, KVStoreID};
 use bytes::byte_array::ByteArray;
 use bytes::Bytes;
@@ -15,6 +15,7 @@ use rocksdb::DBRawIterator;
 use std::cmp::Ordering;
 use std::intrinsics::transmute;
 use std::mem;
+use crate::rocks::pool::PoolRecycleGuard;
 
 type KeyValue<'a> = (&'a [u8], &'a [u8]);
 
@@ -82,13 +83,12 @@ impl RocksRangeIterator {
 
 impl KVStoreRangeIterator for RocksRangeIterator {
     type Args = (KVStoreID, Option<usize>);
-    type Iterpool = ();
+    type KVStore = RocksKVStore;
 
     fn new<'a, const INLINE_BYTES: usize>(
         args: &Self::Args,
-        kv_store_name: &'static str,
+        kv_store: Self::KVStore,
         range: &KeyRange<Bytes<'a, INLINE_BYTES>>,
-        iterpool: &Self::Iterpool,
         storage_counters: StorageCounters,
     ) -> Self {
         let (id, prefix_length) = *args;
@@ -101,10 +101,10 @@ impl KVStoreRangeIterator for RocksRangeIterator {
                 Bytes::Array(cloned)
             }
         };
-        let raw_iterator = if Self::can_use_prefix(prefix_length, range) {
-            iterpool.get_iterator_prefixed(id)
+        let raw_iterator = if Self::can_use_prefix(kv_store.prefix_length, range) {
+            kv_store.iterpool().get_iterator_prefixed(&kv_store)
         } else {
-            iterpool.get_iterator_unprefixed(id)
+            kv_store.iterpool().get_iterator_unprefixed(&kv_store)
         };
         let mut iterator = DBIterator::new_from(raw_iterator, start_prefix.as_ref(), storage_counters);
         if matches!(range.start(), RangeStart::ExcludeFirstWithPrefix(_)) {
@@ -119,7 +119,7 @@ impl KVStoreRangeIterator for RocksRangeIterator {
             RangeEnd::EndPrefixExclusive(end) => ContinueCondition::EndPrefixExclusive(ByteArray::from(&**end)),
             RangeEnd::Unbounded => ContinueCondition::Always,
         };
-        Self { iterator, continue_condition, is_finished: false, kv_store_name }
+        Self { iterator, continue_condition, is_finished: false, kv_store_name: kv_store.name }
     }
 }
 
