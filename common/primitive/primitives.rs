@@ -7,9 +7,9 @@
 use std::ops::Bound;
 
 pub mod either;
+pub mod key_range;
 pub mod maybe_owns;
 pub mod prefix;
-pub mod key_range;
 
 // a type that implements RangeBounds<T>
 pub type Bounds<T> = (Bound<T>, Bound<T>);

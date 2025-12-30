@@ -16,6 +16,7 @@ use std::{
 use chrono::Utc;
 use error::typedb_error;
 use itertools::Itertools;
+use kv::KVStore;
 use same_file::is_same_file;
 use tracing::trace;
 
@@ -25,7 +26,6 @@ use crate::{
     recovery::commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     sequence_number::SequenceNumber,
 };
-use kv::KVStore;
 
 /// A checkpoint is a directory, which contains at least the storage checkpointing data: keyspaces + the watermark.
 /// The watermark represents a sequence number that is guaranteed to be in all the keyspaces, and after which we may
@@ -54,7 +54,11 @@ impl Checkpoint {
         Ok(Checkpoint { directory: current_checkpoint_dir })
     }
 
-    pub fn add_storage<KV: KVStore>(&self, keyspaces: &Keyspaces<KV>, watermark: SequenceNumber) -> Result<(), CheckpointCreateError> {
+    pub fn add_storage<KV: KVStore>(
+        &self,
+        keyspaces: &Keyspaces<KV>,
+        watermark: SequenceNumber,
+    ) -> Result<(), CheckpointCreateError> {
         use CheckpointCreateError::{KeyspaceCheckpoint, MetadataFileCreate, MetadataWrite};
         keyspaces
             .checkpoint(&self.directory)
@@ -148,7 +152,8 @@ impl Checkpoint {
                 .map_err(|error| CheckpointRestore { dir: self.directory.clone(), source: Arc::new(error) })?;
         }
 
-        let keyspaces = Keyspaces::<KV>::open::<KS>(&keyspaces_dir).map_err(|error| KeyspacesOpen { typedb_source: error })?;
+        let keyspaces =
+            Keyspaces::<KV>::open::<KS>(&keyspaces_dir).map_err(|error| KeyspacesOpen { typedb_source: error })?;
 
         trace!("Finished recovering keyspaces, recovering missing commits");
 

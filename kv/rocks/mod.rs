@@ -7,21 +7,26 @@ mod iterator;
 mod iterpool;
 pub mod pool;
 
-use crate::{KVStore, KVStoreError, KVStoreID, KVWriteBatch};
-use bytes::Bytes;
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
+
+use bytes::{util::MB, Bytes};
 use error::typedb_error;
 use primitive::key_range::KeyRange;
-use resource::profile::StorageCounters;
-use rocksdb::checkpoint::Checkpoint;
-use rocksdb::{BlockBasedIndexType, BlockBasedOptions, Cache, DBCompressionType, IteratorMode, Options, ReadOptions, SliceTransform, WriteBatch, WriteOptions, DB};
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use std::{fs, io};
-use bytes::util::MB;
-use resource::constants::storage::ROCKSDB_CACHE_SIZE_MB;
-use crate::iterator::KVStoreRangeIterator;
-use crate::rocks::iterator::RocksRangeIterator;
-use crate::rocks::iterpool::RocksRawIteratorPool;
+use resource::{constants::storage::ROCKSDB_CACHE_SIZE_MB, profile::StorageCounters};
+use rocksdb::{
+    checkpoint::Checkpoint, BlockBasedIndexType, BlockBasedOptions, Cache, DBCompressionType, IteratorMode, Options,
+    ReadOptions, SliceTransform, WriteBatch, WriteOptions, DB,
+};
+
+use crate::{
+    iterator::KVStoreRangeIterator,
+    rocks::{iterator::RocksRangeIterator, iterpool::RocksRawIteratorPool},
+    KVStore, KVStoreError, KVStoreID, KVWriteBatch,
+};
 
 pub struct RocksKVStore {
     path: PathBuf,
@@ -68,7 +73,11 @@ impl KVStore for RocksKVStore {
     type RangeIterator = RocksRangeIterator;
     type WriteBatch = WriteBatch;
 
-    fn open<'a>(open_options: &Self::OpenOptions, name: &'static str, id: KVStoreID) -> Result<Self, Box<dyn KVStoreError>> {
+    fn open<'a>(
+        open_options: &Self::OpenOptions,
+        name: &'static str,
+        id: KVStoreID,
+    ) -> Result<Self, Box<dyn KVStoreError>> {
         use RocksKVError::Open;
         let (storage_path, options, prefix_length) = open_options;
         let path = storage_path.join(name);
@@ -80,7 +89,11 @@ impl KVStore for RocksKVStore {
         Cache::new_lru_cache((ROCKSDB_CACHE_SIZE_MB * MB) as usize)
     }
 
-    fn create_open_options(shared_resources: &Self::SharedResources, path_buf: PathBuf, prefix_length: Option<usize>) -> Self::OpenOptions {
+    fn create_open_options(
+        shared_resources: &Self::SharedResources,
+        path_buf: PathBuf,
+        prefix_length: Option<usize>,
+    ) -> Self::OpenOptions {
         let cache = shared_resources;
 
         let mut options = rocksdb::Options::default();
@@ -131,11 +144,7 @@ impl KVStore for RocksKVStore {
         }
         options.set_block_based_table_factory(&block_options);
 
-        (
-            path_buf,
-            options,
-            prefix_length
-        )
+        (path_buf, options, prefix_length)
     }
 
     fn id(&self) -> KVStoreID {
@@ -207,7 +216,7 @@ impl KVStore for RocksKVStore {
         Ok(())
     }
 
-    fn reset(&mut self) -> Result<(), Box<dyn KVStoreError>>  {
+    fn reset(&mut self) -> Result<(), Box<dyn KVStoreError>> {
         let iterator = self.rocks.iterator(IteratorMode::Start);
         for entry in iterator {
             let (key, _) = entry.map_err(|err| RocksKVError::Iterate { name: self.name, source: err })?;
@@ -216,15 +225,15 @@ impl KVStore for RocksKVStore {
         Ok(())
     }
 
-    fn estimate_size_in_bytes(&self) -> Result<u64, Box<dyn KVStoreError>>  {
+    fn estimate_size_in_bytes(&self) -> Result<u64, Box<dyn KVStoreError>> {
         let property_name = rocks_constants::PROPERTY_ESTIMATE_LIVE_DATA_SIZE;
         self.rocks
             .property_int_value(property_name)
-            .map_err(|source| RocksKVError::PropertyRead{ name: property_name, source }.into())
+            .map_err(|source| RocksKVError::PropertyRead { name: property_name, source }.into())
             .map(|result_opt| result_opt.unwrap_or(0))
     }
 
-    fn estimate_key_count(&self) -> Result<u64, Box<dyn KVStoreError>>  {
+    fn estimate_key_count(&self) -> Result<u64, Box<dyn KVStoreError>> {
         let property_name = rocks_constants::PROPERTY_ESTIMATE_NUM_KEYS;
         self.rocks
             .property_int_value(property_name)
@@ -280,7 +289,6 @@ impl KVWriteBatch for WriteBatch {
         WriteBatch::put(self, key, value)
     }
 }
-
 
 // RocksDB properties. The full list of available properties is available here:
 // https://github.com/facebook/rocksdb/blob/20357988345b02efcef303bc274089111507e160/include/rocksdb/db.h#L750

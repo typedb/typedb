@@ -39,11 +39,11 @@ use ir::{
     },
 };
 use itertools::Itertools;
-use primitive::maybe_owns::MaybeOwns;
+use primitive::{key_range::KeyRange, maybe_owns::MaybeOwns};
 use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::common::Spanned;
-use primitive::key_range::KeyRange;
+
 use crate::{function::SchemaFunction, function_cache::FunctionCache, FunctionError};
 
 /// Analogy to TypeManager, but specialised just for Functions

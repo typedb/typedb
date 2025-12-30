@@ -60,10 +60,7 @@ use encoding::{
 };
 use iterator::minmax_or;
 use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
-use storage::{
-    key_value::StorageKey,
-    snapshot::write::Write,
-};
+use storage::{key_value::StorageKey, snapshot::write::Write};
 
 use crate::{
     thing::{attribute::Attribute, ThingAPI},

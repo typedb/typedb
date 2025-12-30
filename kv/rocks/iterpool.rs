@@ -4,8 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use rocksdb::{DBRawIterator, DB};
-use crate::rocks::pool::{PoolRecycleGuard, Poolable, LIFOPool};
-use crate::rocks::RocksKVStore;
+
+use crate::rocks::{
+    pool::{LIFOPool, PoolRecycleGuard, Poolable},
+    RocksKVStore,
+};
 
 impl Poolable for DBRawIterator<'static> {}
 
@@ -24,7 +27,10 @@ impl RocksRawIteratorPool {
         }
     }
 
-    pub(super) fn get_iterator_unprefixed(&self, rocks_store: &RocksKVStore) -> PoolRecycleGuard<DBRawIterator<'static>> {
+    pub(super) fn get_iterator_unprefixed(
+        &self,
+        rocks_store: &RocksKVStore,
+    ) -> PoolRecycleGuard<DBRawIterator<'static>> {
         let iterator = self.unprefixed_iterators.get_or_create(|| {
             let kv_storage: &'static DB = unsafe { std::mem::transmute(&rocks_store.rocks) };
             kv_storage.raw_iterator_opt(rocks_store.default_read_options())

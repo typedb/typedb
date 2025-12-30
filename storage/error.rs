@@ -4,10 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::keyspace::KeyspacesError;
+use std::sync::Arc;
+
 use error::typedb_error;
 use kv::KVStoreError;
-use std::sync::Arc;
+
+use crate::keyspace::KeyspacesError;
 
 typedb_error!(
     pub MVCCStorageError(component = "MVCC Storage", prefix = "MST") {

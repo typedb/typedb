@@ -66,10 +66,7 @@ fn create_keyspaces_duplicate_name_error() {
     assert!(
         matches!(
             storage_result,
-            Err(StorageOpenError::KeyspaceOpen {
-                typedb_source: KeyspacesError::NameExists { .. },
-                ..
-            })
+            Err(StorageOpenError::KeyspaceOpen { typedb_source: KeyspacesError::NameExists { .. }, .. })
         ),
         "{:?}",
         storage_result.unwrap_err()
@@ -89,10 +86,7 @@ fn create_keyspaces_duplicate_id_error() {
     assert!(
         matches!(
             storage_result,
-            Err(StorageOpenError::KeyspaceOpen {
-                typedb_source: KeyspacesError::IdExists { .. },
-                ..
-            })
+            Err(StorageOpenError::KeyspaceOpen { typedb_source: KeyspacesError::IdExists { .. }, .. })
         ),
         "{:?}",
         storage_result.unwrap_err()

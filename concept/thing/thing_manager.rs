@@ -51,8 +51,10 @@ use encoding::{
 };
 use itertools::Itertools;
 use lending_iterator::Peekable;
-use primitive::either::Either;
-use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
+use primitive::{
+    either::Either,
+    key_range::{KeyRange, RangeEnd, RangeStart},
+};
 use resource::{
     constants::{
         encoding::StructFieldIDUInt,

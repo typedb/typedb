@@ -534,8 +534,10 @@ fn imp_setup(path: &Path) -> Arc<MVCCStorage<WALClient, RocksKVStore>> {
     storage
 }
 
-fn imp_ops<D>(snapshot_update: &mut WriteSnapshot<D, RocksKVStore>, snapshot_delete: &mut WriteSnapshot<D, RocksKVStore>)
-where
+fn imp_ops<D>(
+    snapshot_update: &mut WriteSnapshot<D, RocksKVStore>,
+    snapshot_delete: &mut WriteSnapshot<D, RocksKVStore>,
+) where
     D: DurabilityClient,
 {
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));

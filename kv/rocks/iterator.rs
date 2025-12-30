@@ -3,19 +3,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use crate::iterator::{ContinueCondition, KVStoreRangeIterator};
-use crate::rocks::{RocksKVError, RocksKVStore};
-use crate::{KVStoreError};
-use bytes::byte_array::ByteArray;
-use bytes::Bytes;
+use std::{cmp::Ordering, intrinsics::transmute, mem};
+
+use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::{LendingIterator, Seekable};
 use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
 use resource::profile::StorageCounters;
 use rocksdb::DBRawIterator;
-use std::cmp::Ordering;
-use std::intrinsics::transmute;
-use std::mem;
-use crate::rocks::pool::PoolRecycleGuard;
+
+use crate::{
+    iterator::{ContinueCondition, KVStoreRangeIterator},
+    rocks::{pool::PoolRecycleGuard, RocksKVError, RocksKVStore},
+    KVStoreError,
+};
 
 type KeyValue<'a> = (&'a [u8], &'a [u8]);
 

@@ -8,6 +8,7 @@ use std::{collections::BTreeMap, sync::Arc};
 
 use durability::RawRecord;
 use error::typedb_error;
+use kv::KVStore;
 use tracing::{event, Level};
 
 use crate::{
@@ -18,7 +19,6 @@ use crate::{
     write_batches::WriteBatches,
     MVCCStorage,
 };
-use kv::KVStore;
 
 /// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.
 pub fn load_commit_data_from(
@@ -99,7 +99,8 @@ pub(crate) fn apply_recovered<KV: KVStore>(
     for (commit_sequence_number, commit) in recovered_commits {
         match commit {
             RecoveryCommitStatus::Validated(commit_record) => {
-                pending_writes.push(WriteBatches::<KV>::from_operations(commit_sequence_number, commit_record.operations()));
+                pending_writes
+                    .push(WriteBatches::<KV>::from_operations(commit_sequence_number, commit_record.operations()));
                 isolation_manager.load_validated(commit_sequence_number, commit_record);
             }
             RecoveryCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),

@@ -19,6 +19,7 @@ use encoding::{
     layout::prefix::Prefix,
     AsBytes, EncodingKeyspace, Keyable,
 };
+use kv::rocks::RocksKVStore;
 use resource::profile::CommitProfile;
 use storage::{
     durability_client::WALClient,
@@ -134,8 +135,12 @@ fn loading_storage_assigns_next_vertex() {
     {
         let wal = WAL::create(&storage_path).unwrap();
         let _ = Arc::new(
-            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
-                .unwrap(),
+            MVCCStorage::<WALClient, RocksKVStore>::create::<EncodingKeyspace>(
+                "storage",
+                &storage_path,
+                WALClient::new(wal),
+            )
+            .unwrap(),
         );
     }
     let create_till = 5;
@@ -143,8 +148,13 @@ fn loading_storage_assigns_next_vertex() {
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
-                .unwrap(),
+            MVCCStorage::<WALClient, RocksKVStore>::load::<EncodingKeyspace>(
+                "storage",
+                &storage_path,
+                WALClient::new(wal),
+                &None,
+            )
+            .unwrap(),
         );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
@@ -157,8 +167,13 @@ fn loading_storage_assigns_next_vertex() {
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
-                .unwrap(),
+            MVCCStorage::<WALClient, RocksKVStore>::load::<EncodingKeyspace>(
+                "storage",
+                &storage_path,
+                WALClient::new(wal),
+                &None,
+            )
+            .unwrap(),
         );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
@@ -174,7 +189,7 @@ fn loading_storage_assigns_next_vertex() {
         let wal = WAL::load(&storage_path).unwrap();
         let storage = match checkpoint {
             None => Arc::new(
-                MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
+                MVCCStorage::<WALClient, RocksKVStore>::load::<EncodingKeyspace>(
                     "storage",
                     &storage_path,
                     WALClient::new(wal),
@@ -183,7 +198,7 @@ fn loading_storage_assigns_next_vertex() {
                 .unwrap(),
             ),
             Some(checkpoint) => Arc::new(
-                MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
+                MVCCStorage::<WALClient, RocksKVStore>::load::<EncodingKeyspace>(
                     "storage",
                     &storage_path,
                     WALClient::new(wal),
@@ -209,8 +224,13 @@ fn loading_storage_assigns_next_vertex() {
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
-                .unwrap(),
+            MVCCStorage::<WALClient, RocksKVStore>::load::<EncodingKeyspace>(
+                "storage",
+                &storage_path,
+                WALClient::new(wal),
+                &None,
+            )
+            .unwrap(),
         );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();

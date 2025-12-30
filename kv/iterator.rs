@@ -4,12 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::rocks::pool::Poolable;
-use crate::{KVStore, KVStoreError};
 use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::{LendingIterator, Seekable};
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
+
+use crate::{rocks::pool::Poolable, KVStore, KVStoreError};
 
 pub type KVIteratorItem<'a> = Result<(&'a [u8], &'a [u8]), Box<dyn KVStoreError>>;
 

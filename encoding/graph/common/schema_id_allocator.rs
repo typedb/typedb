@@ -10,17 +10,14 @@ use std::{
 };
 
 use bytes::Bytes;
+use kv::KVStore;
 use lending_iterator::LendingIterator;
 use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
 use resource::{
     constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE},
     profile::StorageCounters,
 };
-use kv::KVStore;
-use storage::{
-    key_value::StorageKey,
-    snapshot::WritableSnapshot,
-};
+use storage::{key_value::StorageKey, snapshot::WritableSnapshot};
 
 use crate::{
     error::EncodingError,
@@ -89,7 +86,10 @@ impl<T: SchemaID + Keyable<BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
         Ok(None)
     }
 
-    pub fn allocate<KV: KVStore, Snapshot: WritableSnapshot<KV>>(&self, snapshot: &mut Snapshot) -> Result<T, EncodingError> {
+    pub fn allocate<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
+        &self,
+        snapshot: &mut Snapshot,
+    ) -> Result<T, EncodingError> {
         let found = self.find_unallocated_id(snapshot, self.last_allocated_type_id.load(Relaxed))?;
         if let Some(allocated_id) = found {
             self.last_allocated_type_id.store(allocated_id, Relaxed);

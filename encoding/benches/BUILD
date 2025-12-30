@@ -15,6 +15,7 @@ rust_test(
     ]),
     deps = [
         "//encoding",
+        "//kv",
         "//resource",
         "//storage",
         "//durability",

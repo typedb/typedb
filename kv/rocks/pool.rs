@@ -31,10 +31,7 @@ impl<T> Clone for LIFOPool<T> {
 
 impl<T: Poolable> LIFOPool<T> {
     pub fn new_capped(size: usize) -> Self {
-        Self {
-            pool: Default::default(),
-            size_cap: Some(size)
-        }
+        Self { pool: Default::default(), size_cap: Some(size) }
     }
 
     pub fn get_or_create(&self, create_fn: impl FnOnce() -> T) -> PoolRecycleGuard<T> {

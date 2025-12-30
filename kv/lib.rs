@@ -6,12 +6,14 @@
 mod iterator;
 pub mod rocks;
 
-use crate::iterator::KVStoreRangeIterator;
+use std::path::{Path, PathBuf};
+
 use bytes::Bytes;
 use error::TypeDBError;
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
-use std::path::{Path, PathBuf};
+
+use crate::iterator::KVStoreRangeIterator;
 
 pub trait KVStore: 'static {
     type SharedResources;
@@ -27,11 +29,7 @@ pub trait KVStore: 'static {
         prefix_length: Option<usize>,
     ) -> Self::OpenOptions;
 
-    fn open<'a>(
-        options: &Self::OpenOptions,
-        name: &'static str,
-        id: KVStoreID,
-    ) -> Result<Self, Box<dyn KVStoreError>>
+    fn open<'a>(options: &Self::OpenOptions, name: &'static str, id: KVStoreID) -> Result<Self, Box<dyn KVStoreError>>
     where
         Self: Sized;
 

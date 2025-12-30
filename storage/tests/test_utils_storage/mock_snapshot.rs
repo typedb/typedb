@@ -79,10 +79,7 @@ impl<KV: KVStore> ReadableSnapshot<KV> for MockSnapshot<KV> {
         empty()
     }
 
-    fn iterate_writes_range<const PS: usize>(
-        &self,
-        _: &KeyRange<StorageKey<'_, PS>>,
-    ) -> BufferRangeIterator {
+    fn iterate_writes_range<const PS: usize>(&self, _: &KeyRange<StorageKey<'_, PS>>) -> BufferRangeIterator {
         BufferRangeIterator::new_empty()
     }
 

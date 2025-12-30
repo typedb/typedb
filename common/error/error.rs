@@ -4,10 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use resource::constants::common::{ERROR_QUERY_POINTER_LINES_AFTER, ERROR_QUERY_POINTER_LINES_BEFORE};
-use std::sync::Arc;
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, sync::Arc};
+
 use ::typeql::common::Spannable;
+use resource::constants::common::{ERROR_QUERY_POINTER_LINES_AFTER, ERROR_QUERY_POINTER_LINES_BEFORE};
 
 mod typeql;
 

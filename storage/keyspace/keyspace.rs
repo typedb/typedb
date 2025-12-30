@@ -4,16 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fmt,
-    path::Path,
-    sync::Arc,
-};
+use std::{fmt, path::Path, sync::Arc};
 
-use crate::write_batches::WriteBatches;
 use error::typedb_error;
 use kv::{KVStore, KVStoreError, KVStoreID};
 use serde::{Deserialize, Serialize};
+
+use crate::write_batches::WriteBatches;
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyspaceId(pub u8);
@@ -114,7 +111,8 @@ impl<KV: KVStore> Keyspaces<KV> {
     pub(crate) fn write(&self, write_batches: WriteBatches<KV>) -> Result<(), KeyspacesError> {
         for (index, write_batch) in write_batches.into_iter() {
             debug_assert!(index < KEYSPACE_MAXIMUM_COUNT);
-            self.get(KeyspaceId(index as u8)).write(write_batch)
+            self.get(KeyspaceId(index as u8))
+                .write(write_batch)
                 .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
         }
         Ok(())
@@ -122,7 +120,8 @@ impl<KV: KVStore> Keyspaces<KV> {
 
     pub(crate) fn checkpoint(&self, current_checkpoint_dir: &Path) -> Result<(), KeyspacesError> {
         for keyspace in &self.keyspaces {
-            keyspace.checkpoint(current_checkpoint_dir)
+            keyspace
+                .checkpoint(current_checkpoint_dir)
                 .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
         }
         Ok(())
@@ -132,7 +131,7 @@ impl<KV: KVStore> Keyspaces<KV> {
         let mut errors = Vec::new();
         for keyspace in self.keyspaces {
             if let Err(e) = keyspace.delete() {
-                errors.push(KeyspacesError::KVStoreError { typedb_source: e.into()});
+                errors.push(KeyspacesError::KVStoreError { typedb_source: e.into() });
             }
         }
         if !errors.is_empty() {
@@ -150,7 +149,8 @@ impl<KV: KVStore> Keyspaces<KV> {
 
     pub fn estimate_size_in_bytes(&self) -> Result<u64, KeyspacesError> {
         self.keyspaces.iter().try_fold(0, |total, keyspace| {
-            let size = keyspace.estimate_size_in_bytes()
+            let size = keyspace
+                .estimate_size_in_bytes()
                 .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
             Ok(total + size)
         })
@@ -158,8 +158,8 @@ impl<KV: KVStore> Keyspaces<KV> {
 
     pub fn estimate_key_count(&self) -> Result<u64, KeyspacesError> {
         self.keyspaces.iter().try_fold(0, |total, keyspace| {
-            let count = keyspace.estimate_key_count()
-                .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
+            let count =
+                keyspace.estimate_key_count().map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
             Ok(total + count)
         })
     }

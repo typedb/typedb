@@ -17,22 +17,8 @@ use std::{
     time::Duration,
 };
 
-use crate::keyspace::{KeyspaceId, KeyspaceSet, Keyspaces, KeyspacesError};
-use crate::{
-    durability_client::{DurabilityClient, DurabilityClientError},
-    error::MVCCStorageError,
-    isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
-    iterator::MVCCRangeIterator,
-    key_value::{StorageKey, StorageKeyReference},
-    recovery::{
-        checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
-        commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
-    },
-    sequence_number::SequenceNumber,
-    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
-};
-use bytes::{byte_array::ByteArray, Bytes};
 use ::error::typedb_error;
+use bytes::{byte_array::ByteArray, Bytes};
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use kv::KVStore;
@@ -44,6 +30,21 @@ use resource::{
     profile::{CommitProfile, StorageCounters},
 };
 use tracing::trace;
+
+use crate::{
+    durability_client::{DurabilityClient, DurabilityClientError},
+    error::MVCCStorageError,
+    isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
+    iterator::MVCCRangeIterator,
+    key_value::{StorageKey, StorageKeyReference},
+    keyspace::{KeyspaceId, KeyspaceSet, Keyspaces, KeyspacesError},
+    recovery::{
+        checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
+        commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
+    },
+    sequence_number::SequenceNumber,
+    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
+};
 
 pub mod durability_client;
 pub mod error;
@@ -299,20 +300,12 @@ impl<Durability, KV: KVStore> MVCCStorage<Durability, KV> {
                 let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key);
                 if known_to_exist {
                     debug_assert!(self
-                        .get::<0>(
-                            wrapped,
-                            snapshot.open_sequence_number(),
-                            storage_counters.clone()
-                        )
+                        .get::<0>(wrapped, snapshot.open_sequence_number(), storage_counters.clone())
                         .is_ok_and(|opt| opt.is_some()));
                     reinsert.store(false, Ordering::Release);
                 } else {
                     let existing_stored = self
-                        .get::<BUFFER_VALUE_INLINE>(
-                            wrapped,
-                            snapshot.open_sequence_number(),
-                            storage_counters.clone(),
-                        )?
+                        .get::<BUFFER_VALUE_INLINE>(wrapped, snapshot.open_sequence_number(), storage_counters.clone())?
                         .is_some_and(|reference| &reference == value);
                     reinsert.store(!existing_stored, Ordering::Release);
                 }
@@ -373,12 +366,7 @@ impl<Durability, KV: KVStore> MVCCStorage<Durability, KV> {
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, MVCCReadError> {
-        self.get_mapped(
-            key,
-            open_sequence_number,
-            |byte_ref| ByteArray::from(byte_ref),
-            storage_counters,
-        )
+        self.get_mapped(key, open_sequence_number, |byte_ref| ByteArray::from(byte_ref), storage_counters)
     }
 
     pub fn get_mapped<'a, Mapper, V>(
@@ -463,10 +451,9 @@ impl<Durability, KV: KVStore> MVCCStorage<Durability, KV> {
         range: KeyRange<StorageKey<'this, PREFIX_INLINE>>,
         storage_counters: StorageCounters,
     ) -> KV::RangeIterator {
-        self.keyspaces.get(range.start().get_value().keyspace_id()).iterate_range(
-            &range.map(|k| k.as_bytes(), |fixed| fixed),
-            storage_counters,
-        )
+        self.keyspaces
+            .get(range.start().get_value().keyspace_id())
+            .iterate_range(&range.map(|k| k.as_bytes(), |fixed| fixed), storage_counters)
     }
 
     pub fn reset(&mut self) -> Result<(), StorageResetError>
@@ -702,9 +689,10 @@ mod tests {
                 .unwrap();
 
             let partial_commit = WriteBatches::from_operations(seq, &partial_operations);
-            let keyspaces =
-                Keyspaces::<RocksKVStore>::open::<TestKeyspaceSet>(storage_path.join(MVCCStorage::<WALClient, RocksKVStore>::STORAGE_DIR_NAME))
-                    .unwrap();
+            let keyspaces = Keyspaces::<RocksKVStore>::open::<TestKeyspaceSet>(
+                storage_path.join(MVCCStorage::<WALClient, RocksKVStore>::STORAGE_DIR_NAME),
+            )
+            .unwrap();
             keyspaces.write(partial_commit).unwrap();
 
             /* CRASH */
@@ -714,12 +702,13 @@ mod tests {
 
         let mut durability_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
         durability_client.register_record_type::<CommitRecord>();
-        let storage =
-            MVCCStorage::<WALClient, RocksKVStore>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
-                .unwrap();
-        assert_eq!(
-            storage.get::<0>(&key_2, seq, StorageCounters::DISABLED).unwrap().unwrap(),
-            ByteArray::empty()
-        );
+        let storage = MVCCStorage::<WALClient, RocksKVStore>::load::<TestKeyspaceSet>(
+            "storage",
+            &storage_path,
+            durability_client,
+            &None,
+        )
+        .unwrap();
+        assert_eq!(storage.get::<0>(&key_2, seq, StorageCounters::DISABLED).unwrap().unwrap(), ByteArray::empty());
     }
 }
