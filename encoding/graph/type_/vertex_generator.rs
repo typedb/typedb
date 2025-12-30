@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use kv::KVStore;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -37,7 +38,7 @@ impl TypeVertexGenerator {
         }
     }
 
-    pub fn create_entity_type<Snapshot: WritableSnapshot>(
+    pub fn create_entity_type<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<TypeVertex, EncodingError> {
@@ -46,7 +47,7 @@ impl TypeVertexGenerator {
         Ok(vertex)
     }
 
-    pub fn create_relation_type<Snapshot: WritableSnapshot>(
+    pub fn create_relation_type<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<TypeVertex, EncodingError> {
@@ -55,7 +56,7 @@ impl TypeVertexGenerator {
         Ok(vertex)
     }
 
-    pub fn create_role_type<Snapshot: WritableSnapshot>(
+    pub fn create_role_type<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<TypeVertex, EncodingError> {
@@ -64,7 +65,7 @@ impl TypeVertexGenerator {
         Ok(vertex)
     }
 
-    pub fn create_attribute_type<Snapshot: WritableSnapshot>(
+    pub fn create_attribute_type<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
         &self,
         snapshot: &mut Snapshot,
     ) -> Result<TypeVertex, EncodingError> {

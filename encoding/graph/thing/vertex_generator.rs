@@ -10,9 +10,10 @@ use std::sync::{
 };
 
 use bytes::{byte_array::ByteArray, Bytes};
+use kv::KVStore;
+use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 use storage::{
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
     MVCCStorage,
@@ -73,12 +74,12 @@ impl ThingVertexGenerator {
         }
     }
 
-    pub fn load<D>(storage: Arc<MVCCStorage<D>>) -> Result<Self, EncodingError> {
+    pub fn load<D, KV: KVStore>(storage: Arc<MVCCStorage<D, KV>>) -> Result<Self, EncodingError> {
         Self::load_with_hasher(storage, seahash::hash)
     }
 
-    pub fn load_with_hasher<D>(
-        storage: Arc<MVCCStorage<D>>,
+    pub fn load_with_hasher<D, KV: KVStore>(
+        storage: Arc<MVCCStorage<D, KV>>,
         large_value_hasher: fn(&[u8]) -> u64,
     ) -> Result<Self, EncodingError> {
         let read_snapshot = storage.clone().open_snapshot_read();
@@ -113,7 +114,7 @@ impl ThingVertexGenerator {
             let next_storage_key: StorageKey<'_, { ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
             if let Some(prev_bytes) =
-                storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key()))
+                storage.get_prev_raw(next_storage_key.as_reference(), &mut |key, _| Vec::from(key.key()))
             {
                 if ObjectVertex::is_entity_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);
@@ -130,7 +131,7 @@ impl ThingVertexGenerator {
             let next_storage_key: StorageKey<'_, { ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
             if let Some(prev_bytes) =
-                storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key()))
+                storage.get_prev_raw(next_storage_key.as_reference(), &mut |key, _| Vec::from(key.key()))
             {
                 if ObjectVertex::is_relation_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);
@@ -152,9 +153,9 @@ impl ThingVertexGenerator {
         &self.large_value_hasher
     }
 
-    pub fn create_entity<Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
+    pub fn create_entity<KV: KVStore, Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let entity_id = self.entity_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::new(entity_id));
@@ -162,9 +163,9 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_relation<Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
+    pub fn create_relation<KV: KVStore, Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let relation_id = self.relation_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_relation(type_id, ObjectID::new(relation_id));
@@ -172,14 +173,14 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_boolean<Snapshot>(
+    pub fn create_attribute_boolean<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: BooleanBytes,
         snapshot: &mut Snapshot,
     ) -> AttributeVertex
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let boolean_attribute_id = self.create_attribute_id_boolean(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Boolean(boolean_attribute_id));
@@ -187,14 +188,14 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_integer<Snapshot>(
+    pub fn create_attribute_integer<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: IntegerBytes,
         snapshot: &mut Snapshot,
     ) -> AttributeVertex
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let integer_attribute_id = self.create_attribute_id_integer(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Integer(integer_attribute_id));
@@ -202,14 +203,14 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_double<Snapshot>(
+    pub fn create_attribute_double<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DoubleBytes,
         snapshot: &mut Snapshot,
     ) -> AttributeVertex
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let double_attribute_id = self.create_attribute_id_double(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Double(double_attribute_id));
@@ -217,14 +218,14 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_decimal<Snapshot>(
+    pub fn create_attribute_decimal<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DecimalBytes,
         snapshot: &mut Snapshot,
     ) -> AttributeVertex
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let decimal_attribute_id = self.create_attribute_id_decimal(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Decimal(decimal_attribute_id));
@@ -232,14 +233,14 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_date<Snapshot>(
+    pub fn create_attribute_date<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DateBytes,
         snapshot: &mut Snapshot,
     ) -> AttributeVertex
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let date_attribute_id = self.create_attribute_id_date(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Date(date_attribute_id));
@@ -247,14 +248,14 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_date_time<Snapshot>(
+    pub fn create_attribute_date_time<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DateTimeBytes,
         snapshot: &mut Snapshot,
     ) -> AttributeVertex
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let date_time_attribute_id = self.create_attribute_id_date_time(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::DateTime(date_time_attribute_id));
@@ -262,14 +263,14 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_date_time_tz<Snapshot>(
+    pub fn create_attribute_date_time_tz<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DateTimeTZBytes,
         snapshot: &mut Snapshot,
     ) -> AttributeVertex
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let date_time_tz_attribute_id = self.create_attribute_id_date_time_tz(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::DateTimeTZ(date_time_tz_attribute_id));
@@ -277,14 +278,14 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_duration<Snapshot>(
+    pub fn create_attribute_duration<KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: DurationBytes,
         snapshot: &mut Snapshot,
     ) -> AttributeVertex
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let duration_attribute_id = self.create_attribute_id_duration(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Duration(duration_attribute_id));
@@ -334,14 +335,14 @@ impl ThingVertexGenerator {
     /// We do not need to retain a reverse index from String -> ID, since 99.9% of the time the prefix + hash
     /// lets us retrieve the ID from the forward index by prefix (ID -> String).
     ///
-    pub fn create_attribute_string<const INLINE_LENGTH: usize, Snapshot>(
+    pub fn create_attribute_string<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: StringBytes<INLINE_LENGTH>,
         snapshot: &mut Snapshot,
     ) -> Result<AttributeVertex, Arc<SnapshotIteratorError>>
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let string_attribute_id = self.create_attribute_id_string(type_id, value.as_reference(), snapshot)?;
         let vertex = AttributeVertex::new(type_id, AttributeID::String(string_attribute_id));
@@ -349,14 +350,14 @@ impl ThingVertexGenerator {
         Ok(vertex)
     }
 
-    pub fn create_attribute_id_string<const INLINE_LENGTH: usize, Snapshot>(
+    pub fn create_attribute_id_string<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &mut Snapshot,
     ) -> Result<StringAttributeID, Arc<SnapshotIteratorError>>
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         if StringAttributeID::is_inlineable(string.as_reference()) {
             Ok(StringAttributeID::build_inline_id(string))
@@ -370,27 +371,27 @@ impl ThingVertexGenerator {
         }
     }
 
-    pub fn find_attribute_id_string_noinline<const INLINE_LENGTH: usize, Snapshot>(
+    pub fn find_attribute_id_string_noinline<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &Snapshot,
     ) -> Result<Option<StringAttributeID>, Arc<SnapshotIteratorError>>
     where
-        Snapshot: ReadableSnapshot,
+        Snapshot: ReadableSnapshot<KV>,
     {
         assert!(!StringAttributeID::is_inlineable(string.as_reference()));
         StringAttributeID::find_hashed_id(type_id, string, snapshot, &self.large_value_hasher)
     }
 
-    pub fn create_attribute_struct<const INLINE_LENGTH: usize, Snapshot>(
+    pub fn create_attribute_struct<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         value: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &mut Snapshot,
     ) -> Result<AttributeVertex, Arc<SnapshotIteratorError>>
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         let struct_attribute_id = self.create_attribute_id_struct(type_id, value.as_reference(), snapshot)?;
         let vertex = AttributeVertex::new(type_id, AttributeID::Struct(struct_attribute_id));
@@ -398,14 +399,14 @@ impl ThingVertexGenerator {
         Ok(vertex)
     }
 
-    pub fn create_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(
+    pub fn create_attribute_id_struct<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &mut Snapshot,
     ) -> Result<StructAttributeID, Arc<SnapshotIteratorError>>
     where
-        Snapshot: WritableSnapshot,
+        Snapshot: WritableSnapshot<KV>,
     {
         // We don't inline structs
         let id = StructAttributeID::build_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)?;
@@ -416,14 +417,14 @@ impl ThingVertexGenerator {
         Ok(id)
     }
 
-    pub fn find_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(
+    pub fn find_attribute_id_struct<const INLINE_LENGTH: usize, KV: KVStore, Snapshot>(
         &self,
         type_id: TypeID,
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
     ) -> Result<Option<StructAttributeID>, Arc<SnapshotIteratorError>>
     where
-        Snapshot: ReadableSnapshot,
+        Snapshot: ReadableSnapshot<KV>,
     {
         StructAttributeID::find_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)
     }

@@ -8,7 +8,9 @@ use std::{path::Path, sync::Arc};
 
 use bytes::byte_array::ByteArray;
 use durability::wal::WAL;
+use kv::rocks::RocksKVStore;
 use lending_iterator::LendingIterator;
+use primitive::key_range::KeyRange;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::{CommitProfile, StorageCounters},
@@ -16,7 +18,6 @@ use resource::{
 use storage::{
     durability_client::{DurabilityClient, WALClient},
     isolation_manager::IsolationConflict,
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
     MVCCStorage, StorageCommitError,
@@ -42,7 +43,7 @@ const VALUE_1: [u8; 1] = [0x0];
 const VALUE_2: [u8; 1] = [0x1];
 const VALUE_3: [u8; 1] = [0x88];
 
-fn setup_storage(path: &Path) -> Arc<MVCCStorage<WALClient>> {
+fn setup_storage(path: &Path) -> Arc<MVCCStorage<WALClient, RocksKVStore>> {
     let storage = create_storage::<TestKeyspaceSet>(path).unwrap();
     let mut snapshot = storage.clone().open_snapshot_write();
     snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
@@ -517,7 +518,7 @@ fn otv() {
     assert_eq!(*value_2_0, *read_2_3.unwrap().unwrap());
 }
 
-fn imp_setup(path: &Path) -> Arc<MVCCStorage<WALClient>> {
+fn imp_setup(path: &Path) -> Arc<MVCCStorage<WALClient, RocksKVStore>> {
     init_logging();
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
@@ -533,8 +534,10 @@ fn imp_setup(path: &Path) -> Arc<MVCCStorage<WALClient>> {
     storage
 }
 
-fn imp_ops<D>(snapshot_update: &mut WriteSnapshot<D>, snapshot_delete: &mut WriteSnapshot<D>)
-where
+fn imp_ops<D>(
+    snapshot_update: &mut WriteSnapshot<D, RocksKVStore>,
+    snapshot_delete: &mut WriteSnapshot<D, RocksKVStore>,
+) where
     D: DurabilityClient,
 {
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
@@ -558,7 +561,7 @@ where
     }
 }
 
-fn imp_validate_serializable<D>(storage: Arc<MVCCStorage<D>>) -> bool
+fn imp_validate_serializable<D>(storage: Arc<MVCCStorage<D, RocksKVStore>>) -> bool
 where
     D: DurabilityClient,
 {

@@ -8,10 +8,11 @@ use std::sync::Arc;
 
 use durability::wal::WAL;
 use encoding::EncodingKeyspace;
+use kv::rocks::RocksKVStore;
 use storage::{durability_client::WALClient, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging, TempDir};
 
-pub fn create_core_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
+pub fn create_core_storage() -> (TempDir, Arc<MVCCStorage<WALClient, RocksKVStore>>) {
     init_logging();
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();

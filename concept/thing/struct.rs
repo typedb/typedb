@@ -15,12 +15,12 @@ use encoding::{
     },
 };
 use lending_iterator::{LendingIterator, Peekable, Seekable};
+use primitive::key_range::KeyRange;
 use resource::{
     constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_KEY_INLINE},
     profile::StorageCounters,
 };
 use storage::{
-    key_range::KeyRange,
     key_value::StorageKey,
     snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot},
 };

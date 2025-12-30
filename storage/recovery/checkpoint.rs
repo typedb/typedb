@@ -16,12 +16,13 @@ use std::{
 use chrono::Utc;
 use error::typedb_error;
 use itertools::Itertools;
+use kv::KVStore;
 use same_file::is_same_file;
 use tracing::trace;
 
 use crate::{
     durability_client::DurabilityClient,
-    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces},
+    keyspace::{KeyspaceSet, Keyspaces, KeyspacesError},
     recovery::commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     sequence_number::SequenceNumber,
 };
@@ -53,11 +54,15 @@ impl Checkpoint {
         Ok(Checkpoint { directory: current_checkpoint_dir })
     }
 
-    pub fn add_storage(&self, keyspaces: &Keyspaces, watermark: SequenceNumber) -> Result<(), CheckpointCreateError> {
+    pub fn add_storage<KV: KVStore>(
+        &self,
+        keyspaces: &Keyspaces<KV>,
+        watermark: SequenceNumber,
+    ) -> Result<(), CheckpointCreateError> {
         use CheckpointCreateError::{KeyspaceCheckpoint, MetadataFileCreate, MetadataWrite};
         keyspaces
             .checkpoint(&self.directory)
-            .map_err(|error| KeyspaceCheckpoint { dir: self.directory.clone(), source: error })?;
+            .map_err(|error| KeyspaceCheckpoint { dir: self.directory.clone(), typedb_source: error })?;
 
         let metadata_file_path = self.directory.join(Self::STORAGE_METADATA_FILE_NAME);
         let mut metadata_file = File::create(&metadata_file_path)
@@ -132,12 +137,12 @@ impl Checkpoint {
         Ok(deserialised)
     }
 
-    pub(crate) fn recover_storage<KS: KeyspaceSet, Durability: DurabilityClient>(
+    pub(crate) fn recover_storage<KS: KeyspaceSet, KV: KVStore, Durability: DurabilityClient>(
         &self,
         keyspaces_dir: &Path,
         durability_client: &Durability,
-    ) -> Result<(Keyspaces, SequenceNumber), CheckpointLoadError> {
-        use CheckpointLoadError::{CheckpointRestore, CommitRecoveryFailed, KeyspaceOpen};
+    ) -> Result<(Keyspaces<KV>, SequenceNumber), CheckpointLoadError> {
+        use CheckpointLoadError::{CheckpointRestore, CommitRecoveryFailed, KeyspacesOpen};
 
         for keyspace in KS::iter() {
             let keyspace_dir = keyspaces_dir.join(keyspace.name());
@@ -147,7 +152,8 @@ impl Checkpoint {
                 .map_err(|error| CheckpointRestore { dir: self.directory.clone(), source: Arc::new(error) })?;
         }
 
-        let keyspaces = Keyspaces::open::<KS>(&keyspaces_dir).map_err(|error| KeyspaceOpen { source: error })?;
+        let keyspaces =
+            Keyspaces::<KV>::open::<KS>(&keyspaces_dir).map_err(|error| KeyspacesOpen { typedb_source: error })?;
 
         trace!("Finished recovering keyspaces, recovering missing commits");
 
@@ -219,45 +225,18 @@ pub trait CheckpointAdditionalData: Sized {
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self>;
 }
 
-#[derive(Debug, Clone)]
-pub enum CheckpointCreateError {
-    CheckpointDirCreate { dir: PathBuf, source: Arc<io::Error> },
-    CheckpointDirRead { dir: PathBuf, source: Arc<io::Error> },
-
-    MissingStorageData { dir: PathBuf },
-
-    KeyspaceCheckpoint { dir: PathBuf, source: KeyspaceCheckpointError },
-
-    MetadataFileCreate { file_path: PathBuf, source: Arc<io::Error> },
-    MetadataWrite { file_path: PathBuf, source: Arc<io::Error> },
-
-    ExtensionDuplicate { name: String },
-    ExtensionIO { name: String, source: Arc<io::Error> },
-    ExtensionSerialise { name: String, source: Arc<bincode::Error> },
-
-    OldCheckpointRemove { dir: PathBuf, source: Arc<io::Error> },
-}
-
-impl fmt::Display for CheckpointCreateError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
-    }
-}
-
-impl Error for CheckpointCreateError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::CheckpointDirCreate { source, .. } => Some(source),
-            Self::CheckpointDirRead { source, .. } => Some(source),
-            Self::MissingStorageData { .. } => None,
-            Self::KeyspaceCheckpoint { source, .. } => Some(source),
-            Self::MetadataFileCreate { source, .. } => Some(source),
-            Self::MetadataWrite { source, .. } => Some(source),
-            Self::ExtensionDuplicate { .. } => None,
-            Self::ExtensionIO { source, .. } => Some(source),
-            Self::ExtensionSerialise { source, .. } => Some(source),
-            Self::OldCheckpointRemove { source, .. } => Some(source),
-        }
+typedb_error! {
+    pub CheckpointCreateError(component = "Checkpoint create", prefix = "CCR") {
+        CheckpointDirCreate(1, "Failed to create checkpoint directory '{dir:?}'.", dir: PathBuf, source: Arc<io::Error>),
+        CheckpointDirRead(2, "Failed to read checkpoint directory '{dir:?}'.", dir: PathBuf, source: Arc<io::Error>),
+        MissingStorageData(3, "Missing storage data in checkpoint directory '{dir:?}'.", dir: PathBuf),
+        KeyspaceCheckpoint(4, "Failed to checkpoint keyspaces in directory '{dir:?}'.", dir: PathBuf, typedb_source: KeyspacesError),
+        MetadataFileCreate(5, "Failed to create metadata file '{file_path:?}'.", file_path: PathBuf, source: Arc<io::Error>),
+        MetadataWrite(6, "Failed to write metadata file '{file_path:?}'.", file_path: PathBuf, source: Arc<io::Error>),
+        ExtensionDuplicate(7, "Checkpoint extension '{name}' already exists.", name: String),
+        ExtensionIO(8, "IO error for checkpoint extension '{name}'.", name: String, source: Arc<io::Error>),
+        ExtensionSerialise(9, "Failed to serialise checkpoint extension '{name}'.", name: String, source: Arc<bincode::Error>),
+        OldCheckpointRemove(10, "Failed to remove old checkpoint directory '{dir:?}'.", dir: PathBuf, source: Arc<io::Error>),
     }
 }
 
@@ -268,7 +247,7 @@ typedb_error! {
         CheckpointNotFound(3, "No checkpoints found in directory '{dir:?}.", dir: PathBuf),
         CommitRecoveryFailed(4, "Failed to recover commits that are in the WAL but not in the storage layer.", typedb_source: StorageRecoveryError),
         CheckpointRestore(5, "Error restoring checkpoint in directory '{dir:?}'.)", dir: PathBuf, source: Arc<io::Error>),
-        KeyspaceOpen(7, "Error while opening storage keyspaces.", source: KeyspaceOpenError),
+        KeyspacesOpen(7, "Error while opening storage keyspaces.", typedb_source: KeyspacesError),
 
         AdditionalDataNotFound(8, "Checkpoint additional data with identifier '{name}' not found.", name: String),
         AdditionalDataIO(9, "Error accessing checkpoint additional data with identifier '{name}'.", name: String, source: Arc<io::Error>),

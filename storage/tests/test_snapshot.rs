@@ -9,12 +9,12 @@
 use bytes::byte_array::ByteArray;
 use lending_iterator::LendingIterator;
 use logger::result::ResultExt;
+use primitive::key_range::KeyRange;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::{CommitProfile, StorageCounters},
 };
 use storage::{
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };

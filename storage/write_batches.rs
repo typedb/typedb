@@ -6,11 +6,12 @@
 
 use std::{
     iter,
+    marker::PhantomData,
     ops::{Deref, DerefMut},
     sync::atomic::Ordering,
 };
 
-use rocksdb::WriteBatch;
+use kv::{KVStore, KVWriteBatch};
 
 use super::{MVCCKey, StorageOperation};
 use crate::{
@@ -19,18 +20,19 @@ use crate::{
     snapshot::{buffer::OperationsBuffer, write::Write},
 };
 
-pub(crate) struct WriteBatches {
-    pub(crate) batches: [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT],
+pub(crate) struct WriteBatches<KV: KVStore> {
+    pub(crate) batches: [Option<KV::WriteBatch>; KEYSPACE_MAXIMUM_COUNT],
+    _phantom: PhantomData<KV>,
 }
 
-impl WriteBatches {
+impl<KV: KVStore> WriteBatches<KV> {
     pub(crate) fn from_operations(seq: SequenceNumber, operations: &OperationsBuffer) -> Self {
         let mut write_batches = Self::default();
 
         for (index, buffer) in operations.write_buffers().enumerate() {
             let writes = buffer.writes();
             if !writes.is_empty() {
-                let write_batch = write_batches[index].insert(WriteBatch::default());
+                let write_batch = write_batches.batches[index].insert(KV::WriteBatch::default());
                 for (key, write) in writes {
                     match write {
                         Write::Insert { value } => {
@@ -52,32 +54,32 @@ impl WriteBatches {
     }
 }
 
-impl IntoIterator for WriteBatches {
-    type Item = (usize, WriteBatch);
+impl<KV: KVStore> IntoIterator for WriteBatches<KV> {
+    type Item = (usize, KV::WriteBatch);
     type IntoIter = iter::FilterMap<
-        iter::Enumerate<<[Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT] as IntoIterator>::IntoIter>,
-        fn((usize, Option<WriteBatch>)) -> Option<(usize, WriteBatch)>,
+        iter::Enumerate<<[Option<KV::WriteBatch>; KEYSPACE_MAXIMUM_COUNT] as IntoIterator>::IntoIter>,
+        fn((usize, Option<KV::WriteBatch>)) -> Option<(usize, KV::WriteBatch)>,
     >;
     fn into_iter(self) -> Self::IntoIter {
         self.batches.into_iter().enumerate().filter_map(|(index, batch)| Some((index, batch?)))
     }
 }
 
-impl Deref for WriteBatches {
-    type Target = [Option<WriteBatch>];
+impl<KV: KVStore> Deref for WriteBatches<KV> {
+    type Target = [Option<KV::WriteBatch>];
     fn deref(&self) -> &Self::Target {
         &self.batches
     }
 }
 
-impl DerefMut for WriteBatches {
+impl<KV: KVStore> DerefMut for WriteBatches<KV> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.batches
     }
 }
 
-impl Default for WriteBatches {
+impl<KV: KVStore> Default for WriteBatches<KV> {
     fn default() -> Self {
-        Self { batches: std::array::from_fn(|_| None) }
+        Self { batches: std::array::from_fn(|_| None), _phantom: PhantomData }
     }
 }

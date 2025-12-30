@@ -18,6 +18,7 @@ use encoding::{
     value::value_type::ValueType,
     AsBytes, Keyable,
 };
+use kv::KVStore;
 use resource::{
     constants::snapshot::BUFFER_VALUE_INLINE,
     profile::{CommitProfile, StorageCounters},
@@ -25,7 +26,7 @@ use resource::{
 use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot};
 use test_utils_encoding::create_core_storage;
 
-fn define_struct<Snapshot: WritableSnapshot>(
+fn define_struct<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
     snapshot: &mut Snapshot,
     definition_key_generator: &DefinitionKeyGenerator,
     definition: StructDefinition,
@@ -42,13 +43,16 @@ fn define_struct<Snapshot: WritableSnapshot>(
     definition_key
 }
 
-fn get_struct_key(snapshot: &impl ReadableSnapshot, name: String) -> Option<DefinitionKey> {
+fn get_struct_key<KV: KVStore>(snapshot: &impl ReadableSnapshot<KV>, name: String) -> Option<DefinitionKey> {
     let index_key = NameToStructDefinitionIndex::build(name.as_str());
     let bytes = snapshot.get(index_key.into_storage_key().as_reference(), StorageCounters::DISABLED).unwrap();
     bytes.map(|value| DefinitionKey::new(Bytes::Array(value)))
 }
 
-fn get_struct_definition(snapshot: &impl ReadableSnapshot, definition_key: &DefinitionKey) -> StructDefinition {
+fn get_struct_definition<KV: KVStore>(
+    snapshot: &impl ReadableSnapshot<KV>,
+    definition_key: &DefinitionKey,
+) -> StructDefinition {
     let bytes = snapshot
         .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference(), StorageCounters::DISABLED)
         .unwrap();

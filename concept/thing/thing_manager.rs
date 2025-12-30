@@ -51,7 +51,10 @@ use encoding::{
 };
 use itertools::Itertools;
 use lending_iterator::Peekable;
-use primitive::either::Either;
+use primitive::{
+    either::Either,
+    key_range::{KeyRange, RangeEnd, RangeStart},
+};
 use resource::{
     constants::{
         encoding::StructFieldIDUInt,
@@ -60,7 +63,6 @@ use resource::{
     profile::StorageCounters,
 };
 use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{lock::create_custom_lock_key, write::Write, ReadableSnapshot, WritableSnapshot},
 };

@@ -11,9 +11,9 @@ use std::{
 };
 
 use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
+use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::KeyspaceSet,
 };

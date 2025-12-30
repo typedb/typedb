@@ -17,6 +17,7 @@ use encoding::{
     },
     EncodingKeyspace, Keyable,
 };
+use kv::rocks::RocksKVStore;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{durability_client::WALClient, key_value::StorageKey, snapshot::WriteSnapshot, MVCCStorage};
 use test_utils::{create_tmp_dir, init_logging};
@@ -24,7 +25,7 @@ use test_utils::{create_tmp_dir, init_logging};
 fn vertex_generation<D>(
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     type_id: TypeID,
-    write_snapshot: &mut WriteSnapshot<D>,
+    write_snapshot: &mut WriteSnapshot<D, RocksKVStore>,
 ) -> ObjectVertex {
     thing_vertex_generator.create_entity(type_id, write_snapshot)
 }
@@ -32,7 +33,7 @@ fn vertex_generation<D>(
 fn vertex_generation_to_key<D>(
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     type_id: TypeID,
-    write_snapshot: &mut WriteSnapshot<D>,
+    write_snapshot: &mut WriteSnapshot<D, RocksKVStore>,
 ) -> StorageKey<'static, { BUFFER_KEY_INLINE }> {
     thing_vertex_generator.create_entity(type_id, write_snapshot).into_storage_key()
 }
@@ -42,7 +43,12 @@ fn criterion_benchmark(c: &mut Criterion) {
     let storage_path = create_tmp_dir();
     let wal = WAL::create(&storage_path).unwrap();
     let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+        MVCCStorage::<WALClient, RocksKVStore>::create::<EncodingKeyspace>(
+            "storage",
+            &storage_path,
+            WALClient::new(wal),
+        )
+        .unwrap(),
     );
 
     let type_id = TypeID::new(0);

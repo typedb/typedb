@@ -4,11 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{any::type_name, error::Error, fmt, iter::empty, ops::Deref, sync::Arc};
+use std::{any::type_name, fmt, iter::empty, marker::PhantomData, ops::Deref, sync::Arc};
 
 use bytes::byte_array::ByteArray;
 use error::typedb_error;
+use kv::KVStore;
 use lending_iterator::LendingIterator;
+use primitive::key_range::KeyRange;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::{CommitProfile, StorageCounters},
@@ -18,9 +20,7 @@ use crate::{
     durability_client::DurabilityClient,
     isolation_manager::{CommitRecord, CommitType},
     iterator::MVCCReadError,
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::IteratorPool,
     sequence_number::SequenceNumber,
     snapshot::{
         buffer::{BufferRangeIterator, OperationsBuffer},
@@ -45,7 +45,7 @@ macro_rules! get_mapped_method {
     };
 }
 
-pub trait ReadableSnapshot {
+pub trait ReadableSnapshot<KV: KVStore> {
     const IMMUTABLE_SCHEMA: bool;
 
     fn open_sequence_number(&self) -> SequenceNumber;
@@ -78,7 +78,7 @@ pub trait ReadableSnapshot {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator;
+    ) -> SnapshotRangeIterator<KV>;
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool;
 
@@ -93,14 +93,12 @@ pub trait ReadableSnapshot {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator;
-
-    fn iterator_pool(&self) -> &IteratorPool;
+    ) -> SnapshotRangeIterator<KV>;
 
     fn close_resources(&self);
 }
 
-pub trait WritableSnapshot: ReadableSnapshot {
+pub trait WritableSnapshot<KV: KVStore>: ReadableSnapshot<KV> {
     fn operations(&self) -> &OperationsBuffer;
 
     fn operations_mut(&mut self) -> &mut OperationsBuffer;
@@ -200,37 +198,37 @@ pub trait WritableSnapshot: ReadableSnapshot {
     }
 }
 
-pub trait CommittableSnapshot<D>: WritableSnapshot
+pub trait CommittableSnapshot<D, KV>: WritableSnapshot<KV>
 where
     D: DurabilityClient,
+    KV: KVStore,
 {
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
 
     fn into_commit_record(self) -> CommitRecord;
 }
 
-pub struct ReadSnapshot<D> {
+pub struct ReadSnapshot<D, KV> {
     open_sequence_number: SequenceNumber,
-    iterator_pool: IteratorPool, // Must be declared & dropped before storage
-    storage: Arc<MVCCStorage<D>>,
+    storage: Arc<MVCCStorage<D, KV>>,
 }
 
-impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
+impl<D: fmt::Debug, KV> fmt::Debug for ReadSnapshot<D, KV> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(type_name::<Self>()).field("open_sequence_number", &self.open_sequence_number).finish()
     }
 }
 
-impl<D> ReadSnapshot<D> {
-    pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
+impl<D, KV: KVStore> ReadSnapshot<D, KV> {
+    pub(crate) fn new(storage: Arc<MVCCStorage<D, KV>>, open_sequence_number: SequenceNumber) -> Self {
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
-        ReadSnapshot { storage, open_sequence_number, iterator_pool: IteratorPool::new() }
+        ReadSnapshot { storage, open_sequence_number }
     }
 
     pub fn close_resources(self) {}
 }
 
-impl<D> ReadableSnapshot for ReadSnapshot<D> {
+impl<D, KV: KVStore> ReadableSnapshot<KV> for ReadSnapshot<D, KV> {
     const IMMUTABLE_SCHEMA: bool = true;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -243,8 +241,8 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         self.storage
-            .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-            .map_err(|error| SnapshotGetError::MVCCRead { source: error })
+            .get(key, self.open_sequence_number, storage_counters)
+            .map_err(|error| SnapshotGetError::MVCCRead { typedb_source: error })
     }
 
     fn get_last_existing<const INLINE_BYTES: usize>(
@@ -259,19 +257,14 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
+    ) -> SnapshotRangeIterator<KV> {
+        let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {
         !buffered_only
-            && self
-                .storage
-                .iterate_range(self.iterator_pool(), range, self.open_sequence_number, StorageCounters::DISABLED)
-                .next()
-                .is_some()
+            && self.storage.iterate_range(range, self.open_sequence_number, StorageCounters::DISABLED).next().is_some()
     }
 
     fn get_write(&self, _: StorageKeyReference<'_>) -> Option<&Write> {
@@ -290,53 +283,42 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
+    ) -> SnapshotRangeIterator<KV> {
+        let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(mvcc_iterator, None)
-    }
-
-    fn iterator_pool(&self) -> &IteratorPool {
-        &self.iterator_pool
     }
 
     fn close_resources(&self) {}
 }
 
-pub struct WriteSnapshot<D> {
+pub struct WriteSnapshot<D, KV> {
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
-    iterator_pool: IteratorPool, // Pool must be declared & dropped before storage
-    storage: Arc<MVCCStorage<D>>,
+    storage: Arc<MVCCStorage<D, KV>>,
 }
 
-impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
+impl<D: fmt::Debug, KV> fmt::Debug for WriteSnapshot<D, KV> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(type_name::<Self>()).field("open_sequence_number", &self.open_sequence_number).finish()
     }
 }
 
-impl<D> WriteSnapshot<D> {
-    pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
+impl<D, KV: KVStore> WriteSnapshot<D, KV> {
+    pub(crate) fn new(storage: Arc<MVCCStorage<D, KV>>, open_sequence_number: SequenceNumber) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
-        WriteSnapshot {
-            storage,
-            operations: OperationsBuffer::new(),
-            open_sequence_number,
-            iterator_pool: IteratorPool::new(),
-        }
+        WriteSnapshot { storage, operations: OperationsBuffer::new(), open_sequence_number }
     }
 
     pub fn new_with_operations(
-        storage: Arc<MVCCStorage<D>>,
+        storage: Arc<MVCCStorage<D, KV>>,
         open_sequence_number: SequenceNumber,
         operations: OperationsBuffer,
-    ) -> impl ReadableSnapshot {
-        WriteSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new() }
+    ) -> impl ReadableSnapshot<KV> {
+        WriteSnapshot { storage, operations, open_sequence_number }
     }
 }
 
-impl<D> ReadableSnapshot for WriteSnapshot<D> {
+impl<D, KV: KVStore> ReadableSnapshot<KV> for WriteSnapshot<D, KV> {
     const IMMUTABLE_SCHEMA: bool = true;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -354,8 +336,8 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
             Some(Write::Delete) => Ok(None),
             None => self
                 .storage
-                .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+                .get(key, self.open_sequence_number, storage_counters)
+                .map_err(|error| SnapshotGetError::MVCCRead { typedb_source: error }),
         }
     }
 
@@ -369,8 +351,8 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) | None => self
                 .storage
-                .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+                .get(key, self.open_sequence_number, storage_counters)
+                .map_err(|error| SnapshotGetError::MVCCRead { typedb_source: error }),
         }
     }
 
@@ -378,13 +360,12 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
+    ) -> SnapshotRangeIterator<KV> {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
-        let storage_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
+        let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
@@ -419,14 +400,9 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
+    ) -> SnapshotRangeIterator<KV> {
+        let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(mvcc_iterator, None)
-    }
-
-    fn iterator_pool(&self) -> &IteratorPool {
-        &self.iterator_pool
     }
 
     fn close_resources(&self) {
@@ -434,7 +410,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     }
 }
 
-impl<D> WritableSnapshot for WriteSnapshot<D> {
+impl<D, KV: KVStore> WritableSnapshot<KV> for WriteSnapshot<D, KV> {
     fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
@@ -444,7 +420,7 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
     }
 }
 
-impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
+impl<D: DurabilityClient, KV: KVStore> CommittableSnapshot<D, KV> for WriteSnapshot<D, KV> {
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         if self.operations.is_writes_empty() && self.operations.locks_empty() {
             Ok(None)
@@ -461,40 +437,34 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
     }
 }
 
-pub struct SchemaSnapshot<D> {
+pub struct SchemaSnapshot<D, KV> {
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
-    iterator_pool: IteratorPool, // Must be declared & dropped before storage
-    storage: Arc<MVCCStorage<D>>,
+    storage: Arc<MVCCStorage<D, KV>>,
 }
 
-impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
+impl<D: fmt::Debug, KV> fmt::Debug for SchemaSnapshot<D, KV> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(type_name::<Self>()).field("open_sequence_number", &self.open_sequence_number).finish()
     }
 }
 
-impl<D> SchemaSnapshot<D> {
-    pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
+impl<D, KV: KVStore> SchemaSnapshot<D, KV> {
+    pub(crate) fn new(storage: Arc<MVCCStorage<D, KV>>, open_sequence_number: SequenceNumber) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
-        SchemaSnapshot {
-            storage,
-            operations: OperationsBuffer::new(),
-            open_sequence_number,
-            iterator_pool: IteratorPool::new(),
-        }
+        SchemaSnapshot { storage, operations: OperationsBuffer::new(), open_sequence_number }
     }
 
     pub fn new_with_operations(
-        storage: Arc<MVCCStorage<D>>,
+        storage: Arc<MVCCStorage<D, KV>>,
         open_sequence_number: SequenceNumber,
         operations: OperationsBuffer,
-    ) -> impl ReadableSnapshot {
-        SchemaSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new() }
+    ) -> impl ReadableSnapshot<KV> {
+        SchemaSnapshot { storage, operations, open_sequence_number }
     }
 }
 
-impl<D> ReadableSnapshot for SchemaSnapshot<D> {
+impl<D, KV: KVStore> ReadableSnapshot<KV> for SchemaSnapshot<D, KV> {
     const IMMUTABLE_SCHEMA: bool = false;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -512,8 +482,8 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
             Some(Write::Delete) => Ok(None),
             None => self
                 .storage
-                .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+                .get(key, self.open_sequence_number, storage_counters)
+                .map_err(|error| SnapshotGetError::MVCCRead { typedb_source: error }),
         }
     }
 
@@ -527,8 +497,8 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
             Some(Write::Insert { value, .. }) | Some(Write::Put { value, .. }) => Ok(Some(ByteArray::copy(value))),
             Some(Write::Delete) | None => self
                 .storage
-                .get(self.iterator_pool(), key, self.open_sequence_number, storage_counters)
-                .map_err(|error| SnapshotGetError::MVCCRead { source: error }),
+                .get(key, self.open_sequence_number, storage_counters)
+                .map_err(|error| SnapshotGetError::MVCCRead { typedb_source: error }),
         }
     }
 
@@ -536,13 +506,12 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
+    ) -> SnapshotRangeIterator<KV> {
         let buffered_iterator = self
             .operations
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.clone().map(|k| k.as_bytes(), |fixed| fixed));
-        let storage_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
+        let storage_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(storage_iterator, Some(buffered_iterator))
     }
 
@@ -577,14 +546,9 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
         storage_counters: StorageCounters,
-    ) -> SnapshotRangeIterator {
-        let mvcc_iterator =
-            self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number, storage_counters);
+    ) -> SnapshotRangeIterator<KV> {
+        let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(mvcc_iterator, None)
-    }
-
-    fn iterator_pool(&self) -> &IteratorPool {
-        &self.iterator_pool
     }
 
     fn close_resources(&self) {
@@ -592,7 +556,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     }
 }
 
-impl<D> WritableSnapshot for SchemaSnapshot<D> {
+impl<D, KV: KVStore> WritableSnapshot<KV> for SchemaSnapshot<D, KV> {
     fn operations(&self) -> &OperationsBuffer {
         &self.operations
     }
@@ -602,7 +566,7 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
     }
 }
 
-impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
+impl<D: DurabilityClient, KV: KVStore> CommittableSnapshot<D, KV> for SchemaSnapshot<D, KV> {
     // TODO: extract these two methods into separate trait
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         if self.operations.is_writes_empty() && self.operations.locks_empty() {
@@ -621,17 +585,18 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
 }
 
 #[derive(Debug)]
-pub struct SnapshotDropGuard<S: ReadableSnapshot> {
+pub struct SnapshotDropGuard<KV: KVStore, S: ReadableSnapshot<KV>> {
     inner: Option<Arc<S>>,
+    _marker: PhantomData<KV>,
 }
 
-impl<S: ReadableSnapshot> SnapshotDropGuard<S> {
+impl<KV: KVStore, S: ReadableSnapshot<KV>> SnapshotDropGuard<KV, S> {
     pub fn new(inner: S) -> Self {
         Self::from_arc(Arc::new(inner))
     }
 
     pub fn from_arc(inner: Arc<S>) -> Self {
-        Self { inner: Some(inner) }
+        Self { inner: Some(inner), _marker: PhantomData }
     }
 
     pub fn into_inner(mut self) -> S {
@@ -671,7 +636,7 @@ impl<S: ReadableSnapshot> SnapshotDropGuard<S> {
     }
 }
 
-impl<S: ReadableSnapshot> Deref for SnapshotDropGuard<S> {
+impl<KV: KVStore, S: ReadableSnapshot<KV>> Deref for SnapshotDropGuard<KV, S> {
     type Target = S;
 
     fn deref(&self) -> &Self::Target {
@@ -679,7 +644,7 @@ impl<S: ReadableSnapshot> Deref for SnapshotDropGuard<S> {
     }
 }
 
-impl<S: ReadableSnapshot> Drop for SnapshotDropGuard<S> {
+impl<KV: KVStore, S: ReadableSnapshot<KV>> Drop for SnapshotDropGuard<KV, S> {
     fn drop(&mut self) {
         if let Some(inner) = self.inner.take() {
             Self::unwrap_arc(inner).close_resources()
@@ -688,31 +653,15 @@ impl<S: ReadableSnapshot> Drop for SnapshotDropGuard<S> {
 }
 
 typedb_error! {
-    pub SnapshotError(component = "Snapshot error", prefix = "SST") {
+    pub SnapshotError(component = "Snapshot error", prefix = "SNA") {
         Commit(1, "Snapshot commit failed due to storage commit error.", typedb_source: StorageCommitError),
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum SnapshotGetError {
-    MVCCRead { source: MVCCReadError },
-    ExpectedRequiredKeyToExist { key: StorageKey<'static, BUFFER_KEY_INLINE> },
-    // for tests:
-    MockError {},
-}
-
-impl fmt::Display for SnapshotGetError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
-    }
-}
-
-impl Error for SnapshotGetError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::MVCCRead { source, .. } => Some(source),
-            SnapshotGetError::ExpectedRequiredKeyToExist { .. } => None,
-            SnapshotGetError::MockError { .. } => None,
-        }
+typedb_error! {
+    pub SnapshotGetError(component = "Snapshot get", prefix = "SGE") {
+        MVCCRead(1, "Failed to read from MVCC storage.", typedb_source: MVCCReadError),
+        ExpectedRequiredKeyToExist(2, "Expected required key to exist: {key:?}.", key: StorageKey<'static, BUFFER_KEY_INLINE>),
+        MockError(3, "Mock error for tests."),
     }
 }

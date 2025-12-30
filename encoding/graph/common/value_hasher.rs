@@ -7,11 +7,11 @@
 use std::sync::Arc;
 
 use bytes::byte_array::ByteArray;
+use kv::KVStore;
 use lending_iterator::LendingIterator;
-use primitive::either::Either;
+use primitive::{either::Either, key_range::KeyRange};
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
-    key_range::KeyRange,
     key_value::StorageKey,
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot},
 };
@@ -32,7 +32,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         Self::HASH_LENGTH
     }
 
-    fn find_existing_or_next_disambiguated_hash<Snapshot>(
+    fn find_existing_or_next_disambiguated_hash<KV: KVStore, Snapshot>(
         snapshot: &Snapshot,
         hasher: &impl Fn(&[u8]) -> u64,
         keyspace: EncodingKeyspace,
@@ -40,7 +40,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         value_bytes: &[u8],
     ) -> Result<Either<[u8; DISAMBIGUATED_HASH_LENGTH], [u8; DISAMBIGUATED_HASH_LENGTH]>, Arc<SnapshotIteratorError>>
     where
-        Snapshot: ReadableSnapshot,
+        Snapshot: ReadableSnapshot<KV>,
     {
         let mut key_without_tail_byte: ByteArray<BUFFER_KEY_INLINE> =
             ByteArray::zeros(key_without_hash.len() + Self::HASH_LENGTH);
@@ -65,14 +65,14 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
     }
 
     /// return Either<Existing tail, newly allocated tail>
-    fn disambiguate<Snapshot>(
+    fn disambiguate<KV: KVStore, Snapshot>(
         snapshot: &Snapshot,
         keyspace: EncodingKeyspace,
         key_without_tail_byte: &[u8],
         value_bytes: &[u8],
     ) -> Result<Either<u8, u8>, Arc<SnapshotIteratorError>>
     where
-        Snapshot: ReadableSnapshot,
+        Snapshot: ReadableSnapshot<KV>,
     {
         let tail_byte_index = key_without_tail_byte.len();
         let mut iter = snapshot.iterate_range(

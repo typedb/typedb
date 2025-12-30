@@ -59,11 +59,8 @@ use encoding::{
     Prefixed,
 };
 use iterator::minmax_or;
-use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    key_value::StorageKey,
-    snapshot::write::Write,
-};
+use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
+use storage::{key_value::StorageKey, snapshot::write::Write};
 
 use crate::{
     thing::{attribute::Attribute, ThingAPI},

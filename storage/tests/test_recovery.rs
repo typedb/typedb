@@ -9,6 +9,7 @@
 use std::fs;
 
 use durability::wal::WAL;
+use kv::rocks::RocksKVStore;
 use resource::{
     constants::snapshot::BUFFER_KEY_INLINE,
     profile::{CommitProfile, StorageCounters},
@@ -175,7 +176,7 @@ fn no_wal_and_no_checkpoint_and_no_keyspaces_illegal() {
     // delete wal
     fs::remove_dir_all(storage_path.join(WAL::WAL_DIR_NAME)).unwrap();
     // delete keyspaces
-    fs::remove_dir_all(storage_path.join(MVCCStorage::<WALClient>::STORAGE_DIR_NAME)).unwrap();
+    fs::remove_dir_all(storage_path.join(MVCCStorage::<WALClient, RocksKVStore>::STORAGE_DIR_NAME)).unwrap();
 
     {
         let wal_result = WAL::load(&storage_path);

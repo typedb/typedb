@@ -39,12 +39,9 @@ use ir::{
     },
 };
 use itertools::Itertools;
-use primitive::maybe_owns::MaybeOwns;
+use primitive::{key_range::KeyRange, maybe_owns::MaybeOwns};
 use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
-use storage::{
-    key_range::KeyRange,
-    snapshot::{ReadableSnapshot, WritableSnapshot},
-};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::common::Spanned;
 
 use crate::{function::SchemaFunction, function_cache::FunctionCache, FunctionError};

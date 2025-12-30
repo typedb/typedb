@@ -20,6 +20,7 @@ use std::{
 };
 
 use durability::DurabilityRecordType;
+use kv::KVStore;
 use logger::result::ResultExt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
@@ -95,12 +96,12 @@ impl IsolationManager {
         self.timeline.may_increment_watermark(sequence_number);
     }
 
-    pub(crate) fn validate_commit(
+    pub(crate) fn validate_commit<KV: KVStore>(
         &self,
         sequence_number: SequenceNumber,
         commit_record: CommitRecord,
         durability_client: &impl DurabilityClient,
-    ) -> Result<ValidatedCommit, DurabilityClientError> {
+    ) -> Result<ValidatedCommit<KV>, DurabilityClientError> {
         let window = self.timeline.get_or_create_window(sequence_number);
         window.insert_pending(sequence_number, commit_record);
         let CommitStatus::Pending(commit_record) = window.get_status(sequence_number) else { unreachable!() };
@@ -256,9 +257,9 @@ impl IsolationManager {
     }
 }
 
-pub(crate) enum ValidatedCommit {
+pub(crate) enum ValidatedCommit<KV: KVStore> {
     Conflict(IsolationConflict),
-    Write(WriteBatches),
+    Write(WriteBatches<KV>),
 }
 
 fn resolve_concurrent(

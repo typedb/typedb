@@ -3,14 +3,6 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test", "rustfmt_test")
-rustfmt_test(
-    name = "rustfmt_test",
-    targets = [
-        ":encoding",
-        ":test_crate_encoding",
-    ],
-    size = "small",
-)
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = [
@@ -19,19 +11,21 @@ package(default_visibility = [
     "//compiler:__subpackages__",
     "//concept:__subpackages__",
     "//database:__subpackages__",
+    "//encoding:__subpackages__",
     "//executor:__subpackages__",
     "//function:__subpackages__",
     "//inference:__subpackages__",
     "//ir:__subpackages__",
     "//server:__subpackages__",
+    "//storage:__subpackages__",
     "//traversal:__subpackages__",
     "//query:__subpackages__",
     "//tests/behaviour:__subpackages__",
 ])
 
 rust_library(
-    name = "encoding",
-    crate_root = "encoding.rs",
+    name = "kv",
+    crate_root = "lib.rs",
     srcs = glob([
         "*.rs",
         "*/*.rs",
@@ -44,46 +38,31 @@ rust_library(
         "//common/logger",
         "//common/primitive",
         "//common/structural_equality",
-        "//durability",
-        "//kv",
         "//resource",
-        "//storage",
 
-        "@typeql//rust:typeql",
+        "@typeql//rust:typeql", # leaky but enables generic TypeDBError
 
-        "@crates//:bincode",
-        "@crates//:chrono",
-        "@crates//:chrono-tz",
         "@crates//:itertools",
         "@crates//:tracing",
-        "@crates//:seahash",
-        "@crates//:serde",
         "@crates//:rocksdb",
-    ],
-)
-
-rust_test(
-    name = "test_crate_encoding",
-    crate = ":encoding",
-    deps = [
-        "@crates//:rand",
     ],
 )
 
 checkstyle_test(
     name = "checkstyle",
     include = glob([
-        "*",
-        "graph/*",
-        "graph/common/*",
-        "graph/definition/*",
-        "graph/thing/*",
-        "graph/type_/*",
-        "layout/*",
-        "value/*",
+        "**/*.rs",
     ]),
     exclude = glob([
         "Cargo.*",
     ]),
     license_type = "mpl-header",
+)
+
+rustfmt_test(
+    name = "rustfmt_test",
+    targets = [
+        ":kv",
+    ],
+    size = "small",
 )
