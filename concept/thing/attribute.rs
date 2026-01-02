@@ -29,6 +29,7 @@ use encoding::{
 };
 use iterator::State;
 use itertools::Itertools;
+use kv::KVStore;
 use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable, Seekable};
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -65,9 +66,9 @@ impl Attribute {
         self.vertex.to_bytes()
     }
 
-    pub fn get_value(
+    pub fn get_value<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<Value<'_>, Box<ConceptReadError>> {
@@ -78,9 +79,9 @@ impl Attribute {
         Ok(self.value.get().unwrap().as_reference())
     }
 
-    pub fn has_owners(
+    pub fn has_owners<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
@@ -92,18 +93,18 @@ impl Attribute {
         }
     }
 
-    pub fn get_owners(
+    pub fn get_owners<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> {
         thing_manager.get_owners(snapshot, self, storage_counters)
     }
 
-    pub fn get_owners_by_type(
+    pub fn get_owners_by_type<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner_type: impl ObjectTypeAPI,
         storage_counters: StorageCounters,
@@ -138,9 +139,9 @@ impl ThingAPI for Attribute {
         self.vertex.to_bytes()
     }
 
-    fn set_required(
+    fn set_required<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -152,18 +153,18 @@ impl ThingAPI for Attribute {
         Ok(())
     }
 
-    fn get_status(
+    fn get_status<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
         thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
     }
 
-    fn delete(
+    fn delete<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -206,25 +207,27 @@ impl Ord for Attribute {
     }
 }
 
-pub struct AttributeIterator<AllAttributesIterator>
+pub struct AttributeIterator<KV, AllAttributesIterator>
 where
+    KV: KVStore,
     AllAttributesIterator:
         Seekable<Attribute> + for<'a> LendingIterator<Item<'a> = Result<Attribute, Box<ConceptReadError>>>,
 {
     independent_attribute_types: Arc<HashSet<AttributeType>>,
     attributes_iterator: Option<Peekable<AllAttributesIterator>>,
-    has_reverse_iterator: Option<HasReverseIterator>,
+    has_reverse_iterator: Option<HasReverseIterator<KV>>,
     state: State<Box<ConceptReadError>>,
 }
 
-impl<AllAttributesIterator> AttributeIterator<AllAttributesIterator>
+impl<KV, AllAttributesIterator> AttributeIterator<KV, AllAttributesIterator>
 where
+    KV: KVStore,
     AllAttributesIterator:
         Seekable<Attribute> + for<'a> LendingIterator<Item<'a> = Result<Attribute, Box<ConceptReadError>>>,
 {
     pub(crate) fn new(
         attributes_iterator: AllAttributesIterator,
-        has_reverse_iterator: HasReverseIterator,
+        has_reverse_iterator: HasReverseIterator<KV>,
         independent_attribute_types: Arc<HashSet<AttributeType>>,
     ) -> Self {
         Self {
@@ -303,7 +306,7 @@ where
     }
 
     fn has_owner(
-        has_reverse_iterator: &mut HasReverseIterator,
+        has_reverse_iterator: &mut HasReverseIterator<KV>,
         attribute_vertex: AttributeVertex,
     ) -> Result<bool, Box<ConceptReadError>> {
         let target_has = Has::EdgeReverse(ThingEdgeHasReverse::new(attribute_vertex, ObjectVertex::MIN));
@@ -324,8 +327,9 @@ where
     }
 }
 
-impl<I> Iterator for AttributeIterator<I>
+impl<KV, I> Iterator for AttributeIterator<KV, I>
 where
+    KV: KVStore,
     I: Seekable<Attribute> + for<'a> LendingIterator<Item<'a> = Result<Attribute, Box<ConceptReadError>>>,
 {
     type Item = Result<Attribute, Box<ConceptReadError>>;

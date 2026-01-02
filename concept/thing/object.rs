@@ -21,6 +21,7 @@ use encoding::{
     value::{decode_value_u64, value::Value, value_type::ValueTypeCategory},
     Keyable, Prefixed,
 };
+use kv::KVStore;
 use lending_iterator::higher_order::Hkt;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
@@ -106,9 +107,9 @@ impl ThingAPI for Object {
         }
     }
 
-    fn set_required(
+    fn set_required<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -118,9 +119,9 @@ impl ThingAPI for Object {
         }
     }
 
-    fn get_status(
+    fn get_status<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
@@ -130,9 +131,9 @@ impl ThingAPI for Object {
         }
     }
 
-    fn delete(
+    fn delete<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -155,9 +156,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
 
     fn into_object(self) -> Object;
 
-    fn has_attribute_with_value(
+    fn has_attribute_with_value<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         value: Value<'_>,
@@ -166,9 +167,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager.owner_has_attribute_with_value(snapshot, self, attribute_type, value, storage_counters)
     }
 
-    fn has_attribute(
+    fn has_attribute<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute: &Attribute,
         storage_counters: StorageCounters,
@@ -176,25 +177,25 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager.owner_has_attribute(snapshot, self, attribute, storage_counters)
     }
 
-    fn get_has_unordered<'m>(
+    fn get_has_unordered<'m, KV: KVStore>(
         self,
-        snapshot: &'m impl ReadableSnapshot,
+        snapshot: &'m impl ReadableSnapshot<KV>,
         thing_manager: &'m ThingManager,
         storage_counters: StorageCounters,
-    ) -> Result<HasIterator, Box<ConceptReadError>> {
+    ) -> Result<HasIterator<KV>, Box<ConceptReadError>> {
         self.get_has_types_range_unordered(snapshot, thing_manager, storage_counters)
     }
 
-    fn get_has_type_unordered<'a>(
+    fn get_has_type_unordered<'a, KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         value_range: &'a impl RangeBounds<Value<'a>>,
         storage_counters: StorageCounters,
     ) -> Result<
         Map<
-            HasIterator,
+            HasIterator<KV>,
             fn(Result<(Has, u64), Box<ConceptReadError>>) -> Result<(Attribute, u64), Box<ConceptReadError>>,
         >,
         Box<ConceptReadError>,
@@ -208,9 +209,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         )
     }
 
-    fn get_has_type_ordered<'m>(
+    fn get_has_type_ordered<'m, KV: KVStore>(
         self,
-        snapshot: &'m impl ReadableSnapshot,
+        snapshot: &'m impl ReadableSnapshot<KV>,
         thing_manager: &'m ThingManager,
         attribute_type: AttributeType,
         storage_counters: StorageCounters,
@@ -218,24 +219,24 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type, storage_counters)
     }
 
-    fn get_has_types_range_unordered<'a>(
+    fn get_has_types_range_unordered<'a, KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) -> Result<HasIterator, Box<ConceptReadError>> {
+    ) -> Result<HasIterator<KV>, Box<ConceptReadError>> {
         thing_manager.owner_get_has_unordered_all(snapshot, self, storage_counters)
     }
 
-    fn get_has_types_range_unordered_in_value_types<'a>(
+    fn get_has_types_range_unordered_in_value_types<'a, KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type_range: &impl RangeBounds<AttributeType>,
         ordered_value_categories: &[ValueTypeCategory],
         value_range: &'a impl RangeBounds<Value<'a>>,
         storage_counters: StorageCounters,
-    ) -> Result<HasIterator, Box<ConceptReadError>> {
+    ) -> Result<HasIterator<KV>, Box<ConceptReadError>> {
         thing_manager.owner_get_has_unordered_in_value_type(
             snapshot,
             self,
@@ -246,9 +247,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         )
     }
 
-    fn set_has_unordered(
+    fn set_has_unordered<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute: &Attribute,
         storage_counters: StorageCounters,
@@ -290,9 +291,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager.set_has_unordered(snapshot, self, attribute, storage_counters)
     }
 
-    fn unset_has_unordered(
+    fn unset_has_unordered<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute: &Attribute,
         storage_counters: StorageCounters,
@@ -322,9 +323,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager.unset_has(snapshot, self, attribute, storage_counters)
     }
 
-    fn set_has_ordered(
+    fn set_has_ordered<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         // TODO: We might need to change this interface if we can add attributes of different types!
         attribute_type: AttributeType,
@@ -407,9 +408,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager.set_has_ordered(snapshot, self, attribute_type, new_attributes, storage_counters)
     }
 
-    fn unset_has_ordered(
+    fn unset_has_ordered<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         storage_counters: StorageCounters,
@@ -446,18 +447,18 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         }
     }
 
-    fn get_relations(
+    fn get_relations<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<Relation, Box<ConceptReadError>>> {
         thing_manager.get_player_relations(snapshot, self, storage_counters)
     }
 
-    fn get_relations_by_role(
+    fn get_relations_by_role<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         role_type: RoleType,
         storage_counters: StorageCounters,
@@ -465,18 +466,18 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager.get_player_relations_using_role(snapshot, self, role_type, storage_counters)
     }
 
-    fn get_relations_roles(
+    fn get_relations_roles<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
         thing_manager.get_player_relations_roles(snapshot, self, storage_counters)
     }
 
-    fn get_has_counts(
+    fn get_has_counts<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<HashMap<AttributeType, u64>, Box<ConceptReadError>> {
@@ -489,9 +490,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         Ok(counts)
     }
 
-    fn get_played_roles_counts(
+    fn get_played_roles_counts<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<HashMap<RoleType, u64>, Box<ConceptReadError>> {
@@ -504,9 +505,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         Ok(counts)
     }
 
-    fn has_indexed_relation_player(
+    fn has_indexed_relation_player<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         end_player: Object,
         relation: Relation,
@@ -529,47 +530,47 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         self.into_object() == other_player && self_role_type == other_role_type
     }
 
-    fn get_indexed_relations(
+    fn get_indexed_relations<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation_type: RelationType,
         storage_counters: StorageCounters,
-    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+    ) -> Result<IndexedRelationsIterator<KV>, Box<ConceptReadError>> {
         thing_manager.get_indexed_relation_players_from(snapshot, self, relation_type, storage_counters)
     }
 
-    fn get_indexed_relations_with_player(
+    fn get_indexed_relations_with_player<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         end_player: Object,
         relation_type: RelationType,
         storage_counters: StorageCounters,
-    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+    ) -> Result<IndexedRelationsIterator<KV>, Box<ConceptReadError>> {
         thing_manager.get_indexed_relations_between(snapshot, self, end_player, relation_type, storage_counters)
     }
 
-    fn get_indexed_relation_roles_with_player_and_relation(
+    fn get_indexed_relation_roles_with_player_and_relation<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         end_player: Object,
         relation: Relation,
         storage_counters: StorageCounters,
-    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+    ) -> Result<IndexedRelationsIterator<KV>, Box<ConceptReadError>> {
         thing_manager.get_indexed_relation_roles(snapshot, self, end_player, relation, storage_counters)
     }
 
-    fn get_indexed_relation_end_roles_with_player_and_relation_and_start_role(
+    fn get_indexed_relation_end_roles_with_player_and_relation_and_start_role<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         end_player: Object,
         relation: Relation,
         start_role: RoleType,
         storage_counters: StorageCounters,
-    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+    ) -> Result<IndexedRelationsIterator<KV>, Box<ConceptReadError>> {
         thing_manager.get_indexed_relation_end_roles(snapshot, self, end_player, relation, start_role, storage_counters)
     }
 }

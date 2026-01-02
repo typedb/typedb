@@ -59,6 +59,7 @@ use encoding::{
     Prefixed,
 };
 use iterator::minmax_or;
+use kv::KVStore;
 use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
 use storage::{key_value::StorageKey, snapshot::write::Write};
 
@@ -69,8 +70,8 @@ use crate::{
 
 macro_rules! validate_capability_cardinality_constraint {
     ($func_name:ident, $capability_type:ident, $object_instance:ident, $get_cardinality_constraints_func:ident, $get_interface_counts_func:ident, $check_func:path) => {
-        pub(crate) fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        pub(crate) fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             thing_manager: &ThingManager,
             object: $object_instance,
             interface_types_to_check: &HashSet<<$capability_type as Capability>::InterfaceType>,
@@ -171,8 +172,8 @@ pub(crate) struct CardinalityChangeTracker {
 }
 
 impl CardinalityChangeTracker {
-    pub(crate) fn build(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn build<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
@@ -254,8 +255,8 @@ impl CardinalityChangeTracker {
         self.has_modified_relates
     }
 
-    fn collect_new_objects(
-        snapshot: &impl ReadableSnapshot,
+    fn collect_new_objects<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
         out_object_role_types: &mut HashMap<Object, HashSet<RoleType>>,
@@ -306,8 +307,8 @@ impl CardinalityChangeTracker {
         Ok(())
     }
 
-    fn collect_modified_has_objects(
-        snapshot: &impl ReadableSnapshot,
+    fn collect_modified_has_objects<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
         storage_counters: StorageCounters,
@@ -327,8 +328,8 @@ impl CardinalityChangeTracker {
         Ok(())
     }
 
-    fn collect_modified_links_objects(
-        snapshot: &impl ReadableSnapshot,
+    fn collect_modified_links_objects<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         out_relation_role_types: &mut HashMap<Relation, HashSet<RoleType>>,
         out_object_role_types: &mut HashMap<Object, HashSet<RoleType>>,
@@ -356,8 +357,8 @@ impl CardinalityChangeTracker {
         Ok(())
     }
 
-    fn collect_modified_schema_capability_cardinalities_objects(
-        snapshot: &impl ReadableSnapshot,
+    fn collect_modified_schema_capability_cardinalities_objects<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
@@ -450,8 +451,8 @@ impl CardinalityChangeTracker {
         Ok(())
     }
 
-    fn collect_modified_schema_capability_cardinalities(
-        snapshot: &impl ReadableSnapshot,
+    fn collect_modified_schema_capability_cardinalities<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         modified_owns: &mut HashMap<ObjectType, HashSet<AttributeType>>,
         modified_plays: &mut HashMap<ObjectType, HashSet<RoleType>>,
@@ -690,8 +691,8 @@ impl CardinalityChangeTracker {
 pub(crate) struct CardinalityValidation {}
 
 impl CardinalityValidation {
-    pub(crate) fn validate_object_has(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_object_has<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         object: Object,
         modified_attribute_types: &HashSet<AttributeType>,
@@ -709,8 +710,8 @@ impl CardinalityValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_object_links(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_object_links<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         object: Object,
         modified_role_types: &HashSet<RoleType>,
@@ -728,8 +729,8 @@ impl CardinalityValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_relation_links(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relation_links<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation: Relation,
         modified_role_types: &HashSet<RoleType>,

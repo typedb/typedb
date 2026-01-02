@@ -24,6 +24,7 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use kv::KVStore;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -103,66 +104,66 @@ impl TypeAPI for RoleType {
         Self::from_vertex(vertex).unwrap()
     }
 
-    fn is_abstract(
+    fn is_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
         self.get_relates_explicit(snapshot, type_manager)?.is_abstract(snapshot, type_manager)
     }
 
-    fn delete(
+    fn delete<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.delete_role_type(snapshot, thing_manager, self)
     }
 
-    fn get_label<'m>(
+    fn get_label<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
         type_manager.get_role_type_label(snapshot, *self)
     }
 
-    fn get_label_arc(
+    fn get_label_arc<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Arc<Label>, Box<ConceptReadError>> {
         type_manager.get_role_type_label_arc(snapshot, *self)
     }
 
-    fn get_supertype(
+    fn get_supertype<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<RoleType>, Box<ConceptReadError>> {
         type_manager.get_role_type_supertype(snapshot, *self)
     }
 
-    fn get_supertypes_transitive<'m>(
+    fn get_supertypes_transitive<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<RoleType>>, Box<ConceptReadError>> {
         type_manager.get_role_type_supertypes(snapshot, *self)
     }
 
-    fn get_subtypes<'m>(
+    fn get_subtypes<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<RoleType>>, Box<ConceptReadError>> {
         type_manager.get_role_type_subtypes(snapshot, *self)
     }
 
-    fn get_subtypes_transitive<'m>(
+    fn get_subtypes_transitive<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<RoleType>>, Box<ConceptReadError>> {
         type_manager.get_role_type_subtypes_transitive(snapshot, *self)
@@ -181,26 +182,26 @@ impl KindAPI for RoleType {
     type AnnotationType = RoleTypeAnnotation;
     const KIND: Kind = Kind::Role;
 
-    fn get_annotations_declared<'m>(
+    fn get_annotations_declared<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, Box<ConceptReadError>> {
         type_manager.get_role_type_annotations_declared(snapshot, *self)
     }
 
-    fn get_constraints<'m>(
+    fn get_constraints<'m, KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RoleType>>>, Box<ConceptReadError>> {
         type_manager.get_role_type_constraints(snapshot, self)
     }
 
-    fn capabilities_syntax(
+    fn capabilities_syntax<KV: KVStore>(
         &self,
         _f: &mut impl Write,
-        _snapshot: &impl ReadableSnapshot,
+        _snapshot: &impl ReadableSnapshot<KV>,
         _type_manager: &TypeManager,
     ) -> Result<(), Box<ConceptReadError>> {
         Ok(())
@@ -208,26 +209,26 @@ impl KindAPI for RoleType {
 }
 
 impl RoleType {
-    pub fn set_name(
+    pub fn set_name<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         name: &str,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_role_type_name(snapshot, *self, name)
     }
 
-    pub fn get_ordering(
+    pub fn get_ordering<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Ordering, Box<ConceptReadError>> {
         type_manager.get_role_type_ordering(snapshot, *self)
     }
 
-    pub fn set_ordering(
+    pub fn set_ordering<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         ordering: Ordering,
@@ -238,33 +239,33 @@ impl RoleType {
 
 // --- Related API ---
 impl RoleType {
-    pub fn get_relates_explicit(
+    pub fn get_relates_explicit<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Relates, Box<ConceptReadError>> {
         type_manager.get_role_type_relates_explicit(snapshot, *self)
     }
 
-    pub fn get_relates<'m>(
+    pub fn get_relates<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
         type_manager.get_role_type_relates(snapshot, *self)
     }
 
-    pub fn get_relation_types<'m>(
+    pub fn get_relation_types<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<RelationType, Relates>>, Box<ConceptReadError>> {
         type_manager.get_role_type_relation_types(snapshot, *self)
     }
 
-    pub fn get_constraints_for_relation<'m>(
+    pub fn get_constraints_for_relation<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates>>>, Box<ConceptReadError>> {
@@ -274,25 +275,25 @@ impl RoleType {
 
 // --- Played API ---
 impl RoleType {
-    pub fn get_plays<'m>(
+    pub fn get_plays<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         type_manager.get_role_type_plays(snapshot, *self)
     }
 
-    pub fn get_player_types<'m>(
+    pub fn get_player_types<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<ObjectType, Plays>>, Box<ConceptReadError>> {
         type_manager.get_role_type_player_types(snapshot, *self)
     }
 
-    pub fn get_constraints_for_player<'m>(
+    pub fn get_constraints_for_player<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
         player_type: ObjectType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {

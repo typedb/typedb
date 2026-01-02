@@ -5,6 +5,7 @@
  */
 
 use encoding::graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition};
+use kv::KVStore;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::type_::type_manager::type_reader::TypeReader;
@@ -16,7 +17,7 @@ pub struct StructDefinitionCache {
 }
 
 impl StructDefinitionCache {
-    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<StructDefinitionCache>]> {
+    pub(super) fn create<KV: KVStore>(snapshot: &impl ReadableSnapshot<KV>) -> Box<[Option<StructDefinitionCache>]> {
         let definitions = TypeReader::get_struct_definitions_all(snapshot).unwrap();
 
         let max_definition_id = definitions.keys().map(|d| d.definition_id().as_uint()).max().unwrap_or(0);

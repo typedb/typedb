@@ -14,6 +14,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use itertools::Itertools;
+use kv::KVStore;
 use primitive::maybe_owns::MaybeOwns;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -81,8 +82,8 @@ macro_rules! type_or_subtype_without_declared_capability_instances_existence_val
         $interface_type:ident,
         $single_type_validation_func:path
     ) => {
-        fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
             object_type: $object_type,
@@ -109,7 +110,7 @@ macro_rules! type_or_subtype_without_declared_capability_instances_existence_val
                 let subtypes = current_object_type.get_subtypes(snapshot, type_manager)?;
                 for subtype in subtypes.into_iter() {
                     let subtype_capabilities =
-                        TypeReader::get_capabilities_declared::<$capability_type>(snapshot, *subtype)?;
+                        TypeReader::get_capabilities_declared::<KV, $capability_type>(snapshot, *subtype)?;
                     if !subtype_capabilities.iter().map(|capability| capability.interface()).contains(&interface_type) {
                         object_types.push_front(subtype.clone());
                     }
@@ -130,8 +131,8 @@ macro_rules! cannot_unset_capability_with_existing_instances_validation {
         $interface_type:ident,
         $existing_instances_validation_func:path
     ) => {
-        pub(crate) fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        pub(crate) fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
             object_type: $object_type,
@@ -143,7 +144,7 @@ macro_rules! cannot_unset_capability_with_existing_instances_validation {
                 .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             {
                 let supertype_capabilities =
-                    TypeReader::get_capabilities::<$capability_type>(snapshot, supertype, false)
+                    TypeReader::get_capabilities::<KV, $capability_type>(snapshot, supertype, false)
                         .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
                 if supertype_capabilities.iter().any(|capability| &capability.interface() == &interface_type) {
                     return Ok(());
@@ -181,8 +182,8 @@ macro_rules! cannot_change_supertype_as_capability_with_existing_instances_is_lo
         $get_lost_capabilities_func:path,
         $existing_instances_validation_func:path
     ) => {
-        pub(crate) fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        pub(crate) fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
             subtype: $object_type,
@@ -222,8 +223,8 @@ macro_rules! cannot_change_supertype_as_capability_with_existing_instances_is_lo
 
 macro_rules! new_acquired_capability_instances_validation {
     ($func_name:ident, $capability_type:ident, $validation_func:path) => {
-        pub(crate) fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        pub(crate) fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
             capability: $capability_type,
@@ -272,8 +273,8 @@ macro_rules! new_acquired_capability_instances_validation {
 
 macro_rules! new_annotation_constraints_compatible_with_capability_instances_validation {
     ($func_name:ident, $capability_type:ident, $validation_func:path) => {
-        pub(crate) fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        pub(crate) fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
             capability: $capability_type,
@@ -327,8 +328,8 @@ macro_rules! new_annotation_constraints_compatible_with_capability_instances_val
 
 macro_rules! updated_constraints_compatible_with_capability_instances_on_object_supertype_change_validation {
     ($func_name:ident, $capability_type:ident, $object_type:ident, $validation_func:path) => {
-        pub(crate) fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        pub(crate) fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
             type_: $object_type,
@@ -345,13 +346,13 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
             )
             .collect();
             let type_capabilities_declared =
-                TypeReader::get_capabilities_declared::<$capability_type>(snapshot, type_.clone())
+                TypeReader::get_capabilities_declared::<KV, $capability_type>(snapshot, type_.clone())
                     .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             let type_capabilities =
-                TypeReader::get_capabilities::<$capability_type>(snapshot, type_.clone(), false)
+                TypeReader::get_capabilities::<KV, $capability_type>(snapshot, type_.clone(), false)
                     .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             let new_capabilities =
-                TypeReader::get_capabilities::<$capability_type>(snapshot, new_supertype.clone(), false)
+                TypeReader::get_capabilities::<KV, $capability_type>(snapshot, new_supertype.clone(), false)
                     .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             for new_capability in new_capabilities.into_iter() {
@@ -419,8 +420,8 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
 
 macro_rules! affected_constraints_compatible_with_capability_instances_on_interface_supertype_unset_validation {
     ($func_name:ident, $capability_type:ident, $validation_func:path) => {
-        pub(crate) fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        pub(crate) fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
             interface_type: <$capability_type as Capability>::InterfaceType,
@@ -450,7 +451,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             let mut objects_with_interface_subtypes_and_constraints: HashSet<
                 <$capability_type as Capability>::ObjectType,
             > = HashSet::new();
-            collect_object_types_with_interface_type_and_subtypes::<$capability_type>(
+            collect_object_types_with_interface_type_and_subtypes::<KV, $capability_type>(
                 snapshot,
                 type_manager,
                 interface_type.clone(),
@@ -507,8 +508,8 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
 
 macro_rules! affected_constraints_compatible_with_capability_instances_on_interface_supertype_change_validation {
     ($func_name:ident, $capability_type:ident, $unset_validation_func:path, $validation_func:path) => {
-        pub(crate) fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        pub(crate) fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
             interface_type: <$capability_type as Capability>::InterfaceType,
@@ -530,7 +531,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                 <$capability_type as Capability>::ObjectType,
                 HashSet<CapabilityConstraint<$capability_type>>,
             > = HashMap::new();
-            collect_object_types_with_interface_type_and_supertypes_constraints(
+            collect_object_types_with_interface_type_and_supertypes_constraints::<KV, _>(
                 snapshot,
                 type_manager,
                 interface_supertype.clone(),
@@ -545,7 +546,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
             let mut objects_with_interface_subtypes_and_constraints: HashSet<
                 <$capability_type as Capability>::ObjectType,
             > = HashSet::new();
-            collect_object_types_with_interface_type_and_subtypes::<$capability_type>(
+            collect_object_types_with_interface_type_and_subtypes::<KV, $capability_type>(
                 snapshot,
                 type_manager,
                 interface_type.clone(),
@@ -600,8 +601,8 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
 
 macro_rules! new_annotation_constraints_compatible_with_type_and_sub_instances_validation {
     ($func_name:ident, $type_:ident, $validation_func:path) => {
-        pub(crate) fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        pub(crate) fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
             type_: $type_,
@@ -632,8 +633,8 @@ macro_rules! new_annotation_constraints_compatible_with_type_and_sub_instances_v
 
 macro_rules! updated_constraints_compatible_with_type_and_sub_instances_on_supertype_change_validation {
     ($func_name:ident, $type_:ident, $validation_func:path) => {
-        pub(crate) fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        pub(crate) fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             type_manager: &TypeManager,
             thing_manager: &ThingManager,
             type_: $type_,
@@ -681,8 +682,8 @@ macro_rules! updated_constraints_compatible_with_type_and_sub_instances_on_super
     };
 }
 
-fn collect_object_types_with_interface_type_and_subtypes<CAP: Capability>(
-    snapshot: &impl ReadableSnapshot,
+fn collect_object_types_with_interface_type_and_subtypes<KV: KVStore, CAP: Capability>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     interface_type: CAP::InterfaceType,
     out_object_types: &mut HashSet<CAP::ObjectType>,
@@ -692,7 +693,7 @@ fn collect_object_types_with_interface_type_and_subtypes<CAP: Capability>(
 
     for interface_subtype in all_interface_subtypes {
         out_object_types.extend(
-            TypeReader::get_object_types_with_capabilities_for_interface::<CAP>(snapshot, interface_subtype)?
+            TypeReader::get_object_types_with_capabilities_for_interface::<KV, CAP>(snapshot, interface_subtype)?
                 .into_keys(),
         );
     }
@@ -700,8 +701,8 @@ fn collect_object_types_with_interface_type_and_subtypes<CAP: Capability>(
     Ok(())
 }
 
-fn collect_object_types_with_interface_type_and_supertypes_constraints<CAP: Capability>(
-    snapshot: &impl ReadableSnapshot,
+fn collect_object_types_with_interface_type_and_supertypes_constraints<KV: KVStore, CAP: Capability>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     interface_type: CAP::InterfaceType,
     out_object_types: &mut HashMap<CAP::ObjectType, HashSet<CapabilityConstraint<CAP>>>,
@@ -711,12 +712,12 @@ fn collect_object_types_with_interface_type_and_supertypes_constraints<CAP: Capa
 
     for interface_supertype in all_interface_supertypes {
         for object_type_with_interface_supertype in
-            TypeReader::get_object_types_with_capabilities_for_interface::<CAP>(snapshot, interface_supertype)?
+            TypeReader::get_object_types_with_capabilities_for_interface::<KV, CAP>(snapshot, interface_supertype)?
                 .into_keys()
         {
             #[allow(clippy::map_entry, reason = "false positive")]
             if !out_object_types.contains_key(&object_type_with_interface_supertype) {
-                let constraints = TypeReader::get_type_capability_constraints::<CAP>(
+                let constraints = TypeReader::get_type_capability_constraints::<KV, CAP>(
                     snapshot,
                     object_type_with_interface_supertype,
                     interface_supertype,
@@ -732,8 +733,8 @@ fn collect_object_types_with_interface_type_and_supertypes_constraints<CAP: Capa
 pub struct OperationTimeValidation {}
 
 impl OperationTimeValidation {
-    pub(crate) fn validate_type_exists(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_type_exists<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_: impl TypeAPI,
     ) -> Result<(), Box<SchemaValidationError>> {
         TypeReader::get_label(snapshot, type_)
@@ -741,8 +742,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_no_subtypes_for_type_deletion<T: KindAPI>(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_no_subtypes_for_type_deletion<KV: KVStore, T: KindAPI>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: T,
     ) -> Result<(), Box<SchemaValidationError>> {
@@ -759,11 +760,11 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_label_uniqueness(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_label_uniqueness<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         new_label: &Label,
     ) -> Result<(), Box<SchemaValidationError>> {
-        if TypeReader::get_labelled_type::<AttributeType>(snapshot, new_label)
+        if TypeReader::get_labelled_type::<KV, AttributeType>(snapshot, new_label)
             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             .is_some()
         {
@@ -771,7 +772,7 @@ impl OperationTimeValidation {
                 label: new_label.clone(),
                 existing_kind: Kind::Attribute,
             }))
-        } else if TypeReader::get_labelled_type::<RelationType>(snapshot, new_label)
+        } else if TypeReader::get_labelled_type::<KV, RelationType>(snapshot, new_label)
             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             .is_some()
         {
@@ -779,7 +780,7 @@ impl OperationTimeValidation {
                 label: new_label.clone(),
                 existing_kind: Kind::Relation,
             }))
-        } else if TypeReader::get_labelled_type::<EntityType>(snapshot, new_label)
+        } else if TypeReader::get_labelled_type::<KV, EntityType>(snapshot, new_label)
             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             .is_some()
         {
@@ -792,8 +793,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_new_role_name_uniqueness(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_new_role_name_uniqueness<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_type: RelationType,
         label: &Label,
@@ -816,8 +817,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_role_names_compatible_with_new_relation_supertype_transitive(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_role_names_compatible_with_new_relation_supertype_transitive<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_subtype: RelationType,
         relation_supertype: RelationType,
@@ -833,8 +834,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_role_names_compatible_with_new_relation_supertype(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_role_names_compatible_with_new_relation_supertype<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_subtype: RelationType,
         relation_supertype: RelationType,
@@ -860,8 +861,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_struct_name_uniqueness(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_struct_name_uniqueness<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         name: &str,
     ) -> Result<(), Box<SchemaValidationError>> {
         let struct_clash = TypeReader::get_struct_definition_key(snapshot, name)
@@ -876,8 +877,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_deleted_struct_is_not_used_in_schema(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_deleted_struct_is_not_used_in_schema<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         definition_key: &DefinitionKey,
     ) -> Result<(), Box<SchemaValidationError>> {
         let struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())
@@ -905,8 +906,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_value_type_is_compatible_with_new_supertypes_value_type_transitive(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_value_type_is_compatible_with_new_supertypes_value_type_transitive<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         subtype: AttributeType,
@@ -957,8 +958,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_value_type_can_be_unset(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_value_type_can_be_unset<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -1011,8 +1012,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_value_type_compatible_with_abstractness(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_value_type_compatible_with_abstractness<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         value_type: Option<ValueType>,
@@ -1038,8 +1039,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_annotation_regex_compatible_value_type(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_annotation_regex_compatible_value_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         value_type: Option<ValueType>,
@@ -1054,8 +1055,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_annotation_range_compatible_value_type(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_annotation_range_compatible_value_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         value_type: Option<ValueType>,
@@ -1070,8 +1071,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_annotation_values_compatible_value_type(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_annotation_values_compatible_value_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         value_type: Option<ValueType>,
@@ -1086,8 +1087,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_type_regex_narrows_supertype_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_type_regex_narrows_supertype_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         regex: AnnotationRegex,
@@ -1102,7 +1103,7 @@ impl OperationTimeValidation {
                 .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             for supertype_constraint in supertype_constraints.into_iter() {
-                supertype_constraint.validate_narrowed_by_strictly_same_type(&constraint_description).map_err(
+                supertype_constraint.validate_narrowed_by_strictly_same_type::<KV>(&constraint_description).map_err(
                     |typedb_source| {
                         let attribute_type_label = match get_label_or_schema_err(snapshot, type_manager, attribute_type)
                         {
@@ -1125,8 +1126,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_type_range_narrows_supertype_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_type_range_narrows_supertype_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         range: AnnotationRange,
@@ -1141,7 +1142,7 @@ impl OperationTimeValidation {
                 .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             for supertype_constraint in supertype_constraints.into_iter() {
-                supertype_constraint.validate_narrowed_by_strictly_same_type(&constraint_description).map_err(
+                supertype_constraint.validate_narrowed_by_strictly_same_type::<KV>(&constraint_description).map_err(
                     |typedb_source| {
                         let attribute_type_label = match get_label_or_schema_err(snapshot, type_manager, attribute_type)
                         {
@@ -1164,8 +1165,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_type_values_narrows_supertype_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_type_values_narrows_supertype_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         values: AnnotationValues,
@@ -1180,7 +1181,7 @@ impl OperationTimeValidation {
                 .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             for supertype_constraint in supertype_constraints.into_iter() {
-                supertype_constraint.validate_narrowed_by_strictly_same_type(&constraint_description).map_err(
+                supertype_constraint.validate_narrowed_by_strictly_same_type::<KV>(&constraint_description).map_err(
                     |typedb_source| {
                         let attribute_type_label = match get_label_or_schema_err(snapshot, type_manager, attribute_type)
                         {
@@ -1203,8 +1204,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_subtypes_narrow_regex(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_subtypes_narrow_regex<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         regex: AnnotationRegex,
@@ -1241,8 +1242,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_subtypes_narrow_range(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_subtypes_narrow_range<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         range: AnnotationRange,
@@ -1279,8 +1280,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_subtypes_narrow_values(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_subtypes_narrow_values<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         values: AnnotationValues,
@@ -1317,8 +1318,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_constraints_on_capabilities_narrow_regex_on_interface_type_transitive(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_constraints_on_capabilities_narrow_regex_on_interface_type_transitive<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         type_regex: AnnotationRegex,
@@ -1335,8 +1336,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_constraints_on_capabilities_narrow_regex_on_interface_type(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_constraints_on_capabilities_narrow_regex_on_interface_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         type_constraint_description: &ConstraintDescription,
@@ -1366,8 +1367,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_constraints_on_capabilities_narrow_range_on_interface_type_transitive(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_constraints_on_capabilities_narrow_range_on_interface_type_transitive<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         type_range: AnnotationRange,
@@ -1384,8 +1385,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_constraints_on_capabilities_narrow_range_on_interface_type(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_constraints_on_capabilities_narrow_range_on_interface_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         type_constraint_description: &ConstraintDescription,
@@ -1415,8 +1416,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_constraints_on_capabilities_narrow_values_on_interface_type_transitive(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_constraints_on_capabilities_narrow_values_on_interface_type_transitive<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         type_values: AnnotationValues,
@@ -1433,8 +1434,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_constraints_on_capabilities_narrow_values_on_interface_type(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_constraints_on_capabilities_narrow_values_on_interface_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         type_constraint_description: &ConstraintDescription,
@@ -1464,8 +1465,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_capability_regex_constraint_narrows_interface_type_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_capability_regex_constraint_narrows_interface_type_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         owns: Owns,
         capability_regex: AnnotationRegex,
@@ -1476,7 +1477,7 @@ impl OperationTimeValidation {
             .get_constraints_regex(snapshot, type_manager)
             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for regex_constraint in attribute_type_regex_constraints {
-            regex_constraint.validate_narrowed_by_strictly_same_type(&capability_constraint_description)
+            regex_constraint.validate_narrowed_by_strictly_same_type::<KV>(&capability_constraint_description)
                 .map_err(|typedb_source| {
                     let owner_label = match get_label_or_schema_err(snapshot, type_manager, owns.owner()) {
                         Ok(label) => label,
@@ -1497,8 +1498,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_capability_range_constraint_narrows_interface_type_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_capability_range_constraint_narrows_interface_type_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         owns: Owns,
         capability_range: AnnotationRange,
@@ -1509,7 +1510,7 @@ impl OperationTimeValidation {
             .get_constraints_range(snapshot, type_manager)
             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for range_constraint in attribute_type_range_constraints {
-            range_constraint.validate_narrowed_by_strictly_same_type(&capability_constraint_description)
+            range_constraint.validate_narrowed_by_strictly_same_type::<KV>(&capability_constraint_description)
                 .map_err(|typedb_source| {
                     let owner_label = match get_label_or_schema_err(snapshot, type_manager, owns.owner()) {
                         Ok(label) => label,
@@ -1530,8 +1531,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_capability_values_constraint_narrows_interface_type_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_capability_values_constraint_narrows_interface_type_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         owns: Owns,
         capability_values: AnnotationValues,
@@ -1542,7 +1543,7 @@ impl OperationTimeValidation {
             .get_constraints_values(snapshot, type_manager)
             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for values_constraint in attribute_type_values_constraints {
-            values_constraint.validate_narrowed_by_strictly_same_type(&capability_constraint_description)
+            values_constraint.validate_narrowed_by_strictly_same_type::<KV>(&capability_constraint_description)
                 .map_err(|typedb_source| {
                     let owner_label = match get_label_or_schema_err(snapshot, type_manager, owns.owner()) {
                         Ok(label) => label,
@@ -1602,8 +1603,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_type_supertype_abstractness_to_set_abstract_annotation<T: KindAPI>(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_type_supertype_abstractness_to_set_abstract_annotation<KV: KVStore, T: KindAPI>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: T,
     ) -> Result<(), Box<SchemaValidationError>> {
@@ -1617,8 +1618,8 @@ impl OperationTimeValidation {
         )
     }
 
-    pub(crate) fn validate_no_abstract_subtypes_to_unset_abstract_annotation<T: KindAPI>(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_no_abstract_subtypes_to_unset_abstract_annotation<KV: KVStore, T: KindAPI>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: T,
     ) -> Result<(), Box<SchemaValidationError>> {
@@ -1639,8 +1640,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_relates_is_not_specialising_to_unset_abstract_annotation(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relates_is_not_specialising_to_unset_abstract_annotation<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
@@ -1656,8 +1657,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relates_specialises_compatible_with_new_supertype_transitive(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relates_specialises_compatible_with_new_supertype_transitive<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_subtype: RelationType,
         relation_supertype: Option<RelationType>,
@@ -1740,8 +1741,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_set_owns_does_not_conflict_with_same_existing_owns_ordering(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_set_owns_does_not_conflict_with_same_existing_owns_ordering<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         existing_owns: Owns,
         new_owns_ordering: Ordering,
@@ -1760,8 +1761,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_updated_owns_does_not_conflict_with_any_sibling_owns_ordering(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_updated_owns_does_not_conflict_with_any_sibling_owns_ordering<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         owns: Owns,
         owns_ordering: Ordering,
@@ -1780,8 +1781,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_new_attribute_type_supertype_owns_ordering(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_new_attribute_type_supertype_owns_ordering<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         new_supertype: AttributeType,
@@ -1826,8 +1827,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relates_distinct_constraint_ordering(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relates_distinct_constraint_ordering<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relates: Relates,
         ordering: Option<Ordering>,
@@ -1855,8 +1856,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_owns_distinct_constraint_ordering(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owns_distinct_constraint_ordering<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         owns: Owns,
         ordering: Option<Ordering>,
@@ -1883,8 +1884,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_role_supertype_ordering_match(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_role_supertype_ordering_match<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         subtype_role: RoleType,
         supertype_role: RoleType,
@@ -1901,8 +1902,8 @@ impl OperationTimeValidation {
         )
     }
 
-    pub(crate) fn validate_type_supertype_abstractness_to_change_supertype<T: KindAPI>(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_type_supertype_abstractness_to_change_supertype<KV: KVStore, T: KindAPI>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         subtype: T,
         supertype: T,
@@ -1917,8 +1918,8 @@ impl OperationTimeValidation {
         )
     }
 
-    pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constraints<T: KindAPI>(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constraints<KV: KVStore, T: KindAPI>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         subtype: T,
         supertype: T,
@@ -1931,8 +1932,8 @@ impl OperationTimeValidation {
         )
     }
 
-    pub(crate) fn validate_sub_does_not_create_cycle<T: KindAPI>(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_sub_does_not_create_cycle<KV: KVStore, T: KindAPI>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: T,
         supertype: T,
@@ -1950,8 +1951,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relates_is_inherited_for_specialisation(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relates_is_inherited_for_specialisation<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_type: RelationType,
         relates: Relates,
@@ -1973,8 +1974,8 @@ impl OperationTimeValidation {
         }))
     }
 
-    pub(crate) fn validate_specialised_relates_is_not_specialising(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_specialised_relates_is_not_specialising<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_type: RelationType,
         specialised_relates: Relates,
@@ -1992,8 +1993,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relates_is_not_specialising_to_manage_annotations(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relates_is_not_specialising_to_manage_annotations<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
@@ -2009,8 +2010,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_non_abstract_relation_type_has_role_types_after_supertype_unset(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_non_abstract_relation_type_has_role_types_after_supertype_unset<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_type: RelationType,
     ) -> Result<(), Box<SchemaValidationError>> {
@@ -2033,8 +2034,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relation_type_has_role_types_to_unset_abstract(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relation_type_has_role_types_to_unset_abstract<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_type: RelationType,
     ) -> Result<(), Box<SchemaValidationError>> {
@@ -2050,8 +2051,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_value_type_compatible_with_inherited_value_type(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_value_type_compatible_with_inherited_value_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         value_type: ValueType,
@@ -2076,8 +2077,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_subtypes_value_types_compatible_with_new_value_type(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_subtypes_value_types_compatible_with_new_value_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         value_type: ValueType,
@@ -2103,8 +2104,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_when_attribute_type_loses_value_type_transitive(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_when_attribute_type_loses_value_type_transitive<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -2140,8 +2141,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_when_attribute_type_loses_value_type(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_when_attribute_type_loses_value_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -2182,8 +2183,8 @@ impl OperationTimeValidation {
     }
 
     // TODO: Cascade constraint does not exist. Revisit it after cascade returns.
-    // pub(crate) fn validate_relation_type_does_not_acquire_cascade_constraint_to_lose_instances_with_new_supertype(
-    //     snapshot: &impl ReadableSnapshot,
+    // pub(crate) fn validate_relation_type_does_not_acquire_cascade_constraint_to_lose_instances_with_new_supertype<KV: KVStore>(
+    //     snapshot: &impl ReadableSnapshot<KV>,
     //     type_manager: &TypeManager,
     //     thing_manager: &ThingManager,
     //     relation_type: RelationType,
@@ -2243,8 +2244,8 @@ impl OperationTimeValidation {
     //     }
     // }
 
-    pub(crate) fn validate_attribute_type_does_not_lose_instances_with_independent_constraint_with_new_supertype(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_attribute_type_does_not_lose_instances_with_independent_constraint_with_new_supertype<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -2329,8 +2330,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_unset_owns_is_not_inherited(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_unset_owns_is_not_inherited<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         owner: ObjectType,
         attribute_type: AttributeType,
@@ -2356,8 +2357,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_unset_plays_is_not_inherited(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_unset_plays_is_not_inherited<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         player: ObjectType,
         role_type: RoleType,
@@ -2383,8 +2384,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_declared_type_annotation_is_compatible_with_declared_annotations(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_declared_type_annotation_is_compatible_with_declared_annotations<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: impl KindAPI,
         annotation_category: AnnotationCategory,
@@ -2407,8 +2408,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_declared_capability_annotation_is_compatible_with_declared_annotations<CAP: Capability>(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_declared_capability_annotation_is_compatible_with_declared_annotations<KV: KVStore, CAP: Capability>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         capability: CAP,
         annotation_category: AnnotationCategory,
@@ -2432,8 +2433,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_owns_value_type_compatible_with_unique_annotation(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owns_value_type_compatible_with_unique_annotation<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         owns: Owns,
         value_type: Option<ValueType>,
@@ -2451,8 +2452,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_owns_value_type_compatible_with_key_annotation(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owns_value_type_compatible_with_key_annotation<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         owns: Owns,
         value_type: Option<ValueType>,
@@ -2470,8 +2471,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_attribute_type_value_type_compatible_with_annotations_transitive(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_attribute_type_value_type_compatible_with_annotations_transitive<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         value_type: Option<ValueType>,
@@ -2487,8 +2488,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_attribute_type_value_type_compatible_with_annotations(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_attribute_type_value_type_compatible_with_annotations<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         value_type: Option<ValueType>,
@@ -2532,8 +2533,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_value_type_compatible_with_all_owns_annotations_transitive(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_value_type_compatible_with_all_owns_annotations_transitive<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         value_type: Option<ValueType>,
@@ -2549,8 +2550,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_value_type_compatible_with_all_owns_annotations(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_value_type_compatible_with_all_owns_annotations<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         value_type: Option<ValueType>,
@@ -2570,8 +2571,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_owns_value_type_compatible_with_annotations(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owns_value_type_compatible_with_annotations<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         owns: Owns,
         value_type: Option<ValueType>,
@@ -2626,8 +2627,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_no_instances_to_delete(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_no_instances_to_delete<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         type_: impl KindAPI,
@@ -2645,8 +2646,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_no_instances_to_change_value_type(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_no_instances_to_change_value_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -2668,8 +2669,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_no_instances_to_lose_value_type(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_no_instances_to_lose_value_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -2691,8 +2692,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_no_role_instances_to_set_ordering(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_no_role_instances_to_set_ordering<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
@@ -2711,8 +2712,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_no_owns_instances_to_set_ordering(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_no_owns_instances_to_set_ordering<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         owns: Owns,
@@ -2732,8 +2733,8 @@ impl OperationTimeValidation {
         }
     }
 
-    fn has_instances_of_type<T: KindAPI>(
-        snapshot: &impl ReadableSnapshot,
+    fn has_instances_of_type<KV: KVStore, T: KindAPI>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         type_: T,
@@ -2772,8 +2773,8 @@ impl OperationTimeValidation {
         }
     }
 
-    fn has_instances_of_owns(
-        snapshot: &impl ReadableSnapshot,
+    fn has_instances_of_owns<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner_type: ObjectType,
         attribute_type: AttributeType,
@@ -2800,8 +2801,8 @@ impl OperationTimeValidation {
         Ok(has_instances)
     }
 
-    fn has_instances_of_plays(
-        snapshot: &impl ReadableSnapshot,
+    fn has_instances_of_plays<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         player_type: ObjectType,
         role_type: RoleType,
@@ -2823,8 +2824,8 @@ impl OperationTimeValidation {
         Ok(has_instances)
     }
 
-    fn has_instances_of_relates(
-        snapshot: &impl ReadableSnapshot,
+    fn has_instances_of_relates<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation_type: RelationType,
         role_type: RoleType,
@@ -2846,8 +2847,8 @@ impl OperationTimeValidation {
         Ok(has_instances)
     }
 
-    fn validate_entity_type_instances_against_constraints(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_entity_type_instances_against_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         entity_types: &HashSet<EntityType>,
@@ -2892,8 +2893,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_relation_type_instances_against_constraints(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_relation_type_instances_against_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         relation_types: &HashSet<RelationType>,
@@ -2939,8 +2940,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_attribute_type_instances_against_constraints(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_attribute_type_instances_against_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_types: &HashSet<AttributeType>,
@@ -3026,8 +3027,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_role_type_instances_against_constraints(
-        _snapshot: &impl ReadableSnapshot,
+    fn validate_role_type_instances_against_constraints<KV: KVStore>(
+        _snapshot: &impl ReadableSnapshot<KV>,
         _type_manager: &TypeManager,
         _thing_manager: &ThingManager,
         _role_types: &HashSet<RoleType>,
@@ -3064,8 +3065,8 @@ impl OperationTimeValidation {
         // Ok(())
     }
 
-    fn is_suitable_capability_constraint<CAP: Capability>(
-        snapshot: &impl ReadableSnapshot,
+    fn is_suitable_capability_constraint<KV: KVStore, CAP: Capability>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<CAP>,
         capability: CAP,
@@ -3103,8 +3104,8 @@ impl OperationTimeValidation {
         interface_type.is_subtype_transitive_of_or_same(snapshot, type_manager, source_interface_type)
     }
 
-    fn validate_owns_instances_against_constraints(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_owns_instances_against_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         object_types: &HashSet<ObjectType>,
@@ -3395,8 +3396,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_plays_instances_against_constraints(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_plays_instances_against_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         object_types: &HashSet<ObjectType>,
@@ -3505,8 +3506,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn validate_relates_instances_against_constraints(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_relates_instances_against_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         relation_types: &HashSet<RelationType>,
@@ -3650,18 +3651,18 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    fn get_lost_capabilities_if_supertype_is_changed<CAP: Capability>(
-        snapshot: &impl ReadableSnapshot,
+    fn get_lost_capabilities_if_supertype_is_changed<KV: KVStore, CAP: Capability>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_: CAP::ObjectType,
         new_supertype: Option<CAP::ObjectType>,
     ) -> Result<HashSet<CAP>, Box<SchemaValidationError>> {
         let new_inherited_capabilities = match new_supertype {
             None => HashSet::new(),
-            Some(new_supertype) => TypeReader::get_capabilities::<CAP>(snapshot, new_supertype, false)
+            Some(new_supertype) => TypeReader::get_capabilities::<KV, CAP>(snapshot, new_supertype, false)
                 .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?,
         };
 
-        let current_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, type_, false)
+        let current_capabilities = TypeReader::get_capabilities::<KV, CAP>(snapshot, type_, false)
             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         let current_inherited_capabilities =
             current_capabilities.iter().filter(|capability| capability.object() != type_);
@@ -3727,21 +3728,21 @@ impl OperationTimeValidation {
         validate_lost_owns_do_not_cause_lost_instances_while_changing_supertype,
         CapabilityKind::Owns,
         ObjectType,
-        Self::get_lost_capabilities_if_supertype_is_changed::<Owns>,
+        Self::get_lost_capabilities_if_supertype_is_changed::<KV, Owns>,
         Self::type_or_subtype_without_declared_capability_that_has_instances_of_owns
     );
     cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation!(
         validate_lost_plays_do_not_cause_lost_instances_while_changing_supertype,
         CapabilityKind::Plays,
         ObjectType,
-        Self::get_lost_capabilities_if_supertype_is_changed::<Plays>,
+        Self::get_lost_capabilities_if_supertype_is_changed::<KV, Plays>,
         Self::type_or_subtype_without_declared_capability_that_has_instances_of_plays
     );
     cannot_change_supertype_as_capability_with_existing_instances_is_lost_validation!(
         validate_lost_relates_do_not_cause_lost_instances_while_changing_supertype,
         CapabilityKind::Relates,
         RelationType,
-        Self::get_lost_capabilities_if_supertype_is_changed::<Relates>,
+        Self::get_lost_capabilities_if_supertype_is_changed::<KV, Relates>,
         Self::type_or_subtype_without_declared_capability_that_has_instances_of_relates
     );
 

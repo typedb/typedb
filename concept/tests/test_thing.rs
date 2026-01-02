@@ -41,7 +41,7 @@ use itertools::Itertools;
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, WritableSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot<KV>, SchemaSnapshot, WritableSnapshot, WriteSnapshot},
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;

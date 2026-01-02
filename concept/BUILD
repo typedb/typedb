@@ -43,6 +43,7 @@ rust_library(
         "//common/primitive",
         "//durability",
         "//encoding",
+        "//kv",
         "//resource",
         "//storage",
 

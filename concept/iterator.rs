@@ -10,6 +10,7 @@
 use std::{cmp::Ordering, marker::PhantomData};
 
 use encoding::{graph::thing::ThingVertex, Keyable};
+use kv::KVStore;
 use lending_iterator::{LendingIterator, Seekable};
 
 use crate::{
@@ -17,13 +18,13 @@ use crate::{
     thing::ThingAPI,
 };
 
-pub struct InstanceIterator<T> {
-    snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator>,
+pub struct InstanceIterator<KV: KVStore, T> {
+    snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator<KV>>,
     _ph: PhantomData<T>,
 }
 
-impl<T> InstanceIterator<T> {
-    pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator) -> Self {
+impl<KV: KVStore, T> InstanceIterator<KV, T> {
+    pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator<KV>) -> Self {
         Self { snapshot_iterator: Some(snapshot_iterator), _ph: PhantomData }
     }
 
@@ -32,7 +33,7 @@ impl<T> InstanceIterator<T> {
     }
 }
 
-impl<T: ThingAPI> InstanceIterator<T> {
+impl<KV: KVStore, T: ThingAPI> InstanceIterator<KV, T> {
     pub fn seek(&mut self, target: &T) -> Result<(), Box<ConceptReadError>> {
         match self.snapshot_iterator.as_mut() {
             None => Ok(()),
@@ -45,7 +46,7 @@ impl<T: ThingAPI> InstanceIterator<T> {
     }
 }
 
-impl<T> Iterator for InstanceIterator<T>
+impl<KV: KVStore, T> Iterator for InstanceIterator<KV, T>
 where
     T: ThingAPI + 'static,
 {
@@ -65,7 +66,7 @@ where
     }
 }
 
-impl<T> LendingIterator for InstanceIterator<T>
+impl<KV: KVStore, T> LendingIterator for InstanceIterator<KV, T>
 where
     T: ThingAPI + 'static,
 {
@@ -76,7 +77,7 @@ where
     }
 }
 
-impl<T> Seekable<T> for InstanceIterator<T>
+impl<KV: KVStore, T> Seekable<T> for InstanceIterator<KV, T>
 where
     T: ThingAPI + 'static,
 {
@@ -100,13 +101,13 @@ where
 #[macro_export]
 macro_rules! concept_iterator {
     ($name:ident, $concept_type:ident, $map_fn: expr) => {
-        pub struct $name {
-            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator>,
+        pub struct $name<KV: ::kv::KVStore> {
+            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator<KV>>,
         }
 
         #[allow(unused)]
-        impl $name {
-            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator) -> Self {
+        impl<KV: ::kv::KVStore> $name<KV> {
+            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator<KV>) -> Self {
                 $name { snapshot_iterator: Some(snapshot_iterator) }
             }
 
@@ -120,7 +121,7 @@ macro_rules! concept_iterator {
             }
         }
 
-        impl ::lending_iterator::LendingIterator for $name {
+        impl<KV: ::kv::KVStore> ::lending_iterator::LendingIterator for $name<KV> {
             type Item<'a> = Result<$concept_type, Box<$crate::error::ConceptReadError>>;
             fn next(&mut self) -> Option<Self::Item<'_>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
@@ -137,13 +138,13 @@ macro_rules! concept_iterator {
 #[macro_export]
 macro_rules! edge_iterator {
     ($name:ident; $mapped_type:ty; $map_fn: expr, $unmap_fn: expr) => {
-        pub struct $name {
-            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator>,
+        pub struct $name<KV: ::kv::KVStore> {
+            snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator<KV>>,
         }
 
         #[allow(unused)]
-        impl $name {
-            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator) -> Self {
+        impl<KV: ::kv::KVStore> $name<KV> {
+            pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator<KV>) -> Self {
                 $name { snapshot_iterator: Some(snapshot_iterator) }
             }
 
@@ -173,7 +174,7 @@ macro_rules! edge_iterator {
             }
         }
 
-        impl Iterator for $name {
+        impl<KV: ::kv::KVStore> Iterator for $name<KV> {
             type Item = Result<$mapped_type, Box<$crate::error::ConceptReadError>>;
             fn next(&mut self) -> Option<Self::Item> {
                 use ::lending_iterator::LendingIterator;
@@ -186,14 +187,14 @@ macro_rules! edge_iterator {
             }
         }
 
-        impl ::lending_iterator::LendingIterator for $name {
+        impl<KV: ::kv::KVStore> ::lending_iterator::LendingIterator for $name<KV> {
             type Item<'a> = Result<$mapped_type, Box<$crate::error::ConceptReadError>>;
             fn next(&mut self) -> Option<Self::Item<'_>> {
                 Iterator::next(self)
             }
         }
 
-        impl ::lending_iterator::Seekable<Result<$mapped_type, Box<$crate::error::ConceptReadError>>> for $name {
+        impl<KV: ::kv::KVStore> ::lending_iterator::Seekable<Result<$mapped_type, Box<$crate::error::ConceptReadError>>> for $name<KV> {
             fn seek(&mut self, key: &Result<$mapped_type, Box<$crate::error::ConceptReadError>>) {
                 if let Ok(key) = key {
                     self.seek(key)

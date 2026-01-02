@@ -24,6 +24,7 @@ use encoding::{
     Prefixed,
 };
 use itertools::Itertools;
+use kv::KVStore;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::profile::StorageCounters;
@@ -111,66 +112,66 @@ impl TypeAPI for AttributeType {
         Self::from_vertex(vertex).unwrap()
     }
 
-    fn is_abstract(
+    fn is_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self.get_constraint_abstract(snapshot, type_manager)?.is_some())
     }
 
-    fn delete(
+    fn delete<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.delete_attribute_type(snapshot, thing_manager, self)
     }
 
-    fn get_label<'m>(
+    fn get_label<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_label(snapshot, *self)
     }
 
-    fn get_label_arc(
+    fn get_label_arc<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Arc<Label>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_label_arc(snapshot, *self)
     }
 
-    fn get_supertype(
+    fn get_supertype<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<AttributeType>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_supertype(snapshot, *self)
     }
 
-    fn get_supertypes_transitive<'m>(
+    fn get_supertypes_transitive<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<AttributeType>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_supertypes(snapshot, *self)
     }
 
-    fn get_subtypes<'m>(
+    fn get_subtypes<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<AttributeType>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_subtypes(snapshot, *self)
     }
 
-    fn get_subtypes_transitive<'m>(
+    fn get_subtypes_transitive<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<AttributeType>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_subtypes_transitive(snapshot, *self)
@@ -189,25 +190,25 @@ impl KindAPI for AttributeType {
     type AnnotationType = AttributeTypeAnnotation;
     const KIND: Kind = Kind::Attribute;
 
-    fn get_annotations_declared<'m>(
+    fn get_annotations_declared<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_annotations_declared(snapshot, *self)
     }
 
-    fn get_constraints<'m>(
+    fn get_constraints<'m, KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<AttributeType>>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_constraints(snapshot, self)
     }
-    fn capabilities_syntax(
+    fn capabilities_syntax<KV: KVStore>(
         &self,
         f: &mut impl std::fmt::Write,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<(), Box<ConceptReadError>> {
         if let Some(value_type) = self.get_value_type_declared(snapshot, type_manager)? {
@@ -225,10 +226,10 @@ impl KindAPI for AttributeType {
         Ok(())
     }
 
-    fn type_annotations_syntax(
+    fn type_annotations_syntax<KV: KVStore>(
         &self,
         f: &mut impl std::fmt::Write,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<(), Box<ConceptReadError>> {
         for annotation in self
@@ -249,34 +250,34 @@ impl ThingTypeAPI for AttributeType {
 }
 
 impl AttributeType {
-    pub fn get_value_type_declared(
+    pub fn get_value_type_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<ValueType>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_value_type_declared(snapshot, *self)
     }
 
-    pub fn get_value_type(
+    pub fn get_value_type<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<(ValueType, AttributeType)>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_value_type(snapshot, *self)
     }
 
-    pub fn get_value_type_without_source(
+    pub fn get_value_type_without_source<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<ValueType>, Box<ConceptReadError>> {
         self.get_value_type(snapshot, type_manager)
             .map(|value_type_opt| value_type_opt.map(|(value_type, _)| value_type))
     }
 
-    pub fn set_value_type(
+    pub fn set_value_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         value_type: ValueType,
@@ -284,18 +285,18 @@ impl AttributeType {
         type_manager.set_value_type(snapshot, thing_manager, *self, value_type)
     }
 
-    pub fn unset_value_type(
+    pub fn unset_value_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.unset_value_type(snapshot, thing_manager, *self)
     }
 
-    pub fn get_value_type_annotations_declared(
+    pub fn get_value_type_annotations_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<AttributeTypeAnnotation>, Box<ConceptReadError>> {
         Ok(self
@@ -306,18 +307,18 @@ impl AttributeType {
             .collect())
     }
 
-    pub fn set_label(
+    pub fn set_label<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_label(snapshot, *self, label)
     }
 
-    pub fn set_supertype(
+    pub fn set_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         supertype: AttributeType,
@@ -325,66 +326,66 @@ impl AttributeType {
         type_manager.set_attribute_type_supertype(snapshot, thing_manager, *self, supertype)
     }
 
-    pub fn unset_supertype(
+    pub fn unset_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.unset_attribute_type_supertype(snapshot, thing_manager, *self)
     }
 
-    pub fn get_constraint_abstract(
+    pub fn get_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
         type_manager.get_type_abstract_constraint(snapshot, *self)
     }
 
-    pub fn get_constraints_independent(
+    pub fn get_constraints_independent<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_independent_constraints(snapshot, *self)
     }
 
-    pub fn is_independent(
+    pub fn is_independent<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
         Ok(!self.get_constraints_independent(snapshot, type_manager)?.is_empty())
     }
 
-    pub fn get_constraints_regex(
+    pub fn get_constraints_regex<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_regex_constraints(snapshot, *self)
     }
 
-    pub fn get_constraints_range(
+    pub fn get_constraints_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_range_constraints(snapshot, *self)
     }
 
-    pub fn get_constraints_values(
+    pub fn get_constraints_values<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_values_constraints(snapshot, *self)
     }
 
-    pub fn set_annotation(
+    pub fn set_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: AttributeTypeAnnotation,
@@ -410,9 +411,9 @@ impl AttributeType {
         Ok(())
     }
 
-    pub fn unset_annotation(
+    pub fn unset_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -439,25 +440,25 @@ impl fmt::Display for AttributeType {
 
 // --- Owned API ---
 impl AttributeType {
-    pub fn get_owns<'m>(
+    pub fn get_owns<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_owns(snapshot, *self)
     }
 
-    pub fn get_owner_types<'m>(
+    pub fn get_owner_types<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<ObjectType, Owns>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_owner_types(snapshot, *self)
     }
 
-    pub fn get_constraints_for_owner<'m>(
+    pub fn get_constraints_for_owner<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
         owner_type: ObjectType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>> {

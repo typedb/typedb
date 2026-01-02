@@ -14,6 +14,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
+use kv::KVStore;
 use storage::{sequence_number::SequenceNumber, MVCCStorage};
 
 use crate::type_::{
@@ -83,8 +84,8 @@ selection::impl_has_object_cache!(RelationTypeCache, RelationType);
 impl TypeCache {
     // If creation becomes slow, We should restore pre-fetching of the schema
     //  with a single pass on disk (as it was in 1f339733feaf4542e47ff604462f107d2ade1f1a)
-    pub fn new<D>(
-        storage: Arc<MVCCStorage<D>>,
+    pub fn new<KV: KVStore, D>(
+        storage: Arc<MVCCStorage<D, KV>>,
         open_sequence_number: SequenceNumber,
     ) -> Result<Self, TypeCacheCreateError> {
         // note: since we will parse out many heterogenous properties/edges from the schema, we will scan once into a vector,

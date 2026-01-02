@@ -256,7 +256,7 @@ pub trait Constraint<T>: Sized + Clone + Hash + Eq {
         self.description().requires_operation_time_validation()
     }
 
-    fn validate_narrowed_by_strictly_same_type(
+    fn validate_narrowed_by_strictly_same_type<KV: KVStore>(
         &self,
         other: &ConstraintDescription,
     ) -> Result<(), Box<ConstraintError>> {
@@ -433,6 +433,7 @@ macro_rules! filter_out_operation_time_unchecked_constraints {
     };
 }
 pub(crate) use filter_out_operation_time_unchecked_constraints;
+use kv::KVStore;
 
 pub(crate) fn get_cardinality_constraints<C: Constraint<T>, T: Hash + Eq>(
     constraints: impl IntoIterator<Item = C>,
@@ -580,8 +581,8 @@ pub(crate) fn get_relates_default_constraints<CAP: Capability>(
     constraints
 }
 
-pub(crate) fn type_get_constraints_closest_source<'a, T: KindAPI>(
-    snapshot: &impl ReadableSnapshot,
+pub(crate) fn type_get_constraints_closest_source<'a, KV: KVStore, T: KindAPI,>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     constraints: impl IntoIterator<Item = &'a TypeConstraint<T>>,
 ) -> Option<T> {

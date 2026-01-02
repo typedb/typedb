@@ -22,6 +22,7 @@ use encoding::{
     AsBytes, Keyable, Prefixed,
 };
 use itertools::Itertools;
+use kv::KVStore;
 use lending_iterator::higher_order::Hkt;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
@@ -58,9 +59,9 @@ impl Relation {
         RelationType::build_from_type_id(self.vertex.type_id_())
     }
 
-    pub fn has_players(
+    pub fn has_players<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
@@ -72,9 +73,9 @@ impl Relation {
         }
     }
 
-    pub fn has_role_player(
+    pub fn has_role_player<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         player: impl ObjectAPI,
         role: RoleType,
@@ -83,9 +84,9 @@ impl Relation {
         thing_manager.has_role_player(snapshot, self, player, role, storage_counters)
     }
 
-    pub fn get_players(
+    pub fn get_players<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> {
@@ -94,9 +95,9 @@ impl Relation {
 
     // TODO: It is basically the same as `get_players_role_type`, but with counts. Do we need to return counts?
     // `has`-related Object's methods return counts. Please refactor when working on lists.
-    pub fn get_players_by_role(
+    pub fn get_players_by_role<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         role_type: RoleType,
         storage_counters: StorageCounters,
@@ -104,9 +105,9 @@ impl Relation {
         thing_manager.get_role_players_role(snapshot, self, role_type, storage_counters)
     }
 
-    pub fn get_players_ordered(
+    pub fn get_players_ordered<KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         role_type: RoleType,
         storage_counters: StorageCounters,
@@ -114,9 +115,9 @@ impl Relation {
         thing_manager.get_role_players_ordered(snapshot, self, role_type, storage_counters)
     }
 
-    pub fn get_players_role_type(
+    pub fn get_players_role_type<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         role_type: RoleType,
         storage_counters: StorageCounters,
@@ -129,9 +130,9 @@ impl Relation {
         })
     }
 
-    pub fn get_player_counts(
+    pub fn get_player_counts<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<HashMap<RoleType, u64>, Box<ConceptReadError>> {
@@ -150,9 +151,9 @@ impl Relation {
     ///
     /// TODO: to optimise the common case of creating a full relation, we could introduce a RelationBuilder, which can accumulate role players,
     ///   Then write all players + indexes in one go
-    pub fn add_player(
+    pub fn add_player<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         role_type: RoleType,
         player: Object,
@@ -205,9 +206,9 @@ impl Relation {
         }
     }
 
-    pub fn set_players_ordered(
+    pub fn set_players_ordered<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         role_type: RoleType,
         new_players: Vec<Object>,
@@ -297,9 +298,9 @@ impl Relation {
         Ok(())
     }
 
-    pub fn remove_player_single(
+    pub fn remove_player_single<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         role_type: RoleType,
         player: Object,
@@ -308,9 +309,9 @@ impl Relation {
         self.remove_player_many(snapshot, thing_manager, role_type, player, 1, storage_counters)
     }
 
-    pub fn remove_player_many(
+    pub fn remove_player_many<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         role_type: RoleType,
         player: Object,
@@ -385,9 +386,9 @@ impl ThingAPI for Relation {
         self.vertex.to_bytes()
     }
 
-    fn set_required(
+    fn set_required<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -397,18 +398,18 @@ impl ThingAPI for Relation {
         Ok(())
     }
 
-    fn get_status(
+    fn get_status<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
         thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
     }
 
-    fn delete(
+    fn delete<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {

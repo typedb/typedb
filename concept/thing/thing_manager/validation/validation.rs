@@ -6,6 +6,7 @@
 
 use bytes::util::HexBytesFormatter;
 use encoding::value::{label::Label, value::Value};
+use kv::KVStore;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -27,8 +28,8 @@ use crate::{
     },
 };
 
-pub(crate) fn get_label_or_data_err(
-    snapshot: &impl ReadableSnapshot,
+pub(crate) fn get_label_or_data_err<KV: KVStore>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     type_: impl TypeAPI,
 ) -> Result<Label, Box<DataValidationError>> {
@@ -43,9 +44,9 @@ macro_rules! create_data_validation_type_abstractness_error_methods {
         fn $method_name:ident($type_decl:ident) -> $error:ident = $type_:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(
+            pub(crate) fn $method_name<KV: KVStore>(
                 constraint: &TypeConstraint<$type_decl>,
-                snapshot: &impl ReadableSnapshot,
+                snapshot: &impl ReadableSnapshot<KV>,
                 type_manager: &TypeManager,
             ) -> Box<DataValidationError> {
                 debug_assert!(constraint.description().unwrap_abstract().is_ok());
@@ -65,10 +66,10 @@ macro_rules! create_data_validation_capability_abstractness_error_methods {
         fn $method_name:ident($capability_type:ident, $object_decl:ident) -> $error:ident = $object:ident + $object_type:ident + $interface_type:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(
+            pub(crate) fn $method_name<KV: KVStore>(
                 constraint: &CapabilityConstraint<$capability_type>,
                 $object: $object_decl,
-                snapshot: &impl ReadableSnapshot,
+                snapshot: &impl ReadableSnapshot<KV>,
                 type_manager: &TypeManager,
             ) -> Box<DataValidationError> {
                 debug_assert!(constraint.description().unwrap_abstract().is_ok());
@@ -90,8 +91,8 @@ macro_rules! create_data_validation_capability_abstractness_error_methods {
 pub(crate) struct DataValidation {}
 
 impl DataValidation {
-    pub(crate) fn validate_owns_instances_cardinality_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owns_instances_cardinality_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
         owner: Object,
@@ -125,8 +126,8 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_plays_instances_cardinality_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_plays_instances_cardinality_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Plays>,
         player: Object,
@@ -144,8 +145,8 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_relates_instances_cardinality_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relates_instances_cardinality_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Relates>,
         relation: Relation,
@@ -163,8 +164,8 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_attribute_regex_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_attribute_regex_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &TypeConstraint<AttributeType>,
         attribute_type: AttributeType,
@@ -179,8 +180,8 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_attribute_range_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_attribute_range_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &TypeConstraint<AttributeType>,
         attribute_type: AttributeType,
@@ -195,8 +196,8 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_attribute_values_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_attribute_values_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &TypeConstraint<AttributeType>,
         attribute_type: AttributeType,
@@ -211,8 +212,8 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_owns_regex_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owns_regex_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
         owner: Object,
@@ -230,8 +231,8 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_owns_range_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owns_range_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
         owner: Object,
@@ -249,8 +250,8 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_owns_values_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owns_values_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
         owner: Object,
@@ -268,8 +269,8 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_owns_distinct_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owns_distinct_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
         owner: Object,
@@ -288,8 +289,8 @@ impl DataValidation {
         })
     }
 
-    pub(crate) fn validate_relates_distinct_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relates_distinct_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Relates>,
         relation: Relation,
@@ -321,8 +322,8 @@ impl DataValidation {
         fn create_data_validation_relates_abstractness_error(Relates, Relation) -> RelatesConstraintViolated = relation_iid + relation_type + role_type;
     }
 
-    pub(crate) fn create_data_validation_uniqueness_error(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn create_data_validation_uniqueness_error<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         constraint: &CapabilityConstraint<Owns>,
         owner: Object,
