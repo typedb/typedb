@@ -23,7 +23,7 @@ pub struct InstanceIterator<KV: KVStore, T> {
     _ph: PhantomData<T>,
 }
 
-impl<T, KV: KVStore> InstanceIterator<KV, T> {
+impl<KV: KVStore, T> InstanceIterator<KV, T> {
     pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator<KV>) -> Self {
         Self { snapshot_iterator: Some(snapshot_iterator), _ph: PhantomData }
     }
@@ -33,7 +33,7 @@ impl<T, KV: KVStore> InstanceIterator<KV, T> {
     }
 }
 
-impl<T: ThingAPI, KV: KVStore> InstanceIterator<KV, T> {
+impl<KV: KVStore, T: ThingAPI> InstanceIterator<KV, T> {
     pub fn seek(&mut self, target: &T) -> Result<(), Box<ConceptReadError>> {
         match self.snapshot_iterator.as_mut() {
             None => Ok(()),
@@ -46,7 +46,7 @@ impl<T: ThingAPI, KV: KVStore> InstanceIterator<KV, T> {
     }
 }
 
-impl<T, KV: KVStore> Iterator for InstanceIterator<KV, T>
+impl<KV: KVStore, T> Iterator for InstanceIterator<KV, T>
 where
     T: ThingAPI + 'static,
 {
@@ -66,7 +66,7 @@ where
     }
 }
 
-impl<T, KV: KVStore> LendingIterator for InstanceIterator<KV, T>
+impl<KV: KVStore, T> LendingIterator for InstanceIterator<KV, T>
 where
     T: ThingAPI + 'static,
 {
@@ -77,7 +77,7 @@ where
     }
 }
 
-impl<T, KV: KVStore> Seekable<T> for InstanceIterator<KV, T>
+impl<KV: KVStore, T> Seekable<T> for InstanceIterator<KV, T>
 where
     T: ThingAPI + 'static,
 {
