@@ -7,6 +7,7 @@
 use std::collections::HashMap;
 
 use encoding::value::label::Label;
+use kv::KVStore;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -23,8 +24,8 @@ use crate::{
     },
 };
 
-pub(crate) fn get_label_or_concept_read_err(
-    snapshot: &impl ReadableSnapshot,
+pub(crate) fn get_label_or_concept_read_err<KV: KVStore>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     type_: impl TypeAPI,
 ) -> Result<Label, Box<ConceptReadError>> {
@@ -34,8 +35,8 @@ pub(crate) fn get_label_or_concept_read_err(
         .map_err(|_| Box::new(ConceptReadError::InternalMissingTypeLabel {}))
 }
 
-pub(crate) fn get_label_or_schema_err(
-    snapshot: &impl ReadableSnapshot,
+pub(crate) fn get_label_or_schema_err<KV: KVStore>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     type_: impl TypeAPI,
 ) -> Result<Label, Box<SchemaValidationError>> {
@@ -43,8 +44,8 @@ pub(crate) fn get_label_or_schema_err(
         .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))
 }
 
-pub(crate) fn get_opt_label_or_schema_err(
-    snapshot: &impl ReadableSnapshot,
+pub(crate) fn get_opt_label_or_schema_err<KV: KVStore>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     type_: Option<impl TypeAPI>,
 ) -> Result<Option<Label>, Box<SchemaValidationError>> {
@@ -54,8 +55,8 @@ pub(crate) fn get_opt_label_or_schema_err(
     })
 }
 
-pub(crate) fn validate_role_name_uniqueness_non_transitive(
-    snapshot: &impl ReadableSnapshot,
+pub(crate) fn validate_role_name_uniqueness_non_transitive<KV: KVStore>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     relation_type: RelationType,
     new_label: &Label,
@@ -70,7 +71,7 @@ pub(crate) fn validate_role_name_uniqueness_non_transitive(
         new_label.source_span(),
     );
 
-    if TypeReader::get_labelled_type::<RoleType>(snapshot, &scoped_label)
+    if TypeReader::get_labelled_type::<KV, RoleType>(snapshot, &scoped_label)
         .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
         .is_some()
     {
@@ -83,8 +84,8 @@ pub(crate) fn validate_role_name_uniqueness_non_transitive(
     }
 }
 
-pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constraints<T: KindAPI>(
-    snapshot: &impl ReadableSnapshot,
+pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constraints<KV: KVStore, T: KindAPI>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     subtype: T,
     supertype: T,
@@ -121,8 +122,8 @@ pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constrai
     Ok(())
 }
 
-pub(crate) fn validate_role_type_supertype_ordering_match(
-    snapshot: &impl ReadableSnapshot,
+pub(crate) fn validate_role_type_supertype_ordering_match<KV: KVStore>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     subtype: RoleType,
     supertype: RoleType,
@@ -150,8 +151,8 @@ pub(crate) fn validate_role_type_supertype_ordering_match(
     }
 }
 
-pub(crate) fn validate_sibling_owns_ordering_match_for_type(
-    snapshot: &impl ReadableSnapshot,
+pub(crate) fn validate_sibling_owns_ordering_match_for_type<KV: KVStore>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     owner_type: ObjectType,
     new_set_owns_orderings: &HashMap<Owns, Ordering>,
@@ -203,8 +204,8 @@ pub(crate) fn validate_sibling_owns_ordering_match_for_type(
     Ok(())
 }
 
-pub(crate) fn validate_type_supertype_abstractness<T: KindAPI>(
-    snapshot: &impl ReadableSnapshot,
+pub(crate) fn validate_type_supertype_abstractness<KV: KVStore, T: KindAPI>(
+    snapshot: &impl ReadableSnapshot<KV>,
     type_manager: &TypeManager,
     subtype: T,
     supertype: Option<T>,
@@ -244,8 +245,8 @@ pub(crate) fn validate_type_supertype_abstractness<T: KindAPI>(
 
 // TODO: This validation can be resurrected (and all the other capabilities constraints validations as well)
 // but it should be rewritten so all the constraints are queried for each separate CAP::ObjectType! (and they have to be validated separately)
-// pub fn validate_capabilities_cardinalities_narrowing<CAP: Capability>(
-//     snapshot: &impl ReadableSnapshot,
+// pub fn validate_capabilities_cardinalities_narrowing<KV: KVStore, CAP: Capability>(
+//     snapshot: &impl ReadableSnapshot<KV>,
 //     type_manager: &TypeManager,
 //     type_: CAP::ObjectType,
 //     not_stored_set_capabilities: &HashMap<CAP, bool>,

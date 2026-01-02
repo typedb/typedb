@@ -17,6 +17,7 @@ use encoding::{
     AsBytes, Keyable, Prefixed,
 };
 use itertools::Itertools;
+use kv::KVStore;
 use lending_iterator::higher_order::Hkt;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -75,9 +76,9 @@ impl ThingAPI for Entity {
         self.vertex.to_bytes()
     }
 
-    fn set_required(
+    fn set_required<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -87,18 +88,18 @@ impl ThingAPI for Entity {
         Ok(())
     }
 
-    fn get_status(
+    fn get_status<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<crate::error::ConceptReadError>> {
         thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
     }
 
-    fn delete(
+    fn delete<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {

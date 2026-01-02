@@ -19,6 +19,7 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use kv::KVStore;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
@@ -99,66 +100,66 @@ impl TypeAPI for EntityType {
         Self::from_vertex(vertex).unwrap()
     }
 
-    fn is_abstract(
+    fn is_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self.get_constraint_abstract(snapshot, type_manager)?.is_some())
     }
 
-    fn delete(
+    fn delete<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.delete_entity_type(snapshot, thing_manager, self)
     }
 
-    fn get_label<'m>(
+    fn get_label<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
         type_manager.get_entity_type_label(snapshot, *self)
     }
 
-    fn get_label_arc(
+    fn get_label_arc<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Arc<Label>, Box<ConceptReadError>> {
         type_manager.get_entity_type_label_arc(snapshot, *self)
     }
 
-    fn get_supertype(
+    fn get_supertype<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<EntityType>, Box<ConceptReadError>> {
         type_manager.get_entity_type_supertype(snapshot, *self)
     }
 
-    fn get_supertypes_transitive<'m>(
+    fn get_supertypes_transitive<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<EntityType>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_supertypes(snapshot, *self)
     }
 
-    fn get_subtypes<'m>(
+    fn get_subtypes<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<EntityType>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_subtypes(snapshot, *self)
     }
 
-    fn get_subtypes_transitive<'m>(
+    fn get_subtypes_transitive<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<EntityType>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_subtypes_transitive(snapshot, *self)
@@ -183,26 +184,26 @@ impl KindAPI for EntityType {
     type AnnotationType = EntityTypeAnnotation;
     const KIND: Kind = Kind::Entity;
 
-    fn get_annotations_declared<'m>(
+    fn get_annotations_declared<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<EntityTypeAnnotation>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_annotations_declared(snapshot, *self)
     }
 
-    fn get_constraints<'m>(
+    fn get_constraints<'m, KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<EntityType>>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_constraints(snapshot, self)
     }
 
-    fn capabilities_syntax(
+    fn capabilities_syntax<KV: KVStore>(
         &self,
         f: &mut impl std::fmt::Write,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<(), Box<ConceptReadError>> {
         self.owns_syntax(f, snapshot, type_manager)?;
@@ -216,18 +217,18 @@ impl ThingTypeAPI for EntityType {
 }
 
 impl EntityType {
-    pub fn set_label(
+    pub fn set_label<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_label(snapshot, *self, label)
     }
 
-    pub fn set_supertype(
+    pub fn set_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         supertype: EntityType,
@@ -235,18 +236,18 @@ impl EntityType {
         type_manager.set_entity_type_supertype(snapshot, thing_manager, *self, supertype)
     }
 
-    pub fn unset_supertype(
+    pub fn unset_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.unset_entity_type_supertype(snapshot, thing_manager, *self)
     }
 
-    pub fn set_annotation(
+    pub fn set_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: EntityTypeAnnotation,
@@ -260,9 +261,9 @@ impl EntityType {
         Ok(())
     }
 
-    pub fn unset_annotation(
+    pub fn unset_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -275,9 +276,9 @@ impl EntityType {
         Ok(())
     }
 
-    pub fn get_constraint_abstract(
+    pub fn get_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<TypeConstraint<EntityType>>, Box<ConceptReadError>> {
         type_manager.get_type_abstract_constraint(snapshot, *self)
@@ -285,9 +286,9 @@ impl EntityType {
 }
 
 impl OwnerAPI for EntityType {
-    fn set_owns(
+    fn set_owns<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -305,9 +306,9 @@ impl OwnerAPI for EntityType {
         Ok(Owns::new(ObjectType::Entity(*self), attribute_type))
     }
 
-    fn unset_owns(
+    fn unset_owns<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -316,96 +317,96 @@ impl OwnerAPI for EntityType {
         Ok(())
     }
 
-    fn get_owns_declared<'m>(
+    fn get_owns_declared<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_owns_declared(snapshot, *self)
     }
 
-    fn get_owns<'m>(
+    fn get_owns<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_owns(snapshot, *self)
     }
 
-    fn get_owns_with_specialised<'m>(
+    fn get_owns_with_specialised<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_owns_with_specialised(snapshot, *self)
     }
 
-    fn get_owned_attribute_type_constraints<'m>(
+    fn get_owned_attribute_type_constraints<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
         attribute_type: AttributeType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_owned_attribute_type_constraints(snapshot, *self, attribute_type)
     }
 
-    fn get_owned_attribute_type_constraint_abstract(
+    fn get_owned_attribute_type_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_abstract_constraint(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_cardinality(
+    fn get_owned_attribute_type_constraints_cardinality<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_cardinality_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_distinct(
+    fn get_owned_attribute_type_constraints_distinct<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_distinct_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_regex(
+    fn get_owned_attribute_type_constraints_regex<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_regex_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_range(
+    fn get_owned_attribute_type_constraints_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_range_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_values(
+    fn get_owned_attribute_type_constraints_values<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_values_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraint_unique(
+    fn get_owned_attribute_type_constraint_unique<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
@@ -414,9 +415,9 @@ impl OwnerAPI for EntityType {
 }
 
 impl PlayerAPI for EntityType {
-    fn set_plays(
+    fn set_plays<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
@@ -425,9 +426,9 @@ impl PlayerAPI for EntityType {
         type_manager.set_plays(snapshot, thing_manager, (*self).into_object_type(), role_type, storage_counters)
     }
 
-    fn unset_plays(
+    fn unset_plays<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
@@ -435,51 +436,51 @@ impl PlayerAPI for EntityType {
         type_manager.unset_plays(snapshot, thing_manager, (*self).into_object_type(), role_type)
     }
 
-    fn get_plays_declared<'m>(
+    fn get_plays_declared<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_plays_declared(snapshot, *self)
     }
 
-    fn get_plays<'m>(
+    fn get_plays<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_plays(snapshot, *self)
     }
 
-    fn get_plays_with_specialised<'m>(
+    fn get_plays_with_specialised<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_plays_with_specialised(snapshot, *self)
     }
 
-    fn get_played_role_type_constraints<'m>(
+    fn get_played_role_type_constraints<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
         role_type: RoleType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_played_role_type_constraints(snapshot, *self, role_type)
     }
 
-    fn get_played_role_type_constraint_abstract(
+    fn get_played_role_type_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
         type_manager.get_type_plays_abstract_constraint(snapshot, (*self).into_object_type(), role_type)
     }
 
-    fn get_played_role_type_constraints_cardinality(
+    fn get_played_role_type_constraints_cardinality<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<HashSet<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {

@@ -22,7 +22,7 @@ use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,
-    snapshot::{CommittableSnapshot, ReadableSnapshot},
+    snapshot::{CommittableSnapshot, ReadableSnapshot<KV>},
     MVCCStorage,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};

@@ -20,6 +20,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
+use kv::KVStore;
 use resource::profile::StorageCounters;
 use storage::snapshot::WritableSnapshot;
 
@@ -30,12 +31,13 @@ use crate::{
     },
 };
 
-pub struct TypeWriter<Snapshot: WritableSnapshot> {
+pub struct TypeWriter<KV: KVStore, Snapshot: WritableSnapshot<KV>> {
     snapshot: PhantomData<Snapshot>,
+    kv: PhantomData<KV>,
 }
 
 // TODO: Make everything pub(super) and make this submodule of type_manager.
-impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
+impl<KV: KVStore, Snapshot: WritableSnapshot<KV>> TypeWriter<KV, Snapshot> {
     pub(crate) fn storage_insert_struct(
         snapshot: &mut Snapshot,
         definition_key: DefinitionKey,

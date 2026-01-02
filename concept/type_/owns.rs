@@ -10,6 +10,7 @@ use encoding::{
     graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
     layout::prefix::Prefix,
 };
+use kv::KVStore;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -52,73 +53,73 @@ impl Owns {
         self.attribute
     }
 
-    pub fn is_key(
+    pub fn is_key<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
         type_manager.get_is_key(snapshot, *self)
     }
 
-    pub fn get_constraint_abstract(
+    pub fn get_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_capability_abstract_constraint(snapshot, *self)
     }
 
-    pub fn get_constraints_distinct(
+    pub fn get_constraints_distinct<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_owns_distinct_constraints(snapshot, *self)
     }
 
-    pub fn is_distinct(
+    pub fn is_distinct<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
         Ok(!self.get_constraints_distinct(snapshot, type_manager)?.is_empty())
     }
 
-    pub fn get_constraint_unique(
+    pub fn get_constraint_unique<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_unique_constraint(snapshot, *self)
     }
 
-    pub fn get_constraints_regex(
+    pub fn get_constraints_regex<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_owns_regex_constraints(snapshot, *self)
     }
 
-    pub fn get_constraints_range(
+    pub fn get_constraints_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_owns_range_constraints(snapshot, *self)
     }
 
-    pub fn get_constraints_values(
+    pub fn get_constraints_values<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_owns_values_constraints(snapshot, *self)
     }
 
-    pub fn set_annotation(
+    pub fn set_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: OwnsAnnotation,
@@ -143,9 +144,9 @@ impl Owns {
         Ok(())
     }
 
-    pub fn unset_annotation(
+    pub fn unset_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation_category: AnnotationCategory,
@@ -166,17 +167,17 @@ impl Owns {
         Ok(())
     }
 
-    pub fn get_ordering(
+    pub fn get_ordering<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Ordering, Box<ConceptReadError>> {
         type_manager.get_owns_ordering(snapshot, *self)
     }
 
-    pub fn set_ordering(
+    pub fn set_ordering<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         ordering: Ordering,
@@ -236,9 +237,9 @@ impl Capability for Owns {
         self.attribute
     }
 
-    fn is_abstract(
+    fn is_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
         let is_abstract = self.get_constraint_abstract(snapshot, type_manager)?.is_some();
@@ -246,33 +247,33 @@ impl Capability for Owns {
         Ok(is_abstract)
     }
 
-    fn get_annotations_declared<'this>(
+    fn get_annotations_declared<'this, KV: KVStore>(
         &'this self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, Box<ConceptReadError>> {
         type_manager.get_owns_annotations_declared(snapshot, *self)
     }
 
-    fn get_constraints<'a>(
+    fn get_constraints<'a, KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'a TypeManager,
     ) -> Result<MaybeOwns<'a, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>> {
         type_manager.get_owns_constraints(snapshot, self)
     }
 
-    fn get_cardinality_constraints(
+    fn get_cardinality_constraints<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_owns_cardinality_constraints(snapshot, *self)
     }
 
-    fn get_cardinality(
+    fn get_cardinality<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
         type_manager.get_capability_cardinality(snapshot, *self)

@@ -21,6 +21,7 @@ use encoding::{
     layout::prefix::Prefix,
     value::{label::Label, value_type::ValueType},
 };
+use kv::KVStore;
 use lending_iterator::LendingIterator;
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
@@ -128,7 +129,7 @@ pub struct ObjectCache {
 }
 
 impl EntityTypeCache {
-    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<EntityTypeCache>]> {
+    pub(super) fn create<KV: KVStore>(snapshot: &impl ReadableSnapshot<KV>) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
             .iterate_range(
                 &KeyRange::new_within(EntityType::prefix_for_kind(), EntityType::PREFIX.fixed_width_keys()),
@@ -151,7 +152,7 @@ impl EntityTypeCache {
 }
 
 impl RelationTypeCache {
-    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<RelationTypeCache>]> {
+    pub(super) fn create<KV: KVStore>(snapshot: &impl ReadableSnapshot<KV>) -> Box<[Option<RelationTypeCache>]> {
         let relations = snapshot
             .iterate_range(
                 &KeyRange::new_within(RelationType::prefix_for_kind(), Prefix::VertexRelationType.fixed_width_keys()),
@@ -165,12 +166,12 @@ impl RelationTypeCache {
             let common_type_cache = CommonTypeCache::create(snapshot, relation_type);
             let object_cache = ObjectCache::create(snapshot, relation_type);
             let relates_root = TypeReader::get_relation_type_relates_root(snapshot, relation_type).unwrap();
-            let relates_declared = TypeReader::get_capabilities_declared::<Relates>(snapshot, relation_type).unwrap();
-            let relates = TypeReader::get_capabilities::<Relates>(snapshot, relation_type, false).unwrap();
+            let relates_declared = TypeReader::get_capabilities_declared::<KV, Relates>(snapshot, relation_type).unwrap();
+            let relates = TypeReader::get_capabilities::<KV, Relates>(snapshot, relation_type, false).unwrap();
             let relates_with_specialised =
-                TypeReader::get_capabilities::<Relates>(snapshot, relation_type, true).unwrap();
+                TypeReader::get_capabilities::<KV, Relates>(snapshot, relation_type, true).unwrap();
             let related_role_type_constraints =
-                TypeReader::get_type_capabilities_constraints::<Relates>(snapshot, relation_type).unwrap();
+                TypeReader::get_type_capabilities_constraints::<KV, Relates>(snapshot, relation_type).unwrap();
             let independency = TypeReader::get_relation_type_independence(snapshot, relation_type).unwrap();
             let cache = RelationTypeCache {
                 common_type_cache,
@@ -189,7 +190,7 @@ impl RelationTypeCache {
 }
 
 impl AttributeTypeCache {
-    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<AttributeTypeCache>]> {
+    pub(super) fn create<KV: KVStore>(snapshot: &impl ReadableSnapshot<KV>) -> Box<[Option<AttributeTypeCache>]> {
         let attributes = snapshot
             .iterate_range(
                 &KeyRange::new_within(AttributeType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING),
@@ -204,8 +205,8 @@ impl AttributeTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, attribute_type),
                 value_type_declared: TypeReader::get_value_type_declared(snapshot, attribute_type).unwrap(),
                 value_type: TypeReader::get_value_type(snapshot, attribute_type).unwrap(),
-                owns: TypeReader::get_capabilities_for_interface::<Owns>(snapshot, attribute_type).unwrap(),
-                owner_types: TypeReader::get_object_types_with_capabilities_for_interface::<Owns>(
+                owns: TypeReader::get_capabilities_for_interface::<_, Owns>(snapshot, attribute_type).unwrap(),
+                owner_types: TypeReader::get_object_types_with_capabilities_for_interface::<_, Owns>(
                     snapshot,
                     attribute_type,
                 )
@@ -218,7 +219,7 @@ impl AttributeTypeCache {
 }
 
 impl RoleTypeCache {
-    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<RoleTypeCache>]> {
+    pub(super) fn create<KV: KVStore>(snapshot: &impl ReadableSnapshot<KV>) -> Box<[Option<RoleTypeCache>]> {
         let roles = snapshot
             .iterate_range(
                 &KeyRange::new_within(RoleType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING),
@@ -234,13 +235,13 @@ impl RoleTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, role_type),
                 ordering,
                 relates_explicit: TypeReader::get_role_type_relates_explicit(snapshot, role_type).unwrap(),
-                relates: TypeReader::get_capabilities_for_interface::<Relates>(snapshot, role_type).unwrap(),
-                relation_types: TypeReader::get_object_types_with_capabilities_for_interface::<Relates>(
+                relates: TypeReader::get_capabilities_for_interface::<KV, Relates>(snapshot, role_type).unwrap(),
+                relation_types: TypeReader::get_object_types_with_capabilities_for_interface::<KV, Relates>(
                     snapshot, role_type,
                 )
                 .unwrap(),
-                plays: TypeReader::get_capabilities_for_interface::<Plays>(snapshot, role_type).unwrap(),
-                player_types: TypeReader::get_object_types_with_capabilities_for_interface::<Plays>(
+                plays: TypeReader::get_capabilities_for_interface::<KV, Plays>(snapshot, role_type).unwrap(),
+                player_types: TypeReader::get_object_types_with_capabilities_for_interface::<KV, Plays>(
                     snapshot, role_type,
                 )
                 .unwrap(),
@@ -252,7 +253,7 @@ impl RoleTypeCache {
 }
 
 impl OwnsCache {
-    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Owns, OwnsCache> {
+    pub(super) fn create<KV: KVStore>(snapshot: &impl ReadableSnapshot<KV>) -> HashMap<Owns, OwnsCache> {
         let mut map = HashMap::new();
         let mut it = snapshot.iterate_range(
             &KeyRange::new_within(TypeEdge::build_prefix(Prefix::EdgeOwnsReverse), TypeEdge::FIXED_WIDTH_ENCODING),
@@ -274,7 +275,7 @@ impl OwnsCache {
 }
 
 impl PlaysCache {
-    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Plays, PlaysCache> {
+    pub(super) fn create<KV: KVStore>(snapshot: &impl ReadableSnapshot<KV>) -> HashMap<Plays, PlaysCache> {
         let mut map = HashMap::new();
         let mut it = snapshot.iterate_range(
             &KeyRange::new_within(TypeEdge::build_prefix(Prefix::EdgePlays), TypeEdge::FIXED_WIDTH_ENCODING),
@@ -294,7 +295,7 @@ impl PlaysCache {
 }
 
 impl RelatesCache {
-    pub(super) fn create(snapshot: &impl ReadableSnapshot) -> HashMap<Relates, RelatesCache> {
+    pub(super) fn create<KV: KVStore>(snapshot: &impl ReadableSnapshot<KV>) -> HashMap<Relates, RelatesCache> {
         let mut map = HashMap::new();
         let mut it = snapshot.iterate_range(
             &KeyRange::new_within(TypeEdge::build_prefix(Prefix::EdgeRelates), TypeEdge::FIXED_WIDTH_ENCODING),
@@ -316,9 +317,10 @@ impl RelatesCache {
 }
 
 impl<T: KindAPI> CommonTypeCache<T> {
-    fn create<Snapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
+    fn create<KV, Snapshot>(snapshot: &Snapshot, type_: T) -> CommonTypeCache<T>
     where
-        Snapshot: ReadableSnapshot,
+        KV: KVStore,
+        Snapshot: ReadableSnapshot<KV>,
     {
         let label = Arc::new(TypeReader::get_label(snapshot, type_).unwrap().unwrap());
         let annotations_declared = TypeReader::get_type_annotations_declared(snapshot, type_).unwrap();
@@ -341,9 +343,10 @@ impl<T: KindAPI> CommonTypeCache<T> {
 }
 
 impl<CAP: Capability> CommonCapabilityCache<CAP> {
-    fn create<Snapshot>(snapshot: &Snapshot, capability: CAP) -> CommonCapabilityCache<CAP>
+    fn create<KV, Snapshot>(snapshot: &Snapshot, capability: CAP) -> CommonCapabilityCache<CAP>
     where
-        Snapshot: ReadableSnapshot,
+        KV: KVStore,
+        Snapshot: ReadableSnapshot<KV>,
     {
         let annotations_declared = TypeReader::get_capability_annotations_declared(snapshot, capability).unwrap();
         let constraints = TypeReader::get_capability_constraints(snapshot, capability).unwrap();
@@ -352,22 +355,23 @@ impl<CAP: Capability> CommonCapabilityCache<CAP> {
 }
 
 impl ObjectCache {
-    fn create<Snapshot, T>(snapshot: &Snapshot, type_: T) -> ObjectCache
+    fn create<KV, Snapshot, T>(snapshot: &Snapshot, type_: T) -> ObjectCache
     where
-        Snapshot: ReadableSnapshot,
+        KV: KVStore,
+        Snapshot: ReadableSnapshot<KV>,
         T: KindAPI + ObjectTypeAPI + PlayerAPI,
     {
         let object_type = type_.into_object_type();
-        let owns_declared = TypeReader::get_capabilities_declared::<Owns>(snapshot, object_type).unwrap();
-        let owns = TypeReader::get_capabilities::<Owns>(snapshot, object_type, false).unwrap();
-        let owns_with_specialised = TypeReader::get_capabilities::<Owns>(snapshot, object_type, true).unwrap();
+        let owns_declared = TypeReader::get_capabilities_declared::<KV, Owns>(snapshot, object_type).unwrap();
+        let owns = TypeReader::get_capabilities::<KV, Owns>(snapshot, object_type, false).unwrap();
+        let owns_with_specialised = TypeReader::get_capabilities::<KV, Owns>(snapshot, object_type, true).unwrap();
         let owned_attribute_type_constraints =
-            TypeReader::get_type_capabilities_constraints::<Owns>(snapshot, object_type).unwrap();
-        let plays_declared = TypeReader::get_capabilities_declared::<Plays>(snapshot, object_type).unwrap();
-        let plays = TypeReader::get_capabilities::<Plays>(snapshot, object_type, false).unwrap();
-        let plays_with_specialised = TypeReader::get_capabilities::<Plays>(snapshot, object_type, true).unwrap();
+            TypeReader::get_type_capabilities_constraints::<KV, Owns>(snapshot, object_type).unwrap();
+        let plays_declared = TypeReader::get_capabilities_declared::<KV, Plays>(snapshot, object_type).unwrap();
+        let plays = TypeReader::get_capabilities::<KV, Plays>(snapshot, object_type, false).unwrap();
+        let plays_with_specialised = TypeReader::get_capabilities::<KV, Plays>(snapshot, object_type, true).unwrap();
         let played_role_type_constraints =
-            TypeReader::get_type_capabilities_constraints::<Plays>(snapshot, object_type).unwrap();
+            TypeReader::get_type_capabilities_constraints::<KV, Plays>(snapshot, object_type).unwrap();
 
         ObjectCache {
             owns_declared,

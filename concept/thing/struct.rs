@@ -14,6 +14,7 @@ use encoding::{
         value_struct::{StructIndexEntry, StructIndexEntryKey},
     },
 };
+use kv::KVStore;
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 use primitive::key_range::KeyRange;
 use resource::{
@@ -31,14 +32,14 @@ use crate::{
     type_::attribute_type::AttributeType,
 };
 
-pub struct StructIndexForAttributeTypeIterator {
+pub struct StructIndexForAttributeTypeIterator<KV: KVStore> {
     prefix: StorageKey<'static, { BUFFER_KEY_INLINE }>,
-    iterator: SnapshotRangeIterator,
+    iterator: SnapshotRangeIterator<KV>,
 }
 
-impl StructIndexForAttributeTypeIterator {
+impl<KV: KVStore> StructIndexForAttributeTypeIterator<KV> {
     pub(crate) fn new(
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         vertex_generator: &ThingVertexGenerator,
         attribute_type: AttributeType,
         path_to_field: &[StructFieldIDUInt],
@@ -60,7 +61,7 @@ impl StructIndexForAttributeTypeIterator {
     }
 }
 
-impl LendingIterator for StructIndexForAttributeTypeIterator {
+impl<KV: KVStore> LendingIterator for StructIndexForAttributeTypeIterator<KV> {
     type Item<'a> = Result<Attribute, Box<ConceptReadError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
@@ -76,7 +77,7 @@ impl LendingIterator for StructIndexForAttributeTypeIterator {
     }
 }
 
-impl Seekable<Attribute> for Peekable<StructIndexForAttributeTypeIterator> {
+impl<KV: KVStore> Seekable<Attribute> for Peekable<StructIndexForAttributeTypeIterator<KV>> {
     fn seek(&mut self, target: &Attribute) {
         // can we guarantee that the PATH is complete and that we will therefore generate in-order attributes?
         // use simple looping seek for now...

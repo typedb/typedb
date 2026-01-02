@@ -39,14 +39,13 @@ use storage::{
     isolation_manager::CommitType,
     iterator::MVCCReadError,
     key_value::{StorageKeyArray, StorageKeyReference},
-    keyspace::IteratorPool,
     recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
     MVCCStorage,
 };
 use tracing::{event, Level};
-
+use kv::KVStore;
 use crate::{
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
     type_::{
@@ -125,7 +124,7 @@ impl Statistics {
         }
     }
 
-    pub fn may_synchronise(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
+    pub fn may_synchronise(&mut self, storage: &MVCCStorage<impl DurabilityClient, impl KVStore>) -> Result<(), StatisticsError> {
         use StatisticsError::{DataRead, ReloadCommitData};
 
         let storage_watermark = storage.snapshot_watermark();
@@ -210,10 +209,10 @@ impl Statistics {
         Ok(())
     }
 
-    fn update_writes<D>(
+    fn update_writes<D, KV: KVStore>(
         &mut self,
         commits: &BTreeMap<SequenceNumber, CommittedWrites>,
-        storage: &MVCCStorage<D>,
+        storage: &MVCCStorage<D, KV>,
     ) -> Result<(), MVCCReadError> {
         for (sequence_number, writes) in commits.range(self.sequence_number.next()..) {
             let delta = self.update_write(*sequence_number, writes, commits, storage)?;
@@ -223,12 +222,12 @@ impl Statistics {
         Ok(())
     }
 
-    fn update_write<D>(
+    fn update_write<D, KV: KVStore>(
         &mut self,
         commit_sequence_number: SequenceNumber,
         writes: &CommittedWrites,
         commits: &BTreeMap<SequenceNumber, CommittedWrites>,
-        storage: &MVCCStorage<D>,
+        storage: &MVCCStorage<D, KV>,
     ) -> Result<i64, MVCCReadError> {
         let mut total_delta = 0;
         for (key, write) in writes.operations.iterate_writes() {
@@ -507,13 +506,13 @@ impl Statistics {
     }
 }
 
-fn write_to_delta<D>(
+fn write_to_delta<D, KV: KVStore>(
     write_key: &StorageKeyArray<{ BUFFER_KEY_INLINE }>,
     write: &Write,
     open_sequence_number: SequenceNumber,
     commit_sequence_number: SequenceNumber,
     commits: &BTreeMap<SequenceNumber, CommittedWrites>,
-    storage: &MVCCStorage<D>,
+    storage: &MVCCStorage<D, KV>,
 ) -> Result<i64, MVCCReadError> {
     let concurrent_commit_range = (Bound::Excluded(open_sequence_number), Bound::Excluded(commit_sequence_number));
     match write {
@@ -551,7 +550,6 @@ fn write_to_delta<D>(
             } else if open_sequence_number.next() < first_commit_sequence_number {
                 if storage
                     .get::<0>(
-                        &IteratorPool::new(),
                         write_key,
                         commit_sequence_number.previous(),
                         StorageCounters::DISABLED,

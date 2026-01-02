@@ -10,6 +10,7 @@ use encoding::{
     graph::type_::{edge::TypeEdgeEncoding, CapabilityKind},
     layout::prefix::Prefix,
 };
+use kv::KVStore;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -48,9 +49,9 @@ impl Plays {
         self.role
     }
 
-    pub fn set_annotation(
+    pub fn set_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: PlaysAnnotation,
@@ -63,9 +64,9 @@ impl Plays {
         Ok(())
     }
 
-    pub fn unset_annotation(
+    pub fn unset_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation_category: AnnotationCategory,
@@ -80,9 +81,9 @@ impl Plays {
         Ok(())
     }
 
-    pub fn get_constraint_abstract(
+    pub fn get_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
         type_manager.get_capability_abstract_constraint(snapshot, *self)
@@ -130,9 +131,9 @@ impl Capability for Plays {
         self.role
     }
 
-    fn is_abstract(
+    fn is_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
         let is_abstract = self.get_constraint_abstract(snapshot, type_manager)?.is_some();
@@ -140,33 +141,33 @@ impl Capability for Plays {
         Ok(is_abstract)
     }
 
-    fn get_annotations_declared<'this>(
+    fn get_annotations_declared<'this, KV: KVStore>(
         &'this self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashSet<PlaysAnnotation>>, Box<ConceptReadError>> {
         type_manager.get_plays_annotations_declared(snapshot, *self)
     }
 
-    fn get_constraints<'a>(
+    fn get_constraints<'a, KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'a TypeManager,
     ) -> Result<MaybeOwns<'a, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {
         type_manager.get_plays_constraints(snapshot, self)
     }
 
-    fn get_cardinality_constraints(
+    fn get_cardinality_constraints<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
         type_manager.get_plays_cardinality_constraints(snapshot, *self)
     }
 
-    fn get_cardinality(
+    fn get_cardinality<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
         type_manager.get_capability_cardinality(snapshot, *self)

@@ -908,6 +908,7 @@ dependencies = [
  "error",
  "iterator",
  "itertools 0.10.5",
+ "kv",
  "lending_iterator",
  "logger",
  "paste",
@@ -4785,6 +4786,7 @@ version = "0.0.0"
 dependencies = [
  "durability",
  "encoding",
+ "kv",
  "logger",
  "storage",
  "test_utils",

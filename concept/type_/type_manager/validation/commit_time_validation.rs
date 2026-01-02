@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 
 use encoding::graph::definition::r#struct::StructDefinition;
 use itertools::Itertools;
+use kv::KVStore;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -43,8 +44,8 @@ pub struct CommitTimeValidation {}
 
 macro_rules! validate_types {
     ($func_name:ident, $get_all_of_kind:ident, $type_:ident, $func:path) => {
-        fn $func_name(
-            snapshot: &impl ReadableSnapshot,
+        fn $func_name<KV: KVStore>(
+            snapshot: &impl ReadableSnapshot<KV>,
             type_manager: &TypeManager,
             validation_errors: &mut Vec<Box<SchemaValidationError>>,
         ) -> Result<(), Box<ConceptReadError>> {
@@ -81,8 +82,8 @@ macro_rules! produced_errors {
 // than the operation time ones.
 // It is still a goal to try call as much as possible validations on operation time.
 impl CommitTimeValidation {
-    pub(crate) fn validate(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Vec<Box<SchemaValidationError>>, Box<ConceptReadError>> {
         let mut errors = Vec::new();
@@ -97,8 +98,8 @@ impl CommitTimeValidation {
     validate_types!(validate_relation_types, get_relation_types, RelationType, Self::validate_relation_type);
     validate_types!(validate_attribute_types, get_attribute_types, AttributeType, Self::validate_attribute_type);
 
-    fn validate_entity_type(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_entity_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: EntityType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -109,8 +110,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_relation_type(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_relation_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: RelationType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -136,8 +137,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_attribute_type(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_attribute_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: AttributeType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -154,8 +155,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_struct_definitions(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_struct_definitions<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -168,8 +169,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_relation_type_role_types(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_relation_type_role_types<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_type: RelationType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -198,8 +199,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_object_type(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_object_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: ObjectType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -231,8 +232,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_owns(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_owns<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: ObjectType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -240,9 +241,9 @@ impl CommitTimeValidation {
         let owns_declared = type_.get_owns_declared(snapshot, type_manager)?;
 
         for owns in owns_declared.into_iter() {
-            Self::validate_redundant_capabilities::<Owns>(snapshot, type_manager, *owns, validation_errors)?;
+            Self::validate_redundant_capabilities::<KV, Owns>(snapshot, type_manager, *owns, validation_errors)?;
 
-            Self::validate_capabilities_constraints::<Owns>(snapshot, type_manager, *owns, validation_errors)?;
+            Self::validate_capabilities_constraints::<KV, Owns>(snapshot, type_manager, *owns, validation_errors)?;
         }
 
         Self::validate_capabilities_ordering(snapshot, type_manager, type_, validation_errors)?;
@@ -250,8 +251,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_plays(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_plays<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: ObjectType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -259,16 +260,16 @@ impl CommitTimeValidation {
         let plays_declared = type_.get_plays_declared(snapshot, type_manager)?;
 
         for plays in plays_declared.into_iter() {
-            Self::validate_redundant_capabilities::<Plays>(snapshot, type_manager, *plays, validation_errors)?;
+            Self::validate_redundant_capabilities::<KV, Plays>(snapshot, type_manager, *plays, validation_errors)?;
 
-            Self::validate_capabilities_constraints::<Plays>(snapshot, type_manager, *plays, validation_errors)?;
+            Self::validate_capabilities_constraints::<KV, Plays>(snapshot, type_manager, *plays, validation_errors)?;
         }
 
         Ok(())
     }
 
-    fn validate_relates(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_relates<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_type: RelationType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -287,14 +288,14 @@ impl CommitTimeValidation {
         for relates in relates_declared.into_iter() {
             Self::validate_specialised_relates(snapshot, type_manager, *relates, validation_errors)?;
 
-            Self::validate_capabilities_constraints::<Relates>(snapshot, type_manager, *relates, validation_errors)?;
+            Self::validate_capabilities_constraints::<KV, Relates>(snapshot, type_manager, *relates, validation_errors)?;
         }
 
         Ok(())
     }
 
-    fn validate_specialised_relates(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_specialised_relates<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relates: Relates,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -309,14 +310,14 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_redundant_capabilities<CAP: Capability>(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_redundant_capabilities<KV: KVStore, CAP: Capability>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         capability: CAP,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         if let Some(supertype) = capability.object().get_supertype(snapshot, type_manager)? {
-            let supertype_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, supertype, false)?;
+            let supertype_capabilities = TypeReader::get_capabilities::<KV, CAP>(snapshot, supertype, false)?;
 
             let interface_type = capability.interface();
             if let Some(supertype_capability) =
@@ -347,8 +348,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_type_constraints(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_type_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: impl KindAPI,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -380,8 +381,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_capabilities_constraints<CAP: Capability>(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_capabilities_constraints<KV: KVStore, CAP: Capability>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         capability: CAP,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -391,8 +392,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_redundant_type_constraints<T: KindAPI>(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_redundant_type_constraints<KV: KVStore, T: KindAPI>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: T,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -420,8 +421,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_redundant_capability_constraints<CAP: Capability>(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_redundant_capability_constraints<KV: KVStore, CAP: Capability>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         capability: CAP,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -449,8 +450,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_non_abstract_relation_type_has_relates(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_non_abstract_relation_type_has_relates<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_type: RelationType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -469,8 +470,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_role_is_unique_for_relation_type_hierarchy(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_role_is_unique_for_relation_type_hierarchy<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         relation_type: RelationType,
         role_type: RoleType,
@@ -498,8 +499,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_type_ordering(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_type_ordering<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         type_: RoleType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -514,8 +515,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_capabilities_ordering(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_capabilities_ordering<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         object_type: ObjectType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -528,8 +529,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_attribute_type_value_type(
-        snapshot: &impl ReadableSnapshot,
+    fn validate_attribute_type_value_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
@@ -563,8 +564,8 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_struct_definition_fields(
-        _snapshot: &impl ReadableSnapshot,
+    fn validate_struct_definition_fields<KV: KVStore>(
+        _snapshot: &impl ReadableSnapshot<KV>,
         _type_manager: &TypeManager,
         struct_definition: StructDefinition,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,

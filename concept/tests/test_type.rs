@@ -39,7 +39,7 @@ use encoding::{
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot<KV>, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
 };
 use test_utils_concept::setup_concept_storage;
@@ -65,9 +65,9 @@ fn thing_manager(type_manager: Arc<TypeManager>) -> Arc<ThingManager> {
     ))
 }
 
-fn type_manager_at_snapshot(
+fn type_manager_at_snapshot<KV: KVStore>(
     storage: Arc<MVCCStorage<WALClient>>,
-    snapshot: &impl ReadableSnapshot,
+    snapshot: &impl ReadableSnapshot<KV>,
 ) -> Arc<TypeManager> {
     let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());

@@ -21,6 +21,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use itertools::Itertools;
+use kv::KVStore;
 use primitive::maybe_owns::MaybeOwns;
 use resource::{
     constants::{concept::RELATION_INDEX_THRESHOLD, encoding::StructFieldIDUInt},
@@ -76,13 +77,13 @@ macro_rules! get_type_methods {
         fn $method_name:ident() -> $output_type:ident = $cache_method:ident;
     )*) => {
         $(
-            pub fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, label: &Label
+            pub fn $method_name<KV: KVStore>(
+                &self, snapshot: &impl ReadableSnapshot<KV>, label: &Label
             ) -> Result<Option<$output_type>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(label))
                 } else {
-                    TypeReader::get_labelled_type::<$output_type>(snapshot, label)
+                    TypeReader::get_labelled_type::<KV, $output_type>(snapshot, label)
                 }
             }
         )*
@@ -94,11 +95,11 @@ macro_rules! get_types_methods {
         fn $method_name:ident() -> $type_:ident = $reader_method:ident | $cache_method:ident;
     )*) => {
         $(
-            pub fn $method_name(&self, snapshot: &impl ReadableSnapshot) -> Result<Vec<$type_>, Box<ConceptReadError>> {
+            pub fn $method_name<KV: KVStore>(&self, snapshot: &impl ReadableSnapshot<KV>) -> Result<Vec<$type_>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method())
                 } else {
-                    TypeReader::$reader_method(snapshot)
+                    TypeReader::$reader_method::<KV>(snapshot)
                 }
             }
         )*
@@ -110,13 +111,13 @@ macro_rules! get_supertype_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            pub(crate) fn $method_name<KV: KVStore>(
+                &self, snapshot: &impl ReadableSnapshot<KV>, type_: $type_
             ) -> Result<Option<$type_>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
-                    TypeReader::get_supertype(snapshot, type_)
+                    TypeReader::get_supertype::<KV, _>(snapshot, type_)
                 }
             }
         )*
@@ -129,13 +130,13 @@ macro_rules! get_supertypes_transitive_methods {
     )*) => {
         $(
             // WARN: supertypes currently do NOT include themselves
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            pub(crate) fn $method_name<KV: KVStore>(
+                &self, snapshot: &impl ReadableSnapshot<KV>, type_: $type_
             ) -> Result<MaybeOwns<'_, Vec<$type_>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    let supertypes = TypeReader::get_supertypes_transitive(snapshot, type_)?;
+                    let supertypes = TypeReader::get_supertypes_transitive::<KV, _>(snapshot, type_)?;
                     Ok(MaybeOwns::Owned(supertypes))
                 }
             }
@@ -148,13 +149,13 @@ macro_rules! get_subtypes_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            pub(crate) fn $method_name<KV: KVStore>(
+                &self, snapshot: &impl ReadableSnapshot<KV>, type_: $type_
             ) -> Result<MaybeOwns<'_, HashSet<$type_>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    let subtypes = TypeReader::get_subtypes(snapshot, type_)?;
+                    let subtypes = TypeReader::get_subtypes::<KV, _>(snapshot, type_)?;
                     Ok(MaybeOwns::Owned(subtypes))
                 }
             }
@@ -168,8 +169,8 @@ macro_rules! get_subtypes_transitive_methods {
     )*) => {
         $(
             // WARN: subtypes currently do NOT include themselves
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            pub(crate) fn $method_name<KV: KVStore>(
+                &self, snapshot: &impl ReadableSnapshot<KV>, type_: $type_
             ) -> Result<MaybeOwns<'_, Vec<$type_>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
@@ -187,8 +188,8 @@ macro_rules! get_type_label_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            pub(crate) fn $method_name<KV: KVStore>(
+                &self, snapshot: &impl ReadableSnapshot<KV>, type_: $type_
             ) -> Result<MaybeOwns<'_, Label>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
@@ -205,8 +206,8 @@ macro_rules! get_type_label_arc_methods {
         fn $method_name:ident() -> $type_:ident = $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            pub(crate) fn $method_name<KV: KVStore>(
+                &self, snapshot: &impl ReadableSnapshot<KV>, type_: $type_
             ) -> Result<Arc<Label>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
@@ -223,8 +224,8 @@ macro_rules! get_annotations_declared_methods {
         fn $method_name:ident($type_:ident) -> $annotation_type:ident = $reader_method:ident | $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            pub(crate) fn $method_name<KV: KVStore>(
+                &self, snapshot: &impl ReadableSnapshot<KV>, type_: $type_
             ) -> Result<MaybeOwns<'_, HashSet<$annotation_type>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
@@ -243,8 +244,8 @@ macro_rules! get_annotation_declared_by_category_methods {
     )*) => {
         $(
             $(#[$meta])*
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_, annotation_category: AnnotationCategory,
+            pub(crate) fn $method_name<KV: KVStore>(
+                &self, snapshot: &impl ReadableSnapshot<KV>, type_: $type_, annotation_category: AnnotationCategory,
             ) -> Result<Option<$annotation_type>, Box<ConceptReadError>> {
                 Ok(type_.get_annotations_declared(snapshot, self)?.into_iter().find(|&type_annotation|
                 {
@@ -260,8 +261,8 @@ macro_rules! get_constraints_methods {
         fn $method_name:ident() -> $constraint_type:ident<$type_:ident> = $reader_method:ident | $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            pub(crate) fn $method_name<KV: KVStore>(
+                &self, snapshot: &impl ReadableSnapshot<KV>, type_: $type_
             ) -> Result<MaybeOwns<'_, HashSet<$constraint_type<$type_>>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
@@ -279,9 +280,9 @@ macro_rules! get_type_capability_constraints_methods {
         fn $method_name:ident($type_decl:ident => |$type_:ident| $reader_convert:expr) -> $capability:ident = $reader_method:ident | $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(
+            pub(crate) fn $method_name<KV: KVStore>(
                 &self,
-                snapshot: &impl ReadableSnapshot,
+                snapshot: &impl ReadableSnapshot<KV>,
                 $type_: $type_decl,
                 interface_type: <$capability as Capability>::InterfaceType,
             ) -> Result<MaybeOwns<'_, HashSet<CapabilityConstraint<$capability>>>, Box<ConceptReadError>> {
@@ -347,8 +348,8 @@ macro_rules! get_filtered_constraints_methods {
         fn $method_name:ident() -> $constraint_type:ident<$type_:ident> = $get_constraints_method:ident + $filtering_method:path;
     )*) => {
         $(
-            pub(crate) fn $method_name(
-                &self, snapshot: &impl ReadableSnapshot, type_: $type_
+            pub(crate) fn $method_name<KV: KVStore>(
+                &self, snapshot: &impl ReadableSnapshot<KV>, type_: $type_
             ) -> Result<HashSet<$constraint_type<$type_>>, Box<ConceptReadError>> {
                 Ok($filtering_method(type_.$get_constraints_method(snapshot, self)?.into_iter().cloned()))
             }
@@ -361,9 +362,9 @@ macro_rules! get_type_capability_filtered_constraints_methods {
         fn $method_name:ident() -> $capability:ident = $get_constraints_method:ident + $filtering_method:path;
     )*) => {
         $(
-            pub(crate) fn $method_name(
+            pub(crate) fn $method_name<KV: KVStore>(
                 &self,
-                snapshot: &impl ReadableSnapshot,
+                snapshot: &impl ReadableSnapshot<KV>,
                 object_type: <$capability as Capability>::ObjectType,
                 interface_type: <$capability as Capability>::InterfaceType,
             ) -> Result<HashSet<CapabilityConstraint<$capability>>, Box<ConceptReadError>> {
@@ -386,9 +387,9 @@ impl TypeManager {
         self.definition_key_generator.clone()
     }
 
-    pub fn get_struct_definition_key(
+    pub fn get_struct_definition_key<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         name: &str,
     ) -> Result<Option<DefinitionKey>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -398,9 +399,9 @@ impl TypeManager {
         }
     }
 
-    pub fn get_struct_definitions(
+    pub fn get_struct_definitions<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
     ) -> Result<HashMap<DefinitionKey, StructDefinition>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             // TODO: the cache read should not clone the map & contents, and return a MaybeOwns
@@ -410,9 +411,9 @@ impl TypeManager {
         }
     }
 
-    pub fn get_struct_definition(
+    pub fn get_struct_definition<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         definition_key: DefinitionKey,
     ) -> Result<MaybeOwns<'_, StructDefinition>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -422,9 +423,9 @@ impl TypeManager {
         }
     }
 
-    pub fn resolve_struct_field(
+    pub fn resolve_struct_field<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         fields_path: &[&str],
         definition: StructDefinition,
     ) -> Result<Vec<StructFieldIDUInt>, Box<ConceptReadError>> {
@@ -529,9 +530,9 @@ impl TypeManager {
         fn get_attribute_type_label_arc() -> AttributeType = get_label_owned;
     }
 
-    pub fn get_roles_by_name(
+    pub fn get_roles_by_name<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         name: &str,
     ) -> Result<Option<Cow<'_, [RoleType]>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -546,9 +547,9 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_entity_type_owns_declared(
+    pub(crate) fn get_entity_type_owns_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         entity_type: EntityType,
     ) -> Result<MaybeOwns<'_, HashSet<Owns>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -559,9 +560,9 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relation_type_owns_declared(
+    pub(crate) fn get_relation_type_owns_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'_, HashSet<Owns>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -572,35 +573,35 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_attribute_type_owns(
+    pub(crate) fn get_attribute_type_owns<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute_type: AttributeType,
     ) -> Result<MaybeOwns<'_, HashSet<Owns>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_attribute_type_owns(attribute_type)))
         } else {
-            let plays = TypeReader::get_capabilities_for_interface::<Owns>(snapshot, attribute_type)?;
+            let plays = TypeReader::get_capabilities_for_interface::<KV, Owns>(snapshot, attribute_type)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
 
-    pub(crate) fn get_attribute_type_owner_types(
+    pub(crate) fn get_attribute_type_owner_types<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute_type: AttributeType,
     ) -> Result<MaybeOwns<'_, HashMap<ObjectType, Owns>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_attribute_type_owner_types(attribute_type)))
         } else {
-            let owns = TypeReader::get_object_types_with_capabilities_for_interface::<Owns>(snapshot, attribute_type)?;
+            let owns = TypeReader::get_object_types_with_capabilities_for_interface::<KV, Owns>(snapshot, attribute_type)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
 
-    pub(crate) fn get_relation_type_relates_root(
+    pub(crate) fn get_relation_type_relates_root<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'_, HashSet<Relates>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -611,177 +612,177 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relation_type_relates_declared(
+    pub(crate) fn get_relation_type_relates_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'_, HashSet<Relates>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_declared(relation_type)))
         } else {
-            let relates = TypeReader::get_capabilities_declared::<Relates>(snapshot, relation_type)?;
+            let relates = TypeReader::get_capabilities_declared::<KV, Relates>(snapshot, relation_type)?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
 
-    pub(crate) fn get_relation_type_relates(
+    pub(crate) fn get_relation_type_relates<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'_, HashSet<Relates>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates(relation_type)))
         } else {
-            let relates = TypeReader::get_capabilities::<Relates>(snapshot, relation_type, false)?;
+            let relates = TypeReader::get_capabilities::<KV, Relates>(snapshot, relation_type, false)?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
 
-    pub(crate) fn get_relation_type_relates_with_specialised(
+    pub(crate) fn get_relation_type_relates_with_specialised<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'_, HashSet<Relates>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_relation_type_relates_with_specialised(relation_type)))
         } else {
-            let relates = TypeReader::get_capabilities::<Relates>(snapshot, relation_type, true)?;
+            let relates = TypeReader::get_capabilities::<KV, Relates>(snapshot, relation_type, true)?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
 
-    pub(crate) fn get_role_type_plays(
+    pub(crate) fn get_role_type_plays<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         role_type: RoleType,
     ) -> Result<MaybeOwns<'_, HashSet<Plays>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_role_type_plays(role_type)))
         } else {
-            let plays = TypeReader::get_capabilities_for_interface::<Plays>(snapshot, role_type)?;
+            let plays = TypeReader::get_capabilities_for_interface::<KV, Plays>(snapshot, role_type)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
 
-    pub(crate) fn get_role_type_player_types(
+    pub(crate) fn get_role_type_player_types<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         role_type: RoleType,
     ) -> Result<MaybeOwns<'_, HashMap<ObjectType, Plays>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_role_type_player_types(role_type)))
         } else {
-            let plays = TypeReader::get_object_types_with_capabilities_for_interface::<Plays>(snapshot, role_type)?;
+            let plays = TypeReader::get_object_types_with_capabilities_for_interface::<KV, Plays>(snapshot, role_type)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
 
-    pub(crate) fn get_role_type_ordering(
+    pub(crate) fn get_role_type_ordering<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         role_type: RoleType,
     ) -> Result<Ordering, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_role_type_ordering(role_type))
         } else {
-            Ok(TypeReader::get_type_ordering(snapshot, role_type)?)
+            Ok(TypeReader::get_type_ordering::<KV>(snapshot, role_type)?)
         }
     }
 
-    pub(crate) fn get_role_type_relates_explicit(
+    pub(crate) fn get_role_type_relates_explicit<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         role_type: RoleType,
     ) -> Result<Relates, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(*cache.get_role_type_relates_explicit(role_type))
         } else {
-            let relates = TypeReader::get_role_type_relates_explicit(snapshot, role_type)?;
+            let relates = TypeReader::get_role_type_relates_explicit::<KV>(snapshot, role_type)?;
             Ok(relates)
         }
     }
 
-    pub(crate) fn get_role_type_relates(
+    pub(crate) fn get_role_type_relates<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         role_type: RoleType,
     ) -> Result<MaybeOwns<'_, HashSet<Relates>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_role_type_relates(role_type)))
         } else {
-            let relates = TypeReader::get_capabilities_for_interface::<Relates>(snapshot, role_type)?;
+            let relates = TypeReader::get_capabilities_for_interface::<KV, Relates>(snapshot, role_type)?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
 
-    pub(crate) fn get_role_type_relation_types(
+    pub(crate) fn get_role_type_relation_types<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         role_type: RoleType,
     ) -> Result<MaybeOwns<'_, HashMap<RelationType, Relates>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_role_type_relation_types(role_type)))
         } else {
-            let relates = TypeReader::get_object_types_with_capabilities_for_interface::<Relates>(snapshot, role_type)?;
+            let relates = TypeReader::get_object_types_with_capabilities_for_interface::<KV, Relates>(snapshot, role_type)?;
             Ok(MaybeOwns::Owned(relates))
         }
     }
 
-    pub(crate) fn get_entity_type_owns(
+    pub(crate) fn get_entity_type_owns<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         entity_type: EntityType,
     ) -> Result<MaybeOwns<'_, HashSet<Owns>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
         } else {
-            let owns = TypeReader::get_capabilities::<Owns>(snapshot, entity_type.into_object_type(), false)?;
+            let owns = TypeReader::get_capabilities::<KV, Owns>(snapshot, entity_type.into_object_type(), false)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
 
-    pub(crate) fn get_entity_type_owns_with_specialised(
+    pub(crate) fn get_entity_type_owns_with_specialised<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         entity_type: EntityType,
     ) -> Result<MaybeOwns<'_, HashSet<Owns>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_with_specialised(entity_type)))
         } else {
-            let owns = TypeReader::get_capabilities::<Owns>(snapshot, entity_type.into_object_type(), true)?;
+            let owns = TypeReader::get_capabilities::<KV, Owns>(snapshot, entity_type.into_object_type(), true)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
 
-    pub(crate) fn get_relation_type_owns(
+    pub(crate) fn get_relation_type_owns<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'_, HashSet<Owns>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
         } else {
-            let owns = TypeReader::get_capabilities::<Owns>(snapshot, relation_type.into_object_type(), false)?;
+            let owns = TypeReader::get_capabilities::<KV, Owns>(snapshot, relation_type.into_object_type(), false)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
 
-    pub(crate) fn get_relation_type_owns_with_specialised(
+    pub(crate) fn get_relation_type_owns_with_specialised<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'_, HashSet<Owns>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_with_specialised(relation_type)))
         } else {
-            let owns = TypeReader::get_capabilities::<Owns>(snapshot, relation_type.into_object_type(), true)?;
+            let owns = TypeReader::get_capabilities::<KV, Owns>(snapshot, relation_type.into_object_type(), true)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
 
-    pub(crate) fn type_qualifies_for_relation_index(
+    pub(crate) fn type_qualifies_for_relation_index<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<bool, Box<ConceptReadError>> {
         // TODO: it would be good if this doesn't require recomputation
@@ -797,9 +798,9 @@ impl TypeManager {
         Ok(max_card <= RELATION_INDEX_THRESHOLD)
     }
 
-    pub(crate) fn get_entity_type_plays_declared<'this>(
+    pub(crate) fn get_entity_type_plays_declared<'this, KV: KVStore>(
         &'this self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         entity_type: EntityType,
     ) -> Result<MaybeOwns<'this, HashSet<Plays>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -810,35 +811,35 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_entity_type_plays(
+    pub(crate) fn get_entity_type_plays<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         entity_type: EntityType,
     ) -> Result<MaybeOwns<'_, HashSet<Plays>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(entity_type)))
         } else {
-            let plays = TypeReader::get_capabilities::<Plays>(snapshot, entity_type.into_object_type(), false)?;
+            let plays = TypeReader::get_capabilities::<KV, Plays>(snapshot, entity_type.into_object_type(), false)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
 
-    pub(crate) fn get_entity_type_plays_with_specialised(
+    pub(crate) fn get_entity_type_plays_with_specialised<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         entity_type: EntityType,
     ) -> Result<MaybeOwns<'_, HashSet<Plays>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_with_specialised(entity_type)))
         } else {
-            let plays = TypeReader::get_capabilities::<Plays>(snapshot, entity_type.into_object_type(), true)?;
+            let plays = TypeReader::get_capabilities::<KV, Plays>(snapshot, entity_type.into_object_type(), true)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
 
-    pub(crate) fn get_relation_type_plays_declared<'this>(
+    pub(crate) fn get_relation_type_plays_declared<'this, KV: KVStore>(
         &'this self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'this, HashSet<Plays>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -849,35 +850,35 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relation_type_plays(
+    pub(crate) fn get_relation_type_plays<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'_, HashSet<Plays>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(relation_type)))
         } else {
-            let plays = TypeReader::get_capabilities::<Plays>(snapshot, relation_type.into_object_type(), false)?;
+            let plays = TypeReader::get_capabilities::<KV, Plays>(snapshot, relation_type.into_object_type(), false)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
 
-    pub(crate) fn get_relation_type_plays_with_specialised(
+    pub(crate) fn get_relation_type_plays_with_specialised<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'_, HashSet<Plays>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_with_specialised(relation_type)))
         } else {
-            let plays = TypeReader::get_capabilities::<Plays>(snapshot, relation_type.into_object_type(), true)?;
+            let plays = TypeReader::get_capabilities::<KV, Plays>(snapshot, relation_type.into_object_type(), true)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
 
-    pub(crate) fn get_attribute_type_value_type(
+    pub(crate) fn get_attribute_type_value_type<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute_type: AttributeType,
     ) -> Result<Option<(ValueType, AttributeType)>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -887,9 +888,9 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_attribute_type_value_type_declared(
+    pub(crate) fn get_attribute_type_value_type_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute_type: AttributeType,
     ) -> Result<Option<ValueType>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -899,9 +900,9 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_owns_ordering(
+    pub(crate) fn get_owns_ordering<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         owns: Owns,
     ) -> Result<Ordering, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -911,9 +912,9 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relates_is_implicit(
+    pub(crate) fn get_relates_is_implicit<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relates: Relates,
     ) -> Result<bool, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -988,27 +989,27 @@ impl TypeManager {
         fn get_type_owns_values_constraints() -> Owns = get_owned_attribute_type_constraints + get_values_constraints;
     }
 
-    pub(crate) fn get_type_abstract_constraint<T: KindAPI>(
+    pub(crate) fn get_type_abstract_constraint<KV: KVStore, T: KindAPI>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_: T,
     ) -> Result<Option<TypeConstraint<T>>, Box<ConceptReadError>> {
         let constraints = type_.get_constraints(snapshot, self)?;
         Ok(get_abstract_constraint(type_, constraints.iter()))
     }
 
-    pub(crate) fn get_capability_abstract_constraint<CAP: Capability>(
+    pub(crate) fn get_capability_abstract_constraint<KV: KVStore, CAP: Capability>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         capability: CAP,
     ) -> Result<Option<CapabilityConstraint<CAP>>, Box<ConceptReadError>> {
         let constraints = capability.get_constraints(snapshot, self)?;
         Ok(get_abstract_constraint(capability, constraints.iter()))
     }
 
-    pub(crate) fn get_type_owns_abstract_constraint(
+    pub(crate) fn get_type_owns_abstract_constraint<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         object_type: ObjectType,
         attribute_type: AttributeType,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
@@ -1021,9 +1022,9 @@ impl TypeManager {
         })
     }
 
-    pub(crate) fn get_type_plays_abstract_constraint(
+    pub(crate) fn get_type_plays_abstract_constraint<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         object_type: ObjectType,
         role_type: RoleType,
     ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
@@ -1036,9 +1037,9 @@ impl TypeManager {
         })
     }
 
-    pub(crate) fn get_type_relates_abstract_constraint(
+    pub(crate) fn get_type_relates_abstract_constraint<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
         role_type: RoleType,
     ) -> Result<Option<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
@@ -1051,17 +1052,17 @@ impl TypeManager {
         })
     }
 
-    pub(crate) fn get_unique_constraint(
+    pub(crate) fn get_unique_constraint<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         owns: Owns,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         Ok(get_unique_constraint(owns.get_constraints(snapshot, self)?.iter()))
     }
 
-    pub(crate) fn get_type_owns_unique_constraint(
+    pub(crate) fn get_type_owns_unique_constraint<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         object_type: ObjectType,
         attribute_type: AttributeType,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
@@ -1070,9 +1071,9 @@ impl TypeManager {
         ))
     }
 
-    pub(crate) fn get_capability_cardinality<CAP: Capability>(
+    pub(crate) fn get_capability_cardinality<KV: KVStore, CAP: Capability>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         capability: CAP,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
         self.get_capability_cardinality_constraint(snapshot, capability)?
@@ -1082,9 +1083,9 @@ impl TypeManager {
             .map_err(|source| Box::new(ConceptReadError::Constraint { typedb_source: source }))
     }
 
-    pub(crate) fn get_relates_cardinality(
+    pub(crate) fn get_relates_cardinality<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relates: Relates,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
         match relates.is_implicit(snapshot, self)? {
@@ -1096,18 +1097,18 @@ impl TypeManager {
         }
     }
 
-    fn get_capability_cardinality_constraint<CAP: Capability>(
+    fn get_capability_cardinality_constraint<KV: KVStore, CAP: Capability>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         capability: CAP,
     ) -> Result<Option<CapabilityConstraint<CAP>>, Box<ConceptReadError>> {
         let constraints = capability.get_constraints(snapshot, self)?;
         Ok(get_cardinality_constraint(capability, constraints.iter()))
     }
 
-    pub(crate) fn get_is_key(
+    pub(crate) fn get_is_key<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         owns: Owns,
     ) -> Result<bool, Box<ConceptReadError>> {
         match owns.get_ordering(snapshot, self) {
@@ -1131,9 +1132,9 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_independent_attribute_types(
+    pub(crate) fn get_independent_attribute_types<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
     ) -> Result<Arc<HashSet<AttributeType>>, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
             Ok(cache.get_independent_attribute_types())
@@ -1148,7 +1149,7 @@ impl TypeManager {
         }
     }
 
-    pub fn get_types_syntax(&self, snapshot: &impl ReadableSnapshot) -> Result<String, Box<ConceptReadError>> {
+    pub fn get_types_syntax<KV: KVStore>(&self, snapshot: &impl ReadableSnapshot<KV>) -> Result<String, Box<ConceptReadError>> {
         let mut syntax = String::new();
         for attribute_type in self.get_attribute_types(snapshot)?.iter() {
             attribute_type.format_syntax(&mut syntax, snapshot, self)?;
@@ -1169,7 +1170,7 @@ impl TypeManager {
 }
 
 impl TypeManager {
-    pub fn validate(&self, snapshot: &impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
+    pub fn validate<KV: KVStore>(&self, snapshot: &impl WritableSnapshot<KV>) -> Result<(), Vec<ConceptWriteError>> {
         let type_errors = CommitTimeValidation::validate(snapshot, self);
         match type_errors {
             Ok(errors) => {
@@ -1186,9 +1187,9 @@ impl TypeManager {
         }
     }
 
-    pub fn create_struct(
+    pub fn create_struct<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         name: String,
     ) -> Result<DefinitionKey, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_struct_name_uniqueness(snapshot, &name)
@@ -1203,9 +1204,9 @@ impl TypeManager {
         Ok(definition_key)
     }
 
-    pub fn create_struct_field(
+    pub fn create_struct_field<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         definition_key: DefinitionKey,
         field_name: &str,
         value_type: ValueType,
@@ -1220,9 +1221,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub fn delete_struct_field(
+    pub fn delete_struct_field<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         _thing_manager: &ThingManager,
         definition_key: DefinitionKey,
         field_name: &str,
@@ -1236,9 +1237,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub fn delete_struct(
+    pub fn delete_struct<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         _thing_manager: &ThingManager,
         definition_key: &DefinitionKey,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1251,9 +1252,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub fn create_entity_type(
+    pub fn create_entity_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         label: &Label,
     ) -> Result<EntityType, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_label_uniqueness(snapshot, label)
@@ -1269,9 +1270,9 @@ impl TypeManager {
         Ok(entity)
     }
 
-    pub fn create_relation_type(
+    pub fn create_relation_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         label: &Label,
     ) -> Result<RelationType, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_label_uniqueness(snapshot, label)
@@ -1287,9 +1288,9 @@ impl TypeManager {
         Ok(relation)
     }
 
-    pub(crate) fn create_role_type(
+    pub(crate) fn create_role_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         label: &Label,
         relation_type: RelationType,
@@ -1324,9 +1325,9 @@ impl TypeManager {
         }
     }
 
-    fn set_relates(
+    fn set_relates<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation_type: RelationType,
         role_type: RoleType,
@@ -1354,9 +1355,9 @@ impl TypeManager {
         Ok(relates)
     }
 
-    pub fn create_attribute_type(
+    pub fn create_attribute_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         label: &Label,
     ) -> Result<AttributeType, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_label_uniqueness(snapshot, label)
@@ -1372,9 +1373,9 @@ impl TypeManager {
         Ok(attribute_type)
     }
 
-    fn delete_object_type_capabilities_unchecked(
+    fn delete_object_type_capabilities_unchecked<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         object_type: ObjectType,
     ) -> Result<(), Box<ConceptWriteError>> {
         for owns in object_type.get_owns_declared(snapshot, self)?.iter() {
@@ -1388,9 +1389,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn validate_delete_type(
+    fn validate_delete_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1409,9 +1410,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn delete_entity_type(
+    pub(crate) fn delete_entity_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         entity_type: EntityType,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1421,9 +1422,9 @@ impl TypeManager {
         self.delete_type(snapshot, entity_type)
     }
 
-    pub(crate) fn delete_relation_type(
+    pub(crate) fn delete_relation_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1437,9 +1438,9 @@ impl TypeManager {
         self.delete_type(snapshot, relation_type)
     }
 
-    pub(crate) fn delete_attribute_type(
+    pub(crate) fn delete_attribute_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1453,9 +1454,9 @@ impl TypeManager {
         self.delete_type(snapshot, attribute_type)
     }
 
-    pub(crate) fn delete_role_type(
+    pub(crate) fn delete_role_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1495,9 +1496,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn delete_type(
+    fn delete_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
         for annotation in TypeReader::get_type_annotations_declared(snapshot, type_)? {
@@ -1509,34 +1510,34 @@ impl TypeManager {
         Ok(())
     }
 
-    fn unset_owns_unchecked(
+    fn unset_owns_unchecked<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
         TypeWriter::storage_delete_type_edge_property::<Ordering>(snapshot, owns);
         self.unset_capability(snapshot, owns)
     }
 
-    fn unset_plays_unchecked(
+    fn unset_plays_unchecked<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         plays: Plays,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.unset_capability(snapshot, plays)
     }
 
-    fn unset_relates_unchecked(
+    fn unset_relates_unchecked<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relates: Relates,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.unset_capability(snapshot, relates)
     }
 
-    fn unset_capability(
+    fn unset_capability<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         capability: impl Capability,
     ) -> Result<(), Box<ConceptWriteError>> {
         for annotation in TypeReader::get_capability_annotations_declared(snapshot, capability)? {
@@ -1546,9 +1547,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_label<T: KindAPI>(
+    pub(crate) fn set_label<KV: KVStore, T: KindAPI>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_: T,
         label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1568,9 +1569,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_relation_type_label(
+    pub(crate) fn set_relation_type_label<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation_type: RelationType,
         label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1590,9 +1591,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_role_type_name(
+    pub(crate) fn set_role_type_name<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         role_type: RoleType,
         name: &str,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1612,9 +1613,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn set_role_type_scope(
+    fn set_role_type_scope<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         role_type: RoleType,
         scope: &str,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1630,9 +1631,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_value_type(
+    pub(crate) fn set_value_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         value_type: ValueType,
@@ -1689,9 +1690,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn unset_value_type(
+    pub(crate) fn unset_value_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1707,9 +1708,9 @@ impl TypeManager {
         self.unset_value_type_unchecked(snapshot, attribute_type)
     }
 
-    fn unset_value_type_unchecked(
+    fn unset_value_type_unchecked<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
         let value_type = attribute_type.get_value_type_declared(snapshot, self)?;
@@ -1719,9 +1720,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn set_supertype<K: KindAPI>(
+    fn set_supertype<KV: KVStore, K: KindAPI>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         subtype: K,
         supertype: K,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1748,9 +1749,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn unset_supertype<T: TypeAPI>(
+    fn unset_supertype<KV: KVStore, T: TypeAPI>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         subtype: T,
     ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert!(OperationTimeValidation::validate_type_exists(snapshot, subtype).is_ok());
@@ -1758,9 +1759,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_attribute_type_supertype(
+    pub(crate) fn set_attribute_type_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         subtype: AttributeType,
         supertype: AttributeType,
@@ -1813,9 +1814,9 @@ impl TypeManager {
         self.set_supertype(snapshot, subtype, supertype)
     }
 
-    pub(crate) fn unset_attribute_type_supertype(
+    pub(crate) fn unset_attribute_type_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         subtype: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1851,9 +1852,9 @@ impl TypeManager {
         self.unset_supertype(snapshot, subtype)
     }
 
-    pub(crate) fn set_object_type_supertype<T: ObjectTypeAPI + KindAPI>(
+    pub(crate) fn set_object_type_supertype<KV: KVStore, T: ObjectTypeAPI + KindAPI>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         subtype: T,
         supertype: T,
@@ -1904,9 +1905,9 @@ impl TypeManager {
         self.set_supertype(snapshot, subtype, supertype)
     }
 
-    pub(crate) fn unset_object_type_supertype(
+    pub(crate) fn unset_object_type_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         subtype: ObjectType,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -1935,9 +1936,9 @@ impl TypeManager {
         self.unset_supertype(snapshot, subtype)
     }
 
-    pub(crate) fn set_entity_type_supertype(
+    pub(crate) fn set_entity_type_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         subtype: EntityType,
         supertype: EntityType,
@@ -1955,18 +1956,18 @@ impl TypeManager {
         self.set_object_type_supertype(snapshot, thing_manager, subtype, supertype)
     }
 
-    pub(crate) fn unset_entity_type_supertype(
+    pub(crate) fn unset_entity_type_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         subtype: EntityType,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.unset_object_type_supertype(snapshot, thing_manager, subtype.into_object_type())
     }
 
-    pub(crate) fn set_relation_type_supertype(
+    pub(crate) fn set_relation_type_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         subtype: RelationType,
         supertype: RelationType,
@@ -2027,9 +2028,9 @@ impl TypeManager {
         self.set_object_type_supertype(snapshot, thing_manager, subtype, supertype)
     }
 
-    pub(crate) fn unset_relation_type_supertype(
+    pub(crate) fn unset_relation_type_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         subtype: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2056,9 +2057,9 @@ impl TypeManager {
         self.unset_object_type_supertype(snapshot, thing_manager, subtype.into_object_type())
     }
 
-    pub(crate) fn set_owns(
+    pub(crate) fn set_owns<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner: ObjectType,
         attribute: AttributeType,
@@ -2097,9 +2098,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn unset_owns(
+    pub(crate) fn unset_owns<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner: ObjectType,
         attribute_type: AttributeType,
@@ -2123,9 +2124,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_plays(
+    pub(crate) fn set_plays<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         player: ObjectType,
         role: RoleType,
@@ -2152,9 +2153,9 @@ impl TypeManager {
         Ok(plays)
     }
 
-    pub(crate) fn unset_plays(
+    pub(crate) fn unset_plays<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         player: ObjectType,
         role_type: RoleType,
@@ -2178,9 +2179,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_owns_ordering(
+    pub(crate) fn set_owns_ordering<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owns: Owns,
         ordering: Ordering,
@@ -2206,9 +2207,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_role_ordering(
+    pub(crate) fn set_role_ordering<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         role_type: RoleType,
         ordering: Ordering,
@@ -2261,9 +2262,9 @@ impl TypeManager {
         Ok(())
     }
 
-    pub(crate) fn set_entity_type_annotation_abstract(
+    pub(crate) fn set_entity_type_annotation_abstract<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         entity_type: EntityType,
         storage_counters: StorageCounters,
@@ -2292,9 +2293,9 @@ impl TypeManager {
         self.set_type_annotation(snapshot, entity_type, annotation)
     }
 
-    pub(crate) fn set_relation_type_annotation_abstract(
+    pub(crate) fn set_relation_type_annotation_abstract<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation_type: RelationType,
         storage_counters: StorageCounters,
@@ -2323,9 +2324,9 @@ impl TypeManager {
         self.set_type_annotation(snapshot, relation_type, annotation)
     }
 
-    pub(crate) fn set_attribute_type_annotation_abstract(
+    pub(crate) fn set_attribute_type_annotation_abstract<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         storage_counters: StorageCounters,
@@ -2354,17 +2355,17 @@ impl TypeManager {
         self.set_type_annotation(snapshot, attribute_type, annotation)
     }
 
-    pub(crate) fn unset_entity_type_annotation_abstract(
+    pub(crate) fn unset_entity_type_annotation_abstract<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         entity_type: EntityType,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.unset_type_annotation_abstract(snapshot, entity_type)
     }
 
-    pub(crate) fn unset_relation_type_annotation_abstract(
+    pub(crate) fn unset_relation_type_annotation_abstract<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_relation_type_has_role_types_to_unset_abstract(snapshot, self, relation_type)
@@ -2373,9 +2374,9 @@ impl TypeManager {
         self.unset_type_annotation_abstract(snapshot, relation_type)
     }
 
-    pub(crate) fn unset_attribute_type_annotation_abstract(
+    pub(crate) fn unset_attribute_type_annotation_abstract<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_value_type_compatible_with_abstractness(
@@ -2390,9 +2391,9 @@ impl TypeManager {
         self.unset_type_annotation_abstract(snapshot, attribute_type)
     }
 
-    fn unset_type_annotation_abstract(
+    fn unset_type_annotation_abstract<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Abstract;
@@ -2403,9 +2404,9 @@ impl TypeManager {
         self.unset_type_annotation(snapshot, type_, annotation_category)
     }
 
-    pub(crate) fn set_relates_annotation_abstract(
+    pub(crate) fn set_relates_annotation_abstract<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         relates: Relates,
         is_manual: bool,
@@ -2443,9 +2444,9 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, relates, annotation)
     }
 
-    pub(crate) fn unset_relates_annotation_abstract(
+    pub(crate) fn unset_relates_annotation_abstract<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relates: Relates,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Abstract;
@@ -2468,9 +2469,9 @@ impl TypeManager {
         self.unset_capability_annotation(snapshot, relates, annotation_category)
     }
 
-    pub(crate) fn set_annotation_independent(
+    pub(crate) fn set_annotation_independent<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         storage_counters: StorageCounters,
@@ -2493,18 +2494,18 @@ impl TypeManager {
         self.set_type_annotation(snapshot, attribute_type, annotation)
     }
 
-    pub(crate) fn unset_annotation_independent(
+    pub(crate) fn unset_annotation_independent<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Independent;
         self.unset_type_annotation(snapshot, type_, annotation_category)
     }
 
-    pub(crate) fn set_relates_specialise(
+    pub(crate) fn set_relates_specialise<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         relates: Relates,
         specialised: Relates,
@@ -2544,9 +2545,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn unset_specialising_relates_if_no_sub_role_types_from_relation_type(
+    fn unset_specialising_relates_if_no_sub_role_types_from_relation_type<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation_type: RelationType,
         specialised_role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2570,9 +2571,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn set_role_type_supertype(
+    fn set_role_type_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         subtype: RoleType,
         supertype: RoleType,
@@ -2616,9 +2617,9 @@ impl TypeManager {
         self.set_supertype(snapshot, subtype, supertype)
     }
 
-    pub(crate) fn unset_relates_specialise(
+    pub(crate) fn unset_relates_specialise<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         relates: Relates,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2635,9 +2636,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn unset_role_type_supertype(
+    fn unset_role_type_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2662,27 +2663,27 @@ impl TypeManager {
         self.unset_supertype(snapshot, role_type)
     }
 
-    pub fn set_relation_type_independent(
+    pub fn set_relation_type_independent<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
         TypeWriter::storage_put_type_vertex_property(snapshot, relation_type, Some(Independent));
         Ok(())
     }
 
-    pub fn unset_relation_type_independent(
+    pub fn unset_relation_type_independent<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
         TypeWriter::storage_delete_type_vertex_property::<Independent>(snapshot, relation_type);
         Ok(())
     }
 
-    pub fn get_is_relation_type_independent(
+    pub fn get_is_relation_type_independent<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<bool, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
@@ -2692,9 +2693,9 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn set_owns_annotation_distinct(
+    pub(crate) fn set_owns_annotation_distinct<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2718,9 +2719,9 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, owns, annotation)
     }
 
-    pub(crate) fn set_relates_annotation_distinct(
+    pub(crate) fn set_relates_annotation_distinct<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         relates: Relates,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2753,18 +2754,18 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, relates, annotation)
     }
 
-    pub(crate) fn unset_owns_annotation_distinct(
+    pub(crate) fn unset_owns_annotation_distinct<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Distinct;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
-    pub(crate) fn unset_relates_annotation_distinct(
+    pub(crate) fn unset_relates_annotation_distinct<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relates: Relates,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Distinct;
@@ -2775,9 +2776,9 @@ impl TypeManager {
         self.unset_capability_annotation(snapshot, relates, annotation_category)
     }
 
-    pub(crate) fn set_owns_annotation_unique(
+    pub(crate) fn set_owns_annotation_unique<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2806,18 +2807,18 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_owns_annotation_unique(
+    pub(crate) fn unset_owns_annotation_unique<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Unique;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
-    pub(crate) fn set_owns_annotation_key(
+    pub(crate) fn set_owns_annotation_key<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2846,9 +2847,9 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_owns_annotation_key(
+    pub(crate) fn unset_owns_annotation_key<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2876,9 +2877,9 @@ impl TypeManager {
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
-    pub(crate) fn set_owns_annotation_cardinality(
+    pub(crate) fn set_owns_annotation_cardinality<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owns: Owns,
         cardinality: AnnotationCardinality,
@@ -2903,9 +2904,9 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_owns_annotation_cardinality(
+    pub(crate) fn unset_owns_annotation_cardinality<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2933,9 +2934,9 @@ impl TypeManager {
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
-    pub(crate) fn set_plays_annotation_cardinality(
+    pub(crate) fn set_plays_annotation_cardinality<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         plays: Plays,
         cardinality: AnnotationCardinality,
@@ -2960,9 +2961,9 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, plays, annotation)
     }
 
-    pub(crate) fn unset_plays_annotation_cardinality(
+    pub(crate) fn unset_plays_annotation_cardinality<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         plays: Plays,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2990,9 +2991,9 @@ impl TypeManager {
         self.unset_capability_annotation(snapshot, plays, annotation_category)
     }
 
-    pub(crate) fn set_relates_annotation_cardinality(
+    pub(crate) fn set_relates_annotation_cardinality<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         relates: Relates,
         cardinality: AnnotationCardinality,
@@ -3019,9 +3020,9 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, relates, annotation)
     }
 
-    pub(crate) fn unset_relates_annotation_cardinality(
+    pub(crate) fn unset_relates_annotation_cardinality<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         relates: Relates,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -3053,9 +3054,9 @@ impl TypeManager {
         self.unset_capability_annotation(snapshot, relates, annotation_category)
     }
 
-    pub(crate) fn set_annotation_regex(
+    pub(crate) fn set_annotation_regex<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         regex: AnnotationRegex,
@@ -3108,18 +3109,18 @@ impl TypeManager {
         self.set_type_annotation(snapshot, attribute_type, annotation)
     }
 
-    pub(crate) fn unset_annotation_regex(
+    pub(crate) fn unset_annotation_regex<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Regex;
         self.unset_type_annotation(snapshot, type_, annotation_category)
     }
 
-    pub(crate) fn set_owns_annotation_regex(
+    pub(crate) fn set_owns_annotation_regex<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owns: Owns,
         regex: AnnotationRegex,
@@ -3160,18 +3161,18 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_owns_annotation_regex(
+    pub(crate) fn unset_owns_annotation_regex<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Regex;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
-    pub(crate) fn set_annotation_cascade(
+    pub(crate) fn set_annotation_cascade<KV: KVStore>(
         &self,
-        _snapshot: &mut impl WritableSnapshot,
+        _snapshot: &mut impl WritableSnapshot<KV>,
         _thing_manager: &ThingManager,
         _relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -3193,9 +3194,9 @@ impl TypeManager {
         // self.set_type_annotation(snapshot, relation_type, annotation)
     }
 
-    pub(crate) fn unset_annotation_cascade(
+    pub(crate) fn unset_annotation_cascade<KV: KVStore>(
         &self,
-        _snapshot: &mut impl WritableSnapshot,
+        _snapshot: &mut impl WritableSnapshot<KV>,
         _type_: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
         unimplemented!("Cascade is temporarily turned off");
@@ -3203,9 +3204,9 @@ impl TypeManager {
         // self.unset_type_annotation(snapshot, type_, annotation_category)
     }
 
-    pub(crate) fn set_annotation_range(
+    pub(crate) fn set_annotation_range<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         range: AnnotationRange,
@@ -3262,18 +3263,18 @@ impl TypeManager {
         self.set_type_annotation(snapshot, attribute_type, annotation)
     }
 
-    pub(crate) fn unset_annotation_range(
+    pub(crate) fn unset_annotation_range<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Range;
         self.unset_type_annotation(snapshot, type_, annotation_category)
     }
 
-    pub(crate) fn set_owns_annotation_range(
+    pub(crate) fn set_owns_annotation_range<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owns: Owns,
         range: AnnotationRange,
@@ -3318,18 +3319,18 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_owns_annotation_range(
+    pub(crate) fn unset_owns_annotation_range<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Range;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
-    pub(crate) fn set_annotation_values(
+    pub(crate) fn set_annotation_values<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         values: AnnotationValues,
@@ -3386,18 +3387,18 @@ impl TypeManager {
         self.set_type_annotation(snapshot, attribute_type, annotation)
     }
 
-    pub(crate) fn unset_annotation_values(
+    pub(crate) fn unset_annotation_values<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_: impl KindAPI,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Values;
         self.unset_type_annotation(snapshot, type_, annotation_category)
     }
 
-    pub(crate) fn set_owns_annotation_values(
+    pub(crate) fn set_owns_annotation_values<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         thing_manager: &ThingManager,
         owns: Owns,
         values: AnnotationValues,
@@ -3442,18 +3443,18 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, owns, annotation)
     }
 
-    pub(crate) fn unset_owns_annotation_values(
+    pub(crate) fn unset_owns_annotation_values<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owns: Owns,
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Values;
         self.unset_capability_annotation(snapshot, owns, annotation_category)
     }
 
-    fn set_type_annotation(
+    fn set_type_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_: impl KindAPI,
         annotation: Annotation,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -3461,9 +3462,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn set_capability_annotation(
+    fn set_capability_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         capability: impl Capability,
         annotation: Annotation,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -3471,9 +3472,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn unset_type_annotation(
+    fn unset_type_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_: impl KindAPI,
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -3487,9 +3488,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn unset_capability_annotation(
+    fn unset_capability_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         capability: impl Capability,
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -3503,9 +3504,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn validate_set_type_annotation_general(
+    fn validate_set_type_annotation_general<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_: impl KindAPI,
         annotation: Annotation,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -3519,9 +3520,9 @@ impl TypeManager {
         Ok(())
     }
 
-    fn validate_set_capability_annotation_general(
+    fn validate_set_capability_annotation_general<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         capability: impl Capability,
         annotation: Annotation,
     ) -> Result<(), Box<ConceptWriteError>> {

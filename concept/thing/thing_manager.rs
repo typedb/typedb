@@ -50,6 +50,7 @@ use encoding::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 use itertools::Itertools;
+use kv::KVStore;
 use lending_iterator::Peekable;
 use primitive::{
     either::Either,
@@ -110,7 +111,7 @@ pub struct ThingManager {
 }
 
 impl ThingManager {
-    pub fn new(
+    pub fn new<KV: KVStore>(
         vertex_generator: Arc<ThingVertexGenerator>,
         type_manager: Arc<TypeManager>,
         statistics: Arc<Statistics>,
@@ -128,13 +129,13 @@ impl ThingManager {
 
     /// Return simple iterator of all Concept(Vertex) found for a specific instantiable Type
     /// If this type is an Attribute type, this iterator will not hide the Dependent attributes that have no owners.
-    fn get_instances_in<T: ThingAPI>(
+    fn get_instances_in<KV: KVStore, T: ThingAPI>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_type: T::TypeAPI,
         keyspace: EncodingKeyspace,
         storage_counters: StorageCounters,
-    ) -> InstanceIterator<T> {
+    ) -> InstanceIterator<KV, T> {
         if thing_type.is_abstract(snapshot, self.type_manager()).unwrap() {
             return InstanceIterator::empty();
         }
@@ -147,12 +148,12 @@ impl ThingManager {
         InstanceIterator::new(snapshot_iterator)
     }
 
-    fn get_instances<T: ThingAPI>(
+    fn get_instances<KV: KVStore, T: ThingAPI>(
         &self,
         keyspace: EncodingKeyspace,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         storage_counters: StorageCounters,
-    ) -> InstanceIterator<T> {
+    ) -> InstanceIterator<KV, T> {
         let (prefix_start, prefix_end_exclusive) = T::PREFIX_RANGE_INCLUSIVE;
         let key_start = T::Vertex::build_prefix_prefix(prefix_start, keyspace);
         let key_end = T::Vertex::build_prefix_prefix(prefix_end_exclusive, keyspace);
@@ -163,13 +164,13 @@ impl ThingManager {
         InstanceIterator::new(snapshot_iterator)
     }
 
-    fn get_instances_in_range<T: ThingAPI>(
+    fn get_instances_in_range<KV: KVStore, T: ThingAPI>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_range: &impl RangeBounds<T::TypeAPI>,
         keyspace: EncodingKeyspace,
         storage_counters: StorageCounters,
-    ) -> InstanceIterator<T> {
+    ) -> InstanceIterator<KV, T> {
         let start = match Self::start_type_bound_to_range_start_included_type(type_range.start_bound()) {
             None => return InstanceIterator::empty(),
             Some(start_type_included) => <T as ThingAPI>::Vertex::build_prefix_type(
@@ -194,9 +195,9 @@ impl ThingManager {
         InstanceIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
-    pub fn get_instance<T: ThingAPI>(
+    pub fn get_instance<KV: KVStore, T: ThingAPI>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         iid: &Bytes<'_, BUFFER_KEY_INLINE>,
         storage_counters: StorageCounters,
     ) -> Result<Option<T>, Box<ConceptReadError>> {
@@ -205,25 +206,25 @@ impl ThingManager {
         };
         let exists = snapshot
             .contains(StorageKeyReference::new(vertex.keyspace(), iid), storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?;
         Ok(exists.then_some(T::new(vertex)))
     }
 
-    pub fn get_objects_in(
+    pub fn get_objects_in<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         object_type: ObjectType,
         storage_counters: StorageCounters,
-    ) -> InstanceIterator<Object> {
+    ) -> InstanceIterator<KV, Object> {
         self.get_instances_in(snapshot, object_type, <Object as ThingAPI>::Vertex::KEYSPACE, storage_counters)
     }
 
-    pub fn get_objects_in_range(
+    pub fn get_objects_in_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         object_type_range: &impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
-    ) -> InstanceIterator<Object> {
+    ) -> InstanceIterator<KV, Object> {
         self.get_instances_in_range(
             snapshot,
             object_type_range,
@@ -232,38 +233,38 @@ impl ThingManager {
         )
     }
 
-    pub fn get_object(
+    pub fn get_object<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         iid: &Bytes<'_, BUFFER_KEY_INLINE>,
         storage_counters: StorageCounters,
     ) -> Result<Option<Object>, Box<ConceptReadError>> {
-        self.get_instance::<Object>(snapshot, iid, storage_counters)
+        self.get_instance::<KV, Object>(snapshot, iid, storage_counters)
     }
 
-    pub fn get_entities(
+    pub fn get_entities<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         storage_counters: StorageCounters,
-    ) -> InstanceIterator<Entity> {
-        self.get_instances::<Entity>(<Entity as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
+    ) -> InstanceIterator<KV, Entity> {
+        self.get_instances::<KV, Entity>(<Entity as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
     }
 
-    pub fn get_entities_in(
+    pub fn get_entities_in<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_: EntityType,
         storage_counters: StorageCounters,
-    ) -> InstanceIterator<Entity> {
+    ) -> InstanceIterator<KV, Entity> {
         self.get_instances_in(snapshot, type_, <Entity as ThingAPI>::Vertex::KEYSPACE, storage_counters)
     }
 
-    pub fn get_entities_in_range(
+    pub fn get_entities_in_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         entity_type_range: &impl RangeBounds<EntityType>,
         storage_counters: StorageCounters,
-    ) -> InstanceIterator<Entity> {
+    ) -> InstanceIterator<KV, Entity> {
         self.get_instances_in_range(
             snapshot,
             entity_type_range,
@@ -272,29 +273,29 @@ impl ThingManager {
         )
     }
 
-    pub fn get_relations(
+    pub fn get_relations<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         storage_counters: StorageCounters,
-    ) -> InstanceIterator<Relation> {
-        self.get_instances::<Relation>(<Relation as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
+    ) -> InstanceIterator<KV, Relation> {
+        self.get_instances::<KV, Relation>(<Relation as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
     }
 
-    pub fn get_relations_in(
+    pub fn get_relations_in<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_: RelationType,
         storage_counters: StorageCounters,
-    ) -> InstanceIterator<Relation> {
+    ) -> InstanceIterator<KV, Relation> {
         self.get_instances_in(snapshot, type_, <Relation as ThingAPI>::Vertex::KEYSPACE, storage_counters)
     }
 
-    pub fn get_relations_in_range(
+    pub fn get_relations_in_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type_range: &impl RangeBounds<RelationType>,
         storage_counters: StorageCounters,
-    ) -> InstanceIterator<Relation> {
+    ) -> InstanceIterator<KV, Relation> {
         self.get_instances_in_range(
             snapshot,
             relation_type_range,
@@ -303,7 +304,7 @@ impl ThingManager {
         )
     }
 
-    pub fn get_attributes<Snapshot: ReadableSnapshot>(
+    pub fn get_attributes<KV: KVStore, Snapshot: ReadableSnapshot<KV>>(
         &self,
         snapshot: &Snapshot,
         storage_counters: StorageCounters,
@@ -313,42 +314,42 @@ impl ThingManager {
             .chain(self.get_attributes_long(snapshot, storage_counters)?))
     }
 
-    pub fn get_attributes_short<Snapshot: ReadableSnapshot>(
+    pub fn get_attributes_short<KV: KVStore, Snapshot: ReadableSnapshot<KV>>(
         &self,
         snapshot: &Snapshot,
         storage_counters: StorageCounters,
-    ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
+    ) -> Result<AttributeIterator<KV, InstanceIterator<KV, Attribute>>, Box<ConceptReadError>> {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix_short(Prefix::VertexAttribute);
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
         let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
-            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_is_short(true), snapshot, storage_counters),
+            self.get_instances::<KV, Attribute>(AttributeVertex::keyspace_for_is_short(true), snapshot, storage_counters),
             has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
 
-    pub fn get_attributes_long<Snapshot: ReadableSnapshot>(
+    pub fn get_attributes_long<KV: KVStore, Snapshot: ReadableSnapshot<KV>>(
         &self,
         snapshot: &Snapshot,
         storage_counters: StorageCounters,
-    ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
+    ) -> Result<AttributeIterator<KV, InstanceIterator<KV, Attribute>>, Box<ConceptReadError>> {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix_long(Prefix::VertexAttribute);
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
         let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
-            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_is_short(false), snapshot, storage_counters),
+            self.get_instances::<KV, Attribute>(AttributeVertex::keyspace_for_is_short(false), snapshot, storage_counters),
             has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
 
-    pub fn get_attributes_in(
+    pub fn get_attributes_in<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute_type: AttributeType,
         storage_counters: StorageCounters,
-    ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
+    ) -> Result<AttributeIterator<KV, InstanceIterator<KV, Attribute>>, Box<ConceptReadError>> {
         let attribute_value_type =
             attribute_type.get_value_type_without_source(snapshot, self.type_manager.as_ref())?;
         let Some(value_type) = attribute_value_type.as_ref() else {
@@ -371,18 +372,18 @@ impl ThingManager {
         ))
     }
 
-    pub fn get_attribute(
+    pub fn get_attribute<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         iid: &Bytes<'_, BUFFER_KEY_INLINE>,
         storage_counters: StorageCounters,
     ) -> Result<Option<Attribute>, Box<ConceptReadError>> {
-        self.get_instance::<Attribute>(snapshot, iid, storage_counters)
+        self.get_instance::<KV, Attribute>(snapshot, iid, storage_counters)
     }
 
-    pub(crate) fn get_attribute_value(
+    pub(crate) fn get_attribute_value<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute: &Attribute,
         storage_counters: StorageCounters,
     ) -> Result<Value<'static>, Box<ConceptReadError>> {
@@ -405,7 +406,7 @@ impl ThingManager {
                             |bytes| String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str()),
                             storage_counters,
                         )
-                        .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                        .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))?
                         .ok_or(ConceptReadError::InternalMissingAttributeValue {})?
                 };
                 Ok(Value::String(Cow::Owned(string)))
@@ -417,16 +418,16 @@ impl ThingManager {
                         |bytes| StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct(),
                         storage_counters,
                     )
-                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))?
                     .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
                 Ok(Value::Struct(Cow::Owned(struct_value)))
             }
         }
     }
 
-    pub fn get_attribute_with_value(
+    pub fn get_attribute_with_value<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute_type: AttributeType,
         value: Value<'_>,
         storage_counters: StorageCounters,
@@ -492,13 +493,13 @@ impl ThingManager {
         Ok(Some(attribute))
     }
 
-    pub fn get_attributes_in_range<'a>(
+    pub fn get_attributes_in_range<'a, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute_type: AttributeType,
         value_range: &'a impl RangeBounds<Value<'a>>,
         storage_counters: StorageCounters,
-    ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
+    ) -> Result<AttributeIterator<KV, InstanceIterator<KV, Attribute>>, Box<ConceptReadError>> {
         if matches!(value_range.start_bound(), Bound::Unbounded) && matches!(value_range.end_bound(), Bound::Unbounded)
         {
             return self.get_attributes_in(snapshot, attribute_type, storage_counters);
@@ -634,9 +635,9 @@ impl ThingManager {
         }
     }
 
-    fn get_attribute_with_value_inline(
+    fn get_attribute_with_value_inline<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute_type: AttributeType,
         value: Value<'_>,
         storage_counters: StorageCounters,
@@ -649,12 +650,12 @@ impl ThingManager {
         let vertex = AttributeVertex::new(attribute_type.vertex().type_id_(), AttributeID::build_inline(value));
         snapshot
             .get_mapped(vertex.into_storage_key().as_reference(), |_| Attribute::new(vertex), storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))
     }
 
-    pub(crate) fn get_player_relations_roles(
+    pub(crate) fn get_player_relations_roles<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         player: impl ObjectAPI,
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
@@ -673,9 +674,9 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_player_relations(
+    pub(crate) fn get_player_relations<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         player: impl ObjectAPI,
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<Relation, Box<ConceptReadError>>> {
@@ -685,9 +686,9 @@ impl ThingManager {
         })
     }
 
-    pub(crate) fn get_player_relations_using_role(
+    pub(crate) fn get_player_relations_using_role<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         player: impl ObjectAPI,
         role_type: RoleType,
         storage_counters: StorageCounters,
@@ -700,9 +701,9 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn owner_has_attribute_with_value(
+    pub(crate) fn owner_has_attribute_with_value<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
         value: Value<'_>,
@@ -731,14 +732,14 @@ impl ThingManager {
         let has = ThingEdgeHas::new(owner.vertex(), vertex);
         let has_exists = snapshot
             .get_mapped(has.into_storage_key().as_reference(), |_value| true, storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
             .unwrap_or(false);
         Ok(has_exists)
     }
 
-    pub(crate) fn owner_has_attribute(
+    pub(crate) fn owner_has_attribute<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         owner: impl ObjectAPI,
         attribute: &Attribute,
         storage_counters: StorageCounters,
@@ -746,17 +747,17 @@ impl ThingManager {
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
         let has_exists = snapshot
             .get_mapped(has.into_storage_key().as_reference(), |_value| true, storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
             .unwrap_or(false);
         Ok(has_exists)
     }
 
-    pub fn get_has_from_owner_type_range_unordered(
+    pub fn get_has_from_owner_type_range_unordered<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         owner_type_range: &impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
-    ) -> HasIterator {
+    ) -> HasIterator<KV> {
         let start = match Self::start_type_bound_to_range_start_included_type(owner_type_range.start_bound()) {
             None => return HasIterator::new_empty(),
             Some(start_type_included) => ThingEdgeHas::prefix_from_type(start_type_included.vertex()),
@@ -773,12 +774,12 @@ impl ThingManager {
         HasIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
-    pub fn get_has_reverse(
+    pub fn get_has_reverse<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute_type: AttributeType,
         storage_counters: StorageCounters,
-    ) -> Result<HasReverseIterator, Box<ConceptReadError>> {
+    ) -> Result<HasReverseIterator<KV>, Box<ConceptReadError>> {
         let Some(value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())? else {
             return Ok(HasReverseIterator::new_empty());
         };
@@ -794,14 +795,14 @@ impl ThingManager {
     /// range [att type][att vertex][start owner type] --> [att type][att vertex][end owner type]
     /// However, it is in general only a hint used to constrain the start prefix and end of the range. When multiple values are matched,
     /// the Has's returned will likely contain Owner types _not_ in the indicated range.
-    pub fn get_has_reverse_in_range<'a>(
+    pub fn get_has_reverse_in_range<'a, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute_type: AttributeType,
         range: &'a impl RangeBounds<Value<'a>>,
         owner_types_range_hint: &impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
-    ) -> Result<HasReverseIterator, Box<ConceptReadError>> {
+    ) -> Result<HasReverseIterator<KV>, Box<ConceptReadError>> {
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
             return self.get_has_reverse(snapshot, attribute_type, storage_counters);
         }
@@ -984,7 +985,7 @@ impl ThingManager {
         Ok(HasReverseIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
     }
 
-    pub fn get_attributes_by_struct_field<Snapshot: ReadableSnapshot>(
+    pub fn get_attributes_by_struct_field<KV: KVStore, Snapshot: ReadableSnapshot<KV>>(
         &self,
         snapshot: &Snapshot,
         attribute_type: AttributeType,
@@ -1019,26 +1020,26 @@ impl ThingManager {
         Ok(iter)
     }
 
-    pub(crate) fn owner_get_has_unordered_all(
+    pub(crate) fn owner_get_has_unordered_all<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         owner: impl ObjectAPI,
         storage_counters: StorageCounters,
-    ) -> Result<HasIterator, Box<ConceptReadError>> {
+    ) -> Result<HasIterator<KV>, Box<ConceptReadError>> {
         let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
         let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
         Ok(HasIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
     }
 
-    pub(crate) fn owner_get_has_unordered_in_value_type<'a>(
+    pub(crate) fn owner_get_has_unordered_in_value_type<'a, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         owner: impl ObjectAPI,
         attribute_type_range_hint: &impl RangeBounds<AttributeType>,
         value_type_categories: &[ValueTypeCategory],
         value_range: &'a impl RangeBounds<Value<'a>>,
         storage_counters: StorageCounters,
-    ) -> Result<HasIterator, Box<ConceptReadError>> {
+    ) -> Result<HasIterator<KV>, Box<ConceptReadError>> {
         let start_attribute_type =
             match Self::start_type_bound_to_range_start_included_type(attribute_type_range_hint.start_bound()) {
                 None => return Ok(HasIterator::new_empty()),
@@ -1072,16 +1073,16 @@ impl ThingManager {
         Ok(HasIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
     }
 
-    pub(crate) fn get_has_from_thing_to_type_unordered<'a>(
+    pub(crate) fn get_has_from_thing_to_type_unordered<'a, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
         value_range: &'a impl RangeBounds<Value<'a>>,
         storage_counters: StorageCounters,
     ) -> Result<
         Map<
-            HasIterator,
+            HasIterator<KV>,
             fn(Result<(Has, u64), Box<ConceptReadError>>) -> Result<(Attribute, u64), Box<ConceptReadError>>,
         >,
         Box<ConceptReadError>,
@@ -1158,9 +1159,9 @@ impl ThingManager {
         })
     }
 
-    pub(crate) fn get_has_from_thing_to_type_ordered(
+    pub(crate) fn get_has_from_thing_to_type_ordered<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
         storage_counters: StorageCounters,
@@ -1181,14 +1182,14 @@ impl ThingManager {
                 },
                 storage_counters,
             )
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
             .unwrap_or_else(Vec::new);
         Ok(attributes)
     }
 
-    pub(crate) fn get_owners(
+    pub(crate) fn get_owners<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute: &Attribute,
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> {
@@ -1202,9 +1203,9 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_owners_by_type(
+    pub(crate) fn get_owners_by_type<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute: &Attribute,
         owner_type: impl ObjectTypeAPI,
         storage_counters: StorageCounters,
@@ -1219,13 +1220,13 @@ impl ThingManager {
         )
     }
 
-    pub fn get_has_reverse_by_attribute_and_owner_type_range(
+    pub fn get_has_reverse_by_attribute_and_owner_type_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute: &Attribute,
         owner_type_range: &impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
-    ) -> HasReverseIterator {
+    ) -> HasReverseIterator<KV> {
         let range_start = match owner_type_range.start_bound() {
             Bound::Included(owner_start) => RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(
                 attribute.vertex(),
@@ -1257,9 +1258,9 @@ impl ThingManager {
         HasReverseIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
-    pub(crate) fn has_owners(
+    pub(crate) fn has_owners<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         attribute: &Attribute,
         buffered_only: bool,
     ) -> bool {
@@ -1267,9 +1268,9 @@ impl ThingManager {
         snapshot.any_in_range(&KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
-    pub(crate) fn has_links(
+    pub(crate) fn has_links<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation: Relation,
         buffered_only: bool, // FIXME use enums
     ) -> bool {
@@ -1277,12 +1278,12 @@ impl ThingManager {
         snapshot.any_in_range(&KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING), buffered_only)
     }
 
-    pub fn get_links_by_relation_type_range(
+    pub fn get_links_by_relation_type_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type_range: &impl RangeBounds<RelationType>,
         storage_counters: StorageCounters,
-    ) -> LinksIterator {
+    ) -> LinksIterator<KV> {
         let start = match Self::start_type_bound_to_range_start_included_type(relation_type_range.start_bound()) {
             None => return LinksIterator::new_empty(),
             Some(start_type) => ThingEdgeLinks::prefix_from_relation_type(start_type.vertex().type_id_()),
@@ -1301,13 +1302,13 @@ impl ThingManager {
         ))
     }
 
-    pub fn get_links_by_relation_and_player_type_range(
+    pub fn get_links_by_relation_and_player_type_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation: Relation,
         player_type_range: &impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
-    ) -> LinksIterator {
+    ) -> LinksIterator<KV> {
         let start = match Self::start_type_bound_to_range_start_included_type(player_type_range.start_bound()) {
             None => return LinksIterator::new_empty(),
             Some(start_type) => {
@@ -1326,13 +1327,13 @@ impl ThingManager {
         LinksIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
-    pub fn get_links_by_relation_and_player(
+    pub fn get_links_by_relation_and_player<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation: Relation,
         player: impl ObjectAPI,
         storage_counters: StorageCounters,
-    ) -> LinksIterator {
+    ) -> LinksIterator<KV> {
         let prefix = ThingEdgeLinks::prefix_from_relation_player(relation.vertex(), player.vertex());
         LinksIterator::new(
             snapshot
@@ -1340,12 +1341,12 @@ impl ThingManager {
         )
     }
 
-    pub fn get_links_reverse_by_player_type_range(
+    pub fn get_links_reverse_by_player_type_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         player_type_range: &impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
-    ) -> LinksReverseIterator {
+    ) -> LinksReverseIterator<KV> {
         let range_start = match Self::start_type_bound_to_range_start_included_type(player_type_range.start_bound()) {
             None => return LinksReverseIterator::new_empty(),
             Some(start_type) => ThingEdgeLinks::prefix_reverse_from_player_type(
@@ -1370,13 +1371,13 @@ impl ThingManager {
         ))
     }
 
-    pub fn get_links_reverse_by_player_and_relation_type_range(
+    pub fn get_links_reverse_by_player_and_relation_type_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         player: impl ObjectAPI,
         relation_type_range: &impl RangeBounds<RelationType>,
         storage_counters: StorageCounters,
-    ) -> LinksReverseIterator {
+    ) -> LinksReverseIterator<KV> {
         let range_start = match Self::start_type_bound_to_range_start_included_type(relation_type_range.start_bound()) {
             None => return LinksReverseIterator::new_empty(),
             Some(start_type) => ThingEdgeLinks::prefix_reverse_from_player_relation_type(
@@ -1400,9 +1401,9 @@ impl ThingManager {
         ))
     }
 
-    pub(crate) fn has_role_player(
+    pub(crate) fn has_role_player<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
@@ -1411,14 +1412,14 @@ impl ThingManager {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
         let links_exists = snapshot
             .get_mapped(links.into_storage_key().as_reference(), |_| true, storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
             .unwrap_or(false);
         Ok(links_exists)
     }
 
-    pub(crate) fn get_role_players(
+    pub(crate) fn get_role_players<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation: Relation,
         storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> {
@@ -1434,9 +1435,9 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_role_players_ordered(
+    pub(crate) fn get_role_players_ordered<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation: Relation,
         role_type: RoleType,
         storage_counters: StorageCounters,
@@ -1448,14 +1449,14 @@ impl ThingManager {
                 |bytes| decode_role_players(bytes).map(Object::new).collect(),
                 storage_counters,
             )
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
             .unwrap_or_else(Vec::new);
         Ok(players)
     }
 
-    pub(crate) fn get_role_players_role(
+    pub(crate) fn get_role_players_role<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation: Relation,
         role_type: RoleType,
         storage_counters: StorageCounters,
@@ -1478,13 +1479,13 @@ impl ThingManager {
         )
     }
 
-    pub fn get_indexed_relations_in(
+    pub fn get_indexed_relations_in<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         relation_type: RelationType,
         start_player_type_range: impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
-    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+    ) -> Result<IndexedRelationsIterator<KV>, Box<ConceptReadError>> {
         let start = match Self::start_type_bound_to_range_start_included_type(start_player_type_range.start_bound()) {
             None => return Ok(IndexedRelationsIterator::new_empty()),
             Some(start_player_type) => Self::indexed_relation_prefix_in_relation_type(relation_type, start_player_type),
@@ -1501,9 +1502,9 @@ impl ThingManager {
         self.iterate_indexed_relations(snapshot, range, relation_type, storage_counters)
     }
 
-    pub(crate) fn has_indexed_relation_player(
+    pub(crate) fn has_indexed_relation_player<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         start_player: impl ObjectAPI,
         end_player: Object,
         relation: Relation,
@@ -1526,16 +1527,16 @@ impl ThingManager {
         snapshot
             .get::<BUFFER_KEY_INLINE>(edge.into_storage_key().as_reference(), storage_counters)
             .map(|option| option.is_some())
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))
     }
 
-    pub(crate) fn get_indexed_relation_players_from(
+    pub(crate) fn get_indexed_relation_players_from<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         start: impl ObjectAPI,
         relation_type: RelationType,
         storage_counters: StorageCounters,
-    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+    ) -> Result<IndexedRelationsIterator<KV>, Box<ConceptReadError>> {
         let prefix = ThingEdgeIndexedRelation::prefix_start(relation_type.vertex().type_id_(), start.vertex());
         self.iterate_indexed_relations(
             snapshot,
@@ -1545,14 +1546,14 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_indexed_relations_between(
+    pub(crate) fn get_indexed_relations_between<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         start: impl ObjectAPI,
         end: impl ObjectAPI,
         relation_type: RelationType,
         storage_counters: StorageCounters,
-    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+    ) -> Result<IndexedRelationsIterator<KV>, Box<ConceptReadError>> {
         let prefix =
             ThingEdgeIndexedRelation::prefix_start_end(relation_type.vertex().type_id_(), start.vertex(), end.vertex());
         self.iterate_indexed_relations(
@@ -1563,14 +1564,14 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_indexed_relation_roles(
+    pub(crate) fn get_indexed_relation_roles<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         start: impl ObjectAPI,
         end: impl ObjectAPI,
         relation: Relation,
         storage_counters: StorageCounters,
-    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+    ) -> Result<IndexedRelationsIterator<KV>, Box<ConceptReadError>> {
         let prefix =
             ThingEdgeIndexedRelation::prefix_start_end_relation(start.vertex(), end.vertex(), relation.vertex());
         self.iterate_indexed_relations(
@@ -1581,15 +1582,15 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_indexed_relation_end_roles(
+    pub(crate) fn get_indexed_relation_end_roles<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         start: impl ObjectAPI,
         end: impl ObjectAPI,
         relation: Relation,
         start_role: RoleType,
         storage_counters: StorageCounters,
-    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+    ) -> Result<IndexedRelationsIterator<KV>, Box<ConceptReadError>> {
         let prefix = ThingEdgeIndexedRelation::prefix_start_end_relation_startrole(
             start.vertex(),
             end.vertex(),
@@ -1604,13 +1605,13 @@ impl ThingManager {
         )
     }
 
-    fn iterate_indexed_relations<const INLINE_SIZE: usize>(
+    fn iterate_indexed_relations<KV: KVStore, const INLINE_SIZE: usize>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         range: &KeyRange<StorageKey<'_, INLINE_SIZE>>,
         relation_type: RelationType,
         storage_counters: StorageCounters,
-    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+    ) -> Result<IndexedRelationsIterator<KV>, Box<ConceptReadError>> {
         if !relation_type.relation_index_available(snapshot, self.type_manager())? {
             Err(ConceptReadError::RelationIndexNotAvailable {
                 relation_label: relation_type.get_label(snapshot, self.type_manager())?.to_owned(),
@@ -1619,9 +1620,9 @@ impl ThingManager {
         Ok(IndexedRelationsIterator::new(snapshot.iterate_range(range, storage_counters)))
     }
 
-    pub(crate) fn get_status(
+    pub(crate) fn get_status<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         key: StorageKey<'_, BUFFER_KEY_INLINE>,
         storage_counters: StorageCounters,
     ) -> Result<ConceptStatus, Box<ConceptReadError>> {
@@ -1635,7 +1636,7 @@ impl ThingManager {
             .unwrap_or_else(|| {
                 match snapshot
                     .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference(), storage_counters)
-                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))?
                 {
                     Some(_) => Ok(ConceptStatus::Persisted),
                     None => Ok(ConceptStatus::Deleted),
@@ -1643,26 +1644,26 @@ impl ThingManager {
             })
     }
 
-    pub fn instance_exists(
+    pub fn instance_exists<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         instance: &impl ThingAPI,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         snapshot
             .contains(instance.vertex().into_storage_key().as_reference(), storage_counters)
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))
     }
 
-    pub fn type_exists(
+    pub fn type_exists<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_: impl TypeAPI,
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         snapshot
             .contains(type_.vertex().into_storage_key().as_reference(), storage_counters)
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))
     }
 
     pub fn start_type_bound_to_range_start_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
@@ -1777,15 +1778,15 @@ impl ThingManager {
 }
 
 impl ThingManager {
-    pub(crate) fn lock_existing_object(&self, snapshot: &mut impl WritableSnapshot, object: impl ObjectAPI) {
+    pub(crate) fn lock_existing_object<KV: KVStore>(&self, snapshot: &mut impl WritableSnapshot<KV>, object: impl ObjectAPI) {
         snapshot.unmodifiable_lock_add(object.vertex().into_storage_key().into_owned_array())
     }
 
-    pub(crate) fn lock_existing_attribute(&self, snapshot: &mut impl WritableSnapshot, attribute: &Attribute) {
+    pub(crate) fn lock_existing_attribute<KV: KVStore>(&self, snapshot: &mut impl WritableSnapshot<KV>, attribute: &Attribute) {
         snapshot.unmodifiable_lock_add(attribute.vertex().into_storage_key().into_owned_array())
     }
 
-    pub fn finalise<Snapshot: WritableSnapshot>(
+    pub fn finalise<KV: KVStore, Snapshot: WritableSnapshot<KV>>(
         &self,
         snapshot: &mut Snapshot,
         storage_counters: StorageCounters,
@@ -1815,9 +1816,9 @@ impl ThingManager {
         }
     }
 
-    fn create_commit_locks(
+    fn create_commit_locks<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         // TODO: Should not collect here (iterate_writes() already copies)
@@ -1844,9 +1845,9 @@ impl ThingManager {
         Ok(())
     }
 
-    fn add_exclusive_lock_for_unique_constraint(
+    fn add_exclusive_lock_for_unique_constraint<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owner: &Object,
         attribute: Attribute,
         storage_counters: StorageCounters,
@@ -1863,7 +1864,7 @@ impl ThingManager {
                     attribute_key.into_storage_key().as_reference(),
                     storage_counters,
                 )
-                .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))?
                 .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
 
             let lock_key = create_custom_lock_key(
@@ -1882,9 +1883,9 @@ impl ThingManager {
         Ok(())
     }
 
-    fn add_exclusive_lock_for_owns_cardinality_constraint(
+    fn add_exclusive_lock_for_owns_cardinality_constraint<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owner: &Object,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -1913,9 +1914,9 @@ impl ThingManager {
         Ok(())
     }
 
-    fn add_exclusive_lock_for_plays_cardinality_constraint(
+    fn add_exclusive_lock_for_plays_cardinality_constraint<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         player: &Object,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -1941,9 +1942,9 @@ impl ThingManager {
         Ok(())
     }
 
-    fn add_exclusive_lock_for_relates_cardinality_constraint(
+    fn add_exclusive_lock_for_relates_cardinality_constraint<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation: &Relation,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptReadError>> {
@@ -1969,9 +1970,9 @@ impl ThingManager {
         Ok(())
     }
 
-    fn cleanup_relations(
+    fn cleanup_relations<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let mut any_deleted = true;
@@ -2044,7 +2045,7 @@ impl ThingManager {
                 once(&relation_type).chain(subtypes.into_iter()).try_for_each(|type_| {
                     let is_cascade = true; // TODO: Always consider cascade now, can be changed later.
                     if is_cascade {
-                        let mut relations: InstanceIterator<Relation> = self.get_instances_in(
+                        let mut relations: InstanceIterator<KV, Relation> = self.get_instances_in(
                             snapshot,
                             *type_,
                             <Relation as ThingAPI>::Vertex::KEYSPACE,
@@ -2065,9 +2066,9 @@ impl ThingManager {
         Ok(())
     }
 
-    fn cleanup_attributes(
+    fn cleanup_attributes<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         for (key, _write) in snapshot
@@ -2139,7 +2140,7 @@ impl ThingManager {
                 let is_independent = type_.is_independent(snapshot, self.type_manager())?;
                 if let Some(value_type) = type_.get_value_type_without_source(snapshot, self.type_manager())? {
                     if !is_independent {
-                        let mut attributes: InstanceIterator<Attribute> = self.get_instances_in(
+                        let mut attributes: InstanceIterator<KV, Attribute> = self.get_instances_in(
                             snapshot,
                             *type_,
                             AttributeVertex::keyspace_for_category(value_type.category()),
@@ -2159,9 +2160,9 @@ impl ThingManager {
         Ok(())
     }
 
-    fn validate_cardinalities(
+    fn validate_cardinalities<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         change_tracker: &CardinalityChangeTracker,
         storage_counters: StorageCounters,
     ) -> Result<(), Vec<ConceptWriteError>> {
@@ -2213,9 +2214,9 @@ impl ThingManager {
         }
     }
 
-    fn update_relation_indices_on_cardinality_changes(
+    fn update_relation_indices_on_cardinality_changes<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         change_tracker: &CardinalityChangeTracker,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2235,9 +2236,9 @@ impl ThingManager {
         Ok(())
     }
 
-    fn update_relation_index_on_cardinality_change(
+    fn update_relation_index_on_cardinality_change<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation: Relation,
         affected_role_types: &HashSet<RoleType>,
         qualifies_for_relation_index: bool,
@@ -2271,9 +2272,9 @@ impl ThingManager {
         Ok(())
     }
 
-    pub fn create_entity(
+    pub fn create_entity<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         entity_type: EntityType,
     ) -> Result<Entity, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_entity_type_is_not_abstract(snapshot, self, entity_type)
@@ -2282,9 +2283,9 @@ impl ThingManager {
         Ok(Entity::new(self.vertex_generator.create_entity(entity_type.vertex().type_id_(), snapshot)))
     }
 
-    pub fn create_relation(
+    pub fn create_relation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation_type: RelationType,
     ) -> Result<Relation, Box<ConceptWriteError>> {
         OperationTimeValidation::validate_relation_type_is_not_abstract(snapshot, self, relation_type)
@@ -2293,9 +2294,9 @@ impl ThingManager {
         Ok(Relation::new(self.vertex_generator.create_relation(relation_type.vertex().type_id_(), snapshot)))
     }
 
-    pub fn create_attribute(
+    pub fn create_attribute<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<Attribute, Box<ConceptWriteError>> {
@@ -2329,9 +2330,9 @@ impl ThingManager {
         self.put_attribute(snapshot, attribute_type, value)
     }
 
-    pub(crate) fn put_attribute(
+    pub(crate) fn put_attribute<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         attribute_type: AttributeType,
         value: Value<'_>,
     ) -> Result<Attribute, Box<ConceptWriteError>> {
@@ -2426,9 +2427,9 @@ impl ThingManager {
         Ok(Attribute::new(vertex))
     }
 
-    fn index_struct_fields(
+    fn index_struct_fields<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         attribute_vertex: &AttributeVertex,
         struct_value: &StructValue<'_>,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2445,27 +2446,27 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn delete_entity(
+    pub(crate) fn delete_entity<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         entity: Entity,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.delete_object(snapshot, entity.vertex().into_storage_key(), storage_counters)
     }
 
-    pub(crate) fn delete_relation(
+    pub(crate) fn delete_relation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation: Relation,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.delete_object(snapshot, relation.vertex().into_storage_key(), storage_counters)
     }
 
-    fn delete_object(
+    fn delete_object<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         key: StorageKey<'_, BUFFER_KEY_INLINE>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2481,9 +2482,9 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn delete_attribute(
+    pub(crate) fn delete_attribute<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         attribute: Attribute,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2502,9 +2503,9 @@ impl ThingManager {
         Ok(())
     }
 
-    fn unput_attribute(
+    fn unput_attribute<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         attribute: &Attribute,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -2517,9 +2518,9 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn set_has_unordered(
+    pub(crate) fn set_has_unordered<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owner: impl ObjectAPI,
         attribute: &Attribute,
         storage_counters: StorageCounters,
@@ -2527,9 +2528,9 @@ impl ThingManager {
         self.set_has_count(snapshot, owner, attribute, 1, storage_counters)
     }
 
-    pub(crate) fn set_has_count(
+    pub(crate) fn set_has_count<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owner: impl ObjectAPI,
         attribute: &Attribute,
         count: u64,
@@ -2597,9 +2598,9 @@ impl ThingManager {
         }
     }
 
-    pub(crate) fn unset_has(
+    pub(crate) fn unset_has<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owner: impl ObjectAPI,
         attribute: &Attribute,
         storage_counters: StorageCounters,
@@ -2626,9 +2627,9 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn set_has_ordered(
+    pub(crate) fn set_has_ordered<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
         attributes: Vec<Attribute>,
@@ -2650,9 +2651,9 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn unset_has_ordered(
+    pub(crate) fn unset_has_ordered<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
         _storage_counters: StorageCounters,
@@ -2661,9 +2662,9 @@ impl ThingManager {
         snapshot.delete(order_property.into_storage_key().into_owned_array())
     }
 
-    pub(crate) fn put_links_unordered(
+    pub(crate) fn put_links_unordered<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
@@ -2694,9 +2695,9 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn set_links_ordered(
+    pub(crate) fn set_links_ordered<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation: Relation,
         role_type: RoleType,
         players: Vec<Object>,
@@ -2712,9 +2713,9 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn set_links_count(
+    pub(crate) fn set_links_count<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
@@ -2742,9 +2743,9 @@ impl ThingManager {
     }
 
     /// Delete all counts of the specific role player in a given relation, and update indexes if required
-    pub fn unset_links(
+    pub fn unset_links<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
@@ -2778,9 +2779,9 @@ impl ThingManager {
 
     /// Add a player to a relation that supports duplicates
     /// Caller must provide a lock that prevents race conditions on the player counts on the relation
-    pub(crate) fn increment_links_count(
+    pub(crate) fn increment_links_count<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
@@ -2793,7 +2794,7 @@ impl ThingManager {
                 |arr| decode_u64(arr.try_into().unwrap()),
                 storage_counters.clone(),
             )
-            .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { source: snapshot_err }))?;
+            .map_err(|typedb_source| Box::new(ConceptReadError::SnapshotGet { typedb_source }))?;
 
         #[cfg(debug_assertions)]
         {
@@ -2813,9 +2814,9 @@ impl ThingManager {
 
     /// Remove a player from a relation that supports duplicates
     /// Caller must provide a lock that prevents race conditions on the player counts on the relation
-    pub(crate) fn decrement_links_count(
+    pub(crate) fn decrement_links_count<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
@@ -2829,7 +2830,7 @@ impl ThingManager {
                 |arr| decode_u64(arr.try_into().unwrap()),
                 storage_counters.clone(),
             )
-            .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { source: snapshot_err }))?;
+            .map_err(|typedb_source| Box::new(ConceptReadError::SnapshotGet { typedb_source }))?;
 
         #[cfg(debug_assertions)]
         {
@@ -2862,9 +2863,9 @@ impl ThingManager {
     /// For N duplicate role players, the self-edges are available N-1 times.
     /// For N duplicate player 1, and M duplicate player 2 - from N to M has M index repetitions,
     /// while M to N has N index repetitions.
-    pub(crate) fn relation_index_player_regenerate(
+    pub(crate) fn relation_index_player_regenerate<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation: Relation,
         player: Object,
         role_type: RoleType,
@@ -2920,9 +2921,9 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn relation_index_player_remove(
+    pub(crate) fn relation_index_player_remove<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
@@ -2960,7 +2961,7 @@ impl ThingManager {
 
             let is_persisted = snapshot
                 .get_mapped(index.as_reference(), |_| true, storage_counters.clone())
-                .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+                .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
                 .unwrap_or(false);
 
             if is_persisted {
@@ -2973,8 +2974,8 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn get_snapshot_put_value(
-        snapshot: &mut impl WritableSnapshot,
+    pub(crate) fn get_snapshot_put_value<KV: KVStore>(
+        snapshot: &mut impl WritableSnapshot<KV>,
         key: StorageKeyReference<'_>,
     ) -> Option<ByteArray<BUFFER_VALUE_INLINE>> {
         match snapshot.get_write(key).cloned()? {

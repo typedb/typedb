@@ -9,6 +9,7 @@ use std::collections::{BTreeMap, Bound, HashMap, HashSet};
 use bytes::util::HexBytesFormatter;
 use encoding::value::{value::Value, value_type::ValueType};
 use iterator::minmax_or;
+use kv::KVStore;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
@@ -36,8 +37,8 @@ use crate::{
 pub struct OperationTimeValidation {}
 
 impl OperationTimeValidation {
-    pub(crate) fn validate_entity_type_is_not_abstract(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_entity_type_is_not_abstract<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         entity_type: EntityType,
     ) -> Result<(), Box<DataValidationError>> {
@@ -56,8 +57,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relation_type_is_not_abstract(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relation_type_is_not_abstract<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation_type: RelationType,
     ) -> Result<(), Box<DataValidationError>> {
@@ -75,8 +76,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_attribute_type_is_not_abstract(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_attribute_type_is_not_abstract<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
     ) -> Result<(), Box<DataValidationError>> {
@@ -94,8 +95,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_owns_is_not_abstract(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owns_is_not_abstract<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
@@ -116,8 +117,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_plays_is_not_abstract(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_plays_is_not_abstract<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         player: Object,
         role_type: RoleType,
@@ -138,8 +139,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relates_is_not_abstract(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relates_is_not_abstract<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation: Relation,
         role_type: RoleType,
@@ -160,8 +161,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_object_type_plays_role_type(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_object_type_plays_role_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         object_type: ObjectType,
         role_type: RoleType,
@@ -180,8 +181,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relation_type_relates_role_type(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relation_type_relates_role_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation_type: RelationType,
         role_type: RoleType,
@@ -200,8 +201,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_object_type_owns_attribute_type(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_object_type_owns_attribute_type<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         object_type: impl ObjectTypeAPI,
         attribute_type: AttributeType,
@@ -220,8 +221,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relates_distinct_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relates_distinct_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation: Relation,
         role_type: RoleType,
@@ -247,8 +248,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_owns_distinct_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owns_distinct_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
@@ -273,8 +274,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_attribute_regex_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_attribute_regex_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         value: Value<'_>,
@@ -294,8 +295,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_attribute_range_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_attribute_range_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         value: Value<'_>,
@@ -315,8 +316,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_attribute_values_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_attribute_values_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         value: Value<'_>,
@@ -336,8 +337,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_has_regex_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_has_regex_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
@@ -360,8 +361,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_has_range_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_has_range_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
@@ -384,8 +385,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_has_values_constraints(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_has_values_constraints<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
@@ -408,8 +409,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_has_unique_constraint(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_has_unique_constraint<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
@@ -478,8 +479,8 @@ impl OperationTimeValidation {
         Ok(())
     }
 
-    pub(crate) fn validate_value_type_matches_attribute_type_for_write(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_value_type_matches_attribute_type_for_write<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         value_type: ValueType,
@@ -506,8 +507,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_value_type_matches_attribute_type_for_read(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_value_type_matches_attribute_type_for_read<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         value_type: ValueType,
@@ -523,8 +524,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_owner_exists_to_set_has(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owner_exists_to_set_has<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
         storage_counters: StorageCounters,
@@ -541,8 +542,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_attribute_exists_to_set_has(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_attribute_exists_to_set_has<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
         attribute: &Attribute,
@@ -565,8 +566,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relation_exists_to_add_player(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relation_exists_to_add_player<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation: Relation,
         storage_counters: StorageCounters,
@@ -583,8 +584,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_role_player_exists_to_add_player(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_role_player_exists_to_add_player<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation: Relation,
         player: impl ObjectAPI,
@@ -603,8 +604,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_owner_exists_to_unset_has(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_owner_exists_to_unset_has<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
         storage_counters: StorageCounters,
@@ -621,8 +622,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relation_exists_to_remove_player(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_relation_exists_to_remove_player<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation: Relation,
         storage_counters: StorageCounters,
@@ -639,8 +640,8 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_links_count_to_remove_players(
-        snapshot: &impl ReadableSnapshot,
+    pub(crate) fn validate_links_count_to_remove_players<KV: KVStore>(
+        snapshot: &impl ReadableSnapshot<KV>,
         thing_manager: &ThingManager,
         relation: Relation,
         player: impl ObjectAPI,

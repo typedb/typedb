@@ -14,6 +14,7 @@ use encoding::{
     Prefixed,
 };
 use itertools::Itertools;
+use kv::KVStore;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::profile::StorageCounters;
@@ -87,9 +88,9 @@ impl primitive::prefix::Prefix for ObjectType {
 }
 
 impl OwnerAPI for ObjectType {
-    fn set_owns(
+    fn set_owns<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -101,9 +102,9 @@ impl OwnerAPI for ObjectType {
         })
     }
 
-    fn unset_owns(
+    fn unset_owns<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -111,33 +112,33 @@ impl OwnerAPI for ObjectType {
         with_object_type!(self, |object| { object.unset_owns(snapshot, type_manager, thing_manager, attribute_type) })
     }
 
-    fn get_owns_declared<'m>(
+    fn get_owns_declared<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_owns_declared(snapshot, type_manager) })
     }
 
-    fn get_owns<'m>(
+    fn get_owns<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_owns(snapshot, type_manager) })
     }
 
-    fn get_owns_with_specialised<'m>(
+    fn get_owns_with_specialised<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_owns_with_specialised(snapshot, type_manager) })
     }
 
-    fn get_owned_attribute_type_constraints<'m>(
+    fn get_owned_attribute_type_constraints<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
         attribute_type: AttributeType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>> {
@@ -146,9 +147,9 @@ impl OwnerAPI for ObjectType {
         })
     }
 
-    fn get_owned_attribute_type_constraint_abstract(
+    fn get_owned_attribute_type_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
@@ -157,9 +158,9 @@ impl OwnerAPI for ObjectType {
         })
     }
 
-    fn get_owned_attribute_type_constraints_cardinality(
+    fn get_owned_attribute_type_constraints_cardinality<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
@@ -168,9 +169,9 @@ impl OwnerAPI for ObjectType {
         })
     }
 
-    fn get_owned_attribute_type_constraints_distinct(
+    fn get_owned_attribute_type_constraints_distinct<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
@@ -179,9 +180,9 @@ impl OwnerAPI for ObjectType {
         })
     }
 
-    fn get_owned_attribute_type_constraints_regex(
+    fn get_owned_attribute_type_constraints_regex<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
@@ -190,9 +191,9 @@ impl OwnerAPI for ObjectType {
         })
     }
 
-    fn get_owned_attribute_type_constraints_range(
+    fn get_owned_attribute_type_constraints_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
@@ -201,9 +202,9 @@ impl OwnerAPI for ObjectType {
         })
     }
 
-    fn get_owned_attribute_type_constraints_values(
+    fn get_owned_attribute_type_constraints_values<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
@@ -212,9 +213,9 @@ impl OwnerAPI for ObjectType {
         })
     }
 
-    fn get_owned_attribute_type_constraint_unique(
+    fn get_owned_attribute_type_constraint_unique<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
@@ -233,42 +234,42 @@ impl TypeAPI for ObjectType {
         Self::from_vertex(vertex).unwrap()
     }
 
-    fn is_abstract(
+    fn is_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.is_abstract(snapshot, type_manager) })
     }
 
-    fn delete(
+    fn delete<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         with_object_type!(self, |object| { object.delete(snapshot, type_manager, thing_manager) })
     }
 
-    fn get_label<'m>(
+    fn get_label<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_label(snapshot, type_manager) })
     }
 
-    fn get_label_arc(
+    fn get_label_arc<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Arc<Label>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_label_arc(snapshot, type_manager) })
     }
 
-    fn get_supertype(
+    fn get_supertype<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<ObjectType>, Box<ConceptReadError>> {
         Ok(with_object_type!(self, |object| {
@@ -276,9 +277,9 @@ impl TypeAPI for ObjectType {
         }))
     }
 
-    fn get_supertypes_transitive<'m>(
+    fn get_supertypes_transitive<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<ObjectType>>, Box<ConceptReadError>> {
         Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
@@ -290,9 +291,9 @@ impl TypeAPI for ObjectType {
         })))
     }
 
-    fn get_subtypes<'m>(
+    fn get_subtypes<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<ObjectType>>, Box<ConceptReadError>> {
         Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
@@ -300,9 +301,9 @@ impl TypeAPI for ObjectType {
         })))
     }
 
-    fn get_subtypes_transitive<'m>(
+    fn get_subtypes_transitive<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<ObjectType>>, Box<ConceptReadError>> {
         Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
@@ -352,9 +353,9 @@ impl ObjectTypeAPI for ObjectType {
 }
 
 impl PlayerAPI for ObjectType {
-    fn set_plays(
+    fn set_plays<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
@@ -365,9 +366,9 @@ impl PlayerAPI for ObjectType {
         })
     }
 
-    fn unset_plays(
+    fn unset_plays<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
@@ -375,42 +376,42 @@ impl PlayerAPI for ObjectType {
         with_object_type!(self, |object| { object.unset_plays(snapshot, type_manager, thing_manager, role_type) })
     }
 
-    fn get_plays_declared<'m>(
+    fn get_plays_declared<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_plays_declared(snapshot, type_manager) })
     }
 
-    fn get_plays<'m>(
+    fn get_plays<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_plays(snapshot, type_manager) })
     }
 
-    fn get_plays_with_specialised<'m>(
+    fn get_plays_with_specialised<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_plays_with_specialised(snapshot, type_manager) })
     }
 
-    fn get_played_role_type_constraints<'m>(
+    fn get_played_role_type_constraints<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
         role_type: RoleType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {
         with_object_type!(self, |object| { object.get_played_role_type_constraints(snapshot, type_manager, role_type) })
     }
 
-    fn get_played_role_type_constraint_abstract(
+    fn get_played_role_type_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
@@ -419,9 +420,9 @@ impl PlayerAPI for ObjectType {
         })
     }
 
-    fn get_played_role_type_constraints_cardinality(
+    fn get_played_role_type_constraints_cardinality<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<HashSet<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {

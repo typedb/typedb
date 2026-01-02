@@ -20,6 +20,7 @@ use encoding::{
     Prefixed,
 };
 use itertools::Itertools;
+use kv::KVStore;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
@@ -102,66 +103,66 @@ impl TypeAPI for RelationType {
         Self::from_vertex(vertex).unwrap()
     }
 
-    fn is_abstract(
+    fn is_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self.get_constraint_abstract(snapshot, type_manager)?.is_some())
     }
 
-    fn delete(
+    fn delete<KV: KVStore>(
         self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.delete_relation_type(snapshot, thing_manager, self)
     }
 
-    fn get_label<'m>(
+    fn get_label<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
         type_manager.get_relation_type_label(snapshot, *self)
     }
 
-    fn get_label_arc(
+    fn get_label_arc<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Arc<Label>, Box<ConceptReadError>> {
         type_manager.get_relation_type_label_arc(snapshot, *self)
     }
 
-    fn get_supertype(
+    fn get_supertype<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<RelationType>, Box<ConceptReadError>> {
         type_manager.get_relation_type_supertype(snapshot, *self)
     }
 
-    fn get_supertypes_transitive<'m>(
+    fn get_supertypes_transitive<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<RelationType>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_supertypes(snapshot, *self)
     }
 
-    fn get_subtypes<'m>(
+    fn get_subtypes<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<RelationType>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_subtypes(snapshot, *self)
     }
 
-    fn get_subtypes_transitive<'m>(
+    fn get_subtypes_transitive<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<RelationType>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_subtypes_transitive(snapshot, *self)
@@ -180,26 +181,26 @@ impl KindAPI for RelationType {
     type AnnotationType = RelationTypeAnnotation;
     const KIND: Kind = Kind::Relation;
 
-    fn get_annotations_declared<'m>(
+    fn get_annotations_declared<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<RelationTypeAnnotation>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_annotations_declared(snapshot, *self)
     }
 
-    fn get_constraints<'m>(
+    fn get_constraints<'m, KV: KVStore>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RelationType>>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_constraints(snapshot, self)
     }
 
-    fn capabilities_syntax(
+    fn capabilities_syntax<KV: KVStore>(
         &self,
         f: &mut impl std::fmt::Write,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<(), Box<ConceptReadError>> {
         self.relates_syntax(f, snapshot, type_manager)?;
@@ -220,18 +221,18 @@ impl ObjectTypeAPI for RelationType {
 }
 
 impl RelationType {
-    pub fn set_label(
+    pub fn set_label<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.set_relation_type_label(snapshot, *self, label)
     }
 
-    pub fn set_supertype(
+    pub fn set_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         supertype: RelationType,
@@ -239,18 +240,18 @@ impl RelationType {
         type_manager.set_relation_type_supertype(snapshot, thing_manager, *self, supertype)
     }
 
-    pub fn unset_supertype(
+    pub fn unset_supertype<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         type_manager.unset_relation_type_supertype(snapshot, thing_manager, *self)
     }
 
-    pub fn set_annotation(
+    pub fn set_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: RelationTypeAnnotation,
@@ -267,9 +268,9 @@ impl RelationType {
         Ok(())
     }
 
-    pub fn unset_annotation(
+    pub fn unset_annotation<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
@@ -284,17 +285,17 @@ impl RelationType {
         Ok(())
     }
 
-    pub fn get_constraint_abstract(
+    pub fn get_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<Option<TypeConstraint<RelationType>>, Box<ConceptReadError>> {
         type_manager.get_type_abstract_constraint(snapshot, *self)
     }
 
-    pub fn create_relates(
+    pub fn create_relates<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         name: &str,
@@ -307,25 +308,25 @@ impl RelationType {
         Ok(Relates::new(*self, role_type))
     }
 
-    pub(crate) fn get_relates_root<'m>(
+    pub(crate) fn get_relates_root<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_relates_root(snapshot, *self)
     }
 
-    pub fn get_relates_declared<'m>(
+    pub fn get_relates_declared<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_relates_declared(snapshot, *self)
     }
 
-    pub fn get_relates_explicit_declared(
+    pub fn get_relates_explicit_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<Relates>, Box<ConceptReadError>> {
         self.get_relates_declared(snapshot, type_manager)?
@@ -338,17 +339,17 @@ impl RelationType {
             .try_collect()
     }
 
-    pub fn get_relates<'m>(
+    pub fn get_relates<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_relates(snapshot, *self)
     }
 
-    pub fn get_relates_explicit(
+    pub fn get_relates_explicit<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<Relates>, Box<ConceptReadError>> {
         self.get_relates(snapshot, type_manager)?
@@ -361,60 +362,60 @@ impl RelationType {
             .try_collect()
     }
 
-    pub fn get_relates_with_specialised<'m>(
+    pub fn get_relates_with_specialised<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_relates_with_specialised(snapshot, *self)
     }
 
-    pub fn get_related_role_types_declared(
+    pub fn get_related_role_types_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<RoleType>, Box<ConceptReadError>> {
         Ok(self.get_relates_explicit_declared(snapshot, type_manager)?.iter().map(|relates| relates.role()).collect())
     }
 
-    pub fn get_related_role_types(
+    pub fn get_related_role_types<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<HashSet<RoleType>, Box<ConceptReadError>> {
         Ok(self.get_relates(snapshot, type_manager)?.iter().map(|relates| relates.role()).collect())
     }
 
-    pub fn get_related_role_type_constraints<'m>(
+    pub fn get_related_role_type_constraints<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
         role_type: RoleType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates>>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_related_role_type_constraints(snapshot, *self, role_type)
     }
 
-    pub fn get_related_role_type_constraint_abstract(
+    pub fn get_related_role_type_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Option<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
         type_manager.get_type_relates_abstract_constraint(snapshot, *self, role_type)
     }
 
-    pub fn get_related_role_type_constraints_cardinality(
+    pub fn get_related_role_type_constraints_cardinality<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<HashSet<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
         type_manager.get_type_relates_cardinality_constraints(snapshot, *self, role_type)
     }
 
-    fn is_related_role_type_bounded_to_one(
+    fn is_related_role_type_bounded_to_one<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<bool, Box<ConceptReadError>> {
@@ -425,36 +426,36 @@ impl RelationType {
             .any(|cardinality| cardinality.is_bounded_to_one()))
     }
 
-    pub(crate) fn get_related_role_type_constraints_distinct(
+    pub(crate) fn get_related_role_type_constraints_distinct<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<HashSet<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
         type_manager.get_type_relates_distinct_constraints(snapshot, *self, role_type)
     }
 
-    pub fn is_related_role_type_abstract(
+    pub fn is_related_role_type_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<bool, Box<ConceptReadError>> {
         Ok(self.get_related_role_type_constraint_abstract(snapshot, type_manager, role_type)?.is_some())
     }
 
-    pub(crate) fn is_related_role_type_distinct(
+    pub(crate) fn is_related_role_type_distinct<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<bool, Box<ConceptReadError>> {
         Ok(!self.get_related_role_type_constraints_distinct(snapshot, type_manager, role_type)?.is_empty())
     }
 
-    pub fn get_relates_role_declared(
+    pub fn get_relates_role_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Option<Relates>, Box<ConceptReadError>> {
@@ -465,18 +466,18 @@ impl RelationType {
             .cloned())
     }
 
-    pub fn get_relates_role(
+    pub fn get_relates_role<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Option<Relates>, Box<ConceptReadError>> {
         Ok(self.get_relates(snapshot, type_manager)?.iter().find(|relates| relates.role() == role_type).cloned())
     }
 
-    pub fn try_get_relates_role(
+    pub fn try_get_relates_role<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Relates, Box<ConceptReadError>> {
@@ -490,9 +491,9 @@ impl RelationType {
         }
     }
 
-    pub fn get_relates_role_name_declared(
+    pub fn get_relates_role_name_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_name: &str,
     ) -> Result<Option<Relates>, Box<ConceptReadError>> {
@@ -505,9 +506,9 @@ impl RelationType {
         Ok(None)
     }
 
-    pub fn get_relates_role_name(
+    pub fn get_relates_role_name<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_name: &str,
     ) -> Result<Option<Relates>, Box<ConceptReadError>> {
@@ -520,9 +521,9 @@ impl RelationType {
         Ok(None)
     }
 
-    pub fn get_relates_role_explicit_declared(
+    pub fn get_relates_role_explicit_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Option<Relates>, Box<ConceptReadError>> {
@@ -534,9 +535,9 @@ impl RelationType {
         Ok(None)
     }
 
-    pub fn get_relates_role_explicit(
+    pub fn get_relates_role_explicit<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Option<Relates>, Box<ConceptReadError>> {
@@ -551,9 +552,9 @@ impl RelationType {
         }
     }
 
-    pub fn get_relates_role_name_explicit_declared(
+    pub fn get_relates_role_name_explicit_declared<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_name: &str,
     ) -> Result<Option<Relates>, Box<ConceptReadError>> {
@@ -565,9 +566,9 @@ impl RelationType {
         Ok(None)
     }
 
-    pub fn get_relates_role_name_explicit(
+    pub fn get_relates_role_name_explicit<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_name: &str,
     ) -> Result<Option<Relates>, Box<ConceptReadError>> {
@@ -582,10 +583,10 @@ impl RelationType {
         }
     }
 
-    fn relates_syntax(
+    fn relates_syntax<KV: KVStore>(
         &self,
         f: &mut impl std::fmt::Write,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<(), Box<ConceptReadError>> {
         let mut declared_relates = HashSet::new();
@@ -627,7 +628,7 @@ impl RelationType {
         Ok(())
     }
 
-    pub fn relation_index_available<Snapshot: ReadableSnapshot>(
+    pub fn relation_index_available<KV: KVStore, Snapshot: ReadableSnapshot<KV>>(
         &self,
         snapshot: &Snapshot,
         type_manager: &TypeManager,
@@ -635,9 +636,9 @@ impl RelationType {
         Ok(Snapshot::IMMUTABLE_SCHEMA && self.schema_qualifies_for_relation_index(snapshot, type_manager)?)
     }
 
-    pub fn schema_qualifies_for_relation_index(
+    pub fn schema_qualifies_for_relation_index<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
         type_manager.type_qualifies_for_relation_index(snapshot, *self)
@@ -661,9 +662,9 @@ impl primitive::prefix::Prefix for RelationType {
 }
 
 impl OwnerAPI for RelationType {
-    fn set_owns(
+    fn set_owns<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -681,9 +682,9 @@ impl OwnerAPI for RelationType {
         Ok(Owns::new(ObjectType::Relation(*self), attribute_type))
     }
 
-    fn unset_owns(
+    fn unset_owns<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
@@ -692,105 +693,105 @@ impl OwnerAPI for RelationType {
         Ok(())
     }
 
-    fn get_owns_declared<'m>(
+    fn get_owns_declared<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_owns_declared(snapshot, *self)
     }
 
-    fn get_owns<'m>(
+    fn get_owns<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_owns(snapshot, *self)
     }
 
-    fn get_owns_with_specialised<'m>(
+    fn get_owns_with_specialised<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_owns_with_specialised(snapshot, *self)
     }
 
-    fn get_owned_attribute_type_constraints<'m>(
+    fn get_owned_attribute_type_constraints<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
         attribute_type: AttributeType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_owned_attribute_type_constraints(snapshot, *self, attribute_type)
     }
 
-    fn get_owned_attribute_type_constraint_abstract(
+    fn get_owned_attribute_type_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_abstract_constraint(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_cardinality(
+    fn get_owned_attribute_type_constraints_cardinality<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_cardinality_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_distinct(
+    fn get_owned_attribute_type_constraints_distinct<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_distinct_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn is_owned_attribute_type_distinct(
+    fn is_owned_attribute_type_distinct<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<bool, Box<ConceptReadError>> {
         Ok(!self.get_owned_attribute_type_constraints_distinct(snapshot, type_manager, attribute_type)?.is_empty())
     }
 
-    fn get_owned_attribute_type_constraints_regex(
+    fn get_owned_attribute_type_constraints_regex<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_regex_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_range(
+    fn get_owned_attribute_type_constraints_range<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_range_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraints_values(
+    fn get_owned_attribute_type_constraints_values<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
         type_manager.get_type_owns_values_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
-    fn get_owned_attribute_type_constraint_unique(
+    fn get_owned_attribute_type_constraint_unique<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
@@ -799,9 +800,9 @@ impl OwnerAPI for RelationType {
 }
 
 impl PlayerAPI for RelationType {
-    fn set_plays(
+    fn set_plays<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
@@ -810,9 +811,9 @@ impl PlayerAPI for RelationType {
         type_manager.set_plays(snapshot, thing_manager, (*self).into_object_type(), role_type, storage_counters)
     }
 
-    fn unset_plays(
+    fn unset_plays<KV: KVStore>(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &mut impl WritableSnapshot<KV>,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
@@ -820,51 +821,51 @@ impl PlayerAPI for RelationType {
         type_manager.unset_plays(snapshot, thing_manager, (*self).into_object_type(), role_type)
     }
 
-    fn get_plays_declared<'m>(
+    fn get_plays_declared<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_plays_declared(snapshot, *self)
     }
 
-    fn get_plays<'m>(
+    fn get_plays<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_plays(snapshot, *self)
     }
 
-    fn get_plays_with_specialised<'m>(
+    fn get_plays_with_specialised<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_plays_with_specialised(snapshot, *self)
     }
 
-    fn get_played_role_type_constraints<'m>(
+    fn get_played_role_type_constraints<'m, KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &'m TypeManager,
         role_type: RoleType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_played_role_type_constraints(snapshot, *self, role_type)
     }
 
-    fn get_played_role_type_constraint_abstract(
+    fn get_played_role_type_constraint_abstract<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
         type_manager.get_type_plays_abstract_constraint(snapshot, (*self).into_object_type(), role_type)
     }
 
-    fn get_played_role_type_constraints_cardinality(
+    fn get_played_role_type_constraints_cardinality<KV: KVStore>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &impl ReadableSnapshot<KV>,
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<HashSet<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
