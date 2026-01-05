@@ -117,13 +117,19 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
             self.return_last_to_heap();
             self.find_next_state();
         }
-        if let Some(next_iterator) = &mut self.next_iterator {
-            if let Some(Ok(item)) = next_iterator.iter.peek() {
-                if item < target {
-                    next_iterator.iter.seek(target)?;
-                }
+        if self.state == kmerge::State::Done {
+            return Ok(());
+        }
+
+        let Some(next_iterator) = &mut self.next_iterator else {
+            unreachable!("There must be a `next_iterator` when KMergeBy is in Used or Ready state.");
+        };
+        if let Some(Ok(item)) = next_iterator.iter.peek() {
+            if item < target {
+                next_iterator.iter.seek(target)?;
             }
         }
+
         self.iterators = mem::take(&mut self.iterators)
             .drain()
             .filter_map(|mut it| {
