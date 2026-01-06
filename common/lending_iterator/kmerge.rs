@@ -17,7 +17,7 @@ pub struct KMergeBy<I: LendingIterator, F> {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum State {
-    Init,
+    Pending,
     Used,
     Ready,
     Done,
@@ -40,7 +40,7 @@ where
             .map(|peekable| PeekWrapper { iter: peekable, cmp_fn: cmp });
         // Peek wrapper reverses the comparator to create a min heap
         let queue = BinaryHeap::from_iter(iters);
-        Self { iterators: queue, next_iterator: None, state: State::Init, phantom_compare: PhantomData }
+        Self { iterators: queue, next_iterator: None, state: State::Pending, phantom_compare: PhantomData }
     }
 
     pub fn find_next_state(&mut self) {
@@ -72,7 +72,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self.state {
-            State::Init | State::Used => {
+            State::Pending | State::Used => {
                 self.find_next_state();
                 self.next()
             }
@@ -96,7 +96,7 @@ where
         }
 
         // force recomputation of heap element
-        self.state = State::Init;
+        self.state = State::Pending;
         self.iterators = self
             .iterators
             .drain()

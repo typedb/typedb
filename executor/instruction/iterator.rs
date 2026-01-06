@@ -117,7 +117,7 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
         }
 
         // force recomputation of heap element
-        self.state = kmerge::State::Init;
+        self.state = kmerge::State::Pending;
         self.iterators = self
             .iterators
             .drain()
