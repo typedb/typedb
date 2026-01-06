@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Borrow, cmp::Ordering, collections::BinaryHeap, marker::PhantomData, mem};
+use std::{borrow::Borrow, cmp::Ordering, collections::BinaryHeap, marker::PhantomData};
 
 use crate::{higher_order::FnHktHelper, LendingIterator, Peekable, Seekable};
 

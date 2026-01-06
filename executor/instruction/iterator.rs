@@ -7,7 +7,6 @@
 use std::{
     cmp::Ordering,
     fmt::{Display, Formatter},
-    mem,
 };
 
 use answer::variable_value::VariableValue;
