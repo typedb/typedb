@@ -44,19 +44,21 @@ where
     }
 
     pub fn find_next_state(&mut self) {
+        if self.state == State::Ready {
+            return;
+        }
+
+        if let Some(mut last_iterator) = self.next_iterator.take() {
+            if last_iterator.iter.peek().is_some() {
+                self.iterators.push(last_iterator);
+            }
+        }
         match self.iterators.pop() {
             None => self.state = State::Done,
             Some(iterator) => {
                 self.next_iterator = Some(iterator);
                 self.state = State::Ready;
             }
-        }
-    }
-
-    pub fn return_last_to_heap(&mut self) {
-        let mut last_iterator = self.next_iterator.take().unwrap();
-        if last_iterator.iter.peek().is_some() {
-            self.iterators.push(last_iterator);
         }
     }
 }
@@ -70,12 +72,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self.state {
-            State::Init => {
-                self.find_next_state();
-                self.next()
-            }
-            State::Used => {
-                self.return_last_to_heap();
+            State::Init | State::Used => {
                 self.find_next_state();
                 self.next()
             }
@@ -94,26 +91,16 @@ where
     F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy + 'static,
 {
     fn seek(&mut self, key: &K) {
-        if self.state == State::Used {
-            self.return_last_to_heap();
-            self.find_next_state();
-        }
         if self.state == State::Done {
             return;
         }
 
-        let Some(next_iterator) = &mut self.next_iterator else {
-            unreachable!("There must be a `next_iterator` when KMergeBy is in Used or Ready state.");
-        };
-        next_iterator.iter.peek();
-        if let Some(item) = next_iterator.iter.get_peeked() {
-            if next_iterator.iter.compare_key(item, key) == Ordering::Less {
-                next_iterator.iter.seek(key);
-            }
-        }
-
-        self.iterators = mem::take(&mut self.iterators)
+        // force recomputation of heap element
+        self.state = State::Init;
+        self.iterators = self
+            .iterators
             .drain()
+            .chain(self.next_iterator.take())
             .filter_map(|mut it| {
                 it.iter.peek();
                 if let Some(item) = it.iter.get_peeked() {
@@ -124,8 +111,6 @@ where
                 it.iter.peek().is_some().then_some(it)
             })
             .collect();
-        // force recomputation of heap element
-        self.state = State::Used;
     }
 
     fn compare_key(&self, item: &Self::Item<'_>, key: &K) -> Ordering {

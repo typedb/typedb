@@ -113,25 +113,16 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
 {
     fn seek(&mut self, target: &Tuple<'_>) -> Result<(), Box<ConceptReadError>> {
         // TODO: this is close to a copy-paste of the Seek() implementation for seekable KMergeBy<I>
-        if self.state == kmerge::State::Used {
-            self.return_last_to_heap();
-            self.find_next_state();
-        }
         if self.state == kmerge::State::Done {
             return Ok(());
         }
 
-        let Some(next_iterator) = &mut self.next_iterator else {
-            unreachable!("There must be a `next_iterator` when KMergeBy is in Used or Ready state.");
-        };
-        if let Some(Ok(item)) = next_iterator.iter.peek() {
-            if item < target {
-                next_iterator.iter.seek(target)?;
-            }
-        }
-
-        self.iterators = mem::take(&mut self.iterators)
+        // force recomputation of heap element
+        self.state = kmerge::State::Init;
+        self.iterators = self
+            .iterators
             .drain()
+            .chain(self.next_iterator.take())
             .filter_map(|mut it| {
                 if let Some(Ok(item)) = it.iter.peek() {
                     if item < target {
@@ -143,8 +134,6 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
                 it.iter.peek().is_some().then_some(Ok::<_, Box<ConceptReadError>>(it))
             })
             .collect::<Result<_, _>>()?;
-        // force recomputation of heap element
-        self.state = kmerge::State::Used;
         Ok(())
     }
 }
