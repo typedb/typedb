@@ -15,7 +15,7 @@ pub struct KMergeBy<I: LendingIterator, F> {
     phantom_compare: PhantomData<F>,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum State {
     Init,
     Used,
@@ -98,14 +98,20 @@ where
             self.return_last_to_heap();
             self.find_next_state();
         }
-        if let Some(next_iterator) = &mut self.next_iterator {
-            next_iterator.iter.peek();
-            if let Some(item) = next_iterator.iter.get_peeked() {
-                if next_iterator.iter.compare_key(item, key) == Ordering::Less {
-                    next_iterator.iter.seek(key);
-                }
+        if self.state == State::Done {
+            return;
+        }
+
+        let Some(next_iterator) = &mut self.next_iterator else {
+            unreachable!("There must be a `next_iterator` when KMergeBy is in Used or Ready state.");
+        };
+        next_iterator.iter.peek();
+        if let Some(item) = next_iterator.iter.get_peeked() {
+            if next_iterator.iter.compare_key(item, key) == Ordering::Less {
+                next_iterator.iter.seek(key);
             }
         }
+
         self.iterators = mem::take(&mut self.iterators)
             .drain()
             .filter_map(|mut it| {
