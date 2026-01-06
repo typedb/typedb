@@ -4,6 +4,7 @@
 
 server:
     address: 0.0.0.0:1729
+    connection-address: 127.0.0.1:1729
     http:
         enabled: true
         address: 0.0.0.0:8000
