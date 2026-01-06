@@ -164,3 +164,106 @@ where
     F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + 'static,
 {
 }
+
+#[cfg(test)]
+mod tests {
+    use std::iter::Peekable;
+
+    use super::*;
+
+    struct Iter<I: Iterator<Item = u64> + 'static>(Peekable<I>);
+
+    impl<I: Iterator<Item = u64> + 'static> Iter<I> {
+        fn new(iter: I) -> Self {
+            Self(iter.peekable())
+        }
+    }
+
+    impl<I> LendingIterator for Iter<I>
+    where
+        I: Iterator<Item = u64> + 'static,
+    {
+        type Item<'a> = u64;
+
+        fn next(&mut self) -> Option<Self::Item<'_>> {
+            self.0.next()
+        }
+    }
+
+    impl<I> Seekable<u64> for Iter<I>
+    where
+        I: Iterator<Item = u64> + 'static,
+    {
+        fn seek(&mut self, key: &u64) {
+            while self.0.peek().is_some_and(|x| x < key) {
+                self.0.next();
+            }
+        }
+
+        fn compare_key(&self, item: &Self::Item<'_>, key: &u64) -> Ordering {
+            item.cmp(key)
+        }
+    }
+
+    #[test]
+    fn empty_merge() {
+        let iters: [Iter<std::iter::Once<u64>>; 0] = [];
+        let mut kmerge = KMergeBy::new(iters, |(a, b)| u64::cmp(a, b));
+        assert_eq!(kmerge.state, State::Pending);
+        assert_eq!(kmerge.next(), None);
+        assert_eq!(kmerge.state, State::Done);
+    }
+
+    #[test]
+    fn merge_one() {
+        let iters = [Iter::new(0..2)];
+        let mut kmerge = KMergeBy::new(iters, |(a, b)| u64::cmp(a, b));
+        assert_eq!(kmerge.state, State::Pending);
+        assert_eq!(kmerge.next(), Some(0));
+        assert_eq!(kmerge.state, State::Used);
+        assert_eq!(kmerge.next(), Some(1));
+        assert_eq!(kmerge.state, State::Used);
+        assert_eq!(kmerge.next(), None);
+        assert_eq!(kmerge.state, State::Done);
+    }
+
+    #[test]
+    fn merge_two() {
+        let iters = [|x: &u64| x % 2 == 0, |x: &u64| x % 2 == 1]
+            .map(|f| Iter::new(0..4).filter::<Box<_>, dyn for<'a> FnHktHelper<&'a u64, bool>>(Box::new(f) as _));
+        let mut kmerge = KMergeBy::new(iters, |(a, b)| u64::cmp(a, b));
+        assert_eq!(kmerge.next(), Some(0));
+        assert_eq!(kmerge.next(), Some(1));
+        assert_eq!(kmerge.next(), Some(2));
+        assert_eq!(kmerge.next(), Some(3));
+        assert_eq!(kmerge.next(), None);
+    }
+
+    #[test]
+    fn empty_seek() {
+        let iters = [Iter::new(0..0)];
+        let mut kmerge = KMergeBy::new(iters, |(a, b)| u64::cmp(a, b));
+        assert_eq!(kmerge.state, State::Pending);
+        kmerge.seek(&0);
+        assert_eq!(kmerge.state, State::Pending);
+        assert_eq!(kmerge.next(), None);
+        assert_eq!(kmerge.state, State::Done);
+    }
+
+    #[test]
+    fn double_seek() {
+        let iters = [Iter::new(0..2)];
+        let mut kmerge = KMergeBy::new(iters, |(a, b)| u64::cmp(a, b));
+        assert_eq!(kmerge.state, State::Pending);
+        assert_eq!(kmerge.next(), Some(0));
+        assert_eq!(kmerge.state, State::Used);
+        kmerge.seek(&1);
+        assert_eq!(kmerge.state, State::Pending);
+        kmerge.seek(&1);
+        assert_eq!(kmerge.state, State::Pending);
+        assert_eq!(kmerge.next(), Some(1));
+        assert_eq!(kmerge.state, State::Used);
+        assert_eq!(kmerge.next(), None);
+        assert_eq!(kmerge.state, State::Done);
+    }
+}
