@@ -175,7 +175,7 @@ build:
 release:
   filter:
     owner: typedb
-    branch: [master]
+    branch: [master, cluster-support-feature-branch]
   validation:
 # TODO: Return when we depend on release tags
 #    validate-dependencies:
