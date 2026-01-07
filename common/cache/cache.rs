@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, error::Error, fmt, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf};
 
+use error::typedb_error;
 use resource::internal_database_prefix;
 use serde::{de::DeserializeOwned, Serialize};
 use tracing::{event, Level};
@@ -107,34 +108,13 @@ impl<T: Serialize + DeserializeOwned + Clone> Drop for SpilloverCache<T> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum CacheError {
-    DiskStorageAccess { source: rocksdb::Error },
-    DiskStorageSerialization,
-    DiskStorageDeserialization,
-}
-
-impl fmt::Display for CacheError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            CacheError::DiskStorageAccess { source } => write!(f, "Cannot access disk storage, {source}"),
-            CacheError::DiskStorageSerialization => write!(f, "Internal error: cannot write data to the disk storage"),
-            CacheError::DiskStorageDeserialization => {
-                write!(f, "Internal error: disk storage is corrupted and data cannot be read")
-            }
-        }
+typedb_error!(
+    pub CacheError(component = "Cache", prefix = "CAH") {
+        DiskStorageAccess(1, "Cannot access disk storage.", source: rocksdb::Error),
+        DiskStorageSerialization(2, "Internal error: cannot write data to the disk storage."),
+        DiskStorageDeserialization(3, "Internal error: disk storage is corrupted and data cannot be read."),
     }
-}
-
-impl Error for CacheError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            CacheError::DiskStorageAccess { source } => Some(source),
-            CacheError::DiskStorageSerialization => None,
-            CacheError::DiskStorageDeserialization => None,
-        }
-    }
-}
+);
 
 #[cfg(test)]
 pub mod tests {

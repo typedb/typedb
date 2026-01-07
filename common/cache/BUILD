@@ -14,6 +14,7 @@ rust_library(
         "*.rs",
     ]),
     deps = [
+        "//common/error",
         "//resource",
 
         "@crates//:bincode",

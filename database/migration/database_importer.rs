@@ -1055,6 +1055,6 @@ typedb_error! {
         DoubleFinalisation(22, "Error finalizing import for database '{name}': it was already finalized. It is a sign of a corrupted file or a client bug.", name: String),
         Finalisation(23, "Error finalizing the imported database.", typedb_source: DatabaseCreateError),
         AccessAfterFinalisation(24, "Tried to modify the imported database's state after finalization. It is a sign of a client bug."),
-        CacheError(25, "Error writing import data.", source: CacheError),
+        CacheError(25, "Error writing import data.", typedb_source: CacheError),
     }
 }
