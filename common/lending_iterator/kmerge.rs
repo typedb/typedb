@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Borrow, cmp::Ordering, collections::BinaryHeap, marker::PhantomData};
+use std::{borrow::Borrow, cmp::Ordering, collections::BinaryHeap, marker::PhantomData, mem};
 
 use crate::{higher_order::FnHktHelper, LendingIterator, Peekable, Seekable};
 
@@ -97,9 +97,8 @@ where
 
         // force recomputation of heap element
         self.state = State::Pending;
-        self.iterators = self
-            .iterators
-            .drain()
+        self.iterators = mem::take(&mut self.iterators)
+            .into_iter()
             .chain(self.next_iterator.take())
             .filter_map(|mut it| {
                 it.iter.peek();

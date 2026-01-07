@@ -7,6 +7,7 @@
 use std::{
     cmp::Ordering,
     fmt::{Display, Formatter},
+    mem,
 };
 
 use answer::variable_value::VariableValue;
@@ -118,9 +119,8 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
 
         // force recomputation of heap element
         self.state = kmerge::State::Pending;
-        self.iterators = self
-            .iterators
-            .drain()
+        self.iterators = mem::take(&mut self.iterators)
+            .into_iter()
             .chain(self.next_iterator.take())
             .filter_map(|mut it| {
                 if let Some(Ok(item)) = it.iter.peek() {
