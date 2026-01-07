@@ -47,7 +47,7 @@ use storage::{
     sequence_number::SequenceNumber,
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
-use tracing::{event, Level};
+use tracing::{debug, event, Level};
 
 use crate::{
     transaction::TransactionError,
@@ -280,9 +280,14 @@ impl Database<WALClient> {
         let schema_txn_lock = Arc::new(RwLock::default());
 
         let query_cache = Arc::new(QueryCache::new());
-        let update_statistics =
-            make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
-        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), SequenceNumber::MIN, storage.clone());
+        let update_statistics = make_update_statistics_fn(
+            name.to_owned(),
+            storage.clone(),
+            schema.clone(),
+            schema_txn_lock.clone(),
+            query_cache.clone(),
+        );
+        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), name.to_owned(), SequenceNumber::MIN, storage.clone());
 
         Ok(Database::<WALClient> {
             name: name.to_owned(),
@@ -380,9 +385,15 @@ impl Database<WALClient> {
         };
 
         let query_cache = Arc::new(QueryCache::new());
-        let update_statistics =
-            make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
-        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), checkpoint_sequence_number, storage.clone());
+        let update_statistics = make_update_statistics_fn(
+            name.to_owned(),
+            storage.clone(),
+            schema.clone(),
+            schema_txn_lock.clone(),
+            query_cache.clone(),
+        );
+        let checkpoint_fn =
+            make_checkpoint_fn(path.to_owned(), name.to_owned(), checkpoint_sequence_number, storage.clone());
 
         let database = Database::<WALClient> {
             name: name.to_owned(),
@@ -498,21 +509,25 @@ impl Database<WALClient> {
 
 fn make_checkpoint_fn(
     path: PathBuf,
+    database_name: String,
     mut prev_checkpoint: SequenceNumber,
     storage: Arc<MVCCStorage<WALClient>>,
 ) -> impl FnMut() {
     move || {
         let watermark = storage.snapshot_watermark();
         if prev_checkpoint < watermark {
+            debug!("Starting checkpoint for database {database_name}");
             let checkpoint = CheckpointWriter::new(&path).unwrap();
             storage.checkpoint(&checkpoint).unwrap();
             checkpoint.finish().unwrap();
+            debug!("Finished checkpoint for database {database_name}");
             prev_checkpoint = watermark;
         }
     }
 }
 
 fn make_update_statistics_fn(
+    database_name: String,
     storage: Arc<MVCCStorage<WALClient>>,
     schema: Arc<RwLock<Schema>>,
     schema_txn_lock: Arc<RwLock<()>>,
@@ -522,9 +537,11 @@ fn make_update_statistics_fn(
         if storage.snapshot_watermark() > (*schema).read().unwrap().thing_statistics.sequence_number {
             let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
+            debug!("Starting updating statistics for database {database_name}");
             new_statistics.may_synchronise(&storage).expect("Statistics sync failed");
             query_cache.may_evict(&new_statistics);
             schema.write().unwrap().thing_statistics = Arc::new(new_statistics);
+            debug!("Finished updating statistics for database {database_name}");
         }
     }
 }
