@@ -6,7 +6,7 @@
 
 use std::{
     borrow::Cow,
-    cmp::{max, min},
+    cmp::{max, min, Ordering},
     collections::HashSet,
     fmt,
     hash::Hash,
@@ -316,10 +316,9 @@ impl AnnotationRange {
         // Helper to check if annotation value type is compatible with expected value type
         fn is_compatible(annotation_type: &ValueType, expected: &Option<ValueType>) -> bool {
             match expected {
-                None => true,
+                None => true, // used for unbound start or end value
                 Some(expected) => {
-                    annotation_type == expected
-                        || annotation_type.is_trivially_castable_to(expected.category())
+                    annotation_type == expected || annotation_type.is_trivially_castable_to(expected.category())
                 }
             }
         }
@@ -338,27 +337,28 @@ impl AnnotationRange {
                     is_compatible(&start_value_type, &value_type)
                 }
                 Some(end_inclusive) => {
-                    if start_inclusive.value_type() != end_inclusive.value_type() {
-                        return false;
-                    }
                     if !is_compatible(&start_inclusive.value_type(), &value_type) {
                         return false;
                     }
-
-                    match start_inclusive {
-                        Value::Boolean(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_boolean(),
-                        Value::Integer(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_integer(),
-                        Value::Double(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_double(),
-                        Value::Decimal(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_decimal(),
-                        Value::Date(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date(),
-                        Value::DateTime(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date_time(),
-                        Value::DateTimeTZ(start_inclusive) => {
-                            start_inclusive < &end_inclusive.clone().unwrap_date_time_tz()
-                        }
-                        Value::String(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_string(),
-                        Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
-                        Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
+                    if !end_inclusive.value_type().is_trivially_castable_to(start_inclusive.value_type().category()) {
+                        return false;
                     }
+                    start_inclusive.partial_cmp(end_inclusive) == Some(Ordering::Less)
+                    //
+                    // match start_inclusive {
+                    //     Value::Boolean(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_boolean(),
+                    //     Value::Integer(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_integer(),
+                    //     Value::Double(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_double(),
+                    //     Value::Decimal(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_decimal(),
+                    //     Value::Date(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date(),
+                    //     Value::DateTime(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date_time(),
+                    //     Value::DateTimeTZ(start_inclusive) => {
+                    //         start_inclusive < &end_inclusive.clone().unwrap_date_time_tz()
+                    //     }
+                    //     Value::String(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_string(),
+                    //     Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
+                    //     Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
+                    // }
                 }
             },
         }
@@ -457,8 +457,7 @@ impl AnnotationValues {
         if let Some(ref expected) = expected_value_type {
             let annotation_value_type = unique_value_types.iter().next().unwrap();
             // Check if the annotation's value type matches or is trivially castable to the expected type
-            if annotation_value_type != expected
-                && !annotation_value_type.is_trivially_castable_to(expected.category())
+            if annotation_value_type != expected && !annotation_value_type.is_trivially_castable_to(expected.category())
             {
                 return false;
             }
