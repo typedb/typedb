@@ -16,8 +16,7 @@
 - Explore the basics of TypeDB in our [Get Started Guide](https://typedb.com/docs/home/get-started/overview)
 - Master TypeDB concepts with the [TypeDB Concepts docs](https://typedb.com/docs/core-concepts/typedb/overview) and [TypeQL Concepts docs](https://typedb.com/docs/core-concepts/typeql/)
 - Discover more of TypeDB’s unique [Features](https://typedb.com/features).
-- Find further articles and lectures in our [Learning Center](https://typedb.com/learn).
-- Stay updated with the latest TypeDB news by [subscribing to the TypeDB newsletter](https://typedb.com/?dialog=newsletter).
+- Stay updated with the latest TypeDB news by [subscribing to the TypeDB newsletter](https://typedb.com/blog).
 - Join our vibrant developer community over on our [Discord](https://typedb.com/discord) chat server.
 
 ##  Why TypeDB?
