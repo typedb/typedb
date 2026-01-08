@@ -165,7 +165,6 @@ Install prerequisites:
 ### Developer resources
 
 - Documentation: https://typedb.com/docs
-- Discussion Forum: https://forum.typedb.com/
 - Discord Chat Server: https://typedb.com/discord
 - Community Projects: https://github.com/typedb-osi
 
@@ -174,7 +173,7 @@ Install prerequisites:
 If you want to begin your journey with TypeDB, you can explore the following resources:
 
 * More on TypeDB's [features](https://typedb.com/features)
-* In-depth dive into TypeDB's [philosophy](https://typedb.com/philosophy)
+* In-depth dive into TypeDB's [philosophy](https://typedb.com/docs/home/what-is-typedb)
 * [TypeDB Get Started Guide](https://typedb.com/docs/home/get-started/overview) 
 * [TypeDB Academy](https://typedb.com/docs/academy)
 * **[TypeQL](https://github.com/typedb/typeql)**
