@@ -1,4 +1,4 @@
-[![TypeDB](https://github.com/typedb/.github/raw/master/profile/banner.png)](https://typedb.com/introduction)
+[![TypeDB](https://github.com/typedb/.github/raw/master/profile/banner.png)](https://typedb.com/)
 
 [![Factory](https://factory.vaticle.com/api/status/typedb/typedb/badge.svg)](https://factory.vaticle.com/typedb/typedb)
 [![CircleCI](https://circleci.com/gh/typedb/typedb/tree/master.svg?style=shield)](https://circleci.com/gh/typedb/typedb/tree/master)
