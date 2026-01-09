@@ -18,7 +18,7 @@ use storage::{
     key_value::{StorageKey, StorageKeyArray},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
-use test_utils::{create_tmp_dir, init_logging};
+use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_storage::{create_storage, test_keyspace_set};
 
 use self::TestKeyspaceSet::Keyspace;
@@ -26,10 +26,42 @@ use self::TestKeyspaceSet::Keyspace;
 test_keyspace_set! {
     Keyspace => 0: "keyspace",
 }
+
+#[test]
+fn snapshot_generated_new_id() {
+    init_logging();
+    let mut profile = CommitProfile::DISABLED;
+    let storage_path = create_tmp_storage_dir();
+    let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
+
+    let mut snapshot1 = storage.clone().open_snapshot_write();
+    let mut snapshot2 = storage.clone().open_snapshot_write();
+    assert_eq!(snapshot1.open_sequence_number(), snapshot2.open_sequence_number());
+    assert_ne!(snapshot1.id(), snapshot2.id());
+
+    let snapshot1_id = snapshot1.id();
+    let snapshot1_open_seq_num = snapshot1.open_sequence_number();
+    let snapshot2_id = snapshot2.id();
+    snapshot1.put(StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1])));
+    let seqnum1 = snapshot1.commit(&mut profile).unwrap().unwrap();
+
+    let snapshot3 = storage.clone().open_snapshot_write();
+    assert_ne!(snapshot3.open_sequence_number(), snapshot1_open_seq_num);
+    assert_ne!(snapshot3.open_sequence_number(), snapshot2.open_sequence_number());
+    assert_eq!(snapshot3.open_sequence_number(), seqnum1);
+    assert_ne!(snapshot3.id(), snapshot2_id);
+
+    snapshot2.close_resources();
+
+    let snapshot4 = storage.clone().open_snapshot_schema();
+    assert_eq!(snapshot4.open_sequence_number(), seqnum1);
+    assert_ne!(snapshot4.id(), snapshot3.id());
+}
+
 #[test]
 fn snapshot_buffered_put_get() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let mut snapshot = storage.open_snapshot_write();
@@ -61,7 +93,7 @@ fn snapshot_buffered_put_get() {
 #[test]
 fn snapshot_buffered_put_iterate() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let mut snapshot = storage.open_snapshot_write();
@@ -86,7 +118,7 @@ fn snapshot_buffered_put_iterate() {
 #[test]
 fn snapshot_buffered_delete() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let mut snapshot = storage.open_snapshot_write();
@@ -116,7 +148,7 @@ fn snapshot_buffered_delete() {
 #[test]
 fn snapshot_read_through() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1]));
@@ -164,7 +196,7 @@ fn snapshot_read_through() {
 #[test]
 fn snapshot_read_buffered_delete_of_persisted_key() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0]));
@@ -222,7 +254,7 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
 #[test]
 fn snapshot_delete_reinserted() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
     let key_1 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1]));

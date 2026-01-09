@@ -138,7 +138,7 @@ impl Error for CacheError {
 
 #[cfg(test)]
 pub mod tests {
-    use test_utils::{create_tmp_dir, TempDir};
+    use test_utils::{create_tmp_storage_dir, TempDir};
 
     use crate::SpilloverCache;
     macro_rules! put {
@@ -153,7 +153,7 @@ pub mod tests {
     }
 
     fn create_cache_in_tmpdir() -> (TempDir, SpilloverCache<String>) {
-        let tmp_dir = create_tmp_dir();
+        let tmp_dir = create_tmp_storage_dir();
         let cache: SpilloverCache<String> = SpilloverCache::new(&tmp_dir.as_ref().to_path_buf(), Some("unit_test"), 1);
         (tmp_dir, cache)
     }

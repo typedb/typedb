@@ -8,6 +8,7 @@ use std::{
     collections::VecDeque,
     ffi::OsString,
     fmt, fs, io,
+    io::Write,
     path::{Path, PathBuf},
     sync::{
         mpsc::{sync_channel, SyncSender},
@@ -25,7 +26,7 @@ use concept::{
 };
 use concurrency::IntervalRunner;
 use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
-use durability::{wal::WAL, DurabilityServiceError};
+use durability::{wal::WAL, DurabilitySequenceNumber, DurabilityServiceError};
 use encoding::{
     error::EncodingError,
     graph::{
@@ -37,17 +38,26 @@ use encoding::{
 use error::typedb_error;
 use function::{function_cache::FunctionCache, FunctionError};
 use query::query_cache::QueryCache;
-use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
+use resource::{
+    constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL},
+    profile::CommitProfile,
+};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
+    record::CommitRecord,
     recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
     sequence_number::SequenceNumber,
+    snapshot::{snapshot_id::SnapshotId, CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 use tracing::{event, Level};
 
 use crate::{
-    transaction::TransactionError,
+    transaction::{
+        DataCommitError, SchemaCommitError,
+        SchemaCommitError::{SnapshotError, TypeCacheUpdateError},
+        TransactionError,
+    },
     DatabaseOpenError::FunctionCacheInitialise,
     DatabaseResetError::{
         CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,
@@ -64,6 +74,11 @@ pub(super) struct Schema {
 
 type SchemaWriteTransactionState = (bool, usize, VecDeque<TransactionReservationRequest>);
 
+enum TransactionReservationRequest {
+    Write(SyncSender<()>),
+    Schema(SyncSender<()>),
+}
+
 pub struct Database<D> {
     name: String,
     pub(super) path: PathBuf,
@@ -77,11 +92,6 @@ pub struct Database<D> {
     schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
     _statistics_updater: IntervalRunner,
     _checkpointer: IntervalRunner,
-}
-
-enum TransactionReservationRequest {
-    Write(SyncSender<()>),
-    Schema(SyncSender<()>),
 }
 
 impl<D> fmt::Debug for Database<D> {
@@ -222,6 +232,125 @@ impl<D> Database<D> {
     }
 }
 
+impl<D: DurabilityClient> Database<D> {
+    pub fn data_commit_with_commit_record(
+        &self,
+        commit_record: CommitRecord,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<(), DataCommitError> {
+        let snapshot = WriteSnapshot::new_with_commit_record(self.storage.clone(), commit_record);
+        self.data_commit_with_snapshot(snapshot, commit_profile)
+    }
+
+    pub fn data_commit_with_snapshot(
+        &self,
+        snapshot: WriteSnapshot<D>,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<(), DataCommitError> {
+        let commit_record_opt = snapshot
+            .finalise(commit_profile)
+            .map_err(|error| DataCommitError::SnapshotError { typedb_source: error })?;
+
+        if let Some(commit_record) = commit_record_opt {
+            let commit_result = self.storage.commit(commit_record, commit_profile);
+            match commit_result {
+                Ok(_) => Ok(()),
+                Err(error) => {
+                    let error = DataCommitError::SnapshotError {
+                        typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error },
+                    };
+                    Err(error)
+                }
+            }
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn schema_commit_with_commit_record(
+        &self,
+        commit_record: CommitRecord,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<(), SchemaCommitError> {
+        let snapshot = SchemaSnapshot::new_with_commit_record(self.storage.clone(), commit_record);
+        self.schema_commit_with_snapshot(snapshot, commit_profile)
+    }
+
+    pub fn schema_commit_with_snapshot(
+        &self,
+        snapshot: SchemaSnapshot<D>,
+        commit_profile: &mut CommitProfile,
+    ) -> Result<(), SchemaCommitError> {
+        // Schema commits must wait for all other data operations to finish. No new read or write
+        // transaction may open until the commit completes.
+        let mut schema_commit_guard = self.schema.write().unwrap();
+        let mut schema = (*schema_commit_guard).clone();
+
+        let commit_record_opt = snapshot
+            .finalise(commit_profile)
+            .map_err(|error| SchemaCommitError::SnapshotError { typedb_source: error })?;
+
+        if let Some(commit_record) = commit_record_opt {
+            let sequence_number = match self.storage.commit(commit_record, commit_profile) {
+                Ok(sequence_number) => Some(sequence_number),
+                Err(error) => {
+                    return Err(SnapshotError {
+                        typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error },
+                    })
+                }
+            };
+
+            // `None` means empty commit
+            if let Some(sequence_number) = sequence_number {
+                let type_cache = match TypeCache::new(self.storage.clone(), sequence_number) {
+                    Ok(type_cache) => type_cache,
+                    Err(typedb_source) => return Err(TypeCacheUpdateError { typedb_source }),
+                };
+                // replace Schema cache
+                schema.type_cache = Arc::new(type_cache);
+                let type_manager = TypeManager::new(
+                    self.definition_key_generator.clone(),
+                    self.type_vertex_generator.clone(),
+                    Some(schema.type_cache.clone()),
+                );
+                let function_cache = match FunctionCache::new(self.storage.clone(), &type_manager, sequence_number) {
+                    Ok(function_cache) => function_cache,
+                    Err(typedb_source) => return Err(SchemaCommitError::FunctionError { typedb_source }),
+                };
+                schema.function_cache = Arc::new(function_cache);
+                commit_profile.schema_update_caches_updated();
+            }
+
+            // replace statistics
+            let mut thing_statistics = (*schema.thing_statistics).clone();
+
+            if let Err(typedb_source) = thing_statistics.may_synchronise(&self.storage) {
+                return Err(crate::transaction::SchemaCommitError::StatisticsError { typedb_source });
+            }
+            commit_profile.schema_update_statistics_keys_updated();
+
+            schema.thing_statistics = Arc::new(thing_statistics);
+            self.query_cache.force_reset(&schema.thing_statistics);
+
+            *schema_commit_guard = schema;
+
+            Ok(())
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn commit_record_exists(
+        &self,
+        open_sequence_number: DurabilitySequenceNumber,
+        snapshot_id: SnapshotId,
+    ) -> Result<bool, DatabaseOpenError> {
+        self.storage
+            .commit_record_exists(open_sequence_number, snapshot_id)
+            .map_err(|typedb_source| DatabaseOpenError::DurabilityClientRead { typedb_source })
+    }
+}
+
 impl Database<WALClient> {
     pub fn open(path: &Path) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::InvalidUnicodeName;
@@ -245,7 +374,7 @@ impl Database<WALClient> {
 
         fs::create_dir(path).map_err(|source| DirectoryCreate { name: name.to_string(), source: Arc::new(source) })?;
 
-        let wal = WAL::create(path).map_err(|error| WALOpen { source: error })?;
+        let wal = WAL::create(path).map_err(|source| WALOpen { source })?;
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
 
@@ -311,7 +440,7 @@ impl Database<WALClient> {
         );
 
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
-        let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
+        let wal = WAL::load(path).map_err(|source| WALOpen { source })?;
         let wal_last_sequence_number = wal.previous();
 
         let mut wal_client = WALClient::new(wal);
@@ -333,7 +462,7 @@ impl Database<WALClient> {
         let mut thing_statistics = storage
             .durability()
             .find_last_unsequenced_type::<Statistics>()
-            .map_err(|err| DurabilityClientRead { typedb_source: err })?
+            .map_err(|typedb_source| DurabilityClientRead { typedb_source })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
         event!(
             Level::TRACE,
@@ -526,7 +655,7 @@ typedb_error! {
         DirectoryCreate(3, "Error creating directory for '{name}'", name: String, source: Arc<io::Error>),
         StorageOpen(4, "Error opening storage layer.", typedb_source: StorageOpenError),
         WALOpen(5, "Error opening WAL.", source: DurabilityServiceError),
-        DurabilityClientOpen(6, "Error opening durability client.", typedb_source:DurabilityClientError),
+        DurabilityClientOpen(6, "Error opening durability client.", typedb_source: DurabilityClientError),
         DurabilityClientRead(7, "Error reading from durability client.", typedb_source: DurabilityClientError),
         CheckpointLoad(8, "Error loading checkpoint for database '{name}'.", name: String, typedb_source: CheckpointLoadError),
         CheckpointCreate(9, "Error creating checkpoint for database '{name}'.", name: String, source: CheckpointCreateError),

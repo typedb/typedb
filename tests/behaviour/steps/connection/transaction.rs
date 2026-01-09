@@ -27,7 +27,7 @@ async fn server_open_transaction_for_database(
     tx_name: String,
     database_name: &'_ str,
 ) -> ActiveTransaction {
-    let database = server.database_manager().database(database_name).expect("Expected database");
+    let database = server.database_manager().await.database(database_name).expect("Expected database");
     match tx_name.as_str() {
         "read" => ActiveTransaction::Read(
             TransactionRead::open(database, TransactionOptions::default()).expect("Read transaction"),
@@ -157,16 +157,16 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                 }
             } else {
                 // after each successful schema trasaction, we re-test the schema export/import
-                test_schema_export(context, &types_syntax);
+                test_schema_export(context, &types_syntax).await;
             }
         }
     }
 }
 
-fn test_schema_export(context: &mut Context, types_syntax: &str) {
+async fn test_schema_export(context: &mut Context, types_syntax: &str) {
     // export, re-import, and export schema and verify that's equal!
     let guard = context.server.as_ref().unwrap().lock().unwrap();
-    let database_manager = guard.database_manager();
+    let database_manager = guard.database_manager().await;
     if !types_syntax.trim().is_empty() {
         const REIMPORT_DB: &str = "schema_reimport_from_test_tmp";
         database_manager.put_database(REIMPORT_DB).unwrap();

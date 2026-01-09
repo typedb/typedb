@@ -14,20 +14,16 @@ use std::{
     sync::Arc,
 };
 
-use compiler::{executable::ExecutableCompilationError, query_structure::PipelineStructure};
+use compiler::query_structure::PipelineStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
-    database_manager::DatabaseManager,
     query::{
         execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
         WriteQueryAnswer, WriteQueryResult,
     },
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
-use diagnostics::{
-    diagnostics_manager::DiagnosticsManager,
-    metrics::{ClientEndpoint, LoadKind},
-};
+use diagnostics::metrics::{ClientEndpoint, LoadKind};
 use executor::{
     batch::Batch,
     document::ConceptDocument,
@@ -43,28 +39,36 @@ use query::error::QueryError;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
-    sync::{broadcast, mpsc::Receiver, oneshot, watch},
+    spawn,
+    sync::{
+        broadcast,
+        mpsc::{Receiver, Sender},
+        oneshot,
+    },
     task::{spawn_blocking, JoinHandle},
     time::Instant,
 };
 use tracing::{event, Level};
 use typeql::{parse_query, query::SchemaQuery};
-use uuid::Uuid;
 
-use crate::service::{
-    http::message::{
-        analyze::{
-            encode_analyzed_query,
-            structure::{encode_analyzed_pipeline_for_studio, AnalyzedPipelineResponse},
-            AnalysedQueryResponse,
+use crate::{
+    service::{
+        http::message::{
+            analyze::{
+                encode_analyzed_query,
+                structure::{encode_analyzed_pipeline_for_studio, AnalyzedPipelineResponse},
+                AnalysedQueryResponse,
+            },
+            query::{document::encode_document, row::encode_row},
         },
-        query::{document::encode_document, row::encode_row},
+        may_encode_pipeline_structure,
+        transaction_service::{
+            commit_schema_transaction, commit_write_transaction, init_transaction_timeout, is_write_pipeline,
+            with_readable_transaction, Transaction, TransactionServiceError,
+        },
+        IncludeInvolvedBlocks, QueryType, TransactionType,
     },
-    may_encode_pipeline_structure,
-    transaction_service::{
-        init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
-    },
-    IncludeInvolvedBlocks, QueryType, TransactionType,
+    state::ArcServerState,
 };
 
 macro_rules! respond_error_and_return_break {
@@ -145,13 +149,11 @@ fn respond_transaction_response(
 
 #[derive(Debug)]
 pub(crate) struct TransactionService {
-    database_manager: Arc<DatabaseManager>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
+    server_state: ArcServerState,
 
     request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
     query_interrupt_sender: broadcast::Sender<InterruptType>,
     query_interrupt_receiver: ExecutionInterrupt,
-    shutdown_receiver: watch::Receiver<()>,
 
     timeout_at: Instant,
     schema_lock_acquire_timeout_millis: Option<u64>,
@@ -159,6 +161,9 @@ pub(crate) struct TransactionService {
     transaction: Option<Transaction>,
     query_queue: VecDeque<(TransactionResponder, QueueOptions, typeql::query::Pipeline, String)>,
     running_write_query: Option<(TransactionResponder, JoinHandle<(Transaction, WriteQueryResult)>)>,
+
+    close_sender: Sender<()>,
+    close_receiver: Receiver<()>,
 }
 
 #[derive(Debug)]
@@ -226,20 +231,17 @@ impl fmt::Display for QueryAnswerWarning {
 
 impl TransactionService {
     pub(crate) fn new(
-        database_manager: Arc<DatabaseManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
+        server_state: ArcServerState,
         request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
-        shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
+        let (close_sender, close_receiver) = tokio::sync::mpsc::channel(1);
         Self {
-            database_manager,
-            diagnostics_manager,
+            server_state,
 
             request_stream,
             query_interrupt_sender,
             query_interrupt_receiver: ExecutionInterrupt::new(query_interrupt_receiver),
-            shutdown_receiver,
 
             timeout_at: init_transaction_timeout(None),
             schema_lock_acquire_timeout_millis: None,
@@ -247,6 +249,9 @@ impl TransactionService {
             transaction: None,
             query_queue: VecDeque::with_capacity(20),
             running_write_query: None,
+
+            close_sender,
+            close_receiver,
         }
     }
 
@@ -260,8 +265,10 @@ impl TransactionService {
         let transaction_timeout_millis = options.transaction_timeout_millis;
 
         let database = self
-            .database_manager
-            .database(database_name.as_ref())
+            .server_state
+            .databases_get_for_transaction(database_name.as_str(), type_)
+            .await
+            .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?
             .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name.clone() })?;
 
         let transaction = match type_ {
@@ -293,7 +300,19 @@ impl TransactionService {
                 Transaction::Schema(transaction)
             }
         };
-        self.diagnostics_manager.increment_load_count(ClientEndpoint::Http, &database_name, transaction.load_kind());
+
+        let transaction_add_result =
+            self.server_state.transactions_add(transaction.id(), transaction.type_(), self.close_sender.clone()).await;
+        if let Err(typedb_source) = transaction_add_result {
+            transaction.close();
+            return Err(TransactionServiceError::CannotOpen { typedb_source });
+        }
+
+        self.server_state.diagnostics_manager().await.increment_load_count(
+            ClientEndpoint::Http,
+            &database_name,
+            transaction.load_kind(),
+        );
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
 
@@ -302,11 +321,20 @@ impl TransactionService {
     }
 
     pub(crate) async fn listen(&mut self) {
+        let mut global_shutdown_receiver = self.server_state.shutdown_receiver().await;
         loop {
             let control = if let Some((_, write_query_worker)) = &mut self.running_write_query {
                 tokio::select! { biased;
-                    _ = self.shutdown_receiver.changed() => {
+                    _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
+                    recv_message = self.close_receiver.recv() => {
+                        event!(Level::TRACE, "{}", match recv_message {
+                            Some(()) => "Transaction close signal received, closing transaction service.",
+                            None => "Close channel dropped; no more control possible. Closing transaction service.",
+                        });
                         self.do_close().await;
                         return;
                     }
@@ -330,8 +358,16 @@ impl TransactionService {
                 }
             } else {
                 tokio::select! { biased;
-                    _ = self.shutdown_receiver.changed() => {
+                    _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
+                    recv_message = self.close_receiver.recv() => {
+                        event!(Level::TRACE, "{}", match recv_message {
+                            Some(()) => "Transaction close signal received, closing transaction service.",
+                            None => "Close channel dropped; no more control possible. Closing transaction service.",
+                        });
                         self.do_close().await;
                         return;
                     }
@@ -392,20 +428,21 @@ impl TransactionService {
             respond_error_and_return_break!(responder, TransactionServiceError::ServiceFailedQueueCleanup {});
         }
 
-        let diagnostics_manager = self.diagnostics_manager.clone();
+        let diagnostics_manager = self.server_state.diagnostics_manager().await;
+        let server_state = self.server_state.clone();
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
                 respond_error_and_return_break!(responder, TransactionServiceError::CannotCommitReadTransaction {});
             }
-            Transaction::Write(transaction) => spawn_blocking(move || {
+            Transaction::Write(transaction) => spawn(async move {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
                 );
                 unwrap_or_execute_else_respond_error_and_return_break!(
-                    transaction.commit().1,
+                    commit_write_transaction(server_state, transaction).await.1, // TODO: Use profile
                     responder,
                     |typedb_source| { TransactionServiceError::DataCommitFailed { typedb_source } }
                 );
@@ -414,14 +451,15 @@ impl TransactionService {
             })
             .await
             .expect("Expected write transaction commit completion"),
-            Transaction::Schema(transaction) => spawn_blocking(move || {
+            Transaction::Schema(transaction) => spawn(async move {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,
                 );
+
                 unwrap_or_execute_else_respond_error_and_return_break!(
-                    transaction.commit().1,
+                    commit_schema_transaction(server_state, transaction).await.1, // TODO: Use profile
                     responder,
                     |typedb_source| { TransactionServiceError::SchemaCommitFailed { typedb_source } }
                 );
@@ -481,7 +519,7 @@ impl TransactionService {
         match self.transaction.take() {
             None => (),
             Some(Transaction::Read(transaction)) => {
-                self.diagnostics_manager.decrement_load_count(
+                self.server_state.diagnostics_manager().await.decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::ReadTransactions,
@@ -489,7 +527,7 @@ impl TransactionService {
                 transaction.close()
             }
             Some(Transaction::Write(transaction)) => {
-                self.diagnostics_manager.decrement_load_count(
+                self.server_state.diagnostics_manager().await.decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
@@ -497,7 +535,7 @@ impl TransactionService {
                 transaction.close()
             }
             Some(Transaction::Schema(transaction)) => {
-                self.diagnostics_manager.decrement_load_count(
+                self.server_state.diagnostics_manager().await.decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,

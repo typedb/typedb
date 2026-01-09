@@ -44,9 +44,13 @@ impl Deref for TempDir {
     }
 }
 
-pub fn create_tmp_dir() -> TempDir {
+pub fn create_tmp_storage_dir() -> TempDir {
+    create_tmp_dir("test_storage")
+}
+
+pub fn create_tmp_dir(prefix: &str) -> TempDir {
     let id = rand::random::<u64>();
-    let dir_name = format!("test_storage_{}", id);
+    let dir_name = format!("{prefix}_{}", id);
     let dir = std::env::temp_dir().join(Path::new(&dir_name));
     fs::create_dir_all(&dir).unwrap();
     TempDir(dir)

@@ -17,17 +17,13 @@ use std::{
 use compiler::query_structure::PipelineStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
-    database_manager::DatabaseManager,
     query::{
         execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
         WriteQueryAnswer, WriteQueryResult,
     },
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
-use diagnostics::{
-    diagnostics_manager::DiagnosticsManager,
-    metrics::{ActionKind, ClientEndpoint, LoadKind},
-};
+use diagnostics::metrics::{ActionKind, ClientEndpoint, LoadKind};
 use executor::{
     batch::Batch,
     document::ConceptDocument,
@@ -42,10 +38,10 @@ use query::error::QueryError;
 use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
+    spawn,
     sync::{
         broadcast,
         mpsc::{channel, Receiver, Sender},
-        watch,
     },
     task::{spawn_blocking, JoinHandle},
     time::{timeout, Instant},
@@ -60,30 +56,34 @@ use typedb_protocol::{
 use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
-use crate::service::{
-    grpc::{
-        analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
-        diagnostics::run_with_diagnostics_async,
-        document::encode_document,
-        error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
-        options::{query_options_from_proto, transaction_options_from_proto},
-        response_builders::transaction::{
-            query_initial_res_from_error, query_initial_res_from_query_res_ok,
-            query_initial_res_ok_from_query_res_ok_ok, query_res_ok_concept_document_stream,
-            query_res_ok_concept_row_stream, query_res_ok_done, query_res_part_from_concept_documents,
-            query_res_part_from_concept_rows, transaction_open_res, transaction_server_res_analyze_res,
-            transaction_server_res_commit_res, transaction_server_res_part_stream_signal_continue,
-            transaction_server_res_part_stream_signal_done, transaction_server_res_part_stream_signal_error,
-            transaction_server_res_parts_query_part, transaction_server_res_query_res,
-            transaction_server_res_rollback_res,
+use crate::{
+    service::{
+        grpc::{
+            analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
+            diagnostics::run_with_diagnostics_async,
+            document::encode_document,
+            error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
+            options::{query_options_from_proto, transaction_options_from_proto},
+            response_builders::transaction::{
+                query_initial_res_from_error, query_initial_res_from_query_res_ok,
+                query_initial_res_ok_from_query_res_ok_ok, query_res_ok_concept_document_stream,
+                query_res_ok_concept_row_stream, query_res_ok_done, query_res_part_from_concept_documents,
+                query_res_part_from_concept_rows, transaction_open_res, transaction_server_res_analyze_res,
+                transaction_server_res_commit_res, transaction_server_res_part_stream_signal_continue,
+                transaction_server_res_part_stream_signal_done, transaction_server_res_part_stream_signal_error,
+                transaction_server_res_parts_query_part, transaction_server_res_query_res,
+                transaction_server_res_rollback_res,
+            },
+            row::encode_row,
         },
-        row::encode_row,
+        may_encode_pipeline_structure,
+        transaction_service::{
+            commit_schema_transaction, commit_write_transaction, init_transaction_timeout, is_write_pipeline,
+            with_readable_transaction, Transaction, TransactionServiceError,
+        },
+        IncludeInvolvedBlocks, TransactionType,
     },
-    may_encode_pipeline_structure,
-    transaction_service::{
-        init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
-    },
-    IncludeInvolvedBlocks,
+    state::ArcServerState,
 };
 
 macro_rules! unwrap_or_execute_and_return {
@@ -96,28 +96,6 @@ macro_rules! unwrap_or_execute_and_return {
             }
         }
     }};
-}
-
-#[derive(Debug)]
-pub(crate) struct TransactionService {
-    database_manager: Arc<DatabaseManager>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
-
-    request_stream: Streaming<typedb_protocol::transaction::Client>,
-    response_sender: Sender<Result<ProtocolServer, Status>>,
-    query_interrupt_sender: broadcast::Sender<InterruptType>,
-    query_interrupt_receiver: ExecutionInterrupt,
-    shutdown_receiver: watch::Receiver<()>,
-
-    timeout_at: Instant,
-    schema_lock_acquire_timeout_millis: Option<u64>,
-    network_latency_millis: Option<u64>,
-
-    is_open: bool,
-    transaction: Option<Transaction>,
-    query_queue: VecDeque<(Uuid, QueueOptions, typeql::query::Pipeline, String)>,
-    query_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
-    running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
 }
 
 macro_rules! send_ok_message {
@@ -141,119 +119,45 @@ macro_rules! send_ok_message_else_return_break {
     }};
 }
 
-enum ImmediateQueryResponse {
-    NonFatalErr(typedb_protocol::Error),
-    ResOk(typedb_protocol::query::initial_res::Ok),
-}
+#[derive(Debug)]
+pub(crate) struct TransactionService {
+    server_state: ArcServerState,
 
-enum ImmediateAnalyzeResponse {
-    NonFatalErr(typedb_protocol::Error),
-    ResAnalyse(typedb_protocol::analyze::res::AnalyzedQuery),
-}
+    request_stream: Streaming<typedb_protocol::transaction::Client>,
+    response_sender: Sender<Result<ProtocolServer, Status>>,
+    query_interrupt_sender: broadcast::Sender<InterruptType>,
+    query_interrupt_receiver: ExecutionInterrupt,
 
-impl ImmediateQueryResponse {
-    fn non_fatal_err(error: impl IntoProtocolErrorMessage) -> Self {
-        Self::NonFatalErr(error.into_error_message())
-    }
+    timeout_at: Instant,
+    schema_lock_acquire_timeout_millis: Option<u64>,
+    network_latency_millis: Option<u64>,
 
-    fn ok(ok_message: typedb_protocol::query::initial_res::ok::Ok) -> Self {
-        ImmediateQueryResponse::ResOk(typedb_protocol::query::initial_res::Ok { ok: Some(ok_message) })
-    }
-}
+    is_open: bool,
+    transaction: Option<Transaction>,
+    query_queue: VecDeque<(Uuid, QueueOptions, typeql::query::Pipeline, String)>,
+    query_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
+    running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
 
-impl ImmediateAnalyzeResponse {
-    fn non_fatal_err(error: impl IntoProtocolErrorMessage) -> Self {
-        Self::NonFatalErr(error.into_error_message())
-    }
-
-    fn analyzed_query(analyzed: typedb_protocol::analyze::res::AnalyzedQuery) -> Self {
-        Self::ResAnalyse(analyzed)
-    }
-}
-
-enum StreamQueryResponse {
-    // initial open response
-    InitOk(typedb_protocol::query::initial_res::Ok),
-    InitErr(typedb_protocol::Error),
-    // stream responses
-    StreamNextRow(typedb_protocol::ConceptRow),
-    StreamNextDocument(typedb_protocol::ConceptDocument),
-    StreamDoneOk(),
-    StreamDoneErr(typedb_protocol::Error),
-}
-
-impl StreamQueryResponse {
-    fn init_ok_rows(
-        columns: &StreamQueryOutputDescriptor,
-        query_type: typedb_protocol::query::Type,
-        query_structure: Option<typedb_protocol::analyze::res::analyzed_query::Pipeline>,
-    ) -> Self {
-        let columns = columns.iter().map(|(name, _)| name.to_string()).collect();
-        let message = query_res_ok_concept_row_stream(columns, query_type, query_structure);
-        Self::InitOk(query_initial_res_ok_from_query_res_ok_ok(message))
-    }
-
-    fn init_ok_documents(query_type: typedb_protocol::query::Type) -> Self {
-        let message = query_res_ok_concept_document_stream(query_type);
-        Self::InitOk(query_initial_res_ok_from_query_res_ok_ok(message))
-    }
-
-    fn init_err(error: impl IntoProtocolErrorMessage) -> Self {
-        Self::InitErr(error.into_error_message())
-    }
-
-    fn next_row(row: typedb_protocol::ConceptRow) -> Self {
-        Self::StreamNextRow(row)
-    }
-
-    fn next_document(document: typedb_protocol::ConceptDocument) -> Self {
-        Self::StreamNextDocument(document)
-    }
-
-    fn done_ok() -> Self {
-        Self::StreamDoneOk()
-    }
-
-    fn done_err(error: impl IntoProtocolErrorMessage) -> Self {
-        Self::StreamDoneErr(error.into_error_message())
-    }
-}
-
-enum StreamingCondition {
-    Count(usize),
-    Duration(Instant, usize),
-}
-
-impl StreamingCondition {
-    fn continue_(&self, iteration: usize) -> bool {
-        match self {
-            StreamingCondition::Count(count) => iteration < *count,
-            StreamingCondition::Duration(start_time, limit_millis) => {
-                (Instant::now().duration_since(*start_time).as_millis() as usize) < *limit_millis
-            }
-        }
-    }
+    close_sender: Sender<()>,
+    close_receiver: Receiver<()>,
 }
 
 impl TransactionService {
     pub(crate) fn new(
-        database_manager: Arc<DatabaseManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
+        server_state: ArcServerState,
         request_stream: Streaming<typedb_protocol::transaction::Client>,
         response_sender: Sender<Result<ProtocolServer, Status>>,
-        shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
+        let (close_sender, close_receiver) = channel(1);
 
         Self {
-            database_manager,
-            diagnostics_manager,
+            server_state,
 
             request_stream,
             response_sender,
             query_interrupt_sender,
             query_interrupt_receiver: ExecutionInterrupt::new(query_interrupt_receiver),
-            shutdown_receiver,
 
             timeout_at: init_transaction_timeout(None),
             schema_lock_acquire_timeout_millis: None,
@@ -264,15 +168,27 @@ impl TransactionService {
             query_queue: VecDeque::with_capacity(20),
             query_responders: HashMap::new(),
             running_write_query: None,
+
+            close_sender,
+            close_receiver,
         }
     }
 
     pub(crate) async fn listen(&mut self) {
+        let mut global_shutdown_receiver = self.server_state.shutdown_receiver().await;
         loop {
             let result = if let Some((req_id, write_query_worker)) = &mut self.running_write_query {
                 tokio::select! { biased;
-                    _ = self.shutdown_receiver.changed() => {
+                    _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
+                    recv_message = self.close_receiver.recv() => {
+                        event!(Level::TRACE, "{}", match recv_message {
+                            Some(()) => "Transaction close signal received, closing transaction service.",
+                            None => "Close channel dropped; no more control possible. Closing transaction service.",
+                        });
                         self.do_close().await;
                         return;
                     }
@@ -299,8 +215,16 @@ impl TransactionService {
                 }
             } else {
                 tokio::select! { biased;
-                    _ = self.shutdown_receiver.changed() => {
+                    _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
+                    recv_message = self.close_receiver.recv() => {
+                        event!(Level::TRACE, "{}", match recv_message {
+                            Some(()) => "Transaction close signal received, closing transaction service.",
+                            None => "Close channel dropped; no more control possible. Closing transaction service.",
+                        });
                         self.do_close().await;
                         return;
                     }
@@ -378,7 +302,7 @@ impl TransactionService {
         match (self.is_open, req) {
             (false, typedb_protocol::transaction::req::Req::OpenReq(open_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     Some(open_req.database.clone()),
                     ActionKind::TransactionOpen,
                     || async {
@@ -398,7 +322,7 @@ impl TransactionService {
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     self.get_database_name().map(|name| name.to_owned()),
                     ActionKind::TransactionQuery,
                     || async { self.handle_query(request_id, query_req).await },
@@ -407,7 +331,7 @@ impl TransactionService {
             }
             (true, typedb_protocol::transaction::req::Req::AnalyzeReq(analyze_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     self.get_database_name().map(|name| name.to_owned()),
                     ActionKind::TransactionAnalyse,
                     || async { self.handle_analyse_query(request_id, analyze_req).await },
@@ -424,7 +348,7 @@ impl TransactionService {
             }
             (true, typedb_protocol::transaction::req::Req::CommitReq(commit_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     self.get_database_name().map(|name| name.to_owned()),
                     ActionKind::TransactionCommit,
                     || async {
@@ -437,7 +361,7 @@ impl TransactionService {
             }
             (true, typedb_protocol::transaction::req::Req::RollbackReq(rollback_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     self.get_database_name().map(|name| name.to_owned()),
                     ActionKind::TransactionRollback,
                     || async { self.handle_rollback(request_id, rollback_req).await },
@@ -446,7 +370,7 @@ impl TransactionService {
             }
             (true, typedb_protocol::transaction::req::Req::CloseReq(close_req)) => {
                 run_with_diagnostics_async(
-                    self.diagnostics_manager.clone(),
+                    self.server_state.diagnostics_manager().await.clone(),
                     self.get_database_name().map(|name| name.to_owned()),
                     ActionKind::TransactionClose,
                     || async {
@@ -507,16 +431,25 @@ impl TransactionService {
         let transaction_options = transaction_options_from_proto(open_req.options);
         let transaction_timeout_millis = transaction_options.transaction_timeout_millis;
 
-        let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type)
-            .map_err(|_| ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status())?;
+        let transaction_type =
+            decode_transaction_type(typedb_protocol::transaction::Type::try_from(open_req.r#type).map_err(|_| {
+                ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status()
+            })?);
 
         let database_name = open_req.database;
-        let database = self.database_manager.database(database_name.as_ref()).ok_or_else(|| {
-            TransactionServiceError::DatabaseNotFound { name: database_name.clone() }.into_error_message().into_status()
-        })?;
+        let database = self
+            .server_state
+            .databases_get_for_transaction(database_name.as_ref(), transaction_type)
+            .await
+            .map_err(|typedb_source| typedb_source.into_error_message().into_status())?
+            .ok_or_else(|| {
+                TransactionServiceError::DatabaseNotFound { name: database_name.clone() }
+                    .into_error_message()
+                    .into_status()
+            })?;
 
         let transaction = match transaction_type {
-            typedb_protocol::transaction::Type::Read => {
+            TransactionType::Read => {
                 let transaction = spawn_blocking(move || {
                     TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
@@ -526,7 +459,7 @@ impl TransactionService {
                 .unwrap()?;
                 Transaction::Read(transaction)
             }
-            typedb_protocol::transaction::Type::Write => {
+            TransactionType::Write => {
                 let transaction = spawn_blocking(move || {
                     TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
@@ -536,7 +469,7 @@ impl TransactionService {
                 .unwrap()?;
                 Transaction::Write(transaction)
             }
-            typedb_protocol::transaction::Type::Schema => {
+            TransactionType::Schema => {
                 let transaction = spawn_blocking(move || {
                     TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
                         TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
@@ -547,7 +480,19 @@ impl TransactionService {
                 Transaction::Schema(transaction)
             }
         };
-        self.diagnostics_manager.increment_load_count(ClientEndpoint::Grpc, &database_name, transaction.load_kind());
+
+        let transaction_add_result =
+            self.server_state.transactions_add(transaction.id(), transaction.type_(), self.close_sender.clone()).await;
+        if let Err(typedb_source) = transaction_add_result {
+            transaction.close();
+            return Err(typedb_source.into_error_message().into_status());
+        }
+
+        self.server_state.diagnostics_manager().await.increment_load_count(
+            ClientEndpoint::Grpc,
+            &database_name,
+            transaction.load_kind(),
+        );
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
         self.is_open = true;
@@ -580,19 +525,20 @@ impl TransactionService {
         // finish executing any remaining writes so they make it into the commit
         self.finish_queued_write_queries(InterruptType::TransactionCommitted).await?;
 
-        let diagnostics_manager = self.diagnostics_manager.clone();
+        let diagnostics_manager = self.server_state.diagnostics_manager().await.clone();
+        let server_state = self.server_state.clone();
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
                 Err(TransactionServiceError::CannotCommitReadTransaction {}.into_error_message().into_status())
             }
-            Transaction::Write(transaction) => spawn_blocking(move || {
+            Transaction::Write(transaction) => spawn(async move {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
                 );
-                let (profile, commit_result) = transaction.commit();
+                let (profile, commit_result) = commit_write_transaction(server_state, transaction).await;
                 if profile.is_enabled() {
                     event!(Level::INFO, "commit done.\n{}", profile);
                 }
@@ -602,13 +548,13 @@ impl TransactionService {
             })
             .await
             .expect("Expected write transaction commit completion"),
-            Transaction::Schema(transaction) => spawn_blocking(move || {
+            Transaction::Schema(transaction) => spawn(async move {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,
                 );
-                let (profile, commit_result) = transaction.commit();
+                let (profile, commit_result) = commit_schema_transaction(server_state, transaction).await;
                 if profile.is_enabled() {
                     event!(Level::INFO, "commit done.\n{}", profile);
                 }
@@ -681,7 +627,7 @@ impl TransactionService {
         match self.transaction.take() {
             None => (),
             Some(Transaction::Read(transaction)) => {
-                self.diagnostics_manager.decrement_load_count(
+                self.server_state.diagnostics_manager().await.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
                     LoadKind::ReadTransactions,
@@ -689,7 +635,7 @@ impl TransactionService {
                 transaction.close()
             }
             Some(Transaction::Write(transaction)) => {
-                self.diagnostics_manager.decrement_load_count(
+                self.server_state.diagnostics_manager().await.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
@@ -697,7 +643,7 @@ impl TransactionService {
                 transaction.close()
             }
             Some(Transaction::Schema(transaction)) => {
-                self.diagnostics_manager.decrement_load_count(
+                self.server_state.diagnostics_manager().await.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,
@@ -887,10 +833,9 @@ impl TransactionService {
         let query = query_req.query;
         let parsed = match parse_query(&query) {
             Ok(parsed) => parsed,
-            Err(err) => {
-                let response = ImmediateQueryResponse::non_fatal_err(TransactionServiceError::QueryParseFailed {
-                    typedb_source: err,
-                });
+            Err(typedb_source) => {
+                let response =
+                    ImmediateQueryResponse::non_fatal_err(TransactionServiceError::QueryParseFailed { typedb_source });
                 return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
             }
         };
@@ -1192,10 +1137,10 @@ impl TransactionService {
                 Ok(encoded_row) => {
                     Self::submit_response_async(&sender, StreamQueryResponse::next_row(encoded_row)).await;
                 }
-                Err(err) => {
+                Err(typedb_source) => {
                     Self::submit_response_async(
                         &sender,
-                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
+                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                     )
                     .await;
                     return;
@@ -1248,10 +1193,10 @@ impl TransactionService {
                 Ok(encoded_document) => {
                     Self::submit_response_async(&sender, StreamQueryResponse::next_document(encoded_document)).await;
                 }
-                Err(err) => {
+                Err(typedb_source) => {
                     Self::submit_response_async(
                         &sender,
-                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
+                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                     )
                     .await;
                     return;
@@ -1370,10 +1315,10 @@ impl TransactionService {
                     Ok(encoded_document) => {
                         Self::submit_response_sync(sender, StreamQueryResponse::next_document(encoded_document))
                     }
-                    Err(err) => {
+                    Err(typedb_source) => {
                         Self::submit_response_sync(
                             sender,
-                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
+                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                         );
                         return;
                     }
@@ -1441,10 +1386,10 @@ impl TransactionService {
                 );
                 match encoded_row {
                     Ok(encoded_row) => Self::submit_response_sync(sender, StreamQueryResponse::next_row(encoded_row)),
-                    Err(err) => {
+                    Err(typedb_source) => {
                         Self::submit_response_sync(
                             sender,
-                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
+                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                         );
                         return;
                     }
@@ -1500,6 +1445,108 @@ impl TransactionService {
 
     fn get_database_name(&self) -> Option<&str> {
         self.transaction.as_ref().map(Transaction::database_name)
+    }
+}
+
+fn decode_transaction_type(transaction_type: typedb_protocol::transaction::Type) -> TransactionType {
+    match transaction_type {
+        typedb_protocol::transaction::Type::Read => TransactionType::Read,
+        typedb_protocol::transaction::Type::Write => TransactionType::Write,
+        typedb_protocol::transaction::Type::Schema => TransactionType::Schema,
+    }
+}
+
+enum ImmediateAnalyzeResponse {
+    NonFatalErr(typedb_protocol::Error),
+    ResAnalyse(typedb_protocol::analyze::res::AnalyzedQuery),
+}
+
+impl ImmediateAnalyzeResponse {
+    fn non_fatal_err(error: impl IntoProtocolErrorMessage) -> Self {
+        Self::NonFatalErr(error.into_error_message())
+    }
+
+    fn analyzed_query(analyzed: typedb_protocol::analyze::res::AnalyzedQuery) -> Self {
+        Self::ResAnalyse(analyzed)
+    }
+}
+
+enum ImmediateQueryResponse {
+    NonFatalErr(typedb_protocol::Error),
+    ResOk(typedb_protocol::query::initial_res::Ok),
+}
+
+impl ImmediateQueryResponse {
+    fn non_fatal_err(error: impl IntoProtocolErrorMessage) -> Self {
+        Self::NonFatalErr(error.into_error_message())
+    }
+
+    fn ok(ok_message: typedb_protocol::query::initial_res::ok::Ok) -> Self {
+        ImmediateQueryResponse::ResOk(typedb_protocol::query::initial_res::Ok { ok: Some(ok_message) })
+    }
+}
+
+enum StreamQueryResponse {
+    // initial open response
+    InitOk(typedb_protocol::query::initial_res::Ok),
+    InitErr(typedb_protocol::Error),
+    // stream responses
+    StreamNextRow(typedb_protocol::ConceptRow),
+    StreamNextDocument(typedb_protocol::ConceptDocument),
+    StreamDoneOk(),
+    StreamDoneErr(typedb_protocol::Error),
+}
+
+impl StreamQueryResponse {
+    fn init_ok_rows(
+        columns: &StreamQueryOutputDescriptor,
+        query_type: typedb_protocol::query::Type,
+        query_structure: Option<typedb_protocol::analyze::res::analyzed_query::Pipeline>,
+    ) -> Self {
+        let columns = columns.iter().map(|(name, _)| name.to_string()).collect();
+        let message = query_res_ok_concept_row_stream(columns, query_type, query_structure);
+        Self::InitOk(query_initial_res_ok_from_query_res_ok_ok(message))
+    }
+
+    fn init_ok_documents(query_type: typedb_protocol::query::Type) -> Self {
+        let message = query_res_ok_concept_document_stream(query_type);
+        Self::InitOk(query_initial_res_ok_from_query_res_ok_ok(message))
+    }
+
+    fn init_err(error: impl IntoProtocolErrorMessage) -> Self {
+        Self::InitErr(error.into_error_message())
+    }
+
+    fn next_row(row: typedb_protocol::ConceptRow) -> Self {
+        Self::StreamNextRow(row)
+    }
+
+    fn next_document(document: typedb_protocol::ConceptDocument) -> Self {
+        Self::StreamNextDocument(document)
+    }
+
+    fn done_ok() -> Self {
+        Self::StreamDoneOk()
+    }
+
+    fn done_err(error: impl IntoProtocolErrorMessage) -> Self {
+        Self::StreamDoneErr(error.into_error_message())
+    }
+}
+
+enum StreamingCondition {
+    Count(usize),
+    Duration(Instant, usize),
+}
+
+impl StreamingCondition {
+    fn continue_(&self, iteration: usize) -> bool {
+        match self {
+            StreamingCondition::Count(count) => iteration < *count,
+            StreamingCondition::Duration(start_time, limit_millis) => {
+                (Instant::now().duration_since(*start_time).as_millis() as usize) < *limit_millis
+            }
+        }
     }
 }
 

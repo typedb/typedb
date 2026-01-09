@@ -7,20 +7,27 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use resource::constants::server::SERVER_INFO;
+use resource::constants::server::DISTRIBUTION_INFO;
 
 /// TypeDB CE usage
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
-#[clap(version = SERVER_INFO.version)]
+#[clap(version = DISTRIBUTION_INFO.version)]
 pub struct CLIArgs {
     /// Path to config file
     #[arg(long = "config")]
     pub config_file_override: Option<String>,
 
-    /// Server host and port (e.g., 0.0.0.0:1729)
+    /// Server serving host and port (e.g., 0.0.0.0:1729)
     #[arg(long = "server.address")]
     pub server_address: Option<String>,
+
+    /// Server connection host and port (e.g., 127.0.0.1:1729)
+    /// This address overrides the serving address in the server info shared through APIs and other outputs
+    /// It is a reference address, which means that its resolved IP address is checked for correctness,
+    /// but the form specified here (even if it's an alias) will not be changed.
+    #[arg(long = "server.connection-address")]
+    pub server_connection_address: Option<String>,
 
     /// Enable/disable HTTP endpoint
     #[arg(long = "server.http.enabled")]
@@ -32,7 +39,7 @@ pub struct CLIArgs {
 
     /// The amount of seconds generated authentication tokens will remain valid, specified in seconds.
     /// Use smaller values for better security and bigger values for better authentication performance and convenience
-    /// (min: 1 second, max: 1 year).
+    /// (min: 1 second, max: 1 year)
     #[arg(long = "server.authentication.token-expiration-seconds")]
     pub server_authentication_token_expiration_seconds: Option<u64>,
 
@@ -48,7 +55,7 @@ pub struct CLIArgs {
     #[arg(long = "server.encryption.certificate-key", value_name = "FILE")]
     pub server_encryption_certificate_key: Option<String>,
 
-    /// Encryption CA in PEM format.
+    /// Encryption CA in PEM format
     #[arg(long = "server.encryption.ca-certificate", value_name = "FILE")]
     pub server_encryption_ca_certificate: Option<String>,
 

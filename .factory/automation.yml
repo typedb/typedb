@@ -14,7 +14,8 @@ build:
   quality:
     filter:
       owner: typedb
-      branch: [master, development]
+      # TODO: Remove xxx-feature-branch
+      branch: [master, cluster-support-feature-branch]
     dependency-analysis:
       image: typedb-ubuntu-22.04
       command: |
@@ -69,6 +70,7 @@ build:
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //common/cache:test_crate_cache --test_output=streamed
+        bazel test //common/concurrency:test_crate_concurrency --test_output=streamed
         bazel test //common/logger:test_crate_logger --test_output=streamed
         bazel test //compiler:test_crate_compiler --test_output=streamed
         bazel test //concept:test_crate_concept --test_output=streamed
@@ -173,12 +175,13 @@ build:
 release:
   filter:
     owner: typedb
-    branch: [master]
+    branch: [master, cluster-support-feature-branch]
   validation:
-    validate-dependencies:
-      image: typedb-ubuntu-22.04
-      command: |
-        bazel test //:release-validate-deps --test_output=streamed
+# TODO: Return when we depend on release tags
+#    validate-dependencies:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        bazel test //:release-validate-deps --test_output=streamed
 
     validate-release-notes:
       image: typedb-ubuntu-22.04

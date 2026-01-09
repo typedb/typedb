@@ -11,7 +11,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use logger::initialise_logging_global;
-use resource::constants::server::{DEFAULT_CONFIG_PATH, SENTRY_REPORTING_URI, SERVER_INFO};
+use resource::constants::server::{DEFAULT_CONFIG_PATH, DISTRIBUTION_INFO, SENTRY_REPORTING_URI};
 use sentry::ClientInitGuard as SentryGuard;
 use server::{
     parameters::{
@@ -52,7 +52,8 @@ impl ServerApplication {
 
     fn run(self) {
         self.runtime.block_on(async {
-            let server = ServerBuilder::default().server_info(SERVER_INFO).build(self.config).await.unwrap();
+            let server =
+                ServerBuilder::default().distribution_info(DISTRIBUTION_INFO).build(self.config).await.unwrap();
             match server.serve().await {
                 Ok(_) => println!("Exited."),
                 Err(err) => println!("Exited with error: {:?}", err),
@@ -75,7 +76,7 @@ fn may_initialise_error_reporting(config: &Config) -> Option<SentryGuard> {
     if config.diagnostics.reporting.report_errors && !config.development_mode.enabled {
         let options = (
             SENTRY_REPORTING_URI,
-            sentry::ClientOptions { release: Some(SERVER_INFO.version.into()), ..Default::default() },
+            sentry::ClientOptions { release: Some(DISTRIBUTION_INFO.version.into()), ..Default::default() },
         );
         Some(sentry::init(options))
     } else {

@@ -3,6 +3,7 @@
 # Do not modify this file.
 
 features = {}
+dev-dependencies = {}
 
 [package]
 	name = "concurrency"
@@ -15,7 +16,17 @@ features = {}
 [dependencies]
 
 	[dependencies.tokio]
-		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.47.1"
+		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
+		version = "1.48.0"
+		default-features = false
+
+	[dependencies.tokio-test]
+		features = []
+		version = "0.4.4"
+		default-features = false
+
+	[dependencies.tokio-util]
+		features = ["codec", "compat", "default", "full", "futures-io", "futures-util", "hashbrown", "io", "io-util", "join-map", "net", "rt", "slab", "time"]
+		version = "0.7.16"
 		default-features = false
 

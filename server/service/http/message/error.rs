@@ -8,12 +8,9 @@ use error::TypeDBError;
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    service::{
-        http::{error::HttpServiceError, message::body::JsonBody},
-        transaction_service::TransactionServiceError,
-    },
-    state::ServerStateError,
+use crate::service::{
+    http::{error::HttpServiceError, message::body::JsonBody},
+    transaction_service::TransactionServiceError,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,23 +30,20 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::UnknownVersion { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::MissingPathParameter { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::InvalidPathParameter { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::State { typedb_source } => match typedb_source {
-                ServerStateError::Unimplemented { .. } => StatusCode::NOT_IMPLEMENTED,
-                ServerStateError::OperationNotPermitted { .. } => StatusCode::FORBIDDEN,
-                ServerStateError::DatabaseDoesNotExist { .. } => StatusCode::NOT_FOUND,
-                ServerStateError::UserDoesNotExist { .. } => StatusCode::NOT_FOUND,
-                ServerStateError::FailedToOpenPrerequisiteTransaction { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::ConceptReadError { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::FunctionReadError { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::UserCannotBeCreated { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::UserCannotBeRetrieved { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::UserCannotBeUpdated { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::UserCannotBeDeleted { .. } => StatusCode::BAD_REQUEST,
-                ServerStateError::DatabaseExport { .. } => StatusCode::BAD_REQUEST,
-            },
+            HttpServiceError::State { typedb_source } => {
+                debug_assert!(
+                    typedb_source.code_prefix() == "SRV",
+                    "Expected only local server state errors. Override for "
+                );
+                match typedb_source.code_number() {
+                    1 => StatusCode::NOT_IMPLEMENTED,                  // Unimplemented
+                    2 => StatusCode::FORBIDDEN,                        // OperationNotPermitted
+                    3 | 4 => StatusCode::NOT_FOUND,                    // DatabaseNotFound | UserNotFound
+                    14 | 17 | 18 => StatusCode::INTERNAL_SERVER_ERROR, // NotInitialised | *CommitFailed
+                    _ => StatusCode::BAD_REQUEST,
+                }
+            }
             HttpServiceError::Authentication { .. } => StatusCode::UNAUTHORIZED,
-            HttpServiceError::DatabaseCreate { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::DatabaseDelete { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::Transaction { typedb_source } => match typedb_source {
                 TransactionServiceError::DatabaseNotFound { .. } => StatusCode::NOT_FOUND,
                 TransactionServiceError::CannotCommitReadTransaction { .. } => StatusCode::BAD_REQUEST,
@@ -71,6 +65,7 @@ impl IntoResponse for HttpServiceError {
                 TransactionServiceError::PipelineExecution { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::TransactionTimeout { .. } => StatusCode::REQUEST_TIMEOUT,
                 TransactionServiceError::InvalidPrefetchSize { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::CannotOpen { .. } => StatusCode::BAD_REQUEST,
             },
             HttpServiceError::QueryClose { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::QueryCommit { .. } => StatusCode::BAD_REQUEST,

@@ -12,9 +12,9 @@ use std::{
 };
 
 use macro_rules_attribute::apply;
-use resource::server_info::ServerInfo;
+use resource::distribution_info::DistributionInfo;
 use server::{parameters::config::ConfigBuilder, Server, ServerBuilder};
-use test_utils::{create_tmp_dir, TempDir};
+use test_utils::{create_tmp_storage_dir, TempDir};
 use tokio::sync::OnceCell;
 
 use crate::{generic_step, Context};
@@ -23,7 +23,8 @@ mod database;
 mod transaction;
 
 const ADDRESS: &str = "0.0.0.0:1729";
-const SERVER_INFO: ServerInfo = ServerInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
+const DISTRIBUTION_INFO: DistributionInfo =
+    DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
 static TYPEDB: OnceCell<(TempDir, Arc<Mutex<Server>>)> = OnceCell::const_new();
 
 fn config_path() -> PathBuf {
@@ -37,7 +38,7 @@ pub async fn typedb_starts(context: &mut Context) {
         .get_or_init(|| async {
             let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
             let shutdown_sender_clone = shutdown_sender.clone();
-            let server_dir = create_tmp_dir();
+            let server_dir = create_tmp_storage_dir();
             let config = ConfigBuilder::from_file(config_path())
                 .expect("Failed to load config file")
                 .server_address(ADDRESS)
@@ -45,8 +46,8 @@ pub async fn typedb_starts(context: &mut Context) {
                 .development_mode(true)
                 .build()
                 .unwrap();
-            let server = ServerBuilder::default()
-                .server_info(SERVER_INFO)
+            let server = ServerBuilder::new()
+                .distribution_info(DISTRIBUTION_INFO)
                 .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
                 .build(config)
                 .await
@@ -69,7 +70,7 @@ pub async fn connection_ignore(_: &mut Context) {}
 #[cucumber::given(expr = r"connection has {int} database(s)")]
 #[cucumber::then(expr = r"connection has {int} database(s)")]
 pub async fn connection_has_count_databases(context: &mut Context, count: usize) {
-    assert_eq!(context.server().unwrap().lock().unwrap().database_manager().database_names().len(), count)
+    assert_eq!(context.server().unwrap().lock().unwrap().database_manager().await.database_names().len(), count)
 }
 
 #[derive(Debug, Clone)]

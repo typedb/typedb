@@ -3,15 +3,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+
 use compiler::query_structure::{PipelineStructure, QueryStructureConjunctionID};
 use concept::error::ConceptReadError;
+pub use grpc::{migration::import_service::DatabaseImportService, IntoGrpcStatus, IntoProtocolErrorMessage};
 use options::QueryOptions;
 use serde::{Deserialize, Serialize};
 
 pub(crate) mod export_service;
 pub(crate) mod grpc;
 pub mod http;
-mod import_service;
+pub mod import_service;
 mod transaction_service;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]

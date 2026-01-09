@@ -15,13 +15,13 @@ features = {}
 [dependencies]
 
 	[dependencies.tokio]
-		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.47.1"
+		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
+		version = "1.48.0"
 		default-features = false
 
 	[dependencies.serde]
 		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.219"
+		version = "1.0.228"
 		default-features = false
 
 	[dependencies.resource]
@@ -77,7 +77,7 @@ features = {}
 
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-		version = "0.4.41"
+		version = "0.4.40"
 		default-features = false
 
 	[dependencies.hyper]
@@ -87,7 +87,7 @@ features = {}
 
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.143"
+		version = "1.0.145"
 		default-features = false
 
 	[dependencies.hyper-rustls]

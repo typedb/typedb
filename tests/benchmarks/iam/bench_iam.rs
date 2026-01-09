@@ -14,7 +14,7 @@ use database::{
 use executor::{batch::Batch, pipeline::stage::StageIterator, ExecutionInterrupt};
 use options::TransactionOptions;
 use storage::durability_client::WALClient;
-use test_utils::create_tmp_dir;
+use test_utils::create_tmp_storage_dir;
 
 const DB_NAME: &str = "benchmark-iam";
 const RESOURCE_PATH: &str = "tests/benchmarks/iam";
@@ -105,7 +105,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
 }
 
 fn setup() -> Arc<Database<WALClient>> {
-    let tmp_dir = create_tmp_dir();
+    let tmp_dir = create_tmp_storage_dir();
     {
         let dbm = DatabaseManager::new(&tmp_dir).unwrap();
         dbm.put_database(DB_NAME).unwrap();
@@ -138,7 +138,7 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
             query_str,
         )
         .unwrap();
-    let (rows, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (rows, _context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     rows.collect_owned().unwrap()
 }

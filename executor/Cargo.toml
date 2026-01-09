@@ -47,8 +47,8 @@ features = {}
 [dependencies]
 
 	[dependencies.tokio]
-		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.47.1"
+		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "test-util", "time", "tokio-macros"]
+		version = "1.48.0"
 		default-features = false
 
 	[dependencies.tracing]
@@ -118,7 +118,7 @@ features = {}
 
 	[dependencies.regex]
 		features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
-		version = "1.11.1"
+		version = "1.12.2"
 		default-features = false
 
 	[dependencies.smallvec]
@@ -149,7 +149,7 @@ features = {}
 
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-		version = "0.4.41"
+		version = "0.4.40"
 		default-features = false
 
 	[dependencies.lending_iterator]

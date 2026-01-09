@@ -21,7 +21,7 @@ use crate::parameters::{cli::CLIArgs, ConfigError};
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
     pub server: ServerConfig,
-    pub(crate) storage: StorageConfig,
+    pub storage: StorageConfig,
     #[serde(default)]
     pub diagnostics: DiagnosticsConfig,
     pub logging: LoggingConfig,
@@ -32,18 +32,19 @@ pub struct Config {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ServerConfig {
-    pub(crate) address: String,
-    pub(crate) http: HttpEndpointConfig,
-    pub(crate) authentication: AuthenticationConfig,
-    pub(crate) encryption: EncryptionConfig,
+    pub address: String,
+    pub connection_address: Option<String>,
+    pub http: HttpEndpointConfig,
+    pub authentication: AuthenticationConfig,
+    pub encryption: EncryptionConfig,
 }
 
 #[serde_as]
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct HttpEndpointConfig {
-    pub(crate) enabled: bool,
-    pub(crate) address: String,
+    pub enabled: bool,
+    pub address: String,
 }
 
 #[serde_as]
@@ -84,8 +85,8 @@ impl Default for EncryptionConfig {
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct StorageConfig {
-    pub(crate) data_directory: PathBuf,
+pub struct StorageConfig {
+    pub data_directory: PathBuf,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -150,6 +151,15 @@ macro_rules! override_config {
     }
 }
 
+macro_rules! override_optional_config {
+    ($($target:expr => $field:expr;)*) => {
+        $( if let Some(value) = $field {
+            $target = Some(value);
+        }
+        )*
+    }
+}
+
 #[derive(Debug)]
 pub struct ConfigBuilder {
     config: Config,
@@ -177,6 +187,7 @@ impl ConfigBuilder {
         let CLIArgs {
             config_file_override: _,
             server_address,
+            server_connection_address,
             server_http_enabled,
             server_http_address,
             server_authentication_token_expiration_seconds,
@@ -214,6 +225,9 @@ impl ConfigBuilder {
 
             config.development_mode.enabled => development_mode_enabled;
         }
+        override_optional_config! {
+            config.server.connection_address => server_connection_address;
+        }
     }
 
     pub fn build(self) -> Result<Config, ConfigError> {
@@ -245,8 +259,14 @@ impl ConfigBuilder {
     }
 
     // Overrides
+
     pub fn server_address(mut self, address: impl Into<String>) -> Self {
         self.config.server.address = address.into();
+        self
+    }
+
+    pub fn server_connection_address(mut self, connection_address: impl Into<String>) -> Self {
+        self.config.server.connection_address = Some(connection_address.into());
         self
     }
 
@@ -326,6 +346,8 @@ pub mod tests {
         let set_to = "10.9.8.7:1234";
         let result = load_and_parse(config_path(), vec!["--server.address", set_to]).unwrap();
         assert_eq!(result.server.address.as_str(), set_to);
+        let result = load_and_parse(config_path(), vec!["--server.connection-address", set_to]).unwrap();
+        assert_eq!(result.server.connection_address.unwrap().as_str(), set_to);
     }
 
     #[test]

@@ -5,11 +5,15 @@
  */
 
 pub mod transaction_util {
+    #[allow(E0412)]
     use std::sync::Arc;
 
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::{
-        transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+        transaction::{
+            DataCommitError, DataCommitIntent, DatabaseDropGuard, SchemaCommitError, SchemaCommitIntent,
+            TransactionRead, TransactionSchema, TransactionWrite,
+        },
         Database,
     };
     use function::function_manager::FunctionManager;
@@ -34,7 +38,7 @@ pub mod transaction_util {
         pub fn schema_transaction<T>(
             &self,
             fn_: impl Fn(&mut SchemaSnapshot<WALClient>, &TypeManager, &ThingManager, &FunctionManager, &QueryManager) -> T,
-        ) -> (TransactionProfile, Result<T, SchemaCommitError>) {
+        ) -> (TransactionProfile, Result<SchemaCommitIntent<WALClient>, SchemaCommitError>) {
             let TransactionSchema {
                 snapshot,
                 type_manager,
@@ -46,7 +50,7 @@ pub mod transaction_util {
                 profile,
             } = TransactionSchema::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
             let mut snapshot: SchemaSnapshot<WALClient> = snapshot.into_inner();
-            let result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
+            let _result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
             let tx = TransactionSchema::from_parts(
                 Arc::new(snapshot),
                 type_manager,
@@ -57,8 +61,8 @@ pub mod transaction_util {
                 transaction_options,
                 profile,
             );
-            let (profile, commit_result) = tx.commit();
-            (profile, commit_result.map(|_| result))
+            let (profile, result) = tx.finalise();
+            (profile, result)
         }
 
         pub fn read_transaction<T>(&self, fn_: impl Fn(TransactionRead<WALClient>) -> T) -> T {
@@ -78,7 +82,7 @@ pub mod transaction_util {
                 Arc<Database<WALClient>>,
                 TransactionOptions,
             ) -> (T, Arc<WriteSnapshot<WALClient>>),
-        ) -> (TransactionProfile, Result<T, DataCommitError>) {
+        ) -> (TransactionProfile, Result<DataCommitIntent<WALClient>, DataCommitError>) {
             let TransactionWrite {
                 snapshot,
                 type_manager,
@@ -89,7 +93,7 @@ pub mod transaction_util {
                 transaction_options,
                 profile,
             } = TransactionWrite::open(self.database.clone(), TransactionOptions::default()).unwrap();
-            let (rows, snapshot) = fn_(
+            let (_rows, snapshot) = fn_(
                 snapshot.into_inner(),
                 type_manager.clone(),
                 thing_manager.clone(),
@@ -108,8 +112,8 @@ pub mod transaction_util {
                 TransactionOptions::default(),
                 profile,
             );
-            let (profile, commit_result) = tx.commit();
-            (profile, commit_result.map(|_| rows))
+            let (profile, result) = tx.finalise();
+            (profile, result)
         }
     }
 }

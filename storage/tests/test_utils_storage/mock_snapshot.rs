@@ -14,18 +14,19 @@ use storage::{
     keyspace::IteratorPool,
     sequence_number::SequenceNumber,
     snapshot::{
-        buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::Write, ReadableSnapshot, SnapshotGetError,
+        buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, snapshot_id::SnapshotId, write::Write,
+        ReadableSnapshot, SnapshotGetError,
     },
 };
 
-#[derive(Default)]
 pub struct MockSnapshot {
+    id: SnapshotId,
     iterator_pool: IteratorPool,
 }
 
 impl MockSnapshot {
     pub fn new() -> Self {
-        Self::default()
+        Self { id: SnapshotId::new(), iterator_pool: IteratorPool::default() }
     }
 }
 
@@ -34,6 +35,10 @@ impl ReadableSnapshot for MockSnapshot {
 
     fn open_sequence_number(&self) -> SequenceNumber {
         SequenceNumber::MIN
+    }
+
+    fn id(&self) -> SnapshotId {
+        self.id
     }
 
     fn get<const INLINE_BYTES: usize>(

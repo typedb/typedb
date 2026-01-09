@@ -12,21 +12,19 @@ use std::{
 use concept::{
     error::ConceptWriteError,
     thing::{statistics::StatisticsError, thing_manager::ThingManager},
-    type_::type_manager::{
-        type_cache::{TypeCache, TypeCacheCreateError},
-        TypeManager,
-    },
+    type_::type_manager::{type_cache::TypeCacheCreateError, TypeManager},
 };
+use durability::DurabilitySequenceNumber;
 use error::typedb_error;
-use function::{function_cache::FunctionCache, function_manager::FunctionManager, FunctionError};
+use function::{function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
 use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{
-        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotDropGuard, SnapshotError, WritableSnapshot,
-        WriteSnapshot,
+        snapshot_id::SnapshotId, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotDropGuard, SnapshotError,
+        WritableSnapshot, WriteSnapshot,
     },
 };
 use tracing::Level;
@@ -91,6 +89,10 @@ impl<D: DurabilityClient> TransactionRead<D> {
 
     pub fn close(self) {
         drop(self)
+    }
+
+    pub fn id(&self) -> TransactionId {
+        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
     }
 }
 
@@ -163,20 +165,16 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         }
     }
 
-    pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
-        self.profile.commit_profile().start();
-        let (mut profile, result) = self.try_commit();
-        profile.commit_profile().end();
-        (profile, result)
-    }
-
-    pub fn try_commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
+    pub fn finalise(self) -> (TransactionProfile, Result<DataCommitIntent<D>, DataCommitError>) {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
+        commit_profile.start();
+
         let mut snapshot = match self.snapshot.try_into_inner() {
             None => return (profile, Err(DataCommitError::SnapshotInUse {})),
             Some(snapshot) => snapshot,
         };
+
         if let Err(errs) = self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
@@ -185,10 +183,20 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         };
         commit_profile.things_finalised();
         drop(self.type_manager);
-        match snapshot.commit(commit_profile) {
-            Ok(_) => (profile, Ok(())),
-            Err(err) => (profile, Err(DataCommitError::SnapshotError { typedb_source: err })),
-        }
+        (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot }))
+    }
+
+    // TODO: substitute this method by "finalise()" + "data_commit_with_snapshot()" in usages
+    pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
+        let (mut profile, (database, snapshot)) = match self.finalise() {
+            (profile, Ok(DataCommitIntent { database_drop_guard, write_snapshot })) => {
+                (profile, (database_drop_guard, write_snapshot))
+            }
+            (profile, Err(error)) => return (profile, Err(error)),
+        };
+        let result = database.data_commit_with_snapshot(snapshot, profile.commit_profile());
+        profile.commit_profile().end();
+        (profile, result)
     }
 
     pub fn rollback(&mut self) {
@@ -198,17 +206,9 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn close(self) {
         drop(self)
     }
-}
 
-// TODO: when we use typedb_error!, how do we pring stack trace? If we use the stack trace of each of these, we'll end up with a tree!
-//       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?
-
-typedb_error! {
-    pub DataCommitError(component = "Data commit", prefix = "DCT") {
-        SnapshotInUse(1, "Failed to commit since the transaction snapshot is still in use."),
-        ConceptWriteErrors(2, "Data commit error.", write_errors: Vec<ConceptWriteError>),
-        ConceptWriteErrorsFirst(3, "Data commit error.", typedb_source: Box<ConceptWriteError>),
-        SnapshotError(4, "Snapshot error.", typedb_source: SnapshotError),
+    pub fn id(&self) -> TransactionId {
+        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
     }
 }
 
@@ -279,19 +279,13 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
     }
 
-    pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
-        self.profile.commit_profile().start();
-        let (mut profile, result) = self.try_commit(); // TODO include
-        profile.commit_profile().end();
-        (profile, result)
-    }
+    pub fn finalise(self) -> (TransactionProfile, Result<SchemaCommitIntent<D>, SchemaCommitError>) {
+        use SchemaCommitError::{ConceptWriteErrorsFirst, FunctionError};
 
-    fn try_commit(self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
-        use SchemaCommitError::{
-            ConceptWriteErrorsFirst, FunctionError, SnapshotError, StatisticsError, TypeCacheUpdateError,
-        };
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
+        commit_profile.start();
+
         let mut snapshot = self.snapshot.into_inner();
         if let Err(errs) = self.type_manager.validate(&snapshot) {
             // TODO: send all the errors, not just the first,
@@ -322,62 +316,20 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         drop(type_manager);
+        (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot }))
+    }
 
-        // Schema commits must wait for all other data operations to finish. No new read or write
-        // transaction may open until the commit completes.
-        let mut schema_commit_guard = self.database.schema.write().unwrap();
-        let mut schema = (*schema_commit_guard).clone();
-
-        let mut thing_statistics = (*schema.thing_statistics).clone();
-
-        // 1. synchronise statistics
-        if let Err(typedb_source) = thing_statistics.may_synchronise(&self.database.storage) {
-            return (profile, Err(StatisticsError { typedb_source }));
-        }
-        // 2. flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
-        if let Err(typedb_source) = thing_statistics.durably_write(self.database.storage.durability()) {
-            return (profile, Err(StatisticsError { typedb_source }));
-        }
-        commit_profile.schema_update_statistics_durably_written();
-
-        let sequence_number = match snapshot.commit(commit_profile) {
-            Ok(sequence_number) => sequence_number,
-            Err(typedb_source) => return (profile, Err(SnapshotError { typedb_source })),
+    // TODO: substitute this method by "finalise()" + "schema_commit_with_snapshot()" in usages
+    pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
+        let (mut profile, commit_intent) = match self.finalise() {
+            (profile, Ok(commit_intent)) => (profile, commit_intent),
+            (profile, Err(error)) => return (profile, Err(error)),
         };
-
-        // `None` means empty commit
-        if let Some(sequence_number) = sequence_number {
-            let type_cache = match TypeCache::new(self.database.storage.clone(), sequence_number) {
-                Ok(type_cache) => type_cache,
-                Err(typedb_source) => return (profile, Err(TypeCacheUpdateError { typedb_source })),
-            };
-            // replace Schema cache
-            schema.type_cache = Arc::new(type_cache);
-            let type_manager = TypeManager::new(
-                self.database.definition_key_generator.clone(),
-                self.database.type_vertex_generator.clone(),
-                Some(schema.type_cache.clone()),
-            );
-            let function_cache = match FunctionCache::new(self.database.storage.clone(), &type_manager, sequence_number)
-            {
-                Ok(function_cache) => function_cache,
-                Err(typedb_source) => return (profile, Err(SchemaCommitError::FunctionError { typedb_source })),
-            };
-            schema.function_cache = Arc::new(function_cache);
-            commit_profile.schema_update_caches_updated();
-        }
-
-        // replace statistics
-        if let Err(typedb_source) = thing_statistics.may_synchronise(&self.database.storage) {
-            return (profile, Err(StatisticsError { typedb_source }));
-        }
-        commit_profile.schema_update_statistics_keys_updated();
-
-        schema.thing_statistics = Arc::new(thing_statistics);
-        self.database.query_cache.force_reset(&schema.thing_statistics);
-
-        *schema_commit_guard = schema;
-        (profile, Ok(()))
+        let result = commit_intent
+            .database_drop_guard
+            .schema_commit_with_snapshot(commit_intent.schema_snapshot, profile.commit_profile());
+        profile.commit_profile().end();
+        (profile, result)
     }
 
     pub fn rollback(&mut self) {
@@ -386,6 +338,30 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
     pub fn close(self) {
         drop(self)
+    }
+
+    pub fn id(&self) -> TransactionId {
+        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct TransactionId {
+    sequence_number: DurabilitySequenceNumber,
+    snapshot_id: SnapshotId,
+}
+
+impl TransactionId {
+    fn new(sequence_number: DurabilitySequenceNumber, snapshot_id: SnapshotId) -> Self {
+        Self { sequence_number, snapshot_id }
+    }
+
+    pub fn sequence_number(&self) -> DurabilitySequenceNumber {
+        self.sequence_number
+    }
+
+    pub fn snapshot_id(&self) -> SnapshotId {
+        self.snapshot_id
     }
 }
 
@@ -421,6 +397,16 @@ macro_rules! with_transaction_parts {
 
         ($transaction, result)
     }};
+}
+
+pub struct SchemaCommitIntent<D> {
+    pub database_drop_guard: DatabaseDropGuard<D>,
+    pub schema_snapshot: SchemaSnapshot<D>,
+}
+
+pub struct DataCommitIntent<D> {
+    pub database_drop_guard: DatabaseDropGuard<D>,
+    pub write_snapshot: WriteSnapshot<D>,
 }
 
 pub struct DatabaseDropGuard<D> {
@@ -462,6 +448,18 @@ impl<D> Drop for DatabaseDropGuard<D> {
 impl<D> std::fmt::Debug for DatabaseDropGuard<D> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.database)
+    }
+}
+
+// TODO: when we use typedb_error!, how do we print stack trace? If we use the stack trace of each of these, we'll end up with a tree!
+//       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?
+
+typedb_error! {
+    pub DataCommitError(component = "Data commit", prefix = "DCT") {
+        SnapshotInUse(1, "Failed to commit since the transaction snapshot is still in use."),
+        ConceptWriteErrors(2, "Data commit error.", write_errors: Vec<ConceptWriteError>),
+        ConceptWriteErrorsFirst(3, "Data commit error.", typedb_source: Box<ConceptWriteError>),
+        SnapshotError(4, "Snapshot error.", typedb_source: SnapshotError),
     }
 }
 

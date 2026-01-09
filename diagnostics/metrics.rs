@@ -509,39 +509,6 @@ impl ActionMetrics {
     }
 }
 
-impl fmt::Display for ActionKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ActionKind::ConnectionOpen => write!(f, "CONNECTION_OPEN"),
-            ActionKind::SignIn => write!(f, "SIGN_IN"),
-            ActionKind::ServersAll => write!(f, "SERVERS_ALL"),
-            ActionKind::UsersContains => write!(f, "USERS_CONTAINS"),
-            ActionKind::UsersCreate => write!(f, "USERS_CREATE"),
-            ActionKind::UsersUpdate => write!(f, "USERS_UPDATE"),
-            ActionKind::UsersDelete => write!(f, "USERS_DELETE"),
-            ActionKind::UsersAll => write!(f, "USERS_ALL"),
-            ActionKind::UsersGet => write!(f, "USERS_GET"),
-            ActionKind::Authenticate => write!(f, "AUTHENTICATE"), // Analogue of 2.x's USER_TOKEN
-            ActionKind::DatabasesContains => write!(f, "DATABASES_CONTAINS"),
-            ActionKind::DatabasesCreate => write!(f, "DATABASES_CREATE"),
-            ActionKind::DatabasesImport => write!(f, "DATABASES_IMPORT"),
-            ActionKind::DatabasesGet => write!(f, "DATABASES_GET"),
-            ActionKind::DatabasesAll => write!(f, "DATABASES_ALL"),
-            ActionKind::DatabaseSchema => write!(f, "DATABASES_SCHEMA"),
-            ActionKind::DatabaseTypeSchema => write!(f, "DATABASES_TYPE_SCHEMA"),
-            ActionKind::DatabaseExport => write!(f, "DATABASES_EXPORT"),
-            ActionKind::DatabaseDelete => write!(f, "DATABASES_DELETE"),
-            ActionKind::TransactionOpen => write!(f, "TRANSACTION_OPEN"),
-            ActionKind::TransactionClose => write!(f, "TRANSACTION_CLOSE"),
-            ActionKind::TransactionCommit => write!(f, "TRANSACTION_COMMIT"),
-            ActionKind::TransactionRollback => write!(f, "TRANSACTION_ROLLBACK"),
-            ActionKind::TransactionQuery => write!(f, "TRANSACTION_QUERY"),
-            ActionKind::TransactionAnalyse => write!(f, "TRANSACTION_ANALYSE"),
-            ActionKind::OneshotQuery => write!(f, "ONESHOT_QUERY"),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub(crate) struct ActionInfo {
     successful: AtomicU64,
@@ -739,9 +706,14 @@ impl fmt::Display for LoadKind {
 #[derive(Serialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ActionKind {
+    // ATTENTION: When adding new Kinds, update all_empty_counts_map()!
     ConnectionOpen,
     SignIn,
     ServersAll,
+    ServersGet,
+    ServersRegister,
+    ServersDeregister,
+    ServerVersion,
     UsersContains,
     UsersCreate,
     UsersUpdate,
@@ -765,7 +737,6 @@ pub enum ActionKind {
     TransactionAnalyse,
     TransactionQuery,
     OneshotQuery,
-    // ATTENTION: When adding new Kinds, update all_empty_counts_map()!
 }
 
 impl ActionKind {
@@ -773,7 +744,13 @@ impl ActionKind {
         HashMap::from([
             (Self::ConnectionOpen, ActionInfo::default()),
             (Self::SignIn, ActionInfo::default()),
+            (Self::ServersGet, ActionInfo::default()),
             (Self::ServersAll, ActionInfo::default()),
+            (Self::ServersRegister, ActionInfo::default()),
+            (Self::ServersDeregister, ActionInfo::default()),
+            (Self::ServerVersion, ActionInfo::default()),
+            (Self::ServersRegister, ActionInfo::default()),
+            (Self::ServersDeregister, ActionInfo::default()),
             (Self::UsersContains, ActionInfo::default()),
             (Self::UsersCreate, ActionInfo::default()),
             (Self::UsersUpdate, ActionInfo::default()),
@@ -805,6 +782,10 @@ impl ActionKind {
             ActionKind::ConnectionOpen => "connection_opens",
             ActionKind::SignIn => "sign_ins",
             ActionKind::ServersAll => "server_alls",
+            ActionKind::ServersGet => "server_gets",
+            ActionKind::ServersRegister => "server_registers",
+            ActionKind::ServersDeregister => "server_deregisters",
+            ActionKind::ServerVersion => "server_versions",
             ActionKind::UsersContains => "user_containses",
             ActionKind::UsersCreate => "user_creates",
             ActionKind::UsersUpdate => "user_updates",
@@ -835,6 +816,43 @@ impl ActionKind {
         match self {
             ActionKind::TransactionQuery | ActionKind::OneshotQuery => true,
             _ => false,
+        }
+    }
+}
+
+impl fmt::Display for ActionKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ActionKind::ConnectionOpen => write!(f, "CONNECTION_OPEN"),
+            ActionKind::SignIn => write!(f, "SIGN_IN"),
+            ActionKind::ServersAll => write!(f, "SERVERS_ALL"),
+            ActionKind::ServersGet => write!(f, "SERVERS_GET"),
+            ActionKind::ServersRegister => write!(f, "SERVER_REGISTER"),
+            ActionKind::ServersDeregister => write!(f, "SERVER_DEREGISTER"),
+            ActionKind::ServerVersion => write!(f, "SERVER_VERSION"),
+            ActionKind::UsersContains => write!(f, "USERS_CONTAINS"),
+            ActionKind::UsersCreate => write!(f, "USERS_CREATE"),
+            ActionKind::UsersUpdate => write!(f, "USERS_UPDATE"),
+            ActionKind::UsersDelete => write!(f, "USERS_DELETE"),
+            ActionKind::UsersAll => write!(f, "USERS_ALL"),
+            ActionKind::UsersGet => write!(f, "USERS_GET"),
+            ActionKind::Authenticate => write!(f, "AUTHENTICATE"), // Analogue of 2.x's USER_TOKEN
+            ActionKind::DatabasesContains => write!(f, "DATABASES_CONTAINS"),
+            ActionKind::DatabasesCreate => write!(f, "DATABASES_CREATE"),
+            ActionKind::DatabasesImport => write!(f, "DATABASES_IMPORT"),
+            ActionKind::DatabasesGet => write!(f, "DATABASES_GET"),
+            ActionKind::DatabasesAll => write!(f, "DATABASES_ALL"),
+            ActionKind::DatabaseSchema => write!(f, "DATABASES_SCHEMA"),
+            ActionKind::DatabaseTypeSchema => write!(f, "DATABASES_TYPE_SCHEMA"),
+            ActionKind::DatabaseExport => write!(f, "DATABASES_EXPORT"),
+            ActionKind::DatabaseDelete => write!(f, "DATABASES_DELETE"),
+            ActionKind::TransactionOpen => write!(f, "TRANSACTION_OPEN"),
+            ActionKind::TransactionClose => write!(f, "TRANSACTION_CLOSE"),
+            ActionKind::TransactionCommit => write!(f, "TRANSACTION_COMMIT"),
+            ActionKind::TransactionRollback => write!(f, "TRANSACTION_ROLLBACK"),
+            ActionKind::TransactionQuery => write!(f, "TRANSACTION_QUERY"),
+            ActionKind::TransactionAnalyse => write!(f, "TRANSACTION_ANALYSE"),
+            ActionKind::OneshotQuery => write!(f, "ONESHOT_QUERY"),
         }
     }
 }

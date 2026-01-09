@@ -12,6 +12,7 @@ use std::{
 };
 
 use cache::CACHE_DB_NAME_PREFIX;
+use itertools::Itertools;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
 use tracing::{event, Level};
@@ -73,9 +74,6 @@ impl DatabaseManager {
             }
 
             let database_name = entry_path.file_name().unwrap().to_string_lossy();
-            if Self::is_internal_database(&database_name) {
-                continue;
-            }
 
             let database = Database::<WALClient>::open(&entry_path)?;
             assert!(!databases.contains_key(database.name()));

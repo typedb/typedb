@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{convert, sync::Arc};
+use std::convert;
 
 use axum::{body::Body, response::IntoResponse};
 use diagnostics::metrics::ActionKind;
@@ -14,16 +14,16 @@ use tower::{Layer, Service};
 use crate::{
     authentication::authenticate,
     service::http::{diagnostics::run_with_diagnostics_async, error::HttpServiceError},
-    state::BoxServerState,
+    state::ArcServerState,
 };
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
-    server_state: Arc<BoxServerState>,
+    server_state: ArcServerState,
 }
 
 impl Authenticator {
-    pub(crate) fn new(server_state: Arc<BoxServerState>) -> Self {
+    pub(crate) fn new(server_state: ArcServerState) -> Self {
         Self { server_state }
     }
 }
@@ -31,7 +31,7 @@ impl Authenticator {
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<Body>) -> Result<Request<Body>, impl IntoResponse> {
         run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
+            self.server_state.diagnostics_manager().await,
             None::<&str>,
             ActionKind::Authenticate,
             || async {

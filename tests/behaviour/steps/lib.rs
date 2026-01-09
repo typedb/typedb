@@ -159,9 +159,16 @@ impl Context {
         self.close_active_concurrent_transactions();
 
         if clean_databases {
-            let database_names = self.server().unwrap().lock().unwrap().database_manager().database_names();
+            let database_names = self.server().unwrap().lock().unwrap().database_manager().await.database_names();
             for database_name in database_names {
-                self.server().unwrap().lock().unwrap().database_manager().delete_database(&database_name).unwrap();
+                self.server()
+                    .unwrap()
+                    .lock()
+                    .unwrap()
+                    .database_manager()
+                    .await
+                    .delete_database(&database_name)
+                    .unwrap();
             }
         }
 
@@ -187,7 +194,7 @@ impl Context {
     }
 
     pub async fn database(&self, name: &str) -> Arc<Database<WALClient>> {
-        self.server().unwrap().lock().unwrap().database_manager().database(name).unwrap()
+        self.server().unwrap().lock().unwrap().database_manager().await.database(name).unwrap()
     }
 
     pub fn set_transaction(&mut self, tx: ActiveTransaction) {
