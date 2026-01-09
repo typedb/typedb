@@ -635,9 +635,9 @@ impl CartesianIterator {
         debug_assert!(self.is_active);
         // precondition: all required iterators are open to the intersection point
 
-        let mut executor_index = self.cartesian_executor_indices.len() - 1;
+        let mut index_of_index = self.cartesian_executor_indices.len() - 1;
         loop {
-            let iterator_index = self.cartesian_executor_indices[executor_index];
+            let iterator_index = self.cartesian_executor_indices[index_of_index];
             let iter = self.iterators[iterator_index].as_mut().unwrap();
             iter.advance_single().map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
             if !iter
@@ -646,13 +646,13 @@ impl CartesianIterator {
                 .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
                 .is_some_and(|value| value == &self.intersection_value)
             {
-                if executor_index == 0 {
+                if index_of_index == 0 {
                     self.is_active = false;
                     return Ok(false);
                 } else {
-                    let reopened = self.reopen_iterator(context, &executors[executor_index])?;
+                    let reopened = self.reopen_iterator(context, &executors[iterator_index])?;
                     self.iterators[iterator_index] = Some(reopened);
-                    executor_index -= 1;
+                    index_of_index -= 1;
                 }
             } else {
                 return Ok(true);
