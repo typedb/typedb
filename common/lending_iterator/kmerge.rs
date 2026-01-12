@@ -4,14 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Borrow, cmp::Ordering, collections::BinaryHeap, marker::PhantomData, mem};
+use std::{borrow::Borrow, cmp::Ordering, collections::BinaryHeap, mem};
 
 use crate::{higher_order::FnHktHelper, LendingIterator, Peekable, Seekable};
 
 pub struct KMergeBy<I: LendingIterator, F> {
     pub iterators: BinaryHeap<PeekWrapper<I, F>>,
     pub next_iterator: Option<PeekWrapper<I, F>>,
-    phantom_compare: PhantomData<F>,
 }
 
 impl<I: LendingIterator, F> KMergeBy<I, F>
@@ -31,7 +30,7 @@ where
             .map(|peekable| PeekWrapper { iter: peekable, cmp_fn: cmp });
         // Peek wrapper reverses the comparator to create a min heap
         let queue = BinaryHeap::from_iter(iters);
-        Self { iterators: queue, next_iterator: None, phantom_compare: PhantomData }
+        Self { iterators: queue, next_iterator: None }
     }
 
     pub fn find_next_state(&mut self) -> Option<()> {
