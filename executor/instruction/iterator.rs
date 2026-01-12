@@ -17,7 +17,7 @@ use compiler::{
 };
 use concept::error::ConceptReadError;
 use itertools::zip_eq;
-use lending_iterator::{adaptors::Inspect, kmerge, kmerge::KMergeBy, LendingIterator, Peekable};
+use lending_iterator::{adaptors::Inspect, kmerge::KMergeBy, LendingIterator, Peekable};
 
 use crate::{
     instruction::{
@@ -113,12 +113,11 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
 {
     fn seek(&mut self, target: &Tuple<'_>) -> Result<(), Box<ConceptReadError>> {
         // TODO: this is close to a copy-paste of the Seek() implementation for seekable KMergeBy<I>
-        if self.state == kmerge::State::Done {
+        if self.is_done() {
             return Ok(());
         }
 
         // force recomputation of heap element
-        self.state = kmerge::State::Pending;
         self.iterators = mem::take(&mut self.iterators)
             .into_iter()
             .chain(self.next_iterator.take())

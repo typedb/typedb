@@ -11,16 +11,7 @@ use crate::{higher_order::FnHktHelper, LendingIterator, Peekable, Seekable};
 pub struct KMergeBy<I: LendingIterator, F> {
     pub iterators: BinaryHeap<PeekWrapper<I, F>>,
     pub next_iterator: Option<PeekWrapper<I, F>>,
-    pub state: State,
     phantom_compare: PhantomData<F>,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum State {
-    Pending,
-    Used,
-    Ready,
-    Done,
 }
 
 impl<I: LendingIterator, F> KMergeBy<I, F>
@@ -40,26 +31,20 @@ where
             .map(|peekable| PeekWrapper { iter: peekable, cmp_fn: cmp });
         // Peek wrapper reverses the comparator to create a min heap
         let queue = BinaryHeap::from_iter(iters);
-        Self { iterators: queue, next_iterator: None, state: State::Pending, phantom_compare: PhantomData }
+        Self { iterators: queue, next_iterator: None, phantom_compare: PhantomData }
     }
 
-    pub fn find_next_state(&mut self) {
-        if self.state == State::Ready {
-            return;
-        }
-
+    pub fn find_next_state(&mut self) -> Option<()> {
         if let Some(mut last_iterator) = self.next_iterator.take() {
             if last_iterator.iter.peek().is_some() {
                 self.iterators.push(last_iterator);
             }
         }
-        match self.iterators.pop() {
-            None => self.state = State::Done,
-            Some(iterator) => {
-                self.next_iterator = Some(iterator);
-                self.state = State::Ready;
-            }
-        }
+        self.iterators.pop().map(|iterator| self.next_iterator = Some(iterator))
+    }
+
+    pub fn is_done(&self) -> bool {
+        self.next_iterator.is_none() && self.iterators.is_empty()
     }
 }
 
@@ -71,17 +56,8 @@ where
     type Item<'a> = I::Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        match self.state {
-            State::Pending | State::Used => {
-                self.find_next_state();
-                self.next()
-            }
-            State::Ready => {
-                self.state = State::Used;
-                self.next_iterator.as_mut().unwrap().iter.next()
-            }
-            State::Done => None,
-        }
+        self.find_next_state()?;
+        self.next_iterator.as_mut().unwrap().iter.next()
     }
 }
 
@@ -91,12 +67,11 @@ where
     F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy + 'static,
 {
     fn seek(&mut self, key: &K) {
-        if self.state == State::Done {
+        if self.is_done() {
             return;
         }
 
         // force recomputation of heap element
-        self.state = State::Pending;
         self.iterators = mem::take(&mut self.iterators)
             .into_iter()
             .chain(self.next_iterator.take())
@@ -208,22 +183,16 @@ mod tests {
     fn empty_merge() {
         let iters: [Iter<std::iter::Once<u64>>; 0] = [];
         let mut kmerge = KMergeBy::new(iters, |(a, b)| u64::cmp(a, b));
-        assert_eq!(kmerge.state, State::Pending);
         assert_eq!(kmerge.next(), None);
-        assert_eq!(kmerge.state, State::Done);
     }
 
     #[test]
     fn merge_one() {
         let iters = [Iter::new(0..2)];
         let mut kmerge = KMergeBy::new(iters, |(a, b)| u64::cmp(a, b));
-        assert_eq!(kmerge.state, State::Pending);
         assert_eq!(kmerge.next(), Some(0));
-        assert_eq!(kmerge.state, State::Used);
         assert_eq!(kmerge.next(), Some(1));
-        assert_eq!(kmerge.state, State::Used);
         assert_eq!(kmerge.next(), None);
-        assert_eq!(kmerge.state, State::Done);
     }
 
     #[test]
@@ -242,27 +211,18 @@ mod tests {
     fn empty_seek() {
         let iters = [Iter::new(0..0)];
         let mut kmerge = KMergeBy::new(iters, |(a, b)| u64::cmp(a, b));
-        assert_eq!(kmerge.state, State::Pending);
         kmerge.seek(&0);
-        assert_eq!(kmerge.state, State::Pending);
         assert_eq!(kmerge.next(), None);
-        assert_eq!(kmerge.state, State::Done);
     }
 
     #[test]
     fn double_seek() {
         let iters = [Iter::new(0..2)];
         let mut kmerge = KMergeBy::new(iters, |(a, b)| u64::cmp(a, b));
-        assert_eq!(kmerge.state, State::Pending);
         assert_eq!(kmerge.next(), Some(0));
-        assert_eq!(kmerge.state, State::Used);
         kmerge.seek(&1);
-        assert_eq!(kmerge.state, State::Pending);
         kmerge.seek(&1);
-        assert_eq!(kmerge.state, State::Pending);
         assert_eq!(kmerge.next(), Some(1));
-        assert_eq!(kmerge.state, State::Used);
         assert_eq!(kmerge.next(), None);
-        assert_eq!(kmerge.state, State::Done);
     }
 }
