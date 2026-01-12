@@ -55,7 +55,6 @@ fn snapshot_buffered_put_get() {
 
     let key_5 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0xff, 0xff, 0xff]));
     assert_eq!(snapshot.get::<48>(StorageKey::Array(key_5).as_reference(), StorageCounters::DISABLED).unwrap(), None);
-    // snapshot.close_resources();
 }
 
 #[test]
@@ -80,7 +79,6 @@ fn snapshot_buffered_put_iterate() {
         .iterate_range(&KeyRange::new_within(StorageKey::Array(key_prefix), false), StorageCounters::DISABLED)
         .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)));
     assert_eq!(items.unwrap(), vec![(key_2, ByteArray::empty()), (key_3, ByteArray::empty())]);
-    // snapshot.close_resources();
 }
 
 #[test]
@@ -110,7 +108,6 @@ fn snapshot_buffered_delete() {
         .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)))
         .unwrap();
     assert_eq!(items, vec![(key_2, ByteArray::empty())]);
-    // snapshot.close_resources();
 }
 
 #[test]
@@ -158,7 +155,6 @@ fn snapshot_read_through() {
         .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)))
         .unwrap();
     assert_eq!(key_values, vec![(key_3, ByteArray::empty()), (key_5, ByteArray::empty())]);
-    // snapshot.close_resources();
 }
 
 #[test]

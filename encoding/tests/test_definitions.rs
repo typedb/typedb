@@ -93,6 +93,5 @@ fn test_struct_definition() {
         let read_1_key = get_struct_key(&snapshot, struct_1_definition.name.clone()).unwrap();
         let read_1_definition = get_struct_definition(&snapshot, &read_1_key);
         assert_eq!(struct_1_definition, read_1_definition);
-        // snapshot.close_resources();
     }
 }

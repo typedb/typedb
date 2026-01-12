@@ -96,8 +96,6 @@ pub trait ReadableSnapshot {
     ) -> SnapshotRangeIterator;
 
     fn iterator_pool(&self) -> &IteratorPool;
-    //
-    // fn close_resources(&self);
 }
 
 pub trait WritableSnapshot: ReadableSnapshot {
@@ -299,8 +297,6 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
     fn iterator_pool(&self) -> &IteratorPool {
         &self.iterator_pool
     }
-
-    // fn close_resources(&self) {}
 }
 
 pub struct WriteSnapshot<D> {
@@ -339,15 +335,6 @@ impl<D> WriteSnapshot<D> {
         WriteSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new(), reader_guard }
     }
 }
-
-// impl<D> Drop for WriteSnapshot<D> {
-//     fn drop(&mut self) {
-//         // swap ensures close_resources is only called once even if Drop runs after explicit close_resources call
-//         if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
-//             self.storage.closed_snapshot_write(self.open_sequence_number);
-//         }
-//     }
-// }
 
 impl<D> ReadableSnapshot for WriteSnapshot<D> {
     const IMMUTABLE_SCHEMA: bool = true;
@@ -441,13 +428,6 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     fn iterator_pool(&self) -> &IteratorPool {
         &self.iterator_pool
     }
-
-    // fn close_resources(&self) {
-    //     // swap ensures close_resources is only called once even if called explicitly and then via Drop
-    //     if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
-    //         self.storage.closed_snapshot_write(self.open_sequence_number());
-    //     }
-    // }
 }
 
 impl<D> WritableSnapshot for WriteSnapshot<D> {
@@ -514,15 +494,6 @@ impl<D> SchemaSnapshot<D> {
         SchemaSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new(), reader_guard }
     }
 }
-
-// impl<D> Drop for SchemaSnapshot<D> {
-//     fn drop(&mut self) {
-//         // swap ensures close_resources is only called once even if Drop runs after explicit close_resources call
-//         if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
-//             self.storage.closed_snapshot_write(self.open_sequence_number);
-//         }
-//     }
-// }
 
 impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     const IMMUTABLE_SCHEMA: bool = false;
@@ -616,13 +587,6 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     fn iterator_pool(&self) -> &IteratorPool {
         &self.iterator_pool
     }
-
-    // fn close_resources(&self) {
-    //     // swap ensures close_resources is only called once even if called explicitly and then via Drop
-    //     if self.cleanup_on_drop.swap(false, Ordering::SeqCst) {
-    //         self.storage.closed_snapshot_write(self.open_sequence_number());
-    //     }
-    // }
 }
 
 impl<D> WritableSnapshot for SchemaSnapshot<D> {

@@ -358,7 +358,6 @@ fn has() {
         .unwrap()
         .unwrap();
     assert_eq!(1, attr_age_10.get_owners(&snapshot, &thing_manager, StorageCounters::DISABLED).count());
-    // snapshot.close_resources()
 }
 
 #[test]
@@ -426,7 +425,6 @@ fn relation() {
     assert!(role_players
         .iter()
         .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(group_type), group_role) }));
-    // snapshot.close_resources();
 }
 
 #[test]
@@ -476,7 +474,6 @@ fn relation_with_inferred_roles() {
     assert!(role_players
         .iter()
         .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(group_type), group_role) }));
-    // snapshot.close_resources();
 }
 
 #[test]
@@ -526,7 +523,6 @@ fn test_has_with_input_rows() {
         .map(|result| result.unwrap().0)
         .collect_vec();
     assert_eq!(p10.as_thing().as_object(), owner_of_a10[0]);
-    // snapshot.close_resources();
 }
 
 #[test]
@@ -585,5 +581,4 @@ fn delete_has() {
             p10.as_thing().as_object().get_has_unordered(&snapshot, &thing_manager, StorageCounters::DISABLED).unwrap()
         )
     );
-    // snapshot.close_resources()
 }

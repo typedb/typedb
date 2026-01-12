@@ -200,7 +200,6 @@ fn g1a_aborted_writes() {
     let snapshot_2 = storage.clone().open_snapshot_write();
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(&value_1_1));
     let read_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED);
-    // snapshot_1.close_resources();
     assert_eq!(*value_1_0, *read_2.unwrap().unwrap());
 }
 

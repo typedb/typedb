@@ -33,7 +33,6 @@ impl FunctionCache {
     ) -> Result<Self, FunctionError> {
         let snapshot = storage.open_snapshot_read_at(open_sequence_number);
         let cache = Self::build_cache(&snapshot, type_manager);
-        // snapshot.close_resources();
         cache
     }
 
