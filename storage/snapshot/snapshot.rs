@@ -4,17 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    any::type_name,
-    error::Error,
-    fmt,
-    iter::empty,
-    mem,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-};
+use std::{any::type_name, error::Error, fmt, iter::empty, sync::Arc};
 
 use bytes::byte_array::ByteArray;
 use error::typedb_error;
@@ -26,7 +16,7 @@ use resource::{
 
 use crate::{
     durability_client::DurabilityClient,
-    isolation_manager::{CommitRecord, CommitType},
+    isolation_manager::{CommitRecord, CommitType, ReaderDropGuard},
     iterator::MVCCReadError,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -40,7 +30,6 @@ use crate::{
     },
     MVCCStorage, StorageCommitError,
 };
-use crate::isolation_manager::ReaderDropGuard;
 
 macro_rules! get_mapped_method {
     ($method_name:ident, $get_func:ident) => {
@@ -336,7 +325,7 @@ impl<D> WriteSnapshot<D> {
             operations: OperationsBuffer::new(),
             open_sequence_number,
             iterator_pool: IteratorPool::new(),
-            reader_guard
+            reader_guard,
         }
     }
 
@@ -347,13 +336,7 @@ impl<D> WriteSnapshot<D> {
     ) -> impl ReadableSnapshot {
         // TODO: do we need this in cluster?
         let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
-        WriteSnapshot {
-            storage,
-            operations,
-            open_sequence_number,
-            iterator_pool: IteratorPool::new(),
-            reader_guard
-        }
+        WriteSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new(), reader_guard }
     }
 }
 
@@ -489,9 +472,9 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
         }
     }
 
-    fn into_commit_record(mut self) -> (ReaderDropGuard, CommitRecord) {
-        let Self { operations, open_sequence_number, reader_guard, iterator_pool: _, storage: _} = self;
-        (reader_guard, CommitRecord::new(operations, self.open_sequence_number, CommitType::Data))
+    fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
+        let Self { operations, open_sequence_number, reader_guard, iterator_pool: _, storage: _ } = self;
+        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Data))
     }
 }
 
@@ -528,13 +511,7 @@ impl<D> SchemaSnapshot<D> {
     ) -> impl ReadableSnapshot {
         // TODO: does cluster need this?
         let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
-        SchemaSnapshot {
-            storage,
-            operations,
-            open_sequence_number,
-            iterator_pool: IteratorPool::new(),
-            reader_guard,
-        }
+        SchemaSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new(), reader_guard }
     }
 }
 
@@ -671,8 +648,8 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
         }
     }
 
-    fn into_commit_record(mut self) -> (ReaderDropGuard, CommitRecord) {
-        let Self { operations, open_sequence_number, reader_guard, iterator_pool: _, storage: _} = self;
+    fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
+        let Self { operations, open_sequence_number, reader_guard, iterator_pool: _, storage: _ } = self;
         (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Schema))
     }
 }

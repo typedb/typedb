@@ -93,7 +93,12 @@ pub async fn unset_owns(
             .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
             .unwrap()
             .unwrap();
-        let res = object_type.unset_owns(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, attr_type);
+        let res = object_type.unset_owns(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            &tx.thing_manager,
+            attr_type,
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }

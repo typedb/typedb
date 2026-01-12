@@ -165,6 +165,7 @@ fn test_open_snapshot_write_at() {
     snapshot_write_1.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let snapshot_read_1 = storage.open_snapshot_read();
-    assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_0); // FIXME: value overwrite currently unsupported
+    assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_0);
+    // FIXME: value overwrite currently unsupported
     // snapshot_read_1.close_resources();
 }

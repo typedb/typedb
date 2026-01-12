@@ -132,7 +132,8 @@ pub async fn relation_role_unset_specialise(
             )
             .unwrap()
             .unwrap();
-        let res = relates.unset_specialise(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
+        let res =
+            relates.unset_specialise(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -612,7 +613,11 @@ pub async fn relation_role_set_name(
             .unwrap()
             .unwrap()
             .role();
-        let res = role.set_name(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, to_label.into_typedb().name.as_str());
+        let res = role.set_name(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            to_label.into_typedb().name.as_str(),
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }

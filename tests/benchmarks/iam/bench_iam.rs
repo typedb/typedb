@@ -39,7 +39,8 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
         transaction_options,
         profile,
     } = tx;
-    let mut inner_snapshot = Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot"));
+    let mut inner_snapshot =
+        Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot"));
     query_manager
         .execute_schema(
             &mut inner_snapshot,

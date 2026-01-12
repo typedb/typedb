@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter, str::FromStr};
+use std::{collections::HashMap, iter, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
@@ -36,7 +36,6 @@ use server::service::http::message::analyze::{
     encode_analyzed_query,
     structure::bdd::{encode_function_structure_as_functor, encode_pipeline_structure_as_functor},
 };
-use std::sync::Arc;
 use test_utils::assert_matches;
 
 use crate::{
@@ -148,9 +147,7 @@ fn execute_write_query(
         );
 
         match pipeline_result {
-            Err((snapshot, error)) => {
-                (Err(BehaviourTestExecutionError::Query(*error)), Arc::new(snapshot))
-            }
+            Err((snapshot, error)) => (Err(BehaviourTestExecutionError::Query(*error)), Arc::new(snapshot)),
             Ok(pipeline) => {
                 if pipeline.has_fetch() {
                     match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {

@@ -103,17 +103,20 @@ pub async fn type_create(
         match kind.into_typedb() {
             Kind::Entity => {
                 may_error.check_concept_write_without_read_errors(
-                    &tx.type_manager.create_entity_type(Arc::get_mut(&mut tx.snapshot).unwrap(), &type_label.into_typedb()),
+                    &tx.type_manager
+                        .create_entity_type(Arc::get_mut(&mut tx.snapshot).unwrap(), &type_label.into_typedb()),
                 );
             }
             Kind::Relation => {
                 may_error.check_concept_write_without_read_errors(
-                    &tx.type_manager.create_relation_type(Arc::get_mut(&mut tx.snapshot).unwrap(), &type_label.into_typedb()),
+                    &tx.type_manager
+                        .create_relation_type(Arc::get_mut(&mut tx.snapshot).unwrap(), &type_label.into_typedb()),
                 );
             }
             Kind::Attribute => {
                 may_error.check_concept_write_without_read_errors(
-                    &tx.type_manager.create_attribute_type(Arc::get_mut(&mut tx.snapshot).unwrap(), &type_label.into_typedb()),
+                    &tx.type_manager
+                        .create_attribute_type(Arc::get_mut(&mut tx.snapshot).unwrap(), &type_label.into_typedb()),
                 );
             }
             Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),
@@ -512,13 +515,21 @@ pub async fn type_unset_supertype(
                     .get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb())
                     .unwrap()
                     .unwrap();
-                let res = thistype.unset_supertype(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
+                let res = thistype.unset_supertype(
+                    Arc::get_mut(&mut tx.snapshot).unwrap(),
+                    &tx.type_manager,
+                    &tx.thing_manager,
+                );
                 may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Entity => {
                 let thistype =
                     tx.type_manager.get_entity_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
-                let res = thistype.unset_supertype(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
+                let res = thistype.unset_supertype(
+                    Arc::get_mut(&mut tx.snapshot).unwrap(),
+                    &tx.type_manager,
+                    &tx.thing_manager,
+                );
                 may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Relation => {
@@ -527,7 +538,11 @@ pub async fn type_unset_supertype(
                     .get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb())
                     .unwrap()
                     .unwrap();
-                let res = thistype.unset_supertype(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
+                let res = thistype.unset_supertype(
+                    Arc::get_mut(&mut tx.snapshot).unwrap(),
+                    &tx.type_manager,
+                    &tx.thing_manager,
+                );
                 may_error.check_concept_write_without_read_errors(&res);
             }
             Kind::Role => unreachable!("Can only address roles through relation(relation_label) get role(role_name)"),

@@ -24,9 +24,7 @@ use query::query_manager::QueryManager;
 use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
-    snapshot::{
-        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot,
-    },
+    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
 };
 use tracing::Level;
 
@@ -404,8 +402,8 @@ macro_rules! with_transaction_parts {
             transaction_options,
             profile,
         } = $transaction;
-        let mut $inner_snapshot = Arc::try_unwrap(snapshot)
-            .unwrap_or_else(|_| panic!("Expected unique ownership of snapshot"));
+        let mut $inner_snapshot =
+            Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot"));
 
         let result = $expr;
 

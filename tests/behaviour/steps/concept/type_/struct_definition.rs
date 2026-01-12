@@ -21,12 +21,10 @@ use crate::{
 #[step(expr = "create struct: {type_label}{may_error}")]
 pub async fn struct_create(context: &mut Context, type_label: params::Label, may_error: params::MayError) {
     with_schema_tx!(context, |tx| {
-        may_error.check_concept_write_without_read_errors(
-            &tx.type_manager.create_struct(
-                Arc::get_mut(&mut tx.snapshot).unwrap(),
-                type_label.into_typedb().scoped_name().as_str().to_owned(),
-            ),
-        );
+        may_error.check_concept_write_without_read_errors(&tx.type_manager.create_struct(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            type_label.into_typedb().scoped_name().as_str().to_owned(),
+        ));
     });
 }
 

@@ -56,8 +56,12 @@ pub async fn unset_plays(
     with_schema_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
-        let res =
-            object_type.unset_plays(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager, role_type);
+        let res = object_type.unset_plays(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.type_manager,
+            &tx.thing_manager,
+            role_type,
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }

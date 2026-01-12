@@ -39,9 +39,10 @@ fn object_create_instance_impl(
             ObjectType::Entity(entity_type) => {
                 tx.thing_manager.create_entity(Arc::get_mut(&mut tx.snapshot).unwrap(), entity_type).map(Object::Entity)
             }
-            ObjectType::Relation(relation_type) => {
-                tx.thing_manager.create_relation(Arc::get_mut(&mut tx.snapshot).unwrap(), relation_type).map(Object::Relation)
-            }
+            ObjectType::Relation(relation_type) => tx
+                .thing_manager
+                .create_relation(Arc::get_mut(&mut tx.snapshot).unwrap(), relation_type)
+                .map(Object::Relation),
         }
     })
 }

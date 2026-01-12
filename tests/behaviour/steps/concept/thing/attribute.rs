@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{attribute::Attribute, ThingAPI},
@@ -12,8 +14,6 @@ use concept::{
 use macro_rules_attribute::apply;
 use params::{self, check_boolean};
 use resource::profile::StorageCounters;
-
-use std::sync::Arc;
 
 use crate::{
     generic_step,
