@@ -41,7 +41,7 @@ async fn relation_add_player_for_role(
         {
             let role_type = relates.role();
             let res = relation.add_player(
-                tx.get_snapshot_mut().unwrap(),
+                Arc::get_mut(&mut tx.snapshot).unwrap(),
                 &tx.thing_manager,
                 role_type,
                 player,
@@ -74,7 +74,7 @@ async fn relation_set_players_for_role(
             .unwrap()
             .role();
         relation.set_players_ordered(
-            tx.get_snapshot_mut().unwrap(),
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.thing_manager,
             role_type,
             players,
@@ -104,7 +104,7 @@ async fn relation_remove_player_for_role(
             .role();
 
         let res = relation.remove_player_single(
-            tx.get_snapshot_mut().unwrap(),
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.thing_manager,
             role_type,
             player,
@@ -134,7 +134,7 @@ async fn relation_remove_count_players_for_role(
             .role();
         relation
             .remove_player_many(
-                tx.get_snapshot_mut().unwrap(),
+                Arc::get_mut(&mut tx.snapshot).unwrap(),
                 &tx.thing_manager,
                 role_type,
                 player,

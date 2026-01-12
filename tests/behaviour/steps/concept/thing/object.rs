@@ -37,11 +37,11 @@ fn object_create_instance_impl(
             tx.type_manager.get_object_type(tx.snapshot.as_ref(), &object_type_label.into_typedb()).unwrap().unwrap();
         match object_type {
             ObjectType::Entity(entity_type) => {
-                tx.thing_manager.create_entity(tx.get_snapshot_mut().unwrap(), entity_type).map(Object::Entity)
+                tx.thing_manager.create_entity(Arc::get_mut(&mut tx.snapshot).unwrap(), entity_type).map(Object::Entity)
             }
             ObjectType::Relation(relation_type) => tx
                 .thing_manager
-                .create_relation(tx.get_snapshot_mut().unwrap(), relation_type)
+                .create_relation(Arc::get_mut(&mut tx.snapshot).unwrap(), relation_type)
                 .map(Object::Relation),
         }
     })
@@ -104,7 +104,7 @@ async fn delete_object(context: &mut Context, object_kind: params::ObjectKind, v
     let object = context.objects[&var.name].as_ref().unwrap().object;
     object_kind.assert(&object.type_());
     with_write_tx!(context, |tx| {
-        object.delete(tx.get_snapshot_mut().unwrap(), &tx.thing_manager, StorageCounters::DISABLED).unwrap()
+        object.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED).unwrap()
     })
 }
 
@@ -121,7 +121,7 @@ async fn delete_objects_of_type(context: &mut Context, object_kind: params::Obje
                 for entity in entity_iterator {
                     entity
                         .unwrap()
-                        .delete(tx.get_snapshot_mut().unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
+                        .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
                         .unwrap();
                 }
             }
@@ -131,7 +131,7 @@ async fn delete_objects_of_type(context: &mut Context, object_kind: params::Obje
                 for relation in relation_iterator {
                     relation
                         .unwrap()
-                        .delete(tx.get_snapshot_mut().unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
+                        .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
                         .unwrap();
                 }
             }
