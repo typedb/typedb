@@ -13,7 +13,8 @@ rust_test(
 
         "@crates//:tokio",
     ],
-    data = ["@typedb_behaviour//driver:concept.feature"],
+#     data = ["@typedb_behaviour//driver:concept.feature"],
+    data = ["//tests/behaviour/debug:debug.feature"],
     crate_features = ["bazel"],
 )
 

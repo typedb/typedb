@@ -32,3 +32,5 @@ checkstyle_test(
     ]),
     license_type = "mpl-header",
 )
+
+exports_files(["debug.feature"])
