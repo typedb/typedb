@@ -102,7 +102,6 @@ impl ThingVertexGenerator {
             )
             .collect_cloned_vec(|k, _v| TypeVertex::decode(Bytes::Reference(k.bytes())).type_id_().as_u16())
             .map_err(|err| EncodingError::ExistingTypesRead { source: err })?;
-        // read_snapshot.close_resources();
 
         let entity_ids = Self::allocate_empty_ids();
         let relation_ids = Self::allocate_empty_ids();

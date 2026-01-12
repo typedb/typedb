@@ -34,7 +34,7 @@ pub async fn relation_type_create_role_unordered(
         let relation_type =
             tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         relation_type.create_relates(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             role_label.into_typedb().name().as_str(),
@@ -56,7 +56,7 @@ pub async fn relation_type_create_role_ordered(
         let relation_type =
             tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         relation_type.create_relates(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             role_label.into_typedb().name().as_str(),
@@ -97,7 +97,7 @@ pub async fn relation_role_set_specialise(
                 .unwrap()
             {
                 let res = relates.set_specialise(
-                    Arc::get_mut(&mut tx.snapshot).unwrap(),
+                    tx.get_snapshot_mut().unwrap(),
                     &tx.type_manager,
                     &tx.thing_manager,
                     specialised_relates,
@@ -133,7 +133,7 @@ pub async fn relation_role_unset_specialise(
             .unwrap()
             .unwrap();
         let res =
-            relates.unset_specialise(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
+            relates.unset_specialise(tx.get_snapshot_mut().unwrap(), &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -416,7 +416,7 @@ pub async fn relation_type_delete_role(
             .unwrap()
             .unwrap()
             .role();
-        let res = role.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.type_manager, &tx.thing_manager);
+        let res = role.delete(tx.get_snapshot_mut().unwrap(), &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -614,7 +614,7 @@ pub async fn relation_role_set_name(
             .unwrap()
             .role();
         let res = role.set_name(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             to_label.into_typedb().name.as_str(),
         );
@@ -645,7 +645,7 @@ pub async fn relation_role_set_annotation(
 
         let parsed_annotation = annotation.into_typedb(None);
         let res = relates.set_annotation(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             parsed_annotation.try_into().unwrap(),
@@ -677,7 +677,7 @@ pub async fn relation_role_unset_annotation(
 
         let parsed_annotation_category = annotation_category.into_typedb();
         let res = relates.unset_annotation(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             parsed_annotation_category,
@@ -978,7 +978,7 @@ pub async fn relation_role_set_ordering(
             .unwrap()
             .role();
         let res = role.set_ordering(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             ordering.into_typedb(),

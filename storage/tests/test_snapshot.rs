@@ -241,5 +241,4 @@ fn snapshot_delete_reinserted() {
             .unwrap(),
         None
     );
-    // snapshot_2.close_resources();
 }

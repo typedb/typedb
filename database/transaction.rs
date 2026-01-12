@@ -192,6 +192,10 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
     }
 
+    pub fn get_snapshot_mut(&mut self) -> Option<&mut SchemaSnapshot<D>> {
+        Arc::get_mut(&mut self.snapshot)
+    }
+
     pub fn close(self) {
         drop(self)
     }
@@ -380,6 +384,10 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
     pub fn rollback(&mut self) {
         Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
+    }
+
+    pub fn get_snapshot_mut(&mut self) -> Option<&mut SchemaSnapshot<D>> {
+        Arc::get_mut(&mut self.snapshot)
     }
 
     pub fn close(self) {

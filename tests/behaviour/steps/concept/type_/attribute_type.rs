@@ -31,7 +31,7 @@ pub async fn attribute_type_set_value_type(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let parsed_value_type = value_type.into_typedb(&tx.type_manager, tx.snapshot.as_ref());
         let res = attribute_type.set_value_type(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             parsed_value_type,
@@ -51,7 +51,7 @@ pub async fn attribute_type_unset_value_type(
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let res = attribute_type.unset_value_type(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
         );

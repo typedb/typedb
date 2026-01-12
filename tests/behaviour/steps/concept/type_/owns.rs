@@ -39,7 +39,7 @@ pub async fn set_owns_unordered(
             .unwrap()
             .unwrap();
         let res = object_type.set_owns(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             attr_type,
@@ -66,7 +66,7 @@ pub async fn set_owns_ordered(
             .unwrap()
             .unwrap();
         let res = object_type.set_owns(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             attr_type,
@@ -94,7 +94,7 @@ pub async fn unset_owns(
             .unwrap()
             .unwrap();
         let res = object_type.unset_owns(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             attr_type,
@@ -120,7 +120,7 @@ pub async fn get_owns_set_annotation(
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let value_type = attr_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         let res = owns.set_annotation(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             annotation.into_typedb(value_type).try_into().unwrap(),
@@ -145,7 +145,7 @@ pub async fn get_owns_unset_annotation(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let res = owns.unset_annotation(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             annotation_category.into_typedb(),
@@ -507,7 +507,7 @@ pub async fn get_owns_set_ordering(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &attr_type_label.into_typedb()).unwrap().unwrap();
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let res = owns.set_ordering(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.get_snapshot_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             ordering.into_typedb(),

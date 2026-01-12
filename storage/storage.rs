@@ -341,10 +341,6 @@ impl<Durability> MVCCStorage<Durability> {
         Ok(())
     }
 
-    // pub fn closed_snapshot_write(&self, open_sequence_number: SequenceNumber) {
-    //     self.isolation_manager.closed_for_read(open_sequence_number)
-    // }
-
     fn get_keyspace(&self, keyspace_id: KeyspaceId) -> &Keyspace {
         self.keyspaces.get(keyspace_id)
     }

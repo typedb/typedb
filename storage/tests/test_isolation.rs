@@ -157,7 +157,6 @@ fn g0_dirty_writes() {
                     .unwrap(),
                 *value_22
             );
-            // reader_after_2.close_resources();
         }
         Err(_) => panic!(),
     }
