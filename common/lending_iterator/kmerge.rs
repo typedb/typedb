@@ -33,7 +33,7 @@ where
         Self { iterators: queue, next_iterator: None }
     }
 
-    pub fn find_next_state(&mut self) -> Option<()> {
+    fn find_next_state(&mut self) -> Option<()> {
         if let Some(mut last_iterator) = self.next_iterator.take() {
             if last_iterator.iter.peek().is_some() {
                 self.iterators.push(last_iterator);
