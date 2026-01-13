@@ -132,10 +132,7 @@ features = {}
 		default-features = false
 
 	[dependencies.typeql]
-		features = []
-		rev = "3011a31ae1fd16f4d387bb801dec8b385cebd954"
-		git = "https://github.com/typedb/typeql"
-		default-features = false
+		workspace = true
 
 	[dependencies.compiler]
 		path = "../compiler"
