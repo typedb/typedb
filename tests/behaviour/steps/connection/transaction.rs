@@ -200,7 +200,7 @@ fn execute_schema_transaction(
     transaction
         .query_manager
         .execute_schema(
-            transaction.snapshot.as_mut().unwrap(),
+            Arc::get_mut(&mut transaction.snapshot).unwrap(),
             &transaction.type_manager,
             &transaction.thing_manager,
             &transaction.function_manager,

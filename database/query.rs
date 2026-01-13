@@ -88,7 +88,7 @@ pub fn execute_write_query_in_schema(
     } = transaction;
 
     let (snapshot, result) = execute_write_query_in(
-        snapshot.into_inner(),
+        Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
         &type_manager,
         thing_manager.clone(),
         &function_manager,
@@ -132,7 +132,7 @@ pub fn execute_write_query_in_write(
     } = transaction;
 
     let (snapshot, result) = execute_write_query_in(
-        snapshot.into_inner(),
+        Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
         &type_manager,
         thing_manager.clone(),
         &function_manager,

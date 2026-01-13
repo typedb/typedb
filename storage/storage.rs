@@ -230,7 +230,7 @@ impl<Durability> MVCCStorage<Durability> {
             .map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
         commit_profile.snapshot_put_statuses_checked();
 
-        let commit_record = snapshot.into_commit_record();
+        let (reader_guard, commit_record) = snapshot.into_commit_record();
         commit_profile.snapshot_commit_record_created();
 
         commit_profile.commit_size(commit_record.operations().len());
@@ -244,6 +244,7 @@ impl<Durability> MVCCStorage<Durability> {
         let sync_notifier = self.durability_client.request_sync();
         let validate_result =
             self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
+        drop(reader_guard);
         commit_profile.snapshot_isolation_validated();
 
         match validate_result {
@@ -338,10 +339,6 @@ impl<Durability> MVCCStorage<Durability> {
     {
         durability_client.unsequenced_write(&StatusRecord::new(commit_sequence_number, did_apply))?;
         Ok(())
-    }
-
-    pub fn closed_snapshot_write(&self, open_sequence_number: SequenceNumber) {
-        self.isolation_manager.closed_for_read(open_sequence_number)
     }
 
     fn get_keyspace(&self, keyspace_id: KeyspaceId) -> &Keyspace {

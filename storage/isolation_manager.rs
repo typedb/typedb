@@ -57,18 +57,14 @@ impl IsolationManager {
         }
     }
 
-    pub(crate) fn opened_for_read(&self, sequence_number: SequenceNumber) {
+    pub(crate) fn opened_for_read(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
         debug_assert!(
             sequence_number <= self.watermark(),
             "assertion `{} <= {}` failed",
             sequence_number,
             self.watermark()
         );
-        self.timeline.record_reader(sequence_number);
-    }
-
-    pub(crate) fn closed_for_read(&self, sequence_number: SequenceNumber) {
-        self.timeline.remove_reader(sequence_number);
+        self.timeline.record_reader(sequence_number)
     }
 
     pub(crate) fn applied(&self, sequence_number: SequenceNumber) -> Result<(), ExpectedWindowError> {
@@ -113,7 +109,6 @@ impl IsolationManager {
             window.set_aborted(sequence_number);
             self.timeline.may_increment_watermark(sequence_number);
         }
-        self.timeline.remove_reader(commit_record.open_sequence_number);
         match isolation_conflict {
             Some(conflict) => Ok(ValidatedCommit::Conflict(conflict)),
             None => {
@@ -252,7 +247,7 @@ impl IsolationManager {
     }
 
     pub fn reset(&mut self) {
-        self.timeline = Timeline::new(self.initial_sequence_number)
+        self.timeline = Timeline::new(self.initial_sequence_number);
     }
 }
 
@@ -440,19 +435,14 @@ impl Timeline {
         SequenceNumber::from(self.watermark.load(Ordering::SeqCst))
     }
 
-    fn record_reader(&self, sequence_number: SequenceNumber) {
+    fn record_reader(&self, sequence_number: SequenceNumber) -> ReaderDropGuard {
         if let Some(window) = self.try_get_window(sequence_number) {
             window.increment_readers();
+            ReaderDropGuard { window: Some(window) }
+        } else {
+            // we only need to record readers against the timeline for windows that are still in-memory
+            ReaderDropGuard { window: None }
         }
-    }
-
-    fn remove_reader(&self, sequence_number: SequenceNumber) {
-        if let Some(window) = self.try_get_window(sequence_number) {
-            if window.decrement_readers() == 0 {
-                drop(window);
-                self.may_free_windows();
-            }
-        };
     }
 
     fn collect_concurrent_windows(
@@ -483,7 +473,11 @@ impl Timeline {
         if sequence_number >= end {
             self.create_windows_to(sequence_number);
         }
-        self.try_get_window(sequence_number).unwrap()
+        if let Some(window) = self.try_get_window(sequence_number) {
+            window
+        } else {
+            panic!();
+        }
     }
 
     fn create_windows_to(&self, sequence_number: SequenceNumber) {
@@ -514,6 +508,18 @@ impl Timeline {
             Some(offset / TIMELINE_WINDOW_SIZE)
         } else {
             None
+        }
+    }
+}
+
+pub struct ReaderDropGuard {
+    window: Option<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>,
+}
+
+impl Drop for ReaderDropGuard {
+    fn drop(&mut self) {
+        if let Some(window) = self.window.as_ref() {
+            window.decrement_readers();
         }
     }
 }
@@ -856,11 +862,12 @@ mod tests {
     use assert as assert_true;
 
     use crate::{
-        isolation_manager::{CommitRecord, CommitStatus, CommitType, Timeline, TIMELINE_WINDOW_SIZE},
+        isolation_manager::{CommitRecord, CommitStatus, CommitType, ReaderDropGuard, Timeline, TIMELINE_WINDOW_SIZE},
         keyspace::{KeyspaceId, KeyspaceSet},
         sequence_number::SequenceNumber,
         snapshot::buffer::OperationsBuffer,
     };
+
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
             #[derive(Clone, Copy)]
@@ -887,24 +894,19 @@ mod tests {
     struct MockTransaction {
         read_sequence_number: SequenceNumber,
         commit_sequence_number: SequenceNumber,
+        reader_drop_guard: ReaderDropGuard,
     }
 
     impl MockTransaction {
-        fn new(read_sequence_number: SequenceNumber, commit_sequence_number: SequenceNumber) -> MockTransaction {
-            MockTransaction { read_sequence_number, commit_sequence_number }
+        fn new(timeline: &Timeline, commit_sequence_number: SequenceNumber) -> MockTransaction {
+            let read_sequence_number = timeline.watermark();
+            let reader_drop_guard = timeline.record_reader(read_sequence_number);
+            MockTransaction { read_sequence_number, commit_sequence_number, reader_drop_guard }
         }
     }
 
-    fn create_timeline() -> Timeline {
-        Timeline::new(SequenceNumber::MIN.next())
-    }
-
-    fn tx_open(timeline: &Timeline, read_sequence_number: SequenceNumber) {
-        timeline.record_reader(read_sequence_number);
-    }
-
-    fn tx_close(timeline: &Timeline, read_sequence_number: SequenceNumber) {
-        timeline.remove_reader(read_sequence_number);
+    fn create_timeline() -> Arc<Timeline> {
+        Arc::new(Timeline::new(SequenceNumber::MIN.next()))
     }
 
     fn tx_start_commit(timeline: &Timeline, tx: &MockTransaction) {
@@ -912,7 +914,8 @@ mod tests {
         window.insert_pending(tx.commit_sequence_number, _record(tx.read_sequence_number));
     }
 
-    fn tx_finalise_commit_status(timeline: &Timeline, tx: &MockTransaction, validation_result: bool) {
+    fn tx_finalise_commit_status(timeline: &Timeline, tx: MockTransaction, validation_result: bool) {
+        let read_guard = tx.reader_drop_guard;
         let window = timeline.try_get_window(tx.commit_sequence_number).unwrap();
         if let CommitStatus::Pending(commit_record) = window.get_status(tx.commit_sequence_number) {
             if validation_result {
@@ -923,19 +926,11 @@ mod tests {
             }
             let sequence_number = commit_record.open_sequence_number;
             drop(window);
-            timeline.remove_reader(sequence_number);
+            drop(read_guard);
             timeline.may_increment_watermark(tx.commit_sequence_number);
         } else {
             unreachable!()
         }
-    }
-
-    fn tx_complete_commit(timeline: &Timeline, tx: &MockTransaction) {
-        tx_finalise_commit_status(timeline, tx, true);
-    }
-
-    fn tx_abort_commit(timeline: &Timeline, tx: &MockTransaction) {
-        tx_finalise_commit_status(timeline, tx, false);
     }
 
     fn _seq(from: u64) -> SequenceNumber {
@@ -949,29 +944,29 @@ mod tests {
     #[test]
     fn watermark_is_updated() {
         let timeline = &create_timeline();
-        let tx1 = &MockTransaction::new(_seq(0), _seq(1));
-        tx_open(timeline, tx1.read_sequence_number);
-        tx_start_commit(timeline, tx1);
+        let tx1 = MockTransaction::new(&timeline, _seq(1));
+
+        tx_start_commit(timeline, &tx1);
+        let tx1_commit_sequence_number = tx1.commit_sequence_number;
         tx_finalise_commit_status(timeline, tx1, true);
-        assert_eq!(tx1.commit_sequence_number, timeline.watermark());
+        assert_eq!(tx1_commit_sequence_number, timeline.watermark());
 
-        let tx2 = &MockTransaction::new(_seq(0), _seq(2));
+        let tx2 = MockTransaction::new(&timeline, _seq(2));
 
-        tx_open(timeline, tx2.read_sequence_number);
-        tx_start_commit(timeline, tx2);
+        tx_start_commit(timeline, &tx2);
+        let tx2_commit_sequence_number = tx2.commit_sequence_number;
         tx_finalise_commit_status(timeline, tx2, false);
-        assert_eq!(tx2.commit_sequence_number, timeline.watermark());
+        assert_eq!(tx2_commit_sequence_number, timeline.watermark());
 
-        let tx3 = &MockTransaction::new(_seq(0), _seq(3));
-        let tx4 = &MockTransaction::new(_seq(0), _seq(4));
-        tx_open(timeline, tx3.read_sequence_number);
-        tx_open(timeline, tx4.read_sequence_number);
-        tx_start_commit(timeline, tx3);
-        tx_start_commit(timeline, tx4);
+        let tx3 = MockTransaction::new(&timeline, _seq(3));
+        let tx4 = MockTransaction::new(&timeline, _seq(4));
+        tx_start_commit(timeline, &tx3);
+        tx_start_commit(timeline, &tx4);
+        let tx4_commit_sequence_number = tx4.commit_sequence_number;
         tx_finalise_commit_status(timeline, tx4, true);
-        assert_eq!(tx2.commit_sequence_number, timeline.watermark()); // tx3 is not yet committed, watermark does not move.
+        assert_eq!(tx2_commit_sequence_number, timeline.watermark()); // tx3 is not yet committed, watermark does not move.
         tx_finalise_commit_status(timeline, tx3, true);
-        assert_eq!(tx4.commit_sequence_number, timeline.watermark()); // Watermark goes up all the way to 4.
+        assert_eq!(tx4_commit_sequence_number, timeline.watermark()); // Watermark goes up all the way to 4.
     }
 
     #[test]
@@ -980,20 +975,18 @@ mod tests {
 
         let tx_count = TIMELINE_WINDOW_SIZE + 2;
         for i in 1..tx_count {
-            //
-            let tx = &MockTransaction::new(_seq(0), _seq(i as u64));
-            tx_open(timeline, tx.read_sequence_number);
-            tx_start_commit(timeline, tx);
+            let tx = MockTransaction::new(&timeline, _seq(i as u64));
+            tx_start_commit(timeline, &tx);
         }
 
         let stop_at = tx_count - 2;
         for i in 1..stop_at {
-            let tx = &MockTransaction::new(_seq(0), _seq(i as u64));
+            let tx = MockTransaction::new(&timeline, _seq(i as u64));
             tx_finalise_commit_status(timeline, tx, true);
         }
         assert_true!(timeline.try_get_window(_seq(1)).is_some());
         for i in stop_at..tx_count {
-            let tx = &MockTransaction::new(_seq(0), _seq(i as u64));
+            let tx = MockTransaction::new(&timeline, _seq(i as u64));
             tx_finalise_commit_status(timeline, tx, true);
         }
         assert_true!(timeline.try_get_window(_seq(1)).is_none());
@@ -1002,19 +995,19 @@ mod tests {
     #[test]
     fn watermark_keeps_window_pinned() {
         let timeline = create_timeline();
-        let tx1 = &MockTransaction::new(_seq(0), _seq(1));
-        tx_open(&timeline, tx1.read_sequence_number);
-        tx_start_commit(&timeline, tx1);
+        let tx1 = MockTransaction::new(&timeline, _seq(1));
+        tx_start_commit(&timeline, &tx1);
+        let tx1_commit_sequence_number = tx1.commit_sequence_number;
         tx_finalise_commit_status(&timeline, tx1, true);
 
-        let got_window = timeline.try_get_window(tx1.commit_sequence_number);
+        let got_window = timeline.try_get_window(tx1_commit_sequence_number);
         assert_true!(got_window.is_some());
+        drop(got_window);
 
-        let mut i = tx1.commit_sequence_number + 1;
+        let mut i = tx1_commit_sequence_number + 1;
         while timeline.try_get_window(i).is_some() {
-            let tx = &MockTransaction::new(_seq(0), i);
-            tx_open(&timeline, tx.read_sequence_number);
-            tx_start_commit(&timeline, tx);
+            let tx = MockTransaction::new(&timeline, i);
+            tx_start_commit(&timeline, &tx);
             tx_finalise_commit_status(&timeline, tx, true);
             i += 1;
         }
@@ -1037,9 +1030,8 @@ mod tests {
                 for _ in 0..TRANSACTIONS_PER_THREAD {
                     let (timeline, commit_sequence_number_counter) = &*timeline_and_counter;
                     let index = commit_sequence_number_counter.fetch_add(1, Ordering::SeqCst);
-                    let tx = &MockTransaction::new(timeline.watermark(), _seq(index));
-                    tx_open(timeline, tx.read_sequence_number);
-                    tx_start_commit(timeline, tx);
+                    let tx = MockTransaction::new(&timeline, _seq(index));
+                    tx_start_commit(timeline, &tx);
                     tx_finalise_commit_status(timeline, tx, true);
                 }
             })
@@ -1053,6 +1045,21 @@ mod tests {
         let (timeline, _) = &*timeline_and_counter;
         assert_eq!(expected_watermark, timeline.watermark());
         let some_index_in_penultimate_window = expected_watermark - TIMELINE_WINDOW_SIZE - 1;
+        timeline.may_free_windows();
         assert_true!(timeline.try_get_window(some_index_in_penultimate_window).is_none());
+    }
+
+    #[test]
+    fn windows_are_dropped() {
+        let timeline = create_timeline();
+        // windows are verified as unused and dropped when the watermark moves onwards far enough
+
+        for i in 1..TIMELINE_WINDOW_SIZE * 10 {
+            let tx = MockTransaction::new(&timeline, _seq(i as u64));
+            tx_start_commit(&timeline, &tx);
+            tx_finalise_commit_status(&timeline, tx, true);
+        }
+
+        assert_eq!(timeline.window_count(), 1);
     }
 }

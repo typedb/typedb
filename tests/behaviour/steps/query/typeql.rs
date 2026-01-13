@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter, str::FromStr};
+use std::{collections::HashMap, iter, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
@@ -36,7 +36,6 @@ use server::service::http::message::analyze::{
     encode_analyzed_query,
     structure::bdd::{encode_function_structure_as_functor, encode_pipeline_structure_as_functor},
 };
-use storage::snapshot::SnapshotDropGuard;
 use test_utils::assert_matches;
 
 use crate::{
@@ -79,7 +78,7 @@ fn execute_read_query(
 ) -> Result<QueryAnswer, Box<QueryError>> {
     with_read_tx!(context, |tx| {
         let pipeline = tx.query_manager.prepare_read_pipeline(
-            tx.snapshot.clone_inner(),
+            tx.snapshot.clone(),
             &tx.type_manager,
             tx.thing_manager.clone(),
             &tx.function_manager,
@@ -139,7 +138,7 @@ fn execute_write_query(
                                            _db,
                                            _opts| {
         let pipeline_result = query_manager.prepare_write_pipeline(
-            snapshot.into_inner(),
+            Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
             &type_manager,
             thing_manager.clone(),
             &function_manager,
@@ -148,9 +147,7 @@ fn execute_write_query(
         );
 
         match pipeline_result {
-            Err((snapshot, error)) => {
-                (Err(BehaviourTestExecutionError::Query(*error)), SnapshotDropGuard::new(snapshot))
-            }
+            Err((snapshot, error)) => (Err(BehaviourTestExecutionError::Query(*error)), Arc::new(snapshot)),
             Ok(pipeline) => {
                 if pipeline.has_fetch() {
                     match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
@@ -164,14 +161,14 @@ fn execute_write_query(
                                     }))
                                 }
                             },
-                            SnapshotDropGuard::from_arc(snapshot),
+                            snapshot,
                         ),
                         Err((err, ExecutionContext { snapshot, .. })) => (
                             Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
                                 source_query: source_query.to_string(),
                                 typedb_source: err,
                             })),
-                            SnapshotDropGuard::from_arc(snapshot),
+                            snapshot,
                         ),
                     }
                 } else {
@@ -182,14 +179,14 @@ fn execute_write_query(
                             match result_as_batch {
                                 Ok(batch) => (
                                     Ok(QueryAnswer::ConceptRows(row_batch_result_to_answer(batch, named_outputs))),
-                                    SnapshotDropGuard::from_arc(snapshot),
+                                    snapshot,
                                 ),
                                 Err(typedb_source) => (
                                     Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
                                         source_query: source_query.to_string(),
                                         typedb_source,
                                     })),
-                                    SnapshotDropGuard::from_arc(snapshot),
+                                    snapshot,
                                 ),
                             }
                         }
@@ -198,7 +195,7 @@ fn execute_write_query(
                                 source_query: source_query.to_string(),
                                 typedb_source: err,
                             })),
-                            SnapshotDropGuard::from_arc(snapshot),
+                            snapshot,
                         ),
                     }
                 }
@@ -215,7 +212,7 @@ fn execute_analyze(
     with_read_tx!(context, |tx| {
         tx.query_manager
             .analyse(
-                tx.snapshot.clone_inner(),
+                tx.snapshot.clone(),
                 &tx.type_manager,
                 tx.thing_manager.clone(),
                 &tx.function_manager,
@@ -245,7 +242,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
 
     with_schema_tx!(context, |tx| {
         let result = tx.query_manager.execute_schema(
-            tx.snapshot.as_mut().unwrap(),
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             &tx.function_manager,

@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+
 use cucumber::gherkin::Step;
 use macro_rules_attribute::apply;
 use params::{self, check_boolean};
@@ -19,12 +21,10 @@ use crate::{
 #[step(expr = "create struct: {type_label}{may_error}")]
 pub async fn struct_create(context: &mut Context, type_label: params::Label, may_error: params::MayError) {
     with_schema_tx!(context, |tx| {
-        may_error.check_concept_write_without_read_errors(
-            &tx.type_manager.create_struct(
-                tx.snapshot.as_mut().unwrap(),
-                type_label.into_typedb().scoped_name().as_str().to_owned(),
-            ),
-        );
+        may_error.check_concept_write_without_read_errors(&tx.type_manager.create_struct(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            type_label.into_typedb().scoped_name().as_str().to_owned(),
+        ));
     });
 }
 
@@ -38,7 +38,7 @@ pub async fn struct_delete(context: &mut Context, type_label: params::Label, may
             .unwrap()
         {
             may_error.check_concept_write_without_read_errors(&tx.type_manager.delete_struct(
-                tx.snapshot.as_mut().unwrap(),
+                Arc::get_mut(&mut tx.snapshot).unwrap(),
                 &tx.thing_manager,
                 definition_key,
             ));
@@ -86,7 +86,7 @@ pub async fn struct_create_field_with_value_type(
             .unwrap();
         let parsed_value_type = value_type.into_typedb(&tx.type_manager, tx.snapshot.as_ref());
         may_error.check_concept_write_without_read_errors(&tx.type_manager.create_struct_field(
-            tx.snapshot.as_mut().unwrap(),
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             definition_key.clone(),
             field_label.into_typedb().scoped_name().as_str(),
             parsed_value_type,
@@ -110,7 +110,7 @@ pub async fn struct_delete_field(
             .unwrap()
             .unwrap();
         may_error.check_concept_write_without_read_errors(&tx.type_manager.delete_struct_field(
-            tx.snapshot.as_mut().unwrap(),
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.thing_manager,
             definition_key.clone(),
             field_label.into_typedb().scoped_name().as_str(),

@@ -1259,8 +1259,6 @@ fn test_struct_definition() {
         let read_outer_definition = type_manager.get_struct_definition(&snapshot, read_outer_key).unwrap();
         assert_eq!(&outer_struct_name, &read_outer_definition.name);
         assert_eq!(&outer_struct_fields, &remap_struct_fields(read_outer_definition.borrow()));
-
-        snapshot.close_resources()
     }
 
     // Persisted, with cache
@@ -1281,8 +1279,6 @@ fn test_struct_definition() {
         let read_outer_definition = type_manager.get_struct_definition(&snapshot, read_outer_key).unwrap();
         assert_eq!(&outer_struct_name, &read_outer_definition.name);
         assert_eq!(&outer_struct_fields, &remap_struct_fields(read_outer_definition.borrow()));
-
-        snapshot.close_resources()
     }
 }
 
@@ -1365,6 +1361,5 @@ fn test_struct_definition_updates() {
             HashMap::from([f_string.clone()]),
             remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
         );
-        snapshot.close_resources();
     }
 }

@@ -45,7 +45,8 @@ pub mod transaction_util {
                 transaction_options,
                 profile,
             } = TransactionSchema::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
-            let mut snapshot: SchemaSnapshot<WALClient> = snapshot.into_inner();
+            let mut snapshot: SchemaSnapshot<WALClient> =
+                Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot"));
             let result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
             let tx = TransactionSchema::from_parts(
                 Arc::new(snapshot),
@@ -90,7 +91,7 @@ pub mod transaction_util {
                 profile,
             } = TransactionWrite::open(self.database.clone(), TransactionOptions::default()).unwrap();
             let (rows, snapshot) = fn_(
-                snapshot.into_inner(),
+                Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
                 type_manager.clone(),
                 thing_manager.clone(),
                 function_manager.clone(),
@@ -143,7 +144,7 @@ pub mod query_util {
         let prepared_pipeline = tx
             .query_manager
             .prepare_read_pipeline(
-                tx.snapshot.clone_inner(),
+                tx.snapshot.clone(),
                 &tx.type_manager,
                 tx.thing_manager.clone(),
                 &tx.function_manager,
