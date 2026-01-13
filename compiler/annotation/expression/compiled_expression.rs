@@ -58,7 +58,6 @@ impl<ID: IrID> ExecutableExpression<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ExpressionValueType {
     // TODO: we haven't implemented ConceptList, only ValueList right now.
-    // TODO: this should hold an actual ValueType, not a Category!
     Single(ValueType),
     List(ValueType),
 }
