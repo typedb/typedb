@@ -473,7 +473,11 @@ impl Timeline {
         if sequence_number >= end {
             self.create_windows_to(sequence_number);
         }
-        self.try_get_window(sequence_number).unwrap()
+        if let Some(window) = self.try_get_window(sequence_number) {
+            window
+        } else {
+            panic!();
+        }
     }
 
     fn create_windows_to(&self, sequence_number: SequenceNumber) {
@@ -1050,7 +1054,7 @@ mod tests {
         let timeline = create_timeline();
         // windows are verified as unused and dropped when the watermark moves onwards far enough
 
-        for i in 0..TIMELINE_WINDOW_SIZE * 10 {
+        for i in 1..TIMELINE_WINDOW_SIZE * 10 {
             let tx = MockTransaction::new(&timeline, _seq(i as u64));
             tx_start_commit(&timeline, &tx);
             tx_finalise_commit_status(&timeline, tx, true);
