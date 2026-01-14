@@ -139,6 +139,7 @@ fn check_is_value(
                     n.to_string() // Integers don't need special formatting
                 }
             }
+            serde_json::Value::String(string) => string.clone(),
             _ => value.to_string(), // Handle non-numbers normally
         }
     }
