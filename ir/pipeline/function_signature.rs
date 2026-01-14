@@ -11,13 +11,17 @@ use primitive::maybe_owns::MaybeOwns;
 use structural_equality::StructuralEquality;
 
 use crate::{
-    pattern::variable_category::{VariableCategory, VariableOptionality},
+    pattern::{
+        expression::BuiltinFunctionID,
+        variable_category::{VariableCategory, VariableOptionality},
+    },
     pipeline::FunctionReadError,
     translation::function::build_signature,
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum FunctionID {
+    Builtin(BuiltinFunctionID),
     Schema(DefinitionKey),
     Preamble(usize),
 }
@@ -61,32 +65,27 @@ impl FunctionID {
             None
         }
     }
-
-    pub fn as_usize(&self) -> usize {
-        match self {
-            FunctionID::Schema(id) => id.definition_id().as_uint() as usize,
-            FunctionID::Preamble(id) => *id,
-        }
-    }
 }
 
 impl StructuralEquality for FunctionID {
     fn hash(&self) -> u64 {
         StructuralEquality::hash(&mem::discriminant(self)).bitxor(match self {
-            FunctionID::Schema(key) => StructuralEquality::hash(&(key.definition_id().as_uint() as usize)),
-            FunctionID::Preamble(id) => StructuralEquality::hash(id),
+            Self::Builtin(id) => StructuralEquality::hash(id),
+            Self::Schema(key) => StructuralEquality::hash(&(key.definition_id().as_uint() as usize)),
+            Self::Preamble(id) => StructuralEquality::hash(id),
         })
     }
 
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
+            (Self::Builtin(id), Self::Builtin(other_id)) => id.equals(other_id),
             (Self::Schema(key), Self::Schema(other_key)) => StructuralEquality::equals(
                 &(key.definition_id().as_uint() as usize),
                 &(other_key.definition_id().as_uint() as usize),
             ),
             (Self::Preamble(id), Self::Preamble(other_id)) => id.equals(other_id),
             // note: this style forces updating the match when the variants change
-            (Self::Schema { .. }, _) | (Self::Preamble { .. }, _) => false,
+            (Self::Builtin { .. }, _) | (Self::Schema { .. }, _) | (Self::Preamble { .. }, _) => false,
         }
     }
 }
@@ -94,6 +93,7 @@ impl StructuralEquality for FunctionID {
 impl fmt::Display for FunctionID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            FunctionID::Builtin(builtin) => write!(f, "BuiltinFunction#{}", builtin),
             FunctionID::Schema(definition_key) => {
                 write!(f, "SchemaFunction#{}", definition_key.definition_id().as_uint())
             }
@@ -126,7 +126,7 @@ impl TryFrom<FunctionID> for usize {
     type Error = ();
     fn try_from(value: FunctionID) -> Result<Self, Self::Error> {
         match value {
-            FunctionID::Schema(_) => Err(()),
+            FunctionID::Builtin(_) | FunctionID::Schema(_) => Err(()),
             FunctionID::Preamble(id) => Ok(id),
         }
     }
@@ -138,7 +138,7 @@ impl TryFrom<FunctionID> for DefinitionKey {
     fn try_from(value: FunctionID) -> Result<DefinitionKey, Self::Error> {
         match value {
             FunctionID::Schema(id) => Ok(id),
-            FunctionID::Preamble(_) => Err(()),
+            FunctionID::Builtin(_) | FunctionID::Preamble(_) => Err(()),
         }
     }
 }

@@ -16,13 +16,11 @@ use error::typedb_error;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
-use crate::pattern::{IrID, ParameterID};
-
-enum ExpectedArgumentType {
-    Single,
-    List,
-    Either,
-}
+use super::variable_category::{VariableCategory, VariableOptionality};
+use crate::{
+    pattern::{IrID, ParameterID},
+    pipeline::function_signature::{FunctionID, FunctionSignature},
+};
 
 pub type ExpressionTreeNodeId = usize;
 
@@ -68,9 +66,10 @@ impl<ID: IrID> ExpressionTree<ID> {
             &Expression::Variable(variable) => Some(variable),
             Expression::ListIndex(list_index) => Some(list_index.list_variable()),
             Expression::ListIndexRange(list_index_range) => Some(list_index_range.list_variable()),
-            Expression::Constant(_) | Expression::Operation(_) | Expression::BuiltInCall(_) | Expression::List(_) => {
-                None
-            }
+            Expression::Constant(_)
+            | Expression::Operation(_)
+            | Expression::BuiltinValueFunctionCall(_)
+            | Expression::List(_) => None,
         })
     }
 
@@ -84,9 +83,9 @@ impl<ID: IrID> ExpressionTree<ID> {
                 Expression::ListIndexRange(list_index_range) => {
                     Expression::ListIndexRange(list_index_range.map(mapping))
                 }
-                Expression::Constant(inner) => Expression::Constant(inner.clone()),
+                Expression::Constant(inner) => Expression::Constant(*inner),
                 Expression::Operation(inner) => Expression::Operation(inner.clone()),
-                Expression::BuiltInCall(inner) => Expression::BuiltInCall(inner.clone()),
+                Expression::BuiltinValueFunctionCall(inner) => Expression::BuiltinValueFunctionCall(inner.clone()),
                 Expression::List(inner) => Expression::List(inner.clone()),
             })
             .collect::<Vec<Expression<T>>>();
@@ -107,9 +106,9 @@ impl<ID: StructuralEquality> StructuralEquality for ExpressionTree<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Expression<ID> {
     Constant(ParameterID),
-    Variable(ID),
+    Variable(ID), // User-defined functions are re-written as an anonymous assignment.
     Operation(Operation),
-    BuiltInCall(BuiltInCall), // Other functions must be re-written as an anonymous assignment.
+    BuiltinValueFunctionCall(BuiltinValueFunctionCall),
     ListIndex(ListIndex<ID>),
 
     List(ListConstructor),
@@ -123,7 +122,7 @@ impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
                 Expression::Constant(inner) => StructuralEquality::hash(inner),
                 Expression::Variable(inner) => StructuralEquality::hash(inner),
                 Expression::Operation(inner) => StructuralEquality::hash(inner),
-                Expression::BuiltInCall(inner) => StructuralEquality::hash(inner),
+                Expression::BuiltinValueFunctionCall(inner) => StructuralEquality::hash(inner),
                 Expression::ListIndex(inner) => StructuralEquality::hash(inner),
                 Expression::List(inner) => StructuralEquality::hash(inner),
                 Expression::ListIndexRange(inner) => StructuralEquality::hash(inner),
@@ -135,7 +134,9 @@ impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
             (Self::Constant(inner), Self::Constant(other_inner)) => inner.equals(other_inner),
             (Self::Variable(inner), Self::Variable(other_inner)) => inner.equals(other_inner),
             (Self::Operation(inner), Self::Operation(other_inner)) => inner.equals(other_inner),
-            (Self::BuiltInCall(inner), Self::BuiltInCall(other_inner)) => inner.equals(other_inner),
+            (Self::BuiltinValueFunctionCall(inner), Self::BuiltinValueFunctionCall(other_inner)) => {
+                inner.equals(other_inner)
+            }
             (Self::ListIndex(inner), Self::ListIndex(other_inner)) => inner.equals(other_inner),
             (Self::List(inner), Self::List(other_inner)) => inner.equals(other_inner),
             (Self::ListIndexRange(inner), Self::ListIndexRange(other_inner)) => inner.equals(other_inner),
@@ -143,7 +144,7 @@ impl<ID: StructuralEquality> StructuralEquality for Expression<ID> {
             (Self::Constant(_), _)
             | (Self::Variable(_), _)
             | (Self::Operation(_), _)
-            | (Self::BuiltInCall(_), _)
+            | (Self::BuiltinValueFunctionCall(_), _)
             | (Self::ListIndex(_), _)
             | (Self::List(_), _)
             | (Self::ListIndexRange(_), _) => false,
@@ -219,24 +220,25 @@ impl StructuralEquality for Operation {
             && self.right_expression_id.equals(&other.right_expression_id)
     }
 }
+
 #[derive(Debug, Clone)]
-pub struct BuiltInCall {
-    builtin_id: BuiltInFunctionID,
+pub struct BuiltinValueFunctionCall {
+    function_id: BuiltinValueFunctionID,
     argument_expression_ids: Vec<ExpressionTreeNodeId>,
     source_span: Option<Span>,
 }
 
-impl BuiltInCall {
+impl BuiltinValueFunctionCall {
     pub(crate) fn new(
-        builtin_id: BuiltInFunctionID,
+        function_id: BuiltinValueFunctionID,
         argument_expression_ids: Vec<ExpressionTreeNodeId>,
         source_span: Option<Span>,
     ) -> Self {
-        Self { builtin_id, argument_expression_ids, source_span }
+        Self { function_id, argument_expression_ids, source_span }
     }
 
-    pub fn builtin_id(&self) -> BuiltInFunctionID {
-        self.builtin_id
+    pub fn function_id(&self) -> BuiltinValueFunctionID {
+        self.function_id
     }
 
     pub fn argument_expression_ids(&self) -> &[ExpressionTreeNodeId] {
@@ -248,46 +250,47 @@ impl BuiltInCall {
     }
 }
 
-impl Hash for BuiltInCall {
+impl Hash for BuiltinValueFunctionCall {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        Hash::hash(&self.builtin_id, state);
+        Hash::hash(&self.function_id, state);
         Hash::hash(&self.argument_expression_ids, state);
     }
 }
 
-impl Eq for BuiltInCall {}
+impl Eq for BuiltinValueFunctionCall {}
 
-impl PartialEq for BuiltInCall {
+impl PartialEq for BuiltinValueFunctionCall {
     fn eq(&self, other: &Self) -> bool {
-        self.builtin_id.eq(&other.builtin_id) && self.argument_expression_ids.eq(&other.argument_expression_ids)
+        self.function_id.eq(&other.function_id) && self.argument_expression_ids.eq(&other.argument_expression_ids)
     }
 }
 
-impl StructuralEquality for BuiltInCall {
+impl StructuralEquality for BuiltinValueFunctionCall {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        hasher.write_u64(StructuralEquality::hash(&self.builtin_id));
+        hasher.write_u64(StructuralEquality::hash(&self.function_id));
         hasher.write_u64(StructuralEquality::hash(&self.argument_expression_ids));
         hasher.finish()
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.builtin_id.equals(&other.builtin_id) && self.argument_expression_ids.equals(&other.argument_expression_ids)
+        self.function_id.equals(&other.function_id)
+            && self.argument_expression_ids.equals(&other.argument_expression_ids)
     }
 }
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum BuiltInFunctionID {
+pub enum BuiltinValueFunctionID {
     Abs,
     Ceil,
     Floor,
     Round,
     Max,
     Min,
-    // TODO: The below
-    // Length
+    Length,
 }
 
-impl StructuralEquality for BuiltInFunctionID {
+impl StructuralEquality for BuiltinValueFunctionID {
     fn hash(&self) -> u64 {
         StructuralEquality::hash(&mem::discriminant(self))
     }
@@ -297,15 +300,76 @@ impl StructuralEquality for BuiltInFunctionID {
     }
 }
 
-impl fmt::Display for BuiltInFunctionID {
+impl fmt::Display for BuiltinValueFunctionID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            BuiltInFunctionID::Abs => fmt::Display::fmt(&typeql::token::Function::Abs, f),
-            BuiltInFunctionID::Ceil => fmt::Display::fmt(&typeql::token::Function::Ceil, f),
-            BuiltInFunctionID::Floor => fmt::Display::fmt(&typeql::token::Function::Floor, f),
-            BuiltInFunctionID::Round => fmt::Display::fmt(&typeql::token::Function::Round, f),
-            BuiltInFunctionID::Max => fmt::Display::fmt(&typeql::token::Function::Max, f),
-            BuiltInFunctionID::Min => fmt::Display::fmt(&typeql::token::Function::Min, f),
+            BuiltinValueFunctionID::Abs => fmt::Display::fmt(&typeql::token::Function::Abs, f),
+            BuiltinValueFunctionID::Ceil => fmt::Display::fmt(&typeql::token::Function::Ceil, f),
+            BuiltinValueFunctionID::Floor => fmt::Display::fmt(&typeql::token::Function::Floor, f),
+            BuiltinValueFunctionID::Round => fmt::Display::fmt(&typeql::token::Function::Round, f),
+            BuiltinValueFunctionID::Max => fmt::Display::fmt(&typeql::token::Function::Max, f),
+            BuiltinValueFunctionID::Min => fmt::Display::fmt(&typeql::token::Function::Min, f),
+            BuiltinValueFunctionID::Length => fmt::Display::fmt(&typeql::token::Function::Length, f),
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum BuiltinFunctionID {
+    Iid,
+    Type,
+    Label,
+}
+
+impl BuiltinFunctionID {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Iid => typeql::token::Function::Iid.as_str(),
+            Self::Type => typeql::token::Function::Type.as_str(),
+            Self::Label => typeql::token::Function::Label.as_str(),
+        }
+    }
+
+    pub(crate) fn signature(self) -> FunctionSignature {
+        match self {
+            Self::Iid => FunctionSignature::new(
+                FunctionID::Builtin(self),
+                vec![VariableCategory::Thing],
+                vec![(VariableCategory::Value, VariableOptionality::Required)],
+                false,
+            ),
+            Self::Type => FunctionSignature::new(
+                FunctionID::Builtin(self),
+                vec![VariableCategory::Thing],
+                vec![(VariableCategory::Type, VariableOptionality::Required)],
+                false,
+            ),
+            Self::Label => FunctionSignature::new(
+                FunctionID::Builtin(self),
+                vec![VariableCategory::Type],
+                vec![(VariableCategory::Value, VariableOptionality::Required)],
+                false,
+            ),
+        }
+    }
+}
+
+impl StructuralEquality for BuiltinFunctionID {
+    fn hash(&self) -> u64 {
+        StructuralEquality::hash(&mem::discriminant(self))
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
+impl fmt::Display for BuiltinFunctionID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BuiltinFunctionID::Iid => fmt::Display::fmt(&typeql::token::Function::Iid, f),
+            BuiltinFunctionID::Type => fmt::Display::fmt(&typeql::token::Function::Type, f),
+            BuiltinFunctionID::Label => fmt::Display::fmt(&typeql::token::Function::Label, f),
         }
     }
 }
@@ -341,7 +405,7 @@ impl<ID: IrID> ListIndex<ID> {
     }
 
     fn map<T: Clone>(&self, mapping: &HashMap<ID, T>) -> ListIndex<T> {
-        ListIndex::new(self.list_variable.map(mapping), self.index_expression_id.clone(), self.source_span)
+        ListIndex::new(self.list_variable.map(mapping), self.index_expression_id, self.source_span)
     }
 }
 
@@ -462,8 +526,8 @@ impl<ID: IrID> ListIndexRange<ID> {
     fn map<T: Clone>(&self, mapping: &HashMap<ID, T>) -> ListIndexRange<T> {
         ListIndexRange::new(
             self.list_variable.map(mapping),
-            self.from_expression_id.clone(),
-            self.to_expression_id.clone(),
+            self.from_expression_id,
+            self.to_expression_id,
             self.source_span,
         )
     }

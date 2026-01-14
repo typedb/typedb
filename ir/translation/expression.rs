@@ -6,7 +6,6 @@
 
 use answer::variable::Variable;
 use encoding::value::value::Value;
-use error::UnimplementedFeature;
 use typeql::{
     common::{Span, Spanned},
     expression::{BuiltinFunctionName, FunctionName},
@@ -17,8 +16,8 @@ use crate::{
     pattern::{
         constraint::ConstraintsBuilder,
         expression::{
-            BuiltInCall, BuiltInFunctionID, Expression, ExpressionTree, ExpressionTreeNodeId, ListConstructor,
-            ListIndex, ListIndexRange, Operation, Operator,
+            BuiltinFunctionID, BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree,
+            ExpressionTreeNodeId, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
         },
         ParameterID, Vertex,
     },
@@ -129,6 +128,19 @@ fn register_typeql_literal(
     Ok(id)
 }
 
+fn add_builtin_function_call(
+    function_index: &impl FunctionSignatureIndex,
+    constraints: &mut ConstraintsBuilder<'_, '_>,
+    builtin_id: BuiltinFunctionID,
+    assigned: Vec<Variable>,
+    args: &[typeql::Expression],
+    source_span: Option<Span>,
+) -> Result<(), Box<RepresentationError>> {
+    let arguments = split_out_inline_expressions(function_index, constraints, args)?;
+    constraints.add_builtin_function_binding(assigned, builtin_id, arguments, source_span)?;
+    Ok(())
+}
+
 pub fn add_user_defined_function_call(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
@@ -158,13 +170,29 @@ fn build_function(
     tree: &mut ExpressionTree<Variable>,
 ) -> Result<Expression<Variable>, Box<RepresentationError>> {
     match &function_call.name {
-        FunctionName::Builtin(builtin) => {
+        FunctionName::Builtin(builtin) if is_builtin_value_function(builtin) => {
             let args = function_call
                 .args
                 .iter()
                 .map(|expr| build_recursive(function_index, constraints, expr, tree))
                 .collect::<Result<Vec<_>, _>>()?;
-            Ok(Expression::BuiltInCall(BuiltInCall::new(to_builtin_id(builtin, &args)?, args, builtin.span())))
+            Ok(Expression::BuiltinValueFunctionCall(BuiltinValueFunctionCall::new(
+                to_builtin_value_function_id(builtin, &args)?,
+                args,
+                builtin.span(),
+            )))
+        }
+        FunctionName::Builtin(builtin) => {
+            let assign = constraints.create_anonymous_variable(function_call.name.span())?;
+            add_builtin_function_call(
+                function_index,
+                constraints,
+                to_builtin_function_id(builtin, &function_call.args)?,
+                vec![assign],
+                &function_call.args,
+                function_call.span(),
+            )?;
+            Ok(Expression::Variable(assign))
         }
         FunctionName::Identifier(identifier) => {
             let assign = constraints.create_anonymous_variable(identifier.span())?;
@@ -210,39 +238,76 @@ fn check_builtin_arg_count(
     }
 }
 
-fn to_builtin_id(
+fn is_builtin_value_function(typeql_id: &BuiltinFunctionName) -> bool {
+    matches!(
+        typeql_id.token,
+        Function::Abs
+            | Function::Ceil
+            | Function::Floor
+            | Function::Round
+            | Function::Max
+            | Function::Min
+            | Function::Length
+    )
+}
+
+fn to_builtin_value_function_id(
     typeql_id: &BuiltinFunctionName,
     args: &[usize],
-) -> Result<BuiltInFunctionID, Box<RepresentationError>> {
+) -> Result<BuiltinValueFunctionID, Box<RepresentationError>> {
     let token = typeql_id.token;
     match token {
         Function::Abs => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltInFunctionID::Abs)
+            Ok(BuiltinValueFunctionID::Abs)
         }
         Function::Ceil => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltInFunctionID::Ceil)
+            Ok(BuiltinValueFunctionID::Ceil)
         }
         Function::Floor => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltInFunctionID::Floor)
+            Ok(BuiltinValueFunctionID::Floor)
         }
         Function::Round => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltInFunctionID::Round)
+            Ok(BuiltinValueFunctionID::Round)
         }
         Function::Max => {
             check_builtin_arg_count(token, args.len(), 2, typeql_id.span())?;
-            Ok(BuiltInFunctionID::Max)
+            Ok(BuiltinValueFunctionID::Max)
         }
         Function::Min => {
             check_builtin_arg_count(token, args.len(), 2, typeql_id.span())?;
-            Ok(BuiltInFunctionID::Min)
+            Ok(BuiltinValueFunctionID::Min)
         }
-        _ => Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-            feature: UnimplementedFeature::BuiltinFunction(token.to_string()),
-        })),
+        Function::Length => {
+            check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
+            Ok(BuiltinValueFunctionID::Length)
+        }
+        _ => Err(Box::new(RepresentationError::InternalNotAValueBuiltin { token, source_span: typeql_id.span() })),
+    }
+}
+
+fn to_builtin_function_id<T>(
+    typeql_id: &BuiltinFunctionName,
+    args: &[T],
+) -> Result<BuiltinFunctionID, Box<RepresentationError>> {
+    let token = typeql_id.token;
+    match token {
+        Function::Iid => {
+            check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
+            Ok(BuiltinFunctionID::Iid)
+        }
+        Function::Type => {
+            check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
+            Ok(BuiltinFunctionID::Type)
+        }
+        Function::Label => {
+            check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
+            Ok(BuiltinFunctionID::Label)
+        }
+        _ => Err(Box::new(RepresentationError::InternalNotANonValueBuiltin { token, source_span: typeql_id.span() })),
     }
 }
 

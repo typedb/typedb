@@ -282,6 +282,18 @@ typedb_error! {
             "Optionals are not allowed in negations as this can never return a meaningful result.",
             source_span: Option<Span>,
         ),
+        InternalNotAValueBuiltin(
+            100,
+            "Attempted to translate function '{token}' as a builtin value function.",
+            token: typeql::token::Function,
+            source_span: Option<Span>,
+        ),
+        InternalNotANonValueBuiltin(
+            101,
+            "Attempted to translate function '{token}' as a builtin non-value function.",
+            token: typeql::token::Function,
+            source_span: Option<Span>,
+        ),
         InvalidTimezoneNamed(
             200,
             "Unrecognised timezone '{name}'.",

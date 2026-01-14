@@ -338,6 +338,41 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(as_ref.as_comparison().unwrap())
     }
 
+    pub(crate) fn add_builtin_function_binding(
+        &mut self,
+        assigned: Vec<Variable>,
+        builtin_id: super::expression::BuiltinFunctionID,
+        arguments: Vec<Variable>,
+        source_span: Option<Span>,
+    ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
+        if let Some(variable) = assigned.iter().find(|var| self.context.is_variable_input(**var)) {
+            let variable = self
+                .context
+                .get_variable_name(*variable)
+                .cloned()
+                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
+        }
+
+        let callee_signature = builtin_id.signature();
+
+        let function_call =
+            self.create_function_call(&assigned, &callee_signature, arguments, builtin_id.name(), source_span)?;
+        let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream, source_span);
+        for (index, var) in binding.ids_assigned().enumerate() {
+            self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
+        }
+        for (callee_arg_index, caller_var) in binding.function_call.argument_ids().enumerate() {
+            self.context.set_variable_category(
+                caller_var,
+                callee_signature.arguments[callee_arg_index],
+                binding.clone().into(),
+            )?;
+        }
+        let constraint = self.constraints.add_constraint(binding);
+        Ok(constraint.as_function_call_binding().unwrap())
+    }
+
     pub fn add_function_binding(
         &mut self,
         assigned: Vec<Variable>,
@@ -368,8 +403,8 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
                 binding.clone().into(),
             )?;
         }
-        let as_ref = self.constraints.add_constraint(binding);
-        Ok(as_ref.as_function_call_binding().unwrap())
+        let constraint = self.constraints.add_constraint(binding);
+        Ok(constraint.as_function_call_binding().unwrap())
     }
 
     fn create_function_call(
@@ -387,7 +422,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         // Validate
         if assigned.len() != callee_signature.returns.len() {
             Err(FunctionCallReturnCountMismatch {
-                name: function_name.to_string(),
+                name: function_name.to_owned(),
                 assigned_var_count: assigned.len(),
                 function_return_count: callee_signature.returns.len(),
                 source_span,
@@ -395,7 +430,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         }
         if arguments.len() != callee_signature.arguments.len() {
             Err(FunctionCallArgumentCountMismatch {
-                name: function_name.to_string(),
+                name: function_name.to_owned(),
                 expected: callee_signature.arguments.len(),
                 actual: arguments.len(),
                 source_span,
