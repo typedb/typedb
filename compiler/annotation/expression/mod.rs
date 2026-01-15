@@ -8,7 +8,7 @@ use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 use ir::{
     pattern::{
-        expression::{BuiltInFunctionID, Operator},
+        expression::{BuiltinValueFunctionID, Operator},
         variable_category::VariableCategory,
     },
     RepresentationError,
@@ -78,14 +78,14 @@ typedb_error! {
         UnsupportedArgumentsForBuiltin(
             12,
             "Built-in function '{function}' cannot be applied to arguments of type '{category}'.",
-            function: BuiltInFunctionID,
+            function: BuiltinValueFunctionID,
             category: ValueTypeCategory,
             source_span: Option<Span>,
         ),
         UnsupportedDifferentArgumentForBuiltin(
             13,
             "Built-in function '{function}' expects matching argument types, but received one argument of type '{arg_1_category}' but another of type '{arg_2_category}'.",
-            function: BuiltInFunctionID,
+            function: BuiltinValueFunctionID,
             arg_1_category: ValueTypeCategory,
             arg_2_category: ValueTypeCategory,
             source_span: Option<Span>,

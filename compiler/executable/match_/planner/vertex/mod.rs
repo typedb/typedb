@@ -188,7 +188,7 @@ impl Cost {
         Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio }
     }
 
-    fn in_mem_simple_with_ratio(io_ratio: f64) -> Self {
+    pub(crate) fn in_mem_simple_with_ratio(io_ratio: f64) -> Self {
         Self { cost: Cost::IN_MEM_COST_SIMPLE, io_ratio }
     }
 

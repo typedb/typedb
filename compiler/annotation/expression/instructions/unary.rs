@@ -91,4 +91,9 @@ unary_instruction! {
     MathRoundDecimal = MathRoundDecimalImpl(a1: Decimal) -> i64 { Ok(Decimal::round(a1)) }
     MathCeilDecimal = MathCeilDecimalImpl(a1: Decimal) -> i64 { Ok(Decimal::ceil(a1)) }
     MathFloorDecimal = MathFloorDecimalImpl(a1: Decimal) -> i64 { Ok(Decimal::floor(a1)) }
+
+    LengthString = LengthStringImpl(a1: String) -> i64 {
+        let len = a1.len();
+        len.try_into().map_err(|_| ExpressionEvaluationError::OverlongString { len })
+    }
 }

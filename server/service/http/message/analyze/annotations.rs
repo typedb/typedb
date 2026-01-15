@@ -110,6 +110,9 @@ fn encode_function_parameter_annotations(
     annotation: FunctionParameterAnnotation,
 ) -> Result<VariableAnnotationsResponse, Box<ConceptReadError>> {
     let annotations = match annotation {
+        FunctionParameterAnnotation::AnyConcept => {
+            TypeAnnotationResponse::Instance { annotations: encode_all_types_annotation_vec(snapshot, type_manager)? }
+        }
         FunctionParameterAnnotation::Concept(types) => TypeAnnotationResponse::Instance {
             annotations: encode_type_annotation_vec(snapshot, type_manager, types.iter())?,
         },
@@ -139,6 +142,26 @@ pub fn encode_variable_type_annotations_and_modifiers(
     };
     let is_optional = annotations_modifiers.is_optional;
     Ok(VariableAnnotationsResponse { is_optional, annotations })
+}
+
+fn encode_all_types_annotation_vec(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+) -> Result<Vec<SingleTypeAnnotationResponse>, Box<ConceptReadError>> {
+    let mut encoded = type_manager
+        .get_object_types(snapshot)?
+        .into_iter()
+        .map(|t| encode_type_annotation(snapshot, type_manager, &Type::from(t)))
+        .collect::<Result<Vec<_>, _>>()?;
+    for at in type_manager
+        .get_attribute_types(snapshot)?
+        .into_iter()
+        .map(|t| encode_type_annotation(snapshot, type_manager, &Type::from(t)))
+    {
+        encoded.push(at?);
+    }
+    encoded.sort_by(|a, b| a.label().cmp(b.label()));
+    Ok(encoded)
 }
 
 fn encode_type_annotation_vec<'a>(
@@ -265,7 +288,7 @@ pub mod bdd {
     pub fn encode_function_annotations_as_functor(func: &AnalyzedFunctionResponse) -> String {
         let AnalyzedFunctionResponse { body, argument_annotations, return_annotations, ..} = func;
         encode_functor_impl!(
-            &FunctorContext { pipeline: &body },
+            &FunctorContext { pipeline: body },
             Function { argument_annotations, return_annotations, &PipelineAnnotationsToEncode, }
         )
     }

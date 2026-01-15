@@ -5,6 +5,7 @@
  */
 
 use std::{
+    borrow::Cow,
     collections::{BTreeMap, BTreeSet, HashMap},
     iter::zip,
     sync::Arc,
@@ -18,7 +19,7 @@ use encoding::{
 };
 use error::needs_update_when_feature_is_implemented;
 use ir::{
-    pattern::Vertex,
+    pattern::{expression::BuiltinFunctionID, Vertex},
     pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::FunctionID,
@@ -44,6 +45,7 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum FunctionParameterAnnotation {
+    AnyConcept,
     Concept(BTreeSet<Type>),
     Value(ValueType),
 }
@@ -107,7 +109,7 @@ impl GetAnnotatedSignature for AnnotatedFunction {
 }
 
 pub trait AnnotatedFunctionSignatures {
-    fn get_annotated_signature(&self, function_id: &FunctionID) -> Option<&AnnotatedFunctionSignature>;
+    fn get_annotated_signature(&self, function_id: &FunctionID) -> Option<Cow<'_, AnnotatedFunctionSignature>>;
 }
 
 #[derive(Debug)]
@@ -120,24 +122,41 @@ impl<'a, T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> AnnotatedFunction
     pub(crate) fn new(schema_functions: &'a HashMap<DefinitionKey, T1>, local_functions: &'a Vec<T2>) -> Self {
         Self { schema_functions, local_functions }
     }
-
-    // pub(crate) fn empty() -> Self {
-    //     Self::new(HashMap::new(), Vec::new())
-    // }
 }
 
 impl<T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> AnnotatedFunctionSignatures
     for AnnotatedFunctionSignaturesImpl<'_, T1, T2>
 {
-    fn get_annotated_signature(&self, function_id: &FunctionID) -> Option<&AnnotatedFunctionSignature> {
+    fn get_annotated_signature(&self, function_id: &FunctionID) -> Option<Cow<'_, AnnotatedFunctionSignature>> {
         match function_id {
+            &FunctionID::Builtin(builtin_id) => Some(Cow::Owned(get_builtin_function_annotated_signature(builtin_id))),
             FunctionID::Schema(definition_key) => {
-                self.schema_functions.get(definition_key).map(|getter| getter.get_annotated_signature())
+                self.schema_functions.get(definition_key).map(|getter| Cow::Borrowed(getter.get_annotated_signature()))
             }
             &FunctionID::Preamble(index) => {
-                self.local_functions.get(index).map(|getter| getter.get_annotated_signature())
+                self.local_functions.get(index).map(|getter| Cow::Borrowed(getter.get_annotated_signature()))
             }
         }
+    }
+}
+
+fn get_builtin_function_annotated_signature(builtin_id: BuiltinFunctionID) -> AnnotatedFunctionSignature {
+    match builtin_id {
+        BuiltinFunctionID::Iid => AnnotatedFunctionSignature {
+            is_stream: false,
+            arguments: vec![FunctionParameterAnnotation::AnyConcept],
+            returns: vec![FunctionParameterAnnotation::Value(ValueType::String)],
+        },
+        BuiltinFunctionID::Type => AnnotatedFunctionSignature {
+            is_stream: false,
+            arguments: vec![FunctionParameterAnnotation::AnyConcept],
+            returns: vec![FunctionParameterAnnotation::Value(ValueType::String)],
+        },
+        BuiltinFunctionID::Label => AnnotatedFunctionSignature {
+            is_stream: false,
+            arguments: vec![FunctionParameterAnnotation::AnyConcept],
+            returns: vec![FunctionParameterAnnotation::Value(ValueType::String)],
+        },
     }
 }
 
@@ -263,6 +282,30 @@ pub(super) fn annotate_named_function(
                 })
             })?;
         match argument_annotations {
+            FunctionParameterAnnotation::AnyConcept => {
+                let object_types = type_manager.get_object_types(snapshot).map_err(|typedb_source| {
+                    FunctionAnnotationError::CouldNotResolveArgumentType {
+                        index: arg_index,
+                        source_span: label.span(),
+                        typedb_source: TypeInferenceError::ConceptRead { typedb_source },
+                    }
+                })?;
+                let attribute_types = type_manager.get_attribute_types(snapshot).map_err(|typedb_source| {
+                    FunctionAnnotationError::CouldNotResolveArgumentType {
+                        index: arg_index,
+                        source_span: label.span(),
+                        typedb_source: TypeInferenceError::ConceptRead { typedb_source },
+                    }
+                })?;
+
+                let concept_types = Iterator::chain(
+                    object_types.into_iter().map(Type::from),
+                    attribute_types.into_iter().map(Type::from),
+                )
+                .collect();
+
+                argument_concept_variable_types.insert(*var, Arc::new(concept_types));
+            }
             FunctionParameterAnnotation::Concept(concept_annotation) => {
                 argument_concept_variable_types.insert(*var, Arc::new(concept_annotation));
             }
@@ -302,7 +345,7 @@ fn annotate_function_impl(
         stages.clone(),
         argument_concept_variable_types.clone(),
         argument_value_variable_types.clone(),
-        Some(&return_operation.variables().as_ref()),
+        Some(return_operation.variables().as_ref()),
     )
     .map_err(|err| {
         Box::new(FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) })
@@ -499,7 +542,7 @@ fn annotate_return(
         AnnotatedFunctionReturn::Stream { variables } | AnnotatedFunctionReturn::Single { variables, .. } => variables
             .iter()
             .map(|&var| {
-                if let Some(arced_types) = final_type_annotations.get(&var.into()) {
+                if let Some(arced_types) = final_type_annotations.get(&var) {
                     let types: &BTreeSet<Type> = arced_types;
                     FunctionParameterAnnotation::Concept(types.clone())
                 } else if let Some(expression_value_type) = final_value_type_annotations.get(&var) {
@@ -568,7 +611,7 @@ fn get_annotations_from_labels(
 
 pub struct EmptyAnnotatedFunctionSignatures;
 impl AnnotatedFunctionSignatures for EmptyAnnotatedFunctionSignatures {
-    fn get_annotated_signature(&self, _function_id: &FunctionID) -> Option<&AnnotatedFunctionSignature> {
+    fn get_annotated_signature(&self, _function_id: &FunctionID) -> Option<Cow<'_, AnnotatedFunctionSignature>> {
         None
     }
 }

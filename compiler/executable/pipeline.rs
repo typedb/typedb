@@ -505,11 +505,12 @@ fn find_referenced_functions_in_conjunction(
         .filter_map(|constraint| constraint.as_function_call_binding().map(|call| call.function_call().function_id()))
         .for_each(|function_id| {
             if !referenced_functions.contains(&function_id) {
+                referenced_functions.insert(function_id.clone());
                 let function = match &function_id {
+                    FunctionID::Builtin(_) => return,
                     FunctionID::Schema(key) => annotated_schema_functions.get(key).unwrap(),
                     FunctionID::Preamble(key) => preamble.get(*key).unwrap(),
                 };
-                referenced_functions.insert(function_id);
                 find_referenced_functions_in_pipeline(
                     annotated_schema_functions,
                     preamble,
