@@ -26,10 +26,7 @@ use concept::{
 use cucumber::Parameter;
 use encoding::{
     graph::type_::Kind as TypeDBTypeKind,
-    value::{
-        label::Label as TypeDBLabel, value::Value as TypeDBValue,
-        value_type::ValueType as TypeDBValueType,
-    },
+    value::{label::Label as TypeDBLabel, value::Value as TypeDBValue, value_type::ValueType as TypeDBValueType},
 };
 use ir::translation::literal::FromTypeQLLiteral;
 use itertools::{Either, Itertools};
@@ -577,11 +574,9 @@ impl Value {
             let parsed_literal = typeql::parse_value(self.as_str()).unwrap();
             let value = TypeDBValue::from_typeql_literal(&parsed_literal, None)
                 .expect("Unable to parse TypeQL literal into TypeDB Value");
-            value.cast(value_type.category()).expect(&format!(
-                "Could not convert {} into expected value type {:?}",
-                parsed_literal,
-                value_type
-            ))
+            value
+                .cast(value_type.category())
+                .expect(&format!("Could not convert {} into expected value type {:?}", parsed_literal, value_type))
         }
     }
 
