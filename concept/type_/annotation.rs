@@ -344,21 +344,6 @@ impl AnnotationRange {
                         return false;
                     }
                     start_inclusive.partial_cmp(end_inclusive) == Some(Ordering::Less)
-                    //
-                    // match start_inclusive {
-                    //     Value::Boolean(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_boolean(),
-                    //     Value::Integer(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_integer(),
-                    //     Value::Double(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_double(),
-                    //     Value::Decimal(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_decimal(),
-                    //     Value::Date(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date(),
-                    //     Value::DateTime(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date_time(),
-                    //     Value::DateTimeTZ(start_inclusive) => {
-                    //         start_inclusive < &end_inclusive.clone().unwrap_date_time_tz()
-                    //     }
-                    //     Value::String(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_string(),
-                    //     Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
-                    //     Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
-                    // }
                 }
             },
         }
