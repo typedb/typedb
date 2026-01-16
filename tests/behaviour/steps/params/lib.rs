@@ -30,7 +30,7 @@ use encoding::{
 };
 use ir::translation::literal::FromTypeQLLiteral;
 use itertools::{Either, Itertools};
-use regex::{Regex};
+use regex::Regex;
 use storage::snapshot::ReadableSnapshot;
 use test_utils::assert_matches;
 
