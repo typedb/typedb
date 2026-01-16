@@ -30,7 +30,7 @@ use encoding::{
 };
 use ir::translation::literal::FromTypeQLLiteral;
 use itertools::{Either, Itertools};
-use regex::Regex;
+use regex::{Regex};
 use storage::snapshot::ReadableSnapshot;
 use test_utils::assert_matches;
 
@@ -563,43 +563,23 @@ impl Value {
     }
 
     pub fn into_typedb(self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
-        if value_type == TypeDBValueType::String {
-            let value = if self.raw_value.starts_with('"') && self.raw_value.ends_with('"') {
-                &self.raw_value[1..&self.raw_value.len() - 1]
+        let value = if value_type == TypeDBValueType::String {
+            // we are either given an in-memory string that is already unquoted and un-escaped
+            if !self.raw_value.starts_with('"') && !self.raw_value.ends_with('"') {
+                format!("\"{}\"", &self.raw_value.replace("\"", "\\\""))
             } else {
-                self.raw_value.as_str()
-            };
-            TypeDBValue::String(Cow::Owned(value.to_string()))
-        } else {
-            let parsed_literal = typeql::parse_value(self.as_str()).unwrap();
-            let value = TypeDBValue::from_typeql_literal(&parsed_literal, None)
-                .expect("Unable to parse TypeQL literal into TypeDB Value");
-            value
-                .cast(value_type.category())
-                .expect(&format!("Could not convert {} into expected value type {:?}", parsed_literal, value_type))
-        }
-    }
-
-    fn parse_decimal_fraction_part(value: &str) -> u64 {
-        assert!(Self::FRACTIONAL_ZEROES >= value.len());
-        10_u64.pow((Self::FRACTIONAL_ZEROES - value.len()) as u32) * value.trim().parse::<u64>().unwrap()
-    }
-
-    fn parse_date_time_and_remainder(value: &str) -> (NaiveDateTime, &str) {
-        for format in Self::DATETIME_FORMATS {
-            if let Ok((datetime, remainder)) = NaiveDateTime::parse_and_remainder(value, format) {
-                return (datetime, remainder.trim());
+                // or an already valid quoted and escaped string to parse
+                self.raw_value
             }
-        }
-        if let Ok((date, remainder)) = NaiveDate::parse_and_remainder(value, Self::DATE_FORMAT) {
-            return (date.and_time(NaiveTime::default()), remainder.trim());
-        }
-        panic!(
-            "Cannot parse DateTime: none of the formats {:?} or {:?} fits for {:?}",
-            Self::DATETIME_FORMATS,
-            Self::DATE_FORMAT,
-            value
-        )
+        } else {
+            self.raw_value
+        };
+        let parsed_literal = typeql::parse_value(value.trim()).unwrap();
+        let value = TypeDBValue::from_typeql_literal(&parsed_literal, None)
+            .expect("Unable to parse TypeQL literal into TypeDB Value");
+        value
+            .cast(value_type.category())
+            .expect(&format!("Could not convert {} into expected value type {:?}", parsed_literal, value_type))
     }
 }
 
