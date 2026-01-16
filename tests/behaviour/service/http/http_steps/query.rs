@@ -125,10 +125,28 @@ fn check_is_value(
     actual_value: &serde_json::Value,
     actual_value_type: &str,
 ) {
+    fn format(value: &serde_json::Value) -> String {
+        match value {
+            serde_json::Value::Number(n) => {
+                if let Some(float_val) = n.as_f64() {
+                    // Format with fixed point (e.g., 20 decimal places) to avoid scientific notation
+                    let s = format!("{:.20}", float_val);
+
+                    // Trim trailing zeros and the decimal point if it becomes an integer
+                    let s = s.trim_end_matches('0').trim_end_matches('.');
+                    s.to_string()
+                } else {
+                    n.to_string() // Integers don't need special formatting
+                }
+            }
+            serde_json::Value::String(string) => string.clone(),
+            _ => value.to_string(), // Handle non-numbers normally
+        }
+    }
     let actual_value_type_converted = params::ValueType::from_str(actual_value_type)
         .expect("Expected actual value type conversion")
         .into_typedb_static();
-    let actual_value_converted = params::Value::from_str(&unquote(&actual_value.to_string()))
+    let actual_value_converted = params::Value::from_str(&format(&actual_value))
         .expect("Expected actual value conversion")
         .into_typedb(actual_value_type_converted.clone());
     is_or_not.compare(expected_value.into_typedb(actual_value_type_converted), actual_value_converted);

@@ -6,7 +6,7 @@
 
 use std::{
     borrow::Cow,
-    cmp::{max, min},
+    cmp::{max, min, Ordering},
     collections::HashSet,
     fmt,
     hash::Hash,
@@ -313,41 +313,37 @@ impl AnnotationRange {
 
     // TODO: We might want to return different errors for incorrect order / unmatched value types
     pub fn valid(&self, value_type: Option<ValueType>) -> bool {
+        // Helper to check if annotation value type is compatible with expected value type
+        fn is_compatible(annotation_type: &ValueType, expected: &Option<ValueType>) -> bool {
+            match expected {
+                None => true, // used for unbound start or end value
+                Some(expected) => {
+                    annotation_type == expected || annotation_type.is_trivially_castable_to(expected.category())
+                }
+            }
+        }
+
         match &self.start_inclusive {
             None => match &self.end_inclusive {
                 None => false,
                 Some(end_inclusive) => {
                     let end_value_type = end_inclusive.value_type();
-                    value_type.unwrap_or(end_value_type.clone()) == end_value_type
+                    is_compatible(&end_value_type, &value_type)
                 }
             },
             Some(start_inclusive) => match &self.end_inclusive {
                 None => {
                     let start_value_type = start_inclusive.value_type();
-                    value_type.unwrap_or(start_value_type.clone()) == start_value_type
+                    is_compatible(&start_value_type, &value_type)
                 }
                 Some(end_inclusive) => {
-                    if start_inclusive.value_type() != end_inclusive.value_type() {
+                    if !is_compatible(&start_inclusive.value_type(), &value_type) {
                         return false;
                     }
-                    if value_type.unwrap_or(start_inclusive.value_type()) != start_inclusive.value_type() {
+                    if !end_inclusive.value_type().is_trivially_castable_to(start_inclusive.value_type().category()) {
                         return false;
                     }
-
-                    match start_inclusive {
-                        Value::Boolean(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_boolean(),
-                        Value::Integer(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_integer(),
-                        Value::Double(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_double(),
-                        Value::Decimal(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_decimal(),
-                        Value::Date(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date(),
-                        Value::DateTime(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date_time(),
-                        Value::DateTimeTZ(start_inclusive) => {
-                            start_inclusive < &end_inclusive.clone().unwrap_date_time_tz()
-                        }
-                        Value::String(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_string(),
-                        Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
-                        Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
-                    }
+                    start_inclusive.partial_cmp(end_inclusive) == Some(Ordering::Less)
                 }
             },
         }
@@ -384,18 +380,7 @@ impl AnnotationRange {
             None => true,
             Some(start) => match &value {
                 None => false,
-                Some(value) => match value {
-                    Value::Boolean(value) => &start.unwrap_boolean() <= value,
-                    Value::Integer(value) => &start.unwrap_integer() <= value,
-                    Value::Double(value) => &start.unwrap_double() <= value,
-                    Value::Decimal(value) => &start.unwrap_decimal() <= value,
-                    Value::Date(value) => &start.unwrap_date() <= value,
-                    Value::DateTime(value) => &start.unwrap_date_time() <= value,
-                    Value::DateTimeTZ(value) => &start.unwrap_date_time_tz() <= value,
-                    Value::String(value) => &start.unwrap_string() <= value,
-                    Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
-                    Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
-                },
+                Some(value) => start.partial_cmp(value).is_some_and(|ord| ord.is_le()),
             },
         }
     }
@@ -405,18 +390,7 @@ impl AnnotationRange {
             None => true,
             Some(end) => match &value {
                 None => false,
-                Some(value) => match value {
-                    Value::Boolean(value) => &end.unwrap_boolean() >= value,
-                    Value::Integer(value) => &end.unwrap_integer() >= value,
-                    Value::Double(value) => &end.unwrap_double() >= value,
-                    Value::Decimal(value) => &end.unwrap_decimal() >= value,
-                    Value::Date(value) => &end.unwrap_date() >= value,
-                    Value::DateTime(value) => &end.unwrap_date_time() >= value,
-                    Value::DateTimeTZ(value) => &end.unwrap_date_time_tz() >= value,
-                    Value::String(value) => &end.unwrap_string() >= value,
-                    Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
-                    Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
-                },
+                Some(value) => end.partial_cmp(value).is_some_and(|ord| ord.is_ge()),
             },
         }
     }
@@ -465,10 +439,13 @@ impl AnnotationValues {
         if unique_value_types.len() > 1 {
             return false;
         }
-        if expected_value_type.is_some()
-            && unique_value_types.iter().any(|value_type| value_type != &expected_value_type.clone().unwrap())
-        {
-            return false;
+        if let Some(ref expected) = expected_value_type {
+            let annotation_value_type = unique_value_types.iter().next().unwrap();
+            // Check if the annotation's value type matches or is trivially castable to the expected type
+            if annotation_value_type != expected && !annotation_value_type.is_trivially_castable_to(expected.category())
+            {
+                return false;
+            }
         }
 
         // Value does not implement Hash, so we run a N^2 loop here expecting a limited number of values

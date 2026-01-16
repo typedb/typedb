@@ -28,7 +28,7 @@ use typeql::{
 use crate::LiteralParseError;
 
 pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, LiteralParseError> {
-    Value::from_typeql_literal(literal, literal.span())
+    Value::from_typeql_literal(&literal.inner, literal.span())
 }
 
 pub trait FromTypeQLLiteral: Sized {
@@ -44,14 +44,14 @@ fn parse_primitive<T: FromStr>(fragment: &str, source_span: Option<Span>) -> Res
 }
 
 impl FromTypeQLLiteral for Value<'static> {
-    type TypeQLLiteral = Literal;
+    type TypeQLLiteral = ValueLiteral;
 
     fn from_typeql_literal(
         literal: &Self::TypeQLLiteral,
         source_span: Option<Span>,
     ) -> Result<Self, LiteralParseError> {
         // We don't know the final type yet. Zip with value-type annotations when constructing the executor.
-        match &literal.inner {
+        match literal {
             ValueLiteral::Boolean(boolean) => Ok(Value::Boolean(bool::from_typeql_literal(boolean, source_span)?)),
             ValueLiteral::Integer(integer) => Ok(Value::Integer(i64::from_typeql_literal(integer, source_span)?)),
             ValueLiteral::Decimal(decimal) => Ok(Value::Decimal(Decimal::from_typeql_literal(decimal, source_span)?)),
