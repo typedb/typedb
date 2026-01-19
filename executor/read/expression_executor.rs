@@ -236,12 +236,12 @@ pub trait ExpressionEvaluation {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError>;
 }
 
-impl<T1, T2, R, F> ExpressionEvaluation for Binary<T1, T2, R, F>
+impl<'a, T1, T2, R, F> ExpressionEvaluation for Binary<'a, T1, T2, R, F>
 where
-    T1: NativeValueConvertible,
-    T2: NativeValueConvertible,
-    R: NativeValueConvertible,
-    F: BinaryExpression<T1, T2, R>,
+    T1: NativeValueConvertible<'a>,
+    T2: NativeValueConvertible<'a>,
+    R: NativeValueConvertible<'a>,
+    F: BinaryExpression<'a, T1, T2, R>,
 {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let a2: T2 = T2::from_db_value(state.pop_value()).unwrap();
@@ -313,7 +313,9 @@ impl ExpressionEvaluation for LoadConstant {
     }
 }
 
-impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionEvaluation for CastUnary<From, To> {
+impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> ExpressionEvaluation
+    for CastUnary<'a, From, To>
+{
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let value_before = From::from_db_value(state.pop_value()).unwrap();
         let value_after = To::cast(value_before)?.to_db_value();
@@ -322,7 +324,9 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionEvaluation 
     }
 }
 
-impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryLeft<From, To> {
+impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> ExpressionEvaluation
+    for CastBinaryLeft<'a, From, To>
+{
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let right = state.pop_value();
         let left_before = From::from_db_value(state.pop_value()).unwrap();
@@ -333,7 +337,9 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionEvaluation 
     }
 }
 
-impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionEvaluation for CastBinaryRight<From, To> {
+impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> ExpressionEvaluation
+    for CastBinaryRight<'a, From, To>
+{
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let right_before = From::from_db_value(state.pop_value()).unwrap();
         let right_after = To::cast(right_before)?.to_db_value();
@@ -342,11 +348,11 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionEvaluation 
     }
 }
 
-impl<T1, R, F> ExpressionEvaluation for Unary<T1, R, F>
+impl<'a, T1, R, F> ExpressionEvaluation for Unary<'a, T1, R, F>
 where
-    T1: NativeValueConvertible,
-    R: NativeValueConvertible,
-    F: UnaryExpression<T1, R>,
+    T1: NativeValueConvertible<'a>,
+    R: NativeValueConvertible<'a>,
+    F: UnaryExpression<'a, T1, R>,
 {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let a1: T1 = T1::from_db_value(state.pop_value()).unwrap();
