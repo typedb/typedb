@@ -16,7 +16,7 @@ use crate::{
     pattern::{
         constraint::ConstraintsBuilder,
         expression::{
-            BuiltinFunctionID, BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree,
+            BuiltinConceptFunctionID, BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree,
             ExpressionTreeNodeId, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
         },
         ParameterID, Vertex,
@@ -131,7 +131,7 @@ fn register_typeql_literal(
 fn add_builtin_function_call(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    builtin_id: BuiltinFunctionID,
+    builtin_id: BuiltinConceptFunctionID,
     assigned: Vec<Variable>,
     args: &[typeql::Expression],
     source_span: Option<Span>,
@@ -292,18 +292,18 @@ fn to_builtin_value_function_id(
 fn to_builtin_function_id<T>(
     typeql_id: &BuiltinFunctionName,
     args: &[T],
-) -> Result<BuiltinFunctionID, Box<RepresentationError>> {
+) -> Result<BuiltinConceptFunctionID, Box<RepresentationError>> {
     let token = typeql_id.token;
     match token {
         Function::Iid => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltinFunctionID::Iid)
+            Ok(BuiltinConceptFunctionID::Iid)
         }
         Function::Label => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltinFunctionID::Label)
+            Ok(BuiltinConceptFunctionID::Label)
         }
-        _ => Err(Box::new(RepresentationError::InternalNotANonValueBuiltin { token, source_span: typeql_id.span() })),
+        _ => Err(Box::new(RepresentationError::InternalNotAConceptBuiltin { token, source_span: typeql_id.span() })),
     }
 }
 

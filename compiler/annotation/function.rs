@@ -19,7 +19,7 @@ use encoding::{
 };
 use error::needs_update_when_feature_is_implemented;
 use ir::{
-    pattern::{expression::BuiltinFunctionID, Vertex},
+    pattern::{expression::BuiltinConceptFunctionID, Vertex},
     pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::FunctionID,
@@ -140,14 +140,14 @@ impl<T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> AnnotatedFunctionSign
     }
 }
 
-fn get_builtin_function_annotated_signature(builtin_id: BuiltinFunctionID) -> AnnotatedFunctionSignature {
+fn get_builtin_function_annotated_signature(builtin_id: BuiltinConceptFunctionID) -> AnnotatedFunctionSignature {
     match builtin_id {
-        BuiltinFunctionID::Iid => AnnotatedFunctionSignature {
+        BuiltinConceptFunctionID::Iid => AnnotatedFunctionSignature {
             is_stream: false,
             arguments: vec![FunctionParameterAnnotation::AnyConcept],
             returns: vec![FunctionParameterAnnotation::Value(ValueType::String)],
         },
-        BuiltinFunctionID::Label => AnnotatedFunctionSignature {
+        BuiltinConceptFunctionID::Label => AnnotatedFunctionSignature {
             is_stream: false,
             arguments: vec![FunctionParameterAnnotation::AnyConcept],
             returns: vec![FunctionParameterAnnotation::Value(ValueType::String)],

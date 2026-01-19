@@ -11,7 +11,7 @@ use bytes::util::HexBytesFormatter;
 use compiler::VariablePosition;
 use concept::error::ConceptReadError;
 use encoding::value::value::Value;
-use ir::pattern::expression::BuiltinFunctionID;
+use ir::pattern::expression::BuiltinConceptFunctionID;
 use lending_iterator::{LendingIterator, Peekable};
 use resource::profile::StepProfile;
 use storage::snapshot::ReadableSnapshot;
@@ -25,7 +25,7 @@ use crate::{
 };
 
 pub(crate) struct BuiltinCallExecutor {
-    builtin_id: BuiltinFunctionID,
+    builtin_id: BuiltinConceptFunctionID,
     argument_positions: Vec<VariablePosition>,
     assignment_positions: Vec<Option<VariablePosition>>,
     output_width: u32,
@@ -41,7 +41,7 @@ impl fmt::Debug for BuiltinCallExecutor {
 
 impl BuiltinCallExecutor {
     pub(crate) fn new(
-        builtin_id: BuiltinFunctionID,
+        builtin_id: BuiltinConceptFunctionID,
         argument_positions: Vec<VariablePosition>,
         assignment_positions: Vec<Option<VariablePosition>>,
         output_width: u32,
@@ -104,11 +104,11 @@ impl BuiltinCallExecutor {
         }
 
         row[res.as_usize()] = match self.builtin_id {
-            BuiltinFunctionID::Iid => {
+            BuiltinConceptFunctionID::Iid => {
                 let iid = row[self.argument_positions[0].as_usize()].as_thing().iid();
                 VariableValue::Value(Value::String(Cow::Owned(format!("{iid:x}"))))
             }
-            BuiltinFunctionID::Label => {
+            BuiltinConceptFunctionID::Label => {
                 let ty = row[self.argument_positions[0].as_usize()].as_type();
                 let label = ty.get_label(&**context.snapshot(), context.type_manager())?;
                 VariableValue::Value(Value::String(Cow::Owned(label.to_string())))

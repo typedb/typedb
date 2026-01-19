@@ -317,12 +317,12 @@ impl fmt::Display for BuiltinValueFunctionID {
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum BuiltinFunctionID {
+pub enum BuiltinConceptFunctionID {
     Iid,
     Label,
 }
 
-impl BuiltinFunctionID {
+impl BuiltinConceptFunctionID {
     pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Iid => typeql::token::Function::Iid.as_str(),
@@ -348,7 +348,7 @@ impl BuiltinFunctionID {
     }
 }
 
-impl StructuralEquality for BuiltinFunctionID {
+impl StructuralEquality for BuiltinConceptFunctionID {
     fn hash(&self) -> u64 {
         StructuralEquality::hash(&mem::discriminant(self))
     }
@@ -358,11 +358,11 @@ impl StructuralEquality for BuiltinFunctionID {
     }
 }
 
-impl fmt::Display for BuiltinFunctionID {
+impl fmt::Display for BuiltinConceptFunctionID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            BuiltinFunctionID::Iid => fmt::Display::fmt(&typeql::token::Function::Iid, f),
-            BuiltinFunctionID::Label => fmt::Display::fmt(&typeql::token::Function::Label, f),
+            BuiltinConceptFunctionID::Iid => fmt::Display::fmt(&typeql::token::Function::Iid, f),
+            BuiltinConceptFunctionID::Label => fmt::Display::fmt(&typeql::token::Function::Label, f),
         }
     }
 }

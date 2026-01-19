@@ -12,7 +12,7 @@ use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
-        expression::BuiltinFunctionID,
+        expression::BuiltinConceptFunctionID,
         variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::FunctionReadError,
@@ -21,7 +21,7 @@ use crate::{
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum FunctionID {
-    Builtin(BuiltinFunctionID),
+    Builtin(BuiltinConceptFunctionID),
     Schema(DefinitionKey),
     Preamble(usize),
 }

@@ -288,9 +288,9 @@ typedb_error! {
             token: typeql::token::Function,
             source_span: Option<Span>,
         ),
-        InternalNotANonValueBuiltin(
+        InternalNotAConceptBuiltin(
             101,
-            "Attempted to translate function '{token}' as a builtin non-value function.",
+            "Attempted to translate function '{token}' as a builtin concept function.",
             token: typeql::token::Function,
             source_span: Option<Span>,
         ),

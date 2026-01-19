@@ -341,7 +341,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     pub(crate) fn add_builtin_function_binding(
         &mut self,
         assigned: Vec<Variable>,
-        builtin_id: super::expression::BuiltinFunctionID,
+        builtin_id: super::expression::BuiltinConceptFunctionID,
         arguments: Vec<Variable>,
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
