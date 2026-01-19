@@ -15,6 +15,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::read::pattern_executor::PatternExecutor;
 
+pub(crate) mod builtin_call_executor;
 mod collecting_stage_executor;
 pub(super) mod control_instruction;
 pub mod expression_executor;

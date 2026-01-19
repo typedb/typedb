@@ -20,6 +20,7 @@ use compiler::{
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::UnimplementedFeature;
+use ir::pipeline::function_signature::FunctionID;
 use itertools::Itertools;
 use resource::profile::QueryProfile;
 use storage::snapshot::ReadableSnapshot;
@@ -28,6 +29,7 @@ use typeql::schema::definable::function::SingleSelector;
 use crate::{
     batch::FixedBatch,
     read::{
+        builtin_call_executor::BuiltinCallExecutor,
         collecting_stage_executor::CollectingStageExecutor,
         immediate_executor::ImmediateExecutor,
         nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor, OptionalExecutor},
@@ -44,6 +46,7 @@ pub enum StepExecutors {
     Optional(OptionalExecutor),
     Negation(NegationExecutor),
     InlinedCall(InlinedCallExecutor),
+    BuiltinCall(BuiltinCallExecutor),
     TabledCall(TabledCallExecutor),
     StreamModifier(StreamModifierExecutor),
     CollectingStage(CollectingStageExecutor),
@@ -58,6 +61,7 @@ impl StepExecutors {
             StepExecutors::Optional(inner) => inner.output_width(),
             StepExecutors::Negation(inner) => inner.output_width(),
             StepExecutors::InlinedCall(inner) => inner.output_width(),
+            StepExecutors::BuiltinCall(inner) => inner.output_width(),
             StepExecutors::TabledCall(inner) => inner.output_width(),
             StepExecutors::StreamModifier(inner) => inner.output_width(),
             StepExecutors::CollectingStage(inner) => inner.output_width(),
@@ -97,6 +101,13 @@ impl StepExecutors {
         match self {
             StepExecutors::InlinedCall(step) => step,
             _ => panic!("bad unwrap. Expected InlinedCall"),
+        }
+    }
+
+    pub(crate) fn unwrap_builtin_call(&mut self) -> &mut BuiltinCallExecutor {
+        match self {
+            StepExecutors::BuiltinCall(step) => step,
+            _ => panic!("bad unwrap. Expected BuiltinCall"),
         }
     }
 
@@ -203,28 +214,38 @@ pub(crate) fn create_executors_for_conjunction(
             }
             ExecutionStep::FunctionCall(function_call) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
-                let _step_profile = stage_profile.extend_or_get(index, || format!("{}", function_call));
-
-                let function = function_registry.get(&function_call.function_id).unwrap();
-                if let FunctionTablingType::Tabled(_) = function.tabling_type {
-                    let executor = TabledCallExecutor::new(
-                        function_call.function_id.clone(),
+                let step_profile = stage_profile.extend_or_get(index, || format!("{}", function_call));
+                if let FunctionID::Builtin(builtin_id) = function_call.function_id {
+                    let executor = BuiltinCallExecutor::new(
+                        builtin_id,
                         function_call.arguments.clone(),
                         function_call.assigned.clone(),
                         function_call.output_width,
+                        step_profile,
                     );
-                    steps.push(StepExecutors::TabledCall(executor))
+                    steps.push(StepExecutors::BuiltinCall(executor));
                 } else {
-                    let inner_executors = create_executors_for_function(
-                        snapshot,
-                        thing_manager,
-                        function_registry,
-                        query_profile,
-                        function,
-                    )?;
-                    let inner = PatternExecutor::new(function.executable_id, inner_executors);
-                    let step = InlinedCallExecutor::new(inner, function_call, function.parameter_registry.clone());
-                    steps.push(step.into())
+                    let function = function_registry.get(&function_call.function_id).unwrap();
+                    if let FunctionTablingType::Tabled(_) = function.tabling_type {
+                        let executor = TabledCallExecutor::new(
+                            function_call.function_id.clone(),
+                            function_call.arguments.clone(),
+                            function_call.assigned.clone(),
+                            function_call.output_width,
+                        );
+                        steps.push(StepExecutors::TabledCall(executor))
+                    } else {
+                        let inner_executors = create_executors_for_function(
+                            snapshot,
+                            thing_manager,
+                            function_registry,
+                            query_profile,
+                            function,
+                        )?;
+                        let inner = PatternExecutor::new(function.executable_id, inner_executors);
+                        let step = InlinedCallExecutor::new(inner, function_call, function.parameter_registry.clone());
+                        steps.push(step.into())
+                    }
                 }
             }
             ExecutionStep::Disjunction(step) => {

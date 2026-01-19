@@ -15,9 +15,9 @@ use crate::{
     pipeline::stage::ExecutionContext,
     read::{
         control_instruction::{
-            CollectingStage, ControlInstruction, ExecuteDisjunctionBranch, ExecuteImmediate, ExecuteInlinedFunction,
-            ExecuteNegation, ExecuteOptional, ExecuteStreamModifier, ExecuteTabledCall, MapBatchToRowsForNested,
-            PatternStart, ReshapeForReturn, RestoreSuspension, StreamCollected, Yield,
+            CollectingStage, ControlInstruction, ExecuteBuiltinCall, ExecuteDisjunctionBranch, ExecuteImmediate,
+            ExecuteInlinedFunction, ExecuteNegation, ExecuteOptional, ExecuteStreamModifier, ExecuteTabledCall,
+            MapBatchToRowsForNested, PatternStart, ReshapeForReturn, RestoreSuspension, StreamCollected, Yield,
         },
         nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor, OptionalExecutor},
         step_executor::StepExecutors,
@@ -74,7 +74,7 @@ impl PatternExecutor {
                 StepExecutors::InlinedCall(inner) => inner.reset(),
                 StepExecutors::StreamModifier(inner) => inner.reset(),
                 StepExecutors::CollectingStage(inner) => inner.reset(),
-                StepExecutors::TabledCall(_) | StepExecutors::ReshapeForReturn(_) => {}
+                StepExecutors::BuiltinCall(_) | StepExecutors::TabledCall(_) | StepExecutors::ReshapeForReturn(_) => (),
             }
         }
         self.control_stack.push(PatternStart { input_batch }.into());
@@ -122,6 +122,12 @@ impl PatternExecutor {
                     let executor = executors[*index].unwrap_immediate();
                     if let Some(batch) = executor.batch_continue(context, interrupt)? {
                         control_stack.push(ExecuteImmediate { index }.into());
+                        self.push_next_instruction(context, index.next(), batch)?;
+                    }
+                }
+                ControlInstruction::ExecuteBuiltinCall(ExecuteBuiltinCall { index }) => {
+                    let executor = executors[*index].unwrap_builtin_call();
+                    if let Some(batch) = executor.batch_continue(context, interrupt)? {
                         self.push_next_instruction(context, index.next(), batch)?;
                     }
                 }
@@ -252,6 +258,10 @@ impl PatternExecutor {
                 StepExecutors::Immediate(executable) => {
                     executable.prepare(batch, context)?;
                     self.control_stack.push(ExecuteImmediate { index: next_index }.into());
+                }
+                StepExecutors::BuiltinCall(executable) => {
+                    executable.prepare(batch, context)?;
+                    self.control_stack.push(ExecuteBuiltinCall { index: next_index }.into());
                 }
                 StepExecutors::Negation(_)
                 | StepExecutors::Disjunction(_)
@@ -428,6 +438,7 @@ fn restore_suspension(
                 }
                 StepExecutors::Immediate(_)
                 | StepExecutors::CollectingStage(_)
+                | StepExecutors::BuiltinCall(_)
                 | StepExecutors::TabledCall(_)
                 | StepExecutors::ReshapeForReturn(_) => unreachable!("Illegal for AtPattern suspension"),
             }
