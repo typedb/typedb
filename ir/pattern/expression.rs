@@ -16,9 +16,11 @@ use error::typedb_error;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
-use super::variable_category::{VariableCategory, VariableOptionality};
 use crate::{
-    pattern::{IrID, ParameterID},
+    pattern::{
+        variable_category::{VariableCategory, VariableOptionality},
+        IrID, ParameterID,
+    },
     pipeline::function_signature::{FunctionID, FunctionSignature},
 };
 

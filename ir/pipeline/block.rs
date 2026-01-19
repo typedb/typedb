@@ -110,7 +110,7 @@ impl<'reg> BlockBuilder<'reg> {
         validate_conjunction(&conjunction, variable_registry, &block_context)?;
         let conjunction_visible: HashSet<_> = conjunction.named_visible_binding_variables(&block_context).collect();
         visible_variables.retain(|name, var| {
-            conjunction_visible.contains(&var) || block_context.get_declaring_scope(&var).unwrap() == ScopeId::INPUT
+            conjunction_visible.contains(var) || block_context.get_declaring_scope(var).unwrap() == ScopeId::INPUT
         });
         Ok(Block { conjunction, block_context })
     }

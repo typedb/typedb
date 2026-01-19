@@ -35,6 +35,7 @@ impl<ID> ExecutableExpression<ID> {
     pub fn return_type(&self) -> &ExpressionValueType {
         &self.return_type
     }
+
     pub(crate) fn return_category(&self) -> VariableCategory {
         match &self.return_type {
             ExpressionValueType::Single(_) => VariableCategory::Value,
