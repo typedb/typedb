@@ -14,10 +14,7 @@ use concept::{
     type_::TypeAPI,
 };
 use cucumber::gherkin::Step;
-use encoding::{
-    value::{label::Label, value_type::ValueType, ValueEncodable},
-    AsBytes,
-};
+use encoding::value::{label::Label, value_type::ValueType, ValueEncodable};
 use executor::{
     batch::Batch,
     pipeline::stage::{ExecutionContext, StageIterator},
