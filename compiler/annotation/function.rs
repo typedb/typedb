@@ -147,11 +147,6 @@ fn get_builtin_function_annotated_signature(builtin_id: BuiltinFunctionID) -> An
             arguments: vec![FunctionParameterAnnotation::AnyConcept],
             returns: vec![FunctionParameterAnnotation::Value(ValueType::String)],
         },
-        BuiltinFunctionID::Type => AnnotatedFunctionSignature {
-            is_stream: false,
-            arguments: vec![FunctionParameterAnnotation::AnyConcept],
-            returns: vec![FunctionParameterAnnotation::Value(ValueType::String)],
-        },
         BuiltinFunctionID::Label => AnnotatedFunctionSignature {
             is_stream: false,
             arguments: vec![FunctionParameterAnnotation::AnyConcept],

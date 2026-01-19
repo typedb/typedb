@@ -317,7 +317,6 @@ impl fmt::Display for BuiltinValueFunctionID {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum BuiltinFunctionID {
     Iid,
-    Type,
     Label,
 }
 
@@ -325,7 +324,6 @@ impl BuiltinFunctionID {
     pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Iid => typeql::token::Function::Iid.as_str(),
-            Self::Type => typeql::token::Function::Type.as_str(),
             Self::Label => typeql::token::Function::Label.as_str(),
         }
     }
@@ -336,12 +334,6 @@ impl BuiltinFunctionID {
                 FunctionID::Builtin(self),
                 vec![VariableCategory::Thing],
                 vec![(VariableCategory::Value, VariableOptionality::Required)],
-                false,
-            ),
-            Self::Type => FunctionSignature::new(
-                FunctionID::Builtin(self),
-                vec![VariableCategory::Thing],
-                vec![(VariableCategory::Type, VariableOptionality::Required)],
                 false,
             ),
             Self::Label => FunctionSignature::new(
@@ -368,7 +360,6 @@ impl fmt::Display for BuiltinFunctionID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             BuiltinFunctionID::Iid => fmt::Display::fmt(&typeql::token::Function::Iid, f),
-            BuiltinFunctionID::Type => fmt::Display::fmt(&typeql::token::Function::Type, f),
             BuiltinFunctionID::Label => fmt::Display::fmt(&typeql::token::Function::Label, f),
         }
     }

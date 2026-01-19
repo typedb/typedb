@@ -299,10 +299,6 @@ fn to_builtin_function_id<T>(
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
             Ok(BuiltinFunctionID::Iid)
         }
-        Function::Type => {
-            check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
-            Ok(BuiltinFunctionID::Type)
-        }
         Function::Label => {
             check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
             Ok(BuiltinFunctionID::Label)
