@@ -134,6 +134,7 @@ dependencies = [
  "encoding",
  "lending_iterator",
  "primitive",
+ "resource",
  "storage",
  "structural_equality",
 ]
