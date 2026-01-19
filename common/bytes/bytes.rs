@@ -116,6 +116,16 @@ impl<const ARRAY_INLINE_SIZE: usize> fmt::Display for Bytes<'_, ARRAY_INLINE_SIZ
     }
 }
 
+impl<const ARRAY_INLINE_SIZE: usize> fmt::LowerHex for Bytes<'_, ARRAY_INLINE_SIZE> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("0x")?;
+        for byte in &**self {
+            write!(f, "{byte:02x}")?;
+        }
+        Ok(())
+    }
+}
+
 impl<const ARRAY_INLINE_SIZE: usize> Deref for Bytes<'_, ARRAY_INLINE_SIZE> {
     type Target = [u8];
 
