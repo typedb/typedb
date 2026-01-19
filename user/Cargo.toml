@@ -45,7 +45,10 @@ features = {}
 		default-features = false
 
 	[dependencies.typeql]
-		workspace = true
+		features = []
+		rev = "d33dc42c37b49bb763463e69c642b37bb20d8e46"
+		git = "https://github.com/typedb/typeql"
+		default-features = false
 
 	[dependencies.storage]
 		path = "../storage"

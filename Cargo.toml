@@ -48,7 +48,8 @@ features = {}
 
 	[dev-dependencies.typeql]
 		features = []
-		path = "../typeql/rust"
+		rev = "d33dc42c37b49bb763463e69c642b37bb20d8e46"
+		git = "https://github.com/typedb/typeql"
 		default-features = false
 
 	[dev-dependencies.storage]
@@ -167,9 +168,4 @@ features = {}
 [workspace]
 	resolver = "2"
 	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "encoding/tests", "encoding", "server", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/cache", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
-
-[workspace.dependencies.typeql]
-    features = []
-    path = "../typeql/rust"
-    default-features = false
 

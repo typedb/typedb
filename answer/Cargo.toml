@@ -14,13 +14,13 @@ features = {}
 
 [dependencies]
 
-	[dependencies.resource]
-		path = "../resource"
+	[dependencies.primitive]
+		path = "../common/primitive"
 		features = []
 		default-features = false
 
-	[dependencies.primitive]
-		path = "../common/primitive"
+	[dependencies.resource]
+		path = "../resource"
 		features = []
 		default-features = false
 
