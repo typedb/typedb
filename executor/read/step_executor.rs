@@ -29,9 +29,8 @@ use typeql::schema::definable::function::SingleSelector;
 use crate::{
     batch::FixedBatch,
     read::{
-        builtin_call_executor::BuiltinCallExecutor,
         collecting_stage_executor::CollectingStageExecutor,
-        immediate_executor::ImmediateExecutor,
+        immediate_executor::{BuiltinCallExecutor, ImmediateExecutor},
         nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor, OptionalExecutor},
         pattern_executor::PatternExecutor,
         stream_modifier::StreamModifierExecutor,
@@ -46,7 +45,6 @@ pub enum StepExecutors {
     Optional(OptionalExecutor),
     Negation(NegationExecutor),
     InlinedCall(InlinedCallExecutor),
-    BuiltinCall(BuiltinCallExecutor),
     TabledCall(TabledCallExecutor),
     StreamModifier(StreamModifierExecutor),
     CollectingStage(CollectingStageExecutor),
@@ -61,7 +59,6 @@ impl StepExecutors {
             StepExecutors::Optional(inner) => inner.output_width(),
             StepExecutors::Negation(inner) => inner.output_width(),
             StepExecutors::InlinedCall(inner) => inner.output_width(),
-            StepExecutors::BuiltinCall(inner) => inner.output_width(),
             StepExecutors::TabledCall(inner) => inner.output_width(),
             StepExecutors::StreamModifier(inner) => inner.output_width(),
             StepExecutors::CollectingStage(inner) => inner.output_width(),
@@ -101,13 +98,6 @@ impl StepExecutors {
         match self {
             StepExecutors::InlinedCall(step) => step,
             _ => panic!("bad unwrap. Expected InlinedCall"),
-        }
-    }
-
-    pub(crate) fn unwrap_builtin_call(&mut self) -> &mut BuiltinCallExecutor {
-        match self {
-            StepExecutors::BuiltinCall(step) => step,
-            _ => panic!("bad unwrap. Expected BuiltinCall"),
         }
     }
 
@@ -223,7 +213,7 @@ pub(crate) fn create_executors_for_conjunction(
                         function_call.output_width,
                         step_profile,
                     );
-                    steps.push(StepExecutors::BuiltinCall(executor));
+                    steps.push(StepExecutors::Immediate(ImmediateExecutor::BuiltinCall(executor)));
                 } else {
                     let function = function_registry.get(&function_call.function_id).unwrap();
                     if let FunctionTablingType::Tabled(_) = function.tabling_type {

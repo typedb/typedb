@@ -26,8 +26,6 @@ pub(super) enum ControlInstruction {
 
     ExecuteImmediate(ExecuteImmediate),
 
-    ExecuteBuiltinCall(ExecuteBuiltinCall),
-
     MapBatchToRowsForNested(MapBatchToRowsForNested),
     ExecuteNegation(ExecuteNegation),
     ExecuteOptional(ExecuteOptional),
@@ -53,11 +51,6 @@ pub(super) struct RestoreSuspension {
 
 #[derive(Debug)]
 pub(super) struct ExecuteImmediate {
-    pub(super) index: ExecutorIndex,
-}
-
-#[derive(Debug)]
-pub(super) struct ExecuteBuiltinCall {
     pub(super) index: ExecutorIndex,
 }
 
@@ -157,7 +150,6 @@ impl_control_instruction_from_inner!(
     Yield,
     MapBatchToRowsForNested,
     ExecuteImmediate,
-    ExecuteBuiltinCall,
     ExecuteNegation,
     ExecuteOptional,
     ExecuteDisjunctionBranch,
