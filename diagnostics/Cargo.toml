@@ -96,7 +96,7 @@ features = {}
 		default-features = false
 
 	[dependencies.sentry]
-		features = ["backtrace", "contexts", "httpdate", "panic", "sentry-backtrace", "sentry-contexts", "sentry-panic", "ureq"]
+		features = ["backtrace", "contexts", "httpdate", "panic", "rustls", "sentry-backtrace", "sentry-contexts", "sentry-panic", "ureq", "webpki-roots"]
 		version = "0.36.0"
 		default-features = false
 
