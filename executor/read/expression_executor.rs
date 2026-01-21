@@ -24,7 +24,7 @@ use compiler::annotation::expression::{
         op_codes::ExpressionOpCode,
         operators,
         unary::{
-            LengthString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
+            LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
             MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble, Unary, UnaryExpression,
         },
         ExpressionEvaluationError,
@@ -228,7 +228,7 @@ fn evaluate_instruction(
         ExpressionOpCode::MathMaxDoubleDouble => MathMaxDoubleDouble::evaluate(state),
         ExpressionOpCode::MathMaxDecimalDecimal => MathMaxDecimalDecimal::evaluate(state),
 
-        ExpressionOpCode::LengthString => LengthString::evaluate(state),
+        ExpressionOpCode::LenString => LenString::evaluate(state),
     }
 }
 

@@ -38,7 +38,7 @@ use crate::annotation::expression::{
         op_codes::ExpressionOpCode,
         operators,
         unary::{
-            LengthString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
+            LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
             MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble,
         },
         CompilableExpression, ExpressionInstruction,
@@ -589,10 +589,10 @@ impl<'this> ExpressionCompilationContext<'this> {
                     })?,
                 }
             }
-            BuiltinValueFunctionID::Length => {
+            BuiltinValueFunctionID::Len => {
                 self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
                 match self.peek_type_single()?.category() {
-                    ValueTypeCategory::String => LengthString::validate_and_append(self)?,
+                    ValueTypeCategory::String => LenString::validate_and_append(self)?,
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                         function: builtin.function_id(),
                         category: self.peek_type_single()?.category(),

@@ -72,7 +72,7 @@ pub enum ExpressionOpCode {
     MathMaxDoubleDouble,
     MathMaxDecimalDecimal,
 
-    LengthString,
+    LenString,
 }
 
 impl fmt::Display for ExpressionOpCode {
@@ -123,7 +123,7 @@ impl fmt::Display for ExpressionOpCode {
             ExpressionOpCode::MathMaxIntegerInteger => write!(f, "max-integer-integer"),
             ExpressionOpCode::MathMaxDoubleDouble => write!(f, "max-double-double"),
             ExpressionOpCode::MathMaxDecimalDecimal => write!(f, "max-decimal-decimal"),
-            ExpressionOpCode::LengthString => write!(f, "length-string"),
+            ExpressionOpCode::LenString => write!(f, "len-string"),
         }
     }
 }

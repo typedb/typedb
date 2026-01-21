@@ -289,7 +289,7 @@ pub enum BuiltinValueFunctionID {
     Round,
     Max,
     Min,
-    Length,
+    Len,
 }
 
 impl StructuralEquality for BuiltinValueFunctionID {
@@ -311,7 +311,7 @@ impl fmt::Display for BuiltinValueFunctionID {
             BuiltinValueFunctionID::Round => fmt::Display::fmt(&typeql::token::Function::Round, f),
             BuiltinValueFunctionID::Max => fmt::Display::fmt(&typeql::token::Function::Max, f),
             BuiltinValueFunctionID::Min => fmt::Display::fmt(&typeql::token::Function::Min, f),
-            BuiltinValueFunctionID::Length => fmt::Display::fmt(&typeql::token::Function::Length, f),
+            BuiltinValueFunctionID::Len => fmt::Display::fmt(&typeql::token::Function::Len, f),
         }
     }
 }

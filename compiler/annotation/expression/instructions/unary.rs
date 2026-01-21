@@ -92,7 +92,7 @@ unary_instruction! { 'a
     MathCeilDecimal = MathCeilDecimalImpl(a1: Decimal) -> i64 { Ok(Decimal::ceil(a1)) }
     MathFloorDecimal = MathFloorDecimalImpl(a1: Decimal) -> i64 { Ok(Decimal::floor(a1)) }
 
-    LengthString = LengthStringImpl(a1: Cow<'a, str>) -> i64 {
+    LenString = LenStringImpl(a1: Cow<'a, str>) -> i64 {
         let len = a1.len();
         len.try_into().map_err(|_| ExpressionEvaluationError::OverlongString { len })
     }
