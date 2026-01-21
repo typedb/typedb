@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::num::FpCategory;
+
 use encoding::value::decimal_value::Decimal;
 
 use crate::annotation::expression::instructions::{
@@ -35,9 +37,9 @@ binary_instruction! {
 
 fn checked_div(a1: f64, a2: f64) -> Result<f64, ExpressionEvaluationError> {
     let res = a1 / a2;
-    if res.is_normal() {
-        Ok(res)
-    } else {
+    if matches!(res.classify(), FpCategory::Infinite | FpCategory::Nan) {
         Err(ExpressionEvaluationError::DivisionFailed { dividend: a1, divisor: a2 })
+    } else {
+        Ok(res)
     }
 }
