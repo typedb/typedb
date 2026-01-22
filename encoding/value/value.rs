@@ -9,7 +9,6 @@ use std::{
     cmp::Ordering,
     fmt,
     hash::{Hash, Hasher},
-    ops::Deref,
 };
 
 use bytes::byte_array::ByteArray;
@@ -483,18 +482,18 @@ impl fmt::Display for Value<'_> {
     }
 }
 
-pub trait NativeValueConvertible: Sized {
+pub trait NativeValueConvertible<'a>: Sized {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory;
 
-    fn from_db_value(value: Value<'static>) -> Result<Self, ()>;
+    fn from_db_value(value: Value<'a>) -> Result<Self, ()>;
 
     fn to_db_value(self) -> Value<'static>;
 }
 
-impl NativeValueConvertible for bool {
+impl<'a> NativeValueConvertible<'a> for bool {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Boolean;
 
-    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'_>) -> Result<Self, ()> {
         match value {
             Value::Boolean(value) => Ok(value),
             _ => Err(()),
@@ -506,10 +505,10 @@ impl NativeValueConvertible for bool {
     }
 }
 
-impl NativeValueConvertible for f64 {
+impl<'a> NativeValueConvertible<'a> for f64 {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Double;
 
-    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'_>) -> Result<Self, ()> {
         match value {
             Value::Double(value) => Ok(value),
             _ => Err(()),
@@ -521,10 +520,10 @@ impl NativeValueConvertible for f64 {
     }
 }
 
-impl NativeValueConvertible for i64 {
+impl<'a> NativeValueConvertible<'a> for i64 {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Integer;
 
-    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'_>) -> Result<Self, ()> {
         match value {
             Value::Integer(value) => Ok(value),
             _ => Err(()),
@@ -536,23 +535,23 @@ impl NativeValueConvertible for i64 {
     }
 }
 
-impl NativeValueConvertible for String {
+impl<'a> NativeValueConvertible<'a> for Cow<'a, str> {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::String;
-    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'a>) -> Result<Self, ()> {
         match value {
-            Value::String(value) => Ok(value.deref().to_owned()),
+            Value::String(value) => Ok(value),
             _ => Err(()),
         }
     }
 
     fn to_db_value(self) -> Value<'static> {
-        Value::String(Cow::Owned(self))
+        Value::String(Cow::Owned(self.into_owned()))
     }
 }
 
-impl NativeValueConvertible for Decimal {
+impl<'a> NativeValueConvertible<'a> for Decimal {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Decimal;
-    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'_>) -> Result<Self, ()> {
         match value {
             Value::Decimal(value) => Ok(value),
             _ => Err(()),
@@ -564,10 +563,10 @@ impl NativeValueConvertible for Decimal {
     }
 }
 
-impl NativeValueConvertible for NaiveDate {
+impl<'a> NativeValueConvertible<'a> for NaiveDate {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Date;
 
-    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'_>) -> Result<Self, ()> {
         match value {
             Value::Date(value) => Ok(value),
             _ => Err(()),
@@ -579,10 +578,10 @@ impl NativeValueConvertible for NaiveDate {
     }
 }
 
-impl NativeValueConvertible for NaiveDateTime {
+impl<'a> NativeValueConvertible<'a> for NaiveDateTime {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::DateTime;
 
-    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'_>) -> Result<Self, ()> {
         match value {
             Value::DateTime(value) => Ok(value),
             _ => Err(()),
@@ -594,10 +593,10 @@ impl NativeValueConvertible for NaiveDateTime {
     }
 }
 
-impl NativeValueConvertible for DateTime<TimeZone> {
+impl<'a> NativeValueConvertible<'a> for DateTime<TimeZone> {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::DateTimeTZ;
 
-    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'_>) -> Result<Self, ()> {
         match value {
             Value::DateTimeTZ(value) => Ok(value),
             _ => Err(()),
@@ -609,10 +608,10 @@ impl NativeValueConvertible for DateTime<TimeZone> {
     }
 }
 
-impl NativeValueConvertible for Duration {
+impl<'a> NativeValueConvertible<'a> for Duration {
     const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Duration;
 
-    fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
+    fn from_db_value(value: Value<'_>) -> Result<Self, ()> {
         match value {
             Value::Duration(value) => Ok(value),
             _ => Err(()),

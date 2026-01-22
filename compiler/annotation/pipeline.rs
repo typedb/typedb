@@ -844,7 +844,7 @@ fn collect_value_types_of_function_call_assignments(
                         .insert(var.as_variable().unwrap(), ExpressionValueType::Single(value_type.clone()));
                     Ok(())
                 }
-                FunctionParameterAnnotation::Concept(_) => Ok(()),
+                FunctionParameterAnnotation::AnyConcept | FunctionParameterAnnotation::Concept(_) => Ok(()),
             })
         })?;
     conjunction.nested_patterns().iter().try_for_each(|nested| match nested {

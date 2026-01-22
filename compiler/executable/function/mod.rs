@@ -54,6 +54,7 @@ impl ExecutableFunctionRegistry {
 
     pub fn get(&self, function_id: &FunctionID) -> Option<&ExecutableFunction> {
         match function_id {
+            FunctionID::Builtin(_) => None,
             FunctionID::Schema(id) => self.schema_functions.get(id),
             FunctionID::Preamble(id) => self.preamble_functions.get(id),
         }
@@ -66,6 +67,9 @@ impl ExecutableFunctionRegistry {
 
 impl FunctionCallCostProvider for ExecutableFunctionRegistry {
     fn get_call_cost(&self, function_id: &FunctionID) -> Cost {
-        self.get(function_id).unwrap().single_call_cost
+        match function_id {
+            FunctionID::Builtin(_) => Cost::in_mem_simple_with_ratio(1.0),
+            FunctionID::Schema(_) | FunctionID::Preamble(_) => self.get(function_id).unwrap().single_call_cost,
+        }
     }
 }

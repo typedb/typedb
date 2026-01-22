@@ -584,7 +584,7 @@ fn add_typeql_iterable_binding(
         | typeql::Expression::Paren(_) => unreachable!(),
     }
 }
-//
+
 // // Helpers
 // pub(super) fn add_function_call_binding_user(
 //     function_index: &(impl FunctionSignatureIndex + std::fmt::Debug),

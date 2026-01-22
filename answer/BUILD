@@ -19,6 +19,7 @@ rust_library(
         "//common/lending_iterator",
         "//concept",
         "//encoding",
+        "//resource",
         "//storage",
     ],
 )

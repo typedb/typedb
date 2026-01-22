@@ -19,6 +19,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.resource]
+		path = "../resource"
+		features = []
+		default-features = false
+
 	[dependencies.structural_equality]
 		path = "../common/structural_equality"
 		features = []

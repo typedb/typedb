@@ -50,7 +50,8 @@ pub struct AttributeVertex {
 
 impl AttributeVertex {
     pub const PREFIX: Prefix = Prefix::VertexAttribute;
-    pub const MAX_LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ValueEncodingLength::LONG_LENGTH;
+    pub const MAX_LENGTH: usize =
+        PrefixID::LENGTH + TypeID::LENGTH + ValueTypeBytes::CATEGORY_LENGTH + ValueEncodingLength::LONG_LENGTH;
 
     pub const fn new(type_id: TypeID, attribute_id: AttributeID) -> Self {
         Self { type_id, attribute_id }

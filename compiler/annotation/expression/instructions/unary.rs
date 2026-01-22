@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::marker::PhantomData;
+use std::{borrow::Cow, marker::PhantomData};
 
 use encoding::value::{decimal_value::Decimal, value::NativeValueConvertible, value_type::ValueTypeCategory};
 
@@ -16,34 +16,34 @@ use crate::annotation::expression::{
     ExpressionCompileError,
 };
 
-pub trait UnaryExpression<T1: NativeValueConvertible, R: NativeValueConvertible> {
+pub trait UnaryExpression<'a, T1: NativeValueConvertible<'a>, R: NativeValueConvertible<'a>> {
     const OP_CODE: ExpressionOpCode;
     fn evaluate(a1: T1) -> Result<R, ExpressionEvaluationError>;
 }
 
-pub struct Unary<T1, R, F>
+pub struct Unary<'a, T1, R, F>
 where
-    T1: NativeValueConvertible,
-    R: NativeValueConvertible,
-    F: UnaryExpression<T1, R>,
+    T1: NativeValueConvertible<'a>,
+    R: NativeValueConvertible<'a>,
+    F: UnaryExpression<'a, T1, R>,
 {
-    phantom: PhantomData<(T1, R, F)>,
+    phantom: PhantomData<&'a (T1, R, F)>,
 }
 
-impl<T1, R, F> ExpressionInstruction for Unary<T1, R, F>
+impl<'a, T1, R, F> ExpressionInstruction for Unary<'a, T1, R, F>
 where
-    T1: NativeValueConvertible,
-    R: NativeValueConvertible,
-    F: UnaryExpression<T1, R>,
+    T1: NativeValueConvertible<'a>,
+    R: NativeValueConvertible<'a>,
+    F: UnaryExpression<'a, T1, R>,
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
 }
 
-impl<T1, R, F> CompilableExpression for Unary<T1, R, F>
+impl<'a, T1, R, F> CompilableExpression for Unary<'a, T1, R, F>
 where
-    T1: NativeValueConvertible,
-    R: NativeValueConvertible,
-    F: UnaryExpression<T1, R>,
+    T1: NativeValueConvertible<'a>,
+    R: NativeValueConvertible<'a>,
+    F: UnaryExpression<'a, T1, R>,
 {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(R::VALUE_TYPE_CATEGORY)
@@ -65,10 +65,10 @@ where
 }
 
 macro_rules! unary_instruction {
-    ( $( $name:ident = $impl_name:ident($a1:ident: $t1:ty) -> $r:ty $impl_code:block )* ) => { $(
-        pub type $name = Unary<$t1, $r, $impl_name>;
+    ( $lt:lifetime $( $name:ident = $impl_name:ident($a1:ident: $t1:ty) -> $r:ty $impl_code:block )* ) => { $(
+        pub type $name<'a> = Unary<'a, $t1, $r, $impl_name>;
         pub struct $impl_name {}
-        impl UnaryExpression<$t1, $r> for $impl_name {
+        impl<'a> UnaryExpression<'a, $t1, $r> for $impl_name {
             const OP_CODE: ExpressionOpCode = ExpressionOpCode::$name;
             fn evaluate($a1: $t1) -> Result<$r, ExpressionEvaluationError> {
                 $impl_code
@@ -79,7 +79,7 @@ macro_rules! unary_instruction {
 
 pub(crate) use unary_instruction;
 
-unary_instruction! {
+unary_instruction! { 'a
     MathAbsInteger = MathAbsIntegerImpl(a1: i64) -> i64 { Ok(i64::abs(a1)) }
     MathAbsDouble = MathAbsDoubleImpl(a1: f64) -> f64 { Ok(f64::abs(a1)) }
     MathAbsDecimal = MathAbsDecimalImpl(a1: Decimal) -> Decimal { Ok(Decimal::abs(a1)) }
@@ -91,4 +91,9 @@ unary_instruction! {
     MathRoundDecimal = MathRoundDecimalImpl(a1: Decimal) -> i64 { Ok(Decimal::round(a1)) }
     MathCeilDecimal = MathCeilDecimalImpl(a1: Decimal) -> i64 { Ok(Decimal::ceil(a1)) }
     MathFloorDecimal = MathFloorDecimalImpl(a1: Decimal) -> i64 { Ok(Decimal::floor(a1)) }
+
+    LenString = LenStringImpl(a1: Cow<'a, str>) -> i64 {
+        let len = a1.chars().count();
+        len.try_into().map_err(|_| ExpressionEvaluationError::OverlongString { len })
+    }
 }

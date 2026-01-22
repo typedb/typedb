@@ -293,9 +293,7 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
             AnnotatedFetchSome::SingleVar(var) => {
                 let as_vertex = Vertex::Variable(*var);
                 if let Some(annotations) = last_stage_annotations.vertex_annotations_of(&as_vertex) {
-                    let attribute_types = annotations.iter().filter_map(|attribute_type| {
-                        attribute_type.is_attribute_type().then(|| attribute_type.as_attribute_type())
-                    });
+                    let attribute_types = annotations.iter().filter(|&attribute_type| attribute_type.is_attribute_type()).map(|attribute_type| attribute_type.as_attribute_type());
                     let leaf_annotations = build_leaf_annotations(snapshot, type_manager, attribute_types)?;
                     FetchStructureAnnotations::Leaf(leaf_annotations)
                 } else if let Some(value_type) = last_stage_annotations.value_type_annotations_of(&as_vertex) {
@@ -324,13 +322,22 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
             | AnnotatedFetchSome::SingleFunction(function) => {
                 debug_assert!(function.annotated_signature.returns.len() == 1);
                 match &function.annotated_signature.returns[0] {
+                    FunctionParameterAnnotation::AnyConcept => {
+                        FetchStructureAnnotations::Leaf(
+                            build_leaf_annotations(
+                                snapshot,
+                                type_manager,
+                                type_manager.get_attribute_types(snapshot)?.into_iter()
+                            )?
+                        )
+                    }
                     FunctionParameterAnnotation::Concept(types) => {
                         debug_assert!(types.iter().all(|type_| type_.is_attribute_type()));
                         FetchStructureAnnotations::Leaf(
                             build_leaf_annotations(
                                 snapshot,
                                 type_manager,
-                                types.iter().copied().filter_map(|type_| type_.is_attribute_type().then(|| type_.as_attribute_type()))
+                                types.iter().copied().filter(|type_| type_.is_attribute_type()).map(|type_| type_.as_attribute_type())
                             )?
                         )
                     }

@@ -22,6 +22,7 @@ use ir::pattern::{
     constraint::{Comparator, Constraint, IsaKind, SubKind},
     ParameterID, Vertex,
 };
+use itertools::Itertools;
 use query::analyse::{
     AnalysedQuery, FetchStructureAnnotations, FetchStructureAnnotationsFields, FunctionStructureAnnotations,
 };
@@ -688,6 +689,10 @@ fn encode_function_parameter_annotations(
     parameter: &FunctionParameterAnnotation,
 ) -> Result<conjunction_proto::VariableAnnotations, Box<ConceptReadError>> {
     let annotations = match parameter {
+        FunctionParameterAnnotation::AnyConcept => {
+            let annotations = encode_all_types_to_concept_variable_annotations(snapshot, type_manager)?;
+            conjunction_proto::variable_annotations::Annotations::Instance(annotations)
+        }
         FunctionParameterAnnotation::Concept(types) => {
             let annotations = encode_types_to_concept_variable_annotations(snapshot, type_manager, types.iter())?;
             conjunction_proto::variable_annotations::Annotations::Instance(annotations)
@@ -702,6 +707,20 @@ fn encode_function_parameter_annotations(
     };
     // TODO: If we ever have optional parameters
     Ok(conjunction_proto::VariableAnnotations { is_optional: false, annotations: Some(annotations) })
+}
+
+fn encode_all_types_to_concept_variable_annotations(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+) -> Result<conjunction_proto::variable_annotations::ConceptVariableAnnotations, Box<ConceptReadError>> {
+    let object_types = type_manager.get_object_types(snapshot)?;
+    let attribute_types = type_manager.get_attribute_types(snapshot)?;
+    let concept_types =
+        Iterator::chain(object_types.into_iter().map(Type::from), attribute_types.into_iter().map(Type::from));
+    concept_types
+        .map(|type_| encode_type(&type_, snapshot, type_manager))
+        .collect::<Result<Vec<_>, _>>()
+        .map(|types| conjunction_proto::variable_annotations::ConceptVariableAnnotations { types })
 }
 
 fn encode_types_to_concept_variable_annotations<'a>(

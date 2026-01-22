@@ -4,20 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter, str::FromStr, sync::Arc};
+use std::{collections::HashMap, fmt::Write, iter, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
 use concept::{
     error::ConceptReadError,
-    thing::{attribute::Attribute, object::ObjectAPI, ThingAPI},
+    thing::{attribute::Attribute, object::ObjectAPI},
     type_::TypeAPI,
 };
 use cucumber::gherkin::Step;
-use encoding::{
-    value::{label::Label, value_type::ValueType, ValueEncodable},
-    AsBytes,
-};
+use encoding::value::{label::Label, value_type::ValueType, ValueEncodable};
 use executor::{
     batch::Batch,
     pipeline::stage::{ExecutionContext, StageIterator},
@@ -562,27 +559,12 @@ fn apply_query_template(mut template: &str, answer: &HashMap<String, VariableVal
     let mut buf = String::with_capacity(template.len());
     while let Some((prefix, var, tail)) = split_placeholder(template) {
         buf.push_str(prefix);
-
         let thing = answer.get(var).unwrap().as_thing();
-        let iid = iid_of(thing);
-
-        buf.push_str("0x");
-        for byte in iid {
-            buf.push_str(&format!("{byte:02X}"));
-        }
-
+        write!(buf, "{:x}", thing.iid()).unwrap();
         template = tail;
     }
     buf.push_str(template);
     buf
-}
-
-fn iid_of(thing: &Thing) -> Vec<u8> {
-    match thing {
-        Thing::Entity(entity) => entity.vertex().to_bytes().into(),
-        Thing::Relation(relation) => relation.vertex().to_bytes().into(),
-        Thing::Attribute(attribute) => attribute.vertex().to_bytes().into(),
-    }
 }
 
 #[cucumber::then("verify answer set is equivalent for query")]

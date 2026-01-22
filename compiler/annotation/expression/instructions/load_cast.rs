@@ -19,17 +19,17 @@ use crate::annotation::expression::{
 pub struct LoadVariable {}
 pub struct LoadConstant {}
 
-pub type CastUnaryIntegerToDouble = CastUnary<i64, f64>;
-pub type CastLeftIntegerToDouble = CastBinaryLeft<i64, f64>;
-pub type CastRightIntegerToDouble = CastBinaryRight<i64, f64>;
+pub type CastUnaryIntegerToDouble<'a> = CastUnary<'a, i64, f64>;
+pub type CastLeftIntegerToDouble<'a> = CastBinaryLeft<'a, i64, f64>;
+pub type CastRightIntegerToDouble<'a> = CastBinaryRight<'a, i64, f64>;
 
-pub type CastUnaryDecimalToDouble = CastUnary<Decimal, f64>;
-pub type CastLeftDecimalToDouble = CastBinaryLeft<Decimal, f64>;
-pub type CastRightDecimalToDouble = CastBinaryRight<Decimal, f64>;
+pub type CastUnaryDecimalToDouble<'a> = CastUnary<'a, Decimal, f64>;
+pub type CastLeftDecimalToDouble<'a> = CastBinaryLeft<'a, Decimal, f64>;
+pub type CastRightDecimalToDouble<'a> = CastBinaryRight<'a, Decimal, f64>;
 
-pub type CastUnaryIntegerToDecimal = CastUnary<i64, Decimal>;
-pub type CastLeftIntegerToDecimal = CastBinaryLeft<i64, Decimal>;
-pub type CastRightIntegerToDecimal = CastBinaryRight<i64, Decimal>;
+pub type CastUnaryIntegerToDecimal<'a> = CastUnary<'a, i64, Decimal>;
+pub type CastLeftIntegerToDecimal<'a> = CastBinaryLeft<'a, i64, Decimal>;
+pub type CastRightIntegerToDecimal<'a> = CastBinaryRight<'a, i64, Decimal>;
 
 // Impls
 
@@ -43,30 +43,34 @@ impl ExpressionInstruction for LoadConstant {
 }
 
 // Casts
-pub trait ImplicitCast<From: NativeValueConvertible>: NativeValueConvertible {
+pub trait ImplicitCast<'a, From: NativeValueConvertible<'a>>: NativeValueConvertible<'a> {
     const CAST_UNARY_OPCODE: ExpressionOpCode;
     const CAST_LEFT_OPCODE: ExpressionOpCode;
     const CAST_RIGHT_OPCODE: ExpressionOpCode;
     fn cast(from: From) -> Result<Self, ExpressionEvaluationError>;
 }
 
-pub struct CastUnary<From: NativeValueConvertible, To: ImplicitCast<From>> {
-    phantom: PhantomData<(From, To)>,
+pub struct CastUnary<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> {
+    phantom: PhantomData<&'a (From, To)>,
 }
 
-pub struct CastBinaryLeft<From: NativeValueConvertible, To: ImplicitCast<From>> {
-    phantom: PhantomData<(From, To)>,
+pub struct CastBinaryLeft<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> {
+    phantom: PhantomData<&'a (From, To)>,
 }
 
-pub struct CastBinaryRight<From: NativeValueConvertible, To: ImplicitCast<From>> {
-    phantom: PhantomData<(From, To)>,
+pub struct CastBinaryRight<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> {
+    phantom: PhantomData<&'a (From, To)>,
 }
 
-impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionInstruction for CastUnary<From, To> {
+impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> ExpressionInstruction
+    for CastUnary<'a, From, To>
+{
     const OP_CODE: ExpressionOpCode = To::CAST_UNARY_OPCODE;
 }
 
-impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression for CastUnary<From, To> {
+impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> CompilableExpression
+    for CastUnary<'a, From, To>
+{
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }
@@ -87,11 +91,15 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
     }
 }
 
-impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionInstruction for CastBinaryLeft<From, To> {
+impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> ExpressionInstruction
+    for CastBinaryLeft<'a, From, To>
+{
     const OP_CODE: ExpressionOpCode = To::CAST_LEFT_OPCODE;
 }
 
-impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression for CastBinaryLeft<From, To> {
+impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> CompilableExpression
+    for CastBinaryLeft<'a, From, To>
+{
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }
@@ -114,11 +122,15 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
     }
 }
 
-impl<From: NativeValueConvertible, To: ImplicitCast<From>> ExpressionInstruction for CastBinaryRight<From, To> {
+impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> ExpressionInstruction
+    for CastBinaryRight<'a, From, To>
+{
     const OP_CODE: ExpressionOpCode = To::CAST_RIGHT_OPCODE;
 }
 
-impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression for CastBinaryRight<From, To> {
+impl<'a, From: NativeValueConvertible<'a>, To: ImplicitCast<'a, From>> CompilableExpression
+    for CastBinaryRight<'a, From, To>
+{
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(To::VALUE_TYPE_CATEGORY)
     }
@@ -139,7 +151,7 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
     }
 }
 
-impl ImplicitCast<i64> for f64 {
+impl ImplicitCast<'_, i64> for f64 {
     const CAST_UNARY_OPCODE: ExpressionOpCode = ExpressionOpCode::CastUnaryIntegerToDouble;
     const CAST_LEFT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastLeftIntegerToDouble;
     const CAST_RIGHT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastRightIntegerToDouble;
@@ -149,7 +161,7 @@ impl ImplicitCast<i64> for f64 {
     }
 }
 
-impl ImplicitCast<Decimal> for f64 {
+impl ImplicitCast<'_, Decimal> for f64 {
     const CAST_UNARY_OPCODE: ExpressionOpCode = ExpressionOpCode::CastUnaryDecimalToDouble;
     const CAST_LEFT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastLeftDecimalToDouble;
     const CAST_RIGHT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastRightDecimalToDouble;
@@ -159,7 +171,7 @@ impl ImplicitCast<Decimal> for f64 {
     }
 }
 
-impl ImplicitCast<i64> for Decimal {
+impl ImplicitCast<'_, i64> for Decimal {
     const CAST_UNARY_OPCODE: ExpressionOpCode = ExpressionOpCode::CastUnaryIntegerToDecimal;
     const CAST_LEFT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastLeftIntegerToDecimal;
     const CAST_RIGHT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastRightIntegerToDecimal;

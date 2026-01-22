@@ -15,37 +15,43 @@ use crate::annotation::expression::{
     ExpressionCompileError,
 };
 
-pub trait BinaryExpression<T1: NativeValueConvertible, T2: NativeValueConvertible, R: NativeValueConvertible> {
+pub trait BinaryExpression<
+    'a,
+    T1: NativeValueConvertible<'a>,
+    T2: NativeValueConvertible<'a>,
+    R: NativeValueConvertible<'a>,
+>
+{
     const OP_CODE: ExpressionOpCode;
     fn evaluate(a1: T1, a2: T2) -> Result<R, ExpressionEvaluationError>;
 }
 
-pub struct Binary<T1, T2, R, F>
+pub struct Binary<'a, T1, T2, R, F>
 where
-    T1: NativeValueConvertible,
-    T2: NativeValueConvertible,
-    R: NativeValueConvertible,
-    F: BinaryExpression<T1, T2, R>,
+    T1: NativeValueConvertible<'a>,
+    T2: NativeValueConvertible<'a>,
+    R: NativeValueConvertible<'a>,
+    F: BinaryExpression<'a, T1, T2, R>,
 {
-    pub phantom: PhantomData<(T1, T2, R, F)>,
+    pub phantom: PhantomData<&'a (T1, T2, R, F)>,
 }
 
-impl<T1, T2, R, F> ExpressionInstruction for Binary<T1, T2, R, F>
+impl<'a, T1, T2, R, F> ExpressionInstruction for Binary<'a, T1, T2, R, F>
 where
-    T1: NativeValueConvertible,
-    T2: NativeValueConvertible,
-    R: NativeValueConvertible,
-    F: BinaryExpression<T1, T2, R>,
+    T1: NativeValueConvertible<'a>,
+    T2: NativeValueConvertible<'a>,
+    R: NativeValueConvertible<'a>,
+    F: BinaryExpression<'a, T1, T2, R>,
 {
     const OP_CODE: ExpressionOpCode = F::OP_CODE;
 }
 
-impl<T1, T2, R, F> CompilableExpression for Binary<T1, T2, R, F>
+impl<'a, T1, T2, R, F> CompilableExpression for Binary<'a, T1, T2, R, F>
 where
-    T1: NativeValueConvertible,
-    T2: NativeValueConvertible,
-    R: NativeValueConvertible,
-    F: BinaryExpression<T1, T2, R>,
+    T1: NativeValueConvertible<'a>,
+    T2: NativeValueConvertible<'a>,
+    R: NativeValueConvertible<'a>,
+    F: BinaryExpression<'a, T1, T2, R>,
 {
     fn return_value_category(&self) -> Option<ValueTypeCategory> {
         Some(R::VALUE_TYPE_CATEGORY)
@@ -76,9 +82,9 @@ where
 
 macro_rules! binary_instruction {
     ( $( $name:ident = $impl_name:ident($a1:ident: $t1:ty, $a2:ident: $t2:ty) -> $r:ty $impl_code:block )* ) => { $(
-        pub type $name = Binary<$t1, $t2, $r, $impl_name>;
+        pub type $name<'a> = Binary<'a, $t1, $t2, $r, $impl_name>;
         pub struct $impl_name {}
-        impl BinaryExpression<$t1, $t2, $r> for $impl_name {
+        impl<'a> BinaryExpression<'a, $t1, $t2, $r> for $impl_name {
             const OP_CODE: ExpressionOpCode = ExpressionOpCode::$name;
             fn evaluate($a1: $t1, $a2: $t2) -> Result<$r, ExpressionEvaluationError> {
                 $impl_code

@@ -180,7 +180,7 @@ fn make_builder<'a>(
                     .collect();
                 let optional_vars = optional
                     .named_visible_binding_variables(block_context)
-                    .filter(|var| !parent_bound_variables.contains(&var))
+                    .filter(|var| !parent_bound_variables.contains(var))
                     .collect();
                 optional_subplans.push(OptionalPlan::new(
                     optional.branch_id(),

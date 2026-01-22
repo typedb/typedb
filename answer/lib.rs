@@ -31,6 +31,7 @@ use encoding::{
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::ReadableSnapshot;
 
 pub mod variable;
@@ -351,6 +352,14 @@ impl Thing {
 
     pub fn minimum_thing() -> Thing {
         Thing::Entity(Entity::new(ObjectVertex::build_entity(TypeID::MIN, ObjectID::MIN)))
+    }
+
+    pub fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
+        match self {
+            Thing::Entity(entity) => entity.iid(),
+            Thing::Relation(relation) => relation.iid(),
+            Thing::Attribute(attribute) => attribute.iid(),
+        }
     }
 }
 
