@@ -23,7 +23,7 @@ use resource::profile::CommitProfile;
 use storage::{
     durability_client::WALClient,
     key_value::StorageKeyReference,
-    recovery::checkpoint::Checkpoint,
+    recovery::checkpoint::{CheckpointReader, CheckpointWriter},
     snapshot::{CommittableSnapshot, WritableSnapshot},
     MVCCStorage,
 };
@@ -200,10 +200,9 @@ fn loading_storage_assigns_next_vertex() {
         assert_eq!(i, vertex.type_id_().as_u16());
         snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
-        let check = Checkpoint::new(&storage_path).unwrap();
+        let check = CheckpointWriter::new(&storage_path).unwrap();
         storage.checkpoint(&check).unwrap();
-        check.finish().unwrap();
-        checkpoint = Some(check);
+        checkpoint = Some(check.finish().unwrap());
     }
 
     for i in 0..create_till {

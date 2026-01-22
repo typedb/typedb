@@ -14,13 +14,12 @@ use std::{
 use cache::CACHE_DB_NAME_PREFIX;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
-use tracing::{event, Level};
+use tracing::{event, warn, Level};
 
 use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
 
 type DatabasesMap = HashMap<String, Arc<Database<WALClient>>>;
 type Databases = RwLock<DatabasesMap>;
-type DatabasesReadLock<'a> = RwLockReadGuard<'a, DatabasesMap>;
 type DatabasesWriteLock<'a> = RwLockWriteGuard<'a, DatabasesMap>;
 
 #[derive(Debug)]
@@ -73,11 +72,18 @@ impl DatabaseManager {
             }
 
             let database_name = entry_path.file_name().unwrap().to_string_lossy();
-            if Self::is_internal_database(&database_name) {
+            if Self::validate_user_database_name(&database_name).is_err() {
                 continue;
             }
 
-            let database = Database::<WALClient>::open(&entry_path)?;
+            let database = match Database::<WALClient>::open(&entry_path) {
+                Ok(database) => database,
+                Err(DatabaseOpenError::NotADatabase { .. }) => {
+                    warn!("{entry_path:?} is not a database, skipping");
+                    continue;
+                }
+                Err(err) => return Err(err),
+            };
             assert!(!databases.contains_key(database.name()));
             databases.insert(database.name().to_owned(), Arc::new(database));
         }
@@ -133,7 +139,7 @@ impl DatabaseManager {
     }
 
     pub fn put_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
-        Self::validate_database_name(name.as_ref())?;
+        Self::validate_user_database_name(name.as_ref())?;
         self.put_database_unrestricted(name)
     }
 
@@ -184,7 +190,7 @@ impl DatabaseManager {
             })?;
         }
 
-        Self::validate_database_name(&name)?;
+        Self::validate_user_database_name(&name)?;
 
         let databases = self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
         if self.exists_public(&databases, &name) {
@@ -275,7 +281,7 @@ impl DatabaseManager {
     }
 
     pub fn database_names(&self) -> Vec<String> {
-        self.databases.read().unwrap().keys().cloned().filter(|db| Self::is_user_database(db)).collect()
+        self.databases.read().unwrap().keys().filter(|&db| Self::is_user_database(db)).cloned().collect()
     }
 
     pub fn databases(&self) -> RwLockReadGuard<'_, HashMap<String, Arc<Database<WALClient>>>> {
@@ -332,11 +338,11 @@ impl DatabaseManager {
             .map_err(|source| DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) })
     }
 
-    fn file_name_lossy(path: &PathBuf) -> String {
+    fn file_name_lossy(path: &Path) -> String {
         path.file_name().unwrap_or("".as_ref()).to_string_lossy().to_string()
     }
 
-    fn validate_database_name(name: &str) -> Result<(), DatabaseCreateError> {
+    fn validate_user_database_name(name: &str) -> Result<(), DatabaseCreateError> {
         if Self::is_internal_database(name) {
             return Err(DatabaseCreateError::InternalDatabaseCreationProhibited {});
         }
