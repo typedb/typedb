@@ -187,7 +187,7 @@ fn build_function(
             add_builtin_function_call(
                 function_index,
                 constraints,
-                to_builtin_function_id(builtin, &function_call.args)?,
+                to_builtin_concept_function_id(builtin, &function_call.args)?,
                 vec![assign],
                 &function_call.args,
                 function_call.span(),
@@ -289,7 +289,7 @@ fn to_builtin_value_function_id(
     }
 }
 
-fn to_builtin_function_id<T>(
+fn to_builtin_concept_function_id<T>(
     typeql_id: &BuiltinFunctionName,
     args: &[T],
 ) -> Result<BuiltinConceptFunctionID, Box<RepresentationError>> {
