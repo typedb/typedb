@@ -206,6 +206,22 @@ fn evaluate_instruction(
         ExpressionOpCode::OpDecimalSubtractDecimal => operators::OpDecimalSubtractDecimal::evaluate(state),
         ExpressionOpCode::OpDecimalMultiplyDecimal => operators::OpDecimalMultiplyDecimal::evaluate(state),
 
+        ExpressionOpCode::OpDateSubtractDate => operators::OpDateSubtractDate::evaluate(state),
+
+        ExpressionOpCode::OpDateTimeAddDuration => operators::OpDateTimeAddDuration::evaluate(state),
+        ExpressionOpCode::OpDateTimeSubtractDuration => operators::OpDateTimeSubtractDuration::evaluate(state),
+        ExpressionOpCode::OpDateTimeSubtractDateTime => operators::OpDateTimeSubtractDateTime::evaluate(state),
+        ExpressionOpCode::OpDateTimeSubtractDate => operators::OpDateTimeSubtractDate::evaluate(state),
+
+        ExpressionOpCode::OpDateTimeTZAddDuration => operators::OpDateTimeTZAddDuration::evaluate(state),
+        ExpressionOpCode::OpDateTimeTZSubtractDuration => operators::OpDateTimeTZSubtractDuration::evaluate(state),
+        ExpressionOpCode::OpDateTimeTZSubtractDateTimeTZ => operators::OpDateTimeTZSubtractDateTimeTZ::evaluate(state),
+
+        ExpressionOpCode::OpDurationAddDuration => operators::OpDurationAddDuration::evaluate(state),
+        ExpressionOpCode::OpDurationSubtractDuration => operators::OpDurationSubtractDuration::evaluate(state),
+
+        ExpressionOpCode::OpStringAddString => operators::OpStringAddString::evaluate(state),
+
         ExpressionOpCode::MathAbsDouble => MathAbsDouble::evaluate(state),
         ExpressionOpCode::MathAbsDecimal => MathAbsDecimal::evaluate(state),
         ExpressionOpCode::MathAbsInteger => MathAbsInteger::evaluate(state),
