@@ -10,11 +10,14 @@ use std::{
     str::FromStr,
 };
 
-use chrono::{DateTime, Days, MappedLocalTime, Months, NaiveDateTime, Offset, TimeDelta, TimeZone};
+use chrono::{
+    DateTime, Datelike, Days, MappedLocalTime, Months, NaiveDate, NaiveDateTime, Offset, TimeDelta, TimeZone,
+};
 
 pub const NANOS_PER_SEC: u64 = 1_000_000_000;
 pub const NANOS_PER_MINUTE: u64 = 60 * NANOS_PER_SEC;
 pub const NANOS_PER_HOUR: u64 = 60 * 60 * NANOS_PER_SEC;
+pub const NANOS_PER_NAIVE_DAY: u64 = 24 * NANOS_PER_HOUR;
 
 const MAX_YEAR: i32 = (i32::MAX >> 13) - 1; // NaiveDate.year() is from a trait and not `const`
 const MIN_YEAR: i32 = (i32::MIN >> 13) + 1; // NaiveDate.year() is from a trait and not `const`
@@ -71,6 +74,43 @@ impl Duration {
 
     pub fn nanos(nanos: u64) -> Self {
         Self { months: 0, days: 0, nanos }
+    }
+
+    pub fn between_dates(before: NaiveDate, after: NaiveDate) -> Self {
+        debug_assert!(before <= after, "attempting to subtract with underflow");
+        let mut months = (after.year() - before.year()) as u32 * MONTHS_PER_YEAR + after.month() - before.month();
+        let days = if after.day() < before.day() {
+            months -= 1;
+            after.day() + before.num_days_in_month() as u32 - before.day()
+        } else {
+            after.day() - before.day()
+        };
+        Self { months, days, nanos: 0 }
+    }
+
+    pub fn between_datetimes(before: NaiveDateTime, after: NaiveDateTime) -> Self {
+        debug_assert!(before <= after, "attempting to subtract with underflow");
+        let date_duration = Self::between_dates(before.date(), after.date());
+        let nanos = (after.time() - before.time()).num_nanoseconds().expect("time difference < 1 day cannot overflow");
+        if nanos >= 0 {
+            date_duration + Self::nanos(nanos as u64)
+        } else {
+            let nanos =
+                NANOS_PER_NAIVE_DAY.checked_add_signed(nanos).expect("time difference < 1 day cannot underflow");
+            date_duration - Self::days(1) + Self::nanos(nanos)
+        }
+    }
+
+    pub fn between_datetimes_tz<Tz: TimeZone>(before: DateTime<Tz>, after: DateTime<Tz>) -> Self {
+        debug_assert!(before <= after, "attempting to subtract with underflow");
+        let date_duration = if after.time() >= before.time() {
+            Self::between_dates(before.date_naive(), after.date_naive())
+        } else {
+            Self::between_dates(before.date_naive(), after.date_naive().pred())
+        };
+        let adjusted_before = before + date_duration;
+        let nanos = (after - adjusted_before).num_nanoseconds().expect("time difference < 1 day cannot overflow");
+        date_duration + Self::nanos(nanos as u64)
     }
 }
 
@@ -322,7 +362,50 @@ mod tests {
 
         let p1d = Duration::days(1);
 
-        assert_eq!(_2024_03_30__12_00_00 + p1d, _2024_03_31__12_00_00)
+        assert_eq!(_2024_03_30__12_00_00 + p1d, _2024_03_31__12_00_00);
+    }
+
+    #[test]
+    fn subtracting_across_dst_uses_days() {
+        // London DST change occurred on 2024-03-31 01:00:00 GMT
+        let _2024_03_30__12_00_00 = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 3, 30).unwrap(),
+            NaiveTime::from_hms_opt(12, 0, 0).unwrap(),
+        )
+        .and_local_timezone(London)
+        .unwrap();
+
+        let _2024_03_31__12_00_00 = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 3, 31).unwrap(),
+            NaiveTime::from_hms_opt(12, 0, 0).unwrap(),
+        )
+        .and_local_timezone(London)
+        .unwrap();
+
+        let p1d = Duration::days(1);
+        assert_eq!(Duration::between_datetimes_tz(_2024_03_30__12_00_00, _2024_03_31__12_00_00), p1d);
+    }
+
+    #[test]
+    fn subtracting_across_dst_shows_correct_time_delta() {
+        // London DST change occurred on 2024-03-31 01:00:00 GMT
+        let _2024_03_30__12_00_00 = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 3, 30).unwrap(),
+            NaiveTime::from_hms_opt(12, 0, 0).unwrap(),
+        )
+        .and_local_timezone(London)
+        .unwrap();
+
+        let _2024_03_31__11_00_00 = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 3, 31).unwrap(),
+            NaiveTime::from_hms_opt(11, 0, 0).unwrap(),
+        )
+        .and_local_timezone(London)
+        .unwrap();
+
+        let pt22h = Duration::hours(22);
+        assert_eq!(_2024_03_30__12_00_00 + pt22h, _2024_03_31__11_00_00);
+        assert_eq!(Duration::between_datetimes_tz(_2024_03_30__12_00_00, _2024_03_31__11_00_00), pt22h);
     }
 
     #[test]
