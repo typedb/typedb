@@ -375,12 +375,16 @@ impl<'this> ExpressionCompilationContext<'this> {
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
-        Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-            op,
-            left_category: ValueTypeCategory::String,
-            right_category,
-            source_span,
-        }))
+        match (op, right_category) {
+            (Operator::Add, ValueTypeCategory::String) => operators::OpStringAddString::validate_and_append(self)?,
+            _ => Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
+                op,
+                left_category: ValueTypeCategory::String,
+                right_category,
+                source_span,
+            }))?,
+        }
+        Ok(())
     }
 
     fn compile_op_date(
@@ -391,12 +395,16 @@ impl<'this> ExpressionCompilationContext<'this> {
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
-        Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-            op,
-            left_category: ValueTypeCategory::Date,
-            right_category,
-            source_span,
-        }))
+        match (op, right_category) {
+            (Operator::Subtract, ValueTypeCategory::Date) => operators::OpDateSubtractDate::validate_and_append(self)?,
+            _ => Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
+                op,
+                left_category: ValueTypeCategory::Date,
+                right_category,
+                source_span,
+            }))?,
+        }
+        Ok(())
     }
 
     fn compile_op_datetime(
@@ -407,12 +415,27 @@ impl<'this> ExpressionCompilationContext<'this> {
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
-        Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-            op,
-            left_category: ValueTypeCategory::DateTime,
-            right_category,
-            source_span,
-        }))
+        match (op, right_category) {
+            (Operator::Subtract, ValueTypeCategory::Date) => {
+                operators::OpDateTimeSubtractDate::validate_and_append(self)?
+            }
+            (Operator::Subtract, ValueTypeCategory::DateTime) => {
+                operators::OpDateTimeSubtractDateTime::validate_and_append(self)?
+            }
+            (Operator::Add, ValueTypeCategory::Duration) => {
+                operators::OpDateTimeAddDuration::validate_and_append(self)?
+            }
+            (Operator::Subtract, ValueTypeCategory::Duration) => {
+                operators::OpDateTimeSubtractDuration::validate_and_append(self)?
+            }
+            _ => Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
+                op,
+                left_category: ValueTypeCategory::DateTime,
+                right_category,
+                source_span,
+            }))?,
+        }
+        Ok(())
     }
 
     fn compile_op_datetime_tz(
@@ -423,12 +446,24 @@ impl<'this> ExpressionCompilationContext<'this> {
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
-        Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-            op,
-            left_category: ValueTypeCategory::DateTimeTZ,
-            right_category,
-            source_span,
-        }))
+        match (op, right_category) {
+            (Operator::Subtract, ValueTypeCategory::DateTimeTZ) => {
+                operators::OpDateTimeTZSubtractDateTimeTZ::validate_and_append(self)?
+            }
+            (Operator::Add, ValueTypeCategory::Duration) => {
+                operators::OpDateTimeTZAddDuration::validate_and_append(self)?
+            }
+            (Operator::Subtract, ValueTypeCategory::Duration) => {
+                operators::OpDateTimeTZSubtractDuration::validate_and_append(self)?
+            }
+            _ => Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
+                op,
+                left_category: ValueTypeCategory::DateTimeTZ,
+                right_category,
+                source_span,
+            }))?,
+        }
+        Ok(())
     }
 
     fn compile_op_duration(
@@ -439,12 +474,21 @@ impl<'this> ExpressionCompilationContext<'this> {
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
-        Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
-            op,
-            left_category: ValueTypeCategory::Duration,
-            right_category,
-            source_span,
-        }))
+        match (op, right_category) {
+            (Operator::Add, ValueTypeCategory::Duration) => {
+                operators::OpDurationAddDuration::validate_and_append(self)?
+            }
+            (Operator::Subtract, ValueTypeCategory::Duration) => {
+                operators::OpDurationSubtractDuration::validate_and_append(self)?
+            }
+            _ => Err(Box::new(ExpressionCompileError::UnsupportedOperandsForOperation {
+                op,
+                left_category: ValueTypeCategory::Duration,
+                right_category,
+                source_span,
+            }))?,
+        }
+        Ok(())
     }
 
     fn compile_op_struct(
