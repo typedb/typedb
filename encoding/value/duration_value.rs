@@ -130,6 +130,24 @@ impl Duration {
         let nanos = (later - adjusted_earlier).num_nanoseconds().expect("time difference < 1 day cannot overflow");
         date_duration + Self::nanos(nanos as u64)
     }
+
+    pub fn checked_sub(self, rhs: Self) -> Result<Self, DurationSubtractError> {
+        let Self { months, days, nanos } = self;
+        let Self { months: rhs_months, days: rhs_days, nanos: rhs_nanos } = rhs;
+        if months >= rhs_months && days >= rhs_days && nanos >= rhs_nanos {
+            Ok(Self::new(months - rhs_months, days - rhs_days, nanos - rhs_nanos))
+        } else if months <= rhs_months && days <= rhs_days && nanos <= rhs_nanos {
+            Err(DurationSubtractError::Underflow { lhs: self, rhs })
+        } else {
+            Err(DurationSubtractError::IncompatibleOperands { lhs: self, rhs })
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum DurationSubtractError {
+    Underflow { lhs: Duration, rhs: Duration },
+    IncompatibleOperands { lhs: Duration, rhs: Duration },
 }
 
 impl Add for Duration {
