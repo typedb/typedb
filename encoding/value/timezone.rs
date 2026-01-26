@@ -104,7 +104,7 @@ impl chrono::TimeZone for TimeZone {
 
 macro_rules! tz_to_number {
     ($($id:literal => $tz:path),+ $(,)?) => {
-        const NUM_TZS: u32 = 596;
+        pub(crate) const NUM_TZS: u32 = 596;
         const _: () = {
             // NOTE: if this breaks, that means a new timezone has been added to the IANA database.
             // The new timezone(s) MUST be added to the END of the list below in order to preserve the data integrity.
