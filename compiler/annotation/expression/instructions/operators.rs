@@ -7,7 +7,11 @@
 use std::borrow::Cow;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
-use encoding::value::{decimal_value::Decimal, duration_value::Duration, timezone::TimeZone};
+use encoding::value::{
+    decimal_value::Decimal,
+    duration_value::{Duration, DurationSubtractError},
+    timezone::TimeZone,
+};
 
 use crate::annotation::expression::instructions::{
     binary::{binary_instruction, Binary, BinaryExpression},
@@ -72,7 +76,17 @@ binary_instruction! { 'a
     }
 
     OpDurationAddDuration = OpDurationAddDurationImpl(a1: Duration, a2: Duration) -> Duration { Ok(a1 + a2) }
-    OpDurationSubtractDuration = OpDurationSubtractDurationImpl(a1: Duration, a2: Duration) -> Duration { Ok(a1 - a2) } // TODO range check
+    OpDurationSubtractDuration = OpDurationSubtractDurationImpl(a1: Duration, a2: Duration) -> Duration {
+        match a1.checked_sub(a2) {
+            Ok(diff) => Ok(diff),
+            Err(DurationSubtractError::Underflow { lhs, rhs }) => {
+                Err(ExpressionEvaluationError::DurationSubtractUnderflow { lhs, rhs })
+            }
+            Err(DurationSubtractError::IncompatibleOperands { lhs, rhs }) => {
+                Err(ExpressionEvaluationError::DurationSubtractIncompatible { lhs, rhs })
+            }
+        }
+    }
 
     OpStringAddString = OpStringAddStringImpl(a1: Cow<'a, str>, a2: Cow<'a, str>) -> Cow<'a, str> { Ok(Cow::Owned(format!("{a1}{a2}"))) }
 }
