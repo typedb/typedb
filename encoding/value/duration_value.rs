@@ -76,40 +76,58 @@ impl Duration {
         Self { months: 0, days: 0, nanos }
     }
 
-    pub fn between_dates(before: NaiveDate, after: NaiveDate) -> Self {
-        debug_assert!(before <= after, "attempting to subtract with underflow");
-        let mut months = (after.year() - before.year()) as u32 * MONTHS_PER_YEAR + after.month() - before.month();
-        let days = if after.day() < before.day() {
+    pub fn between_dates(earlier: NaiveDate, later: NaiveDate) -> Self {
+        debug_assert!(earlier <= later, "attempting to subtract with underflow");
+        let mut months = (later.year() - earlier.year()) as u32 * MONTHS_PER_YEAR + later.month() - earlier.month();
+
+        let adjusted_earlier = earlier + Months::new(months);
+        let days = if later.day() < adjusted_earlier.day() {
             months -= 1;
-            after.day() + before.num_days_in_month() as u32 - before.day()
+            let adjusted_earlier = earlier + Months::new(months);
+            later.day() + adjusted_earlier.num_days_in_month() as u32 - adjusted_earlier.day()
         } else {
-            after.day() - before.day()
+            later.day() - adjusted_earlier.day()
         };
+
         Self { months, days, nanos: 0 }
     }
 
-    pub fn between_datetimes(before: NaiveDateTime, after: NaiveDateTime) -> Self {
-        debug_assert!(before <= after, "attempting to subtract with underflow");
-        let date_duration = Self::between_dates(before.date(), after.date());
-        let nanos = (after.time() - before.time()).num_nanoseconds().expect("time difference < 1 day cannot overflow");
-        if nanos >= 0 {
-            date_duration + Self::nanos(nanos as u64)
+    pub fn between_datetimes(earlier: NaiveDateTime, later: NaiveDateTime) -> Self {
+        debug_assert!(earlier <= later, "attempting to subtract with underflow");
+        let date_duration = if later.time() >= earlier.time() {
+            Self::between_dates(earlier.date(), later.date())
         } else {
-            let nanos =
-                NANOS_PER_NAIVE_DAY.checked_add_signed(nanos).expect("time difference < 1 day cannot underflow");
-            date_duration - Self::days(1) + Self::nanos(nanos)
-        }
+            Self::between_dates(
+                earlier.date(),
+                later.date().pred_opt().expect(
+                    "later datetime has earlier time of day, it must have date later the earlier datetime's date",
+                ),
+            )
+        };
+        let adjusted_earlier = earlier + date_duration;
+        let nanos = (later - adjusted_earlier).num_nanoseconds().expect("time difference < 1 day cannot overflow");
+        date_duration + Self::nanos(nanos as u64)
     }
 
-    pub fn between_datetimes_tz<Tz: TimeZone>(before: DateTime<Tz>, after: DateTime<Tz>) -> Self {
-        debug_assert!(before <= after, "attempting to subtract with underflow");
-        let date_duration = if after.time() >= before.time() {
-            Self::between_dates(before.date_naive(), after.date_naive())
+    pub fn between_datetimes_tz<Tz: TimeZone>(earlier: DateTime<Tz>, later: DateTime<Tz>) -> Self {
+        debug_assert!(earlier <= later, "attempting to subtract with underflow");
+        let later = later.with_timezone(&earlier.timezone());
+        let date_duration = if later.time() >= earlier.time() {
+            Self::between_dates(earlier.date_naive(), later.date_naive())
         } else {
-            Self::between_dates(before.date_naive(), after.date_naive().pred())
+            let day_before_later = {
+                let mut days = 1;
+                loop {
+                    if let Some(date) = later.clone().checked_sub_days(Days::new(days)) {
+                        break date;
+                    }
+                    days += 1;
+                }
+            };
+            Self::between_dates(earlier.date_naive(), day_before_later.date_naive())
         };
-        let adjusted_before = before + date_duration;
-        let nanos = (after - adjusted_before).num_nanoseconds().expect("time difference < 1 day cannot overflow");
+        let adjusted_earlier = earlier + date_duration;
+        let nanos = (later - adjusted_earlier).num_nanoseconds().expect("time difference < 1 day cannot overflow");
         date_duration + Self::nanos(nanos as u64)
     }
 }
@@ -322,17 +340,27 @@ mod tests {
     #![allow(non_snake_case)]
     #![allow(clippy::just_underscores_and_digits)]
 
-    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    use std::mem;
+
+    use chrono::{DateTime, Days, FixedOffset, Months, NaiveDate, NaiveDateTime, NaiveTime};
     use chrono_tz::Europe::London;
     use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
 
-    use super::{Duration, MAX_YEAR, MIN_YEAR};
+    use super::{Duration, MAX_YEAR, MIN_YEAR, NANOS_PER_NAIVE_DAY};
+    use crate::value::{
+        primitive_encoding::encode_u32,
+        timezone::{TimeZone, NUM_TZS},
+    };
 
-    fn random_naive_utc_date_time(rng: &mut impl Rng) -> NaiveDateTime {
+    fn random_naive_date(rng: &mut impl Rng) -> NaiveDate {
         let year = rng.gen_range(MIN_YEAR..=MAX_YEAR);
         let is_leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
         let ordinal_day = rng.gen_range(1..365 + is_leap as u32);
-        let date = NaiveDate::from_yo_opt(year, ordinal_day).unwrap();
+        NaiveDate::from_yo_opt(year, ordinal_day).unwrap()
+    }
+
+    fn random_naive_utc_date_time(rng: &mut impl Rng) -> NaiveDateTime {
+        let date = random_naive_date(rng);
 
         const SECS_PER_DAY: u32 = 24 * 60 * 60;
         let secs_from_midnight = rng.gen_range(0..SECS_PER_DAY);
@@ -341,6 +369,18 @@ mod tests {
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs_from_midnight, nsecs).unwrap();
 
         date.and_time(time)
+    }
+
+    fn random_timezone(rng: &mut impl Rng) -> TimeZone {
+        if rng.gen_bool(0.5) {
+            TimeZone::Fixed(FixedOffset::east_opt(rng.gen_range(-86399..86400)).unwrap())
+        } else {
+            TimeZone::decode(encode_u32(rng.gen_range(0..NUM_TZS)))
+        }
+    }
+
+    fn random_datetime(rng: &mut impl Rng) -> DateTime<TimeZone> {
+        random_naive_utc_date_time(rng).and_utc().with_timezone(&random_timezone(rng))
     }
 
     #[test]
@@ -446,8 +486,62 @@ mod tests {
     }
 
     #[test]
+    fn date_subtraction_is_consistent() {
+        let seed = thread_rng().gen();
+        let mut rng = SmallRng::seed_from_u64(seed);
+        eprintln!("Running with seed: {seed}");
+
+        for _ in 0..1_000_000 {
+            let mut earlier = random_naive_date(&mut rng);
+            let mut later = random_naive_date(&mut rng);
+            if earlier > later {
+                mem::swap(&mut earlier, &mut later);
+            }
+            let Duration { months, days, nanos } = Duration::between_dates(earlier, later);
+            assert_eq!(nanos, 0);
+            assert_eq!(earlier + Months::new(months) + Days::new(days.into()), later);
+        }
+    }
+
+    #[test]
+    fn datetime_subtraction_is_consistent() {
+        let seed = thread_rng().gen();
+        let mut rng = SmallRng::seed_from_u64(seed);
+        eprintln!("Running with seed: {seed}");
+
+        for _ in 0..1_000_000 {
+            let mut date_time_1 = random_datetime(&mut rng);
+            let mut date_time_2 = random_datetime(&mut rng);
+            if date_time_1 > date_time_2 {
+                mem::swap(&mut date_time_1, &mut date_time_2);
+            }
+            assert_eq!(
+                date_time_1 + Duration::between_datetimes_tz(date_time_1, date_time_2),
+                date_time_2.with_timezone(&date_time_1.timezone())
+            );
+        }
+    }
+
+    #[test]
+    fn datetime_subtraction_always_produces_time_delta_less_than_a_day() {
+        let seed = thread_rng().gen();
+        let mut rng = SmallRng::seed_from_u64(seed);
+        eprintln!("Running with seed: {seed}");
+
+        for _ in 0..1_000_000 {
+            let mut date_time_1 = random_datetime(&mut rng);
+            let mut date_time_2 = random_datetime(&mut rng);
+            if date_time_1 > date_time_2 {
+                mem::swap(&mut date_time_1, &mut date_time_2);
+            }
+            let diff = Duration::between_datetimes_tz(date_time_1, date_time_2);
+            assert!(diff.nanos < NANOS_PER_NAIVE_DAY);
+        }
+    }
+
+    #[test]
     fn extreme_timezone_changes_are_respected() {
-        // Samoa switched from -10 to +14 after 29th of December, 2011,
+        // Samoa switched from -10 to +14 later 29th of December, 2011,
         // skipping 30th of December.
         let _2011_12_29__12_00_00__Apia = NaiveDate::from_ymd_opt(2011, 12, 29)
             .unwrap()
@@ -455,16 +549,51 @@ mod tests {
             .unwrap()
             .and_local_timezone(chrono_tz::Tz::Pacific__Apia)
             .unwrap();
-        let _2011_12_31__12_00_00_Apia = NaiveDate::from_ymd_opt(2011, 12, 31)
+        let _2011_12_31__12_00_00__Apia = NaiveDate::from_ymd_opt(2011, 12, 31)
             .unwrap()
             .and_hms_opt(12, 0, 0)
             .unwrap()
             .and_local_timezone(chrono_tz::Tz::Pacific__Apia)
             .unwrap();
 
-        assert_eq!(_2011_12_29__12_00_00__Apia + Duration::days(1), _2011_12_31__12_00_00_Apia);
+        assert_eq!(_2011_12_29__12_00_00__Apia + Duration::days(1), _2011_12_31__12_00_00__Apia);
+        assert_eq!(_2011_12_29__12_00_00__Apia + Duration::days(2), _2011_12_31__12_00_00__Apia);
 
-        assert_eq!(_2011_12_29__12_00_00__Apia + Duration::hours(24), _2011_12_31__12_00_00_Apia);
+        assert_eq!(_2011_12_29__12_00_00__Apia + Duration::hours(24), _2011_12_31__12_00_00__Apia);
+    }
+
+    #[test]
+    fn extreme_timezone_changes_produce_sensible_duration_diffs() {
+        // Samoa switched from -10 to +14 later 29th of December, 2011,
+        // skipping 30th of December.
+        let _2011_12_29__12_00_00__Apia = NaiveDate::from_ymd_opt(2011, 12, 29)
+            .unwrap()
+            .and_hms_opt(12, 0, 0)
+            .unwrap()
+            .and_local_timezone(chrono_tz::Tz::Pacific__Apia)
+            .unwrap();
+        let _2011_12_31__12_00_00__Apia = NaiveDate::from_ymd_opt(2011, 12, 31)
+            .unwrap()
+            .and_hms_opt(12, 0, 0)
+            .unwrap()
+            .and_local_timezone(chrono_tz::Tz::Pacific__Apia)
+            .unwrap();
+
+        assert_eq!(
+            Duration::between_datetimes_tz(_2011_12_29__12_00_00__Apia, _2011_12_31__12_00_00__Apia),
+            Duration::days(2),
+        );
+
+        let _2011_12_29__13_00_00__Apia = NaiveDate::from_ymd_opt(2011, 12, 29)
+            .unwrap()
+            .and_hms_opt(13, 0, 0)
+            .unwrap()
+            .and_local_timezone(chrono_tz::Tz::Pacific__Apia)
+            .unwrap();
+        assert_eq!(
+            Duration::between_datetimes_tz(_2011_12_29__13_00_00__Apia, _2011_12_31__12_00_00__Apia),
+            Duration::hours(23),
+        );
     }
 
     #[test]
