@@ -102,6 +102,15 @@ impl chrono::TimeZone for TimeZone {
     }
 }
 
+impl fmt::Display for TimeZone {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TimeZone::IANA(tz) => fmt::Display::fmt(tz, f),
+            TimeZone::Fixed(fixed_offset) => fmt::Display::fmt(fixed_offset, f),
+        }
+    }
+}
+
 macro_rules! tz_to_number {
     ($($id:literal => $tz:path),+ $(,)?) => {
         pub(crate) const NUM_TZS: u32 = 596;
