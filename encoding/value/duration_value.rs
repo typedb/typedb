@@ -363,6 +363,7 @@ mod tests {
     use chrono::{DateTime, Days, FixedOffset, Months, NaiveDate, NaiveDateTime, NaiveTime};
     use chrono_tz::Europe::London;
     use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
+    use resource::constants::common::SECONDS_IN_HOUR;
 
     use super::{Duration, MAX_YEAR, MIN_YEAR, NANOS_PER_NAIVE_DAY};
     use crate::value::{
@@ -486,6 +487,61 @@ mod tests {
         let pt24h = Duration::hours(24);
 
         assert_eq!(_2024_03_30__12_00_00 + pt24h, _2024_03_31__13_00_00)
+    }
+
+    #[test]
+    fn when_adding_duration_is_ambiguous_earlier_is_used() {
+        // London DST change occurred on 2024-10-27 02:00:00 BST
+        let _2024_10_26__01_30_00__London = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 10, 26).unwrap(),
+            NaiveTime::from_hms_opt(1, 30, 0).unwrap(),
+        )
+        .and_local_timezone(TimeZone::IANA(London))
+        .unwrap();
+
+        let _2024_10_27__01_30_00__BST = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 10, 27).unwrap(),
+            NaiveTime::from_hms_opt(1, 30, 0).unwrap(),
+        )
+        .and_local_timezone(TimeZone::Fixed(FixedOffset::east_opt(SECONDS_IN_HOUR as i32).unwrap()))
+        .unwrap();
+
+        let _2024_10_27__01_30_00__GMT = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 10, 27).unwrap(),
+            NaiveTime::from_hms_opt(1, 30, 0).unwrap(),
+        )
+        .and_local_timezone(TimeZone::Fixed(FixedOffset::east_opt(0).unwrap()))
+        .unwrap();
+
+        let p1d = Duration::days(1);
+        let pt24h = Duration::hours(24);
+        let pt25h = Duration::hours(25);
+
+        assert_eq!(_2024_10_26__01_30_00__London + p1d, _2024_10_27__01_30_00__BST);
+        assert_eq!(_2024_10_26__01_30_00__London + pt24h, _2024_10_27__01_30_00__BST);
+        assert_eq!(_2024_10_26__01_30_00__London + pt25h, _2024_10_27__01_30_00__GMT);
+    }
+
+    #[test]
+    fn when_adding_duration_lands_in_gap_it_is_advanced_by_gap() {
+        // London DST change occurred on 2024-03-31 01:00:00 GMT
+        let _2024_03_30__01_30_00 = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 3, 30).unwrap(),
+            NaiveTime::from_hms_opt(1, 30, 0).unwrap(),
+        )
+        .and_local_timezone(London)
+        .unwrap();
+
+        let _2024_03_31__02_30_00 = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 3, 31).unwrap(),
+            NaiveTime::from_hms_opt(2, 30, 0).unwrap(),
+        )
+        .and_local_timezone(London)
+        .unwrap();
+
+        let p1d = Duration::days(1);
+
+        assert_eq!(_2024_03_30__01_30_00 + p1d, _2024_03_31__02_30_00);
     }
 
     #[test]
