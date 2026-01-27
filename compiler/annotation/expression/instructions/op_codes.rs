@@ -49,6 +49,22 @@ pub enum ExpressionOpCode {
     OpDecimalSubtractDecimal,
     OpDecimalMultiplyDecimal,
 
+    OpDateSubtractDate,
+
+    OpDateTimeAddDuration,
+    OpDateTimeSubtractDuration,
+    OpDateTimeSubtractDateTime,
+    OpDateTimeSubtractDate,
+
+    OpDateTimeTZAddDuration,
+    OpDateTimeTZSubtractDuration,
+    OpDateTimeTZSubtractDateTimeTZ,
+
+    OpDurationAddDuration,
+    OpDurationSubtractDuration,
+
+    OpStringAddString,
+
     // BuiltIns, maybe by domain?
     MathAbsDouble,
     MathAbsDecimal,
@@ -107,6 +123,17 @@ impl fmt::Display for ExpressionOpCode {
             ExpressionOpCode::OpDecimalAddDecimal => write!(f, "add-decimal"),
             ExpressionOpCode::OpDecimalSubtractDecimal => write!(f, "subtract-decimal"),
             ExpressionOpCode::OpDecimalMultiplyDecimal => write!(f, "multiply-decimal"),
+            ExpressionOpCode::OpDateSubtractDate => write!(f, "subtract-date"),
+            ExpressionOpCode::OpDateTimeAddDuration => write!(f, "add-datetime-duration"),
+            ExpressionOpCode::OpDateTimeSubtractDuration => write!(f, "subtract-datetime-duration"),
+            ExpressionOpCode::OpDateTimeSubtractDateTime => write!(f, "subtract-datetime-datetime"),
+            ExpressionOpCode::OpDateTimeSubtractDate => write!(f, "subtract-datetime-date"),
+            ExpressionOpCode::OpDateTimeTZAddDuration => write!(f, "add-datetime-tz-duration"),
+            ExpressionOpCode::OpDateTimeTZSubtractDuration => write!(f, "subtract-datetime-tz-duration"),
+            ExpressionOpCode::OpDateTimeTZSubtractDateTimeTZ => write!(f, "subtract-datetime-tz-datetime-tz"),
+            ExpressionOpCode::OpDurationAddDuration => write!(f, "add-duration-duration"),
+            ExpressionOpCode::OpDurationSubtractDuration => write!(f, "subtract-duration-duration"),
+            ExpressionOpCode::OpStringAddString => write!(f, "add-string"),
             ExpressionOpCode::MathAbsDouble => write!(f, "abs-double"),
             ExpressionOpCode::MathAbsDecimal => write!(f, "abs-decimal"),
             ExpressionOpCode::MathAbsInteger => write!(f, "abs-integer"),

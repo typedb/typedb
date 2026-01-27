@@ -102,9 +102,18 @@ impl chrono::TimeZone for TimeZone {
     }
 }
 
+impl fmt::Display for TimeZone {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TimeZone::IANA(tz) => fmt::Display::fmt(tz, f),
+            TimeZone::Fixed(fixed_offset) => fmt::Display::fmt(fixed_offset, f),
+        }
+    }
+}
+
 macro_rules! tz_to_number {
     ($($id:literal => $tz:path),+ $(,)?) => {
-        const NUM_TZS: u32 = 596;
+        pub(crate) const NUM_TZS: u32 = 596;
         const _: () = {
             // NOTE: if this breaks, that means a new timezone has been added to the IANA database.
             // The new timezone(s) MUST be added to the END of the list below in order to preserve the data integrity.

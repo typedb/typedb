@@ -8,6 +8,8 @@
 #![deny(elided_lifetimes_in_paths)]
 #![allow(unused_variables)]
 
+use chrono::{DateTime, NaiveDateTime};
+use encoding::value::timezone::TimeZone;
 use error::typedb_error;
 use typeql::{common::Span, statement::InIterable, token, value::StringLiteral};
 
@@ -383,6 +385,22 @@ typedb_error! {
             offset: String,
             source_span: Option<Span>,
         ),
-        UnimplementedLanguageFeature(9, "Unimplemented '{feature}'.", feature: error::UnimplementedFeature),
+        AmbiguousLocalTime(
+            9,
+            "Local time {date_time} is ambiguous in timezone {tz}, ranging from {earliest} to {latest}.",
+            date_time: NaiveDateTime,
+            tz: TimeZone,
+            earliest: DateTime<TimeZone>,
+            latest: DateTime<TimeZone>,
+            source_span: Option<Span>,
+        ),
+        NoSuchLocalTime(
+            10,
+            "Local time {date_time} does not exist in timezone {tz}.",
+            date_time: NaiveDateTime,
+            tz: TimeZone,
+            source_span: Option<Span>,
+        ),
+        UnimplementedLanguageFeature(255, "Unimplemented '{feature}'.", feature: error::UnimplementedFeature),
     }
 }

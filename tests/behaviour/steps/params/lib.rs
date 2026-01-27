@@ -7,9 +7,8 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
+use std::{convert::Infallible, fmt, str::FromStr, sync::Arc};
 
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use concept::{
     error::ConceptWriteError,
     type_::{
@@ -240,11 +239,7 @@ impl ExistsOrDoesnt {
     }
 
     pub fn check_result<T: fmt::Debug, E>(&self, scrutinee: &Result<T, E>, message: &str) {
-        let option = match scrutinee {
-            Ok(result) => Some(result),
-            Err(_) => None,
-        };
-        self.check(&option, message)
+        self.check(&scrutinee.as_ref().ok(), message)
     }
 }
 
@@ -544,20 +539,6 @@ pub struct Value {
 }
 
 impl Value {
-    const DATETIME_FORMATS: [&'static str; 8] = [
-        "%Y-%m-%dT%H:%M:%S%.9f",
-        "%Y-%m-%d %H:%M:%S%.9f",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M",
-        "%Y-%m-%d %H:%M",
-        "%Y-%m-%dT%H",
-        "%Y-%m-%d %H",
-    ];
-    const DATE_FORMAT: &'static str = "%Y-%m-%d";
-
-    const FRACTIONAL_ZEROES: usize = 19;
-
     pub fn as_str(&self) -> &str {
         &self.raw_value
     }
@@ -579,7 +560,7 @@ impl Value {
             .expect("Unable to parse TypeQL literal into TypeDB Value");
         value
             .cast(value_type.category())
-            .expect(&format!("Could not convert {} into expected value type {:?}", parsed_literal, value_type))
+            .unwrap_or_else(|| panic!("Could not convert {} into expected value type {:?}", parsed_literal, value_type))
     }
 }
 

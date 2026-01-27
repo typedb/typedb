@@ -81,10 +81,10 @@ where
 }
 
 macro_rules! binary_instruction {
-    ( $( $name:ident = $impl_name:ident($a1:ident: $t1:ty, $a2:ident: $t2:ty) -> $r:ty $impl_code:block )* ) => { $(
-        pub type $name<'a> = Binary<'a, $t1, $t2, $r, $impl_name>;
+    ( $lt:lifetime $( $name:ident = $impl_name:ident($a1:ident: $t1:ty, $a2:ident: $t2:ty) -> $r:ty $impl_code:block )* ) => { $(
+        pub type $name<$lt> = Binary<$lt, $t1, $t2, $r, $impl_name>;
         pub struct $impl_name {}
-        impl<'a> BinaryExpression<'a, $t1, $t2, $r> for $impl_name {
+        impl<$lt> BinaryExpression<$lt, $t1, $t2, $r> for $impl_name {
             const OP_CODE: ExpressionOpCode = ExpressionOpCode::$name;
             fn evaluate($a1: $t1, $a2: $t2) -> Result<$r, ExpressionEvaluationError> {
                 $impl_code
@@ -95,7 +95,7 @@ macro_rules! binary_instruction {
 
 pub(crate) use binary_instruction;
 
-binary_instruction! {
+binary_instruction! { 'a
     MathRemainderInteger = MathRemainderIntegerImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }
 
     MathMinIntegerInteger = MathMinIntegerIntegerImpl(a1: i64, a2: i64) -> i64 { Ok(cmp::min(a1, a2)) }
