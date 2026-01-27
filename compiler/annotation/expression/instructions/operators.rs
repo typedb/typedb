@@ -7,11 +7,7 @@
 use std::borrow::Cow;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
-use encoding::value::{
-    decimal_value::Decimal,
-    duration_value::{Duration, DurationSubtractError},
-    timezone::TimeZone,
-};
+use encoding::value::{decimal_value::Decimal, duration_value::{DateTimeExt, Duration}, timezone::TimeZone};
 
 use crate::annotation::expression::instructions::{
     binary::{binary_instruction, Binary, BinaryExpression},
@@ -43,17 +39,21 @@ binary_instruction! { 'a
         if a2 <= a1 {
             Ok(Duration::between_dates(a2, a1))
         } else {
-            Err(ExpressionEvaluationError::NegativeDurationSub { lhs: a1.to_string(), rhs: a2.to_string()})
+            Err(ExpressionEvaluationError::NegativeDatetimeSub { lhs: a1.to_string(), rhs: a2.to_string()})
         }
     }
 
-    OpDateTimeAddDuration = OpDateTimeAddDurationImpl(a1: NaiveDateTime, a2: Duration) -> NaiveDateTime { Ok(a1 + a2) } // TODO range check
-    OpDateTimeSubtractDuration = OpDateTimeSubtractDurationImpl(a1: NaiveDateTime, a2: Duration) -> NaiveDateTime { Ok(a1 - a2) } // TODO range check
+    OpDateTimeAddDuration = OpDateTimeAddDurationImpl(a1: NaiveDateTime, a2: Duration) -> NaiveDateTime {
+        check_operation(DateTimeExt::checked_add(a1, a2), "add")
+    }
+    OpDateTimeSubtractDuration = OpDateTimeSubtractDurationImpl(a1: NaiveDateTime, a2: Duration) -> NaiveDateTime {
+        check_operation(DateTimeExt::checked_sub(a1, a2), "sub")
+    }
     OpDateTimeSubtractDateTime = OpDateTimeSubtractDateTimeImpl(a1: NaiveDateTime, a2: NaiveDateTime) -> Duration {
         if a2 <= a1 {
             Ok(Duration::between_datetimes(a2, a1))
         } else {
-            Err(ExpressionEvaluationError::NegativeDurationSub { lhs: a1.to_string(), rhs: a2.to_string()})
+            Err(ExpressionEvaluationError::NegativeDatetimeSub { lhs: a1.to_string(), rhs: a2.to_string()})
         }
     }
     OpDateTimeSubtractDate = OpDateTimeSubtractDateImpl(a1: NaiveDateTime, a2: NaiveDate) -> Duration {
@@ -61,31 +61,30 @@ binary_instruction! { 'a
         if a2 <= a1 {
             Ok(Duration::between_datetimes(a2, a1))
         } else {
-            Err(ExpressionEvaluationError::NegativeDurationSub { lhs: a1.to_string(), rhs: a2.to_string()})
+            Err(ExpressionEvaluationError::NegativeDatetimeSub { lhs: a1.to_string(), rhs: a2.to_string()})
         }
     }
 
-    OpDateTimeTZAddDuration = OpDateTimeTZAddDurationImpl(a1: DateTime<TimeZone>, a2: Duration) -> DateTime<TimeZone> { Ok(a1 + a2) } // TODO range check
-    OpDateTimeTZSubtractDuration = OpDateTimeTZSubtractDurationImpl(a1: DateTime<TimeZone>, a2: Duration) -> DateTime<TimeZone> { Ok(a1 - a2) } // TODO range check
+    OpDateTimeTZAddDuration = OpDateTimeTZAddDurationImpl(a1: DateTime<TimeZone>, a2: Duration) -> DateTime<TimeZone> {
+        check_operation(DateTimeExt::checked_add(a1, a2), "add")
+    }
+    OpDateTimeTZSubtractDuration = OpDateTimeTZSubtractDurationImpl(a1: DateTime<TimeZone>, a2: Duration) -> DateTime<TimeZone> {
+        check_operation(DateTimeExt::checked_sub(a1, a2), "sub")
+    }
     OpDateTimeTZSubtractDateTimeTZ = OpDateTimeTZSubtractDateTimeTZImpl(a1: DateTime<TimeZone>, a2: DateTime<TimeZone>) -> Duration {
         if a2 <= a1 {
             Ok(Duration::between_datetimes_tz(a2, a1))
         } else {
-            Err(ExpressionEvaluationError::NegativeDurationSub { lhs: a1.to_string(), rhs: a2.to_string()})
+            Err(ExpressionEvaluationError::NegativeDatetimeSub { lhs: a1.to_string(), rhs: a2.to_string()})
         }
     }
 
-    OpDurationAddDuration = OpDurationAddDurationImpl(a1: Duration, a2: Duration) -> Duration { Ok(a1 + a2) }
+    OpDurationAddDuration = OpDurationAddDurationImpl(a1: Duration, a2: Duration) -> Duration {
+        check_operation(Duration::checked_add(a1, a2), "add")
+    }
+
     OpDurationSubtractDuration = OpDurationSubtractDurationImpl(a1: Duration, a2: Duration) -> Duration {
-        match a1.checked_sub(a2) {
-            Ok(diff) => Ok(diff),
-            Err(DurationSubtractError::Underflow { lhs, rhs }) => {
-                Err(ExpressionEvaluationError::DurationSubtractUnderflow { lhs, rhs })
-            }
-            Err(DurationSubtractError::IncompatibleOperands { lhs, rhs }) => {
-                Err(ExpressionEvaluationError::DurationSubtractIncompatible { lhs, rhs })
-            }
-        }
+        check_operation(Duration::checked_sub(a1, a2), "sub")
     }
 
     OpStringAddString = OpStringAddStringImpl(a1: Cow<'a, str>, a2: Cow<'a, str>) -> Cow<'a, str> { Ok(Cow::Owned(format!("{a1}{a2}"))) }
