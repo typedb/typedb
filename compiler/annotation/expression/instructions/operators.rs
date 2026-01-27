@@ -7,7 +7,11 @@
 use std::borrow::Cow;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
-use encoding::value::{decimal_value::Decimal, duration_value::{DateTimeExt, Duration}, timezone::TimeZone};
+use encoding::value::{
+    decimal_value::Decimal,
+    duration_value::{DateTimeExt, Duration},
+    timezone::TimeZone,
+};
 
 use crate::annotation::expression::instructions::{
     binary::{binary_instruction, Binary, BinaryExpression},
