@@ -6,7 +6,7 @@
 
 use std::{
     borrow::Cow,
-    collections::{Bound, HashSet},
+    collections::{Bound, HashMap, HashSet},
     iter::{once, Map},
     ops::RangeBounds,
     sync::Arc,
@@ -1795,15 +1795,16 @@ impl ThingManager {
         self.validate_cardinalities(snapshot, &cardinality_change_tracker, storage_counters.clone())?;
 
         // For immutable schema, the indices are updated at operation time
-        if !Snapshot::IMMUTABLE_SCHEMA && cardinality_change_tracker.has_modified_relates() {
-            self.update_relation_indices_on_cardinality_changes(
+        if !Snapshot::IMMUTABLE_SCHEMA && (cardinality_change_tracker.has_modified_relates() || true) {
+            // The cardinality change tracker collects modified_relations_role_types if card of a type changes.
+            // Otherwise we still have to update since we don't do operation time index-generation.
+            self.update_relation_indices_on_schema_commit(
                 snapshot,
-                &cardinality_change_tracker,
+                &cardinality_change_tracker.modified_relations_role_types(),
                 storage_counters.clone(),
             )
             .map_err(|err| vec![*err])?;
         }
-
         self.cleanup_relations(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
         self.cleanup_attributes(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
 
@@ -2211,18 +2212,18 @@ impl ThingManager {
         }
     }
 
-    fn update_relation_indices_on_cardinality_changes(
+    fn update_relation_indices_on_schema_commit(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        change_tracker: &CardinalityChangeTracker,
+        modified_relations_role_types: &HashMap<Relation, HashSet<RoleType>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for (relation, modified_relates) in change_tracker.modified_relations_role_types() {
+        for (relation, modified_relates) in modified_relations_role_types {
             let qualifies_for_relation_index = relation
                 .type_()
                 .schema_qualifies_for_relation_index(snapshot, self.type_manager())
                 .map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?;
-            self.update_relation_index_on_cardinality_change(
+            self.update_relation_index_on_schema_commit(
                 snapshot,
                 *relation,
                 &modified_relates,
@@ -2233,7 +2234,7 @@ impl ThingManager {
         Ok(())
     }
 
-    fn update_relation_index_on_cardinality_change(
+    fn update_relation_index_on_schema_commit(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation,
@@ -2870,6 +2871,7 @@ impl ThingManager {
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert_ne!(count_for_player, 0);
+        debug_assert_eq!(count_for_player, 1, "Verify correctness. Why is count not rp_count * count_for_player?");
         let players = relation
             .get_players(snapshot, self, storage_counters)
             .map_ok(|(roleplayer, count)| (roleplayer.player(), roleplayer.role_type(), count));
