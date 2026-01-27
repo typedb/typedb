@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::num::FpCategory;
-
 use encoding::value::decimal_value::Decimal;
 
 use crate::annotation::expression::instructions::{
