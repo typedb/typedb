@@ -99,13 +99,11 @@ impl Duration {
     pub fn between_datetimes_tz<Tz: TimeZone>(earlier: DateTime<Tz>, later: DateTime<Tz>) -> Self {
         debug_assert!(earlier <= later, "attempting to subtract with underflow");
         let later = later.with_timezone(&earlier.timezone());
-        let date_duration = if later.time() >= earlier.time() {
-            Self::between_dates(earlier.date_naive(), later.date_naive())
-        } else {
-            let mut days = 1;
+        let date_duration = {
+            let mut days = 0;
             loop {
                 let duration = Self::between_dates(earlier.date_naive(), later.date_naive() - Days::new(days));
-                if &earlier + duration < later {
+                if &earlier + duration <= later {
                     break duration;
                 } else {
                     days += 1;
@@ -482,23 +480,23 @@ mod tests {
     #[test]
     fn subtracting_across_dst_gap_produces_correct_duration() {
         // London DST change occurred on 2024-03-31 01:00:00 GMT
-        let _2024_03_30__13_30_00 = NaiveDateTime::new(
+        let _2024_03_30__01_59_00 = NaiveDateTime::new(
             NaiveDate::from_ymd_opt(2024, 3, 30).unwrap(),
-            NaiveTime::from_hms_opt(13, 30, 0).unwrap(),
+            NaiveTime::from_hms_opt(1, 59, 0).unwrap(),
         )
         .and_local_timezone(London)
         .unwrap();
 
-        let _2024_04_01__01_30_00 = NaiveDateTime::new(
-            NaiveDate::from_ymd_opt(2024, 4, 1).unwrap(),
-            NaiveTime::from_hms_opt(1, 30, 0).unwrap(),
+        let _2024_03_31__02_01_00 = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 3, 31).unwrap(),
+            NaiveTime::from_hms_opt(2, 1, 0).unwrap(),
         )
         .and_local_timezone(London)
         .unwrap();
 
-        let p1dt12h = Duration::days(1) + Duration::hours(12);
-        assert_eq!(_2024_03_30__13_30_00 + p1dt12h, _2024_04_01__01_30_00);
-        assert_eq!(Duration::between_datetimes_tz(_2024_03_30__13_30_00, _2024_04_01__01_30_00), p1dt12h);
+        let pt23h2m = Duration::hours(23) + Duration::minutes(2);
+        assert_eq!(_2024_03_30__01_59_00 + pt23h2m, _2024_03_31__02_01_00);
+        assert_eq!(Duration::between_datetimes_tz(_2024_03_30__01_59_00, _2024_03_31__02_01_00), pt23h2m);
     }
 
     #[test]
