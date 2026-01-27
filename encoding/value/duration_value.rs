@@ -131,23 +131,25 @@ impl Duration {
         date_duration + Self::nanos(nanos as u64)
     }
 
-    pub fn checked_sub(self, rhs: Self) -> Result<Self, DurationSubtractError> {
+    pub fn checked_add(self, rhs: Self) -> Option<Self> {
+        let Self { months, days, nanos } = self;
+        let Self { months: rhs_months, days: rhs_days, nanos: rhs_nanos } = rhs;
+        Some(Self::new(months.checked_add(rhs_months)?, days.checked_add(rhs_days)?, nanos.checked_add(rhs_nanos)?))
+    }
+
+    pub fn checked_sub(self, rhs: Self) -> Option<Self> {
         let Self { months, days, nanos } = self;
         let Self { months: rhs_months, days: rhs_days, nanos: rhs_nanos } = rhs;
         if months >= rhs_months && days >= rhs_days && nanos >= rhs_nanos {
-            Ok(Self::new(months - rhs_months, days - rhs_days, nanos - rhs_nanos))
-        } else if months <= rhs_months && days <= rhs_days && nanos <= rhs_nanos {
-            Err(DurationSubtractError::Underflow { lhs: self, rhs })
+            Some(Self::new(months - rhs_months, days - rhs_days, nanos - rhs_nanos))
         } else {
-            Err(DurationSubtractError::IncompatibleOperands { lhs: self, rhs })
+            None
         }
     }
-}
 
-#[derive(Debug)]
-pub enum DurationSubtractError {
-    Underflow { lhs: Duration, rhs: Duration },
-    IncompatibleOperands { lhs: Duration, rhs: Duration },
+    fn time_as_timedelta(&self) -> TimeDelta {
+        TimeDelta::new((self.nanos / NANOS_PER_SEC) as i64, (self.nanos % NANOS_PER_SEC) as u32).unwrap()
+    }
 }
 
 impl Add for Duration {
@@ -163,9 +165,7 @@ impl Add<Duration> for NaiveDateTime {
     type Output = Self;
 
     fn add(self, rhs: Duration) -> Self::Output {
-        self + Months::new(rhs.months)
-            + Days::new(rhs.days as u64)
-            + TimeDelta::new((rhs.nanos / NANOS_PER_SEC) as i64, (rhs.nanos % NANOS_PER_SEC) as u32).unwrap()
+        self + Months::new(rhs.months) + Days::new(rhs.days as u64) + rhs.time_as_timedelta()
     }
 }
 
@@ -191,9 +191,7 @@ impl Sub<Duration> for NaiveDateTime {
     type Output = Self;
 
     fn sub(self, rhs: Duration) -> Self::Output {
-        self - Months::new(rhs.months)
-            - Days::new(rhs.days as u64)
-            - TimeDelta::new((rhs.nanos / NANOS_PER_SEC) as i64, (rhs.nanos % NANOS_PER_SEC) as u32).unwrap()
+        self - Months::new(rhs.months) - Days::new(rhs.days as u64) - rhs.time_as_timedelta()
     }
 }
 
@@ -202,7 +200,48 @@ impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
 
     fn sub(self, rhs: Duration) -> Self::Output {
         resolve_date_time(self.naive_local() - Months::new(rhs.months) - Days::new(rhs.days as u64), self.timezone())
-            - TimeDelta::new((rhs.nanos / NANOS_PER_SEC) as i64, (rhs.nanos % NANOS_PER_SEC) as u32).unwrap()
+            - rhs.time_as_timedelta()
+    }
+}
+
+pub trait DateTimeExt: Sized {
+    fn checked_add(self, rhs: Duration) -> Option<Self>;
+    fn checked_sub(self, rhs: Duration) -> Option<Self>;
+}
+
+impl DateTimeExt for NaiveDateTime {
+    fn checked_add(self, rhs: Duration) -> Option<Self> {
+        self.checked_add_months(Months::new(rhs.months))?
+            .checked_add_days(Days::new(rhs.days as u64))?
+            .checked_add_signed(rhs.time_as_timedelta())
+    }
+
+    fn checked_sub(self, rhs: Duration) -> Option<Self> {
+        self.checked_sub_months(Months::new(rhs.months))?
+            .checked_sub_days(Days::new(rhs.days as u64))?
+            .checked_sub_signed(rhs.time_as_timedelta())
+    }
+}
+
+impl<Tz: TimeZone> DateTimeExt for DateTime<Tz> {
+    fn checked_add(self, rhs: Duration) -> Option<Self> {
+        resolve_date_time(
+            self.naive_local()
+                .checked_add_months(Months::new(rhs.months))?
+                .checked_add_days(Days::new(rhs.days as u64))?,
+            self.timezone(),
+        )
+        .checked_add_signed(rhs.time_as_timedelta())
+    }
+
+    fn checked_sub(self, rhs: Duration) -> Option<Self> {
+        resolve_date_time(
+            self.naive_local()
+                .checked_add_months(Months::new(rhs.months))?
+                .checked_add_days(Days::new(rhs.days as u64))?,
+            self.timezone(),
+        )
+        .checked_add_signed(rhs.time_as_timedelta())
     }
 }
 
@@ -365,7 +404,7 @@ mod tests {
     use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
     use resource::constants::common::SECONDS_IN_HOUR;
 
-    use super::{Duration, MAX_YEAR, MIN_YEAR, NANOS_PER_NAIVE_DAY};
+    use super::{DateTimeExt, Duration, MAX_YEAR, MIN_YEAR, NANOS_PER_NAIVE_DAY};
     use crate::value::{
         primitive_encoding::encode_u32,
         timezone::{TimeZone, NUM_TZS},
@@ -422,6 +461,7 @@ mod tests {
         let p1d = Duration::days(1);
 
         assert_eq!(_2024_03_30__12_00_00 + p1d, _2024_03_31__12_00_00);
+        assert_eq!(_2024_03_30__12_00_00.checked_add(p1d), Some(_2024_03_31__12_00_00));
     }
 
     #[test]
@@ -486,7 +526,8 @@ mod tests {
 
         let pt24h = Duration::hours(24);
 
-        assert_eq!(_2024_03_30__12_00_00 + pt24h, _2024_03_31__13_00_00)
+        assert_eq!(_2024_03_30__12_00_00 + pt24h, _2024_03_31__13_00_00);
+        assert_eq!(_2024_03_30__12_00_00.checked_add(pt24h), Some(_2024_03_31__13_00_00));
     }
 
     #[test]
@@ -520,6 +561,10 @@ mod tests {
         assert_eq!(_2024_10_26__01_30_00__London + p1d, _2024_10_27__01_30_00__BST);
         assert_eq!(_2024_10_26__01_30_00__London + pt24h, _2024_10_27__01_30_00__BST);
         assert_eq!(_2024_10_26__01_30_00__London + pt25h, _2024_10_27__01_30_00__GMT);
+
+        assert_eq!(_2024_10_26__01_30_00__London.checked_add(p1d), Some(_2024_10_27__01_30_00__BST));
+        assert_eq!(_2024_10_26__01_30_00__London.checked_add(pt24h), Some(_2024_10_27__01_30_00__BST));
+        assert_eq!(_2024_10_26__01_30_00__London.checked_add(pt25h), Some(_2024_10_27__01_30_00__GMT));
     }
 
     #[test]
@@ -542,6 +587,7 @@ mod tests {
         let p1d = Duration::days(1);
 
         assert_eq!(_2024_03_30__01_30_00 + p1d, _2024_03_31__02_30_00);
+        assert_eq!(_2024_03_30__01_30_00.checked_add(p1d), Some(_2024_03_31__02_30_00));
     }
 
     #[test]
@@ -632,8 +678,11 @@ mod tests {
 
         assert_eq!(_2011_12_29__12_00_00__Apia + Duration::days(1), _2011_12_31__12_00_00__Apia);
         assert_eq!(_2011_12_29__12_00_00__Apia + Duration::days(2), _2011_12_31__12_00_00__Apia);
-
         assert_eq!(_2011_12_29__12_00_00__Apia + Duration::hours(24), _2011_12_31__12_00_00__Apia);
+
+        assert_eq!(_2011_12_29__12_00_00__Apia.checked_add(Duration::days(1)), Some(_2011_12_31__12_00_00__Apia));
+        assert_eq!(_2011_12_29__12_00_00__Apia.checked_add(Duration::days(2)), Some(_2011_12_31__12_00_00__Apia));
+        assert_eq!(_2011_12_29__12_00_00__Apia.checked_add(Duration::hours(24)), Some(_2011_12_31__12_00_00__Apia));
     }
 
     #[test]
