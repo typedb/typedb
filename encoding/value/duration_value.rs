@@ -93,20 +93,7 @@ impl Duration {
     }
 
     pub fn between_datetimes(earlier: NaiveDateTime, later: NaiveDateTime) -> Self {
-        debug_assert!(earlier <= later, "attempting to subtract with underflow");
-        let date_duration = if later.time() >= earlier.time() {
-            Self::between_dates(earlier.date(), later.date())
-        } else {
-            Self::between_dates(
-                earlier.date(),
-                later.date().pred_opt().expect(
-                    "later datetime has earlier time of day, it must have date later the earlier datetime's date",
-                ),
-            )
-        };
-        let adjusted_earlier = earlier + date_duration;
-        let nanos = (later - adjusted_earlier).num_nanoseconds().expect("time difference < 1 day cannot overflow");
-        date_duration + Self::nanos(nanos as u64)
+        Self::between_datetimes_tz(earlier.and_utc(), later.and_utc())
     }
 
     pub fn between_datetimes_tz<Tz: TimeZone>(earlier: DateTime<Tz>, later: DateTime<Tz>) -> Self {
@@ -115,16 +102,15 @@ impl Duration {
         let date_duration = if later.time() >= earlier.time() {
             Self::between_dates(earlier.date_naive(), later.date_naive())
         } else {
-            let day_before_later = {
-                let mut days = 1;
-                loop {
-                    if let Some(date) = later.clone().checked_sub_days(Days::new(days)) {
-                        break date;
-                    }
+            let mut days = 1;
+            loop {
+                let duration = Self::between_dates(earlier.date_naive(), later.date_naive() - Days::new(days));
+                if &earlier + duration < later {
+                    break duration;
+                } else {
                     days += 1;
                 }
-            };
-            Self::between_dates(earlier.date_naive(), day_before_later.date_naive())
+            }
         };
         let adjusted_earlier = earlier + date_duration;
         let nanos = (later - adjusted_earlier).num_nanoseconds().expect("time difference < 1 day cannot overflow");
@@ -169,12 +155,20 @@ impl Add<Duration> for NaiveDateTime {
     }
 }
 
-impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
-    type Output = Self;
+impl<Tz: TimeZone> Add<Duration> for &DateTime<Tz> {
+    type Output = DateTime<Tz>;
 
     fn add(self, rhs: Duration) -> Self::Output {
         resolve_date_time(self.naive_local() + Months::new(rhs.months) + Days::new(rhs.days as u64), self.timezone())
             + TimeDelta::new((rhs.nanos / NANOS_PER_SEC) as i64, (rhs.nanos % NANOS_PER_SEC) as u32).unwrap()
+    }
+}
+
+impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
+    type Output = Self;
+
+    fn add(self, rhs: Duration) -> Self::Output {
+        &self + rhs
     }
 }
 
@@ -483,6 +477,28 @@ mod tests {
 
         let p1d = Duration::days(1);
         assert_eq!(Duration::between_datetimes_tz(_2024_03_30__12_00_00, _2024_03_31__12_00_00), p1d);
+    }
+
+    #[test]
+    fn subtracting_across_dst_gap_produces_correct_duration() {
+        // London DST change occurred on 2024-03-31 01:00:00 GMT
+        let _2024_03_30__13_30_00 = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 3, 30).unwrap(),
+            NaiveTime::from_hms_opt(13, 30, 0).unwrap(),
+        )
+        .and_local_timezone(London)
+        .unwrap();
+
+        let _2024_04_01__01_30_00 = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(2024, 4, 1).unwrap(),
+            NaiveTime::from_hms_opt(1, 30, 0).unwrap(),
+        )
+        .and_local_timezone(London)
+        .unwrap();
+
+        let p1dt12h = Duration::days(1) + Duration::hours(12);
+        assert_eq!(_2024_03_30__13_30_00 + p1dt12h, _2024_04_01__01_30_00);
+        assert_eq!(Duration::between_datetimes_tz(_2024_03_30__13_30_00, _2024_04_01__01_30_00), p1dt12h);
     }
 
     #[test]
