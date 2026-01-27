@@ -37,7 +37,7 @@ binary_instruction! {
 
 fn checked_div(a1: f64, a2: f64) -> Result<f64, ExpressionEvaluationError> {
     let res = a1 / a2;
-    if matches!(res.classify(), FpCategory::Infinite | FpCategory::Nan) {
+    if res.is_finite() {
         Err(ExpressionEvaluationError::DivisionFailed { dividend: a1, divisor: a2 })
     } else {
         Ok(res)
