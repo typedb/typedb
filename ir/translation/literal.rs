@@ -6,7 +6,7 @@
 
 use std::{borrow::Cow, str::FromStr};
 
-use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Offset, Utc};
+use chrono::{FixedOffset, MappedLocalTime, NaiveDate, NaiveDateTime, NaiveTime, Offset, Utc};
 use chrono_tz::Tz;
 use concept::type_::annotation::AnnotationRegex;
 use encoding::value::{
@@ -253,7 +253,12 @@ impl FromTypeQLLiteral for chrono::DateTime<TimeZone> {
         let date = NaiveDate::from_typeql_literal(&literal.date, source_span)?;
         let time = NaiveTime::from_typeql_literal(&literal.time, source_span)?;
         let tz = TimeZone::from_typeql_literal(&literal.timezone, source_span)?;
-        Ok(NaiveDateTime::new(date, time).and_local_timezone(tz).unwrap())
+        let date_time = NaiveDateTime::new(date, time);
+        match date_time.and_local_timezone(tz) {
+            MappedLocalTime::Single(dt) => Ok(dt),
+            MappedLocalTime::Ambiguous(earliest, latest) => Err(LiteralParseError::AmbiguousLocalTime { date_time, tz, earliest, latest, source_span }),
+            MappedLocalTime::None => Err(LiteralParseError::NoSuchLocalTime { date_time, tz, source_span }),
+        }
     }
 }
 
