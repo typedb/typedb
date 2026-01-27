@@ -237,11 +237,11 @@ impl<Tz: TimeZone> DateTimeExt for DateTime<Tz> {
     fn checked_sub(self, rhs: Duration) -> Option<Self> {
         resolve_date_time(
             self.naive_local()
-                .checked_add_months(Months::new(rhs.months))?
-                .checked_add_days(Days::new(rhs.days as u64))?,
+                .checked_sub_months(Months::new(rhs.months))?
+                .checked_sub_days(Days::new(rhs.days as u64))?,
             self.timezone(),
         )
-        .checked_add_signed(rhs.time_as_timedelta())
+        .checked_sub_signed(rhs.time_as_timedelta())
     }
 }
 
