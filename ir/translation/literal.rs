@@ -256,7 +256,9 @@ impl FromTypeQLLiteral for chrono::DateTime<TimeZone> {
         let date_time = NaiveDateTime::new(date, time);
         match date_time.and_local_timezone(tz) {
             MappedLocalTime::Single(dt) => Ok(dt),
-            MappedLocalTime::Ambiguous(earliest, latest) => Err(LiteralParseError::AmbiguousLocalTime { date_time, tz, earliest, latest, source_span }),
+            MappedLocalTime::Ambiguous(earliest, latest) => {
+                Err(LiteralParseError::AmbiguousLocalTime { date_time, tz, earliest, latest, source_span })
+            }
             MappedLocalTime::None => Err(LiteralParseError::NoSuchLocalTime { date_time, tz, source_span }),
         }
     }
