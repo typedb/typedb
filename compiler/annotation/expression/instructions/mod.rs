@@ -49,6 +49,6 @@ typedb_error! {
         ListIndexOutOfRange(6, "List index out of range {index}, list length: {length}", index: i64, length: usize),
         ListRangeOutOfRange(7, "List range out of range {from_index}..{to_index}, list length: {length}", from_index: i64, to_index: i64, length: usize),
         OverlongString(8, "Found string with length {len} which is too long to fit in a 64-bit signed integer", len: usize),
-        NegativeDatetimeSub(9, "Attempting to subtract future from past: {lhs} - {rhs}", lhs: String, rhs: String),
+        NegativeDatetimeSub(9, "Attempting to subtract later datetime from earlier: {lhs} - {rhs}", lhs: String, rhs: String),
     }
 }
