@@ -93,7 +93,7 @@ binary_instruction! { 'a
 
 fn checked_div(a1: f64, a2: f64) -> Result<f64, ExpressionEvaluationError> {
     let res = a1 / a2;
-    if res.is_normal() {
+    if res.is_finite() {
         Ok(res)
     } else {
         Err(ExpressionEvaluationError::DivisionFailed { dividend: a1, divisor: a2 })
