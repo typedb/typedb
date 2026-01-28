@@ -171,6 +171,7 @@ pub trait ServerState: Debug {
         &self,
         transaction_id: TransactionId,
         transaction_type: TransactionType,
+        owner: String,
         close_sender: Sender<()>,
     ) -> Result<(), ArcServerStateError>;
 
@@ -443,6 +444,17 @@ impl LocalServerState {
             .expect(&format!("Unable to map address '{}' to any IP address", address))
     }
 
+    async fn close_user_transactions(&self, username: &str) {
+        let transactions = self.transactions.read().await;
+        for (_, TransactionInfo { owner, close_sender, .. }) in transactions.iter() {
+            println!("Closing txs for {username} vs {owner}");
+            if username == owner {
+                println!("Closing txs for {username} vs {owner} EQUAL");
+                let _ = close_sender.send(());
+            }
+        }
+    }
+
     async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>) {
         let mut transactions = transactions.write().await;
         transactions.retain(|_, info| !info.close_sender.is_closed());
@@ -700,8 +712,7 @@ impl ServerState for LocalServerState {
             let commit_profile = transaction_profile.commit_profile();
             self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
             self.token_manager.invalidate_user(username).await;
-            // TODO #7430: Store users as owners of transactions in TransactionInfo and close transactions
-            // when the user is invalidated!
+            self.close_user_transactions(username).await;
         }
 
         Ok(())
@@ -727,8 +738,7 @@ impl ServerState for LocalServerState {
             let commit_profile = transaction_profile.commit_profile();
             self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
             self.token_manager.invalidate_user(username).await;
-            // TODO #7430: Store users as owners of transactions in TransactionInfo and close transactions
-            // when the user is invalidated!
+            self.close_user_transactions(username).await;
         }
 
         Ok(())
@@ -757,10 +767,11 @@ impl ServerState for LocalServerState {
         &self,
         transaction_id: TransactionId,
         transaction_type: TransactionType,
+        owner: String,
         close_sender: Sender<()>,
     ) -> Result<(), ArcServerStateError> {
         let mut transactions_lock = self.transactions.write().await;
-        transactions_lock.insert(transaction_id, TransactionInfo { transaction_type, close_sender });
+        transactions_lock.insert(transaction_id, TransactionInfo { transaction_type, owner, close_sender });
         Ok(())
     }
 
@@ -802,5 +813,6 @@ impl ServerState for LocalServerState {
 #[derive(Debug)]
 struct TransactionInfo {
     transaction_type: TransactionType,
+    owner: String,
     close_sender: Sender<()>,
 }

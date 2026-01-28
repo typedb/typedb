@@ -122,6 +122,7 @@ macro_rules! send_ok_message_else_return_break {
 #[derive(Debug)]
 pub(crate) struct TransactionService {
     server_state: ArcServerState,
+    owner: String,
 
     request_stream: Streaming<typedb_protocol::transaction::Client>,
     response_sender: Sender<Result<ProtocolServer, Status>>,
@@ -145,6 +146,7 @@ pub(crate) struct TransactionService {
 impl TransactionService {
     pub(crate) fn new(
         server_state: ArcServerState,
+        owner: String,
         request_stream: Streaming<typedb_protocol::transaction::Client>,
         response_sender: Sender<Result<ProtocolServer, Status>>,
     ) -> Self {
@@ -153,6 +155,7 @@ impl TransactionService {
 
         Self {
             server_state,
+            owner,
 
             request_stream,
             response_sender,
@@ -185,6 +188,7 @@ impl TransactionService {
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
+                        println!("RECVVVV");
                         event!(Level::TRACE, "{}", match recv_message {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
@@ -221,6 +225,7 @@ impl TransactionService {
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
+                        println!("RECVVVV");
                         event!(Level::TRACE, "{}", match recv_message {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
@@ -481,8 +486,10 @@ impl TransactionService {
             }
         };
 
-        let transaction_add_result =
-            self.server_state.transactions_add(transaction.id(), transaction.type_(), self.close_sender.clone()).await;
+        let transaction_add_result = self
+            .server_state
+            .transactions_add(transaction.id(), transaction.type_(), self.owner.clone(), self.close_sender.clone())
+            .await;
         if let Err(typedb_source) = transaction_add_result {
             transaction.close();
             return Err(typedb_source.into_error_message().into_status());
@@ -619,6 +626,7 @@ impl TransactionService {
     }
 
     async fn do_close(&mut self) {
+        println!("Closing transaction of {}", self.owner);
         self.interrupt_and_close_responders(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_read_queries(InterruptType::TransactionClosed).await;
         let _ = self.finish_running_write_query_no_transmit(InterruptType::TransactionClosed).await;
