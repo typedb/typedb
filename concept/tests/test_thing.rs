@@ -1721,7 +1721,7 @@ fn schema_transactions_generate_role_player_indices() {
     // Separate schema transaction so cardinality change isn't the trigger
     {
         let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
-        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let (_type_manager, thing_manager) = load_managers(storage.clone(), None);
         let group_1 = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
         let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type).unwrap();
 
@@ -1857,7 +1857,7 @@ fn schema_transactions_generate_role_player_indices() {
     // Delete that relation to ensure it is removed from the index too
     {
         let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
-        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let (_type_manager, thing_manager) = load_managers(storage.clone(), None);
 
         let entities: Vec<Entity> =
             thing_manager.get_entities(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
@@ -1866,15 +1866,6 @@ fn schema_transactions_generate_role_player_indices() {
             thing_manager.get_relations(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
         assert_eq!(relations.len(), 1);
         let collection_1 = relations.first().unwrap();
-        let group_1 = entities
-            .iter()
-            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &group_label).unwrap().unwrap())
-            .unwrap();
-
-        let resource_1 = entities
-            .iter()
-            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &resource_label).unwrap().unwrap())
-            .unwrap();
         collection_1.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
         assert!(finalise_result.is_ok());

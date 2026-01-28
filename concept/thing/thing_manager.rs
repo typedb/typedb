@@ -50,7 +50,7 @@ use encoding::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 use itertools::Itertools;
-use lending_iterator::Peekable;
+use lending_iterator::{LendingIterator, Peekable};
 use primitive::either::Either;
 use resource::{
     constants::{
@@ -1800,7 +1800,8 @@ impl ThingManager {
             // Otherwise we still have to update since we don't do operation time index-generation.
             self.update_relation_indices_on_schema_commit(
                 snapshot,
-                &cardinality_change_tracker.modified_relations_role_types(),
+                cardinality_change_tracker.modified_relations_role_types(),
+                cardinality_change_tracker.players_in_deleted_relations(),
                 storage_counters.clone(),
             )
             .map_err(|err| vec![*err])?;
@@ -2216,6 +2217,7 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         modified_relations_role_types: &HashMap<Relation, HashSet<RoleType>>,
+        players_in_deleted_relations: &HashMap<Relation, HashSet<Object>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         for (relation, modified_relates) in modified_relations_role_types {
@@ -2230,6 +2232,31 @@ impl ThingManager {
                 qualifies_for_relation_index,
                 storage_counters.clone(),
             )?;
+        }
+        for (relation, players) in players_in_deleted_relations {
+            let qualifies_for_relation_index = relation
+                .type_()
+                .schema_qualifies_for_relation_index(snapshot, self.type_manager())
+                .map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?;
+            if qualifies_for_relation_index {
+                for (p1, p2) in players.iter().cartesian_product(players.iter()) {
+                    let player_pair_for_relation = ThingEdgeIndexedRelation::prefix_start_end_relation(
+                        p1.vertex(),
+                        p2.vertex(),
+                        relation.vertex(),
+                    );
+                    let prefix_range =
+                        KeyRange::new_within(player_pair_for_relation, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING);
+                    // Nuke all
+                    let collected = snapshot
+                        .iterate_range(&prefix_range, storage_counters.clone())
+                        .collect_cloned_vec(|k, _| StorageKeyArray::from(k))
+                        .map_err(|source| Box::new(ConceptWriteError::SnapshotIterate { source }))?;
+                    collected.into_iter().for_each(|edge| {
+                        snapshot.delete(edge);
+                    });
+                }
+            }
         }
         Ok(())
     }

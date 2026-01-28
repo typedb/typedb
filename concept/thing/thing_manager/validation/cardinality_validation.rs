@@ -171,6 +171,7 @@ pub(crate) struct CardinalityChangeTracker {
     has_modified_plays: bool,
     modified_relations_role_types: HashMap<Relation, HashSet<RoleType>>,
     has_modified_relates: bool,
+    players_in_deleted_relations: HashMap<Relation, HashSet<Object>>,
 }
 
 impl CardinalityChangeTracker {
@@ -185,6 +186,7 @@ impl CardinalityChangeTracker {
         let mut modified_objects_role_types: HashMap<Object, HashSet<RoleType>> = HashMap::new();
         let mut has_modified_plays = false;
         let mut modified_relations_role_types: HashMap<Relation, HashSet<RoleType>> = HashMap::new();
+        let mut players_in_deleted_relations: HashMap<Relation, HashSet<Object>> = HashMap::new();
         let mut has_modified_relates = false;
 
         Self::collect_new_objects(
@@ -207,6 +209,7 @@ impl CardinalityChangeTracker {
             thing_manager,
             &mut modified_relations_role_types,
             &mut modified_objects_role_types,
+            &mut players_in_deleted_relations,
             storage_counters.clone(),
         )?;
 
@@ -229,6 +232,7 @@ impl CardinalityChangeTracker {
             modified_objects_role_types,
             has_modified_plays,
             modified_relations_role_types,
+            players_in_deleted_relations,
             has_modified_relates,
         })
     }
@@ -251,6 +255,10 @@ impl CardinalityChangeTracker {
 
     pub(crate) fn modified_relations_role_types(&self) -> &HashMap<Relation, HashSet<RoleType>> {
         &self.modified_relations_role_types
+    }
+
+    pub(crate) fn players_in_deleted_relations(&self) -> &HashMap<Relation, HashSet<Object>> {
+        &self.players_in_deleted_relations
     }
 
     pub(crate) fn has_modified_relates(&self) -> bool {
@@ -335,6 +343,7 @@ impl CardinalityChangeTracker {
         thing_manager: &ThingManager,
         out_relation_role_types: &mut HashMap<Relation, HashSet<RoleType>>,
         out_object_role_types: &mut HashMap<Object, HashSet<RoleType>>,
+        players_in_deleted_relations: &mut HashMap<Relation, HashSet<Object>>,
         storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         for (key, _) in snapshot
@@ -348,6 +357,9 @@ impl CardinalityChangeTracker {
             if thing_manager.instance_exists(snapshot, &relation, storage_counters.clone())? {
                 let updated_role_types = out_relation_role_types.entry(relation).or_default();
                 updated_role_types.insert(role_type);
+            } else {
+                let players_in_deleted = players_in_deleted_relations.entry(relation).or_default();
+                players_in_deleted.insert(player);
             }
 
             if thing_manager.instance_exists(snapshot, &player, storage_counters.clone())? {
