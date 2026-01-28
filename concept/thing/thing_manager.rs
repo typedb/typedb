@@ -1795,7 +1795,7 @@ impl ThingManager {
         self.validate_cardinalities(snapshot, &cardinality_change_tracker, storage_counters.clone())?;
 
         // For immutable schema, the indices are updated at operation time
-        if !Snapshot::IMMUTABLE_SCHEMA && (cardinality_change_tracker.has_modified_relates() || true) {
+        if !Snapshot::IMMUTABLE_SCHEMA {
             // The cardinality change tracker collects modified_relations_role_types if card of a type changes.
             // Otherwise we still have to update since we don't do operation time index-generation.
             self.update_relation_indices_on_schema_commit(
