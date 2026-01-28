@@ -98,9 +98,14 @@ impl FromTypeQLLiteral for i64 {
         // example: -9223372036854775808 is parsed as i64::parse(9223372036854775808), then the sign is computed
         // which fails since the max positive value is 9223372036854775807
         let unsigned: i128 = parse_primitive(literal.integral.as_str(), source_span)?;
-        Ok(match literal.sign.unwrap_or(Sign::Plus) {
-            Sign::Plus => unsigned as i64,
-            Sign::Minus => -unsigned as i64,
+        let signed = match literal.sign.unwrap_or(Sign::Plus) {
+            Sign::Plus => unsigned,
+            Sign::Minus => -unsigned,
+        };
+        i64::try_from(signed).map_err(|_| LiteralParseError::LiteralOutOfRange {
+            value_type: "integer",
+            literal: literal.to_string(),
+            source_span,
         })
     }
 }
@@ -133,11 +138,18 @@ impl FromTypeQLLiteral for f64 {
         literal: &Self::TypeQLLiteral,
         source_span: Option<Span>,
     ) -> Result<Self, LiteralParseError> {
-        // TODO: this has the same issue that is fixed for u64 being parsed by u128: f64 can't use f64::MIN (off by "one")
         let unsigned = parse_primitive::<f64>(literal.double.as_str(), source_span)?;
-        match &literal.sign.unwrap_or(Sign::Plus) {
-            Sign::Plus => Ok(unsigned),
-            Sign::Minus => Ok(-unsigned),
+        if unsigned.is_finite() {
+            match &literal.sign.unwrap_or(Sign::Plus) {
+                Sign::Plus => Ok(unsigned),
+                Sign::Minus => Ok(-unsigned),
+            }
+        } else {
+            Err(LiteralParseError::LiteralOutOfRange {
+                value_type: "double",
+                literal: literal.to_string(),
+                source_span,
+            })
         }
     }
 }
@@ -288,7 +300,11 @@ impl FromTypeQLLiteral for Duration {
             DurationLiteral::Time(time_part) => nanos = duration_time_part_to_nanos(time_part, source_span)?,
         }
 
-        Ok(Duration::new(months, days, nanos))
+        Duration::new_checked(months, days, nanos).ok_or(LiteralParseError::LiteralOutOfRange {
+            value_type: "duration",
+            literal: literal.to_string(),
+            source_span,
+        })
     }
 }
 

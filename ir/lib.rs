@@ -401,6 +401,13 @@ typedb_error! {
             tz: TimeZone,
             source_span: Option<Span>,
         ),
+        LiteralOutOfRange(
+            11,
+            "{value_type} literal '{literal}' is out of range.",
+            value_type: &'static str,
+            literal: String,
+            source_span: Option<Span>,
+        ),
         UnimplementedLanguageFeature(255, "Unimplemented '{feature}'.", feature: error::UnimplementedFeature),
     }
 }

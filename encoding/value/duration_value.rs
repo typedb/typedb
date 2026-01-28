@@ -35,9 +35,13 @@ pub struct Duration {
 }
 
 impl Duration {
-    pub fn new(months: u32, days: u32, nanos: u64) -> Self {
+    fn new(months: u32, days: u32, nanos: u64) -> Self {
         assert!(months <= MAX_MONTHS);
         Self { months, days, nanos }
+    }
+
+    pub fn new_checked(months: u32, days: u32, nanos: u64) -> Option<Self> {
+        (months <= MAX_MONTHS).then(|| Self::new(months, days, nanos))
     }
 
     fn is_empty(&self) -> bool {
@@ -118,14 +122,14 @@ impl Duration {
     pub fn checked_add(self, rhs: Self) -> Option<Self> {
         let Self { months, days, nanos } = self;
         let Self { months: rhs_months, days: rhs_days, nanos: rhs_nanos } = rhs;
-        Some(Self::new(months.checked_add(rhs_months)?, days.checked_add(rhs_days)?, nanos.checked_add(rhs_nanos)?))
+        Self::new_checked(months.checked_add(rhs_months)?, days.checked_add(rhs_days)?, nanos.checked_add(rhs_nanos)?)
     }
 
     pub fn checked_sub(self, rhs: Self) -> Option<Self> {
         let Self { months, days, nanos } = self;
         let Self { months: rhs_months, days: rhs_days, nanos: rhs_nanos } = rhs;
         if months >= rhs_months && days >= rhs_days && nanos >= rhs_nanos {
-            Some(Self::new(months - rhs_months, days - rhs_days, nanos - rhs_nanos))
+            Self::new_checked(months - rhs_months, days - rhs_days, nanos - rhs_nanos)
         } else {
             None
         }
