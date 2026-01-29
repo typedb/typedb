@@ -16,7 +16,7 @@ use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
 use diagnostics::metrics::ActionKind;
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
-use resource::{constants::common::SECONDS_IN_MINUTE, distribution_info::DistributionInfo};
+use resource::constants::common::SECONDS_IN_MINUTE;
 use system::concepts::{Credential, User};
 use tokio::{
     sync::{
@@ -40,6 +40,7 @@ use crate::{
                 body::{JsonBody, PlainTextBody},
                 database::{encode_database, encode_databases, DatabasePath},
                 query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
+                server::encode_servers,
                 transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},
                 user::{encode_user, encode_users, CreateUserPayload, UpdateUserPayload, UserPath},
                 version::{encode_server_version, ProtocolVersion, PROTOCOL_VERSION_LATEST},
@@ -66,7 +67,6 @@ struct TransactionInfo {
 
 #[derive(Clone, Debug)]
 pub(crate) struct HTTPTypeDBService {
-    distribution_info: DistributionInfo,
     server_state: ArcServerState,
     // TODO: If TransactionId proves itself to be stable, we could substitute Uuid with it
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
@@ -76,11 +76,7 @@ impl HTTPTypeDBService {
     const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
     const QUERY_ENDPOINT_COMMIT_DEFAULT: bool = true;
 
-    pub(crate) fn new(
-        distribution_info: DistributionInfo,
-        server_state: ArcServerState,
-        background_tasks: TokioTaskSpawner,
-    ) -> Self {
+    pub(crate) fn new(server_state: ArcServerState, background_tasks: TokioTaskSpawner) -> Self {
         let transaction_services = Arc::new(RwLock::new(HashMap::new()));
         let controlled_transactions = transaction_services.clone();
         background_tasks.spawn_interval(
@@ -97,7 +93,7 @@ impl HTTPTypeDBService {
             ),
         );
 
-        Self { distribution_info, server_state, transaction_services }
+        Self { server_state, transaction_services }
     }
 
     async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>) {
@@ -119,7 +115,7 @@ impl HTTPTypeDBService {
         let database_name = payload.database_name;
 
         let processing_time = transaction_service
-            .open(payload.transaction_type, database_name.clone(), options)
+            .open(payload.transaction_type, owner.clone(), database_name.clone(), options)
             .await
             .map_err(|typedb_source| HttpServiceError::Transaction { typedb_source })?;
 
@@ -148,9 +144,6 @@ impl HTTPTypeDBService {
             },
             Err(_) => Err(HttpServiceError::transaction_timeout()),
         }
-    }
-    fn build_analyse_query_request(query: String) -> TransactionRequest {
-        TransactionRequest::AnalyseQuery(query)
     }
 
     fn build_query_request(query_options_payload: Option<QueryOptionsPayload>, query: String) -> TransactionRequest {
@@ -185,6 +178,7 @@ impl HTTPTypeDBService {
 
     pub(crate) fn create_protected_router<T>(service: Arc<HTTPTypeDBService>) -> Router<T> {
         Router::new()
+            .route("/:version/servers", get(Self::servers))
             .route("/:version/databases", get(Self::databases))
             .route("/:version/databases/:database-name", get(Self::databases_get))
             .route("/:version/databases/:database-name", post(Self::databases_create))
@@ -231,9 +225,10 @@ impl HTTPTypeDBService {
             None::<&str>,
             ActionKind::ServerVersion,
             || async {
+                let info = service.server_state.distribution_info().await;
                 Ok::<_, HttpServiceError>(JsonBody(encode_server_version(
-                    service.distribution_info.distribution.to_string(),
-                    service.distribution_info.version.to_string(),
+                    info.distribution.to_string(),
+                    info.version.to_string(),
                 )))
             },
         )
@@ -263,6 +258,23 @@ impl HTTPTypeDBService {
                     .token_create(payload.username, payload.password)
                     .await
                     .map(|token| JsonBody(encode_token(token)))
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
+            },
+        )
+        .await
+    }
+
+    async fn servers(_version: ProtocolVersion, State(service): State<Arc<HTTPTypeDBService>>) -> impl IntoResponse {
+        run_with_diagnostics_async(
+            service.server_state.diagnostics_manager().await,
+            None::<&str>,
+            ActionKind::ServersAll,
+            || async {
+                service
+                    .server_state
+                    .servers_statuses()
+                    .await
+                    .map(|servers| JsonBody(encode_servers(servers)))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
         )
@@ -622,7 +634,7 @@ impl HTTPTypeDBService {
                 if accessor != transaction.owner {
                     return Err(HttpServiceError::operation_not_permitted());
                 }
-                Self::transaction_request(&transaction, Self::build_analyse_query_request(payload.query), true).await
+                Self::transaction_request(&transaction, TransactionRequest::AnalyseQuery(payload.query), true).await
             },
         )
         .await
