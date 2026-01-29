@@ -4,7 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::value::decimal_value::Decimal;
+use std::borrow::Cow;
+
+use chrono::{DateTime, NaiveDate, NaiveDateTime};
+use encoding::value::{
+    decimal_value::Decimal,
+    duration_value::{DateTimeExt, Duration},
+    timezone::TimeZone,
+};
 
 use crate::annotation::expression::instructions::{
     binary::{binary_instruction, Binary, BinaryExpression},
@@ -13,7 +20,7 @@ use crate::annotation::expression::instructions::{
     ExpressionEvaluationError,
 };
 
-binary_instruction! {
+binary_instruction! { 'a
     OpIntegerAddInteger = OpIntegerAddIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_add(a1, a2), "add") }
     OpIntegerSubtractInteger = OpIntegerSubtractIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_sub(a1, a2), "sub") }
     OpIntegerMultiplyInteger = OpIntegerMultiplyIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_mul(a1, a2), "mul") }
@@ -31,6 +38,60 @@ binary_instruction! {
     OpDecimalAddDecimal = OpDecimalAddDecimalImpl(a1: Decimal, a2: Decimal) -> Decimal { Ok( a1 + a2) }
     OpDecimalSubtractDecimal = OpDecimalSubtractDecimalImpl(a1: Decimal, a2: Decimal) -> Decimal { Ok(a1 - a2) }
     OpDecimalMultiplyDecimal = OpDecimalMultiplyDecimalImpl(a1: Decimal, a2: Decimal) -> Decimal { Ok(a1 * a2) }
+
+    OpDateSubtractDate = OpDateSubtractDateImpl(a1: NaiveDate, a2: NaiveDate) -> Duration {
+        if a2 <= a1 {
+            Ok(Duration::between_dates(a2, a1))
+        } else {
+            Err(ExpressionEvaluationError::NegativeDatetimeSub { lhs: a1.to_string(), rhs: a2.to_string()})
+        }
+    }
+
+    OpDateTimeAddDuration = OpDateTimeAddDurationImpl(a1: NaiveDateTime, a2: Duration) -> NaiveDateTime {
+        check_operation(DateTimeExt::checked_add(a1, a2), "add")
+    }
+    OpDateTimeSubtractDuration = OpDateTimeSubtractDurationImpl(a1: NaiveDateTime, a2: Duration) -> NaiveDateTime {
+        check_operation(DateTimeExt::checked_sub(a1, a2), "sub")
+    }
+    OpDateTimeSubtractDateTime = OpDateTimeSubtractDateTimeImpl(a1: NaiveDateTime, a2: NaiveDateTime) -> Duration {
+        if a2 <= a1 {
+            Ok(Duration::between_datetimes(a2, a1))
+        } else {
+            Err(ExpressionEvaluationError::NegativeDatetimeSub { lhs: a1.to_string(), rhs: a2.to_string()})
+        }
+    }
+    OpDateTimeSubtractDate = OpDateTimeSubtractDateImpl(a1: NaiveDateTime, a2: NaiveDate) -> Duration {
+        let a2 = NaiveDateTime::from(a2);
+        if a2 <= a1 {
+            Ok(Duration::between_datetimes(a2, a1))
+        } else {
+            Err(ExpressionEvaluationError::NegativeDatetimeSub { lhs: a1.to_string(), rhs: a2.to_string()})
+        }
+    }
+
+    OpDateTimeTZAddDuration = OpDateTimeTZAddDurationImpl(a1: DateTime<TimeZone>, a2: Duration) -> DateTime<TimeZone> {
+        check_operation(DateTimeExt::checked_add(a1, a2), "add")
+    }
+    OpDateTimeTZSubtractDuration = OpDateTimeTZSubtractDurationImpl(a1: DateTime<TimeZone>, a2: Duration) -> DateTime<TimeZone> {
+        check_operation(DateTimeExt::checked_sub(a1, a2), "sub")
+    }
+    OpDateTimeTZSubtractDateTimeTZ = OpDateTimeTZSubtractDateTimeTZImpl(a1: DateTime<TimeZone>, a2: DateTime<TimeZone>) -> Duration {
+        if a2 <= a1 {
+            Ok(Duration::between_datetimes_tz(a2, a1))
+        } else {
+            Err(ExpressionEvaluationError::NegativeDatetimeSub { lhs: a1.to_string(), rhs: a2.to_string()})
+        }
+    }
+
+    OpDurationAddDuration = OpDurationAddDurationImpl(a1: Duration, a2: Duration) -> Duration {
+        check_operation(Duration::checked_add(a1, a2), "add")
+    }
+
+    OpDurationSubtractDuration = OpDurationSubtractDurationImpl(a1: Duration, a2: Duration) -> Duration {
+        check_operation(Duration::checked_sub(a1, a2), "sub")
+    }
+
+    OpStringAddString = OpStringAddStringImpl(a1: Cow<'a, str>, a2: Cow<'a, str>) -> Cow<'a, str> { Ok(Cow::Owned(format!("{a1}{a2}"))) }
 }
 
 fn checked_div(a1: f64, a2: f64) -> Result<f64, ExpressionEvaluationError> {

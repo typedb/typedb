@@ -6,7 +6,7 @@
 
 use std::{borrow::Cow, str::FromStr};
 
-use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Offset, Utc};
+use chrono::{FixedOffset, MappedLocalTime, NaiveDate, NaiveDateTime, NaiveTime, Offset, Utc};
 use chrono_tz::Tz;
 use concept::type_::annotation::AnnotationRegex;
 use encoding::value::{
@@ -98,9 +98,14 @@ impl FromTypeQLLiteral for i64 {
         // example: -9223372036854775808 is parsed as i64::parse(9223372036854775808), then the sign is computed
         // which fails since the max positive value is 9223372036854775807
         let unsigned: i128 = parse_primitive(literal.integral.as_str(), source_span)?;
-        Ok(match literal.sign.unwrap_or(Sign::Plus) {
-            Sign::Plus => unsigned as i64,
-            Sign::Minus => -unsigned as i64,
+        let signed = match literal.sign.unwrap_or(Sign::Plus) {
+            Sign::Plus => unsigned,
+            Sign::Minus => -unsigned,
+        };
+        i64::try_from(signed).map_err(|_| LiteralParseError::LiteralOutOfRange {
+            value_type: "integer",
+            literal: literal.to_string(),
+            source_span,
         })
     }
 }
@@ -133,11 +138,18 @@ impl FromTypeQLLiteral for f64 {
         literal: &Self::TypeQLLiteral,
         source_span: Option<Span>,
     ) -> Result<Self, LiteralParseError> {
-        // TODO: this has the same issue that is fixed for u64 being parsed by u128: f64 can't use f64::MIN (off by "one")
         let unsigned = parse_primitive::<f64>(literal.double.as_str(), source_span)?;
-        match &literal.sign.unwrap_or(Sign::Plus) {
-            Sign::Plus => Ok(unsigned),
-            Sign::Minus => Ok(-unsigned),
+        if unsigned.is_finite() {
+            match &literal.sign.unwrap_or(Sign::Plus) {
+                Sign::Plus => Ok(unsigned),
+                Sign::Minus => Ok(-unsigned),
+            }
+        } else {
+            Err(LiteralParseError::LiteralOutOfRange {
+                value_type: "double",
+                literal: literal.to_string(),
+                source_span,
+            })
         }
     }
 }
@@ -149,6 +161,7 @@ impl FromTypeQLLiteral for Decimal {
         literal: &Self::TypeQLLiteral,
         source_span: Option<Span>,
     ) -> Result<Self, LiteralParseError> {
+        // TODO: currently can't parse integer part == `i64::MIN`
         let decimal = parse_primitive::<Decimal>(&literal.decimal, source_span)?;
 
         Ok(match literal.sign {
@@ -253,7 +266,14 @@ impl FromTypeQLLiteral for chrono::DateTime<TimeZone> {
         let date = NaiveDate::from_typeql_literal(&literal.date, source_span)?;
         let time = NaiveTime::from_typeql_literal(&literal.time, source_span)?;
         let tz = TimeZone::from_typeql_literal(&literal.timezone, source_span)?;
-        Ok(NaiveDateTime::new(date, time).and_local_timezone(tz).unwrap())
+        let date_time = NaiveDateTime::new(date, time);
+        match date_time.and_local_timezone(tz) {
+            MappedLocalTime::Single(dt) => Ok(dt),
+            MappedLocalTime::Ambiguous(earliest, latest) => {
+                Err(LiteralParseError::AmbiguousLocalTime { date_time, tz, earliest, latest, source_span })
+            }
+            MappedLocalTime::None => Err(LiteralParseError::NoSuchLocalTime { date_time, tz, source_span }),
+        }
     }
 }
 
@@ -281,7 +301,11 @@ impl FromTypeQLLiteral for Duration {
             DurationLiteral::Time(time_part) => nanos = duration_time_part_to_nanos(time_part, source_span)?,
         }
 
-        Ok(Duration::new(months, days, nanos))
+        Duration::new_checked(months, days, nanos).ok_or(LiteralParseError::LiteralOutOfRange {
+            value_type: "duration",
+            literal: literal.to_string(),
+            source_span,
+        })
     }
 }
 
