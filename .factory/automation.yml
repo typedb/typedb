@@ -18,7 +18,7 @@ build:
     dependency-analysis:
       image: typedb-ubuntu-22.04
       command: |
-        bazel run @typedb_dependencies//factory/analysis:dependency-analysis
+        bazel run --config=ci @typedb_dependencies//factory/analysis:dependency-analysis
   correctness:
     build:
       image: typedb-ubuntu-22.04
@@ -26,10 +26,10 @@ build:
         sudo apt update
         sudo apt install -y libclang-dev
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel build //... 
-        bazel run @typedb_dependencies//tool/checkstyle:test-coverage
-        bazel test $(bazel query 'kind(checkstyle_test, //...)') 
-        bazel test $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config
+        bazel build --config=ci //... 
+        bazel run --config=ci @typedb_dependencies//tool/checkstyle:test-coverage
+        bazel test --config=ci $(bazel query 'kind(checkstyle_test, //...)') 
+        bazel test --config=ci $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config
 
 #    build-dependency:
 #      image: typedb-ubuntu-22.04
@@ -37,7 +37,7 @@ build:
 #        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
 #        dependencies/maven/update.sh
 #        git diff --exit-code dependencies/maven/artifacts.snapshot
-#        bazel run @typedb_dependencies//tool/unuseddeps:unused-deps -- list
+#        bazel run --config=ci @typedb_dependencies//tool/unuseddeps:unused-deps -- list
 
     cargo-check:
       image: typedb-ubuntu-22.04
@@ -68,108 +68,108 @@ build:
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //common/cache:test_crate_cache --test_output=streamed
-        bazel test //common/lending_iterator:test_crate_lending_iterator --test_output=streamed
-        bazel test //common/logger:test_crate_logger --test_output=streamed
-        bazel test //compiler:test_crate_compiler --test_output=streamed
-        bazel test //concept:test_crate_concept --test_output=streamed
-        bazel test //database:test_crate_database --test_output=streamed
-        bazel test //durability:test_crate_durability  --test_output=streamed
-        bazel test //encoding:test_crate_encoding --test_output=streamed
-        bazel test //executor:test_crate_executor --test_output=streamed
-        bazel test //function:test_crate_function --test_output=streamed
-        bazel test //ir:test_crate_ir --test_output=streamed
-        bazel test //query:test_crate_query --test_output=streamed
-        bazel test //server:test_crate_server --test_output=streamed
-        bazel test //storage:test_crate_storage --test_output=streamed
+        bazel test --config=ci //common/cache:test_crate_cache --test_output=streamed
+        bazel test --config=ci //common/lending_iterator:test_crate_lending_iterator --test_output=streamed
+        bazel test --config=ci //common/logger:test_crate_logger --test_output=streamed
+        bazel test --config=ci //compiler:test_crate_compiler --test_output=streamed
+        bazel test --config=ci //concept:test_crate_concept --test_output=streamed
+        bazel test --config=ci //database:test_crate_database --test_output=streamed
+        bazel test --config=ci //durability:test_crate_durability  --test_output=streamed
+        bazel test --config=ci //encoding:test_crate_encoding --test_output=streamed
+        bazel test --config=ci //executor:test_crate_executor --test_output=streamed
+        bazel test --config=ci //function:test_crate_function --test_output=streamed
+        bazel test --config=ci //ir:test_crate_ir --test_output=streamed
+        bazel test --config=ci //query:test_crate_query --test_output=streamed
+        bazel test --config=ci //server:test_crate_server --test_output=streamed
+        bazel test --config=ci //storage:test_crate_storage --test_output=streamed
 
     test-integration:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test $(bazel query 'kind(rust_test, //compiler/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //concept/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //database/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //durability/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //encoding/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //executor/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //function/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //ir/tests/...)') --test_output=streamed
-        bazel test $(bazel query 'kind(rust_test, //query/tests/...)') --test_output=streamed
+        bazel test --config=ci $(bazel query 'kind(rust_test, //compiler/tests/...)') --test_output=streamed
+        bazel test --config=ci $(bazel query 'kind(rust_test, //concept/tests/...)') --test_output=streamed
+        bazel test --config=ci $(bazel query 'kind(rust_test, //database/tests/...)') --test_output=streamed
+        bazel test --config=ci $(bazel query 'kind(rust_test, //durability/tests/...)') --test_output=streamed
+        bazel test --config=ci $(bazel query 'kind(rust_test, //encoding/tests/...)') --test_output=streamed
+        bazel test --config=ci $(bazel query 'kind(rust_test, //executor/tests/...)') --test_output=streamed
+        bazel test --config=ci $(bazel query 'kind(rust_test, //function/tests/...)') --test_output=streamed
+        bazel test --config=ci $(bazel query 'kind(rust_test, //ir/tests/...)') --test_output=streamed
+        bazel test --config=ci $(bazel query 'kind(rust_test, //query/tests/...)') --test_output=streamed
         # TODO: Uncomment!
-        # bazel test $(bazel query 'kind(rust_test, //storage/tests/...)') --test_output=streamed
-        bazel test //storage/tests:test_mvcc //storage/tests:test_snapshot //storage/tests:test_isolation //storage/tests:test_storage --test_output=streamed
+        # bazel test --config=ci $(bazel query 'kind(rust_test, //storage/tests/...)') --test_output=streamed
+        bazel test --config=ci //storage/tests:test_mvcc //storage/tests:test_snapshot //storage/tests:test_isolation //storage/tests:test_storage --test_output=streamed
 
 #    tests-commented-out-which-fail:
 #      image: typedb-ubuntu-22.04
 #      dependencies: [ build ]
 #      command: |
 #        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        bazel test //storage/tests/... --test_output=streamed
+#        bazel test --config=ci //storage/tests/... --test_output=streamed
 
     test-behaviour-connection:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/connection:test_connection --test_output=streamed  --test_arg="--test-threads=1"
+        bazel test --config=ci //tests/behaviour/connection:test_connection --test_output=streamed  --test_arg="--test-threads=1"
 
     test-behaviour-concept:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/concept:test_concept --test_output=errors --test_arg="--test-threads=1"
+        bazel test --config=ci //tests/behaviour/concept:test_concept --test_output=errors --test_arg="--test-threads=1"
 
     test-behaviour-query-read:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_read"
+        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_read"
 
     test-behaviour-query-write:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_write"
+        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_write"
 
     test-behaviour-query-analyze:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_analyze"
+        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_analyze"
 
     test-behaviour-query-definable:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_definable"
+        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_definable"
 
     test-behaviour-functions:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="functions::"
+        bazel test --config=ci //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="functions::"
 
     test-assembly:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/assembly:test_assembly
+        bazel test --config=ci //tests/assembly:test_assembly
 
     test-behaviour-service:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test $(bazel query 'kind(rust_test, //tests/behaviour/service/...)') --test_output=streamed --jobs=1
+        bazel test --config=ci $(bazel query 'kind(rust_test, //tests/behaviour/service/...)') --test_output=streamed --jobs=1
 
 release:
   filter:
@@ -179,13 +179,13 @@ release:
     validate-dependencies:
       image: typedb-ubuntu-22.04
       command: |
-        bazel test //:release-validate-deps --test_output=streamed
+        bazel test --config=ci //:release-validate-deps --test_output=streamed
 
     validate-release-notes:
       image: typedb-ubuntu-22.04
       command: |
         export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
+        bazel run --config=ci @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
 
   deployment:
     trigger-release-circleci:

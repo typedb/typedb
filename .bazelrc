@@ -4,6 +4,9 @@
 
 try-import ./.bazel-remote-cache.rc
 
-build --incompatible_strict_action_env --@io_bazel_rules_docker//transitions:enable=false --remote_download_toplevel
+build --incompatible_strict_action_env --@io_bazel_rules_docker//transitions:enable=false --remote_download_toplevel --disk_cache=~/.cache/bazel
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env --test_env=PATH
+
+# CI configuration: disables disk cache to prevent cache size issues in CI environments
+build:ci --disk_cache=
