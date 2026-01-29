@@ -1650,6 +1650,285 @@ fn role_player_duplicates_ordered_small_card() {
 }
 
 #[test]
+fn schema_transactions_generate_role_player_indices() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let collection_label = Label::build("collection", None);
+    let entry_role_label = "entry";
+    let owner_role_label = "owner";
+    let resource_label = Label::build("resource", None);
+    let group_label = Label::build("group", None);
+
+    // Schema transaction
+    let (collection_type, resource_type, group_type, owner_type, entry_type) = {
+        let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let collection_type = type_manager.create_relation_type(&mut snapshot, &collection_label).unwrap();
+        let entry_relates = collection_type
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                entry_role_label,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        entry_relates
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(2))), // must be small to allow index to kick in
+            )
+            .unwrap();
+        let entry_type = entry_relates.role();
+        let owner_relates = collection_type
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                owner_role_label,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        owner_relates
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(2))), // must be small to allow index to kick in
+            )
+            .unwrap();
+        let owner_type =
+            collection_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
+
+        let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
+        let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
+        resource_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type, StorageCounters::DISABLED)
+            .unwrap();
+        group_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type, StorageCounters::DISABLED)
+            .unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+        (collection_type, resource_type, group_type, owner_type, entry_type)
+    };
+
+    // Separate schema transaction so cardinality change isn't the trigger
+    {
+        let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+        let (_type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let group_1 = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
+        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type).unwrap();
+
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type).unwrap();
+        collection_1
+            .add_player(&mut snapshot, &thing_manager, owner_type, Object::Entity(group_1), StorageCounters::DISABLED)
+            .unwrap();
+        collection_1
+            .add_player(
+                &mut snapshot,
+                &thing_manager,
+                entry_type,
+                Object::Entity(resource_1),
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        collection_1
+            .add_player(
+                &mut snapshot,
+                &thing_manager,
+                entry_type,
+                Object::Entity(resource_1),
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+
+        let player_counts: u64 = collection_1
+            .get_players(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| res.unwrap().1)
+            .sum();
+        assert_eq!(player_counts, 3);
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(group_relations_count, 1);
+        let resource_relations_count: u64 = resource_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(resource_relations_count, 2);
+
+        assert!(
+            group_1
+                .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
+                .is_err(),
+            "Expected no indices in schema transactions"
+        );
+        assert!(
+            resource_1
+                .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
+                .is_err(),
+            "Expected no indices in schema transactions"
+        );
+        let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
+        assert!(finalise_result.is_ok());
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    }
+
+    // Read transaction
+    {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let collection_type = type_manager.get_relation_type(&snapshot, &collection_label).unwrap().unwrap();
+        let entities: Vec<Entity> =
+            thing_manager.get_entities(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
+        assert_eq!(entities.len(), 2);
+        let relations: Vec<Relation> =
+            thing_manager.get_relations(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
+        assert_eq!(relations.len(), 1);
+
+        let collection_1 = relations.first().unwrap();
+        let player_counts: u64 = collection_1
+            .get_players(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| res.unwrap().1)
+            .sum();
+        assert_eq!(player_counts, 3);
+
+        let group_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &group_label).unwrap().unwrap())
+            .unwrap();
+
+        let resource_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &resource_label).unwrap().unwrap())
+            .unwrap();
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(group_relations_count, 1);
+        let resource_relations_count: u64 = resource_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(resource_relations_count, 2);
+
+        let group_1_indexed_count: u64 = group_1
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
+            .unwrap()
+            .map(|res| {
+                let (_, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(group_1_indexed_count, 2, "Expected index to work");
+        let resource_1_indexed_count: u64 = resource_1
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
+            .unwrap()
+            .map(|res| {
+                let (_, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(resource_1_indexed_count, 2, "Expected index to work");
+    }
+
+    // Delete that relation to ensure it is removed from the index too
+    {
+        let mut snapshot: SchemaSnapshot<WALClient> = storage.clone().open_snapshot_schema();
+        let (_type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+        let entities: Vec<Entity> =
+            thing_manager.get_entities(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
+        assert_eq!(entities.len(), 2);
+        let relations: Vec<Relation> =
+            thing_manager.get_relations(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
+        assert_eq!(relations.len(), 1);
+        let collection_1 = relations.first().unwrap();
+        collection_1.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
+        let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
+        assert!(finalise_result.is_ok());
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    }
+
+    // Read transaction
+    {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let collection_type = type_manager.get_relation_type(&snapshot, &collection_label).unwrap().unwrap();
+        let entities: Vec<Entity> =
+            thing_manager.get_entities(&snapshot, StorageCounters::DISABLED).map(|result| result.unwrap()).collect();
+        assert_eq!(entities.len(), 2);
+        let group_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &group_label).unwrap().unwrap())
+            .unwrap();
+
+        let resource_1 = entities
+            .iter()
+            .find(|entity| entity.type_() == type_manager.get_entity_type(&snapshot, &resource_label).unwrap().unwrap())
+            .unwrap();
+
+        let group_relations_count: u64 = group_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(group_relations_count, 0);
+        let resource_relations_count: u64 = resource_1
+            .get_relations_roles(&snapshot, &thing_manager, StorageCounters::DISABLED)
+            .map(|res| {
+                let (_, _, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(resource_relations_count, 0);
+
+        let group_1_indexed_count: u64 = group_1
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
+            .unwrap()
+            .map(|res| {
+                let (_, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(group_1_indexed_count, 0, "Expected index to have been deleted as well");
+        let resource_1_indexed_count: u64 = resource_1
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type, StorageCounters::DISABLED)
+            .unwrap()
+            .map(|res| {
+                let (_, count) = res.unwrap();
+                count
+            })
+            .sum();
+        assert_eq!(resource_1_indexed_count, 0, "Expected index to have been deleted as well");
+    }
+}
+
+#[test]
 fn attribute_string_write_read_delete() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
