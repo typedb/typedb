@@ -14,6 +14,7 @@ pub struct ServerResponse {
     pub grpc_serving_address: Option<String>,
     pub grpc_connection_address: Option<String>,
     pub http_address: Option<String>,
+    // TODO: Can we put ReplicaStatus here? Or shall we return a dyn ServerResponse overridden in cluster?
 }
 
 #[derive(Debug, Serialize, Deserialize)]
