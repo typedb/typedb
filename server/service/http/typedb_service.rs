@@ -115,7 +115,7 @@ impl HTTPTypeDBService {
         let database_name = payload.database_name;
 
         let processing_time = transaction_service
-            .open(payload.transaction_type, database_name.clone(), owner.clone(), options)
+            .open(payload.transaction_type, owner.clone(), database_name.clone(), options)
             .await
             .map_err(|typedb_source| HttpServiceError::Transaction { typedb_source })?;
 
