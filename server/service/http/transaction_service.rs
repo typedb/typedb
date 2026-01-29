@@ -66,7 +66,7 @@ use crate::{
             commit_schema_transaction, commit_write_transaction, init_transaction_timeout, is_write_pipeline,
             with_readable_transaction, Transaction, TransactionServiceError,
         },
-        IncludeInvolvedBlocks, QueryType, TransactionType,
+        QueryType, TransactionType,
     },
     state::ArcServerState,
 };
@@ -258,6 +258,7 @@ impl TransactionService {
     pub(crate) async fn open(
         &mut self,
         type_: TransactionType,
+        owner: String,
         database_name: String,
         options: TransactionOptions,
     ) -> Result<u64, TransactionServiceError> {
@@ -301,8 +302,10 @@ impl TransactionService {
             }
         };
 
-        let transaction_add_result =
-            self.server_state.transactions_add(transaction.id(), transaction.type_(), self.close_sender.clone()).await;
+        let transaction_add_result = self
+            .server_state
+            .transactions_add(transaction.id(), transaction.type_(), owner, self.close_sender.clone())
+            .await;
         if let Err(typedb_source) = transaction_add_result {
             transaction.close();
             return Err(TransactionServiceError::CannotOpen { typedb_source });

@@ -10,6 +10,7 @@ pub(crate) mod body;
 pub mod database;
 pub mod error;
 pub mod query;
+pub mod server;
 pub mod transaction;
 pub mod user;
 pub mod version;

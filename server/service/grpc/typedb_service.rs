@@ -597,9 +597,11 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<Streaming<TransactionClientProto>>,
     ) -> Result<Response<Self::transactionStream>, Status> {
+        let Accessor(accessor) =
+            Accessor::from_extensions(&request.extensions()).map_err(|err| err.into_error_message().into_status())?;
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
-        let mut service = TransactionService::new(self.server_state.clone(), request_stream, response_sender);
+        let mut service = TransactionService::new(self.server_state.clone(), accessor, request_stream, response_sender);
         tokio::spawn(async move { service.listen().await });
         let stream: ReceiverStream<Result<TransactionServerProto, Status>> = ReceiverStream::new(response_receiver);
         Ok(Response::new(Box::pin(stream)))
