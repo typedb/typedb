@@ -2252,9 +2252,7 @@ impl ThingManager {
                         .iterate_range(&prefix_range, storage_counters.clone())
                         .collect_cloned_vec(|k, _| StorageKeyArray::from(k))
                         .map_err(|source| Box::new(ConceptWriteError::SnapshotIterate { source }))?;
-                    collected.into_iter().for_each(|edge| {
-                        snapshot.delete(edge);
-                    });
+                    collected.into_iter().for_each(|edge| snapshot.delete(edge));
                 }
             }
         }
