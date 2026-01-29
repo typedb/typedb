@@ -238,7 +238,6 @@ impl Server {
         );
         let http_server = if let Some(http_address) = server_state.http_address().await {
             let server = Self::serve_http(
-                distribution_info,
                 http_address,
                 &encryption_config,
                 server_state.clone(),
@@ -294,7 +293,6 @@ impl Server {
     }
 
     async fn serve_http(
-        distribution_info: DistributionInfo,
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
         server_state: ArcServerState,
@@ -302,8 +300,7 @@ impl Server {
         background_tasks: TokioTaskSpawner,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());
-        let service =
-            http::typedb_service::HTTPTypeDBService::new(distribution_info, server_state.clone(), background_tasks);
+        let service = http::typedb_service::HTTPTypeDBService::new(server_state.clone(), background_tasks);
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);
         let router_service = http::typedb_service::HTTPTypeDBService::create_protected_router(http_service.clone())

@@ -188,7 +188,6 @@ impl TransactionService {
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
-                        println!("RECVVVV");
                         event!(Level::TRACE, "{}", match recv_message {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
@@ -225,7 +224,6 @@ impl TransactionService {
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
-                        println!("RECVVVV");
                         event!(Level::TRACE, "{}", match recv_message {
                             Some(()) => "Transaction close signal received, closing transaction service.",
                             None => "Close channel dropped; no more control possible. Closing transaction service.",
@@ -626,7 +624,6 @@ impl TransactionService {
     }
 
     async fn do_close(&mut self) {
-        println!("Closing transaction of {}", self.owner);
         self.interrupt_and_close_responders(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_read_queries(InterruptType::TransactionClosed).await;
         let _ = self.finish_running_write_query_no_transmit(InterruptType::TransactionClosed).await;

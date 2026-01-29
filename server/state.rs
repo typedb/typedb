@@ -447,10 +447,8 @@ impl LocalServerState {
     async fn close_user_transactions(&self, username: &str) {
         let transactions = self.transactions.read().await;
         for (_, TransactionInfo { owner, close_sender, .. }) in transactions.iter() {
-            println!("Closing txs for {username} vs {owner}");
             if username == owner {
-                println!("Closing txs for {username} vs {owner} EQUAL");
-                let _ = close_sender.send(());
+                let _ = close_sender.send(()).await;
             }
         }
     }
@@ -783,7 +781,7 @@ impl ServerState for LocalServerState {
 
         for id in to_close {
             if let Some(info) = txs.remove(&id) {
-                let _ = info.close_sender.send(());
+                let _ = info.close_sender.send(()).await;
             }
         }
         Ok(())

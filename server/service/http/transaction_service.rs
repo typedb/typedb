@@ -66,7 +66,7 @@ use crate::{
             commit_schema_transaction, commit_write_transaction, init_transaction_timeout, is_write_pipeline,
             with_readable_transaction, Transaction, TransactionServiceError,
         },
-        IncludeInvolvedBlocks, QueryType, TransactionType,
+        QueryType, TransactionType,
     },
     state::ArcServerState,
 };
