@@ -161,6 +161,7 @@ impl FromTypeQLLiteral for Decimal {
         literal: &Self::TypeQLLiteral,
         source_span: Option<Span>,
     ) -> Result<Self, LiteralParseError> {
+        // TODO: currently can't parse integer part == `i64::MIN`
         let decimal = parse_primitive::<Decimal>(&literal.decimal, source_span)?;
 
         Ok(match literal.sign {
