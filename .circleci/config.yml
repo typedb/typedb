@@ -81,8 +81,8 @@ commands:
       - run: |
           echo 'skipped'
           # bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          # bazel build --jobs=8 //:assemble-typedb-all --compilation_mode=opt
-          # bazel test //tests/assembly:test_assembly --test_output=errors
+          # bazel build --config=ci --jobs=8 //:assemble-typedb-all --compilation_mode=opt
+          # bazel test --config=ci //tests/assembly:test_assembly --test_output=errors
 
   deploy-snapshot-unix:
     steps:
@@ -90,7 +90,7 @@ commands:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --jobs=8 --define version=$(git rev-parse HEAD) //:deploy-typedb-server --compilation_mode=opt -- snapshot
+          bazel run --config=ci --jobs=8 --define version=$(git rev-parse HEAD) //:deploy-typedb-server --compilation_mode=opt -- snapshot
 
   deploy-release-unix:
     steps:
@@ -98,7 +98,7 @@ commands:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --jobs=8 --define version=$(cat VERSION) //:deploy-typedb-server --compilation_mode=opt --//server:mode=published -- release
+          bazel run --config=ci --jobs=8 --define version=$(cat VERSION) //:deploy-typedb-server --compilation_mode=opt --//server:mode=published -- release
 
   deploy-release-apt:
     steps:
@@ -106,7 +106,7 @@ commands:
           export DEPLOY_APT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --jobs=8 --define version=$(cat VERSION) //:deploy-apt --compilation_mode=opt --//server:mode=published -- release
+          bazel run --config=ci --jobs=8 --define version=$(cat VERSION) //:deploy-apt --compilation_mode=opt --//server:mode=published -- release
 
   deploy-docker-snapshot-for-arch:
     parameters:
@@ -117,7 +117,7 @@ commands:
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
           export VERSION=$(git rev-parse HEAD)
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --jobs=8 --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-<<parameters.image-arch>> \
+          bazel run --config=ci --jobs=8 --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-<<parameters.image-arch>> \
             --define container-version="$VERSION-<<parameters.image-arch>>" //:deploy-docker-snapshot-<<parameters.image-arch>>
 
   # TODO: Migrate to bazel sh_binary
@@ -141,7 +141,7 @@ commands:
       - run: |
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --jobs=8 --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-<<parameters.image-arch>> \
+          bazel run --config=ci --jobs=8 --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-<<parameters.image-arch>> \
             //:deploy-docker-release-<<parameters.image-arch>> --compilation_mode=opt --//server:mode=published
 
   # TODO: Migrate to bazel sh_binary
@@ -303,7 +303,7 @@ jobs:
           sha256sum ~/dist/typedb-all-mac-arm64.zip  | awk '{print $1}' > checksum-arm64
           sha256sum ~/dist/typedb-all-mac-x86_64.zip | awk '{print $1}' > checksum-x86_64
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --define version=$(cat VERSION) //:deploy-brew --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
+          bazel run --config=ci --define version=$(cat VERSION) //:deploy-brew --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
 
   deploy-release-apt-x86_64:
     executor: linux-x86_64-amazonlinux-2
