@@ -585,7 +585,7 @@ fn execute_object_entries(
     let mut map = HashMap::with_capacity(entries.len());
     for (id, fetch_some) in entries {
         map.insert(
-            *id,
+            id.clone(),
             execute_fetch_some(
                 fetch_some,
                 snapshot.clone(),

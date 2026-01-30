@@ -207,12 +207,12 @@ struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
 
 impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
     pub fn get_parameter_value(&self, param: &ParameterID) -> Option<Value<'static>> {
-        debug_assert!(matches!(param, ParameterID::Value(_, _)));
-        self.structure.parameters.value(*param).cloned()
+        debug_assert!(matches!(param, ParameterID::Value { .. }));
+        self.structure.parameters.value(param).cloned()
     }
 
     pub fn get_parameter_iid(&self, param: &ParameterID) -> Option<&[u8]> {
-        self.structure.parameters.iid(*param).map(|iid| iid.as_ref())
+        self.structure.parameters.iid(param).map(|iid| iid.as_ref())
     }
 
     pub fn get_variable_name(&self, variable: &StructureVariableId) -> Option<String> {

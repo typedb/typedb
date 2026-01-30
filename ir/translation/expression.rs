@@ -353,11 +353,11 @@ pub mod tests {
         assert_eq!(lhs, &Vertex::Variable(var_y));
 
         assert_eq!(rhs.len(), 5);
-        let Expression::Constant(id) = rhs[0] else { panic!("Expected Constant, found: {:?}", rhs[0]) };
+        let Expression::Constant(id) = &rhs[0] else { panic!("Expected Constant, found: {:?}", rhs[0]) };
         assert_eq!(value_parameters.value(id), Some(&Value::Integer(5)));
-        let Expression::Constant(id) = rhs[1] else { panic!("Expected Constant, found: {:?}", rhs[1]) };
+        let Expression::Constant(id) = &rhs[1] else { panic!("Expected Constant, found: {:?}", rhs[1]) };
         assert_eq!(value_parameters.value(id), Some(&Value::Integer(9)));
-        let Expression::Constant(id) = rhs[2] else { panic!("Expected Constant, found: {:?}", rhs[2]) };
+        let Expression::Constant(id) = &rhs[2] else { panic!("Expected Constant, found: {:?}", rhs[2]) };
         assert_eq!(value_parameters.value(id), Some(&Value::Integer(6)));
         assert_eq!(rhs[3], Expression::Operation(Operation::new(Operator::Multiply, 1, 2, None)));
         assert_eq!(rhs[4], Expression::Operation(Operation::new(Operator::Add, 0, 3, None)));

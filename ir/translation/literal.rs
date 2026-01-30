@@ -396,7 +396,7 @@ pub mod tests {
                     .finish()
                     .unwrap();
             let x = block.conjunction().constraints()[0].as_expression_binding().unwrap().expression().get_root();
-            match *x {
+            match x {
                 Expression::Constant(id) => Ok(value_parameters.value_unchecked(id).to_owned()),
                 _ => unreachable!(),
             }

@@ -89,7 +89,7 @@ fn translate_fetch_object(
                     key,
                     entry.span().expect("Parser did not provide Fetch key-value text range."),
                 );
-                source_spans.insert(key_id, entry.span());
+                source_spans.insert(key_id.clone(), entry.span());
                 object.insert(key_id, translate_fetch_some(parent_context, value_parameters, function_index, value)?);
             }
             Ok(FetchObject::Entries(object, source_spans))

@@ -238,11 +238,11 @@ pub(crate) fn add_inserted_concepts(
                 variable_registry,
                 stage_source_span,
             )?;
-            let value = if let Some(&constant) = value_bindings.get(&value_variable) {
+            let value = if let Some(constant) = value_bindings.get(&value_variable) {
                 debug_assert!(!value_variable
                     .as_variable()
                     .is_some_and(|variable| input_variables.contains_key(&variable)));
-                ValueSource::Parameter(constant)
+                ValueSource::Parameter(constant.clone())
             } else if let &Vertex::Variable(variable) = value_variable {
                 if let Some(&position) = input_variables.get(&variable) {
                     ValueSource::Variable(position)
@@ -435,7 +435,7 @@ fn collect_value_bindings(
 
     filter_variants!(Constraint::ExpressionBinding : constraints)
         .map(|expr| {
-            let &Expression::Constant(constant) = expr.expression().get_root() else {
+            let Expression::Constant(constant) = expr.expression().get_root() else {
                 return Err(Box::new(WriteCompilationError::UnsupportedCompoundExpressions {
                     source_span: expr.source_span(),
                 }));
@@ -446,13 +446,13 @@ fn collect_value_bindings(
                 seen.insert(expr.left());
             }
 
-            Ok((expr.left(), constant))
+            Ok((expr.left(), constant.clone()))
         })
         .chain(
             constraints
                 .iter()
                 .flat_map(|con| con.vertices().filter(|v| v.is_parameter()))
-                .map(|param| Ok((param, param.as_parameter().unwrap()))),
+                .map(|param| Ok((param, param.as_parameter().unwrap().clone()))),
         )
         .collect()
 }

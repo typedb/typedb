@@ -215,7 +215,7 @@ impl<T> Checker<T> {
     ) -> Result<bool, Box<ConceptReadError>> {
         for check in &self.checks {
             let passes = match check {
-                CheckInstruction::Iid { var, iid } => self.filter_iid(context, row, *var, &source, *iid),
+                CheckInstruction::Iid { var, iid } => self.filter_iid(context, row, *var, &source, iid),
                 CheckInstruction::TypeList { type_var, types } => {
                     self.filter_type_list(context, row, *type_var, &source, types)
                 }
@@ -283,7 +283,7 @@ impl<T> Checker<T> {
 
         for check in &self.checks {
             let filter = match check {
-                &CheckInstruction::Iid { var, iid } => self.filter_iid_fn(context, row, var, iid),
+                CheckInstruction::Iid { var, iid } => self.filter_iid_fn(context, row, *var, iid),
                 &CheckInstruction::TypeList { type_var, ref types } => {
                     self.filter_type_list_fn(context, row, type_var, types)
                 }
@@ -350,7 +350,7 @@ impl<T> Checker<T> {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
         var: ExecutorVariable,
-        iid: ir::pattern::ParameterID,
+        iid: &ir::pattern::ParameterID,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
         let var: BoxExtractor<T> = match self.extractors.get(&var) {
             Some(&function) => Box::new(function),
@@ -366,7 +366,7 @@ impl<T> Checker<T> {
         row: &MaybeOwnedRow<'_>,
         var: ExecutorVariable,
         source: &T,
-        iid: ir::pattern::ParameterID,
+        iid: &ir::pattern::ParameterID,
     ) -> bool {
         let extracted = match self.extractors.get(&var) {
             Some(function) => function(source),
@@ -1135,7 +1135,7 @@ impl<T> Checker<T> {
         let rhs = match rhs {
             &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
             &CheckVertex::Variable(_) => unreachable!(),
-            &CheckVertex::Parameter(param) => {
+            CheckVertex::Parameter(param) => {
                 VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
             }
             CheckVertex::Type(_) => unreachable!(),
@@ -1189,7 +1189,7 @@ impl<T> Checker<T> {
         let rhs = match rhs {
             &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
             &CheckVertex::Variable(_) => unreachable!(),
-            &CheckVertex::Parameter(param) => {
+            CheckVertex::Parameter(param) => {
                 VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
             }
             CheckVertex::Type(_) => unreachable!(),
@@ -1268,7 +1268,7 @@ fn get_vertex_value<'a, 'b>(
         },
         CheckVertex::Type(type_) => VariableValue::Type(*type_),
         CheckVertex::Parameter(parameter_id) => {
-            VariableValue::Value(parameters.value_unchecked(*parameter_id).as_reference())
+            VariableValue::Value(parameters.value_unchecked(parameter_id).as_reference())
         }
     }
 }

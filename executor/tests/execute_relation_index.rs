@@ -585,7 +585,7 @@ fn traverse_index_from_bound() {
     conjunction.constraints_mut().add_label(var_casting_actor_type, CASTING_ACTOR_LABEL.clone()).unwrap();
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_id), Vertex::Parameter(id_0_parameter), Comparator::Equal, None)
+        .add_comparison(Vertex::Variable(var_id), Vertex::Parameter(id_0_parameter.clone()), Comparator::Equal, None)
         .unwrap();
 
     let entry = builder.finish().unwrap();

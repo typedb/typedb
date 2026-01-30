@@ -144,7 +144,7 @@ fn annotated_object_entries(
             source_span,
         )
         .map_err(|err| AnnotationError::FetchEntry {
-            key: parameters.fetch_key(key).unwrap().clone(),
+            key: parameters.fetch_key(&key).unwrap().clone(),
             typedb_source: Box::new(err),
         })?;
         annotated_entries.insert(key, annotated_value);

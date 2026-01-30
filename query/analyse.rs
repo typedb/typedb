@@ -288,7 +288,7 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
     entries: &HashMap<ParameterID, AnnotatedFetchSome>,
 ) -> Result<FetchStructureAnnotationsFields, Box<ConceptReadError>> {
     entries.iter().map(|(parameter_id, fetch_object)| {
-        let key = parameters.fetch_key(*parameter_id).expect("Expected fetch key to be present").to_owned();
+        let key = parameters.fetch_key(parameter_id).expect("Expected fetch key to be present").to_owned();
         let fetch_object_annotations_maybe_list = match fetch_object {
             AnnotatedFetchSome::SingleVar(var) => {
                 let as_vertex = Vertex::Variable(*var);

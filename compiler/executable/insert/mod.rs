@@ -23,7 +23,7 @@ pub enum TypeSource {
     Constant(answer::Type),
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum ValueSource {
     Variable(VariablePosition),
     Parameter(ParameterID),
