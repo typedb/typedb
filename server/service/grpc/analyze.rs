@@ -22,7 +22,6 @@ use ir::pattern::{
     constraint::{Comparator, Constraint, IsaKind, SubKind},
     ParameterID, Vertex,
 };
-use itertools::Itertools;
 use query::analyse::{
     AnalysedQuery, FetchStructureAnnotations, FetchStructureAnnotationsFields, FunctionStructureAnnotations,
 };
@@ -49,12 +48,12 @@ pub(crate) struct PipelineStructureContext<'a, Snapshot: ReadableSnapshot> {
 }
 impl<'a, Snapshot: ReadableSnapshot> PipelineStructureContext<'a, Snapshot> {
     pub(crate) fn get_parameter_value(&self, param: &ParameterID) -> Option<Value<'static>> {
-        debug_assert!(matches!(param, ParameterID::Value(_, _)));
-        self.pipeline_structure.parameters.value(*param).cloned()
+        debug_assert!(matches!(param, ParameterID::Value { .. }));
+        self.pipeline_structure.parameters.value(param).cloned()
     }
 
     pub fn get_parameter_iid(&self, param: &ParameterID) -> Option<&[u8]> {
-        self.pipeline_structure.parameters.iid(*param).map(|iid| iid.as_ref())
+        self.pipeline_structure.parameters.iid(param).map(|iid| iid.as_ref())
     }
 
     pub(crate) fn get_type(&self, label: &Label) -> Option<answer::Type> {

@@ -502,7 +502,7 @@ fn value_int_equality_isa_reads() {
     conjunction.constraints_mut().add_label(var_id_type, ID_LABEL.clone()).unwrap();
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_attr), Vertex::Parameter(value_int_2_id), Comparator::Equal, None)
+        .add_comparison(Vertex::Variable(var_attr), Vertex::Parameter(value_int_2_id.clone()), Comparator::Equal, None)
         .unwrap();
 
     let entry = builder.finish().unwrap();
@@ -606,7 +606,12 @@ fn value_int_equality_has_reverse_reads() {
     conjunction.constraints_mut().add_label(var_gov_id_type, GOV_ID_LABEL.clone()).unwrap();
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_gov_id), Vertex::Parameter(value_int_1_id), Comparator::Equal, None)
+        .add_comparison(
+            Vertex::Variable(var_gov_id),
+            Vertex::Parameter(value_int_1_id.clone()),
+            Comparator::Equal,
+            None,
+        )
         .unwrap();
 
     let entry = builder.finish().unwrap();
@@ -694,7 +699,12 @@ fn value_int_equality_has_bound_owner() {
     conjunction.constraints_mut().add_label(var_gov_id_type, GOV_ID_LABEL.clone()).unwrap();
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_gov_id), Vertex::Parameter(value_int_1_id), Comparator::Equal, None)
+        .add_comparison(
+            Vertex::Variable(var_gov_id),
+            Vertex::Parameter(value_int_1_id.clone()),
+            Comparator::Equal,
+            None,
+        )
         .unwrap();
 
     let entry = builder.finish().unwrap();
@@ -797,14 +807,14 @@ fn value_int_inequality_has_bound_owner() {
         .constraints_mut()
         .add_comparison(
             Vertex::Variable(var_gov_id),
-            Vertex::Parameter(value_int_1_id),
+            Vertex::Parameter(value_int_1_id.clone()),
             Comparator::GreaterOrEqual,
             None,
         )
         .unwrap();
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_gov_id), Vertex::Parameter(value_int_3_id), Comparator::Less, None)
+        .add_comparison(Vertex::Variable(var_gov_id), Vertex::Parameter(value_int_3_id.clone()), Comparator::Less, None)
         .unwrap();
 
     let entry = builder.finish().unwrap();
@@ -909,7 +919,12 @@ fn value_inline_string_equality_has_bound_owner() {
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_name), Vertex::Parameter(value_string_abby), Comparator::Equal, None)
+        .add_comparison(
+            Vertex::Variable(var_name),
+            Vertex::Parameter(value_string_abby.clone()),
+            Comparator::Equal,
+            None,
+        )
         .unwrap();
 
     let entry = builder.finish().unwrap();
@@ -1009,7 +1024,12 @@ fn value_hashed_string_equality_has_bound_owner() {
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_name), Vertex::Parameter(value_string_hashed), Comparator::Equal, None)
+        .add_comparison(
+            Vertex::Variable(var_name),
+            Vertex::Parameter(value_string_hashed.clone()),
+            Comparator::Equal,
+            None,
+        )
         .unwrap();
 
     let entry = builder.finish().unwrap();
@@ -1112,14 +1132,19 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
         .constraints_mut()
         .add_comparison(
             Vertex::Variable(var_name),
-            Vertex::Parameter(value_string_bolton),
+            Vertex::Parameter(value_string_bolton.clone()),
             Comparator::GreaterOrEqual,
             None,
         )
         .unwrap();
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_name), Vertex::Parameter(value_string_willow), Comparator::Less, None)
+        .add_comparison(
+            Vertex::Variable(var_name),
+            Vertex::Parameter(value_string_willow.clone()),
+            Comparator::Less,
+            None,
+        )
         .unwrap();
 
     let entry = builder.finish().unwrap();
@@ -1236,7 +1261,7 @@ fn intersection_seeks() {
 
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_age), Vertex::Parameter(value_int_10), Comparator::Equal, None)
+        .add_comparison(Vertex::Variable(var_age), Vertex::Parameter(value_int_10.clone()), Comparator::Equal, None)
         .unwrap();
 
     let entry = builder.finish().unwrap();
@@ -1418,11 +1443,11 @@ fn intersections_seeks_with_extra_values() {
 
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_age), Vertex::Parameter(value_int_12), Comparator::Equal, None)
+        .add_comparison(Vertex::Variable(var_age), Vertex::Parameter(value_int_12.clone()), Comparator::Equal, None)
         .unwrap();
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_gov_id), Vertex::Parameter(value_int_2), Comparator::Greater, None)
+        .add_comparison(Vertex::Variable(var_gov_id), Vertex::Parameter(value_int_2.clone()), Comparator::Greater, None)
         .unwrap();
 
     let entry = builder.finish().unwrap();

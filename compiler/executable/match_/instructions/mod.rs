@@ -528,8 +528,8 @@ impl<ID: IrID> CheckVertex<ID> {
         matches!(self, Self::Parameter(..))
     }
 
-    pub fn as_parameter(&self) -> Option<ParameterID> {
-        if let &Self::Parameter(v) = self {
+    pub fn as_parameter(&self) -> Option<&ParameterID> {
+        if let Self::Parameter(v) = self {
             Some(v)
         } else {
             None

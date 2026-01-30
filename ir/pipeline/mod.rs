@@ -8,7 +8,10 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use answer::variable::Variable;
 use bytes::byte_array::ByteArray;
-use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::value::Value};
+use encoding::{
+    graph::thing::THING_VERTEX_MAX_LENGTH,
+    value::{value::Value, ValueEncodable},
+};
 use error::typedb_error;
 use itertools::Itertools;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
@@ -21,7 +24,7 @@ use crate::{
     pattern::{
         constraint::Constraint,
         variable_category::{VariableCategory, VariableOptionality},
-        BranchID, ParameterID,
+        BranchID, ParameterID, ValueType,
     },
     pipeline::{function_signature::FunctionID, reduce::Reducer},
     RepresentationError,
@@ -355,39 +358,39 @@ impl ParameterRegistry {
     }
 
     pub fn register_value(&mut self, value: Value<'static>, source_span: Span) -> ParameterID {
-        let id = ParameterID::Value(self.value_registry.len(), source_span);
-        let _prev = self.value_registry.insert(id, value);
+        let id = ParameterID::Value(self.value_registry.len(), ValueType::Builtin(value.value_type()), source_span);
+        let _prev = self.value_registry.insert(id.clone(), value);
         debug_assert_eq!(_prev, None);
         id
     }
 
     pub(crate) fn register_iid(&mut self, iid: ByteArray<THING_VERTEX_MAX_LENGTH>, source_span: Span) -> ParameterID {
         let id = ParameterID::Iid(self.iid_registry.len(), source_span);
-        let _prev = self.iid_registry.insert(id, iid);
+        let _prev = self.iid_registry.insert(id.clone(), iid);
         debug_assert_eq!(_prev, None);
         id
     }
 
     pub(crate) fn register_fetch_key(&mut self, key: String, source_span: Span) -> ParameterID {
         let id = ParameterID::FetchKey(self.fetch_key_registry.len(), source_span);
-        let _prev = self.fetch_key_registry.insert(id, key);
+        let _prev = self.fetch_key_registry.insert(id.clone(), key);
         debug_assert_eq!(_prev, None);
         id
     }
 
-    pub fn value(&self, id: ParameterID) -> Option<&Value<'static>> {
-        self.value_registry.get(&id)
+    pub fn value(&self, id: &ParameterID) -> Option<&Value<'static>> {
+        self.value_registry.get(id)
     }
 
-    pub fn value_unchecked(&self, id: ParameterID) -> &Value<'static> {
-        self.value_registry.get(&id).unwrap()
+    pub fn value_unchecked(&self, id: &ParameterID) -> &Value<'static> {
+        self.value_registry.get(id).unwrap()
     }
 
-    pub fn iid(&self, id: ParameterID) -> Option<&ByteArray<THING_VERTEX_MAX_LENGTH>> {
-        self.iid_registry.get(&id)
+    pub fn iid(&self, id: &ParameterID) -> Option<&ByteArray<THING_VERTEX_MAX_LENGTH>> {
+        self.iid_registry.get(id)
     }
 
-    pub fn fetch_key(&self, id: ParameterID) -> Option<&String> {
-        self.fetch_key_registry.get(&id)
+    pub fn fetch_key(&self, id: &ParameterID) -> Option<&String> {
+        self.fetch_key_registry.get(id)
     }
 }

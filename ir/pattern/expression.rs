@@ -85,7 +85,7 @@ impl<ID: IrID> ExpressionTree<ID> {
                 Expression::ListIndexRange(list_index_range) => {
                     Expression::ListIndexRange(list_index_range.map(mapping))
                 }
-                Expression::Constant(inner) => Expression::Constant(*inner),
+                Expression::Constant(inner) => Expression::Constant(inner.clone()),
                 Expression::Operation(inner) => Expression::Operation(inner.clone()),
                 Expression::BuiltinValueFunctionCall(inner) => Expression::BuiltinValueFunctionCall(inner.clone()),
                 Expression::List(inner) => Expression::List(inner.clone()),
@@ -444,8 +444,8 @@ impl ListConstructor {
         &self.item_expression_ids
     }
 
-    pub fn len_id(&self) -> ParameterID {
-        self.len_id
+    pub fn len_id(&self) -> &ParameterID {
+        &self.len_id
     }
 
     pub fn source_span(&self) -> Option<Span> {

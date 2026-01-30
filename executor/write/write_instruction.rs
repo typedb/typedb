@@ -45,17 +45,17 @@ fn get_value<'a>(
     storage_counters: StorageCounters,
     input: &'a Row<'_>,
     parameters: &'a ParameterRegistry,
-    source: ValueSource,
+    source: &ValueSource,
 ) -> Result<Value<'a>, Box<WriteError>> {
     match source {
-        ValueSource::Variable(position) => match input.get(position) {
+        &ValueSource::Variable(position) => match input.get(position) {
             VariableValue::Thing(Thing::Attribute(attribute)) => attribute
                 .get_value(snapshot, thing_manager, storage_counters)
                 .map_err(|typedb_source| Box::new(WriteError::ConceptRead { typedb_source })),
             VariableValue::Value(value) => Ok(value.as_reference()),
             _ => unreachable!("Expected value or attribute"),
         },
-        ValueSource::Parameter(id) => Ok(parameters.value_unchecked(id).as_reference()),
+        ValueSource::Parameter(id) => Ok(parameters.value_unchecked(&id).as_reference()),
     }
 }
 
@@ -92,7 +92,7 @@ impl AsWriteInstruction for PutAttribute {
             .create_attribute(
                 snapshot,
                 attribute_type,
-                get_value(snapshot, thing_manager, storage_counters, row, parameters, self.value)?.clone(),
+                get_value(snapshot, thing_manager, storage_counters, row, parameters, &self.value)?.clone(),
             )
             .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
         let ThingPosition(write_to) = &self.write_to;

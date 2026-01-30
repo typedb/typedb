@@ -127,7 +127,7 @@ impl QueryAnswer {
             DocumentMap::UserKeys(user_keys_map) => user_keys_map
                 .iter()
                 .map(|(parameter_id, node)| {
-                    let key_name = match parameters.fetch_key(*parameter_id) {
+                    let key_name = match parameters.fetch_key(parameter_id) {
                         Some(name) => name,
                         None => panic!("Expected parameter {parameter_id:?} string in {parameters:?}"),
                     };

@@ -1879,7 +1879,7 @@ impl ConjunctionPlan<'_> {
 
             ConstraintVertex::Iid(iid) => {
                 let var = iid.iid().var().as_variable().unwrap();
-                let instruction = CheckInstruction::Iid { var, iid: iid.iid().iid().as_parameter().unwrap() };
+                let instruction = CheckInstruction::Iid { var, iid: iid.iid().iid().as_parameter().unwrap().clone() };
                 conjunction_builder.push_check(instruction.map(conjunction_builder.position_mapping()));
             }
 

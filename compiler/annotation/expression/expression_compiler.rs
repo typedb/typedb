@@ -89,7 +89,7 @@ impl<'this> ExpressionCompilationContext<'this> {
 
     fn compile_recursive(&mut self, expression: &Expression<Variable>) -> Result<(), Box<ExpressionCompileError>> {
         match expression {
-            Expression::Constant(constant) => self.compile_constant(*constant),
+            Expression::Constant(constant) => self.compile_constant(constant),
             Expression::Variable(variable) => self.compile_variable(variable),
             Expression::Operation(op) => self.compile_op(op),
             Expression::BuiltinValueFunctionCall(builtin) => self.compile_value_builtin(builtin),
@@ -99,8 +99,8 @@ impl<'this> ExpressionCompilationContext<'this> {
         }
     }
 
-    fn compile_constant(&mut self, constant: ParameterID) -> Result<(), Box<ExpressionCompileError>> {
-        self.constant_stack.push(constant);
+    fn compile_constant(&mut self, constant: &ParameterID) -> Result<(), Box<ExpressionCompileError>> {
+        self.constant_stack.push(constant.clone());
 
         self.push_type_single(self.parameters.value_unchecked(constant).value_type());
         self.append_instruction(LoadConstant::OP_CODE);

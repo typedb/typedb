@@ -2313,7 +2313,7 @@ impl Comparator {
             | Comparator::LessOrEqual
             | Comparator::GreaterOrEqual
             | Comparator::Contains => Ok(()),
-            Comparator::Like => match rhs.as_parameter().and_then(|pid| parameters.value(pid)) {
+            Comparator::Like => match rhs.as_parameter().and_then(|pid| parameters.value(&pid)) {
                 Some(encoding::value::value::Value::String(value)) => {
                     regex::Regex::new(value).map(|_| ()).map_err(|source| {
                         Box::new(RepresentationError::RegexFailedCompilation {

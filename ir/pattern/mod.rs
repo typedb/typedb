@@ -123,8 +123,8 @@ impl<ID: IrID> Vertex<ID> {
         }
     }
 
-    pub fn as_parameter(&self) -> Option<ParameterID> {
-        if let &Self::Parameter(v) = self {
+    pub fn as_parameter(&self) -> Option<&ParameterID> {
+        if let Self::Parameter(v) = self {
             Some(v)
         } else {
             None
@@ -208,9 +208,9 @@ impl<ID: fmt::Debug> fmt::Display for Vertex<ID> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum ParameterID {
-    Value(usize, Span),
+    Value(usize, ValueType, Span),
     Iid(usize, Span),
     FetchKey(usize, Span),
 }
@@ -218,7 +218,7 @@ pub enum ParameterID {
 impl ParameterID {
     fn source_span(&self) -> Span {
         match self {
-            ParameterID::Value(_, span) | ParameterID::Iid(_, span) | ParameterID::FetchKey(_, span) => *span,
+            ParameterID::Value(_, _, span) | ParameterID::Iid(_, span) | ParameterID::FetchKey(_, span) => *span,
         }
     }
 }
@@ -228,7 +228,7 @@ impl Eq for ParameterID {}
 impl PartialEq for ParameterID {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Value(v1, _), Self::Value(v2, _)) => v1 == v2,
+            (Self::Value(v1, ty1, _), Self::Value(v2, ty2, _)) => (v1, ty1) == (v2, ty2),
             (Self::Iid(v1, _), Self::Iid(v2, _)) => v1 == v2,
             (Self::FetchKey(v1, _), Self::FetchKey(v2, _)) => v1 == v2,
             (_, _) => false,
@@ -245,17 +245,17 @@ impl PartialOrd for ParameterID {
 impl Ord for ParameterID {
     fn cmp(&self, other: &Self) -> Ordering {
         match self {
-            ParameterID::Value(v1, _) => match other {
-                ParameterID::Value(v2, _) => v1.cmp(v2),
+            ParameterID::Value(v1, ty1, _) => match other {
+                ParameterID::Value(v2, ty2, _) => v1.cmp(v2).then(ty1.cmp(ty2)),
                 ParameterID::Iid(_, _) | ParameterID::FetchKey(_, _) => Ordering::Less,
             },
             ParameterID::Iid(v1, _) => match other {
-                ParameterID::Value(_, _) => Ordering::Greater,
+                ParameterID::Value { .. } => Ordering::Greater,
                 ParameterID::Iid(v2, _) => v1.cmp(v2),
                 ParameterID::FetchKey(_, _) => Ordering::Less,
             },
             ParameterID::FetchKey(v1, _) => match other {
-                ParameterID::Value(_, _) | ParameterID::Iid(_, _) => Ordering::Greater,
+                ParameterID::Value { .. } | ParameterID::Iid(_, _) => Ordering::Greater,
                 ParameterID::FetchKey(v2, _) => v1.cmp(v2),
             },
         }
@@ -265,7 +265,10 @@ impl Ord for ParameterID {
 impl Hash for ParameterID {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
-            ParameterID::Value(v, _) => state.write_u64(*v as u64),
+            ParameterID::Value(v, ty, _) => {
+                state.write_u64(*v as u64);
+                Hash::hash(&ty, state);
+            }
             ParameterID::Iid(v, _) => state.write_u64(*v as u64),
             ParameterID::FetchKey(v, _) => state.write_u64(*v as u64),
         }
@@ -274,12 +277,11 @@ impl Hash for ParameterID {
 
 impl StructuralEquality for ParameterID {
     fn hash(&self) -> u64 {
-        let id = match *self {
-            ParameterID::Value(id, _) => id,
-            ParameterID::Iid(id, _) => id,
-            ParameterID::FetchKey(id, _) => id,
-        };
-        StructuralEquality::hash(&id)
+        match self {
+            ParameterID::Value(id, ty, _) => StructuralEquality::hash(&(id, ty)),
+            ParameterID::Iid(id, _) => StructuralEquality::hash(id),
+            ParameterID::FetchKey(id, _) => StructuralEquality::hash(id),
+        }
     }
 
     fn equals(&self, other: &Self) -> bool {
@@ -291,7 +293,7 @@ impl fmt::Debug for ParameterID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Param[")?;
         match self {
-            ParameterID::Value(id, _) => write!(f, "Value({id})")?,
+            ParameterID::Value(id, ty, _) => write!(f, "Value({ty}:{id})")?,
             ParameterID::Iid(id, _) => write!(f, "IID({id})")?,
             ParameterID::FetchKey(id, _) => write!(f, "FetchKey({id})")?,
         }
@@ -343,6 +345,23 @@ impl ValueType {
     #[must_use]
     pub fn is_struct(&self) -> bool {
         matches!(self, Self::Struct(..))
+    }
+}
+
+impl PartialOrd for ValueType {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(Ord::cmp(self, other))
+    }
+}
+
+impl Ord for ValueType {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (ValueType::Builtin(_), ValueType::Struct(_)) => Ordering::Less,
+            (ValueType::Builtin(lhs), ValueType::Builtin(rhs)) => lhs.cmp(rhs),
+            (ValueType::Struct(_), ValueType::Builtin(_)) => Ordering::Greater,
+            (ValueType::Struct(lhs), ValueType::Struct(rhs)) => lhs.cmp(rhs),
+        }
     }
 }
 

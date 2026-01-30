@@ -142,7 +142,7 @@ impl<'this> ExpressionExecutorState<'this> {
     }
 
     fn next_constant(&mut self) -> Value<'static> {
-        let constant = self.parameter_registry.value_unchecked(self.constants[self.next_constant_index]).clone();
+        let constant = self.parameter_registry.value_unchecked(&self.constants[self.next_constant_index]).clone();
         self.next_constant_index += 1;
         constant
     }
