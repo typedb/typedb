@@ -4,33 +4,33 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::fmt::Debug;
+
+use erased_serde::serialize_trait_object;
 use serde::{Deserialize, Serialize};
 
-use crate::state::BoxServerStatus;
+pub trait HttpServerResponse: erased_serde::Serialize + Debug + Send + Sync {}
+
+serialize_trait_object!(HttpServerResponse);
+
+pub type BoxHttpServerResponse = Box<dyn HttpServerResponse>;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ServerResponse {
+pub struct LocalServerResponse {
     pub grpc_serving_address: Option<String>,
     pub grpc_connection_address: Option<String>,
     pub http_address: Option<String>,
-    // TODO: Can we put ReplicaStatus here? Or shall we return a dyn ServerResponse overridden in cluster?
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+impl HttpServerResponse for LocalServerResponse {}
+
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ServersResponse {
-    pub servers: Vec<ServerResponse>,
+    pub servers: Vec<BoxHttpServerResponse>,
 }
 
-pub(crate) fn encode_server(server: &BoxServerStatus) -> ServerResponse {
-    ServerResponse {
-        grpc_serving_address: server.grpc_serving_address().map(|s| s.to_string()),
-        grpc_connection_address: server.grpc_connection_address().map(|s| s.to_string()),
-        http_address: server.http_address().map(|s| s.to_string()),
-    }
-}
-
-pub(crate) fn encode_servers(servers: Vec<BoxServerStatus>) -> ServersResponse {
-    ServersResponse { servers: servers.iter().map(|s| encode_server(&s)).collect() }
+pub(crate) fn encode_servers(servers: Vec<BoxHttpServerResponse>) -> ServersResponse {
+    ServersResponse { servers }
 }
