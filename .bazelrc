@@ -2,9 +2,20 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+# Bzlmod is now the default (Bazel 7+)
+# WORKSPACE is kept for backward compatibility but is deprecated
+# To use WORKSPACE mode, uncomment the following line:
+# common --enable_workspace=true
+
+# Enable isolated extension usages for crate universe
+common --experimental_isolated_extension_usages
+
 try-import ./.bazel-remote-cache.rc
 
-build --incompatible_strict_action_env --@io_bazel_rules_docker//transitions:enable=false --remote_download_toplevel --disk_cache=~/.cache/bazel
+# Allow empty globs (many checkstyle_test patterns may not match)
+common --noincompatible_disallow_empty_glob
+
+build --incompatible_strict_action_env --remote_download_toplevel --disk_cache=~/.cache/bazel
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env --test_env=PATH
 

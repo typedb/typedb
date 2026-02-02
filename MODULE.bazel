@@ -1,0 +1,80 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+module(
+    name = "typedb",
+    version = "0.0.0",
+    compatibility_level = 1,
+)
+
+# Core BCR dependencies
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "rules_java", version = "8.6.2")
+bazel_dep(name = "rules_jvm_external", version = "6.6")
+bazel_dep(name = "rules_python", version = "1.0.0")
+bazel_dep(name = "rules_rust", version = "0.56.0")
+bazel_dep(name = "rules_kotlin", version = "2.0.0")
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "rules_proto", version = "7.1.0")
+bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
+
+# typedb ecosystem - local path overrides (until published to BCR)
+bazel_dep(name = "typedb_dependencies", version = "0.0.0")
+local_path_override(
+    module_name = "typedb_dependencies",
+    path = "../dependencies",
+)
+
+bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
+local_path_override(
+    module_name = "typedb_bazel_distribution",
+    path = "../bazel-distribution",
+)
+
+bazel_dep(name = "typeql", version = "0.0.0")
+local_path_override(
+    module_name = "typeql",
+    path = "../typeql",
+)
+
+bazel_dep(name = "typedb_protocol", version = "0.0.0")
+local_path_override(
+    module_name = "typedb_protocol",
+    path = "../typedb-protocol",
+)
+
+bazel_dep(name = "typedb_behaviour", version = "0.0.0")
+local_path_override(
+    module_name = "typedb_behaviour",
+    path = "../typedb-behaviour",
+)
+
+# Python toolchain
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.11",
+)
+
+# Rust toolchain
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.81.0"],
+)
+use_repo(rust, "rust_toolchains")
+register_toolchains("@rust_toolchains//:all")
+
+# Rust crates from typedb_dependencies
+# Use isolate=True to avoid conflict with typedb_dependencies' crate extension
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate", isolate = True)
+crate.from_cargo(
+    name = "crates",
+    cargo_lockfile = "@typedb_dependencies//:library/crates/Cargo.lock",
+    manifests = ["@typedb_dependencies//:library/crates/Cargo.toml"],
+)
+use_repo(crate, "crates")
+
+# Register Kotlin toolchain
+register_toolchains("@rules_kotlin//kotlin/internal:default_toolchain")

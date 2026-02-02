@@ -13,8 +13,10 @@ load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble
 load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
      "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
-load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
-load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
+# Docker rules commented out - io_bazel_rules_docker does not support Bzlmod
+# TODO: Migrate to rules_oci for Bazel 8+ compatibility
+# load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
+# load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
 
 load("@rules_pkg//:mappings.bzl", "pkg_files", "pkg_attributes")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
@@ -284,103 +286,17 @@ alias(
     })
 )
 
-# docker
-docker_container_image(
-    name = "assemble-docker-x86_64",
-    operating_system = "linux",
-    architecture = "amd64",
-    base = "@typedb-ubuntu-x86_64//image",
-    entrypoint = ["/opt/typedb-server-linux-x86_64/typedb", "server", "--storage.data-directory=/var/lib/typedb/data"],
-    cmd = [],
-    directory = "opt",
-    env = {
-        "LANG": "C.UTF-8",
-        "LC_ALL": "C.UTF-8",
-    },
-    ports = ["1729", "8000"],
-    tars = [":assemble-server-linux-x86_64-targz"],
-    visibility = ["//test:__subpackages__"],
-    volumes = ["/var/lib/typedb/data/"],
-    workdir = "/opt/typedb-server-linux-x86_64",
-    target_compatible_with = constraint_linux_x86_64,
-)
-
-docker_container_image(
-    name = "assemble-docker-arm64",
-    operating_system = "linux",
-    architecture = "arm64",
-    base = "@typedb-ubuntu-arm64//image",
-    entrypoint = ["/opt/typedb-server-linux-arm64/typedb", "server", "--storage.data-directory=/var/lib/typedb/data"],
-    cmd = [],
-    directory = "opt",
-    env = {
-        "LANG": "C.UTF-8",
-        "LC_ALL": "C.UTF-8",
-    },
-    ports = ["1729", "8000"],
-    tars = [":assemble-server-linux-arm64-targz"],
-    visibility = ["//test:__subpackages__"],
-    volumes = ["/var/lib/typedb/data/"],
-    workdir = "/opt/typedb-server-linux-arm64",
-    target_compatible_with = constraint_linux_arm64,
-)
-
-# TODO: Make a typedb-distribution rule similar to `deploy_apt`
-
-docker_container_push(
-    name = "deploy-docker-snapshot-x86_64",
-    format = "Docker",
-    image = ":assemble-docker-x86_64",
-    registry = deployment_docker["docker.index"],
-    repository = "{}/{}".format(
-        deployment_docker["docker.organisation"],
-        deployment_docker["docker.snapshot.repository"],
-    ),
-    # using $(version) propagates to `assemble-docker` and breaks the image so it doesn't boot
-    tag = "$(container-version)",
-    target_compatible_with = constraint_linux_x86_64,
-    tags = ["manual"],
-)
-
-docker_container_push(
-    name = "deploy-docker-snapshot-arm64",
-    format = "Docker",
-    image = ":assemble-docker-arm64",
-    registry = deployment_docker["docker.index"],
-    repository = "{}/{}".format(
-        deployment_docker["docker.organisation"],
-        deployment_docker["docker.snapshot.repository"],
-    ),
-    tag = "$(container-version)",
-    target_compatible_with = constraint_linux_arm64,
-    tags = ["manual"],
-)
-
-docker_container_push(
-    name = "deploy-docker-release-x86_64",
-    format = "Docker",
-    image = ":assemble-docker-x86_64",
-    registry = deployment_docker["docker.index"],
-    repository = "{}/{}".format(
-        deployment_docker["docker.organisation"],
-        deployment_docker["docker.release.repository"],
-    ),
-    tag_file = "//docker:version-x86_64",
-    target_compatible_with = constraint_linux_x86_64,
-)
-
-docker_container_push(
-    name = "deploy-docker-release-arm64",
-    format = "Docker",
-    image = ":assemble-docker-arm64",
-    registry = deployment_docker["docker.index"],
-    repository = "{}/{}".format(
-        deployment_docker["docker.organisation"],
-        deployment_docker["docker.release.repository"],
-    ),
-    tag_file = "//docker:version-arm64",
-    target_compatible_with = constraint_linux_arm64,
-)
+# docker - DISABLED for Bzlmod migration (io_bazel_rules_docker not compatible)
+# TODO: Migrate to rules_oci for Bazel 8+ compatibility
+# docker_container_image(
+#     name = "assemble-docker-x86_64",
+#     ...
+# )
+# docker_container_image(
+#     name = "assemble-docker-arm64",
+#     ...
+# )
+# docker_container_push targets also disabled
 
 # brew
 deploy_brew(
@@ -554,7 +470,8 @@ filegroup(
         "@typedb_dependencies//tool/release/notes:create",
         "@typedb_dependencies//tool/checkstyle:test-coverage",
         "@typedb_dependencies//tool/unuseddeps:unused-deps",
-        "@rust_analyzer_toolchain_tools//lib/rustlib/src:rustc_srcs",
+        # Note: @rust_analyzer_toolchain_tools removed - not automatically created
+        # by Bzlmod extension, optional for IDE support
         "@typedb_dependencies//tool/ide:rust_sync",
     ],
 )
