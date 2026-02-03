@@ -32,18 +32,6 @@ impl LocalServerStatus {
             http_address.map(|address| address.to_string()),
         )
     }
-
-    pub fn grpc_serving_address(&self) -> Option<&str> {
-        Some(&self.grpc_serving_address)
-    }
-
-    pub fn grpc_connection_address(&self) -> Option<&str> {
-        Some(&self.grpc_connection_address)
-    }
-
-    pub fn http_address(&self) -> Option<&str> {
-        self.http_address.as_ref().map(|address| address.as_str())
-    }
 }
 
 pub trait ServerStatus: Debug {

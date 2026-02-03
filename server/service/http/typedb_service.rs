@@ -274,10 +274,7 @@ impl HTTPTypeDBService {
                     .server_state
                     .servers_statuses()
                     .await
-                    .map(|servers| {
-                        let responses = servers.iter().map(|s| s.to_http()).collect();
-                        JsonBody(encode_servers(responses))
-                    })
+                    .map(|servers| JsonBody(encode_servers(servers)))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
         )

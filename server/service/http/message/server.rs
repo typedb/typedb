@@ -9,6 +9,8 @@ use std::fmt::Debug;
 use erased_serde::serialize_trait_object;
 use serde::{Deserialize, Serialize};
 
+use crate::state::BoxServerStatus;
+
 pub trait HttpServerResponse: erased_serde::Serialize + Debug + Send + Sync {}
 
 serialize_trait_object!(HttpServerResponse);
@@ -31,6 +33,6 @@ pub struct ServersResponse {
     pub servers: Vec<BoxHttpServerResponse>,
 }
 
-pub(crate) fn encode_servers(servers: Vec<BoxHttpServerResponse>) -> ServersResponse {
-    ServersResponse { servers }
+pub(crate) fn encode_servers(servers: Vec<BoxServerStatus>) -> ServersResponse {
+    ServersResponse { servers: servers.iter().map(|s| s.to_http()).collect() }
 }
