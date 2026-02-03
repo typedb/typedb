@@ -75,6 +75,7 @@ rust_library(
         "@crates//:chrono",
         "@crates//:chrono-tz",
         "@crates//:clap",
+        "@crates//:erased-serde",
         "@crates//:futures",
         "@crates//:http",
         "@crates//:hyper",
