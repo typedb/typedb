@@ -159,6 +159,11 @@ dev-dependencies = {}
 		features = []
 		default-features = false
 
+	[dependencies.erased-serde]
+		features = ["alloc", "default", "std"]
+		version = "0.4.9"
+		default-features = false
+
 	[dependencies.yaml-rust2]
 		features = ["default", "encoding"]
 		version = "0.10.4"
