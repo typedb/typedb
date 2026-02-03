@@ -68,16 +68,18 @@ other_permissions = {
     "server/data": "0755",
 }
 
-alias(
-    name = "typedb_console_artifact",
-    actual = select({
-        "@typedb_bazel_distribution//platform:is_linux_arm64" : "@typedb_console_artifact_linux-arm64//file",
-        "@typedb_bazel_distribution//platform:is_linux_x86_64" : "@typedb_console_artifact_linux-x86_64//file",
-        "@typedb_bazel_distribution//platform:is_mac_arm64" : "@typedb_console_artifact_mac-arm64//file",
-        "@typedb_bazel_distribution//platform:is_mac_x86_64" : "@typedb_console_artifact_mac-x86_64//file",
-        "@typedb_bazel_distribution//platform:is_windows_x86_64" : "@typedb_console_artifact_windows-x86_64//file",
-    })
-)
+# TODO(bzlmod): Migrate typedb_console_artifact to MODULE.bazel
+# Requires http_file definitions for each platform
+# alias(
+#     name = "typedb_console_artifact",
+#     actual = select({
+#         "@typedb_bazel_distribution//platform:is_linux_arm64" : "@typedb_console_artifact_linux-arm64//file",
+#         "@typedb_bazel_distribution//platform:is_linux_x86_64" : "@typedb_console_artifact_linux-x86_64//file",
+#         "@typedb_bazel_distribution//platform:is_mac_arm64" : "@typedb_console_artifact_mac-arm64//file",
+#         "@typedb_bazel_distribution//platform:is_mac_x86_64" : "@typedb_console_artifact_mac-x86_64//file",
+#         "@typedb_bazel_distribution//platform:is_windows_x86_64" : "@typedb_console_artifact_windows-x86_64//file",
+#     })
+# )
 
 # The directory structure for distribution
 pkg_files(
@@ -150,17 +152,19 @@ assemble_zip(
     target_compatible_with = constraint_win_x86_64,
 )
 
-# Package TypeDB & console together
-artifact_repackage(
-    name = "console-repackaged",
-    srcs = [":typedb_console_artifact"],
-    files_to_keep = ["console"],
-)
+# TODO(bzlmod): Package TypeDB & console together - requires typedb_console_artifact migration
+# Console artifact is disabled until migrated to Bzlmod
+# artifact_repackage(
+#     name = "console-repackaged",
+#     srcs = [":typedb_console_artifact"],
+#     files_to_keep = ["console"],
+# )
 
+# Temporary: package-typedb-all without console (console requires http_file migration)
 pkg_tar(
     name = "package-typedb-all",
     srcs = [":package-layout-server"],
-    deps = [":console-repackaged"],
+    # deps = [":console-repackaged"],  # TODO(bzlmod): Re-enable when console artifact is migrated
 )
 
 assemble_zip(

@@ -9,6 +9,7 @@ module(
 )
 
 # Core BCR dependencies
+bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "rules_java", version = "8.6.2")
 bazel_dep(name = "rules_jvm_external", version = "6.6")
@@ -66,15 +67,23 @@ rust.toolchain(
 use_repo(rust, "rust_toolchains")
 register_toolchains("@rust_toolchains//:all")
 
-# Rust crates from typedb_dependencies
-# Use isolate=True to avoid conflict with typedb_dependencies' crate extension
-crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate", isolate = True)
-crate.from_cargo(
-    name = "crates",
-    cargo_lockfile = "@typedb_dependencies//:library/crates/Cargo.lock",
-    manifests = ["@typedb_dependencies//:library/crates/Cargo.toml"],
-)
+# Rust crates - import from typedb_dependencies' crate extension
+# This ensures type compatibility with typedb_protocol which uses the same crates
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
 use_repo(crate, "crates")
+
+# Maven dependencies - import from typedb_dependencies
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+use_repo(maven, "maven")
 
 # Register Kotlin toolchain
 register_toolchains("@rules_kotlin//kotlin/internal:default_toolchain")
+
+# workspace_refs for release validation
+# Creates a refs.json file with version information from dependencies
+workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
+workspace_refs(
+    name = "typedb_workspace_refs",
+    workspace_commit_dict = {},
+    workspace_tag_dict = {},
+)
