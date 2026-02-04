@@ -49,7 +49,7 @@ features = {}
 	[dev-dependencies.typeql]
 		features = []
 		git = "https://github.com/typedb/typeql"
-		tag = "3.8.0-rc0"
+		tag = "3.8.0"
 		default-features = false
 
 	[dev-dependencies.storage]
