@@ -1,10 +1,10 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.8.0-rc0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.8.0-rc0)
+[Distributions for 3.8.0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.8.0)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.8.0-rc0```
+```docker pull typedb/typedb:3.8.0```
 
 
 ## New Features
@@ -24,6 +24,11 @@
   
 
 ## Bugs Fixed
+- **Tag parameters with value type**
+  
+  We tag extracted parameters in queries with their value type. Previously the plan cache would not be able to distinguish queries with integer literals from ones with datetime literals, e.g., which would cause it to retrieve a wrong compiled plan from the cache, causing a server crash.
+  
+  
 - **Always regenerate indices for modified relations on schema commit**
   #7594  changed relation-index behaviour so schema transactions avoid reading or writing to relation-indices - and generate indices at commit time for newly inserted relations, or relations of types that became eligible for indices as part of schema modifications. 
   
@@ -55,6 +60,11 @@
 
 
 ## Other Improvements
+- **Introduce bazel ci config setting**
+  
+  We add a bazel config profile `ci`, which does not use a local disk cache. Local disk caches can help speed up builds, especially when switching branches or creating new worktrees. However, they can be very large and cause CI systems to run out of disk space, while also not providing any benefits (roughly building once per CI job, and already using the global networked cache).
+  
+  
 - **Add bazel disk cache to speed up local builds when switching branches**
 
 - **Change "newsletter" to "blog" in README**
