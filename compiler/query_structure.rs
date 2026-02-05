@@ -16,7 +16,8 @@ use answer::variable::Variable;
 use encoding::value::{label::Label, value_type::ValueType};
 use ir::{
     pattern::{
-        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, IrID, Scope, ScopeId,
+        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, IrID, Pattern,
+        Scope, ScopeId,
     },
     pipeline::{
         modifier::SortVariable,
@@ -127,12 +128,42 @@ pub fn extract_pipeline_structure_from(
     let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
     annotated_stages.into_iter().enumerate().for_each(|(index, stage)| builder.add_stage(stage, StageIndex(index)));
     let output_variables = annotated_stages
-        .last()
-        .unwrap()
-        .named_referenced_variables(variable_registry)
-        .map(|v| StructureVariableId::from(v))
-        .collect();
-    builder.finish(output_variables)
+        .iter()
+        .rev()
+        .filter_map(|stage| match stage {
+            AnnotatedStage::Match { block, .. } => Some(
+                block
+                    .conjunction()
+                    .variable_binding_modes()
+                    .iter()
+                    .filter_map(|(v, mode)| (!mode.is_locally_binding_in_child()).then_some(v.clone()))
+                    .collect::<Vec<_>>(),
+            ),
+            | AnnotatedStage::Insert { block, .. }
+            | AnnotatedStage::Update { block, .. }
+            | AnnotatedStage::Put { block, .. } => {
+                Some(block.conjunction().variable_binding_modes().keys().cloned().collect::<Vec<_>>())
+            }
+            AnnotatedStage::Delete { block, deleted_variables, .. } => Some(
+                block
+                    .conjunction()
+                    .variable_binding_modes()
+                    .keys()
+                    .filter(|v| !deleted_variables.contains(v))
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            ),
+            AnnotatedStage::Select(select) => Some(select.variables.iter().cloned().collect::<Vec<_>>()),
+            AnnotatedStage::Reduce(reduce, _) => Some(reduce.variables().collect::<Vec<_>>()),
+            AnnotatedStage::Sort(_) => None,
+            | AnnotatedStage::Offset(_) => None,
+            | AnnotatedStage::Limit(_) => None,
+            | AnnotatedStage::Require(_) => None,
+            | AnnotatedStage::Distinct(_) => None,
+        })
+        .next()
+        .unwrap_or_default();
+    builder.finish(output_variables.iter().map(|v| StructureVariableId::from(v)).collect())
 }
 
 #[derive(Debug, Clone)]
