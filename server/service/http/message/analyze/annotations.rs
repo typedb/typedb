@@ -267,19 +267,19 @@ pub mod bdd {
     use std::collections::HashMap;
 
     use compiler::query_structure::{QueryStructureConjunctionID, QueryStructureStage};
-    use itertools::Itertools;
+use itertools::Itertools;
 
-    use super::{FetchStructureAnnotationsResponse, FunctionReturnAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse, ConjunctionAnnotationsResponse, VariableAnnotationsResponse};
-    use crate::service::http::message::analyze::{
-        bdd::{
-            functor_macros,
-            functor_macros::{encode_functor_impl, impl_functor_for, impl_functor_for_multi},
-            FunctorContext, FunctorEncoded,
-        },
-        structure::StructureConstraint,
-        AnalysedQueryResponse,
-    };
-    use crate::service::http::message::analyze::structure::{AnalyzedFunctionResponse, AnalyzedPipelineResponse};
+    use super::{ConjunctionAnnotationsResponse, FetchStructureAnnotationsResponse, FunctionReturnAnnotationsResponse, SingleTypeAnnotationResponse, TypeAnnotationResponse, VariableAnnotationsResponse};
+use crate::service::http::message::analyze::structure::{AnalyzedFunctionResponse, AnalyzedPipelineResponse};
+use crate::service::http::message::analyze::{
+    bdd::{
+        functor_macros,
+        functor_macros::{encode_functor_impl, impl_functor_for, impl_functor_for_multi},
+        FunctorContext, FunctorEncoded,
+    },
+    structure::StructureConstraint,
+    AnalysedQueryResponse,
+};
 
     pub fn encode_pipeline_annotations_as_functor(pipeline: &AnalyzedPipelineResponse) -> String {
         PipelineAnnotationsToEncode.encode_as_functor(&FunctorContext { pipeline })
