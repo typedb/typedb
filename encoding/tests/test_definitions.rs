@@ -48,10 +48,7 @@ fn get_struct_key(snapshot: &impl ReadableSnapshot, name: String) -> Option<Defi
     bytes.map(|value| DefinitionKey::new(Bytes::Array(value)))
 }
 
-fn get_struct_definition(
-    snapshot: &impl ReadableSnapshot,
-    definition_key: &DefinitionKey,
-) -> StructDefinition {
+fn get_struct_definition(snapshot: &impl ReadableSnapshot, definition_key: &DefinitionKey) -> StructDefinition {
     let bytes = snapshot
         .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference(), StorageCounters::DISABLED)
         .unwrap();

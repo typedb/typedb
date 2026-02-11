@@ -8,10 +8,7 @@ use std::{path::Path, sync::Arc};
 
 use durability::wal::WAL;
 use kv::keyspaces::KeyspaceSet;
-use storage::{
-    durability_client::WALClient, recovery::checkpoint::Checkpoint, MVCCStorage,
-    StorageOpenError,
-};
+use storage::{durability_client::WALClient, recovery::checkpoint::Checkpoint, MVCCStorage, StorageOpenError};
 
 pub mod mock_snapshot;
 
@@ -35,9 +32,7 @@ macro_rules! test_keyspace_set {
     };
 }
 
-pub fn create_storage<KS: KeyspaceSet>(
-    path: &Path,
-) -> Result<Arc<MVCCStorage<WALClient>>, StorageOpenError> {
+pub fn create_storage<KS: KeyspaceSet>(path: &Path) -> Result<Arc<MVCCStorage<WALClient>>, StorageOpenError> {
     let wal = WAL::create(path).unwrap();
     let storage = MVCCStorage::create::<KS>("storage", path, WALClient::new(wal))?;
     Ok(Arc::new(storage))

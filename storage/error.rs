@@ -7,8 +7,7 @@
 use std::sync::Arc;
 
 use error::typedb_error;
-use kv::keyspaces::KeyspacesError;
-use kv::KVStoreError;
+use kv::{keyspaces::KeyspacesError, KVStoreError};
 
 typedb_error!(
     pub MVCCStorageError(component = "MVCC Storage", prefix = "MST") {

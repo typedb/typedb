@@ -7,11 +7,9 @@
 #![deny(elided_lifetimes_in_paths)]
 #![deny(unused_must_use)]
 
-use bytes::{Bytes};
+use bytes::Bytes;
 use kv::keyspaces::{KeyspaceId, KeyspaceSet};
-use storage::{
-    key_value::StorageKey,
-};
+use storage::key_value::StorageKey;
 
 use crate::layout::prefix::{Prefix, PrefixID};
 

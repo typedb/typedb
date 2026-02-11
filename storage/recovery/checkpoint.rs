@@ -14,10 +14,12 @@ use std::{
 use chrono::Utc;
 use error::typedb_error;
 use itertools::Itertools;
-use kv::KVStore;
+use kv::{
+    keyspaces::{KeyspaceSet, Keyspaces, KeyspacesError},
+    KVStore,
+};
 use same_file::is_same_file;
 use tracing::trace;
-use kv::keyspaces::{KeyspaceSet, Keyspaces, KeyspacesError};
 
 use crate::{
     durability_client::DurabilityClient,
@@ -52,11 +54,7 @@ impl Checkpoint {
         Ok(Checkpoint { directory: current_checkpoint_dir })
     }
 
-    pub fn add_storage(
-        &self,
-        keyspaces: &Keyspaces,
-        watermark: SequenceNumber,
-    ) -> Result<(), CheckpointCreateError> {
+    pub fn add_storage(&self, keyspaces: &Keyspaces, watermark: SequenceNumber) -> Result<(), CheckpointCreateError> {
         use CheckpointCreateError::{KeyspaceCheckpoint, MetadataFileCreate, MetadataWrite};
         keyspaces
             .checkpoint(&self.directory)
@@ -150,7 +148,8 @@ impl Checkpoint {
                 .map_err(|error| CheckpointRestore { dir: self.directory.clone(), source: Arc::new(error) })?;
         }
 
-        let keyspaces = KVStore::open_keyspaces::<KS>(keyspaces_dir).map_err(|error| KeyspacesOpen { typedb_source: error })?;
+        let keyspaces =
+            KVStore::open_keyspaces::<KS>(keyspaces_dir).map_err(|error| KeyspacesOpen { typedb_source: error })?;
 
         trace!("Finished recovering keyspaces, recovering missing commits");
 

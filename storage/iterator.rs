@@ -8,9 +8,7 @@ use std::{cmp::Ordering, sync::Arc};
 
 use bytes::byte_array::ByteArray;
 use error::typedb_error;
-use kv::KVStoreError;
-use kv::iterator::KVRangeIterator;
-use kv::keyspaces::KeyspaceId;
+use kv::{iterator::KVRangeIterator, keyspaces::KeyspaceId, KVStoreError};
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;

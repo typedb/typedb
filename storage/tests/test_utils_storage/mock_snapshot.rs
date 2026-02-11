@@ -13,10 +13,9 @@ use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     sequence_number::SequenceNumber,
     snapshot::{
-        buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::Write, ReadableSnapshot,
+        buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::Write, ReadableSnapshot, SnapshotGetError,
     },
 };
-use storage::snapshot::SnapshotGetError;
 
 pub struct MockSnapshot;
 

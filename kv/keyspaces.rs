@@ -3,15 +3,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::fmt;
-use std::path::Path;
-use std::sync::Arc;
+use std::{fmt, path::Path, sync::Arc};
 
 use error::typedb_error;
 use serde::{Deserialize, Serialize};
 
-use crate::write_batches::WriteBatches;
-use crate::{KVStore, KVStoreError, KVStoreID};
+use crate::{write_batches::WriteBatches, KVStore, KVStoreError, KVStoreID};
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyspaceId(pub u8);

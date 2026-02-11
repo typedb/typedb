@@ -8,16 +8,18 @@ use std::{collections::BTreeMap, sync::Arc};
 
 use durability::RawRecord;
 use error::typedb_error;
+use kv::{
+    keyspaces::{Keyspaces, KeyspacesError},
+    write_batches::WriteBatches,
+};
 use tracing::{event, Level};
-use kv::keyspaces::{Keyspaces, KeyspacesError};
-use kv::write_batches::WriteBatches;
+
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     sequence_number::SequenceNumber,
-    MVCCStorage,
+    FromOperationsBuffer, MVCCStorage,
 };
-use crate::FromOperationsBuffer;
 
 /// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.
 pub fn load_commit_data_from(
@@ -98,8 +100,7 @@ pub(crate) fn apply_recovered(
     for (commit_sequence_number, commit) in recovered_commits {
         match commit {
             RecoveryCommitStatus::Validated(commit_record) => {
-                pending_writes
-                    .push(WriteBatches::from_operations(commit_sequence_number, commit_record.operations()));
+                pending_writes.push(WriteBatches::from_operations(commit_sequence_number, commit_record.operations()));
                 isolation_manager.load_validated(commit_sequence_number, commit_record);
             }
             RecoveryCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),

@@ -14,9 +14,7 @@ use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
 use kv::keyspaces::KeyspaceSet;
 use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{
-    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-};
+use storage::key_value::{StorageKey, StorageKeyArray, StorageKeyReference};
 
 use crate::{
     graph::{

@@ -17,7 +17,25 @@ use std::{
     time::Duration,
 };
 
-use crate::snapshot::buffer::OperationsBuffer;
+use ::error::typedb_error;
+use bytes::{byte_array::ByteArray, Bytes};
+use isolation_manager::IsolationConflict;
+use iterator::MVCCReadError;
+use kv::{
+    iterator::KVRangeIterator,
+    keyspaces::{KeyspaceId, KeyspaceSet, Keyspaces, KeyspacesError},
+    write_batches::{KVWriteBatch, WriteBatches},
+    KVStore,
+};
+use lending_iterator::LendingIterator;
+use logger::{error, result::ResultExt};
+use primitive::key_range::KeyRange;
+use resource::{
+    constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
+    profile::{CommitProfile, StorageCounters},
+};
+use tracing::trace;
+
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     error::MVCCStorageError,
@@ -29,25 +47,10 @@ use crate::{
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
-    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::{
+        buffer::OperationsBuffer, write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot,
+    },
 };
-use ::error::typedb_error;
-use bytes::{byte_array::ByteArray, Bytes};
-use isolation_manager::IsolationConflict;
-use iterator::MVCCReadError;
-use kv::iterator::KVRangeIterator;
-use kv::keyspaces::{KeyspaceId, KeyspaceSet, Keyspaces, KeyspacesError};
-use kv::write_batches::WriteBatches;
-use kv::KVStore;
-use kv::write_batches::KVWriteBatch;
-use lending_iterator::LendingIterator;
-use logger::{error, result::ResultExt};
-use primitive::key_range::KeyRange;
-use resource::{
-    constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
-    profile::{CommitProfile, StorageCounters},
-};
-use tracing::trace;
 
 pub mod durability_client;
 pub mod error;
@@ -661,8 +664,9 @@ mod tests {
 
     #[test]
     fn test_recovery_from_partial_write() {
-        use crate::FromOperationsBuffer;
         use kv::KVStore;
+
+        use crate::FromOperationsBuffer;
         test_keyspace_set! {
             PersistedKeyspace => 0: "write",
             FailedKeyspace => 1: "failed",
@@ -703,13 +707,9 @@ mod tests {
 
         let mut durability_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
         durability_client.register_record_type::<CommitRecord>();
-        let storage = MVCCStorage::<WALClient>::load::<TestKeyspaceSet>(
-            "storage",
-            &storage_path,
-            durability_client,
-            &None,
-        )
-        .unwrap();
+        let storage =
+            MVCCStorage::<WALClient>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
+                .unwrap();
         assert_eq!(storage.get::<0>(&key_2, seq, StorageCounters::DISABLED).unwrap().unwrap(), ByteArray::empty());
     }
 }

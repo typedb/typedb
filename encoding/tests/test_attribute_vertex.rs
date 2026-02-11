@@ -198,12 +198,8 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     {
         let wal = WAL::create(&storage_path).unwrap();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
-                "storage",
-                &storage_path,
-                WALClient::new(wal),
-            )
-            .unwrap(),
+            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
+                .unwrap(),
         );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
@@ -220,13 +216,8 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     for i in 0..5 {
         let wal = WAL::load(&storage_path).unwrap();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
-                "storage",
-                &storage_path,
-                WALClient::new(wal),
-                &None,
-            )
-            .unwrap(),
+            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
+                .unwrap(),
         );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
@@ -239,13 +230,8 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     for i in 0..5 {
         let wal = WAL::load(&storage_path).unwrap();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
-                "storage",
-                &storage_path,
-                WALClient::new(wal),
-                &None,
-            )
-            .unwrap(),
+            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
+                .unwrap(),
         );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();

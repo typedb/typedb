@@ -85,10 +85,7 @@ impl<T: SchemaID + Keyable<BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
         Ok(None)
     }
 
-    pub fn allocate<Snapshot: WritableSnapshot>(
-        &self,
-        snapshot: &mut Snapshot,
-    ) -> Result<T, EncodingError> {
+    pub fn allocate<Snapshot: WritableSnapshot>(&self, snapshot: &mut Snapshot) -> Result<T, EncodingError> {
         let found = self.find_unallocated_id(snapshot, self.last_allocated_type_id.load(Relaxed))?;
         if let Some(allocated_id) = found {
             self.last_allocated_type_id.store(allocated_id, Relaxed);

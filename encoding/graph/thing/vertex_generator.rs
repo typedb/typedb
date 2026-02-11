@@ -151,16 +151,18 @@ impl ThingVertexGenerator {
         &self.large_value_hasher
     }
 
-    pub fn create_entity<Snapshot: WritableSnapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
-    {
+    pub fn create_entity<Snapshot: WritableSnapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex {
         let entity_id = self.entity_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::new(entity_id));
         snapshot.insert(vertex.into_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_relation<Snapshot: WritableSnapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
-    {
+    pub fn create_relation<Snapshot: WritableSnapshot>(
+        &self,
+        type_id: TypeID,
+        snapshot: &mut Snapshot,
+    ) -> ObjectVertex {
         let relation_id = self.relation_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_relation(type_id, ObjectID::new(relation_id));
         snapshot.insert(vertex.into_storage_key().into_owned_array());

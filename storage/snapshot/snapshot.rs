@@ -283,7 +283,6 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         let mvcc_iterator = self.storage.iterate_range(range, self.open_sequence_number, storage_counters);
         SnapshotRangeIterator::new(mvcc_iterator, None)
     }
-
 }
 
 pub struct WriteSnapshot<D> {
@@ -456,9 +455,9 @@ impl<D> SchemaSnapshot<D> {
         open_sequence_number: SequenceNumber,
         operations: OperationsBuffer,
     ) -> impl ReadableSnapshot {
-    // TODO: does cluster need this?
-    let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
-    SchemaSnapshot { storage, operations, open_sequence_number, reader_guard }
+        // TODO: does cluster need this?
+        let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
+        SchemaSnapshot { storage, operations, open_sequence_number, reader_guard }
     }
 }
 

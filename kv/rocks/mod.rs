@@ -62,6 +62,28 @@ impl RocksKVStore {
         Ok(Self::new(path, name, id, kv_storage, prefix_length.to_owned()))
     }
 
+    pub fn open_keyspaces<KS: KeyspaceSet>(storage_dir: &Path) -> Result<Keyspaces, KeyspacesError> {
+        let cache = RocksKVStore::create_cache();
+
+        let mut keyspaces = Keyspaces::new();
+        for keyspace in KS::iter() {
+            keyspaces.validate_new_keyspace(keyspace)?;
+            let prefix_length = keyspace.prefix_length();
+            let options = RocksKVStore::create_open_options(&cache, prefix_length);
+            let kv = RocksKVStore::open(
+                storage_dir.to_path_buf(),
+                options,
+                prefix_length,
+                keyspace.name(),
+                keyspace.id().into(),
+            )
+            .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
+            keyspaces.keyspaces.push(KVStore::RocksDB(kv));
+            keyspaces.index[keyspace.id().0 as usize] = Some(KeyspaceId(keyspaces.keyspaces.len() as u8 - 1));
+        }
+        Ok(keyspaces)
+    }
+
     pub(crate) fn default_read_options(&self) -> ReadOptions {
         let mut options = ReadOptions::default();
         options.set_total_order_seek(true);
@@ -133,23 +155,6 @@ impl RocksKVStore {
 
     pub(crate) fn iterpool(&self) -> &iterpool::RocksRawIteratorPool {
         &self.rocks_raw_iterator_pool
-    }
-
-    pub fn open_keyspaces<KS: KeyspaceSet>(storage_dir: &Path) -> Result<Keyspaces, KeyspacesError> {
-        let cache = RocksKVStore::create_cache();
-
-        let mut keyspaces = Keyspaces::new();
-        for keyspace in KS::iter() {
-            keyspaces.validate_new_keyspace(keyspace)?;
-            let prefix_length = keyspace.prefix_length();
-            let options = RocksKVStore::create_open_options(&cache, prefix_length);
-            let kv =
-                RocksKVStore::open(storage_dir.to_path_buf(), options, prefix_length, keyspace.name(), keyspace.id().into())
-                    .map_err(|e| KeyspacesError::KVStoreError { typedb_source: e.into() })?;
-            keyspaces.keyspaces.push(KVStore::RocksDB(kv));
-            keyspaces.index[keyspace.id().0 as usize] = Some(KeyspaceId(keyspaces.keyspaces.len() as u8 - 1));
-        }
-        Ok(keyspaces)
     }
 
     pub fn id(&self) -> KVStoreID {
