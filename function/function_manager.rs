@@ -39,12 +39,9 @@ use ir::{
     },
 };
 use itertools::Itertools;
-use primitive::maybe_owns::MaybeOwns;
+use primitive::{key_range::KeyRange, maybe_owns::MaybeOwns};
 use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
-use storage::{
-    key_range::KeyRange,
-    snapshot::{ReadableSnapshot, WritableSnapshot},
-};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::common::Spanned;
 
 use crate::{function::SchemaFunction, function_cache::FunctionCache, FunctionError};
@@ -115,7 +112,7 @@ impl FunctionManager {
             let existing = snapshot
                 .get::<BUFFER_VALUE_INLINE>(index_key.as_reference(), StorageCounters::DISABLED)
                 .map_err(|source| FunctionError::FunctionRetrieval {
-                    typedb_source: FunctionReadError::FunctionRetrieval { source },
+                    typedb_source: FunctionReadError::FunctionRetrieval { typedb_source: source },
                 })?;
             if existing.is_some() {
                 Err(FunctionError::FunctionAlreadyExists { name: function.name(), source_span: definition.span() })?;
@@ -263,7 +260,7 @@ impl FunctionReader {
         let index_key = NameToFunctionDefinitionIndex::build(name);
         let bytes_opt = snapshot
             .get(index_key.into_storage_key().as_reference(), StorageCounters::DISABLED)
-            .map_err(|source| FunctionReadError::FunctionRetrieval { source })?;
+            .map_err(|source| FunctionReadError::FunctionRetrieval { typedb_source: source })?;
         Ok(bytes_opt.map(|bytes| DefinitionKey::new(Bytes::Array(bytes))))
     }
 
@@ -274,7 +271,7 @@ impl FunctionReader {
     ) -> Result<SchemaFunction, FunctionReadError> {
         snapshot
             .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference(), StorageCounters::DISABLED)
-            .map_err(|source| FunctionReadError::FunctionRetrieval { source })?
+            .map_err(|source| FunctionReadError::FunctionRetrieval { typedb_source: source })?
             .map_or(
                 Err(FunctionReadError::FunctionIDNotFound { name: name.to_owned(), id: FunctionID::Schema(definition_key.clone()) }),
                 |bytes| Ok(SchemaFunction::build(definition_key, FunctionDefinition::new(Bytes::Array(bytes))).unwrap()),

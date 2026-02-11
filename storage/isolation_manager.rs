@@ -24,7 +24,7 @@ use logger::result::ResultExt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
 use serde::{Deserialize, Serialize};
-
+use kv::write_batches::WriteBatches;
 use crate::{
     durability_client::{
         DurabilityClient, DurabilityClientError, DurabilityRecord, SequencedDurabilityRecord,
@@ -32,8 +32,8 @@ use crate::{
     },
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},
-    write_batches::WriteBatches,
 };
+use crate::FromOperationsBuffer;
 
 #[derive(Debug)]
 pub(crate) struct IsolationManager {
@@ -871,7 +871,6 @@ mod tests {
 
     use crate::{
         isolation_manager::{CommitRecord, CommitStatus, CommitType, ReaderDropGuard, Timeline, TIMELINE_WINDOW_SIZE},
-        keyspace::{KeyspaceId, KeyspaceSet},
         sequence_number::SequenceNumber,
         snapshot::buffer::OperationsBuffer,
     };
@@ -880,10 +879,10 @@ mod tests {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
             #[derive(Clone, Copy)]
             enum TestKeyspaceSet { $($variant),* }
-            impl KeyspaceSet for TestKeyspaceSet {
+            impl kv::keyspaces::KeyspaceSet for TestKeyspaceSet {
                 fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-                fn id(&self) -> KeyspaceId {
-                    match *self { $(Self::$variant => KeyspaceId($id)),* }
+                fn id(&self) -> kv::keyspaces::KeyspaceId {
+                    match *self { $(Self::$variant => kv::keyspaces::KeyspaceId($id)),* }
                 }
                 fn name(&self) -> &'static str {
                     match *self { $(Self::$variant => $name),* }

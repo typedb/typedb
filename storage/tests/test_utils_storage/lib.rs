@@ -7,8 +7,9 @@
 use std::{path::Path, sync::Arc};
 
 use durability::wal::WAL;
+use kv::keyspaces::KeyspaceSet;
 use storage::{
-    durability_client::WALClient, keyspace::KeyspaceSet, recovery::checkpoint::Checkpoint, MVCCStorage,
+    durability_client::WALClient, recovery::checkpoint::Checkpoint, MVCCStorage,
     StorageOpenError,
 };
 
@@ -19,10 +20,10 @@ macro_rules! test_keyspace_set {
     {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
         #[derive(Clone, Copy)]
         enum TestKeyspaceSet { $($variant),* }
-        impl storage::keyspace::KeyspaceSet for TestKeyspaceSet {
+        impl kv::keyspaces::KeyspaceSet for TestKeyspaceSet {
             fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-            fn id(&self) -> storage::keyspace::KeyspaceId {
-                match *self { $(Self::$variant => storage::keyspace::KeyspaceId($id)),* }
+            fn id(&self) -> kv::keyspaces::KeyspaceId {
+                match *self { $(Self::$variant => kv::keyspaces::KeyspaceId($id)),* }
             }
             fn name(&self) -> &'static str {
                 match *self { $(Self::$variant => $name),* }
@@ -34,7 +35,9 @@ macro_rules! test_keyspace_set {
     };
 }
 
-pub fn create_storage<KS: KeyspaceSet>(path: &Path) -> Result<Arc<MVCCStorage<WALClient>>, StorageOpenError> {
+pub fn create_storage<KS: KeyspaceSet>(
+    path: &Path,
+) -> Result<Arc<MVCCStorage<WALClient>>, StorageOpenError> {
     let wal = WAL::create(path).unwrap();
     let storage = MVCCStorage::create::<KS>("storage", path, WALClient::new(wal))?;
     Ok(Arc::new(storage))

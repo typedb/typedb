@@ -6,7 +6,7 @@
 
 use std::fmt::Debug;
 
-use primitive::prefix::Prefix;
+use crate::prefix::Prefix;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KeyRange<T: Prefix> {

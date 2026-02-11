@@ -10,9 +10,9 @@ use std::sync::{
 };
 
 use bytes::{byte_array::ByteArray, Bytes};
+use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 use storage::{
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
     MVCCStorage,
@@ -112,7 +112,7 @@ impl ThingVertexGenerator {
             let next_storage_key: StorageKey<'_, { ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
             if let Some(prev_bytes) =
-                storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key()))
+                storage.get_prev_raw(next_storage_key.as_reference(), &mut |key, _| Vec::from(key.key()))
             {
                 if ObjectVertex::is_entity_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);
@@ -129,7 +129,7 @@ impl ThingVertexGenerator {
             let next_storage_key: StorageKey<'_, { ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
             if let Some(prev_bytes) =
-                storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key()))
+                storage.get_prev_raw(next_storage_key.as_reference(), &mut |key, _| Vec::from(key.key()))
             {
                 if ObjectVertex::is_relation_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);
@@ -151,9 +151,7 @@ impl ThingVertexGenerator {
         &self.large_value_hasher
     }
 
-    pub fn create_entity<Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
-    where
-        Snapshot: WritableSnapshot,
+    pub fn create_entity<Snapshot: WritableSnapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
     {
         let entity_id = self.entity_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::new(entity_id));
@@ -161,9 +159,7 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_relation<Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
-    where
-        Snapshot: WritableSnapshot,
+    pub fn create_relation<Snapshot: WritableSnapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
     {
         let relation_id = self.relation_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_relation(type_id, ObjectID::new(relation_id));

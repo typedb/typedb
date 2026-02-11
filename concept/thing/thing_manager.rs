@@ -50,8 +50,11 @@ use encoding::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 use itertools::Itertools;
-use lending_iterator::{LendingIterator, Peekable};
-use primitive::either::Either;
+use lending_iterator::Peekable;
+use primitive::{
+    either::Either,
+    key_range::{KeyRange, RangeEnd, RangeStart},
+};
 use resource::{
     constants::{
         encoding::StructFieldIDUInt,
@@ -60,7 +63,6 @@ use resource::{
     profile::StorageCounters,
 };
 use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{lock::create_custom_lock_key, write::Write, ReadableSnapshot, WritableSnapshot},
 };
@@ -203,7 +205,7 @@ impl ThingManager {
         };
         let exists = snapshot
             .contains(StorageKeyReference::new(vertex.keyspace(), iid), storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?;
         Ok(exists.then_some(T::new(vertex)))
     }
 
@@ -403,7 +405,7 @@ impl ThingManager {
                             |bytes| String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str()),
                             storage_counters,
                         )
-                        .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                        .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))?
                         .ok_or(ConceptReadError::InternalMissingAttributeValue {})?
                 };
                 Ok(Value::String(Cow::Owned(string)))
@@ -415,7 +417,7 @@ impl ThingManager {
                         |bytes| StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct(),
                         storage_counters,
                     )
-                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))?
                     .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
                 Ok(Value::Struct(Cow::Owned(struct_value)))
             }
@@ -647,7 +649,7 @@ impl ThingManager {
         let vertex = AttributeVertex::new(attribute_type.vertex().type_id_(), AttributeID::build_inline(value));
         snapshot
             .get_mapped(vertex.into_storage_key().as_reference(), |_| Attribute::new(vertex), storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))
     }
 
     pub(crate) fn get_player_relations_roles(
@@ -729,7 +731,7 @@ impl ThingManager {
         let has = ThingEdgeHas::new(owner.vertex(), vertex);
         let has_exists = snapshot
             .get_mapped(has.into_storage_key().as_reference(), |_value| true, storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
             .unwrap_or(false);
         Ok(has_exists)
     }
@@ -744,7 +746,7 @@ impl ThingManager {
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
         let has_exists = snapshot
             .get_mapped(has.into_storage_key().as_reference(), |_value| true, storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
             .unwrap_or(false);
         Ok(has_exists)
     }
@@ -1179,7 +1181,7 @@ impl ThingManager {
                 },
                 storage_counters,
             )
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
             .unwrap_or_else(Vec::new);
         Ok(attributes)
     }
@@ -1409,7 +1411,7 @@ impl ThingManager {
         let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
         let links_exists = snapshot
             .get_mapped(links.into_storage_key().as_reference(), |_| true, storage_counters)
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
             .unwrap_or(false);
         Ok(links_exists)
     }
@@ -1446,7 +1448,7 @@ impl ThingManager {
                 |bytes| decode_role_players(bytes).map(Object::new).collect(),
                 storage_counters,
             )
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
             .unwrap_or_else(Vec::new);
         Ok(players)
     }
@@ -1524,7 +1526,7 @@ impl ThingManager {
         snapshot
             .get::<BUFFER_KEY_INLINE>(edge.into_storage_key().as_reference(), storage_counters)
             .map(|option| option.is_some())
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))
     }
 
     pub(crate) fn get_indexed_relation_players_from(
@@ -1633,7 +1635,7 @@ impl ThingManager {
             .unwrap_or_else(|| {
                 match snapshot
                     .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference(), storage_counters)
-                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))?
                 {
                     Some(_) => Ok(ConceptStatus::Persisted),
                     None => Ok(ConceptStatus::Deleted),
@@ -1649,7 +1651,7 @@ impl ThingManager {
     ) -> Result<bool, Box<ConceptReadError>> {
         snapshot
             .contains(instance.vertex().into_storage_key().as_reference(), storage_counters)
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))
     }
 
     pub fn type_exists(
@@ -1660,7 +1662,7 @@ impl ThingManager {
     ) -> Result<bool, Box<ConceptReadError>> {
         snapshot
             .contains(type_.vertex().into_storage_key().as_reference(), storage_counters)
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))
     }
 
     pub fn start_type_bound_to_range_start_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
@@ -1863,7 +1865,7 @@ impl ThingManager {
                     attribute_key.into_storage_key().as_reference(),
                     storage_counters,
                 )
-                .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+                .map_err(|error| Box::new(ConceptReadError::SnapshotGet { typedb_source: error }))?
                 .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
 
             let lock_key = create_custom_lock_key(
@@ -2817,7 +2819,7 @@ impl ThingManager {
                 |arr| decode_u64(arr.try_into().unwrap()),
                 storage_counters.clone(),
             )
-            .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { source: snapshot_err }))?;
+            .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { typedb_source: snapshot_err }))?;
 
         #[cfg(debug_assertions)]
         {
@@ -2853,7 +2855,7 @@ impl ThingManager {
                 |arr| decode_u64(arr.try_into().unwrap()),
                 storage_counters.clone(),
             )
-            .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { source: snapshot_err }))?;
+            .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { typedb_source: snapshot_err }))?;
 
         #[cfg(debug_assertions)]
         {
@@ -2984,7 +2986,7 @@ impl ThingManager {
 
             let is_persisted = snapshot
                 .get_mapped(index.as_reference(), |_| true, storage_counters.clone())
-                .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+                .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?
                 .unwrap_or(false);
 
             if is_persisted {

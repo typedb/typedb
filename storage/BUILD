@@ -22,6 +22,7 @@ rust_library(
         "//common/logger",
         "//common/primitive",
         "//durability",
+        "//kv",
         "//resource",
 
         "@typeql//rust:typeql", # leaky but enables generic TypeDBError

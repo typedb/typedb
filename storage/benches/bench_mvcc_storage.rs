@@ -12,13 +12,13 @@ use bytes::byte_array::ByteArray;
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
 use durability::wal::WAL;
 use pprof::ProfilerGuard;
+use primitive::key_range::KeyRange;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::{CommitProfile, StorageCounters},
 };
 use storage::{
     durability_client::WALClient,
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
