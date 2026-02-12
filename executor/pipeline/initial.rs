@@ -47,13 +47,13 @@ impl<Snapshot> StageAPI<Snapshot> for InitialStage<Snapshot> {
 }
 
 pub struct InitialIterator {
-    iterator: FixedBatchRowIterator,
+    iterator: Box<FixedBatchRowIterator>,
     index: u32,
 }
 
 impl InitialIterator {
     fn new(batch: FixedBatch) -> Self {
-        Self { iterator: FixedBatchRowIterator::new(Ok(batch)), index: 0 }
+        Self { iterator: Box::new(FixedBatchRowIterator::new(Ok(batch))), index: 0 }
     }
 }
 
