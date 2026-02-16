@@ -34,11 +34,162 @@ const MAX_WAL_FILE_SIZE: u64 = 16 * 1024 * 1024;
 
 const FILE_PREFIX: &str = "wal-";
 
+// Instrumentation counters for WAL write breakdown
+static SEQ_LOCK_NS: AtomicU64 = AtomicU64::new(0);
+static SEQ_COMPRESS_NS: AtomicU64 = AtomicU64::new(0);
+static SEQ_IO_NS: AtomicU64 = AtomicU64::new(0);
+static UNSEQ_LOCK_NS: AtomicU64 = AtomicU64::new(0);
+static UNSEQ_COMPRESS_NS: AtomicU64 = AtomicU64::new(0);
+static UNSEQ_IO_NS: AtomicU64 = AtomicU64::new(0);
+static WAL_WRITE_COUNT: AtomicU64 = AtomicU64::new(0);
+
+pub fn reset_wal_instrumentation() {
+    SEQ_LOCK_NS.store(0, Ordering::Relaxed);
+    SEQ_COMPRESS_NS.store(0, Ordering::Relaxed);
+    SEQ_IO_NS.store(0, Ordering::Relaxed);
+    UNSEQ_LOCK_NS.store(0, Ordering::Relaxed);
+    UNSEQ_COMPRESS_NS.store(0, Ordering::Relaxed);
+    UNSEQ_IO_NS.store(0, Ordering::Relaxed);
+    WAL_WRITE_COUNT.store(0, Ordering::Relaxed);
+}
+
+pub fn print_wal_instrumentation(label: &str) {
+    let count = WAL_WRITE_COUNT.load(Ordering::Relaxed);
+    if count == 0 {
+        return;
+    }
+    let c = count as f64;
+    eprintln!(
+        "  WAL [{label}] [{count} writes] seq: lock {:.0}us compress {:.0}us io {:.0}us | unseq: lock {:.0}us compress {:.0}us io {:.0}us",
+        SEQ_LOCK_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        SEQ_COMPRESS_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        SEQ_IO_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        UNSEQ_LOCK_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        UNSEQ_COMPRESS_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        UNSEQ_IO_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+    );
+}
+
+enum WriteRequest {
+    Sequenced {
+        record_type: DurabilityRecordType,
+        raw_bytes: Vec<u8>,
+        completion: mpsc::Sender<DurabilitySequenceNumber>,
+    },
+    Unsequenced {
+        record_type: DurabilityRecordType,
+        raw_bytes: Vec<u8>,
+        completion: mpsc::Sender<()>,
+    },
+}
+
+struct WriteThread {
+    handle: Option<JoinHandle<()>>,
+    sender: mpsc::Sender<WriteRequest>,
+}
+
+impl fmt::Debug for WriteThread {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("WriteThread").finish()
+    }
+}
+
+impl Drop for WriteThread {
+    fn drop(&mut self) {
+        // Take and drop the sender to signal the writer loop to exit
+        let sender = mem::replace(&mut self.sender, mpsc::channel().0);
+        drop(sender);
+        if let Some(handle) = self.handle.take() {
+            handle.join().unwrap_or_else(|_| eprintln!("WriteThread panicked during join"));
+        }
+    }
+}
+
+const MAX_BATCH_SIZE: usize = 10;
+
+fn lz4_compress(bytes: &[u8]) -> Result<Vec<u8>, WALError> {
+    let mut compressed_bytes = Vec::new();
+    let mut encoder = lz4::EncoderBuilder::new()
+        .build(&mut compressed_bytes)
+        .map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+    encoder.write_all(bytes).map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+    encoder.finish().1.map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+    Ok(compressed_bytes)
+}
+
+fn writer_loop(
+    rx: mpsc::Receiver<WriteRequest>,
+    next_sequence_number: Arc<AtomicU64>,
+    files: Arc<RwLock<Files>>,
+) {
+    enum Completion {
+        Sequenced(mpsc::Sender<DurabilitySequenceNumber>, DurabilitySequenceNumber),
+        Unsequenced(mpsc::Sender<()>),
+    }
+
+    while let Ok(first) = rx.recv() {
+        let mut batch = vec![first];
+        while batch.len() < MAX_BATCH_SIZE {
+            match rx.try_recv() {
+                Ok(req) => batch.push(req),
+                Err(_) => break,
+            }
+        }
+
+        let mut files_guard = files.write().unwrap();
+
+        for req in batch {
+            let (record_type, raw_bytes, seq, completion) = match req {
+                WriteRequest::Sequenced { record_type, raw_bytes, completion } => {
+                    let seq = DurabilitySequenceNumber::from(
+                        next_sequence_number.fetch_add(1, Ordering::Relaxed),
+                    );
+                    (record_type, raw_bytes, seq, Completion::Sequenced(completion, seq))
+                }
+                WriteRequest::Unsequenced { record_type, raw_bytes, completion } => {
+                    let seq = DurabilitySequenceNumber::from(
+                        next_sequence_number.load(Ordering::Relaxed) - 1,
+                    );
+                    (record_type, raw_bytes, seq, Completion::Unsequenced(completion))
+                }
+            };
+
+            if files_guard.files.is_empty()
+                || files_guard.files.last().unwrap().len >= MAX_WAL_FILE_SIZE
+            {
+                files_guard.open_new_file_at(seq).unwrap();
+            }
+
+            let compressed = lz4_compress(&raw_bytes).unwrap();
+            let writer = files_guard.writer.as_mut().unwrap();
+            write_header(writer, RecordHeader {
+                sequence_number: seq,
+                len: compressed.len() as u64,
+                record_type,
+            }).unwrap();
+            writer.write_all(&compressed).unwrap();
+
+            // Signal completion immediately so caller can start isolation
+            // validation while the writer thread processes the rest of the batch
+            match completion {
+                Completion::Sequenced(tx, seq) => { let _ = tx.send(seq); }
+                Completion::Unsequenced(tx) => { let _ = tx.send(()); }
+            }
+        }
+
+        files_guard.writer.as_mut().unwrap().flush().unwrap();
+        files_guard.files.last_mut().unwrap().len =
+            files_guard.writer.as_mut().unwrap().stream_position().unwrap();
+        drop(files_guard);
+    }
+}
+
 #[derive(Debug)]
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, String>,
-    next_sequence_number: AtomicU64,
+    next_sequence_number: Arc<AtomicU64>,
     files: Arc<RwLock<Files>>,
+    write_thread: WriteThread,
     fsync_thread: FsyncThread,
 }
 
@@ -61,12 +212,25 @@ impl WAL {
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
+        let next_sequence_number = Arc::new(AtomicU64::new(next.number()));
+
+        let (write_tx, write_rx) = mpsc::channel();
+        let write_thread = WriteThread {
+            handle: Some(thread::spawn({
+                let next_seq = next_sequence_number.clone();
+                let files_clone = files.clone();
+                move || writer_loop(write_rx, next_seq, files_clone)
+            })),
+            sender: write_tx,
+        };
+
         let mut fsync_thread = FsyncThread::new(files.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
             registered_types: HashMap::new(),
-            next_sequence_number: AtomicU64::new(next.number()),
+            next_sequence_number,
             files,
+            write_thread,
             fsync_thread,
         })
     }
@@ -86,13 +250,25 @@ impl WAL {
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
+        let next_sequence_number = Arc::new(AtomicU64::new(next.number()));
+
+        let (write_tx, write_rx) = mpsc::channel();
+        let write_thread = WriteThread {
+            handle: Some(thread::spawn({
+                let next_seq = next_sequence_number.clone();
+                let files_clone = files.clone();
+                move || writer_loop(write_rx, next_seq, files_clone)
+            })),
+            sender: write_tx,
+        };
 
         let mut fsync_thread = FsyncThread::new(files.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
             registered_types: HashMap::new(),
-            next_sequence_number: AtomicU64::new(next.number()),
+            next_sequence_number,
             files,
+            write_thread,
             fsync_thread,
         })
     }
@@ -112,6 +288,34 @@ impl WAL {
     pub fn request_sync(&self, ack_waits_for_sync: bool) -> mpsc::Receiver<()> {
         self.fsync_thread.schedule_next_sync_may_subscribe(ack_waits_for_sync)
     }
+
+    pub fn submit_sequenced_write(
+        &self,
+        record_type: DurabilityRecordType,
+        bytes: &[u8],
+    ) -> Result<mpsc::Receiver<DurabilitySequenceNumber>, DurabilityServiceError> {
+        let (tx, rx) = mpsc::channel();
+        self.write_thread.sender.send(WriteRequest::Sequenced {
+            record_type,
+            raw_bytes: bytes.to_vec(),
+            completion: tx,
+        }).unwrap();
+        Ok(rx)
+    }
+
+    pub fn submit_unsequenced_write(
+        &self,
+        record_type: DurabilityRecordType,
+        bytes: &[u8],
+    ) -> Result<mpsc::Receiver<()>, DurabilityServiceError> {
+        let (tx, rx) = mpsc::channel();
+        self.write_thread.sender.send(WriteRequest::Unsequenced {
+            record_type,
+            raw_bytes: bytes.to_vec(),
+            completion: tx,
+        }).unwrap();
+        Ok(rx)
+    }
 }
 
 impl DurabilityService for WAL {
@@ -124,9 +328,52 @@ impl DurabilityService for WAL {
 
     fn unsequenced_write(&self, record_type: DurabilityRecordType, bytes: &[u8]) -> Result<(), DurabilityServiceError> {
         debug_assert!(self.registered_types.contains_key(&record_type));
+
+        let t0 = Instant::now();
         let mut files = self.files.write().unwrap();
-        let raw_record = RawRecord { sequence_number: self.previous(), record_type, bytes: Cow::Borrowed(bytes) };
-        files.write_record(raw_record)?;
+        let t1 = Instant::now();
+
+        let seq = self.previous();
+
+        // LZ4 compress
+        let mut compressed_bytes = Vec::new();
+        let mut encoder = lz4::EncoderBuilder::new()
+            .build(&mut compressed_bytes)
+            .map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+        encoder.write_all(bytes).map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+        encoder.finish().1.map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+        let t2 = Instant::now();
+
+        // I/O: header + data + flush
+        if files.files.is_empty() || files.files.last().unwrap().len >= MAX_WAL_FILE_SIZE {
+            files.open_new_file_at(seq)?;
+        }
+        let writer = files.writer.as_mut().unwrap();
+        write_header(writer, RecordHeader { sequence_number: seq, len: compressed_bytes.len() as u64, record_type })?;
+        writer.write_all(&compressed_bytes)?;
+        writer.flush()?;
+        files.files.last_mut().unwrap().len = writer.stream_position()?;
+        let t3 = Instant::now();
+
+        UNSEQ_LOCK_NS.fetch_add((t1 - t0).as_nanos() as u64, Ordering::Relaxed);
+        UNSEQ_COMPRESS_NS.fetch_add((t2 - t1).as_nanos() as u64, Ordering::Relaxed);
+        UNSEQ_IO_NS.fetch_add((t3 - t2).as_nanos() as u64, Ordering::Relaxed);
+
+        let count = WAL_WRITE_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+        if count % 1000 == 0 {
+            let c = count as f64;
+            eprintln!(
+                "WAL BREAKDOWN [{} writes] seq: lock {:.0}us compress {:.0}us io {:.0}us | unseq: lock {:.0}us compress {:.0}us io {:.0}us",
+                count,
+                SEQ_LOCK_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                SEQ_COMPRESS_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                SEQ_IO_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                UNSEQ_LOCK_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                UNSEQ_COMPRESS_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                UNSEQ_IO_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+            );
+        }
+
         Ok(())
     }
 
@@ -136,10 +383,52 @@ impl DurabilityService for WAL {
         bytes: &[u8],
     ) -> Result<DurabilitySequenceNumber, DurabilityServiceError> {
         debug_assert!(self.registered_types.contains_key(&record_type));
+
+        let t0 = Instant::now();
         let mut files = self.files.write().unwrap();
+        let t1 = Instant::now();
+
         let seq = self.increment();
-        let raw_record = RawRecord { sequence_number: seq, record_type, bytes: Cow::Borrowed(bytes) };
-        files.write_record(raw_record)?;
+
+        // LZ4 compress
+        let mut compressed_bytes = Vec::new();
+        let mut encoder = lz4::EncoderBuilder::new()
+            .build(&mut compressed_bytes)
+            .map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+        encoder.write_all(bytes).map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+        encoder.finish().1.map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+        let t2 = Instant::now();
+
+        // I/O: header + data + flush
+        if files.files.is_empty() || files.files.last().unwrap().len >= MAX_WAL_FILE_SIZE {
+            files.open_new_file_at(seq)?;
+        }
+        let writer = files.writer.as_mut().unwrap();
+        write_header(writer, RecordHeader { sequence_number: seq, len: compressed_bytes.len() as u64, record_type })?;
+        writer.write_all(&compressed_bytes)?;
+        writer.flush()?;
+        files.files.last_mut().unwrap().len = writer.stream_position()?;
+        let t3 = Instant::now();
+
+        SEQ_LOCK_NS.fetch_add((t1 - t0).as_nanos() as u64, Ordering::Relaxed);
+        SEQ_COMPRESS_NS.fetch_add((t2 - t1).as_nanos() as u64, Ordering::Relaxed);
+        SEQ_IO_NS.fetch_add((t3 - t2).as_nanos() as u64, Ordering::Relaxed);
+
+        let count = WAL_WRITE_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+        if count % 1000 == 0 {
+            let c = count as f64;
+            eprintln!(
+                "WAL BREAKDOWN [{} writes] seq: lock {:.0}us compress {:.0}us io {:.0}us | unseq: lock {:.0}us compress {:.0}us io {:.0}us",
+                count,
+                SEQ_LOCK_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                SEQ_COMPRESS_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                SEQ_IO_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                UNSEQ_LOCK_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                UNSEQ_COMPRESS_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                UNSEQ_IO_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+            );
+        }
+
         Ok(seq)
     }
 
@@ -188,6 +477,7 @@ impl DurabilityService for WAL {
     }
 
     fn delete_durability(self) -> Result<(), DurabilityServiceError> {
+        drop(self.write_thread);
         drop(self.fsync_thread);
         let files = Arc::into_inner(self.files)
             .expect("cannot get exclusive ownership of WAL's Arc<Files>")

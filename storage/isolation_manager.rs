@@ -17,6 +17,7 @@ use std::{
         atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
         Arc, OnceLock, RwLock,
     },
+    time::Instant,
 };
 
 use durability::DurabilityRecordType;
@@ -34,6 +35,88 @@ use crate::{
     snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},
     write_batches::WriteBatches,
 };
+
+// Instrumentation counters for isolation validation breakdown
+static ISO_GET_WINDOW_NS: AtomicU64 = AtomicU64::new(0);
+static ISO_INSERT_PENDING_NS: AtomicU64 = AtomicU64::new(0);
+static ISO_VALIDATE_NS: AtomicU64 = AtomicU64::new(0);
+static ISO_FINALIZE_NS: AtomicU64 = AtomicU64::new(0);
+static ISO_COUNT: AtomicU64 = AtomicU64::new(0);
+
+// Inner validation breakdown
+static ISO_COLLECT_WINDOWS_NS: AtomicU64 = AtomicU64::new(0);
+static ISO_SPIN_EMPTY_NS: AtomicU64 = AtomicU64::new(0);
+static ISO_SPIN_PENDING_NS: AtomicU64 = AtomicU64::new(0);
+static ISO_COMPUTE_DEP_NS: AtomicU64 = AtomicU64::new(0);
+static ISO_PREDECESSOR_COUNT: AtomicU64 = AtomicU64::new(0);
+
+// compute_dependency breakdown
+static CD_WRITES_LOOP_NS: AtomicU64 = AtomicU64::new(0);
+static CD_LOCKS_VS_WRITES_NS: AtomicU64 = AtomicU64::new(0);
+static CD_LOCKS_VS_LOCKS_NS: AtomicU64 = AtomicU64::new(0);
+static CD_CALL_COUNT: AtomicU64 = AtomicU64::new(0);
+static CD_WRITES_ITERS: AtomicU64 = AtomicU64::new(0);
+static CD_LOCKS_VS_WRITES_ITERS: AtomicU64 = AtomicU64::new(0);
+static CD_LOCKS_VS_LOCKS_ITERS: AtomicU64 = AtomicU64::new(0);
+
+pub fn reset_isolation_instrumentation() {
+    ISO_GET_WINDOW_NS.store(0, Ordering::Relaxed);
+    ISO_INSERT_PENDING_NS.store(0, Ordering::Relaxed);
+    ISO_VALIDATE_NS.store(0, Ordering::Relaxed);
+    ISO_FINALIZE_NS.store(0, Ordering::Relaxed);
+    ISO_COUNT.store(0, Ordering::Relaxed);
+    ISO_COLLECT_WINDOWS_NS.store(0, Ordering::Relaxed);
+    ISO_SPIN_EMPTY_NS.store(0, Ordering::Relaxed);
+    ISO_SPIN_PENDING_NS.store(0, Ordering::Relaxed);
+    ISO_COMPUTE_DEP_NS.store(0, Ordering::Relaxed);
+    ISO_PREDECESSOR_COUNT.store(0, Ordering::Relaxed);
+    CD_WRITES_LOOP_NS.store(0, Ordering::Relaxed);
+    CD_LOCKS_VS_WRITES_NS.store(0, Ordering::Relaxed);
+    CD_LOCKS_VS_LOCKS_NS.store(0, Ordering::Relaxed);
+    CD_CALL_COUNT.store(0, Ordering::Relaxed);
+    CD_WRITES_ITERS.store(0, Ordering::Relaxed);
+    CD_LOCKS_VS_WRITES_ITERS.store(0, Ordering::Relaxed);
+    CD_LOCKS_VS_LOCKS_ITERS.store(0, Ordering::Relaxed);
+}
+
+pub fn print_isolation_instrumentation(label: &str) {
+    let count = ISO_COUNT.load(Ordering::Relaxed);
+    if count == 0 {
+        return;
+    }
+    let c = count as f64;
+    let pred_count = ISO_PREDECESSOR_COUNT.load(Ordering::Relaxed);
+    let avg_preds = pred_count as f64 / c;
+    eprintln!(
+        "  ISO [{label}] [{count} validations] get_window {:.0}us insert_pending {:.0}us validate {:.0}us finalize {:.0}us",
+        ISO_GET_WINDOW_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        ISO_INSERT_PENDING_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        ISO_VALIDATE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        ISO_FINALIZE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+    );
+    eprintln!(
+        "       [{label}] validate breakdown: collect_windows {:.0}us | per-predecessor ({:.1} avg): spin_empty {:.0}us spin_pending {:.0}us compute_dep {:.0}us",
+        ISO_COLLECT_WINDOWS_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        avg_preds,
+        ISO_SPIN_EMPTY_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        ISO_SPIN_PENDING_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        ISO_COMPUTE_DEP_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+    );
+    let cd_count = CD_CALL_COUNT.load(Ordering::Relaxed).max(1) as f64;
+    let cd_writes_iters = CD_WRITES_ITERS.load(Ordering::Relaxed) as f64 / cd_count;
+    let cd_lvw_iters = CD_LOCKS_VS_WRITES_ITERS.load(Ordering::Relaxed) as f64 / cd_count;
+    let cd_lvl_iters = CD_LOCKS_VS_LOCKS_ITERS.load(Ordering::Relaxed) as f64 / cd_count;
+    eprintln!(
+        "       [{label}] compute_dep breakdown ({:.0} calls): writes_loop {:.0}us ({:.0} iters) locks_vs_writes {:.0}us ({:.0} iters) locks_vs_locks {:.0}us ({:.0} iters)",
+        cd_count,
+        CD_WRITES_LOOP_NS.load(Ordering::Relaxed) as f64 / cd_count / 1000.0,
+        cd_writes_iters,
+        CD_LOCKS_VS_WRITES_NS.load(Ordering::Relaxed) as f64 / cd_count / 1000.0,
+        cd_lvw_iters,
+        CD_LOCKS_VS_LOCKS_NS.load(Ordering::Relaxed) as f64 / cd_count / 1000.0,
+        cd_lvl_iters,
+    );
+}
 
 #[derive(Debug)]
 pub(crate) struct IsolationManager {
@@ -97,10 +180,17 @@ impl IsolationManager {
         commit_record: CommitRecord,
         durability_client: &impl DurabilityClient,
     ) -> Result<ValidatedCommit, DurabilityClientError> {
+        let t0 = Instant::now();
         let window = self.timeline.get_or_create_window(sequence_number);
+        let t1 = Instant::now();
+
         window.insert_pending(sequence_number, commit_record);
         let CommitStatus::Pending(commit_record) = window.get_status(sequence_number) else { unreachable!() };
+        let t2 = Instant::now();
+
         let isolation_conflict = self.validate_all_concurrent(sequence_number, &commit_record, durability_client)?;
+        let t3 = Instant::now();
+
         if isolation_conflict.is_none() {
             window.set_validated(sequence_number);
             // We can't increment watermark here till the status is "applied", but we do update the latest validated number
@@ -109,6 +199,25 @@ impl IsolationManager {
             window.set_aborted(sequence_number);
             self.timeline.may_increment_watermark(sequence_number);
         }
+        let t4 = Instant::now();
+
+        ISO_GET_WINDOW_NS.fetch_add((t1 - t0).as_nanos() as u64, Ordering::Relaxed);
+        ISO_INSERT_PENDING_NS.fetch_add((t2 - t1).as_nanos() as u64, Ordering::Relaxed);
+        ISO_VALIDATE_NS.fetch_add((t3 - t2).as_nanos() as u64, Ordering::Relaxed);
+        ISO_FINALIZE_NS.fetch_add((t4 - t3).as_nanos() as u64, Ordering::Relaxed);
+        let count = ISO_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+        if count % 1000 == 0 {
+            let c = count as f64;
+            eprintln!(
+                "ISOLATION BREAKDOWN [{} validations] get_window {:.0}us insert_pending {:.0}us validate {:.0}us finalize {:.0}us",
+                count,
+                ISO_GET_WINDOW_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                ISO_INSERT_PENDING_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                ISO_VALIDATE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                ISO_FINALIZE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+            );
+        }
+
         match isolation_conflict {
             Some(conflict) => Ok(ValidatedCommit::Conflict(conflict)),
             None => {
@@ -132,8 +241,10 @@ impl IsolationManager {
         // TODO: Should we validate from the timeline before going to disk?
 
         // Pre-collect all the ARCs so we can validate against them.
+        let tcw0 = Instant::now();
         let (windows, first_sequence_number_in_memory) =
             self.timeline.collect_concurrent_windows(commit_record.open_sequence_number, commit_sequence_number);
+        ISO_COLLECT_WINDOWS_NS.fetch_add(tcw0.elapsed().as_nanos() as u64, Ordering::Relaxed);
         if commit_record.open_sequence_number().next() < first_sequence_number_in_memory {
             if let Some(conflict) =
                 self.validate_concurrent_from_disk(commit_record, first_sequence_number_in_memory, durability_client)?
@@ -261,16 +372,23 @@ fn resolve_concurrent(
     predecessor_sequence_number: SequenceNumber,
     predecessor_window: &TimelineWindow<TIMELINE_WINDOW_SIZE>,
 ) -> Option<IsolationConflict> {
+    let t_start = Instant::now();
     while matches!(predecessor_window.get_status(predecessor_sequence_number), CommitStatus::Empty) {
         // Race condition
         std::hint::spin_loop();
     }
+    let t_after_empty = Instant::now();
+
+    let mut spin_pending_ns: u64 = 0;
     let commit_dependency = match predecessor_window.get_status(predecessor_sequence_number) {
         CommitStatus::Empty => unreachable!("A concurrent status should never be empty at commit time"),
         CommitStatus::Pending(predecessor_record) => match commit_record.compute_dependency(&predecessor_record) {
             CommitDependency::Independent => CommitDependency::Independent,
             result => {
-                if predecessor_window.await_pending_status_commits(predecessor_sequence_number) {
+                let tp0 = Instant::now();
+                let committed = predecessor_window.await_pending_status_commits(predecessor_sequence_number);
+                spin_pending_ns = tp0.elapsed().as_nanos() as u64;
+                if committed {
                     result
                 } else {
                     CommitDependency::Independent
@@ -282,6 +400,14 @@ fn resolve_concurrent(
         }
         CommitStatus::Aborted => CommitDependency::Independent,
     };
+    let t_after_dep = Instant::now();
+
+    ISO_SPIN_EMPTY_NS.fetch_add((t_after_empty - t_start).as_nanos() as u64, Ordering::Relaxed);
+    ISO_SPIN_PENDING_NS.fetch_add(spin_pending_ns, Ordering::Relaxed);
+    // compute_dep = total after-empty time minus any spin_pending time
+    ISO_COMPUTE_DEP_NS.fetch_add((t_after_dep - t_after_empty).as_nanos() as u64 - spin_pending_ns, Ordering::Relaxed);
+    ISO_PREDECESSOR_COUNT.fetch_add(1, Ordering::Relaxed);
+
     handle_dependency(commit_dependency)
 }
 
@@ -736,11 +862,18 @@ impl CommitRecord {
 
         let locks = self.operations().locks();
         let predecessor_locks = predecessor.operations().locks();
+
+        let t_writes_start = Instant::now();
+        let mut writes_iter_count: u64 = 0;
+        let mut locks_vs_writes_iter_count: u64 = 0;
+        let mut locks_vs_writes_ns: u64 = 0;
+
         for (write_buffer, pred_write_buffer) in self.operations().write_buffers().zip(predecessor.operations()) {
             let writes = write_buffer.writes();
             let predecessor_writes = pred_write_buffer.writes();
 
             for (key, write) in writes.iter() {
+                writes_iter_count += 1;
                 if let Some(predecessor_write) = predecessor_writes.get(key) {
                     match (predecessor_write, write) {
                         (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
@@ -758,22 +891,37 @@ impl CommitRecord {
                 }
             }
 
+            let t_lvw_start = Instant::now();
             // TODO: this is ineffecient since we loop over all locks each time - should we locks into keyspaces?
             //    Investigate
             for (key, lock) in locks.iter() {
+                locks_vs_writes_iter_count += 1;
                 if matches!(lock, LockType::Unmodifiable) {
                     if let Some(Write::Delete) = predecessor_writes.get(key) {
                         return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
                     }
                 }
             }
+            locks_vs_writes_ns += t_lvw_start.elapsed().as_nanos() as u64;
         }
+        let writes_total_ns = t_writes_start.elapsed().as_nanos() as u64;
+        CD_WRITES_LOOP_NS.fetch_add(writes_total_ns - locks_vs_writes_ns, Ordering::Relaxed);
+        CD_LOCKS_VS_WRITES_NS.fetch_add(locks_vs_writes_ns, Ordering::Relaxed);
 
+        let t_lvl_start = Instant::now();
+        let mut locks_vs_locks_iter_count: u64 = 0;
         for (key, lock) in locks.iter() {
+            locks_vs_locks_iter_count += 1;
             if matches!(lock, LockType::Exclusive) && matches!(predecessor_locks.get(key), Some(LockType::Exclusive)) {
                 return CommitDependency::Conflict(IsolationConflict::ExclusiveLock);
             }
         }
+        CD_LOCKS_VS_LOCKS_NS.fetch_add(t_lvl_start.elapsed().as_nanos() as u64, Ordering::Relaxed);
+
+        CD_WRITES_ITERS.fetch_add(writes_iter_count, Ordering::Relaxed);
+        CD_LOCKS_VS_WRITES_ITERS.fetch_add(locks_vs_writes_iter_count, Ordering::Relaxed);
+        CD_LOCKS_VS_LOCKS_ITERS.fetch_add(locks_vs_locks_iter_count, Ordering::Relaxed);
+        CD_CALL_COUNT.fetch_add(1, Ordering::Relaxed);
 
         if puts_to_update.is_empty() {
             CommitDependency::Independent

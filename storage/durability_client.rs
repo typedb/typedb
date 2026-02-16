@@ -45,6 +45,14 @@ pub trait DurabilityClient {
     where
         Record: UnsequencedDurabilityRecord;
 
+    fn submit_sequenced_write<Record>(&self, record: &Record) -> Result<mpsc::Receiver<SequenceNumber>, DurabilityClientError>
+    where
+        Record: SequencedDurabilityRecord;
+
+    fn submit_unsequenced_write<Record>(&self, record: &Record) -> Result<mpsc::Receiver<()>, DurabilityClientError>
+    where
+        Record: UnsequencedDurabilityRecord;
+
     fn request_sync(&self) -> mpsc::Receiver<()>;
 
     fn iter_from(
@@ -156,6 +164,26 @@ impl DurabilityClient for WALClient {
         let serialised = Self::serialise_record(record)?;
         self.wal
             .unsequenced_write(Record::RECORD_TYPE, &serialised)
+            .map_err(|err| DurabilityClientError::ServiceError { source: err })
+    }
+
+    fn submit_sequenced_write<Record>(&self, record: &Record) -> Result<mpsc::Receiver<SequenceNumber>, DurabilityClientError>
+    where
+        Record: SequencedDurabilityRecord,
+    {
+        let serialised = Self::serialise_record(record)?;
+        self.wal
+            .submit_sequenced_write(Record::RECORD_TYPE, &serialised)
+            .map_err(|err| DurabilityClientError::ServiceError { source: err })
+    }
+
+    fn submit_unsequenced_write<Record>(&self, record: &Record) -> Result<mpsc::Receiver<()>, DurabilityClientError>
+    where
+        Record: UnsequencedDurabilityRecord,
+    {
+        let serialised = Self::serialise_record(record)?;
+        self.wal
+            .submit_unsequenced_write(Record::RECORD_TYPE, &serialised)
             .map_err(|err| DurabilityClientError::ServiceError { source: err })
     }
 

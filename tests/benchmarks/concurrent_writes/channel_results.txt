@@ -1,0 +1,67 @@
+Channel WAL Benchmark Results (AFTER channel-based WAL write queue)
+====================================================================
+Date: 2026-02-16
+Architecture: Channel-based WAL writes (single writer thread, batching up to 10, fire-and-forget status writes)
+
+Concurrent Write Scalability Benchmark
+======================================
+Inserts per transaction: 100
+Total inserts per run:   100000
+
+=== THROUGHPUT ===
+
+Threads:   1 | Time:   8687.6ms | Inserts/s:      11511 | Txns/s:      115 | avg tx: open        5us ( 0.1%) exec     4621us (53.2%) commit     4062us (46.8%) [1000 txns]
+Threads:   2 | Time:   4819.7ms | Inserts/s:      20748 | Txns/s:      207 | avg tx: open      495us ( 5.1%) exec     4709us (49.0%) commit     4416us (45.9%) [1000 txns]
+Threads:   4 | Time:   2783.3ms | Inserts/s:      35929 | Txns/s:      359 | avg tx: open      938us ( 8.5%) exec     4867us (44.0%) commit     5254us (47.5%) [1000 txns]
+Threads:   8 | Time:   1769.4ms | Inserts/s:      56516 | Txns/s:      565 | avg tx: open     1537us (11.1%) exec     5070us (36.7%) commit     7206us (52.2%) [1000 txns]
+Threads:  16 | Time:   1654.8ms | Inserts/s:      59947 | Txns/s:      599 | avg tx: open     4882us (19.0%) exec     7491us (29.2%) commit    13270us (51.7%) [992 txns]
+Threads:  32 | Time:   1780.4ms | Inserts/s:      55718 | Txns/s:      557 | avg tx: open    11120us (20.3%) exec    13217us (24.1%) commit    30460us (55.6%) [992 txns]
+Threads:  64 | Time:   2105.8ms | Inserts/s:      45589 | Txns/s:      456 | avg tx: open    32190us (24.1%) exec    21770us (16.3%) commit    79546us (59.6%) [960 txns]
+Threads: 128 | Time:   2375.5ms | Inserts/s:      37719 | Txns/s:      377 | avg tx: open   107069us (33.7%) exec    37085us (11.7%) commit   173507us (54.6%) [896 txns]
+
+=== ISOLATION BREAKDOWN (cumulative averages, printed every 1000 validations) ===
+
+ISOLATION BREAKDOWN [1000 validations] get_window  1us insert_pending 1us validate    1us finalize 0us
+ISOLATION BREAKDOWN [2000 validations] get_window  1us insert_pending 1us validate   32us finalize 0us
+ISOLATION BREAKDOWN [3000 validations] get_window  1us insert_pending 1us validate   85us finalize 0us
+ISOLATION BREAKDOWN [4000 validations] get_window  3us insert_pending 1us validate  206us finalize 0us
+ISOLATION BREAKDOWN [5000 validations] get_window 65us insert_pending 1us validate  537us finalize 0us
+ISOLATION BREAKDOWN [6000 validations] get_window 154us insert_pending 1us validate 1677us finalize 0us
+ISOLATION BREAKDOWN [7000 validations] get_window 234us insert_pending 1us validate 6039us finalize 0us
+
+=== FULL COMMIT BREAKDOWN (cumulative averages, printed every 1000 commits) ===
+
+FULL BREAKDOWN [1000 commits] open: wm_wait    0us | commit: put_status 514us record_create 6us wal_write  423us req_sync 3us isolation   65us sync_wait 2154us storage_write  363us iso_notify  35us status_write  12us
+FULL BREAKDOWN [2000 commits] open: wm_wait  219us | commit: put_status 504us record_create 5us wal_write  549us req_sync 2us isolation   89us sync_wait 2156us storage_write  399us iso_notify  37us status_write  12us
+FULL BREAKDOWN [3000 commits] open: wm_wait  434us | commit: put_status 522us record_create 5us wal_write  750us req_sync 2us isolation  140us sync_wait 2142us storage_write  463us iso_notify  42us status_write  13us
+FULL BREAKDOWN [4000 commits] open: wm_wait  639us | commit: put_status 513us record_create 5us wal_write 1123us req_sync 2us isolation  263us sync_wait 2252us storage_write  514us iso_notify  50us status_write  13us
+FULL BREAKDOWN [5000 commits] open: wm_wait 1392us | commit: put_status 541us record_create 5us wal_write 1759us req_sync 2us isolation  661us sync_wait 2560us storage_write  676us iso_notify  83us status_write  17us
+FULL BREAKDOWN [6000 commits] open: wm_wait 2755us | commit: put_status 630us record_create 6us wal_write 3389us req_sync 4us isolation 1903us sync_wait 3012us storage_write 1034us iso_notify 111us status_write  65us
+FULL BREAKDOWN [7000 commits] open: wm_wait 6016us | commit: put_status 766us record_create 6us wal_write 7073us req_sync 8us isolation 6587us sync_wait 3298us storage_write 2387us iso_notify 182us status_write 155us
+
+=== COMPARISON WITH BASELINE ===
+
+Throughput (inserts/s):
+  Threads | Baseline | Channel  | Change
+  --------|----------|----------|--------
+       1  |   11,280 |   11,511 |  +2.0%
+       2  |   20,401 |   20,748 |  +1.7%
+       4  |   37,696 |   35,929 |  -4.7%
+       8  |   50,815 |   56,516 | +11.2%
+      16  |   56,893 |   59,947 |  +5.4%
+      32  |   59,106 |   55,718 |  -5.7%
+      64  |   43,836 |   45,589 |  +4.0%
+     128  |   36,152 |   37,719 |  +4.3%
+
+Key metric changes at 7000 commits (64T+128T):
+                 Baseline  Channel   Change
+  wal_write:     8,525us   7,073us   -17.0%
+  status_write:  3,564us     155us   -95.6%
+  isolation:     2,298us   6,587us  +186.5% (now the bottleneck!)
+  sync_wait:     6,133us   3,298us   -46.2%
+
+status_write fire-and-forget: 3,564us -> 155us (23x faster)
+wal_write reduced: 8,525us -> 7,073us (17% faster)
+Combined WAL savings: ~4,861us per commit
+
+New bottleneck: isolation validation (6,587us) has become the #1 cost, now that WAL contention is reduced.
