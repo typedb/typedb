@@ -24,6 +24,8 @@ use durability::DurabilityRecordType;
 use logger::result::ResultExt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
+use bytes::byte_array::ByteArray;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -35,6 +37,53 @@ use crate::{
     snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},
     write_batches::WriteBatches,
 };
+
+// Lightweight bloom filter for fast pre-filtering in compute_dependency.
+// 16384 bits (2KB) with 2 hash functions gives <0.1% false positive rate
+// for ~70 keys (per-keyspace writes) and ~0.2% for ~400 keys (locks).
+const BLOOM_BITS: usize = 16384;
+const BLOOM_MASK: usize = BLOOM_BITS - 1;
+const BLOOM_U64S: usize = BLOOM_BITS / 64;
+
+struct QuickBloom {
+    bits: [u64; BLOOM_U64S],
+}
+
+impl QuickBloom {
+    fn new() -> Self {
+        Self { bits: [0; BLOOM_U64S] }
+    }
+
+    fn insert(&mut self, key: &[u8]) {
+        let (h1, h2) = Self::positions(key);
+        self.bits[h1 / 64] |= 1u64 << (h1 % 64);
+        self.bits[h2 / 64] |= 1u64 << (h2 % 64);
+    }
+
+    fn may_contain(&self, key: &[u8]) -> bool {
+        let (h1, h2) = Self::positions(key);
+        (self.bits[h1 / 64] & (1u64 << (h1 % 64))) != 0
+            && (self.bits[h2 / 64] & (1u64 << (h2 % 64))) != 0
+    }
+
+    fn positions(key: &[u8]) -> (usize, usize) {
+        // FNV-1a hash, then split into two independent positions
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &b in key {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        ((h as usize) & BLOOM_MASK, ((h >> 18) as usize) & BLOOM_MASK)
+    }
+
+    fn from_btree_keys<V>(map: &std::collections::BTreeMap<ByteArray<BUFFER_KEY_INLINE>, V>) -> Self {
+        let mut bloom = Self::new();
+        for key in map.keys() {
+            bloom.insert(key.as_ref());
+        }
+        bloom
+    }
+}
 
 // Instrumentation counters for isolation validation breakdown
 static ISO_GET_WINDOW_NS: AtomicU64 = AtomicU64::new(0);
@@ -850,18 +899,13 @@ impl CommitRecord {
     }
 
     fn compute_dependency(&self, predecessor: &CommitRecord) -> CommitDependency {
-        // TODO: this can be optimised by some kind of bit-wise AND of two bloom filter-like data
-        // structures first, since we assume few clashes this should mostly succeed
-        // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
-
         let mut puts_to_update = Vec::new();
-
-        // we check self operations against predecessor operations.
-        //   if our buffer contains a delete, we check the predecessor doesn't have an Existing lock on it
-        // We check
 
         let locks = self.operations().locks();
         let predecessor_locks = predecessor.operations().locks();
+
+        // Build bloom filters once for predecessor data to skip BTreeMap lookups
+        let pred_locks_bloom = QuickBloom::from_btree_keys(predecessor_locks);
 
         let t_writes_start = Instant::now();
         let mut writes_iter_count: u64 = 0;
@@ -872,20 +916,27 @@ impl CommitRecord {
             let writes = write_buffer.writes();
             let predecessor_writes = pred_write_buffer.writes();
 
+            // Build per-keyspace bloom for predecessor writes
+            let pred_writes_bloom = QuickBloom::from_btree_keys(predecessor_writes);
+
             for (key, write) in writes.iter() {
                 writes_iter_count += 1;
-                if let Some(predecessor_write) = predecessor_writes.get(key) {
-                    match (predecessor_write, write) {
-                        (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
+                if pred_writes_bloom.may_contain(key.as_ref()) {
+                    if let Some(predecessor_write) = predecessor_writes.get(key) {
+                        match (predecessor_write, write) {
+                            (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
+                                puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
+                            }
+                            (Write::Delete, Write::Put { reinsert, .. }) => {
+                                puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
+                            }
+                            _ => (),
                         }
-                        (Write::Delete, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
-                        }
-                        _ => (),
                     }
                 }
-                if matches!(write, Write::Delete) && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable))
+                if matches!(write, Write::Delete)
+                    && pred_locks_bloom.may_contain(key.as_ref())
+                    && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable))
                 {
                     return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);
                 }
@@ -910,7 +961,10 @@ impl CommitRecord {
         let mut locks_vs_locks_iter_count: u64 = 0;
         for (key, lock) in locks.iter() {
             locks_vs_locks_iter_count += 1;
-            if matches!(lock, LockType::Exclusive) && matches!(predecessor_locks.get(key), Some(LockType::Exclusive)) {
+            if matches!(lock, LockType::Exclusive)
+                && pred_locks_bloom.may_contain(key.as_ref())
+                && matches!(predecessor_locks.get(key), Some(LockType::Exclusive))
+            {
                 return CommitDependency::Conflict(IsolationConflict::ExclusiveLock);
             }
         }
