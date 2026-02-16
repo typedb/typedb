@@ -892,14 +892,12 @@ impl CommitRecord {
             }
 
             let t_lvw_start = Instant::now();
-            // TODO: this is ineffecient since we loop over all locks each time - should we locks into keyspaces?
-            //    Investigate
-            for (key, lock) in locks.iter() {
+            // Flipped loop: iterate predecessor writes (per-keyspace, small) and check against
+            // our locks map, instead of iterating ALL locks for EACH keyspace.
+            for (key, write) in predecessor_writes.iter() {
                 locks_vs_writes_iter_count += 1;
-                if matches!(lock, LockType::Unmodifiable) {
-                    if let Some(Write::Delete) = predecessor_writes.get(key) {
-                        return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
-                    }
+                if matches!(write, Write::Delete) && matches!(locks.get(key), Some(LockType::Unmodifiable)) {
+                    return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
                 }
             }
             locks_vs_writes_ns += t_lvw_start.elapsed().as_nanos() as u64;
