@@ -296,11 +296,10 @@ impl<Durability> MVCCStorage<Durability> {
 
         commit_profile.commit_size(commit_record.operations().len());
 
-        let seq_receiver = self
+        let commit_sequence_number = self
             .durability_client
-            .submit_sequenced_write(&commit_record)
+            .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
-        let commit_sequence_number = seq_receiver.recv().unwrap();
         commit_profile.snapshot_durable_write_data_submitted();
         let tc3 = Instant::now();
 
@@ -437,8 +436,7 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityClient,
     {
-        let _recv = durability_client.submit_unsequenced_write(&StatusRecord::new(commit_sequence_number, did_apply))?;
-        // Drop receiver without waiting — fire and forget for status writes
+        durability_client.unsequenced_write(&StatusRecord::new(commit_sequence_number, did_apply))?;
         Ok(())
     }
 
