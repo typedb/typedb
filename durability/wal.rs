@@ -118,13 +118,14 @@ struct PendingWrite {
     record_type: DurabilityRecordType,
     bytes: Vec<u8>,
     is_sequenced: bool,
-    completion: *const AtomicU64,
-    waiter: thread::Thread,
+    completion: *const AtomicU64, // null for fire-and-forget
+    waiter: Option<thread::Thread>, // None for fire-and-forget
 }
 
-// Safety: completion points to the caller's stack-allocated CompletionSlot.
+// Safety: when completion is non-null, it points to the caller's stack-allocated CompletionSlot.
 // The caller is parked (stack frame alive) until the leader writes to the slot and unparks it.
 // The leader writes before unparking. Acquire/Release ordering ensures visibility.
+// When completion is null (fire-and-forget), the leader skips signaling entirely.
 unsafe impl Send for PendingWrite {}
 
 struct GroupCommitQueue {
@@ -246,6 +247,7 @@ impl WAL {
     fn run_leader_loop(&self) {
         let mut files = self.files.write().unwrap();
         let mut completions: Vec<(*const AtomicU64, thread::Thread, u64)> = Vec::new();
+        let mut wrote_any = false;
 
         loop {
             let batch = {
@@ -259,6 +261,7 @@ impl WAL {
             };
 
             BATCH_SIZE_TOTAL.fetch_add(batch.len() as u64, Ordering::Relaxed);
+            wrote_any = true;
 
             for item in batch {
                 let seq = if item.is_sequenced {
@@ -302,14 +305,16 @@ impl WAL {
                 } else {
                     u64::MAX
                 };
-                completions.push((item.completion, item.waiter, signal_value));
+                if !item.completion.is_null() {
+                    completions.push((item.completion, item.waiter.unwrap(), signal_value));
+                }
             }
 
             // Loop continues: check for more items accumulated while we were writing
         }
 
         // Single flush for entire leader session
-        if !completions.is_empty() {
+        if wrote_any {
             files.writer.as_mut().unwrap().flush().unwrap();
         }
         LEADER_COUNT.fetch_add(1, Ordering::Relaxed);
@@ -336,13 +341,12 @@ impl DurabilityService for WAL {
     fn unsequenced_write(&self, record_type: DurabilityRecordType, bytes: &[u8]) -> Result<(), DurabilityServiceError> {
         debug_assert!(self.registered_types.contains_key(&record_type));
 
-        let slot = CompletionSlot::new();
         let request = PendingWrite {
             record_type,
             bytes: bytes.to_vec(),
             is_sequenced: false,
-            completion: slot.as_ptr(),
-            waiter: thread::current(),
+            completion: std::ptr::null(),
+            waiter: None,
         };
 
         let is_leader = {
@@ -356,11 +360,11 @@ impl DurabilityService for WAL {
             }
         };
 
+        // If we became the leader, we must run the loop before returning
         if is_leader {
             self.run_leader_loop();
         }
 
-        slot.wait_unsequenced()?;
         WAL_WRITE_COUNT.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
@@ -378,7 +382,7 @@ impl DurabilityService for WAL {
             bytes: bytes.to_vec(),
             is_sequenced: true,
             completion: slot.as_ptr(),
-            waiter: thread::current(),
+            waiter: Some(thread::current()),
         };
 
         let t0 = Instant::now();
