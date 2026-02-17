@@ -1,0 +1,85 @@
+Baseline Benchmark Results (BEFORE channel-based WAL write queue)
+=================================================================
+Date: 2026-02-16
+Architecture: Direct RwLock-based WAL writes (all threads contend on files.write())
+
+Concurrent Write Scalability Benchmark
+======================================
+Inserts per transaction: 100
+Total inserts per run:   100000
+
+=== THROUGHPUT ===
+
+Threads:   1 | Time:   8865.0ms | Inserts/s:      11280 | Txns/s:      113 | avg tx: open        5us ( 0.1%) exec     4617us (52.1%) commit     4243us (47.9%) [1000 txns]
+Threads:   2 | Time:   4901.7ms | Inserts/s:      20401 | Txns/s:      204 | avg tx: open      511us ( 5.2%) exec     4702us (48.0%) commit     4573us (46.7%) [1000 txns]
+Threads:   4 | Time:   2652.8ms | Inserts/s:      37696 | Txns/s:      377 | avg tx: open      898us ( 8.5%) exec     4627us (43.8%) commit     5031us (47.7%) [1000 txns]
+Threads:   8 | Time:   1967.9ms | Inserts/s:      50815 | Txns/s:      508 | avg tx: open     2028us (13.1%) exec     5493us (35.5%) commit     7971us (51.5%) [1000 txns]
+Threads:  16 | Time:   1743.6ms | Inserts/s:      56893 | Txns/s:      569 | avg tx: open     4835us (17.9%) exec     7130us (26.3%) commit    15119us (55.8%) [992 txns]
+Threads:  32 | Time:   1678.4ms | Inserts/s:      59106 | Txns/s:      591 | avg tx: open     9439us (18.1%) exec    11513us (22.1%) commit    31168us (59.8%) [992 txns]
+Threads:  64 | Time:   2190.0ms | Inserts/s:      43836 | Txns/s:      438 | avg tx: open    24825us (17.9%) exec    22006us (15.9%) commit    91881us (66.2%) [960 txns]
+Threads: 128 | Time:   2478.4ms | Inserts/s:      36152 | Txns/s:      362 | avg tx: open    78221us (23.5%) exec    40837us (12.2%) commit   214486us (64.3%) [896 txns]
+
+=== WAL BREAKDOWN (cumulative averages, printed every 1000 writes) ===
+Source: durability/wal.rs — measures lock acquisition, LZ4 compression, and I/O per WAL write
+
+WAL BREAKDOWN [ 1000 writes] seq: lock  103us compress 26us io 18us | unseq: lock   63us compress 8us io 8us
+WAL BREAKDOWN [ 2000 writes] seq: lock  113us compress 25us io 18us | unseq: lock   66us compress 7us io 7us
+WAL BREAKDOWN [ 3000 writes] seq: lock  149us compress 25us io 17us | unseq: lock   77us compress 6us io 7us
+WAL BREAKDOWN [ 4000 writes] seq: lock  166us compress 25us io 17us | unseq: lock   85us compress 6us io 7us
+WAL BREAKDOWN [ 5000 writes] seq: lock  217us compress 25us io 15us | unseq: lock   79us compress 5us io 6us
+WAL BREAKDOWN [ 6000 writes] seq: lock  252us compress 25us io 15us | unseq: lock   96us compress 5us io 6us
+WAL BREAKDOWN [ 7000 writes] seq: lock  357us compress 26us io 14us | unseq: lock  107us compress 5us io 6us
+WAL BREAKDOWN [ 8000 writes] seq: lock  419us compress 26us io 14us | unseq: lock  131us compress 5us io 5us
+WAL BREAKDOWN [ 9000 writes] seq: lock  617us compress 27us io 13us | unseq: lock  221us compress 5us io 5us
+WAL BREAKDOWN [10000 writes] seq: lock  757us compress 28us io 13us | unseq: lock  309us compress 6us io 5us
+WAL BREAKDOWN [11000 writes] seq: lock 1132us compress 29us io 13us | unseq: lock  460us compress 6us io 5us
+WAL BREAKDOWN [12000 writes] seq: lock 1609us compress 30us io 13us | unseq: lock  684us compress 6us io 5us
+WAL BREAKDOWN [13000 writes] seq: lock 2226us compress 31us io 13us | unseq: lock  904us compress 6us io 5us
+WAL BREAKDOWN [14000 writes] seq: lock 3808us compress 33us io 14us | unseq: lock 1749us compress 6us io 5us
+WAL BREAKDOWN [15000 writes] seq: lock 6319us compress 41us io 16us | unseq: lock 2601us compress 6us io 5us
+
+=== ISOLATION BREAKDOWN (cumulative averages, printed every 1000 validations) ===
+Source: storage/isolation_manager.rs — measures window lookup, insert, validation, and finalization
+
+ISOLATION BREAKDOWN [1000 validations] get_window 1us insert_pending 1us validate    1us finalize 0us
+ISOLATION BREAKDOWN [2000 validations] get_window 1us insert_pending 1us validate   30us finalize 0us
+ISOLATION BREAKDOWN [3000 validations] get_window 1us insert_pending 1us validate   86us finalize 0us
+ISOLATION BREAKDOWN [4000 validations] get_window 9us insert_pending 1us validate  197us finalize 0us
+ISOLATION BREAKDOWN [5000 validations] get_window 55us insert_pending 1us validate  423us finalize 0us
+ISOLATION BREAKDOWN [6000 validations] get_window 82us insert_pending 1us validate  875us finalize 0us
+ISOLATION BREAKDOWN [7000 validations] get_window 94us insert_pending 1us validate 1869us finalize 0us
+
+=== FULL COMMIT BREAKDOWN (cumulative averages, printed every 1000 commits) ===
+Source: storage/storage.rs — measures each phase of snapshot_commit end-to-end
+
+FULL BREAKDOWN [1000 commits] open: wm_wait    0us | commit: put_status 525us record_create 5us wal_write  389us req_sync  1us isolation   45us sync_wait 2227us storage_write  356us iso_notify  33us status_write  159us
+FULL BREAKDOWN [2000 commits] open: wm_wait  239us | commit: put_status 525us record_create 5us wal_write  502us req_sync  1us isolation   74us sync_wait 2195us storage_write  382us iso_notify  37us status_write  189us
+FULL BREAKDOWN [3000 commits] open: wm_wait  436us | commit: put_status 515us record_create 5us wal_write  667us req_sync  1us isolation  131us sync_wait 2114us storage_write  426us iso_notify  43us status_write  220us
+FULL BREAKDOWN [4000 commits] open: wm_wait  762us | commit: put_status 518us record_create 5us wal_write 1003us req_sync  1us isolation  250us sync_wait 2339us storage_write  500us iso_notify  52us status_write  278us
+FULL BREAKDOWN [5000 commits] open: wm_wait 1461us | commit: put_status 524us record_create 5us wal_write 1690us req_sync  1us isolation  525us sync_wait 2732us storage_write  638us iso_notify  79us status_write  653us
+FULL BREAKDOWN [6000 commits] open: wm_wait 2602us | commit: put_status 577us record_create 4us wal_write 3427us req_sync  1us isolation 1017us sync_wait 3320us storage_write  905us iso_notify 116us status_write 1386us
+FULL BREAKDOWN [7000 commits] open: wm_wait 5418us | commit: put_status 730us record_create 5us wal_write 8525us req_sync 11us isolation 2298us sync_wait 6133us storage_write 1730us iso_notify 140us status_write 3564us
+
+=== KEY OBSERVATIONS ===
+
+Peak throughput: 59,106 inserts/s at 32 threads (591 txns/s)
+Throughput DROPS at 64T (43,836) and 128T (36,152) — negative scaling due to lock contention
+
+WAL lock contention dominates at high thread counts:
+  At 1T:   seq lock   103us, compress 26us, io 18us (lock is 70% of WAL write time)
+  At 64T:  seq lock  3808us, compress 33us, io 14us (lock is 99% of WAL write time)  [~14000 writes]
+  At 128T: seq lock  6319us, compress 41us, io 16us (lock is 99% of WAL write time)  [~15000 writes]
+
+Commit path bottleneck at 7000 commits (64T+128T runs):
+  wal_write:     8,525us (37% of commit time)
+  status_write:  3,564us (15% of commit time)
+  sync_wait:     6,133us (27% of commit time)
+  → WAL lock contention (wal_write + status_write) = 52% of commit time
+
+Isolation validation also grows but is secondary:
+  At 1T:   validate    1us
+  At 64T+: validate 1869us
+
+At 128T:
+  commit: 214,486us avg (64.3% of total tx time)
+  Performance degrades to worse than 16T throughput

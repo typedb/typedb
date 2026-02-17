@@ -32,13 +32,139 @@ use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, D
 
 const MAX_WAL_FILE_SIZE: u64 = 16 * 1024 * 1024;
 
+// Record header: 8 bytes seq_number + 8 bytes len + 1 byte record_type
+const RECORD_HEADER_BYTES: u64 = (mem::size_of::<u64>() * 2 + 1) as u64;
+
 const FILE_PREFIX: &str = "wal-";
+
+// Instrumentation counters for WAL write breakdown
+static SEQ_COMPRESS_NS: AtomicU64 = AtomicU64::new(0);
+static SEQ_IO_NS: AtomicU64 = AtomicU64::new(0);
+static UNSEQ_COMPRESS_NS: AtomicU64 = AtomicU64::new(0);
+static UNSEQ_IO_NS: AtomicU64 = AtomicU64::new(0);
+static QUEUE_WAIT_NS: AtomicU64 = AtomicU64::new(0);
+static WAL_WRITE_COUNT: AtomicU64 = AtomicU64::new(0);
+static BATCH_SIZE_TOTAL: AtomicU64 = AtomicU64::new(0);
+static LEADER_COUNT: AtomicU64 = AtomicU64::new(0);
+
+pub fn reset_wal_instrumentation() {
+    SEQ_COMPRESS_NS.store(0, Ordering::Relaxed);
+    SEQ_IO_NS.store(0, Ordering::Relaxed);
+    UNSEQ_COMPRESS_NS.store(0, Ordering::Relaxed);
+    UNSEQ_IO_NS.store(0, Ordering::Relaxed);
+    QUEUE_WAIT_NS.store(0, Ordering::Relaxed);
+    WAL_WRITE_COUNT.store(0, Ordering::Relaxed);
+    BATCH_SIZE_TOTAL.store(0, Ordering::Relaxed);
+    LEADER_COUNT.store(0, Ordering::Relaxed);
+}
+
+pub fn print_wal_instrumentation(label: &str) {
+    let count = WAL_WRITE_COUNT.load(Ordering::Relaxed);
+    if count == 0 {
+        return;
+    }
+    let c = count as f64;
+    let leaders = LEADER_COUNT.load(Ordering::Relaxed);
+    let avg_batch = if leaders > 0 { BATCH_SIZE_TOTAL.load(Ordering::Relaxed) as f64 / leaders as f64 } else { 0.0 };
+    eprintln!(
+        "  WAL [{label}] [{count} writes] seq: compress {:.0}us io {:.0}us | unseq: compress {:.0}us io {:.0}us | group: queue_wait {:.0}us avg_batch {:.1} leaders {leaders}",
+        SEQ_COMPRESS_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        SEQ_IO_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        UNSEQ_COMPRESS_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        UNSEQ_IO_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        QUEUE_WAIT_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        avg_batch,
+    );
+}
+
+/// Stack-allocated slot for leader→follower completion signaling.
+/// The follower parks; the leader writes the result and unparks.
+struct CompletionSlot {
+    /// 0 = pending. For sequenced: seq_number + 1. For unsequenced: u64::MAX.
+    value: AtomicU64,
+}
+
+impl CompletionSlot {
+    fn new() -> Self {
+        Self { value: AtomicU64::new(0) }
+    }
+
+    fn as_ptr(&self) -> *const AtomicU64 {
+        &self.value
+    }
+
+    fn wait_sequenced(&self) -> Result<DurabilitySequenceNumber, DurabilityServiceError> {
+        loop {
+            let v = self.value.load(Ordering::Acquire);
+            if v != 0 {
+                return Ok(DurabilitySequenceNumber::from(v.wrapping_sub(1)));
+            }
+            thread::park();
+        }
+    }
+
+    fn wait_unsequenced(&self) -> Result<(), DurabilityServiceError> {
+        loop {
+            let v = self.value.load(Ordering::Acquire);
+            if v != 0 {
+                return Ok(());
+            }
+            thread::park();
+        }
+    }
+}
+
+struct PendingWrite {
+    record_type: DurabilityRecordType,
+    bytes: Vec<u8>,
+    is_sequenced: bool,
+    completion: *const AtomicU64, // null for fire-and-forget
+    waiter: Option<thread::Thread>, // None for fire-and-forget
+}
+
+// Safety: when completion is non-null, it points to the caller's stack-allocated CompletionSlot.
+// The caller is parked (stack frame alive) until the leader writes to the slot and unparks it.
+// The leader writes before unparking. Acquire/Release ordering ensures visibility.
+// When completion is null (fire-and-forget), the leader skips signaling entirely.
+unsafe impl Send for PendingWrite {}
+
+struct GroupCommitQueue {
+    inner: Mutex<GroupCommitInner>,
+}
+
+impl GroupCommitQueue {
+    fn new() -> Self {
+        Self { inner: Mutex::new(GroupCommitInner { pending: Vec::new(), leader_active: false }) }
+    }
+}
+
+impl fmt::Debug for GroupCommitQueue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("GroupCommitQueue").finish()
+    }
+}
+
+struct GroupCommitInner {
+    pending: Vec<PendingWrite>,
+    leader_active: bool,
+}
+
+fn lz4_compress(bytes: &[u8]) -> Result<Vec<u8>, WALError> {
+    let mut compressed = Vec::new();
+    let mut encoder = lz4::EncoderBuilder::new()
+        .build(&mut compressed)
+        .map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+    encoder.write_all(bytes).map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+    encoder.finish().1.map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+    Ok(compressed)
+}
 
 #[derive(Debug)]
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, String>,
     next_sequence_number: AtomicU64,
     files: Arc<RwLock<Files>>,
+    group_queue: GroupCommitQueue,
     fsync_thread: FsyncThread,
 }
 
@@ -61,12 +187,15 @@ impl WAL {
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
+        let next_sequence_number = AtomicU64::new(next.number());
+
         let mut fsync_thread = FsyncThread::new(files.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
             registered_types: HashMap::new(),
-            next_sequence_number: AtomicU64::new(next.number()),
+            next_sequence_number,
             files,
+            group_queue: GroupCommitQueue::new(),
             fsync_thread,
         })
     }
@@ -86,13 +215,15 @@ impl WAL {
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
+        let next_sequence_number = AtomicU64::new(next.number());
 
         let mut fsync_thread = FsyncThread::new(files.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
             registered_types: HashMap::new(),
-            next_sequence_number: AtomicU64::new(next.number()),
+            next_sequence_number,
             files,
+            group_queue: GroupCommitQueue::new(),
             fsync_thread,
         })
     }
@@ -112,6 +243,91 @@ impl WAL {
     pub fn request_sync(&self, ack_waits_for_sync: bool) -> mpsc::Receiver<()> {
         self.fsync_thread.schedule_next_sync_may_subscribe(ack_waits_for_sync)
     }
+
+    fn run_leader_loop(&self) {
+        let mut files = self.files.write().unwrap();
+        let mut completions: Vec<(*const AtomicU64, thread::Thread, u64)> = Vec::new();
+        let mut wrote_any = false;
+
+        loop {
+            let batch = {
+                let mut inner = self.group_queue.inner.lock().unwrap();
+                let batch = mem::take(&mut inner.pending);
+                if batch.is_empty() {
+                    inner.leader_active = false;
+                    break;
+                }
+                batch
+            };
+
+            BATCH_SIZE_TOTAL.fetch_add(batch.len() as u64, Ordering::Relaxed);
+            wrote_any = true;
+
+            for item in batch {
+                let seq = if item.is_sequenced {
+                    self.increment()
+                } else {
+                    self.previous()
+                };
+
+                let tc0 = Instant::now();
+                let compressed = lz4_compress(&item.bytes).unwrap();
+                let tc1 = Instant::now();
+
+                if files.files.is_empty() || files.files.last().unwrap().len >= MAX_WAL_FILE_SIZE {
+                    files.open_new_file_at(seq).unwrap();
+                }
+
+                let writer = files.writer.as_mut().unwrap();
+                write_header(
+                    writer,
+                    RecordHeader {
+                        sequence_number: seq,
+                        len: compressed.len() as u64,
+                        record_type: item.record_type,
+                    },
+                )
+                .unwrap();
+                writer.write_all(&compressed).unwrap();
+                files.files.last_mut().unwrap().len += RECORD_HEADER_BYTES + compressed.len() as u64;
+                let tc2 = Instant::now();
+
+                if item.is_sequenced {
+                    SEQ_COMPRESS_NS.fetch_add((tc1 - tc0).as_nanos() as u64, Ordering::Relaxed);
+                    SEQ_IO_NS.fetch_add((tc2 - tc1).as_nanos() as u64, Ordering::Relaxed);
+                } else {
+                    UNSEQ_COMPRESS_NS.fetch_add((tc1 - tc0).as_nanos() as u64, Ordering::Relaxed);
+                    UNSEQ_IO_NS.fetch_add((tc2 - tc1).as_nanos() as u64, Ordering::Relaxed);
+                }
+
+                let signal_value = if item.is_sequenced {
+                    seq.number().wrapping_add(1)
+                } else {
+                    u64::MAX
+                };
+                if !item.completion.is_null() {
+                    completions.push((item.completion, item.waiter.unwrap(), signal_value));
+                }
+            }
+
+            // Loop continues: check for more items accumulated while we were writing
+        }
+
+        // Single flush for entire leader session
+        if wrote_any {
+            files.writer.as_mut().unwrap().flush().unwrap();
+        }
+        LEADER_COUNT.fetch_add(1, Ordering::Relaxed);
+        drop(files);
+
+        // Signal all waiters
+        for (completion_ptr, waiter, value) in completions {
+            unsafe {
+                (*completion_ptr).store(value, Ordering::Release);
+            }
+            waiter.unpark();
+        }
+    }
 }
 
 impl DurabilityService for WAL {
@@ -124,9 +340,32 @@ impl DurabilityService for WAL {
 
     fn unsequenced_write(&self, record_type: DurabilityRecordType, bytes: &[u8]) -> Result<(), DurabilityServiceError> {
         debug_assert!(self.registered_types.contains_key(&record_type));
-        let mut files = self.files.write().unwrap();
-        let raw_record = RawRecord { sequence_number: self.previous(), record_type, bytes: Cow::Borrowed(bytes) };
-        files.write_record(raw_record)?;
+
+        let request = PendingWrite {
+            record_type,
+            bytes: bytes.to_vec(),
+            is_sequenced: false,
+            completion: std::ptr::null(),
+            waiter: None,
+        };
+
+        let is_leader = {
+            let mut inner = self.group_queue.inner.lock().unwrap();
+            inner.pending.push(request);
+            if !inner.leader_active {
+                inner.leader_active = true;
+                true
+            } else {
+                false
+            }
+        };
+
+        // If we became the leader, we must run the loop before returning
+        if is_leader {
+            self.run_leader_loop();
+        }
+
+        WAL_WRITE_COUNT.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
 
@@ -136,11 +375,40 @@ impl DurabilityService for WAL {
         bytes: &[u8],
     ) -> Result<DurabilitySequenceNumber, DurabilityServiceError> {
         debug_assert!(self.registered_types.contains_key(&record_type));
-        let mut files = self.files.write().unwrap();
-        let seq = self.increment();
-        let raw_record = RawRecord { sequence_number: seq, record_type, bytes: Cow::Borrowed(bytes) };
-        files.write_record(raw_record)?;
-        Ok(seq)
+
+        let slot = CompletionSlot::new();
+        let request = PendingWrite {
+            record_type,
+            bytes: bytes.to_vec(),
+            is_sequenced: true,
+            completion: slot.as_ptr(),
+            waiter: Some(thread::current()),
+        };
+
+        let t0 = Instant::now();
+        let is_leader = {
+            let mut inner = self.group_queue.inner.lock().unwrap();
+            inner.pending.push(request);
+            if !inner.leader_active {
+                inner.leader_active = true;
+                true
+            } else {
+                false
+            }
+        };
+
+        if is_leader {
+            self.run_leader_loop();
+        }
+
+        let result = slot.wait_sequenced();
+
+        if !is_leader {
+            QUEUE_WAIT_NS.fetch_add((Instant::now() - t0).as_nanos() as u64, Ordering::Relaxed);
+        }
+        WAL_WRITE_COUNT.fetch_add(1, Ordering::Relaxed);
+
+        result
     }
 
     fn iter_any_from(

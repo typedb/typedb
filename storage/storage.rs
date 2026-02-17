@@ -12,9 +12,12 @@ use std::{
     error::Error,
     fs, io,
     path::{Path, PathBuf},
-    sync::{atomic::Ordering, Arc},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
     thread::sleep,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use ::error::typedb_error;
@@ -60,6 +63,57 @@ pub mod recovery;
 pub mod sequence_number;
 pub mod snapshot;
 mod write_batches;
+
+// Instrumentation counters for open + commit path breakdown
+static OPEN_WATERMARK_WAIT_NS: AtomicU64 = AtomicU64::new(0);
+static OPEN_COUNT: AtomicU64 = AtomicU64::new(0);
+static COMMIT_PUT_STATUS_NS: AtomicU64 = AtomicU64::new(0);
+static COMMIT_RECORD_CREATE_NS: AtomicU64 = AtomicU64::new(0);
+static COMMIT_WAL_WRITE_NS: AtomicU64 = AtomicU64::new(0);
+static COMMIT_REQUEST_SYNC_NS: AtomicU64 = AtomicU64::new(0);
+static COMMIT_ISOLATION_NS: AtomicU64 = AtomicU64::new(0);
+static COMMIT_SYNC_WAIT_NS: AtomicU64 = AtomicU64::new(0);
+static COMMIT_STORAGE_WRITE_NS: AtomicU64 = AtomicU64::new(0);
+static COMMIT_ISO_NOTIFY_NS: AtomicU64 = AtomicU64::new(0);
+static COMMIT_STATUS_WRITE_NS: AtomicU64 = AtomicU64::new(0);
+static COMMIT_COUNT: AtomicU64 = AtomicU64::new(0);
+
+pub fn reset_commit_instrumentation() {
+    OPEN_WATERMARK_WAIT_NS.store(0, Ordering::Relaxed);
+    OPEN_COUNT.store(0, Ordering::Relaxed);
+    COMMIT_PUT_STATUS_NS.store(0, Ordering::Relaxed);
+    COMMIT_RECORD_CREATE_NS.store(0, Ordering::Relaxed);
+    COMMIT_WAL_WRITE_NS.store(0, Ordering::Relaxed);
+    COMMIT_REQUEST_SYNC_NS.store(0, Ordering::Relaxed);
+    COMMIT_ISOLATION_NS.store(0, Ordering::Relaxed);
+    COMMIT_SYNC_WAIT_NS.store(0, Ordering::Relaxed);
+    COMMIT_STORAGE_WRITE_NS.store(0, Ordering::Relaxed);
+    COMMIT_ISO_NOTIFY_NS.store(0, Ordering::Relaxed);
+    COMMIT_STATUS_WRITE_NS.store(0, Ordering::Relaxed);
+    COMMIT_COUNT.store(0, Ordering::Relaxed);
+}
+
+pub fn print_commit_instrumentation(label: &str) {
+    let count = COMMIT_COUNT.load(Ordering::Relaxed);
+    if count == 0 {
+        return;
+    }
+    let c = count as f64;
+    let oc = OPEN_COUNT.load(Ordering::Relaxed).max(1) as f64;
+    eprintln!(
+        "  COMMIT [{label}] [{count} commits] open: wm_wait {:.0}us | commit: put_status {:.0}us record_create {:.0}us wal_write {:.0}us req_sync {:.0}us isolation {:.0}us sync_wait {:.0}us storage_write {:.0}us iso_notify {:.0}us status_write {:.0}us",
+        OPEN_WATERMARK_WAIT_NS.load(Ordering::Relaxed) as f64 / oc / 1000.0,
+        COMMIT_PUT_STATUS_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        COMMIT_RECORD_CREATE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        COMMIT_WAL_WRITE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        COMMIT_REQUEST_SYNC_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        COMMIT_ISOLATION_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        COMMIT_SYNC_WAIT_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        COMMIT_STORAGE_WRITE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        COMMIT_ISO_NOTIFY_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+        COMMIT_STATUS_WRITE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+    );
+}
 
 #[derive(Debug)]
 pub struct MVCCStorage<Durability> {
@@ -175,8 +229,12 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn open_snapshot_write(self: Arc<Self>) -> WriteSnapshot<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
+        let t0 = Instant::now();
         let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
+        let t1 = Instant::now();
+        OPEN_WATERMARK_WAIT_NS.fetch_add((t1 - t0).as_nanos() as u64, Ordering::Relaxed);
+        OPEN_COUNT.fetch_add(1, Ordering::Relaxed);
         WriteSnapshot::new(self, open_sequence_number)
     }
 
@@ -226,12 +284,15 @@ impl<Durability> MVCCStorage<Durability> {
     {
         use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
 
+        let tc0 = Instant::now();
         self.set_initial_put_status(&snapshot, commit_profile.storage_counters())
             .map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
         commit_profile.snapshot_put_statuses_checked();
+        let tc1 = Instant::now();
 
         let (reader_guard, commit_record) = snapshot.into_commit_record();
         commit_profile.snapshot_commit_record_created();
+        let tc2 = Instant::now();
 
         commit_profile.commit_size(commit_record.operations().len());
 
@@ -240,33 +301,71 @@ impl<Durability> MVCCStorage<Durability> {
             .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
         commit_profile.snapshot_durable_write_data_submitted();
+        let tc3 = Instant::now();
 
         let sync_notifier = self.durability_client.request_sync();
+        let tc4 = Instant::now();
+
         let validate_result =
             self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
         drop(reader_guard);
         commit_profile.snapshot_isolation_validated();
+        let tc5 = Instant::now();
+
+        COMMIT_PUT_STATUS_NS.fetch_add((tc1 - tc0).as_nanos() as u64, Ordering::Relaxed);
+        COMMIT_RECORD_CREATE_NS.fetch_add((tc2 - tc1).as_nanos() as u64, Ordering::Relaxed);
+        COMMIT_WAL_WRITE_NS.fetch_add((tc3 - tc2).as_nanos() as u64, Ordering::Relaxed);
+        COMMIT_REQUEST_SYNC_NS.fetch_add((tc4 - tc3).as_nanos() as u64, Ordering::Relaxed);
+        COMMIT_ISOLATION_NS.fetch_add((tc5 - tc4).as_nanos() as u64, Ordering::Relaxed);
 
         match validate_result {
             Ok(ValidatedCommit::Write(write_batches)) => {
+                let tc6 = Instant::now();
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
                                                // Write to the k-v store
                 commit_profile.snapshot_durable_write_data_confirmed();
+                let tc7 = Instant::now();
 
                 self.keyspaces
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_storage_written();
+                let tc8 = Instant::now();
 
                 // Inform the isolation manager and increment the watermark
                 self.isolation_manager
                     .applied(commit_sequence_number)
                     .map_err(|error| Internal { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_isolation_manager_notified();
+                let tc9 = Instant::now();
 
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 commit_profile.snapshot_durable_write_commit_status_submitted();
+                let tc10 = Instant::now();
+
+                COMMIT_SYNC_WAIT_NS.fetch_add((tc7 - tc6).as_nanos() as u64, Ordering::Relaxed);
+                COMMIT_STORAGE_WRITE_NS.fetch_add((tc8 - tc7).as_nanos() as u64, Ordering::Relaxed);
+                COMMIT_ISO_NOTIFY_NS.fetch_add((tc9 - tc8).as_nanos() as u64, Ordering::Relaxed);
+                COMMIT_STATUS_WRITE_NS.fetch_add((tc10 - tc9).as_nanos() as u64, Ordering::Relaxed);
+                let count = COMMIT_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+                if count % 1000 == 0 {
+                    let c = count as f64;
+                    let oc = OPEN_COUNT.load(Ordering::Relaxed).max(1) as f64;
+                    eprintln!(
+                        "FULL BREAKDOWN [{c:.0} commits] open: wm_wait {:.0}us | commit: put_status {:.0}us record_create {:.0}us wal_write {:.0}us req_sync {:.0}us isolation {:.0}us sync_wait {:.0}us storage_write {:.0}us iso_notify {:.0}us status_write {:.0}us",
+                        OPEN_WATERMARK_WAIT_NS.load(Ordering::Relaxed) as f64 / oc / 1000.0,
+                        COMMIT_PUT_STATUS_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                        COMMIT_RECORD_CREATE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                        COMMIT_WAL_WRITE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                        COMMIT_REQUEST_SYNC_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                        COMMIT_ISOLATION_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                        COMMIT_SYNC_WAIT_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                        COMMIT_STORAGE_WRITE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                        COMMIT_ISO_NOTIFY_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                        COMMIT_STATUS_WRITE_NS.load(Ordering::Relaxed) as f64 / c / 1000.0,
+                    );
+                }
 
                 Ok(commit_sequence_number)
             }
