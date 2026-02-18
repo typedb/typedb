@@ -20,35 +20,40 @@ bazel_dep(name = "rules_pkg", version = "1.0.1")
 bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
 
-# typedb ecosystem - local path overrides (until published to BCR)
+# typedb ecosystem dependencies
 bazel_dep(name = "typedb_dependencies", version = "0.0.0")
-local_path_override(
+git_override(
     module_name = "typedb_dependencies",
-    path = "../dependencies",
+    remote = "https://github.com/typedb/dependencies",
+    commit = "5a7279d66110f269375a0bf641d0686ccf8a9bff",
 )
 
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
-local_path_override(
+git_override(
     module_name = "typedb_bazel_distribution",
-    path = "../bazel-distribution",
+    remote = "https://github.com/typedb/bazel-distribution",
+    commit = "5b417d0f9acf8b550851ef72a2388ca7eb92a5bf",
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")
-local_path_override(
+git_override(
     module_name = "typeql",
-    path = "../typeql",
+    remote = "https://github.com/typedb/typeql",
+    commit = "870f60dd79f987a4f2cf4d4ea9a98cbdfc3a56a2",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
-local_path_override(
+git_override(
     module_name = "typedb_protocol",
-    path = "../typedb-protocol",
+    remote = "https://github.com/typedb/typedb-protocol",
+    commit = "9387174d99f7ab635237e1639f92598765299695",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
-local_path_override(
+git_override(
     module_name = "typedb_behaviour",
-    path = "../typedb-behaviour",
+    remote = "https://github.com/typedb/typedb-behaviour",
+    commit = "7f0b7fdac4aca550c81e8f979a7af6843e077221",
 )
 
 # Python toolchain
