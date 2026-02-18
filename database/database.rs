@@ -251,24 +251,10 @@ impl<D: DurabilityClient> Database<D> {
         snapshot: WriteSnapshot<D>,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), DataCommitError> {
-        let commit_record_opt = snapshot
-            .finalise(commit_profile)
-            .map_err(|error| DataCommitError::SnapshotError { typedb_source: error })?;
-
-        if let Some(commit_record) = commit_record_opt {
-            let commit_result = self.storage.commit(commit_record, commit_profile);
-            match commit_result {
-                Ok(_) => Ok(()),
-                Err(error) => {
-                    let error = DataCommitError::SnapshotError {
-                        typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error },
-                    };
-                    Err(error)
-                }
-            }
-        } else {
-            Ok(())
-        }
+        use storage::snapshot::SnapshotError;
+        self.storage.snapshot_commit(snapshot, commit_profile).map(|_| ()).map_err(|typedb_source| {
+            DataCommitError::SnapshotError { typedb_source: SnapshotError::Commit { typedb_source } }
+        })
     }
 
     pub fn schema_commit_with_commit_record(
@@ -285,63 +271,41 @@ impl<D: DurabilityClient> Database<D> {
         snapshot: SchemaSnapshot<D>,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), SchemaCommitError> {
+        use storage::snapshot::SnapshotError;
         // Schema commits must wait for all other data operations to finish. No new read or write
         // transaction may open until the commit completes.
         let mut schema_commit_guard = self.schema.write().unwrap();
         let mut schema = (*schema_commit_guard).clone();
 
-        let commit_record_opt = snapshot
-            .finalise(commit_profile)
-            .map_err(|error| SchemaCommitError::SnapshotError { typedb_source: error })?;
+        let sequence_number = self.storage.snapshot_commit(snapshot, commit_profile).map_err(|typedb_source| {
+            SchemaCommitError::SnapshotError { typedb_source: SnapshotError::Commit { typedb_source } }
+        })?;
 
-        if let Some(commit_record) = commit_record_opt {
-            let sequence_number = match self.storage.commit(commit_record, commit_profile) {
-                Ok(sequence_number) => Some(sequence_number),
-                Err(error) => {
-                    return Err(SnapshotError {
-                        typedb_source: storage::snapshot::SnapshotError::Commit { typedb_source: error },
-                    })
-                }
-            };
+        // replace Schema cache
+        let type_cache = TypeCache::new(self.storage.clone(), sequence_number)
+            .map_err(|typedb_source| TypeCacheUpdateError { typedb_source })?;
+        schema.type_cache = Arc::new(type_cache);
+        let type_manager = TypeManager::new(
+            self.definition_key_generator.clone(),
+            self.type_vertex_generator.clone(),
+            Some(schema.type_cache.clone()),
+        );
+        let function_cache = FunctionCache::new(self.storage.clone(), &type_manager, sequence_number)
+            .map_err(|typedb_source| SchemaCommitError::FunctionError { typedb_source })?;
+        schema.function_cache = Arc::new(function_cache);
+        commit_profile.schema_update_caches_updated();
 
-            // `None` means empty commit
-            if let Some(sequence_number) = sequence_number {
-                let type_cache = match TypeCache::new(self.storage.clone(), sequence_number) {
-                    Ok(type_cache) => type_cache,
-                    Err(typedb_source) => return Err(TypeCacheUpdateError { typedb_source }),
-                };
-                // replace Schema cache
-                schema.type_cache = Arc::new(type_cache);
-                let type_manager = TypeManager::new(
-                    self.definition_key_generator.clone(),
-                    self.type_vertex_generator.clone(),
-                    Some(schema.type_cache.clone()),
-                );
-                let function_cache = match FunctionCache::new(self.storage.clone(), &type_manager, sequence_number) {
-                    Ok(function_cache) => function_cache,
-                    Err(typedb_source) => return Err(SchemaCommitError::FunctionError { typedb_source }),
-                };
-                schema.function_cache = Arc::new(function_cache);
-                commit_profile.schema_update_caches_updated();
-            }
-
-            // replace statistics
-            let mut thing_statistics = (*schema.thing_statistics).clone();
-
-            if let Err(typedb_source) = thing_statistics.may_synchronise(&self.storage) {
-                return Err(crate::transaction::SchemaCommitError::StatisticsError { typedb_source });
-            }
-            commit_profile.schema_update_statistics_keys_updated();
-
-            schema.thing_statistics = Arc::new(thing_statistics);
-            self.query_cache.force_reset(&schema.thing_statistics);
-
-            *schema_commit_guard = schema;
-
-            Ok(())
-        } else {
-            Ok(())
+        // replace statistics
+        let mut thing_statistics = (*schema.thing_statistics).clone();
+        if let Err(typedb_source) = thing_statistics.may_synchronise(&self.storage) {
+            return Err(SchemaCommitError::StatisticsError { typedb_source });
         }
+        commit_profile.schema_update_statistics_keys_updated();
+        schema.thing_statistics = Arc::new(thing_statistics);
+        self.query_cache.force_reset(&schema.thing_statistics);
+
+        *schema_commit_guard = schema;
+        Ok(())
     }
 
     pub fn commit_record_exists(

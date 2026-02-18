@@ -39,7 +39,6 @@ fn snapshot_generated_new_id() {
     assert_eq!(snapshot1.open_sequence_number(), snapshot2.open_sequence_number());
     assert_ne!(snapshot1.id(), snapshot2.id());
 
-    let snapshot1_id = snapshot1.id();
     let snapshot1_open_seq_num = snapshot1.open_sequence_number();
     let snapshot2_id = snapshot2.id();
     snapshot1.put(StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0, 0x0, 0x1])));
@@ -50,8 +49,6 @@ fn snapshot_generated_new_id() {
     assert_ne!(snapshot3.open_sequence_number(), snapshot2.open_sequence_number());
     assert_eq!(snapshot3.open_sequence_number(), seqnum1);
     assert_ne!(snapshot3.id(), snapshot2_id);
-
-    snapshot2.close_resources();
 
     let snapshot4 = storage.clone().open_snapshot_schema();
     assert_eq!(snapshot4.open_sequence_number(), seqnum1);

@@ -113,7 +113,6 @@ impl fmt::Display for TimeZone {
 
 macro_rules! tz_to_number {
     ($($id:literal => $tz:path),+ $(,)?) => {
-        pub(crate) const NUM_TZS: u32 = 596;
         pub(crate) const NUM_TZS: u32 = 597;
         const _: () = {
             // NOTE: if this breaks, that means a new timezone has been added to the IANA database.

@@ -64,7 +64,7 @@ unuseddeps_deps()
 load("@typedb_dependencies//builder/rust:deps.bzl", rust_deps = "deps")
 rust_deps()
 
-load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains", "rust_analyzer_toolchain_tools_repository")
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies")
 rules_rust_dependencies()
 load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
 rust_analyzer_dependencies()

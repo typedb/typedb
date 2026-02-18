@@ -11,7 +11,10 @@ use resource::{
     internal_database_prefix,
     profile::TransactionProfile,
 };
-use storage::{durability_client::WALClient, record::CommitRecord, snapshot::CommittableSnapshot};
+use storage::{
+    durability_client::WALClient, isolation_manager::ReaderDropGuard, record::CommitRecord,
+    snapshot::CommittableSnapshot,
+};
 use system::{
     concepts::{Credential, PasswordHash, User},
     repositories::SCHEMA,
@@ -29,7 +32,11 @@ pub async fn initialise_system_database(
     server_state: &dyn ServerState,
 ) -> Result<Arc<Database<WALClient>>, ArcServerStateError> {
     server_state.databases_create_unrestricted(SYSTEM_DB).await?;
-    let db = server_state.database_manager().await.database_unrestricted(SYSTEM_DB).expect("todo");
+    let db = server_state
+        .database_manager()
+        .await
+        .database_unrestricted(SYSTEM_DB)
+        .expect("Critical: system database is absent");
     initialise_system_database_schema(db.clone(), server_state).await?;
     Ok(db)
 }
@@ -51,14 +58,13 @@ pub async fn get_system_database_schema_commit_record(
             },
         );
     });
-    let mut commit_profile = transaction_profile.commit_profile();
     let commit_intent =
         finalise_result.map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;
-    let commit_record_opt = commit_intent.schema_snapshot.finalise(&mut commit_profile).map_err(|error| {
-        LocalServerStateError::DatabaseSchemaCommitFailed {
-            typedb_source: SchemaCommitError::SnapshotError { typedb_source: error },
-        }
-    })?;
+    let commit_record_opt = commit_intent
+        .schema_snapshot
+        .has_changes()
+        .then(|| commit_intent.schema_snapshot.into_commit_record())
+        .map(|(_drop_guard, record)| record);
     Ok((transaction_profile, commit_record_opt))
 }
 
@@ -80,14 +86,13 @@ pub async fn get_default_user_commit_record(
         &Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
     );
 
-    let (mut transaction_profile, commit_intent) =
+    let (transaction_profile, commit_intent) =
         create_result.map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeCreated { typedb_source })?;
-    let mut commit_profile = transaction_profile.commit_profile();
-    let commit_record_opt = commit_intent.write_snapshot.finalise(&mut commit_profile).map_err(|error| {
-        LocalServerStateError::DatabaseSchemaCommitFailed {
-            typedb_source: SchemaCommitError::SnapshotError { typedb_source: error },
-        }
-    })?;
+    let commit_record_opt = commit_intent
+        .write_snapshot
+        .has_changes()
+        .then(|| commit_intent.write_snapshot.into_commit_record())
+        .map(|(_drop_guard, record)| record);
     Ok((transaction_profile, commit_record_opt))
 }
 
