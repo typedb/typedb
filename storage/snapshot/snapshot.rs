@@ -4,14 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    any::type_name,
-    error::Error,
-    fmt,
-    iter::empty,
-    ops::Deref,
-    sync::{atomic::Ordering, Arc},
-};
+use std::{any::type_name, error::Error, fmt, iter::empty, sync::Arc};
 
 use bytes::byte_array::ByteArray;
 use error::typedb_error;
@@ -23,7 +16,7 @@ use resource::{
 
 use crate::{
     durability_client::DurabilityClient,
-    isolation_manager::{ReaderDropGuard},
+    isolation_manager::ReaderDropGuard,
     iterator::MVCCReadError,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -38,7 +31,6 @@ use crate::{
         write::Write,
     },
     MVCCStorage, StorageCommitError,
-    StorageCommitError::MVCCRead,
 };
 
 macro_rules! get_mapped_method {
@@ -214,50 +206,12 @@ pub trait CommittableSnapshot<D>: WritableSnapshot
 where
     D: DurabilityClient,
 {
-    // TODO: update the tests and remove it
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
 
-    // TODO: Combine with finalise?
     fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord);
 
-    fn finalise(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError>;
-
-    fn set_initial_put_status(
-        &self,
-        storage: Arc<MVCCStorage<D>>,
-        storage_counters: StorageCounters,
-    ) -> Result<(), MVCCReadError> {
-        for buffer in self.operations() {
-            let writes = buffer.writes();
-            let puts = writes.iter().filter_map(|(key, write)| match write {
-                Write::Put { value, reinsert, known_to_exist } => Some((key, value, reinsert, *known_to_exist)),
-                _ => None,
-            });
-            for (key, value, reinsert, known_to_exist) in puts {
-                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key);
-                if known_to_exist {
-                    debug_assert!(storage
-                        .get::<0>(self.iterator_pool(), wrapped, self.open_sequence_number(), storage_counters.clone())
-                        .is_ok_and(|opt| opt.is_some()));
-                    reinsert.store(false, Ordering::Release);
-                } else {
-                    let existing_stored = storage
-                        .get::<BUFFER_VALUE_INLINE>(
-                            self.iterator_pool(),
-                            wrapped,
-                            self.open_sequence_number(),
-                            storage_counters.clone(),
-                        )?
-                        .is_some_and(|reference| &reference == value);
-                    reinsert.store(!existing_stored, Ordering::Release);
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn not_committable(&self) -> bool {
-        self.operations().is_writes_empty() && self.operations().locks_empty()
+    fn has_changes(&self) -> bool {
+        !self.operations().is_writes_empty() || !self.operations().locks_empty()
     }
 }
 
@@ -279,8 +233,6 @@ impl<D> ReadSnapshot<D> {
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
         ReadSnapshot { open_sequence_number, id: SnapshotId::new(), iterator_pool: IteratorPool::new(), storage }
     }
-
-    pub fn close_resources(self) {}
 }
 
 impl<D> ReadableSnapshot for ReadSnapshot<D> {
@@ -396,7 +348,6 @@ impl<D> WriteSnapshot<D> {
         open_sequence_number: SequenceNumber,
         id: Option<SnapshotId>,
     ) -> Self {
-        // TODO: do we need this in cluster?
         let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
         WriteSnapshot {
             storage,
@@ -505,11 +456,6 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     fn iterator_pool(&self) -> &IteratorPool {
         &self.iterator_pool
     }
-
-    fn close_resources(&self) {
-        self.storage.closed_snapshot_write(self.open_sequence_number);
-    }
->>>>>>> 1adfdedd7 (Ignore already processed commit records in storage (#7638))
 }
 
 impl<D> WritableSnapshot for WriteSnapshot<D> {
@@ -523,36 +469,21 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
 }
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
-    // TODO: update the tests and remove it
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
-        let storage = self.storage.clone();
-        match self.finalise(commit_profile)? {
-            Some(commit_record) => match storage.clone().commit(commit_record, commit_profile) {
-                Ok(sequence_number) => Ok(Some(sequence_number)),
-                Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
-            },
-            None => Ok(None),
-        }
-    }
-
-    // TODO: Combine with finalise?
-    fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
-        let Self { operations, open_sequence_number, reader_guard, iterator_pool: _, storage: _ } = self;
-        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Data))
-    }
-
-    fn finalise(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError> {
-        if self.not_committable() {
-            Ok(None)
+        if self.has_changes() {
+            self.storage
+                .clone()
+                .snapshot_commit(self, commit_profile)
+                .map(Some)
+                .map_err(|typedb_source| SnapshotError::Commit { typedb_source })
         } else {
-            self.set_initial_put_status(self.storage.clone(), commit_profile.storage_counters()).map_err(|error| {
-                SnapshotError::Commit { typedb_source: MVCCRead { name: self.storage.name.clone(), source: error } }
-            })?;
-            commit_profile.snapshot_put_statuses_checked();
-            let commit_record =
-                CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Data, self.id);
-            Ok(Some(commit_record))
+            Ok(None)
         }
+    }
+
+    fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
+        let Self { operations, open_sequence_number, id, reader_guard, iterator_pool: _, storage: _ } = self;
+        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Data, id))
     }
 }
 
@@ -594,7 +525,6 @@ impl<D> SchemaSnapshot<D> {
         open_sequence_number: SequenceNumber,
         id: Option<SnapshotId>,
     ) -> Self {
-        // TODO: does cluster need this?
         let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
         SchemaSnapshot {
             storage,
@@ -716,35 +646,21 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
 }
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
-    // TODO: extract these two methods into separate trait
-    // TODO: update the tests and remove it
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
-        let storage = self.storage.clone();
-        match self.finalise(commit_profile)? {
-            Some(commit_record) => match storage.commit(commit_record, commit_profile) {
-                Ok(sequence_number) => Ok(Some(sequence_number)),
-                Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
-            },
-            None => Ok(None),
-        }
-    }
-
-    // TODO: Combine with finalise?
-    fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
-        let Self { operations, open_sequence_number, reader_guard, iterator_pool: _, storage: _ } = self;
-        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Schema))
-    }
-
-    fn finalise(self, commit_profile: &mut CommitProfile) -> Result<Option<CommitRecord>, SnapshotError> {
-        if self.not_committable() {
-            Ok(None)
+        if self.has_changes() {
+            self.storage
+                .clone()
+                .snapshot_commit(self, commit_profile)
+                .map(Some)
+                .map_err(|typedb_source| SnapshotError::Commit { typedb_source })
         } else {
-            self.set_initial_put_status(self.storage.clone(), commit_profile.storage_counters()).map_err(|error| {
-                SnapshotError::Commit { typedb_source: MVCCRead { name: self.storage.name.clone(), source: error } }
-            })?;
-            commit_profile.snapshot_put_statuses_checked();
-            Ok(Some(CommitRecord::new(self.operations, self.open_sequence_number, CommitType::Schema, self.id)))
+            Ok(None)
         }
+    }
+
+    fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
+        let Self { operations, open_sequence_number, reader_guard, id, iterator_pool: _, storage: _ } = self;
+        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Schema, id))
     }
 }
 

@@ -23,8 +23,8 @@ use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{
-        snapshot_id::SnapshotId, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError,
-        WritableSnapshot, WriteSnapshot,
+        snapshot_id::SnapshotId, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot,
+        WriteSnapshot,
     },
 };
 use tracing::Level;
@@ -169,9 +169,9 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
         commit_profile.start();
-        let mut snapshot = match self.snapshot.try_into_inner() {
-            None => return (profile, Err(DataCommitError::SnapshotInUse {})),
-            Some(snapshot) => snapshot,
+        let mut snapshot = match Arc::try_unwrap(self.snapshot) {
+            Err(_) => return (profile, Err(DataCommitError::SnapshotInUse {})),
+            Ok(snapshot) => snapshot,
         };
 
         if let Err(errs) = self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
@@ -185,8 +185,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot }))
     }
 
-    // TODO: substitute this method by "finalise()" + "data_commit_with_snapshot()" in usages
-    pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
+    pub fn commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
         let (mut profile, (database, snapshot)) = match self.finalise() {
             (profile, Ok(DataCommitIntent { database_drop_guard, write_snapshot })) => {
                 (profile, (database_drop_guard, write_snapshot))
@@ -284,7 +283,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
         commit_profile.start();
-        let mut snapshot = self.snapshot.try_into_inner()
+        let mut snapshot = Arc::try_unwrap(self.snapshot)
             .unwrap_or_else(|_| panic!("Expected unique ownership of snapshot for schema commit"));
         if let Err(errs) = self.type_manager.validate(&snapshot) {
             // TODO: send all the errors, not just the first,
@@ -318,7 +317,6 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot }))
     }
 
-    // TODO: substitute this method by "finalise()" + "schema_commit_with_snapshot()" in usages
     pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
         let (mut profile, commit_intent) = match self.finalise() {
             (profile, Ok(commit_intent)) => (profile, commit_intent),

@@ -670,16 +670,10 @@ impl ServerState for LocalServerState {
             .map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeCreated { typedb_source })?;
 
         let commit_profile = transaction_profile.commit_profile();
-        let commit_record = commit_intent.write_snapshot.finalise(commit_profile).map_err(|_error| {
-            LocalServerStateError::UserCannotBeCreated { typedb_source: UserCreateError::Unexpected {} }
-        })?;
-
-        if let Some(commit_record) = commit_record {
-            let commit_profile = transaction_profile.commit_profile();
-            self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
-        }
-
-        Ok(())
+        let database = self.databases_get_unrestricted(SYSTEM_DB).await?.unwrap();
+        database.data_commit_with_snapshot(commit_intent.write_snapshot, commit_profile).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
+        })
     }
 
     async fn users_update(
@@ -702,17 +696,13 @@ impl ServerState for LocalServerState {
             .map_err(|typedb_source| LocalServerStateError::UserCannotBeUpdated { typedb_source })?;
 
         let commit_profile = transaction_profile.commit_profile();
-        let commit_record = commit_intent.write_snapshot.finalise(commit_profile).map_err(|_error| {
-            LocalServerStateError::UserCannotBeUpdated { typedb_source: UserUpdateError::Unexpected {} }
+        let database = self.databases_get_unrestricted(SYSTEM_DB).await?.unwrap();
+        database.data_commit_with_snapshot(commit_intent.write_snapshot, commit_profile).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
         })?;
 
-        if let Some(commit_record) = commit_record {
-            let commit_profile = transaction_profile.commit_profile();
-            self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
-            self.token_manager.invalidate_user(username).await;
-            self.close_user_transactions(username).await;
-        }
-
+        self.token_manager.invalidate_user(username).await;
+        self.close_user_transactions(username).await;
         Ok(())
     }
 
@@ -728,17 +718,13 @@ impl ServerState for LocalServerState {
             .map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeDeleted { typedb_source })?;
 
         let commit_profile = transaction_profile.commit_profile();
-        let commit_record = commit_intent.write_snapshot.finalise(commit_profile).map_err(|_error| {
-            LocalServerStateError::UserCannotBeDeleted { typedb_source: UserDeleteError::Unexpected {} }
+        let database = self.databases_get_unrestricted(SYSTEM_DB).await?.unwrap();
+        database.data_commit_with_snapshot(commit_intent.write_snapshot, commit_profile).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
         })?;
 
-        if let Some(commit_record) = commit_record {
-            let commit_profile = transaction_profile.commit_profile();
-            self.database_data_commit(SYSTEM_DB, commit_record, commit_profile).await?;
-            self.token_manager.invalidate_user(username).await;
-            self.close_user_transactions(username).await;
-        }
-
+        self.token_manager.invalidate_user(username).await;
+        self.close_user_transactions(username).await;
         Ok(())
     }
 

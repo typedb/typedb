@@ -6,10 +6,7 @@
 
 use std::time::Duration;
 
-use database::transaction::{
-    DataCommitError, SchemaCommitError, TransactionError, TransactionId, TransactionRead, TransactionSchema,
-    TransactionWrite,
-};
+use database::transaction::{TransactionError, TransactionId, TransactionRead, TransactionSchema, TransactionWrite};
 use diagnostics::metrics::LoadKind;
 use error::typedb_error;
 use executor::{pipeline::PipelineExecutionError, InterruptType};
@@ -102,26 +99,19 @@ pub(crate) async fn commit_schema_transaction(
     server_state: ArcServerState,
     transaction: TransactionSchema<WALClient>,
 ) -> (TransactionProfile, Result<(), ArcServerStateError>) {
-    let (mut profile, into_commit_record_result) = match transaction.finalise() {
+    match transaction.finalise() {
         (mut profile, Ok(commit_intent)) => {
-            let into_commit_record_result = commit_intent
-                .schema_snapshot
-                .finalise(profile.commit_profile())
-                .map(|commit_record_opt| (commit_intent.database_drop_guard, commit_record_opt))
-                .map_err(|error| SchemaCommitError::SnapshotError { typedb_source: error });
-            (profile, into_commit_record_result)
-        }
-        (profile, Err(error)) => (profile, Err(error)),
-    };
-
-    match into_commit_record_result {
-        Ok((database, Some(commit_record))) => {
+            if !commit_intent.schema_snapshot.has_changes() {
+                return (profile, Ok(()));
+            }
+            let database = commit_intent.database_drop_guard;
+            // After server state's execution, another snapshot is built, acquiring an alternative read drop guard
+            let (_snapshot_guard, commit_record) = commit_intent.schema_snapshot.into_commit_record();
             let commit_result =
                 server_state.database_schema_commit(database.name(), commit_record, profile.commit_profile()).await;
             (profile, commit_result)
         }
-        Ok((_, None)) => (profile, Ok(())),
-        Err(typedb_source) => {
+        (profile, Err(typedb_source)) => {
             (profile, Err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }.into()))
         }
     }
@@ -131,26 +121,21 @@ pub(crate) async fn commit_write_transaction(
     server_state: ArcServerState,
     transaction: TransactionWrite<WALClient>,
 ) -> (TransactionProfile, Result<(), ArcServerStateError>) {
-    let (mut profile, into_commit_record_result) = match transaction.finalise() {
+    match transaction.finalise() {
         (mut profile, Ok(commit_intent)) => {
-            let into_commit_record_result = commit_intent
-                .write_snapshot
-                .finalise(profile.commit_profile())
-                .map(|commit_record_opt| (commit_intent.database_drop_guard, commit_record_opt))
-                .map_err(|typedb_source| DataCommitError::SnapshotError { typedb_source });
-            (profile, into_commit_record_result)
-        }
-        (profile, Err(error)) => (profile, Err(error)),
-    };
-
-    match into_commit_record_result {
-        Ok((database, Some(commit_record))) => {
+            if !commit_intent.write_snapshot.has_changes() {
+                return (profile, Ok(()));
+            }
+            let database = commit_intent.database_drop_guard;
+            // After server state's execution, another snapshot is built, acquiring an alternative read drop guard
+            let (_snapshot_guard, commit_record) = commit_intent.write_snapshot.into_commit_record();
             let commit_result =
-                server_state.database_data_commit(database.name(), commit_record, profile.commit_profile()).await;
+                server_state.database_schema_commit(database.name(), commit_record, profile.commit_profile()).await;
             (profile, commit_result)
         }
-        Ok((_, None)) => (profile, Ok(())),
-        Err(error) => (profile, Err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source: error }.into())),
+        (profile, Err(typedb_source)) => {
+            (profile, Err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source }.into()))
+        }
     }
 }
 
