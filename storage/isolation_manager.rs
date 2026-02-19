@@ -758,11 +758,23 @@ impl CommitRecord {
                 }
             }
 
-            // TODO: this is ineffecient since we loop over all locks each time - should we locks into keyspaces?
-            //    Investigate
-            for (key, lock) in locks.iter() {
-                if matches!(lock, LockType::Unmodifiable) {
-                    if let Some(Write::Delete) = predecessor_writes.get(key) {
+            // Check for conflicts: our Unmodifiable locks vs predecessor Delete writes.
+            // Iterate the smaller collection and point-lookup into the larger one.
+            // Cost analysis: iterating N items with lookups into M-sized BTreeMap = O(N log M).
+            // Choosing min(L, W) as the iteration side gives O(min(L,W) * log(max(L,W))).
+            let locks_len = locks.len();
+            let pred_writes_len = predecessor_writes.len();
+            if locks_len <= pred_writes_len {
+                for (key, lock) in locks.iter() {
+                    if matches!(lock, LockType::Unmodifiable) {
+                        if matches!(predecessor_writes.get(key), Some(Write::Delete)) {
+                            return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
+                        }
+                    }
+                }
+            } else {
+                for (key, write) in predecessor_writes.iter() {
+                    if matches!(write, Write::Delete) && matches!(locks.get(key), Some(LockType::Unmodifiable)) {
                         return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
                     }
                 }
