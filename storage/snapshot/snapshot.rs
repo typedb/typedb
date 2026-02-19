@@ -206,6 +206,8 @@ pub trait CommittableSnapshot<D>: WritableSnapshot
 where
     D: DurabilityClient,
 {
+    // TODO: Strongly collides with server_state's database commit and exposes risks of non-replicated commits.
+    // Think about refactoring or removing it with the change of tests.
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
 
     fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord);

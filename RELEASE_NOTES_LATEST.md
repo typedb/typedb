@@ -1,33 +1,28 @@
+**This is an alpha release for CLUSTERED TypeDB 3.x. Do not use this as a stable version of TypeDB.**
+**Instead, reference a non-alpha release of the same major and minor versions.**
+
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.8.3](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.8.3)
+[Distributions for 3.8.0-alpha-1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.8.0-alpha-1)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.8.3```
+```docker pull typedb/typedb:3.8.0-alpha-1```
 
 
-## New Features
+## New Clustered Features
+- **Support clustered statuses in the HTTP endpoint**
 
+- **Invalidate user transactions on user changes**
+
+- **Support new features from 3.8.0**  
 
 ## Bugs Fixed
-- **Seed variables in comparison with attribute types for type-inference**
-  Type-inference now seeds the variables involved in comparisons with attribute types. This avoids other kinds being involved in comparisons allows simpler downstream code, avoiding errors like #7697 
-  
-  
+
 
 ## Code Refactors
-
+- **Refactor snapshot commits**
 
 ## Other Improvements
-- **Increase posthog reporting interval to 2 hours**
-  
-  We increase the Posthog reporting interval to once every two hours.
 
-  
-- **Limit recovery read size when updating data statistics**
-  
-  We discard pre-loaded commit records when updating data statistics when the total size of data loaded from the WAL exceeds the limit (currently 1 GiB).
-  
-  
     
