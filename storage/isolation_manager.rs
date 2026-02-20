@@ -758,11 +758,19 @@ impl CommitRecord {
                 }
             }
 
-            // TODO: this is ineffecient since we loop over all locks each time - should we locks into keyspaces?
-            //    Investigate
-            for (key, lock) in locks.iter() {
-                if matches!(lock, LockType::Unmodifiable) {
-                    if let Some(Write::Delete) = predecessor_writes.get(key) {
+            // Check for conflicts: our Unmodifiable locks vs predecessor Delete writes.
+            // Iterate the smaller collection and point-lookup into the larger one.
+            if locks.len() <= predecessor_writes.len() {
+                for (key, lock) in locks.iter() {
+                    if matches!(lock, LockType::Unmodifiable)
+                        && matches!(predecessor_writes.get(key), Some(Write::Delete))
+                    {
+                        return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
+                    }
+                }
+            } else {
+                for (key, write) in predecessor_writes.iter() {
+                    if matches!(write, Write::Delete) && matches!(locks.get(key), Some(LockType::Unmodifiable)) {
                         return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
                     }
                 }
