@@ -15,9 +15,7 @@ features = {}
 [dependencies]
 
 	[dependencies.primitive]
-		path = "../common/primitive"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.resource]
 		path = "../resource"
@@ -25,32 +23,20 @@ features = {}
 		default-features = false
 
 	[dependencies.structural_equality]
-		path = "../common/structural_equality"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.bytes]
-		path = "../common/bytes"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.concept]
-		path = "../concept"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.storage]
-		path = "../storage"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.encoding]
-		path = "../encoding"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.lending_iterator]
-		path = "../common/lending_iterator"
-		features = []
-		default-features = false
+		workspace = true
 
