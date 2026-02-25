@@ -204,8 +204,8 @@ impl ConfigBuilder {
             config.server.encryption.certificate_key => server_encryption_certificate_key.map(|cert| Some(cert.into()));
             config.server.encryption.ca_certificate => server_encryption_ca_certificate.map(|cert| Some(cert.into()));
 
-            config.storage.data_directory => storage_data_directory.map(|p| CLIArgs::resolve_path_from_pwd(&p.into()));
-            config.logging.directory => logging_directory.map(|p| CLIArgs::resolve_path_from_pwd(&p.into()));
+            config.storage.data_directory => storage_data_directory.map(|p| CLIArgs::resolve_path_from_pwd(Path::new(&p)));
+            config.logging.directory => logging_directory.map(|p| CLIArgs::resolve_path_from_pwd(Path::new(&p)));
 
             config.diagnostics.reporting.report_metrics => diagnostics_reporting_metrics;
             config.diagnostics.reporting.report_errors => diagnostics_reporting_errors;
@@ -232,11 +232,11 @@ impl ConfigBuilder {
         // finalise:
         config.storage.data_directory = Self::resolve_path_from_executable(&config.storage.data_directory);
         config.logging.directory = Self::resolve_path_from_executable(&config.logging.directory);
-        config.development_mode.enabled = config.development_mode.enabled | Self::IS_DEVELOPMENT_MODE_FORCED;
+        config.development_mode.enabled |= Self::IS_DEVELOPMENT_MODE_FORCED;
         Ok(config)
     }
 
-    pub fn resolve_path_from_executable(path: &PathBuf) -> PathBuf {
+    pub fn resolve_path_from_executable(path: &Path) -> PathBuf {
         let typedb_dir_or_current = std::env::current_exe()
             .map(|path| path.parent().expect("Expected parent directory of: {path}").to_path_buf())
             .unwrap_or(std::env::current_dir().expect("Expected access to the current directory"));
