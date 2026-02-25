@@ -418,7 +418,7 @@ impl ConjunctionExecutableBuilder {
         let mut added_to_current = false;
         let steps_count = self.steps.len();
         let mut available_variables = Vec::with_capacity(self.steps.last().map_or(0, |s| s.selected_variables.len()));
-        available_variables.extend(self.input_variables.iter().cloned());
+        available_variables.extend(self.input_variables.iter().copied());
         for (i, step) in self.steps.iter_mut().chain(self.current.as_mut().map(|box_| box_.as_mut())).enumerate() {
             // TODO: we may be able to inject into non-intersection steps as well? For now, we know intersection steps are always sorted
             if let StepInstructionsBuilder::Intersection(intersection) = &mut step.builder {
