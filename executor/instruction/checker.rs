@@ -206,6 +206,22 @@ impl<T> Checker<T> {
         }
     }
 
+    fn make_extractor(
+        &self,
+        vertex: &CheckVertex<ExecutorVariable>,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+    ) -> Box<dyn for<'a> Fn(&'a T) -> VariableValue<'a>> {
+        match vertex.as_variable().and_then(|v| self.extractors.get(&v)) {
+            None => {
+                let value = get_vertex_value(vertex, Some(row), &context.parameters);
+                let owned_value = value.into_owned();
+                Box::new(move |_| owned_value.clone())
+            }
+            Some(&tuple_extractor) => Box::new(tuple_extractor),
+        }
+    }
+
     pub(crate) fn filter(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
@@ -352,10 +368,7 @@ impl<T> Checker<T> {
         var: ExecutorVariable,
         iid: &ir::pattern::ParameterID,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let var: BoxExtractor<T> = match self.extractors.get(&var) {
-            Some(&function) => Box::new(function),
-            None => make_const_extractor(&CheckVertex::Variable(var), row, context),
-        };
+        let var = self.make_extractor(&CheckVertex::Variable(var), row, context);
         let iid = context.parameters().iid(iid).unwrap().clone();
         Box::new(move |value: &T| Ok(Self::check_iid(&iid, var(value))))
     }
@@ -397,11 +410,7 @@ impl<T> Checker<T> {
         type_var: ExecutorVariable,
         types: &std::sync::Arc<std::collections::BTreeSet<Type>>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let maybe_type_extractor = self.extractors.get(&type_var);
-        let type_: BoxExtractor<T> = match maybe_type_extractor {
-            Some(&subtype) => Box::new(subtype),
-            None => make_const_extractor(&CheckVertex::Variable(type_var), row, context),
-        };
+        let type_ = self.make_extractor(&CheckVertex::Variable(type_var), row, context);
         let types = types.clone();
         Box::new(move |value: &T| Ok(types.contains(&unwrap_or_result_false!(type_(value) => Type))))
     }
@@ -428,11 +437,7 @@ impl<T> Checker<T> {
         thing_var: ExecutorVariable,
         types: &std::sync::Arc<std::collections::BTreeSet<Type>>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let maybe_type_extractor = self.extractors.get(&thing_var);
-        let thing: BoxExtractor<T> = match maybe_type_extractor {
-            Some(&subtype) => Box::new(subtype),
-            None => make_const_extractor(&CheckVertex::Variable(thing_var), row, context),
-        };
+        let thing = self.make_extractor(&CheckVertex::Variable(thing_var), row, context);
         let types = types.clone();
         Box::new(move |value: &T| Ok(types.contains(&unwrap_or_result_false!(thing(value) => Thing).type_())))
     }
@@ -462,16 +467,8 @@ impl<T> Checker<T> {
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
-        let maybe_subtype_extractor = subtype.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_supertype_extractor = supertype.as_variable().and_then(|var| self.extractors.get(&var));
-        let subtype: BoxExtractor<T> = match maybe_subtype_extractor {
-            Some(&subtype) => Box::new(subtype),
-            None => make_const_extractor(subtype, row, context),
-        };
-        let supertype: BoxExtractor<T> = match maybe_supertype_extractor {
-            Some(&supertype) => Box::new(supertype),
-            None => make_const_extractor(supertype, row, context),
-        };
+        let subtype = self.make_extractor(subtype, row, context);
+        let supertype = self.make_extractor(supertype, row, context);
         Box::new(move |source: &T| {
             let subtype = unwrap_or_result_false!(subtype(source) => Type);
             let supertype = unwrap_or_result_false!(supertype(source) => Type);
@@ -527,16 +524,8 @@ impl<T> Checker<T> {
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
-        let maybe_owner_extractor = owner.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_attribute_extractor = attribute.as_variable().and_then(|var| self.extractors.get(&var));
-        let owner: BoxExtractor<T> = match maybe_owner_extractor {
-            Some(&owner) => Box::new(owner),
-            None => make_const_extractor(owner, row, context),
-        };
-        let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
-            Some(&attribute) => Box::new(attribute),
-            None => make_const_extractor(attribute, row, context),
-        };
+        let owner = self.make_extractor(owner, row, context);
+        let attribute = self.make_extractor(attribute, row, context);
         Box::new(move |value: &T| {
             let owner = unwrap_or_result_false!(owner(value) => Type).as_object_type();
             let attribute = unwrap_or_result_false!(attribute(value) => Type).as_attribute_type();
@@ -574,18 +563,10 @@ impl<T> Checker<T> {
         relation: &CheckVertex<ExecutorVariable>,
         role_type: &CheckVertex<ExecutorVariable>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_role_type_extractor = role_type.as_variable().and_then(|var| self.extractors.get(&var));
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
-        let relation: BoxExtractor<T> = match maybe_relation_extractor {
-            Some(&relation) => Box::new(relation),
-            None => make_const_extractor(relation, row, context),
-        };
-        let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
-            Some(&role_type) => Box::new(role_type),
-            None => make_const_extractor(role_type, row, context),
-        };
+        let relation = self.make_extractor(relation, row, context);
+        let role_type = self.make_extractor(role_type, row, context);
         Box::new(move |value: &T| {
             let relation_type = unwrap_or_result_false!(relation(value) => Type).as_relation_type();
             let role_type = unwrap_or_result_false!(role_type(value) => Type).as_role_type();
@@ -627,16 +608,8 @@ impl<T> Checker<T> {
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
-        let maybe_player_extractor = player.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_role_type_extractor = role_type.as_variable().and_then(|var| self.extractors.get(&var));
-        let player: BoxExtractor<T> = match maybe_player_extractor {
-            Some(&player) => Box::new(player),
-            None => make_const_extractor(player, row, context),
-        };
-        let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
-            Some(&role_type) => Box::new(role_type),
-            None => make_const_extractor(role_type, row, context),
-        };
+        let player = self.make_extractor(player, row, context);
+        let role_type = self.make_extractor(role_type, row, context);
         Box::new({
             move |value: &T| {
                 let object_type = unwrap_or_result_false!(player(value) => Type).as_object_type();
@@ -679,18 +652,10 @@ impl<T> Checker<T> {
         type_: &CheckVertex<ExecutorVariable>,
         thing: &CheckVertex<ExecutorVariable>,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let maybe_thing_extractor = thing.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_type_extractor = type_.as_variable().and_then(|var| self.extractors.get(&var));
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
-        let thing: BoxExtractor<T> = match maybe_thing_extractor {
-            Some(&thing) => Box::new(thing),
-            None => make_const_extractor(thing, row, context),
-        };
-        let type_: BoxExtractor<T> = match maybe_type_extractor {
-            Some(&type_) => Box::new(type_),
-            None => make_const_extractor(type_, row, context),
-        };
+        let thing = self.make_extractor(thing, row, context);
+        let type_ = self.make_extractor(type_, row, context);
         Box::new({
             move |value: &T| {
                 let actual = unwrap_or_result_false!(thing(value) => Thing).type_();
@@ -738,18 +703,10 @@ impl<T> Checker<T> {
         attribute: &CheckVertex<ExecutorVariable>,
         storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let maybe_owner_extractor = owner.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_attribute_extractor = attribute.as_variable().and_then(|var| self.extractors.get(&var));
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
-        let owner: BoxExtractor<T> = match maybe_owner_extractor {
-            Some(&owner) => Box::new(owner),
-            None => make_const_extractor(owner, row, context),
-        };
-        let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
-            Some(&attribute) => Box::new(attribute),
-            None => make_const_extractor(attribute, row, context),
-        };
+        let owner = self.make_extractor(owner, row, context);
+        let attribute = self.make_extractor(attribute, row, context);
         Box::new({
             move |value: &T| {
                 let owner = unwrap_or_result_false!(owner(value) => Thing).as_object();
@@ -796,23 +753,11 @@ impl<T> Checker<T> {
         role: &CheckVertex<ExecutorVariable>,
         storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_player_extractor = player.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_role_extractor = role.as_variable().and_then(|var| self.extractors.get(&var));
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
-        let relation: BoxExtractor<T> = match maybe_relation_extractor {
-            Some(&relation) => Box::new(relation),
-            None => make_const_extractor(relation, row, context),
-        };
-        let player: BoxExtractor<T> = match maybe_player_extractor {
-            Some(&player) => Box::new(player),
-            None => make_const_extractor(player, row, context),
-        };
-        let role: BoxExtractor<T> = match maybe_role_extractor {
-            Some(&role) => Box::new(role),
-            None => make_const_extractor(role, row, context),
-        };
+        let relation = self.make_extractor(relation, row, context);
+        let player = self.make_extractor(player, row, context);
+        let role = self.make_extractor(role, row, context);
         Box::new({
             move |value: &T| {
                 let relation = unwrap_or_result_false!(relation(value) => Thing).as_relation();
@@ -868,33 +813,13 @@ impl<T> Checker<T> {
         end_role: &CheckVertex<ExecutorVariable>,
         storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let maybe_start_player_extractor = start_player.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_end_player_extractor = end_player.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_start_role_extractor = start_role.as_variable().and_then(|var| self.extractors.get(&var));
-        let maybe_end_role_extractor = end_role.as_variable().and_then(|var| self.extractors.get(&var));
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
-        let start_player_extractor: BoxExtractor<T> = match maybe_start_player_extractor {
-            Some(&player) => Box::new(player),
-            None => make_const_extractor(start_player, row, context),
-        };
-        let end_player_extractor: BoxExtractor<T> = match maybe_end_player_extractor {
-            Some(&player) => Box::new(player),
-            None => make_const_extractor(end_player, row, context),
-        };
-        let relation_extractor: BoxExtractor<T> = match maybe_relation_extractor {
-            Some(&relation) => Box::new(relation),
-            None => make_const_extractor(relation, row, context),
-        };
-        let start_role_extractor: BoxExtractor<T> = match maybe_start_role_extractor {
-            Some(&role) => Box::new(role),
-            None => make_const_extractor(start_role, row, context),
-        };
-        let end_role_extractor: BoxExtractor<T> = match maybe_end_role_extractor {
-            Some(&role) => Box::new(role),
-            None => make_const_extractor(end_role, row, context),
-        };
+        let start_player_extractor = self.make_extractor(start_player, row, context);
+        let end_player_extractor = self.make_extractor(end_player, row, context);
+        let relation_extractor = self.make_extractor(relation, row, context);
+        let start_role_extractor = self.make_extractor(start_role, row, context);
+        let end_role_extractor = self.make_extractor(end_role, row, context);
         Box::new({
             move |value: &T| {
                 let object = unwrap_or_result_false!(start_player_extractor(value) => Thing).as_object();
@@ -1127,33 +1052,13 @@ impl<T> Checker<T> {
         comparator: Comparator,
         storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
-        let maybe_lhs_extractor = lhs.as_variable().and_then(|var| self.extractors.get(&var));
-        let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
-            Some(&lhs) => Box::new(lhs),
-            None => make_const_extractor(lhs, row, context),
-        };
-        let rhs = match rhs {
-            &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
-            &CheckVertex::Variable(_) => unreachable!(),
-            CheckVertex::Parameter(param) => {
-                VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
-            }
-            CheckVertex::Type(_) => unreachable!(),
-        };
+        let lhs = self.make_extractor(lhs, row, context);
+        let rhs = self.make_extractor(rhs, row, context);
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
-        let rhs = match rhs {
-            VariableValue::Thing(Thing::Attribute(attr)) => {
-                attr.get_value(&*snapshot, &thing_manager, storage_counters.clone()).map(Value::into_owned)
-            }
-            VariableValue::Value(value) => Ok(value.into_owned()),
-            VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-            VariableValue::None | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
-        };
         Box::new(move |value: &T| {
             // NOTE: Empty <op> Empty never matches
-            let lhs = lhs(value);
-            let lhs = match lhs {
+            let lhs = match lhs(value) {
                 VariableValue::Thing(Thing::Attribute(attr)) => {
                     attr.get_value(&*snapshot, &thing_manager, storage_counters.clone())?.into_owned()
                 }
@@ -1161,7 +1066,14 @@ impl<T> Checker<T> {
                 VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
                 VariableValue::None | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
             };
-            let rhs = rhs.clone()?;
+            let rhs = match rhs(value) {
+                VariableValue::Thing(Thing::Attribute(attr)) => {
+                    attr.get_value(&*snapshot, &thing_manager, storage_counters.clone())?.into_owned()
+                }
+                VariableValue::Value(value) => value,
+                VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
+                VariableValue::None | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+            };
             if rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) {
                 Ok(Self::cmp_values_fn(&comparator)(&lhs, &rhs.cast(lhs.value_type().category()).unwrap()))
             } else if lhs.value_type().is_trivially_castable_to(rhs.value_type().category()) {
@@ -1240,16 +1152,6 @@ impl<T> Checker<T> {
             },
         }
     }
-}
-
-fn make_const_extractor<T>(
-    vertex: &CheckVertex<ExecutorVariable>,
-    row: &MaybeOwnedRow<'_>,
-    context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-) -> Box<dyn for<'a> Fn(&'a T) -> VariableValue<'a>> {
-    let value = get_vertex_value(vertex, Some(row), &context.parameters);
-    let owned_value = value.into_owned();
-    Box::new(move |_| owned_value.clone())
 }
 
 fn get_vertex_value<'a, 'b>(
