@@ -104,30 +104,8 @@ load("@typedb_bazel_distribution//pip:deps.bzl", "typedb_bazel_distribution_pip"
 typedb_bazel_distribution_pip()
 
 ###################################################
-# Load @typedb_dependencies//distribution/docker #
+# Docker (migrated to rules_oci via MODULE.bazel) #
 ###################################################
-
-# must be loaded after `typedb_bazel_distribution` to ensure
-# `rules_pkg` is correctly patched (bazel-distribution #251)
-
-# Load //distribution/docker
-load("@typedb_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
-docker_deps()
-
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
-go_rules_dependencies()
-go_register_toolchains(version = "1.18.3")
-gazelle_dependencies()
-
-load("@io_bazel_rules_docker//repositories:repositories.bzl", bazel_rules_docker_repositories = "repositories")
-bazel_rules_docker_repositories()
-
-load("@io_bazel_rules_docker//repositories:deps.bzl", bazel_rules_docker_container_deps = "deps")
-bazel_rules_docker_container_deps()
-
-load("//docker:images.bzl", docker_base_images = "base_images")
-docker_base_images()
 
 #####################################
 # Load @typedb/typedb dependencies #

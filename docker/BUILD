@@ -3,7 +3,6 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 package(default_visibility = ["//visibility:public"])
-load("@io_bazel_rules_docker//docker/util:run.bzl", docker_container_run_and_commit = "container_run_and_commit")
 load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 

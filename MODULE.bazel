@@ -66,6 +66,22 @@ use_repo(crate, "crates")
 # ===========================================================
 
 bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "rules_oci", version = "2.2.7")
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+oci.pull(
+    name = "typedb-ubuntu-x86_64",
+    image = "index.docker.io/typedb/ubuntu",
+    tag = "3.1.0-amd64",
+    platforms = ["linux/amd64"],
+)
+oci.pull(
+    name = "typedb-ubuntu-arm64",
+    image = "index.docker.io/typedb/ubuntu",
+    tag = "3.1.0-arm64",
+    platforms = ["linux/arm64"],
+)
+use_repo(oci, "typedb-ubuntu-x86_64", "typedb-ubuntu-x86_64_linux_amd64", "typedb-ubuntu-arm64", "typedb-ubuntu-arm64_linux_arm64")
 
 workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
 workspace_refs(

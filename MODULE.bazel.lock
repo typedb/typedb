@@ -1,5 +1,5 @@
 {
-  "lockFileVersion": 16,
+  "lockFileVersion": 24,
   "registryFileHashes": {
     "https://bcr.bazel.build/bazel_registry.json": "8a28e4aff06ee60aed2a8c281907fb8bcbf3b753c91fb5a5c57da3215d5b3497",
     "https://bcr.bazel.build/modules/abseil-cpp/20210324.2/MODULE.bazel": "7cd0312e064fde87c8d1cd79ba06c876bd23630c83466e9500321be55c96ace2",
@@ -16,12 +16,13 @@
     "https://bcr.bazel.build/modules/abseil-cpp/20240722.0/source.json": "59af9f8a8a4817092624e21263fe1fb7d7951a3b06f0570c610c7e5a9caf5f29",
     "https://bcr.bazel.build/modules/apple_support/1.15.1/MODULE.bazel": "a0556fefca0b1bb2de8567b8827518f94db6a6e7e7d632b4c48dc5f865bc7c85",
     "https://bcr.bazel.build/modules/apple_support/1.17.1/MODULE.bazel": "655c922ab1209978a94ef6ca7d9d43e940cd97d9c172fb55f94d91ac53f8610b",
-    "https://bcr.bazel.build/modules/apple_support/1.17.1/source.json": "6b2b8c74d14e8d485528a938e44bdb72a5ba17632b9e14ef6e68a5ee96c8347f",
+    "https://bcr.bazel.build/modules/apple_support/1.23.1/MODULE.bazel": "53763fed456a968cf919b3240427cf3a9d5481ec5466abc9d5dc51bc70087442",
+    "https://bcr.bazel.build/modules/apple_support/1.23.1/source.json": "d888b44312eb0ad2c21a91d026753f330caa48a25c9b2102fae75eb2b0dcfdd2",
+    "https://bcr.bazel.build/modules/aspect_bazel_lib/2.7.2/MODULE.bazel": "780d1a6522b28f5edb7ea09630748720721dfe27690d65a2d33aa7509de77e07",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/2.7.7/MODULE.bazel": "491f8681205e31bb57892d67442ce448cda4f472a8e6b3dc062865e29a64f89c",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/2.8.1/MODULE.bazel": "812d2dd42f65dca362152101fbec418029cc8fd34cbad1a2fde905383d705838",
     "https://bcr.bazel.build/modules/aspect_bazel_lib/2.9.3/MODULE.bazel": "66baf724dbae7aff4787bf2245cc188d50cb08e07789769730151c0943587c14",
-    "https://bcr.bazel.build/modules/aspect_bazel_lib/2.9.4/MODULE.bazel": "ccc41028429f894b02fde7ef67d416cba3ba5084ed9ddb9bb6107aa82d118776",
-    "https://bcr.bazel.build/modules/aspect_bazel_lib/2.9.4/source.json": "9e20ebe57de2e7657a188af6e132a9562fa26c201b2d999bc0a8981e8f3b6c36",
+    "https://bcr.bazel.build/modules/aspect_bazel_lib/2.9.3/source.json": "b290debdc0ab191a2a866b5a4e26f042c983026ff58b2e003ea634d838e3b6ae",
     "https://bcr.bazel.build/modules/aspect_rules_js/2.0.0/MODULE.bazel": "b45b507574aa60a92796e3e13c195cd5744b3b8aff516a9c0cb5ae6a048161c5",
     "https://bcr.bazel.build/modules/aspect_rules_js/2.1.2/MODULE.bazel": "05bbb900d2de0ac08c260af149ee6f1394c37b0ca388571305e33be00d7c3b97",
     "https://bcr.bazel.build/modules/aspect_rules_js/2.1.2/source.json": "6eadb3c46d212fe4af0669f527d005331ad0acfdc3b0999b770a057e5d4177e2",
@@ -37,8 +38,10 @@
     "https://bcr.bazel.build/modules/bazel_features/1.18.0/MODULE.bazel": "1be0ae2557ab3a72a57aeb31b29be347bcdc5d2b1eb1e70f39e3851a7e97041a",
     "https://bcr.bazel.build/modules/bazel_features/1.19.0/MODULE.bazel": "59adcdf28230d220f0067b1f435b8537dd033bfff8db21335ef9217919c7fb58",
     "https://bcr.bazel.build/modules/bazel_features/1.21.0/MODULE.bazel": "675642261665d8eea09989aa3b8afb5c37627f1be178382c320d1b46afba5e3b",
-    "https://bcr.bazel.build/modules/bazel_features/1.21.0/source.json": "3e8379efaaef53ce35b7b8ba419df829315a880cb0a030e5bb45c96d6d5ecb5f",
+    "https://bcr.bazel.build/modules/bazel_features/1.27.0/MODULE.bazel": "621eeee06c4458a9121d1f104efb80f39d34deff4984e778359c60eaf1a8cb65",
     "https://bcr.bazel.build/modules/bazel_features/1.3.0/MODULE.bazel": "cdcafe83ec318cda34e02948e81d790aab8df7a929cec6f6969f13a489ccecd9",
+    "https://bcr.bazel.build/modules/bazel_features/1.30.0/MODULE.bazel": "a14b62d05969a293b80257e72e597c2da7f717e1e69fa8b339703ed6731bec87",
+    "https://bcr.bazel.build/modules/bazel_features/1.30.0/source.json": "b07e17f067fe4f69f90b03b36ef1e08fe0d1f3cac254c1241a1818773e3423bc",
     "https://bcr.bazel.build/modules/bazel_features/1.4.1/MODULE.bazel": "e45b6bb2350aff3e442ae1111c555e27eac1d915e77775f6fdc4b351b758b5d7",
     "https://bcr.bazel.build/modules/bazel_features/1.9.0/MODULE.bazel": "885151d58d90d8d9c811eb75e3288c11f850e1d6b481a8c9f766adee4712358b",
     "https://bcr.bazel.build/modules/bazel_features/1.9.1/MODULE.bazel": "8f679097876a9b609ad1f60249c49d68bfab783dd9be012faf9d82547b14815a",
@@ -53,7 +56,8 @@
     "https://bcr.bazel.build/modules/bazel_skylib/1.6.1/MODULE.bazel": "8fdee2dbaace6c252131c00e1de4b165dc65af02ea278476187765e1a617b917",
     "https://bcr.bazel.build/modules/bazel_skylib/1.7.0/MODULE.bazel": "0db596f4563de7938de764cc8deeabec291f55e8ec15299718b93c4423e9796d",
     "https://bcr.bazel.build/modules/bazel_skylib/1.7.1/MODULE.bazel": "3120d80c5861aa616222ec015332e5f8d3171e062e3e804a2a0253e1be26e59b",
-    "https://bcr.bazel.build/modules/bazel_skylib/1.7.1/source.json": "f121b43eeefc7c29efbd51b83d08631e2347297c95aac9764a701f2a6a2bb953",
+    "https://bcr.bazel.build/modules/bazel_skylib/1.8.1/MODULE.bazel": "88ade7293becda963e0e3ea33e7d54d3425127e0a326e0d17da085a5f1f03ff6",
+    "https://bcr.bazel.build/modules/bazel_skylib/1.8.1/source.json": "7ebaefba0b03efe59cac88ed5bbc67bcf59a3eff33af937345ede2a38b2d368a",
     "https://bcr.bazel.build/modules/boringssl/0.0.0-20211025-d4f1ab9/MODULE.bazel": "6ee6353f8b1a701fe2178e1d925034294971350b6d3ac37e67e5a7d463267834",
     "https://bcr.bazel.build/modules/boringssl/0.0.0-20230215-5c22014/MODULE.bazel": "4b03dc0d04375fa0271174badcd202ed249870c8e895b26664fd7298abea7282",
     "https://bcr.bazel.build/modules/boringssl/0.0.0-20240530-2db0eb3/MODULE.bazel": "d0405b762c5e87cd445b7015f2b8da5400ef9a8dbca0bfefa6c1cea79d528a97",
@@ -130,7 +134,8 @@
     "https://bcr.bazel.build/modules/opentracing-cpp/1.6.0/MODULE.bazel": "b3925269f63561b8b880ae7cf62ccf81f6ece55b62cd791eda9925147ae116ec",
     "https://bcr.bazel.build/modules/opentracing-cpp/1.6.0/source.json": "da1cb1add160f5e5074b7272e9db6fd8f1b3336c15032cd0a653af9d2f484aed",
     "https://bcr.bazel.build/modules/platforms/0.0.10/MODULE.bazel": "8cb8efaf200bdeb2150d93e162c40f388529a25852b332cec879373771e48ed5",
-    "https://bcr.bazel.build/modules/platforms/0.0.10/source.json": "f22828ff4cf021a6b577f1bf6341cb9dcd7965092a439f64fc1bb3b7a5ae4bd5",
+    "https://bcr.bazel.build/modules/platforms/0.0.11/MODULE.bazel": "0daefc49732e227caa8bfa834d65dc52e8cc18a2faf80df25e8caea151a9413f",
+    "https://bcr.bazel.build/modules/platforms/0.0.11/source.json": "f7e188b79ebedebfe75e9e1d098b8845226c7992b307e28e1496f23112e8fc29",
     "https://bcr.bazel.build/modules/platforms/0.0.4/MODULE.bazel": "9b328e31ee156f53f3c416a64f8491f7eb731742655a47c9eec4703a71644aee",
     "https://bcr.bazel.build/modules/platforms/0.0.5/MODULE.bazel": "5733b54ea419d5eaf7997054bb55f6a1d0b5ff8aedf0176fef9eea44f3acda37",
     "https://bcr.bazel.build/modules/platforms/0.0.6/MODULE.bazel": "ad6eeef431dc52aefd2d77ed20a4b353f8ebf0f4ecdd26a807d2da5aa8cd0615",
@@ -182,12 +187,13 @@
     "https://bcr.bazel.build/modules/rules_cc/0.0.15/MODULE.bazel": "6704c35f7b4a72502ee81f61bf88706b54f06b3cbe5558ac17e2e14666cd5dcc",
     "https://bcr.bazel.build/modules/rules_cc/0.0.16/MODULE.bazel": "7661303b8fc1b4d7f532e54e9d6565771fea666fbdf839e0a86affcd02defe87",
     "https://bcr.bazel.build/modules/rules_cc/0.0.17/MODULE.bazel": "2ae1d8f4238ec67d7185d8861cb0a2cdf4bc608697c331b95bf990e69b62e64a",
-    "https://bcr.bazel.build/modules/rules_cc/0.0.17/source.json": "4db99b3f55c90ab28d14552aa0632533e3e8e5e9aea0f5c24ac0014282c2a7c5",
     "https://bcr.bazel.build/modules/rules_cc/0.0.2/MODULE.bazel": "6915987c90970493ab97393024c156ea8fb9f3bea953b2f3ec05c34f19b5695c",
     "https://bcr.bazel.build/modules/rules_cc/0.0.5/MODULE.bazel": "be41f87587998fe8890cd82ea4e848ed8eb799e053c224f78f3ff7fe1a1d9b74",
     "https://bcr.bazel.build/modules/rules_cc/0.0.6/MODULE.bazel": "abf360251023dfe3efcef65ab9d56beefa8394d4176dd29529750e1c57eaa33f",
     "https://bcr.bazel.build/modules/rules_cc/0.0.8/MODULE.bazel": "964c85c82cfeb6f3855e6a07054fdb159aced38e99a5eecf7bce9d53990afa3e",
     "https://bcr.bazel.build/modules/rules_cc/0.0.9/MODULE.bazel": "836e76439f354b89afe6a911a7adf59a6b2518fafb174483ad78a2a2fde7b1c5",
+    "https://bcr.bazel.build/modules/rules_cc/0.1.1/MODULE.bazel": "2f0222a6f229f0bf44cd711dc13c858dad98c62d52bd51d8fc3a764a83125513",
+    "https://bcr.bazel.build/modules/rules_cc/0.1.1/source.json": "d61627377bd7dd1da4652063e368d9366fc9a73920bfa396798ad92172cf645c",
     "https://bcr.bazel.build/modules/rules_foreign_cc/0.10.1/MODULE.bazel": "b9527010e5fef060af92b6724edb3691970a5b1f76f74b21d39f7d433641be60",
     "https://bcr.bazel.build/modules/rules_foreign_cc/0.10.1/source.json": "9300e71df0cdde0952f10afff1401fa664e9fc5d9ae6204660ba1b158d90d6a6",
     "https://bcr.bazel.build/modules/rules_foreign_cc/0.9.0/MODULE.bazel": "c9e8c682bf75b0e7c704166d79b599f93b72cfca5ad7477df596947891feeef6",
@@ -219,11 +225,11 @@
     "https://bcr.bazel.build/modules/rules_java/7.4.0/MODULE.bazel": "a592852f8a3dd539e82ee6542013bf2cadfc4c6946be8941e189d224500a8934",
     "https://bcr.bazel.build/modules/rules_java/7.6.1/MODULE.bazel": "2f14b7e8a1aa2f67ae92bc69d1ec0fa8d9f827c4e17ff5e5f02e91caa3b2d0fe",
     "https://bcr.bazel.build/modules/rules_java/7.6.5/MODULE.bazel": "481164be5e02e4cab6e77a36927683263be56b7e36fef918b458d7a8a1ebadb1",
+    "https://bcr.bazel.build/modules/rules_java/8.14.0/MODULE.bazel": "717717ed40cc69994596a45aec6ea78135ea434b8402fb91b009b9151dd65615",
+    "https://bcr.bazel.build/modules/rules_java/8.14.0/source.json": "8a88c4ca9e8759da53cddc88123880565c520503321e2566b4e33d0287a3d4bc",
     "https://bcr.bazel.build/modules/rules_java/8.3.2/MODULE.bazel": "7336d5511ad5af0b8615fdc7477535a2e4e723a357b6713af439fe8cf0195017",
     "https://bcr.bazel.build/modules/rules_java/8.5.1/MODULE.bazel": "d8a9e38cc5228881f7055a6079f6f7821a073df3744d441978e7a43e20226939",
-    "https://bcr.bazel.build/modules/rules_java/8.6.1/MODULE.bazel": "f4808e2ab5b0197f094cabce9f4b006a27766beb6a9975931da07099560ca9c2",
     "https://bcr.bazel.build/modules/rules_java/8.6.2/MODULE.bazel": "a06360fa8fcfc3faf3c21557945119711c863d7330a8eada3e01e332fa7f34e7",
-    "https://bcr.bazel.build/modules/rules_java/8.6.2/source.json": "ffd54f5fa51b4a68dc9044dc4342fefb4230782f22ee1eb922fcf086eef8be99",
     "https://bcr.bazel.build/modules/rules_jvm_external/4.4.2/MODULE.bazel": "a56b85e418c83eb1839819f0b515c431010160383306d13ec21959ac412d2fe7",
     "https://bcr.bazel.build/modules/rules_jvm_external/5.1/MODULE.bazel": "33f6f999e03183f7d088c9be518a63467dfd0be94a11d0055fe2d210f89aa909",
     "https://bcr.bazel.build/modules/rules_jvm_external/5.2/MODULE.bazel": "d9351ba35217ad0de03816ef3ed63f89d411349353077348a45348b096615036",
@@ -247,6 +253,8 @@
     "https://bcr.bazel.build/modules/rules_nodejs/6.3.0/MODULE.bazel": "45345e4aba35dd6e4701c1eebf5a4e67af4ed708def9ebcdc6027585b34ee52d",
     "https://bcr.bazel.build/modules/rules_nodejs/6.3.2/MODULE.bazel": "42e8d5254b6135f890fecca7c8d7f95a7d27a45f8275b276f66ec337767530ef",
     "https://bcr.bazel.build/modules/rules_nodejs/6.3.2/source.json": "80e0a68eb81772f1631f8b69014884eebc2474b3b3025fd19a5240ae4f76f9c9",
+    "https://bcr.bazel.build/modules/rules_oci/2.2.7/MODULE.bazel": "f6150e4b224d459f7f6523ef65967464ca4efdd266c7fbf2f5a2a51011957e0c",
+    "https://bcr.bazel.build/modules/rules_oci/2.2.7/source.json": "b099f02af330f47f19dc67fc9300ef6e1937a8c86882690db0e7a2fcea8c7f6b",
     "https://bcr.bazel.build/modules/rules_pkg/0.7.0/MODULE.bazel": "df99f03fc7934a4737122518bb87e667e62d780b610910f0447665a7e2be62dc",
     "https://bcr.bazel.build/modules/rules_pkg/1.0.1/MODULE.bazel": "5b1df97dbc29623bccdf2b0dcd0f5cb08e2f2c9050aab1092fd39a41e82686ff",
     "https://bcr.bazel.build/modules/rules_pkg/1.0.1/source.json": "bd82e5d7b9ce2d31e380dd9f50c111d678c3bdaca190cb76b0e1c71b05e1ba8a",
@@ -306,47 +314,17 @@
     "https://bcr.bazel.build/modules/zlib/1.2.13/MODULE.bazel": "aa6deb1b83c18ffecd940c4119aff9567cd0a671d7bba756741cb2ef043a29d5",
     "https://bcr.bazel.build/modules/zlib/1.3.1.bcr.1/MODULE.bazel": "6a9fe6e3fc865715a7be9823ce694ceb01e364c35f7a846bf0d2b34762bc066b",
     "https://bcr.bazel.build/modules/zlib/1.3.1.bcr.3/MODULE.bazel": "af322bc08976524477c79d1e45e241b6efbeb918c497e8840b8ab116802dda79",
-    "https://bcr.bazel.build/modules/zlib/1.3.1.bcr.3/source.json": "2be409ac3c7601245958cd4fcdff4288be79ed23bd690b4b951f500d54ee6e7d",
+    "https://bcr.bazel.build/modules/zlib/1.3.1.bcr.5/MODULE.bazel": "eec517b5bbe5492629466e11dae908d043364302283de25581e3eb944326c4ca",
+    "https://bcr.bazel.build/modules/zlib/1.3.1.bcr.5/source.json": "22bc55c47af97246cfc093d0acf683a7869377de362b5d1c552c2c2e16b7a806",
     "https://bcr.bazel.build/modules/zlib/1.3.1/MODULE.bazel": "751c9940dcfe869f5f7274e1295422a34623555916eb98c174c1e945594bf198",
     "https://bcr.bazel.build/modules/zlib/1.3/MODULE.bazel": "6a9c02f19a24dcedb05572b2381446e27c272cd383aed11d41d99da9e3167a72"
   },
   "selectedYankedVersions": {},
   "moduleExtensions": {
-    "@@apple_support+//crosstool:setup.bzl%apple_cc_configure_extension": {
-      "general": {
-        "bzlTransitiveDigest": "Ync9nL0AbHC6ondeEY7fBjBjLxojTsiXcJh65ZDTRlA=",
-        "usagesDigest": "f700ASGHSlNlHWdeh4mrBuHr6boot3gLQzH9SMYrbBY=",
-        "recordedFileInputs": {},
-        "recordedDirentsInputs": {},
-        "envVariables": {},
-        "generatedRepoSpecs": {
-          "local_config_apple_cc_toolchains": {
-            "repoRuleId": "@@apple_support+//crosstool:setup.bzl%_apple_cc_autoconf_toolchains",
-            "attributes": {}
-          },
-          "local_config_apple_cc": {
-            "repoRuleId": "@@apple_support+//crosstool:setup.bzl%_apple_cc_autoconf",
-            "attributes": {}
-          }
-        },
-        "recordedRepoMappingEntries": [
-          [
-            "apple_support+",
-            "bazel_tools",
-            "bazel_tools"
-          ],
-          [
-            "bazel_tools",
-            "rules_cc",
-            "rules_cc+"
-          ]
-        ]
-      }
-    },
     "@@aspect_bazel_lib+//lib:extensions.bzl%toolchains": {
       "general": {
-        "bzlTransitiveDigest": "B/yM1bxXtnLWs4ADjepewz3pFO6EnC4otr3UukxqlVk=",
-        "usagesDigest": "XtDVB4mNLUewF/wONBgUueZr1sG0OIWFTJy8rMAnL0Y=",
+        "bzlTransitiveDigest": "mPQHPJyy6/AxEgxULwWX6fMwpRExkwPnhzhfzTb3sv0=",
+        "usagesDigest": "qruN6IzVsndDFpuF0a2b8izF3Mwo1NGplohe2DAoLxg=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -752,25 +730,9 @@
         ]
       }
     },
-    "@@platforms//host:extension.bzl%host_platform": {
-      "general": {
-        "bzlTransitiveDigest": "xelQcPZH8+tmuOHVjL9vDxMnnQNMlwj0SlvgoqBkm4U=",
-        "usagesDigest": "8W6Zg78qF8FKyH5W6tdCEg4ggAxf1blvO14DM0+KEnM=",
-        "recordedFileInputs": {},
-        "recordedDirentsInputs": {},
-        "envVariables": {},
-        "generatedRepoSpecs": {
-          "host_platform": {
-            "repoRuleId": "@@platforms//host:extension.bzl%host_platform_repo",
-            "attributes": {}
-          }
-        },
-        "recordedRepoMappingEntries": []
-      }
-    },
     "@@rules_foreign_cc+//foreign_cc:extensions.bzl%tools": {
       "general": {
-        "bzlTransitiveDigest": "FApcIcVN43WOEs7g8eg7Cy1hrfRbVNEoUu8IiF+8WOc=",
+        "bzlTransitiveDigest": "zQWdDuoSv0j1j1Xo98omGrujiwDhXv69hAfIGQG3RlU=",
         "usagesDigest": "9LXdVp01HkdYQT8gYPjYLO6VLVJHo9uFfxWaU1ymiRE=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -1082,31 +1044,9 @@
         ]
       }
     },
-    "@@rules_java+//java:rules_java_deps.bzl%compatibility_proxy": {
-      "general": {
-        "bzlTransitiveDigest": "IE9Jf/hSIsrRtFcI+JIEY1/u5/Xx5lYQlsKyYsCmw14=",
-        "usagesDigest": "X4ewgNVwfFpjcoUGfH11OoTLxcMeSgijJ9qZWhEAeQs=",
-        "recordedFileInputs": {},
-        "recordedDirentsInputs": {},
-        "envVariables": {},
-        "generatedRepoSpecs": {
-          "compatibility_proxy": {
-            "repoRuleId": "@@rules_java+//java:rules_java_deps.bzl%_compatibility_proxy_repo_rule",
-            "attributes": {}
-          }
-        },
-        "recordedRepoMappingEntries": [
-          [
-            "rules_java+",
-            "bazel_tools",
-            "bazel_tools"
-          ]
-        ]
-      }
-    },
     "@@rules_kotlin+//src/main/starlark/core/repositories:bzlmod_setup.bzl%rules_kotlin_extensions": {
       "general": {
-        "bzlTransitiveDigest": "NJOdnPIgUWy9k+k+aFuTY7QCyBVT9AhxZlDRNiOx61Q=",
+        "bzlTransitiveDigest": "BPtcNR+6+tfwR+Tr7/VtqG+w2KpGo1RAIG3meFBwJWo=",
         "usagesDigest": "sA7eQq8ArVESgE7FiiD5tkjPB23LatMrbrQHa3AWPV8=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -1306,9 +1246,229 @@
         "recordedRepoMappingEntries": []
       }
     },
+    "@@rules_oci+//oci:extensions.bzl%oci": {
+      "general": {
+        "bzlTransitiveDigest": "ps+Iv0gSvLHnBNvW3bxgPPoLSQTyX7Xz+n2J6A7aA6c=",
+        "usagesDigest": "WN7+aWp91XlMU0UhqPUv38VV/0Gb6115nsVK67gLR6Y=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "typedb-ubuntu-x86_64_linux_amd64": {
+            "repoRuleId": "@@rules_oci+//oci/private:pull.bzl%oci_pull",
+            "attributes": {
+              "www_authenticate_challenges": {},
+              "scheme": "https",
+              "registry": "index.docker.io",
+              "repository": "typedb/ubuntu",
+              "identifier": "3.1.0-amd64",
+              "platform": "linux/amd64",
+              "target_name": "typedb-ubuntu-x86_64_linux_amd64",
+              "bazel_tags": []
+            }
+          },
+          "typedb-ubuntu-x86_64": {
+            "repoRuleId": "@@rules_oci+//oci/private:pull.bzl%oci_alias",
+            "attributes": {
+              "target_name": "typedb-ubuntu-x86_64",
+              "www_authenticate_challenges": {},
+              "scheme": "https",
+              "registry": "index.docker.io",
+              "repository": "typedb/ubuntu",
+              "identifier": "3.1.0-amd64",
+              "platforms": {
+                "@@platforms//cpu:x86_64": "@typedb-ubuntu-x86_64_linux_amd64"
+              },
+              "bzlmod_repository": "typedb-ubuntu-x86_64",
+              "reproducible": true
+            }
+          },
+          "typedb-ubuntu-arm64_linux_arm64": {
+            "repoRuleId": "@@rules_oci+//oci/private:pull.bzl%oci_pull",
+            "attributes": {
+              "www_authenticate_challenges": {},
+              "scheme": "https",
+              "registry": "index.docker.io",
+              "repository": "typedb/ubuntu",
+              "identifier": "3.1.0-arm64",
+              "platform": "linux/arm64",
+              "target_name": "typedb-ubuntu-arm64_linux_arm64",
+              "bazel_tags": []
+            }
+          },
+          "typedb-ubuntu-arm64": {
+            "repoRuleId": "@@rules_oci+//oci/private:pull.bzl%oci_alias",
+            "attributes": {
+              "target_name": "typedb-ubuntu-arm64",
+              "www_authenticate_challenges": {},
+              "scheme": "https",
+              "registry": "index.docker.io",
+              "repository": "typedb/ubuntu",
+              "identifier": "3.1.0-arm64",
+              "platforms": {
+                "@@platforms//cpu:arm64": "@typedb-ubuntu-arm64_linux_arm64"
+              },
+              "bzlmod_repository": "typedb-ubuntu-arm64",
+              "reproducible": true
+            }
+          },
+          "oci_crane_darwin_amd64": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%crane_repositories",
+            "attributes": {
+              "platform": "darwin_amd64",
+              "crane_version": "v0.18.0"
+            }
+          },
+          "oci_crane_darwin_arm64": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%crane_repositories",
+            "attributes": {
+              "platform": "darwin_arm64",
+              "crane_version": "v0.18.0"
+            }
+          },
+          "oci_crane_linux_arm64": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%crane_repositories",
+            "attributes": {
+              "platform": "linux_arm64",
+              "crane_version": "v0.18.0"
+            }
+          },
+          "oci_crane_linux_armv6": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%crane_repositories",
+            "attributes": {
+              "platform": "linux_armv6",
+              "crane_version": "v0.18.0"
+            }
+          },
+          "oci_crane_linux_i386": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%crane_repositories",
+            "attributes": {
+              "platform": "linux_i386",
+              "crane_version": "v0.18.0"
+            }
+          },
+          "oci_crane_linux_s390x": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%crane_repositories",
+            "attributes": {
+              "platform": "linux_s390x",
+              "crane_version": "v0.18.0"
+            }
+          },
+          "oci_crane_linux_amd64": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%crane_repositories",
+            "attributes": {
+              "platform": "linux_amd64",
+              "crane_version": "v0.18.0"
+            }
+          },
+          "oci_crane_windows_armv6": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%crane_repositories",
+            "attributes": {
+              "platform": "windows_armv6",
+              "crane_version": "v0.18.0"
+            }
+          },
+          "oci_crane_windows_amd64": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%crane_repositories",
+            "attributes": {
+              "platform": "windows_amd64",
+              "crane_version": "v0.18.0"
+            }
+          },
+          "oci_crane_toolchains": {
+            "repoRuleId": "@@rules_oci+//oci/private:toolchains_repo.bzl%toolchains_repo",
+            "attributes": {
+              "toolchain_type": "@rules_oci//oci:crane_toolchain_type",
+              "toolchain": "@oci_crane_{platform}//:crane_toolchain"
+            }
+          },
+          "oci_regctl_darwin_amd64": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%regctl_repositories",
+            "attributes": {
+              "platform": "darwin_amd64"
+            }
+          },
+          "oci_regctl_darwin_arm64": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%regctl_repositories",
+            "attributes": {
+              "platform": "darwin_arm64"
+            }
+          },
+          "oci_regctl_linux_arm64": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%regctl_repositories",
+            "attributes": {
+              "platform": "linux_arm64"
+            }
+          },
+          "oci_regctl_linux_s390x": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%regctl_repositories",
+            "attributes": {
+              "platform": "linux_s390x"
+            }
+          },
+          "oci_regctl_linux_amd64": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%regctl_repositories",
+            "attributes": {
+              "platform": "linux_amd64"
+            }
+          },
+          "oci_regctl_windows_amd64": {
+            "repoRuleId": "@@rules_oci+//oci:repositories.bzl%regctl_repositories",
+            "attributes": {
+              "platform": "windows_amd64"
+            }
+          },
+          "oci_regctl_toolchains": {
+            "repoRuleId": "@@rules_oci+//oci/private:toolchains_repo.bzl%toolchains_repo",
+            "attributes": {
+              "toolchain_type": "@rules_oci//oci:regctl_toolchain_type",
+              "toolchain": "@oci_regctl_{platform}//:regctl_toolchain"
+            }
+          }
+        },
+        "moduleExtensionMetadata": {
+          "explicitRootModuleDirectDeps": [
+            "typedb-ubuntu-x86_64",
+            "typedb-ubuntu-x86_64_linux_amd64",
+            "typedb-ubuntu-arm64",
+            "typedb-ubuntu-arm64_linux_arm64"
+          ],
+          "explicitRootModuleDirectDevDeps": [],
+          "useAllRepos": "NO",
+          "reproducible": false
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "aspect_bazel_lib+",
+            "bazel_tools",
+            "bazel_tools"
+          ],
+          [
+            "bazel_features+",
+            "bazel_tools",
+            "bazel_tools"
+          ],
+          [
+            "rules_oci+",
+            "aspect_bazel_lib",
+            "aspect_bazel_lib+"
+          ],
+          [
+            "rules_oci+",
+            "bazel_features",
+            "bazel_features+"
+          ],
+          [
+            "rules_oci+",
+            "bazel_skylib",
+            "bazel_skylib+"
+          ]
+        ]
+      }
+    },
     "@@rules_python+//python/extensions:pip.bzl%pip": {
       "general": {
-        "bzlTransitiveDigest": "gERLhlO4fEPwJ3dAze9Arx70q0il9hgiWK3OT+RgWlg=",
+        "bzlTransitiveDigest": "N8A7SMSctOF8gpEq1rUWGJMTB3s25iGPNKAcgmIMFRI=",
         "usagesDigest": "9+c5u5dqYloX74wDvGFH/1DzoiicJFIM7zxbdgkFT1o=",
         "recordedFileInputs": {
           "@@grpc+//requirements.bazel.txt": "4c8c19a2a8f22108bf29feb5cc2694eb0c7e0c82ba0364df27fe5f5e4d7936e5",
@@ -7285,10 +7445,6 @@
             }
           }
         },
-        "moduleExtensionMetadata": {
-          "useAllRepos": "NO",
-          "reproducible": false
-        },
         "recordedRepoMappingEntries": [
           [
             "bazel_features+",
@@ -7430,7 +7586,7 @@
     },
     "@@rules_rust+//rust/private:internal_extensions.bzl%i": {
       "general": {
-        "bzlTransitiveDigest": "Cop02mtwntJlcrwl66dA3/nNKZAM7I5XDy4WsKFT2fI=",
+        "bzlTransitiveDigest": "Rw3LKz3UzJ4/Pc2TJQxQnW9sv8N3mTLpknIkJr2Q5cw=",
         "usagesDigest": "8daAc/SRar7Mu8+uVH3y5t7CY0RsiqVBIznBuEjXJ4w=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -8206,6 +8362,311 @@
           ]
         ]
       }
+    },
+    "@@typedb_dependencies+//library/maven:maven_extension.bzl%maven": {
+      "general": {
+        "bzlTransitiveDigest": "/1GgGaqvvh9dMGzSw9vP/DjY2L59wajADIxosbWZaDs=",
+        "usagesDigest": "DN99BxtZyqFjtkyBux+PqWhuuOm4BMqdgkkIC2I19Hw=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "maven": {
+            "repoRuleId": "@@rules_jvm_external+//private/rules:coursier.bzl%coursier_fetch",
+            "attributes": {
+              "user_provided_name": "maven",
+              "artifacts": [
+                "{ \"group\": \"androidx.annotation\", \"artifact\": \"annotation\", \"version\": \"1.2.0\" }",
+                "{ \"group\": \"aws.sdk.kotlin\", \"artifact\": \"sqs-jvm\", \"version\": \"1.3.23\" }",
+                "{ \"group\": \"aws.sdk.kotlin\", \"artifact\": \"marketplacemetering-jvm\", \"version\": \"1.3.23\" }",
+                "{ \"group\": \"ch.qos.logback\", \"artifact\": \"logback-classic\", \"version\": \"1.4.14\" }",
+                "{ \"group\": \"ch.qos.logback\", \"artifact\": \"logback-core\", \"version\": \"1.4.14\" }",
+                "{ \"group\": \"ch.qos.logback.contrib\", \"artifact\": \"logback-json-classic\", \"version\": \"0.1.5\" }",
+                "{ \"group\": \"ch.qos.logback.contrib\", \"artifact\": \"logback-json-core\", \"version\": \"0.1.5\" }",
+                "{ \"group\": \"ch.qos.logback.contrib\", \"artifact\": \"logback-jackson\", \"version\": \"0.1.5\" }",
+                "{ \"group\": \"com.auth0\", \"artifact\": \"java-jwt\", \"version\": \"3.8.3\" }",
+                "{ \"group\": \"com.auth0\", \"artifact\": \"jwks-rsa\", \"version\": \"0.22.0\" }",
+                "{ \"group\": \"com.azure\", \"artifact\": \"azure-core\", \"version\": \"1.5.0\" }",
+                "{ \"group\": \"com.azure\", \"artifact\": \"azure-identity\", \"version\": \"1.0.6\" }",
+                "{ \"group\": \"com.azure\", \"artifact\": \"azure-storage-blob\", \"version\": \"12.7.0\" }",
+                "{ \"group\": \"com.azure\", \"artifact\": \"azure-storage-common\", \"version\": \"12.7.0\" }",
+                "{ \"group\": \"com.datastax.oss\", \"artifact\": \"java-driver-core\", \"version\": \"4.3.0\" }",
+                "{ \"group\": \"com.datastax.oss\", \"artifact\": \"java-driver-query-builder\", \"version\": \"4.3.0\" }",
+                "{ \"group\": \"com.eclipsesource.minimal-json\", \"artifact\": \"minimal-json\", \"version\": \"0.9.5\" }",
+                "{ \"group\": \"com.electronwill.night-config\", \"artifact\": \"core\", \"version\": \"3.6.5\" }",
+                "{ \"group\": \"com.electronwill.night-config\", \"artifact\": \"toml\", \"version\": \"3.6.5\" }",
+                "{ \"group\": \"com.fasterxml.jackson.core\", \"artifact\": \"jackson-annotations\", \"version\": \"2.16.0\" }",
+                "{ \"group\": \"com.fasterxml.jackson.core\", \"artifact\": \"jackson-core\", \"version\": \"2.16.0\" }",
+                "{ \"group\": \"com.fasterxml.jackson.core\", \"artifact\": \"jackson-databind\", \"version\": \"2.16.0\" }",
+                "{ \"group\": \"com.fasterxml.jackson.dataformat\", \"artifact\": \"jackson-dataformat-yaml\", \"version\": \"2.9.9\" }",
+                "{ \"group\": \"com.fasterxml.jackson.module\", \"artifact\": \"jackson-module-scala_2.11\", \"version\": \"2.9.9\" }",
+                "{ \"group\": \"com.fasterxml.jackson.module\", \"artifact\": \"jackson-module-kotlin\", \"version\": \"2.16.0\" }",
+                "{ \"group\": \"com.fasterxml.jackson.datatype\", \"artifact\": \"jackson-datatype-jsr310\", \"version\": \"2.16.0\" }",
+                "{ \"group\": \"com.fasterxml.jackson.datatype\", \"artifact\": \"jackson-datatype-jdk8\", \"version\": \"2.16.0\" }",
+                "{ \"group\": \"com.fifesoft\", \"artifact\": \"rsyntaxtextarea\", \"version\": \"3.1.3\" }",
+                "{ \"group\": \"com.github.ben-manes.caffeine\", \"artifact\": \"caffeine\", \"version\": \"2.8.6\" }",
+                "{ \"group\": \"com.github.jknack\", \"artifact\": \"handlebars\", \"version\": \"4.0.4\" }",
+                "{ \"group\": \"com.github.rholder\", \"artifact\": \"guava-retrying\", \"version\": \"2.0.0\" }",
+                "{ \"group\": \"com.google.android\", \"artifact\": \"annotations\", \"version\": \"4.1.1.4\" }",
+                "{ \"group\": \"com.google.api.grpc\", \"artifact\": \"proto-google-common-protos\", \"version\": \"2.9.0\" }",
+                "{ \"group\": \"com.google.api\", \"artifact\": \"gax\", \"version\": \"2.19.4\" }",
+                "{ \"group\": \"com.google.api\", \"artifact\": \"gax-grpc\", \"version\": \"2.19.4\" }",
+                "{ \"group\": \"com.google.api-client\", \"artifact\": \"google-api-client\", \"version\": \"2.0.0\" }",
+                "{ \"group\": \"com.google.api-client\", \"artifact\": \"google-api-client-gson\", \"version\": \"2.0.0\" }",
+                "{ \"group\": \"com.google.auth\", \"artifact\": \"google-auth-library-credentials\", \"version\": \"1.6.0\" }",
+                "{ \"group\": \"com.google.auth\", \"artifact\": \"google-auth-library-oauth2-http\", \"version\": \"1.6.0\" }",
+                "{ \"group\": \"com.google.auto.value\", \"artifact\": \"auto-value\", \"version\": \"1.9\" }",
+                "{ \"group\": \"com.google.auto.value\", \"artifact\": \"auto-value-annotations\", \"version\": \"1.9\" }",
+                "{ \"group\": \"com.google.cloud\", \"artifact\": \"google-cloud-secretmanager\", \"version\": \"1.5.2\" }",
+                "{ \"group\": \"com.google.cloud\", \"artifact\": \"google-cloud-pubsub\", \"version\": \"1.112.5\" }",
+                "{ \"group\": \"com.google.api.grpc\", \"artifact\": \"proto-google-cloud-pubsub-v1\", \"version\": \"1.94.5\" }",
+                "{ \"group\": \"com.google.code.findbugs\", \"artifact\": \"annotations\", \"version\": \"3.0.1\" }",
+                "{ \"group\": \"com.google.code.findbugs\", \"artifact\": \"jsr305\", \"version\": \"3.0.2\" }",
+                "{ \"group\": \"com.google.code.gson\", \"artifact\": \"gson\", \"version\": \"2.9.0\" }",
+                "{ \"group\": \"com.google.errorprone\", \"artifact\": \"error_prone_annotations\", \"version\": \"2.9.0\" }",
+                "{ \"group\": \"com.google.guava\", \"artifact\": \"failureaccess\", \"version\": \"1.0.1\" }",
+                "{ \"group\": \"com.google.guava\", \"artifact\": \"guava\", \"version\": \"30.1-jre\" }",
+                "{ \"group\": \"com.google.firebase\", \"artifact\": \"firebase-admin\", \"version\": \"9.1.1\" }",
+                "{ \"group\": \"com.google.http-client\", \"artifact\": \"google-http-client\", \"version\": \"1.41.4\" }",
+                "{ \"group\": \"com.google.http-client\", \"artifact\": \"google-http-client-gson\", \"version\": \"1.41.4\" }",
+                "{ \"group\": \"com.google.inject\", \"artifact\": \"guice\", \"version\": \"4.2.2\" }",
+                "{ \"group\": \"com.google.j2objc\", \"artifact\": \"j2objc-annotations\", \"version\": \"1.3\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-java\", \"version\": \"9.6.2534\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-darwin-aarch64\", \"version\": \"9.6.2534\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-darwin-x86-64\", \"version\": \"9.6.2534\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-linux-aarch64\", \"version\": \"9.6.2534\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-linux-x86-64\", \"version\": \"9.6.2534\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-win32-x86-64\", \"version\": \"9.6.2534\" }",
+                "{ \"group\": \"com.google.protobuf\", \"artifact\": \"protobuf-java\", \"version\": \"3.21.7\" }",
+                "{ \"group\": \"com.google.protobuf\", \"artifact\": \"protobuf-kotlin\", \"version\": \"3.21.7\" }",
+                "{ \"group\": \"com.google.re2j\", \"artifact\": \"re2j\", \"version\": \"1.6\" }",
+                "{ \"group\": \"com.google.truth\", \"artifact\": \"truth\", \"version\": \"1.0.1\" }",
+                "{ \"group\": \"com.jcraft\", \"artifact\": \"jsch\", \"version\": \"0.1.55\" }",
+                "{ \"group\": \"com.microsoft.azure\", \"artifact\": \"azure\", \"version\": \"1.33.1\" }",
+                "{ \"group\": \"com.microsoft.azure\", \"artifact\": \"azure-client-authentication\", \"version\": \"1.7.4\" }",
+                "{ \"group\": \"com.microsoft.azure\", \"artifact\": \"azure-client-runtime\", \"version\": \"1.7.4\" }",
+                "{ \"group\": \"com.microsoft.azure\", \"artifact\": \"azure-mgmt-compute\", \"version\": \"1.33.1\" }",
+                "{ \"group\": \"com.microsoft.azure\", \"artifact\": \"azure-mgmt-network\", \"version\": \"1.33.1\" }",
+                "{ \"group\": \"com.microsoft.azure\", \"artifact\": \"azure-mgmt-resources\", \"version\": \"1.33.1\" }",
+                "{ \"group\": \"com.microsoft.rest\", \"artifact\": \"client-runtime\", \"version\": \"1.7.4\" }",
+                "{ \"group\": \"com.newrelic.agent.java\", \"artifact\": \"newrelic-agent\", \"version\": \"8.10.0\" }",
+                "{ \"group\": \"com.newrelic.logging\", \"artifact\": \"logback\", \"version\": \"3.1.0\" }",
+                "{ \"group\": \"com.newrelic.telemetry\", \"artifact\": \"telemetry-core\", \"version\": \"0.16.0\" }",
+                "{ \"group\": \"com.newrelic.telemetry\", \"artifact\": \"telemetry-http-okhttp\", \"version\": \"0.16.0\" }",
+                "{ \"group\": \"com.posthog.java\", \"artifact\": \"posthog\", \"version\": \"1.1.1\" }",
+                "{ \"group\": \"com.quantego\", \"artifact\": \"clp-java\", \"version\": \"1.16.10\" }",
+                "{ \"group\": \"com.stripe\", \"artifact\": \"stripe-java\", \"version\": \"22.3.0\" }",
+                "{ \"group\": \"com.typesafe.akka\", \"artifact\": \"akka-actor-testkit-typed_2.12\", \"version\": \"2.6.3\" }",
+                "{ \"group\": \"com.typesafe.akka\", \"artifact\": \"akka-actor-typed_2.12\", \"version\": \"2.6.3\" }",
+                "{ \"group\": \"com.typesafe.akka\", \"artifact\": \"akka-actor_2.12\", \"version\": \"2.6.3\" }",
+                "{ \"group\": \"com.typesafe.akka\", \"artifact\": \"akka-stream_2.12\", \"version\": \"2.6.3\" }",
+                "{ \"group\": \"com.typesafe.play\", \"artifact\": \"build-link\", \"version\": \"2.8.1\" }",
+                "{ \"group\": \"com.typesafe.play\", \"artifact\": \"filters-helpers_2.12\", \"version\": \"2.8.1\" }",
+                "{ \"group\": \"com.typesafe.play\", \"artifact\": \"play-akka-http-server_2.12\", \"version\": \"2.8.1\" }",
+                "{ \"group\": \"com.typesafe.play\", \"artifact\": \"play-guice_2.12\", \"version\": \"2.8.1\" }",
+                "{ \"group\": \"com.typesafe.play\", \"artifact\": \"play-java_2.12\", \"version\": \"2.8.1\" }",
+                "{ \"group\": \"com.typesafe.play\", \"artifact\": \"play-netty-server_2.12\", \"version\": \"2.8.1\" }",
+                "{ \"group\": \"com.typesafe.play\", \"artifact\": \"play-server_2.12\", \"version\": \"2.8.1\" }",
+                "{ \"group\": \"com.typesafe.play\", \"artifact\": \"play-streams_2.12\", \"version\": \"2.8.1\" }",
+                "{ \"group\": \"com.typesafe.play\", \"artifact\": \"play-ws_2.12\", \"version\": \"2.8.1\" }",
+                "{ \"group\": \"com.typesafe.play\", \"artifact\": \"play_2.12\", \"version\": \"2.8.1\" }",
+                "{ \"group\": \"com.typesafe.play\", \"artifact\": \"twirl-api_2.12\", \"version\": \"1.5.0\" }",
+                "{ \"group\": \"com.typesafe\", \"artifact\": \"config\", \"version\": \"1.4.0\" }",
+                "{ \"group\": \"com.squareup.okhttp\", \"artifact\": \"okhttp\", \"version\": \"2.7.5\" }",
+                "{ \"group\": \"com.squareup.okio\", \"artifact\": \"okio\", \"version\": \"1.17.5\" }",
+                "{ \"group\": \"com.univocity\", \"artifact\": \"univocity-parsers\", \"version\": \"2.8.1\" }",
+                "{ \"group\": \"commons-cli\", \"artifact\": \"commons-cli\", \"version\": \"1.4\" }",
+                "{ \"group\": \"commons-collections\", \"artifact\": \"commons-collections\", \"version\": \"3.2.1\" }",
+                "{ \"group\": \"commons-configuration\", \"artifact\": \"commons-configuration\", \"version\": \"1.10\" }",
+                "{ \"group\": \"commons-io\", \"artifact\": \"commons-io\", \"version\": \"2.3\" }",
+                "{ \"group\": \"commons-lang\", \"artifact\": \"commons-lang\", \"version\": \"2.6\" }",
+                "{ \"group\": \"commons-logging\", \"artifact\": \"commons-logging\", \"version\": \"1.2\" }",
+                "{ \"group\": \"eu.neilalexander\", \"artifact\": \"jnacl\", \"version\": \"1.0.0\" }",
+                "{ \"group\": \"info.picocli\", \"artifact\": \"picocli\", \"version\": \"4.6.1\" }",
+                "{ \"group\": \"io.cucumber\", \"artifact\": \"cucumber-java\", \"version\": \"5.1.3\" }",
+                "{ \"group\": \"io.cucumber\", \"artifact\": \"cucumber-junit\", \"version\": \"5.1.3\" }",
+                "{ \"group\": \"io.github.microutils\", \"artifact\": \"kotlin-logging-jvm\", \"version\": \"2.0.10\" }",
+                "{ \"group\": \"io.github.speedb-io\", \"artifact\": \"speedbjni\", \"version\": \"2.6.0\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-alts\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-api\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-auth\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-context\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-core\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-googleapis\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-grpclb\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-netty\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-netty-shaded\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-protobuf\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-protobuf-lite\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-services\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-stub\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-testing\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.grpc\", \"artifact\": \"grpc-xds\", \"version\": \"1.50.1\" }",
+                "{ \"group\": \"io.fabric8\", \"artifact\": \"kubernetes-client\", \"version\": \"6.10.0\" }",
+                "{ \"group\": \"io.fabric8\", \"artifact\": \"kubernetes-client-api\", \"version\": \"6.10.0\" }",
+                "{ \"group\": \"io.fabric8\", \"artifact\": \"kubernetes-model\", \"version\": \"6.10.0\" }",
+                "{ \"group\": \"io.fabric8\", \"artifact\": \"kubernetes-model-apiextensions\", \"version\": \"6.10.0\" }",
+                "{ \"group\": \"io.fabric8\", \"artifact\": \"kubernetes-model-apps\", \"version\": \"6.10.0\" }",
+                "{ \"group\": \"io.fabric8\", \"artifact\": \"kubernetes-model-core\", \"version\": \"6.10.0\" }",
+                "{ \"group\": \"io.fabric8\", \"artifact\": \"kubernetes-model-policy\", \"version\": \"6.10.0\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-client-auth-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-client-cio-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-client-content-negotiation-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-client-core-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-client-websockets-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-serialization-gson-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-serialization-jackson-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-serialization-kotlinx-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-serialization-kotlinx-protobuf-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-server-auth-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-server-auth-jwt-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-server-content-negotiation-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-server-core-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-server-netty-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-server-default-headers-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.ktor\", \"artifact\": \"ktor-server-websockets-jvm\", \"version\": \"2.3.7\" }",
+                "{ \"group\": \"io.kubernetes\", \"artifact\": \"client-java\", \"version\": \"12.0.0\" }",
+                "{ \"group\": \"io.kubernetes\", \"artifact\": \"client-java-api\", \"version\": \"12.0.0\" }",
+                "{ \"group\": \"io.kubernetes\", \"artifact\": \"client-java-util\", \"version\": \"0.1\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-all\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-codec-http2\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-handler\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-handler-proxy\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-buffer\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-codec\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-codec-http\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-codec-socks\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-common\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-tcnative-classes\", \"version\": \"2.0.61.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-transport\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-resolver\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-transport-native-epoll\", \"version\": \"4.1.87.Final\", \"packaging\": \"jar\", \"classifier\": \"linux-x86_64\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-transport-native-unix-common\", \"version\": \"4.1.87.Final\" }",
+                "{ \"group\": \"io.netty\", \"artifact\": \"netty-tcnative-boringssl-static\", \"version\": \"2.0.61.Final\" }",
+                "{ \"group\": \"io.opencensus\", \"artifact\": \"opencensus-api\", \"version\": \"0.24.0\" }",
+                "{ \"group\": \"io.opencensus\", \"artifact\": \"opencensus-contrib-grpc-metrics\", \"version\": \"0.24.0\" }",
+                "{ \"group\": \"io.sentry\", \"artifact\": \"sentry\", \"version\": \"7.1.0\" }",
+                "{ \"group\": \"io.perfmark\", \"artifact\": \"perfmark-api\", \"version\": \"0.25.0\" }",
+                "{ \"group\": \"io.vavr\", \"artifact\": \"vavr\", \"version\": \"0.9.0\" }",
+                "{ \"group\": \"javax.annotation\", \"artifact\": \"javax.annotation-api\", \"version\": \"1.3.2\" }",
+                "{ \"group\": \"javax.inject\", \"artifact\": \"javax.inject\", \"version\": \"1\" }",
+                "{ \"group\": \"javax.servlet\", \"artifact\": \"javax.servlet-api\", \"version\": \"3.1.0\" }",
+                "{ \"group\": \"javax.xml.stream\", \"artifact\": \"stax-api\", \"version\": \"1.0-2\" }",
+                "{ \"group\": \"org.jline\", \"artifact\": \"jline\", \"version\": \"3.17.1\" }",
+                "{ \"group\": \"org.jline\", \"artifact\": \"jline-terminal-jansi\", \"version\": \"3.17.1\" }",
+                "{ \"group\": \"junit\", \"artifact\": \"junit\", \"version\": \"4.12\" }",
+                "{ \"group\": \"net.logstash.logback\", \"artifact\": \"logstash-logback-encoder\", \"version\": \"6.5\" }",
+                "{ \"group\": \"net.minidev\", \"artifact\": \"json-smart\", \"version\": \"2.3\" }",
+                "{ \"group\": \"org.antlr\", \"artifact\": \"antlr4-runtime\", \"version\": \"4.8\" }",
+                "{ \"group\": \"org.apache.cassandra\", \"artifact\": \"cassandra-all\", \"version\": \"3.11.3\" }",
+                "{ \"group\": \"org.apache.cassandra\", \"artifact\": \"cassandra-thrift\", \"version\": \"3.11.3\" }",
+                "{ \"group\": \"org.apache.commons\", \"artifact\": \"commons-compress\", \"version\": \"1.21\" }",
+                "{ \"group\": \"org.apache.commons\", \"artifact\": \"commons-csv\", \"version\": \"1.8\" }",
+                "{ \"group\": \"org.apache.commons\", \"artifact\": \"commons-lang3\", \"version\": \"3.9\" }",
+                "{ \"group\": \"org.apache.commons\", \"artifact\": \"commons-math3\", \"version\": \"3.6.1\" }",
+                "{ \"group\": \"org.apache.hadoop\", \"artifact\": \"hadoop-annotations\", \"version\": \"2.7.2\" }",
+                "{ \"group\": \"org.apache.hadoop\", \"artifact\": \"hadoop-common\", \"version\": \"2.7.2\" }",
+                "{ \"group\": \"org.apache.hadoop\", \"artifact\": \"hadoop-mapreduce-client-core\", \"version\": \"2.7.2\" }",
+                "{ \"group\": \"org.apache.spark\", \"artifact\": \"spark-core_2.11\", \"version\": \"2.2.0\" }",
+                "{ \"group\": \"org.apache.spark\", \"artifact\": \"spark-launcher_2.11\", \"version\": \"2.2.0\" }",
+                "{ \"group\": \"org.apache.thrift\", \"artifact\": \"libthrift\", \"version\": \"0.9.2\" }",
+                "{ \"group\": \"org.apache.tinkerpop\", \"artifact\": \"gremlin-core\", \"version\": \"3.4.1\" }",
+                "{ \"group\": \"org.apache.tinkerpop\", \"artifact\": \"hadoop-gremlin\", \"version\": \"3.4.1\" }",
+                "{ \"group\": \"org.apache.tinkerpop\", \"artifact\": \"spark-gremlin\", \"version\": \"3.4.1\" }",
+                "{ \"group\": \"org.apache.tinkerpop\", \"artifact\": \"tinkergraph-gremlin\", \"version\": \"3.4.1\" }",
+                "{ \"group\": \"org.apache.tomcat\", \"artifact\": \"annotations-api\", \"version\": \"6.0.53\" }",
+                "{ \"group\": \"org.bouncycastle\", \"artifact\": \"bcprov-jdk15on\", \"version\": \"1.69\" }",
+                "{ \"group\": \"org.bouncycastle\", \"artifact\": \"bcpkix-jdk15on\", \"version\": \"1.69\" }",
+                "{ \"group\": \"org.codehaus.janino\", \"artifact\": \"janino\", \"version\": \"3.1.6\" }",
+                "{ \"group\": \"org.codehaus.mojo\", \"artifact\": \"animal-sniffer-annotations\", \"version\": \"1.21\" }",
+                "{ \"group\": \"org.hamcrest\", \"artifact\": \"hamcrest\", \"version\": \"2.2\" }",
+                "{ \"group\": \"org.hamcrest\", \"artifact\": \"hamcrest-all\", \"version\": \"1.3\" }",
+                "{ \"group\": \"org.hamcrest\", \"artifact\": \"hamcrest-core\", \"version\": \"1.3\" }",
+                "{ \"group\": \"org.hamcrest\", \"artifact\": \"hamcrest-library\", \"version\": \"1.3\" }",
+                "{ \"group\": \"org.javatuples\", \"artifact\": \"javatuples\", \"version\": \"1.2\" }",
+                "{ \"group\": \"org.jetbrains.compose.compiler\", \"artifact\": \"compiler\", \"version\": \"1.5.7\" }",
+                "{ \"group\": \"org.jetbrains.compose.animation\", \"artifact\": \"animation-core-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.desktop\", \"artifact\": \"desktop-jvm\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.foundation\", \"artifact\": \"foundation-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.foundation\", \"artifact\": \"foundation-layout-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.material\", \"artifact\": \"material-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.ui\", \"artifact\": \"ui-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.ui\", \"artifact\": \"ui-geometry-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.ui\", \"artifact\": \"ui-graphics-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.ui\", \"artifact\": \"ui-test-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.ui\", \"artifact\": \"ui-test-junit4-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.ui\", \"artifact\": \"ui-text-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.ui\", \"artifact\": \"ui-unit-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.compose.runtime\", \"artifact\": \"runtime-desktop\", \"version\": \"1.5.11\" }",
+                "{ \"group\": \"org.jetbrains.kotlin\", \"artifact\": \"kotlin-reflect\", \"version\": \"1.9.22\" }",
+                "{ \"group\": \"org.jetbrains.kotlin\", \"artifact\": \"kotlin-stdlib-jdk7\", \"version\": \"1.9.22\" }",
+                "{ \"group\": \"org.jetbrains.kotlin\", \"artifact\": \"kotlin-test\", \"version\": \"1.9.22\" }",
+                "{ \"group\": \"org.jetbrains.kotlinx\", \"artifact\": \"kotlinx-coroutines-core\", \"version\": \"1.7.3\" }",
+                "{ \"group\": \"org.jetbrains.kotlinx\", \"artifact\": \"kotlinx-coroutines-core-jvm\", \"version\": \"1.7.3\" }",
+                "{ \"group\": \"org.jetbrains.kotlinx\", \"artifact\": \"kotlinx-coroutines-slf4j\", \"version\": \"1.7.3\" }",
+                "{ \"group\": \"org.jetbrains.kotlinx\", \"artifact\": \"kotlinx-coroutines-test\", \"version\": \"1.7.3\" }",
+                "{ \"group\": \"org.jetbrains.kotlinx\", \"artifact\": \"kotlinx-serialization-core-jvm\", \"version\": \"1.6.2\" }",
+                "{ \"group\": \"org.jetbrains.kotlinx\", \"artifact\": \"kotlinx-serialization-protobuf-jvm\", \"version\": \"1.6.2\" }",
+                "{ \"group\": \"org.jacoco\", \"artifact\": \"org.jacoco.agent\", \"version\": \"0.8.12\", \"packaging\": \"jar\", \"classifier\": \"runtime\" }",
+                "{ \"group\": \"org.jacoco\", \"artifact\": \"org.jacoco.cli\", \"version\": \"0.8.12\", \"packaging\": \"jar\", \"classifier\": \"nodeps\" }",
+                "{ \"group\": \"org.jetbrains.skiko\", \"artifact\": \"skiko-awt\", \"version\": \"0.7.85\" }",
+                "{ \"group\": \"org.jetbrains.skiko\", \"artifact\": \"skiko-awt-runtime-linux-arm64\", \"version\": \"0.7.85\" }",
+                "{ \"group\": \"org.jetbrains.skiko\", \"artifact\": \"skiko-awt-runtime-linux-x64\", \"version\": \"0.7.85\" }",
+                "{ \"group\": \"org.jetbrains.skiko\", \"artifact\": \"skiko-awt-runtime-macos-arm64\", \"version\": \"0.7.85\" }",
+                "{ \"group\": \"org.jetbrains.skiko\", \"artifact\": \"skiko-awt-runtime-macos-x64\", \"version\": \"0.7.85\" }",
+                "{ \"group\": \"org.jetbrains.skiko\", \"artifact\": \"skiko-awt-runtime-windows-x64\", \"version\": \"0.7.85\" }",
+                "{ \"group\": \"org.jsoup\", \"artifact\": \"jsoup\", \"version\": \"1.16.1\" }",
+                "{ \"group\": \"org.kohsuke\", \"artifact\": \"github-api\", \"version\": \"1.101\" }",
+                "{ \"group\": \"org.mockito\", \"artifact\": \"mockito-core\", \"version\": \"3.2.4\" }",
+                "{ \"group\": \"org.mockito.kotlin\", \"artifact\": \"mockito-kotlin\", \"version\": \"3.0.0\" }",
+                "{ \"group\": \"org.openjdk.jmh\", \"artifact\": \"jmh-core\", \"version\": \"1.23\" }",
+                "{ \"group\": \"org.openjdk.jmh\", \"artifact\": \"jmh-generator-annprocess\", \"version\": \"1.23\" }",
+                "{ \"group\": \"org.scala-lang\", \"artifact\": \"scala-library\", \"version\": \"2.12.10\" }",
+                "{ \"group\": \"org.sharegov\", \"artifact\": \"mjson\", \"version\": \"1.4.1\" }",
+                "{ \"group\": \"org.slf4j\", \"artifact\": \"jcl-over-slf4j\", \"version\": \"2.0.0\" }",
+                "{ \"group\": \"org.slf4j\", \"artifact\": \"log4j-over-slf4j\", \"version\": \"2.0.0\" }",
+                "{ \"group\": \"org.slf4j\", \"artifact\": \"slf4j-api\", \"version\": \"2.0.0\" }",
+                "{ \"group\": \"org.slf4j\", \"artifact\": \"slf4j-simple\", \"version\": \"2.0.0\" }",
+                "{ \"group\": \"org.springframework.security\", \"artifact\": \"spring-security-crypto\", \"version\": \"5.5.0\" }",
+                "{ \"group\": \"org.yaml\", \"artifact\": \"snakeyaml\", \"version\": \"2.2\" }",
+                "{ \"group\": \"org.zeromq\", \"artifact\": \"jeromq\", \"version\": \"0.5.2\" }",
+                "{ \"group\": \"org.zeroturnaround\", \"artifact\": \"zt-exec\", \"version\": \"1.10\" }",
+                "{ \"group\": \"com.mailgun\", \"artifact\": \"mailgun-java\", \"version\": \"1.1.2\" }",
+                "{ \"group\": \"io.github.openfeign\", \"artifact\": \"feign-core\", \"version\": \"13.2.1\" }",
+                "{ \"group\": \"com.vdurmont\", \"artifact\": \"semver4j\", \"version\": \"3.1.0\" }"
+              ],
+              "excluded_artifacts": [
+                "{ \"group\": \"com.github.jnr\", \"artifact\": \"jnr-ffi\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-darwin-x86-64\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-darwin-aarch64\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-linux-x86-64\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-linux-aarch64\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-win32-x86-64\" }",
+                "{ \"group\": \"com.google.android.tools\", \"artifact\": \"dx\" }",
+                "{ \"group\": \"com.github.stefanbirkner\", \"artifact\": \"system-rules\" }"
+              ],
+              "repositories": [
+                "{ \"repo_url\": \"https://repo1.maven.org/maven2\" }",
+                "{ \"repo_url\": \"https://repo.maven.apache.org/maven2/\" }",
+                "{ \"repo_url\": \"https://repo.typedb.com/public/public-release/maven/\" }",
+                "{ \"repo_url\": \"https://repo.typedb.com/public/public-snapshot/maven/\" }",
+                "{ \"repo_url\": \"https://dl.google.com/dl/android/maven2\" }",
+                "{ \"repo_url\": \"https://maven.pkg.jetbrains.space/public/p/compose/dev\" }"
+              ],
+              "strict_visibility": true,
+              "version_conflict_policy": "pinned"
+            }
+          }
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "typedb_dependencies+",
+            "rules_jvm_external",
+            "rules_jvm_external+"
+          ]
+        ]
+      }
     }
-  }
+  },
+  "facts": {}
 }

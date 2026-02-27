@@ -3,20 +3,15 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//distribution:deployment.bzl", "deployment")
-load("@typedb_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
-load("//:deployment.bzl", deployment_docker = "deployment", deployment_github = "deployment")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@typedb_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 
 load("@typedb_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
-load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_versioned", "assemble_zip")
+load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip")
 load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
      "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
-# Docker rules commented out - io_bazel_rules_docker does not support Bzlmod
-# TODO: Migrate to rules_oci for Bazel 8+ compatibility
-# load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
-# load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_push")
 
 load("@rules_pkg//:mappings.bzl", "pkg_files", "pkg_attributes")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
@@ -290,17 +285,84 @@ alias(
     })
 )
 
-# docker - DISABLED for Bzlmod migration (io_bazel_rules_docker not compatible)
-# TODO: Migrate to rules_oci for Bazel 8+ compatibility
-# docker_container_image(
-#     name = "assemble-docker-x86_64",
-#     ...
-# )
-# docker_container_image(
-#     name = "assemble-docker-arm64",
-#     ...
-# )
-# docker_container_push targets also disabled
+# docker
+pkg_tar(
+    name = "docker-layer-x86_64",
+    deps = [":assemble-server-linux-x86_64-targz"],
+    package_dir = "/opt",
+)
+
+oci_image(
+    name = "assemble-docker-x86_64",
+    base = "@typedb-ubuntu-x86_64",
+    tars = [":docker-layer-x86_64"],
+    entrypoint = ["/opt/typedb-server-linux-x86_64/typedb", "server", "--storage.data-directory=/var/lib/typedb/data"],
+    cmd = [],
+    env = {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+    },
+    exposed_ports = ["1729/tcp", "8000/tcp"],
+    volumes = ["/var/lib/typedb/data/"],
+    workdir = "/opt/typedb-server-linux-x86_64",
+    visibility = ["//test:__subpackages__"],
+    target_compatible_with = constraint_linux_x86_64,
+)
+
+pkg_tar(
+    name = "docker-layer-arm64",
+    deps = [":assemble-server-linux-arm64-targz"],
+    package_dir = "/opt",
+)
+
+oci_image(
+    name = "assemble-docker-arm64",
+    base = "@typedb-ubuntu-arm64",
+    tars = [":docker-layer-arm64"],
+    entrypoint = ["/opt/typedb-server-linux-arm64/typedb", "server", "--storage.data-directory=/var/lib/typedb/data"],
+    cmd = [],
+    env = {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+    },
+    exposed_ports = ["1729/tcp", "8000/tcp"],
+    volumes = ["/var/lib/typedb/data/"],
+    workdir = "/opt/typedb-server-linux-arm64",
+    visibility = ["//test:__subpackages__"],
+    target_compatible_with = constraint_linux_arm64,
+)
+
+oci_push(
+    name = "deploy-docker-snapshot-x86_64",
+    image = ":assemble-docker-x86_64",
+    repository = "index.docker.io/typedb/typedb-snapshot",
+    target_compatible_with = constraint_linux_x86_64,
+    tags = ["manual"],
+)
+
+oci_push(
+    name = "deploy-docker-snapshot-arm64",
+    image = ":assemble-docker-arm64",
+    repository = "index.docker.io/typedb/typedb-snapshot",
+    target_compatible_with = constraint_linux_arm64,
+    tags = ["manual"],
+)
+
+oci_push(
+    name = "deploy-docker-release-x86_64",
+    image = ":assemble-docker-x86_64",
+    repository = "index.docker.io/typedb/typedb",
+    remote_tags = ["//docker:version-x86_64"],
+    target_compatible_with = constraint_linux_x86_64,
+)
+
+oci_push(
+    name = "deploy-docker-release-arm64",
+    image = ":assemble-docker-arm64",
+    repository = "index.docker.io/typedb/typedb",
+    remote_tags = ["//docker:version-arm64"],
+    target_compatible_with = constraint_linux_arm64,
+)
 
 # brew
 deploy_brew(
