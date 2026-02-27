@@ -258,7 +258,7 @@ pub struct SchemaLoadMetrics {
 }
 
 impl SchemaLoadMetrics {
-    pub fn to_state_report(&self) -> SchemaLoadReport {
+    pub(crate) fn to_state_report(&self) -> SchemaLoadReport {
         SchemaLoadReport { type_count: self.type_count }
     }
 }
@@ -275,7 +275,7 @@ pub struct DataLoadMetrics {
 }
 
 impl DataLoadMetrics {
-    pub fn to_state_report(&self) -> DataLoadReport {
+    pub(crate) fn to_state_report(&self) -> DataLoadReport {
         DataLoadReport {
             entity_count: self.entity_count,
             relation_count: self.relation_count,

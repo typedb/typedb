@@ -112,12 +112,12 @@ pub(crate) fn apply_recovered(
                 drop(read_guard);
                 match validated_commit {
                     ValidatedCommit::Write(write_batches) => {
-                        MVCCStorage::<_>::persist_commit_status(true, commit_sequence_number, durability_client)
+                        MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
                         pending_writes.push(write_batches);
                     }
                     ValidatedCommit::Conflict(_) => {
-                        MVCCStorage::<_>::persist_commit_status(false, commit_sequence_number, durability_client)
+                        MVCCStorage::persist_commit_status(false, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
                     }
                 }

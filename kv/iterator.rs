@@ -18,10 +18,7 @@ pub enum KVRangeIterator {
 }
 
 impl LendingIterator for KVRangeIterator {
-    type Item<'a>
-        = KVIteratorItem<'a>
-    where
-        Self: 'a;
+    type Item<'a> = KVIteratorItem<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         match self {

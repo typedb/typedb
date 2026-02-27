@@ -9,8 +9,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-pub trait Poolable {}
-
 #[derive(Debug)]
 pub struct SinglePool<T> {
     pool: Arc<Mutex<Vec<T>>>,
@@ -28,7 +26,7 @@ impl<T> Clone for SinglePool<T> {
     }
 }
 
-impl<T: Poolable> SinglePool<T> {
+impl<T> SinglePool<T> {
     pub fn get_or_create(&self, create_fn: impl FnOnce() -> T) -> PoolRecycleGuard<T> {
         let mut unlocked = self.pool.lock().unwrap();
         if let Some(item) = unlocked.pop() {
@@ -45,12 +43,12 @@ impl<T: Poolable> SinglePool<T> {
     }
 }
 
-pub struct PoolRecycleGuard<T: Poolable> {
+pub struct PoolRecycleGuard<T> {
     item: Option<T>,
     pool: SinglePool<T>,
 }
 
-impl<T: Poolable> Deref for PoolRecycleGuard<T> {
+impl<T> Deref for PoolRecycleGuard<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -58,13 +56,13 @@ impl<T: Poolable> Deref for PoolRecycleGuard<T> {
     }
 }
 
-impl<T: Poolable> DerefMut for PoolRecycleGuard<T> {
+impl<T> DerefMut for PoolRecycleGuard<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.item.as_mut().unwrap()
     }
 }
 
-impl<T: Poolable> Drop for PoolRecycleGuard<T> {
+impl<T> Drop for PoolRecycleGuard<T> {
     fn drop(&mut self) {
         debug_assert!(self.item.is_some());
         let item = self.item.take().unwrap();

@@ -144,10 +144,9 @@ impl<Durability> MVCCStorage<Durability> {
                 (keyspaces, next_sequence_number)
             }
             Some(checkpoint) => {
-                let (kv_store, next_sequence_number) = checkpoint
+                checkpoint
                     .recover_storage::<KS, _>(&storage_dir, &durability_client)
-                    .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?;
-                (kv_store, next_sequence_number)
+                    .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
             }
         };
 
@@ -426,13 +425,13 @@ impl<Durability> MVCCStorage<Durability> {
             .unwrap_or_log()
     }
 
-    pub fn get_raw_mapped<M, V>(&self, key: StorageKeyReference<'_>, mapper: &mut M) -> Option<V>
+    pub fn get_raw_mapped<M, V>(&self, key: StorageKeyReference<'_>, mapper: M) -> Option<V>
     where
         M: FnMut(&[u8]) -> V,
     {
         self.keyspaces
             .get(key.keyspace_id())
-            .get(key.bytes(), &mut |value| mapper(value))
+            .get(key.bytes(), mapper)
             .map_err(|e| MVCCStorageError::KeyspaceError {
                 storage_name: (*self.name()).clone(),
                 keyspace_name: self.keyspaces.get(key.keyspace_id()).name(),
@@ -441,13 +440,13 @@ impl<Durability> MVCCStorage<Durability> {
             .unwrap_or_log() // TODO: unwrap_or_log may be incorrect: this could trigger if the DB is deleted for example?
     }
 
-    pub fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, key_value_mapper: &mut M) -> Option<T>
+    pub fn get_prev_raw<M, T>(&self, key: StorageKeyReference<'_>, mut key_value_mapper: M) -> Option<T>
     where
         M: FnMut(&MVCCKey<'_>, &[u8]) -> T,
     {
         self.keyspaces
             .get(key.keyspace_id())
-            .get_prev(key.bytes(), &mut |raw_key, v| key_value_mapper(&MVCCKey::wrap_slice(raw_key), v))
+            .get_prev(key.bytes(), |raw_key, v| key_value_mapper(&MVCCKey::wrap_slice(raw_key), v))
     }
 
     pub fn iterate_keyspace_range<'this, const PREFIX_INLINE: usize>(

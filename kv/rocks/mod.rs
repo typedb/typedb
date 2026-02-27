@@ -171,7 +171,7 @@ impl RocksKVStore {
             .map_err(|error| RocksKVError::Put { name: self.name, source: error }.into())
     }
 
-    pub fn get<M, V>(&self, key: &[u8], mapper: &mut M) -> Result<Option<V>, Box<dyn KVStoreError>>
+    pub fn get<M, V>(&self, key: &[u8], mut mapper: M) -> Result<Option<V>, Box<dyn KVStoreError>>
     where
         M: FnMut(&[u8]) -> V,
     {
@@ -181,7 +181,7 @@ impl RocksKVStore {
             .map_err(|error| RocksKVError::Get { name: self.name, source: error }.into())
     }
 
-    pub fn get_prev<M, T>(&self, key: &[u8], mapper: &mut M) -> Option<T>
+    pub fn get_prev<M, T>(&self, key: &[u8], mut mapper: M) -> Option<T>
     where
         M: FnMut(&[u8], &[u8]) -> T,
     {
