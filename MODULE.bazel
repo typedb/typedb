@@ -8,24 +8,81 @@ module(
     compatibility_level = 1,
 )
 
-# Core BCR dependencies
+# ===========================================================
+# Common
+# ===========================================================
+
 bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
-bazel_dep(name = "rules_java", version = "8.6.2")
-bazel_dep(name = "rules_jvm_external", version = "6.6")
-bazel_dep(name = "rules_python", version = "1.0.0")
+
+# ===========================================================
+# Languages & toolchains
+# ===========================================================
+
+# Rust
 bazel_dep(name = "rules_rust", version = "0.56.0")
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.81.0"],
+)
+use_repo(rust, "rust_toolchains")
+register_toolchains("@rust_toolchains//:all")
+
+# Kotlin
 bazel_dep(name = "rules_kotlin", version = "2.0.0")
-bazel_dep(name = "rules_pkg", version = "1.0.1")
+register_toolchains("@rules_kotlin//kotlin/internal:default_toolchain")
+
+# Python
+bazel_dep(name = "rules_python", version = "1.0.0")
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(is_default = True, python_version = "3.11")
+
+# Java
+bazel_dep(name = "rules_java", version = "8.6.2")
+
+# ===========================================================
+# Protobuf & gRPC
+# ===========================================================
+
 bazel_dep(name = "rules_proto", version = "7.1.0")
 bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
 
-# typedb ecosystem dependencies
+# ===========================================================
+# Package managers
+# ===========================================================
+
+# Maven
+bazel_dep(name = "rules_jvm_external", version = "6.6")
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+use_repo(maven, "maven")
+
+# Rust crates
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+use_repo(crate, "crates")
+
+# ===========================================================
+# Assembly / distribution
+# ===========================================================
+
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+
+workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
+workspace_refs(
+    name = "typedb_workspace_refs",
+    workspace_commit_dict = {},
+    workspace_tag_dict = {},
+)
+
+# ===========================================================
+# TypeDB repos
+# ===========================================================
+
 bazel_dep(name = "typedb_dependencies", version = "0.0.0")
 git_override(
     module_name = "typedb_dependencies",
     remote = "https://github.com/typedb/dependencies",
-    commit = "34afbb54d31851f47fc7272e6fa3893b4d042b0d",
+    commit = "ccdb36af9a868eeb6116d508db05a5b93e688e79",
 )
 
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
@@ -39,56 +96,19 @@ bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    commit = "0171b8179e9a30dcc420d3565bb38b1f6a88d8ba",
+    commit = "7f6e802c91ce0a1e6e0d9a6eaff4de377158ed17",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    commit = "14a23f94fee9faaa5b3f6545e9baa0c4eec891ed",
+    commit = "3620b570b3ca9d9d19bbd43886a353fefbb38bca",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
     module_name = "typedb_behaviour",
     remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "0b430edb20c25617adfd79fd157b560de12bd3b5",
-)
-
-# Python toolchain
-python = use_extension("@rules_python//python/extensions:python.bzl", "python")
-python.toolchain(
-    is_default = True,
-    python_version = "3.11",
-)
-
-# Rust toolchain
-rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
-rust.toolchain(
-    edition = "2021",
-    versions = ["1.81.0"],
-)
-use_repo(rust, "rust_toolchains")
-register_toolchains("@rust_toolchains//:all")
-
-# Rust crates - import from typedb_dependencies' crate extension
-# This ensures type compatibility with typedb_protocol which uses the same crates
-crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
-use_repo(crate, "crates")
-
-# Maven dependencies - import from typedb_dependencies
-maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
-use_repo(maven, "maven")
-
-# Register Kotlin toolchain
-register_toolchains("@rules_kotlin//kotlin/internal:default_toolchain")
-
-# workspace_refs for release validation
-# Creates a refs.json file with version information from dependencies
-workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
-workspace_refs(
-    name = "typedb_workspace_refs",
-    workspace_commit_dict = {},
-    workspace_tag_dict = {},
+    commit = "4bb9cafb8cef3de4bde7bb0734e7c12772de0b32",
 )
