@@ -11,6 +11,7 @@ if "%1" == "" goto missingargument
 
 if "%1" == "console" goto startconsole
 if "%1" == "server"  goto startserver
+if "%1" == "psql"    goto startpsql
 
 echo   Invalid argument: %1. Possible commands are:
 goto print_usage
@@ -31,12 +32,38 @@ for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
 "%TYPEDB_HOME%\server\typedb_server_bin.exe" %ARGS%
 goto exit
 
+:startpsql
+REM Launch psql connected to the TypeDB pgwire endpoint.
+SET PSQL_HOST=localhost
+SET PSQL_PORT=5432
+SET PSQL_USER=typedb
+SET PSQL_DB=typedb
+shift
+:psqlargs
+if "%1"=="" goto runpsql
+if "%1"=="--host"     ( set PSQL_HOST=%2& shift& shift& goto psqlargs )
+if "%1"=="--port"     ( set PSQL_PORT=%2& shift& shift& goto psqlargs )
+if "%1"=="--user"     ( set PSQL_USER=%2& shift& shift& goto psqlargs )
+if "%1"=="--database" ( set PSQL_DB=%2& shift& shift& goto psqlargs )
+if "%1"=="--help" (
+  echo Usage: typedb psql [--host HOST] [--port PORT] [--user USER] [--database DB]
+  echo.
+  echo Launches psql connected to the TypeDB pgwire endpoint.
+  goto exit
+)
+echo Unknown option: %1
+goto exiterror
+:runpsql
+psql -h %PSQL_HOST% -p %PSQL_PORT% -U %PSQL_USER% -d %PSQL_DB%
+goto exit
+
 :exit
 exit /b 0
 
 :print_usage
 echo   Server:          typedb server [--help]
 echo   Console:         typedb console [--help]
+echo   Postgres shell:  typedb psql [--host HOST] [--port PORT] [--user USER] [--database DB]
 goto exiterror
 
 :exiterror

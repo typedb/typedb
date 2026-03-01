@@ -85,12 +85,74 @@ pub fn execute_query(catalog: &dyn ProjectionCatalog, query: &ParsedQuery) -> Qu
         ParsedQuery::Rollback => command_complete("ROLLBACK"),
         ParsedQuery::Deallocate { .. } => command_complete("DEALLOCATE"),
         ParsedQuery::DiscardAll => command_complete("DISCARD ALL"),
+        ParsedQuery::SelectExpression { expressions, aliases } => execute_select_expression(expressions, aliases),
     }
 }
 
 /// Build a CommandComplete-style outcome with no rows.
 fn command_complete(tag: &str) -> QueryOutcome {
     QueryOutcome::Result(QueryResult { columns: vec![], rows: vec![], command_tag: Some(tag.to_string()) })
+}
+
+// ── SELECT expression (no FROM) ───────────────────────────────────
+
+/// Handle `SELECT <expr>, ...` with no FROM clause.
+///
+/// Evaluates well-known functions (current_database, current_schema, version,
+/// current_user, pg_backend_pid, etc.) and literal values.
+fn execute_select_expression(expressions: &[String], aliases: &[Option<String>]) -> QueryOutcome {
+    let mut columns = Vec::new();
+    let mut values = Vec::new();
+
+    for (i, expr) in expressions.iter().enumerate() {
+        let lower = expr.to_ascii_lowercase();
+        let (col_name, value) = evaluate_expression(&lower, expr);
+
+        let name = aliases.get(i).and_then(|a| a.clone()).unwrap_or_else(|| col_name.unwrap_or_else(|| expr.clone()));
+
+        columns.push(ColumnDescription {
+            name,
+            table_oid: 0,
+            column_index: 0,
+            type_oid: crate::type_mapping::PG_OID_TEXT,
+            type_size: -1,
+            type_modifier: -1,
+            format_code: 0,
+        });
+        values.push(value);
+    }
+
+    QueryOutcome::Result(QueryResult { columns, rows: vec![values], command_tag: None })
+}
+
+/// Evaluate a single expression. Returns (optional default column name, value).
+fn evaluate_expression(lower: &str, _original: &str) -> (Option<String>, Option<String>) {
+    // Well-known functions.
+    match lower {
+        "current_database()" => (Some("current_database".into()), Some("typedb".into())),
+        "current_schema()" | "current_schema" => (Some("current_schema".into()), Some("public".into())),
+        "current_user" | "session_user" | "user" => (Some("current_user".into()), Some("typedb".into())),
+        "version()" => {
+            (Some("version".into()), Some("TypeDB (PostgreSQL-compatible) via pgwire projection facade".into()))
+        }
+        "pg_backend_pid()" => (Some("pg_backend_pid".into()), Some("1".into())),
+        "inet_server_addr()" => (Some("inet_server_addr".into()), None),
+        "inet_server_port()" => (Some("inet_server_port".into()), Some("5432".into())),
+        "pg_is_in_recovery()" => (Some("pg_is_in_recovery".into()), Some("f".into())),
+        "txid_current()" => (Some("txid_current".into()), Some("1".into())),
+        _ => {
+            // Try to evaluate as a simple integer/string literal.
+            if let Ok(n) = lower.parse::<i64>() {
+                (None, Some(n.to_string()))
+            } else if lower.starts_with('\'') && lower.ends_with('\'') && lower.len() >= 2 {
+                let inner = &lower[1..lower.len() - 1];
+                (None, Some(inner.to_string()))
+            } else {
+                // Unknown expression — return the expression text as-is.
+                (None, Some(lower.to_string()))
+            }
+        }
+    }
 }
 
 // ── SHOW TABLES ────────────────────────────────────────────────────
@@ -212,6 +274,9 @@ fn execute_information_schema(
         execute_info_schema_columns(catalog, where_clause, limit, offset)
     } else if table.eq_ignore_ascii_case("schemata") {
         execute_info_schema_schemata(where_clause, limit, offset)
+    } else if table.eq_ignore_ascii_case("key_column_usage") || table.eq_ignore_ascii_case("table_constraints") {
+        // ORMs query these for FK/PK discovery — we have none, return empty.
+        execute_info_schema_empty_virtual(table, limit, offset)
     } else {
         QueryOutcome::Error {
             severity: "ERROR".into(),
@@ -342,6 +407,33 @@ fn execute_pg_catalog(
         execute_pg_type(where_clause, limit, offset)
     } else if table.eq_ignore_ascii_case("pg_database") {
         execute_pg_database(where_clause, limit, offset)
+    } else if table.eq_ignore_ascii_case("pg_constraint") {
+        execute_pg_empty_virtual(
+            "pg_constraint",
+            &["oid", "conname", "connamespace", "contype", "conrelid"],
+            limit,
+            offset,
+        )
+    } else if table.eq_ignore_ascii_case("pg_index") {
+        execute_pg_empty_virtual(
+            "pg_index",
+            &["indexrelid", "indrelid", "indisunique", "indisprimary", "indisvalid"],
+            limit,
+            offset,
+        )
+    } else if table.eq_ignore_ascii_case("pg_description") {
+        execute_pg_empty_virtual("pg_description", &["objoid", "classoid", "objsubid", "description"], limit, offset)
+    } else if table.eq_ignore_ascii_case("pg_am") {
+        execute_pg_am(where_clause, limit, offset)
+    } else if table.eq_ignore_ascii_case("pg_settings") {
+        execute_pg_settings(where_clause, limit, offset)
+    } else if table.eq_ignore_ascii_case("pg_stat_activity") {
+        execute_pg_empty_virtual(
+            "pg_stat_activity",
+            &["datid", "datname", "pid", "usename", "application_name", "state"],
+            limit,
+            offset,
+        )
     } else {
         QueryOutcome::Error {
             severity: "ERROR".into(),
@@ -557,6 +649,113 @@ fn execute_pg_database(where_clause: &[WhereCondition], limit: Option<u64>, offs
     let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
     let paged = apply_offset_limit(filtered, offset, limit);
     QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
+}
+
+/// Generic empty virtual table — returns the named columns with zero rows.
+/// Used for pg_constraint, pg_index, pg_description, pg_stat_activity where we have no data
+/// but ORMs need the table to exist.
+fn execute_pg_empty_virtual(
+    _table: &str,
+    col_names: &[&str],
+    _limit: Option<u64>,
+    _offset: Option<u64>,
+) -> QueryOutcome {
+    let columns: Vec<ColumnDescription> = col_names.iter().map(|n| pg_catalog_text_col(n)).collect();
+    QueryOutcome::Result(QueryResult { columns, rows: vec![], command_tag: None })
+}
+
+/// pg_am: oid, amname, amhandler, amtype
+fn execute_pg_am(where_clause: &[WhereCondition], limit: Option<u64>, offset: Option<u64>) -> QueryOutcome {
+    let columns = vec![
+        pg_catalog_oid_col("oid"),
+        pg_catalog_text_col("amname"),
+        pg_catalog_text_col("amhandler"),
+        pg_catalog_text_col("amtype"),
+    ];
+
+    let all_rows: Vec<Vec<Option<String>>> = vec![
+        vec![s("2"), s("heap"), s("heap_tableam_handler"), s("t")],
+        vec![s("403"), s("btree"), s("bthandler"), s("i")],
+        vec![s("405"), s("hash"), s("hashhandler"), s("i")],
+    ];
+
+    let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
+    let paged = apply_offset_limit(filtered, offset, limit);
+    QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
+}
+
+/// pg_settings: server variables exposed as a virtual table (for `SHOW` and BI tool introspection).
+fn execute_pg_settings(where_clause: &[WhereCondition], limit: Option<u64>, offset: Option<u64>) -> QueryOutcome {
+    let columns = vec![
+        pg_catalog_text_col("name"),
+        pg_catalog_text_col("setting"),
+        pg_catalog_text_col("unit"),
+        pg_catalog_text_col("category"),
+        pg_catalog_text_col("short_desc"),
+    ];
+
+    let all_rows: Vec<Vec<Option<String>>> = vec![
+        vec![s("server_version"), s("16.0"), None, s("Preset Options"), s("Shows the server version.")],
+        vec![s("server_encoding"), s("UTF8"), None, s("Client Connection Defaults"), s("Shows the server encoding.")],
+        vec![s("client_encoding"), s("UTF8"), None, s("Client Connection Defaults"), s("Sets the client encoding.")],
+        vec![
+            s("standard_conforming_strings"),
+            s("on"),
+            None,
+            s("Version and Platform Compatibility"),
+            s("Causes ... strings to treat backslashes literally."),
+        ],
+        vec![s("DateStyle"), s("ISO, MDY"), None, s("Client Connection Defaults"), s("Sets the display format.")],
+        vec![s("TimeZone"), s("UTC"), None, s("Client Connection Defaults"), s("Sets the time zone.")],
+        vec![
+            s("max_connections"),
+            s("100"),
+            None,
+            s("Connections and Authentication"),
+            s("Sets the maximum number of concurrent connections."),
+        ],
+        vec![
+            s("search_path"),
+            s("\"$user\", public"),
+            None,
+            s("Client Connection Defaults"),
+            s("Sets the schema search path."),
+        ],
+    ];
+
+    let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
+    let paged = apply_offset_limit(filtered, offset, limit);
+    QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
+}
+
+/// Empty information_schema virtual tables (key_column_usage, table_constraints).
+fn execute_info_schema_empty_virtual(table: &str, _limit: Option<u64>, _offset: Option<u64>) -> QueryOutcome {
+    let col_names = match table.to_ascii_lowercase().as_str() {
+        "key_column_usage" => vec![
+            "constraint_catalog",
+            "constraint_schema",
+            "constraint_name",
+            "table_catalog",
+            "table_schema",
+            "table_name",
+            "column_name",
+            "ordinal_position",
+        ],
+        "table_constraints" => vec![
+            "constraint_catalog",
+            "constraint_schema",
+            "constraint_name",
+            "table_catalog",
+            "table_schema",
+            "table_name",
+            "constraint_type",
+            "is_deferrable",
+            "initially_deferred",
+        ],
+        _ => vec!["placeholder"],
+    };
+    let columns: Vec<ColumnDescription> = col_names.iter().map(|n| info_schema_text_col(n)).collect();
+    QueryOutcome::Result(QueryResult { columns, rows: vec![], command_tag: None })
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -1744,5 +1943,168 @@ mod tests {
         };
         let result = unwrap_result(execute_query(&catalog, &query));
         assert_eq!(result.command_tag, None);
+    }
+
+    // ── SELECT expression (no FROM) ───────────────────────────────
+
+    #[test]
+    fn test_select_current_database() {
+        let catalog = StubCatalog::with_people();
+        let query =
+            ParsedQuery::SelectExpression { expressions: vec!["current_database()".into()], aliases: vec![None] };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.columns.len(), 1);
+        assert_eq!(result.columns[0].name, "current_database");
+        assert_eq!(result.rows.len(), 1);
+        assert_eq!(result.rows[0][0], Some("typedb".to_string()));
+    }
+
+    #[test]
+    fn test_select_version() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::SelectExpression { expressions: vec!["version()".into()], aliases: vec![None] };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.columns[0].name, "version");
+        assert!(result.rows[0][0].as_ref().unwrap().contains("TypeDB"));
+    }
+
+    #[test]
+    fn test_select_current_schema() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::SelectExpression { expressions: vec!["current_schema()".into()], aliases: vec![None] };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.rows[0][0], Some("public".to_string()));
+    }
+
+    #[test]
+    fn test_select_literal_integer() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::SelectExpression { expressions: vec!["1".into()], aliases: vec![Some("one".into())] };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.columns[0].name, "one");
+        assert_eq!(result.rows[0][0], Some("1".to_string()));
+    }
+
+    #[test]
+    fn test_select_multiple_expressions() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::SelectExpression {
+            expressions: vec!["current_database()".into(), "current_user".into()],
+            aliases: vec![None, Some("me".into())],
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.columns.len(), 2);
+        assert_eq!(result.columns[1].name, "me");
+        assert_eq!(result.rows[0][0], Some("typedb".to_string()));
+        assert_eq!(result.rows[0][1], Some("typedb".to_string()));
+    }
+
+    // ── pg_catalog ORM compat (empty virtual tables) ───────────────
+
+    #[test]
+    fn test_pg_constraint_returns_empty() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_constraint".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert!(result.rows.is_empty());
+        assert!(!result.columns.is_empty());
+    }
+
+    #[test]
+    fn test_pg_index_returns_empty() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_index".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert!(result.rows.is_empty());
+    }
+
+    #[test]
+    fn test_pg_am_returns_access_methods() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_am".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.rows.len(), 3);
+        let names: Vec<_> = result.rows.iter().map(|r| r[1].as_deref().unwrap()).collect();
+        assert!(names.contains(&"heap"));
+        assert!(names.contains(&"btree"));
+    }
+
+    #[test]
+    fn test_pg_settings_has_common_variables() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_settings".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert!(result.rows.len() >= 5);
+        let names: Vec<_> = result.rows.iter().map(|r| r[0].as_deref().unwrap()).collect();
+        assert!(names.contains(&"server_version"));
+        assert!(names.contains(&"search_path"));
+    }
+
+    // ── information_schema ORM compat (empty virtual tables) ───────
+
+    #[test]
+    fn test_info_schema_key_column_usage_returns_empty() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "key_column_usage".into(),
+            schema: Some("information_schema".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert!(result.rows.is_empty());
+        assert!(result.columns.len() >= 6);
+    }
+
+    #[test]
+    fn test_info_schema_table_constraints_returns_empty() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "table_constraints".into(),
+            schema: Some("information_schema".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert!(result.rows.is_empty());
+        assert!(result.columns.len() >= 6);
     }
 }

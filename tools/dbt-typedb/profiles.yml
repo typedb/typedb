@@ -1,0 +1,15 @@
+# dbt profile for TypeDB's pgwire endpoint.
+# Copy to ~/.dbt/profiles.yml or set DBT_PROFILES_DIR.
+
+typedb:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: localhost
+      port: 5432
+      user: typedb
+      pass: ""
+      dbname: typedb
+      schema: public
+      threads: 4

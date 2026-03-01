@@ -1,0 +1,18 @@
+{
+  "details": {
+    "host": "localhost",
+    "port": 5432,
+    "dbname": "typedb",
+    "user": "typedb",
+    "password": "",
+    "ssl": false,
+    "tunnel-enabled": false,
+    "additional-options": ""
+  },
+  "engine": "postgres",
+  "name": "TypeDB via pgwire",
+  "notes": [
+    "Metabase syncs schema metadata automatically on connection.",
+    "information_schema and pg_catalog virtual tables provide discovery."
+  ]
+}

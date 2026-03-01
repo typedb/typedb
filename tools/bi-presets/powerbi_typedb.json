@@ -1,0 +1,22 @@
+{
+  "name": "TypeDB via pgwire",
+  "description": "Connect Power BI to TypeDB's PostgreSQL-compatible endpoint",
+  "driver": "PostgreSQL",
+  "settings": {
+    "server": "localhost",
+    "port": 5432,
+    "database": "typedb",
+    "username": "typedb",
+    "password": "",
+    "dataConnectivityMode": "Import",
+    "advancedOptions": {
+      "commandTimeout": 120,
+      "connectionTimeout": 30
+    }
+  },
+  "notes": [
+    "Use Import mode — DirectQuery requires full SQL push-down.",
+    "Power BI navigator discovers tables via information_schema.",
+    "SSL is off by default; enable if your deployment requires it."
+  ]
+}

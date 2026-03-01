@@ -21,6 +21,7 @@ print_usage() {
     if [[ $CONSOLE_EXISTS ]]; then
       echo "  Console:         typedb console [--help]"
     fi
+    echo "  Postgres shell:  typedb psql [--host HOST] [--port PORT] [--user USER] [--database DB]"
 }
 
 # =============================================
@@ -43,6 +44,37 @@ case "$1" in
         # exec replaces current shell process so no commands after these ones will ever get executed
         TYPEDB_SERVER_BIN="${TYPEDB_HOME}/server/typedb_server_bin"
         exec ${TYPEDB_SERVER_BIN} "${@:2}"
+        ;;
+
+    psql)
+        # Launch psql connected to the TypeDB pgwire endpoint.
+        PSQL_HOST="localhost"
+        PSQL_PORT="5432"
+        PSQL_USER="typedb"
+        PSQL_DB="typedb"
+        shift # consume 'psql'
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --host)  PSQL_HOST="$2"; shift 2 ;;
+                --port)  PSQL_PORT="$2"; shift 2 ;;
+                --user)  PSQL_USER="$2"; shift 2 ;;
+                --database) PSQL_DB="$2"; shift 2 ;;
+                --help)
+                    echo "Usage: typedb psql [--host HOST] [--port PORT] [--user USER] [--database DB]"
+                    echo ""
+                    echo "Launches psql connected to the TypeDB pgwire endpoint."
+                    echo ""
+                    echo "Defaults:"
+                    echo "  --host      localhost"
+                    echo "  --port      5432"
+                    echo "  --user      typedb"
+                    echo "  --database  typedb"
+                    exit 0
+                    ;;
+                *) echo "Unknown option: $1"; exit 1 ;;
+            esac
+        done
+        exec psql -h "${PSQL_HOST}" -p "${PSQL_PORT}" -U "${PSQL_USER}" -d "${PSQL_DB}"
         ;;
 
     "")

@@ -122,7 +122,7 @@
 - [x] `pg_catalog` compatibility (`pg_namespace`, `pg_class`, `pg_attribute`, `pg_type`, `pg_database`)
 - [x] BI tool no-op commands (`SET`, `BEGIN`, `COMMIT`, `ROLLBACK`, `DEALLOCATE`, `DISCARD ALL`)
 - [x] Custom `command_tag` on `QueryResult` for correct CommandComplete tags
-- [ ] `typedb psql` convenience command
-- [ ] dbt adapter (thin Python wrapper)
-- [ ] BI tool presets (Looker, PowerBI, Metabase)
-- [ ] Schema introspection completeness for ORM compatibility
+- [x] `typedb psql` convenience command
+- [x] dbt adapter (thin Python wrapper)
+- [x] BI tool presets (Looker, PowerBI, Metabase)
+- [x] Schema introspection completeness for ORM compatibility

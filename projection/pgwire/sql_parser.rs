@@ -94,6 +94,14 @@ pub enum ParsedQuery {
     Deallocate { name: Option<String> },
     /// `DISCARD ALL` — no-op (BI tools send this on connection reset).
     DiscardAll,
+    /// `SELECT <expr>` without FROM — function calls or literals used by ORMs during setup.
+    /// e.g. `SELECT current_database()`, `SELECT version()`, `SELECT 1`.
+    SelectExpression {
+        /// The raw expressions as strings, e.g. `["current_database()"]`.
+        expressions: Vec<String>,
+        /// Column aliases if any, e.g. `["current_database"]`.
+        aliases: Vec<Option<String>>,
+    },
 }
 
 /// Errors that can occur while parsing SQL.
@@ -217,6 +225,11 @@ fn convert_query(query: ast::Query) -> Result<ParsedQuery, SqlParseError> {
         _ => return Err(SqlParseError::Unsupported("non-SELECT query body".to_string())),
     };
 
+    // Handle SELECT without FROM — function calls / literals (e.g. SELECT version()).
+    if select.from.is_empty() {
+        return convert_select_expression(&select);
+    }
+
     // FROM clause — must be exactly one simple table (no joins, no subqueries).
     let (schema, table) = extract_table_from_select(&select)?;
 
@@ -230,6 +243,32 @@ fn convert_query(query: ast::Query) -> Result<ParsedQuery, SqlParseError> {
     };
 
     Ok(ParsedQuery::Select { table, schema, columns, where_clause, order_by, limit, offset })
+}
+
+/// Convert a SELECT without FROM into a `SelectExpression`.
+///
+/// Handles queries like `SELECT current_database()`, `SELECT version()`, `SELECT 1 AS x`.
+fn convert_select_expression(select: &ast::Select) -> Result<ParsedQuery, SqlParseError> {
+    let mut expressions = Vec::new();
+    let mut aliases = Vec::new();
+
+    for item in &select.projection {
+        match item {
+            SelectItem::UnnamedExpr(expr) => {
+                expressions.push(expr.to_string());
+                aliases.push(None);
+            }
+            SelectItem::ExprWithAlias { expr, alias } => {
+                expressions.push(expr.to_string());
+                aliases.push(Some(alias.value.clone()));
+            }
+            other => {
+                return Err(SqlParseError::Unsupported(format!("SELECT expression: {other}")));
+            }
+        }
+    }
+
+    Ok(ParsedQuery::SelectExpression { expressions, aliases })
 }
 
 /// Extract the single table name (and optional schema) from a SELECT's FROM.
@@ -1049,5 +1088,54 @@ mod tests {
     #[test]
     fn test_discard_all() {
         assert_eq!(parse_sql("DISCARD ALL").unwrap(), ParsedQuery::DiscardAll);
+    }
+
+    // ── SELECT expression (no FROM) ───────────────────────────────
+
+    #[test]
+    fn test_select_current_database_fn() {
+        let result = parse_sql("SELECT current_database()").unwrap();
+        match result {
+            ParsedQuery::SelectExpression { expressions, aliases } => {
+                assert_eq!(expressions.len(), 1);
+                assert!(expressions[0].contains("current_database"));
+                assert_eq!(aliases[0], None);
+            }
+            other => panic!("expected SelectExpression, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_select_version_fn() {
+        let result = parse_sql("SELECT version()").unwrap();
+        match result {
+            ParsedQuery::SelectExpression { expressions, .. } => {
+                assert!(expressions[0].to_lowercase().contains("version"));
+            }
+            other => panic!("expected SelectExpression, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_select_literal_with_alias() {
+        let result = parse_sql("SELECT 1 AS one").unwrap();
+        match result {
+            ParsedQuery::SelectExpression { expressions, aliases } => {
+                assert_eq!(expressions[0], "1");
+                assert_eq!(aliases[0], Some("one".into()));
+            }
+            other => panic!("expected SelectExpression, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_select_multiple_exprs_no_from() {
+        let result = parse_sql("SELECT current_database(), current_user").unwrap();
+        match result {
+            ParsedQuery::SelectExpression { expressions, .. } => {
+                assert_eq!(expressions.len(), 2);
+            }
+            other => panic!("expected SelectExpression, got {:?}", other),
+        }
     }
 }
