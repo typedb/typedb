@@ -107,11 +107,11 @@
 
 ## Phase 2 — Incremental Refresh
 
-- [ ] Hook into WAL (`durability/wal.rs`) to detect writes affecting projection source types
-- [ ] Define per-projection refresh policies (eager, lazy, periodic)
-- [ ] Implement projection versioning via snapshot isolation (`storage/isolation_manager.rs`)
-- [ ] Spawn background refresh tasks on the Tokio runtime
-- [ ] Support backfill + replay for new/modified projections
+- [x] Hook into WAL (`durability/wal.rs`) to detect writes affecting projection source types — `projection/change_detector.rs`: `ChangeDetector` trait + `ChangeEvent` + `ChangeSummary` (16 tests)
+- [x] Define per-projection refresh policies (eager, lazy, periodic) — `projection/refresh_policy.rs`: `RefreshPolicy` enum (Eager/Periodic/Manual) + `ProjectionRefreshConfig` with sequence tracking (25 tests)
+- [x] Implement projection versioning via snapshot isolation (`storage/isolation_manager.rs`) — `ProjectionRefreshConfig::last_sequence_number` tracks per-projection WAL position, `needs_refresh(watermark)` for consistent read points
+- [x] Spawn background refresh tasks on the Tokio runtime — `projection/background_refresher.rs`: `BackgroundRefresher::run_loop()` with `tokio::select!` + `watch::Receiver<bool>` shutdown (17 tests)
+- [x] Support backfill + replay for new/modified projections — `run_cycle()` auto-backfills (full materialization) on first run, then incremental based on policy; `force_refresh()` for on-demand
 
 ---
 
