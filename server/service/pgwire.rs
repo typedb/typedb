@@ -40,7 +40,7 @@ impl ServerStateAuthenticator {
 
 impl PgAuthenticator for ServerStateAuthenticator {
     fn verify_password(&self, username: &str, password: &str) -> Result<(), String> {
-        self.server_state.user_verify_password(username, password).map_err(|e| format!("{e}"))
+        self.server_state.user_verify_password(username, password).map_err(|e| format!("{e:?}"))
     }
 }
 
@@ -66,7 +66,7 @@ impl QueryHandler for CatalogQueryHandler {
             Err(err) => QueryOutcome::Error {
                 severity: "ERROR".to_string(),
                 code: "42601".to_string(), // syntax_error
-                message: err,
+                message: err.to_string(),
             },
         }
     }
