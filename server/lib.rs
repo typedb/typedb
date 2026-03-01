@@ -14,11 +14,7 @@ use axum_server::{tls_rustls::RustlsConfig, Handle};
 use database::database_manager::DatabaseManager;
 use projection::{
     catalog::MaterializedCatalog,
-    pgwire::{
-        authenticator::AuthMode,
-        connection::ServerParams,
-        listener::PgWireListener,
-    },
+    pgwire::{authenticator::AuthMode, connection::ServerParams, listener::PgWireListener},
 };
 use resource::{
     constants::server::{GRPC_CONNECTION_KEEPALIVE, SERVER_INFO},
@@ -33,7 +29,10 @@ use tracing::info;
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
-    service::{grpc, http, pgwire::{CatalogQueryHandler, ServerStateAuthenticator}},
+    service::{
+        grpc, http,
+        pgwire::{CatalogQueryHandler, ServerStateAuthenticator},
+    },
     state::{BoxServerState, LocalServerState},
 };
 
@@ -139,12 +138,8 @@ impl Server {
         };
         let pgwire_server = if let Some(pgwire_address) = pgwire_address_opt {
             let catalog = MaterializedCatalog::new();
-            let server = Self::serve_pgwire(
-                pgwire_address,
-                self.server_state.clone(),
-                catalog,
-                self.shutdown_receiver.clone(),
-            );
+            let server =
+                Self::serve_pgwire(pgwire_address, self.server_state.clone(), catalog, self.shutdown_receiver.clone());
             Some(server)
         } else {
             None
@@ -158,8 +153,7 @@ impl Server {
         Self::spawn_shutdown_handler(self.shutdown_sender);
         match (http_server, pgwire_server) {
             (Some(http), Some(pgwire)) => {
-                let (grpc_result, http_result, pgwire_result) =
-                    tokio::join!(grpc_server, http, pgwire);
+                let (grpc_result, http_result, pgwire_result) = tokio::join!(grpc_server, http, pgwire);
                 grpc_result?;
                 http_result?;
                 pgwire_result?;

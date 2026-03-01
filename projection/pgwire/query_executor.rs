@@ -71,11 +71,26 @@ pub fn execute_query(catalog: &dyn ProjectionCatalog, query: &ParsedQuery) -> Qu
                         *offset,
                     );
                 }
+                if s.eq_ignore_ascii_case("pg_catalog") {
+                    return execute_pg_catalog(catalog, table, columns, where_clause, order_by, *limit, *offset);
+                }
                 // Unknown schema → treat as regular table lookup (will fail if not found).
             }
             execute_select(catalog, table, columns, where_clause, order_by, *limit, *offset)
         }
+        // No-op statements that BI tools send during connection setup.
+        ParsedQuery::Set { .. } => command_complete("SET"),
+        ParsedQuery::Begin => command_complete("BEGIN"),
+        ParsedQuery::Commit => command_complete("COMMIT"),
+        ParsedQuery::Rollback => command_complete("ROLLBACK"),
+        ParsedQuery::Deallocate { .. } => command_complete("DEALLOCATE"),
+        ParsedQuery::DiscardAll => command_complete("DISCARD ALL"),
     }
+}
+
+/// Build a CommandComplete-style outcome with no rows.
+fn command_complete(tag: &str) -> QueryOutcome {
+    QueryOutcome::Result(QueryResult { columns: vec![], rows: vec![], command_tag: Some(tag.to_string()) })
 }
 
 // ── SHOW TABLES ────────────────────────────────────────────────────
@@ -92,7 +107,7 @@ fn execute_show_tables(catalog: &dyn ProjectionCatalog) -> QueryOutcome {
         format_code: 0,
     }];
     let rows: Vec<Vec<Option<String>>> = names.into_iter().map(|n| vec![Some(n)]).collect();
-    QueryOutcome::Result(QueryResult { columns, rows })
+    QueryOutcome::Result(QueryResult { columns, rows, command_tag: None })
 }
 
 // ── SELECT from projection ─────────────────────────────────────────
@@ -177,7 +192,7 @@ fn execute_select(
     let projected_rows: Vec<Vec<Option<String>>> =
         rows.iter().map(|row| col_indices.iter().map(|&idx| row[idx].clone()).collect()).collect();
 
-    QueryOutcome::Result(QueryResult { columns: out_columns, rows: projected_rows })
+    QueryOutcome::Result(QueryResult { columns: out_columns, rows: projected_rows, command_tag: None })
 }
 
 // ── information_schema ─────────────────────────────────────────────
@@ -195,6 +210,8 @@ fn execute_information_schema(
         execute_info_schema_tables(catalog, where_clause, limit, offset)
     } else if table.eq_ignore_ascii_case("columns") {
         execute_info_schema_columns(catalog, where_clause, limit, offset)
+    } else if table.eq_ignore_ascii_case("schemata") {
+        execute_info_schema_schemata(where_clause, limit, offset)
     } else {
         QueryOutcome::Error {
             severity: "ERROR".into(),
@@ -238,7 +255,7 @@ fn execute_info_schema_tables(
     let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
     let paged = apply_offset_limit(filtered, offset, limit);
 
-    QueryOutcome::Result(QueryResult { columns, rows: paged })
+    QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
 }
 
 fn execute_info_schema_columns(
@@ -278,7 +295,268 @@ fn execute_info_schema_columns(
     let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
     let paged = apply_offset_limit(filtered, offset, limit);
 
-    QueryOutcome::Result(QueryResult { columns, rows: paged })
+    QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
+}
+
+fn execute_info_schema_schemata(
+    where_clause: &[WhereCondition],
+    limit: Option<u64>,
+    offset: Option<u64>,
+) -> QueryOutcome {
+    let columns = vec![
+        info_schema_text_col("catalog_name"),
+        info_schema_text_col("schema_name"),
+        info_schema_text_col("schema_owner"),
+    ];
+
+    let all_rows: Vec<Vec<Option<String>>> = vec![
+        vec![Some("typedb".into()), Some("public".into()), Some("typedb".into())],
+        vec![Some("typedb".into()), Some("information_schema".into()), Some("typedb".into())],
+        vec![Some("typedb".into()), Some("pg_catalog".into()), Some("typedb".into())],
+    ];
+
+    let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
+    let paged = apply_offset_limit(filtered, offset, limit);
+
+    QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
+}
+
+// ── pg_catalog ─────────────────────────────────────────────────────
+
+fn execute_pg_catalog(
+    catalog: &dyn ProjectionCatalog,
+    table: &str,
+    _columns: &[SelectColumn],
+    where_clause: &[WhereCondition],
+    _order_by: &[OrderByExpr],
+    limit: Option<u64>,
+    offset: Option<u64>,
+) -> QueryOutcome {
+    if table.eq_ignore_ascii_case("pg_namespace") {
+        execute_pg_namespace(where_clause, limit, offset)
+    } else if table.eq_ignore_ascii_case("pg_class") {
+        execute_pg_class(catalog, where_clause, limit, offset)
+    } else if table.eq_ignore_ascii_case("pg_attribute") {
+        execute_pg_attribute(catalog, where_clause, limit, offset)
+    } else if table.eq_ignore_ascii_case("pg_type") {
+        execute_pg_type(where_clause, limit, offset)
+    } else if table.eq_ignore_ascii_case("pg_database") {
+        execute_pg_database(where_clause, limit, offset)
+    } else {
+        QueryOutcome::Error {
+            severity: "ERROR".into(),
+            code: "42P01".into(),
+            message: format!("relation \"pg_catalog.{table}\" does not exist"),
+        }
+    }
+}
+
+fn pg_catalog_int4_col(name: &str) -> ColumnDescription {
+    ColumnDescription {
+        name: name.to_string(),
+        table_oid: 0,
+        column_index: 0,
+        type_oid: crate::type_mapping::PG_OID_INT4,
+        type_size: 4,
+        type_modifier: -1,
+        format_code: 0,
+    }
+}
+
+fn pg_catalog_text_col(name: &str) -> ColumnDescription {
+    ColumnDescription {
+        name: name.to_string(),
+        table_oid: 0,
+        column_index: 0,
+        type_oid: crate::type_mapping::PG_OID_TEXT,
+        type_size: -1,
+        type_modifier: -1,
+        format_code: 0,
+    }
+}
+
+fn pg_catalog_bool_col(name: &str) -> ColumnDescription {
+    ColumnDescription {
+        name: name.to_string(),
+        table_oid: 0,
+        column_index: 0,
+        type_oid: crate::type_mapping::PG_OID_BOOL,
+        type_size: 1,
+        type_modifier: -1,
+        format_code: 0,
+    }
+}
+
+fn pg_catalog_oid_col(name: &str) -> ColumnDescription {
+    ColumnDescription {
+        name: name.to_string(),
+        table_oid: 0,
+        column_index: 0,
+        type_oid: crate::type_mapping::PG_OID_OID,
+        type_size: 4,
+        type_modifier: -1,
+        format_code: 0,
+    }
+}
+
+/// pg_namespace: oid, nspname, nspowner
+fn execute_pg_namespace(where_clause: &[WhereCondition], limit: Option<u64>, offset: Option<u64>) -> QueryOutcome {
+    let columns = vec![pg_catalog_oid_col("oid"), pg_catalog_text_col("nspname"), pg_catalog_oid_col("nspowner")];
+
+    let all_rows: Vec<Vec<Option<String>>> = vec![
+        vec![Some("11".into()), Some("pg_catalog".into()), Some("10".into())],
+        vec![Some("2200".into()), Some("public".into()), Some("10".into())],
+        vec![Some("13000".into()), Some("information_schema".into()), Some("10".into())],
+    ];
+
+    let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
+    let paged = apply_offset_limit(filtered, offset, limit);
+    QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
+}
+
+/// pg_class: oid, relname, relnamespace, relkind, relowner, reltuples, relhasindex, relhasrules, relhastriggers
+fn execute_pg_class(
+    catalog: &dyn ProjectionCatalog,
+    where_clause: &[WhereCondition],
+    limit: Option<u64>,
+    offset: Option<u64>,
+) -> QueryOutcome {
+    let columns = vec![
+        pg_catalog_oid_col("oid"),
+        pg_catalog_text_col("relname"),
+        pg_catalog_oid_col("relnamespace"),
+        pg_catalog_text_col("relkind"),
+        pg_catalog_oid_col("relowner"),
+        pg_catalog_text_col("reltuples"),
+        pg_catalog_bool_col("relhasindex"),
+        pg_catalog_bool_col("relhasrules"),
+        pg_catalog_bool_col("relhastriggers"),
+    ];
+
+    let names = catalog.list_projections();
+    let all_rows: Vec<Vec<Option<String>>> = names
+        .into_iter()
+        .enumerate()
+        .map(|(i, n)| {
+            vec![
+                Some(format!("{}", 16384 + i)), // synthetic oid
+                Some(n),                        // relname
+                Some("2200".into()),            // relnamespace = public
+                Some("r".into()),               // relkind = ordinary table
+                Some("10".into()),              // relowner
+                Some("-1".into()),              // reltuples (unknown)
+                Some("f".into()),               // relhasindex
+                Some("f".into()),               // relhasrules
+                Some("f".into()),               // relhastriggers
+            ]
+        })
+        .collect();
+
+    let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
+    let paged = apply_offset_limit(filtered, offset, limit);
+    QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
+}
+
+/// pg_attribute: attrelid, attname, atttypid, attnum, attnotnull, attlen, atttypmod
+fn execute_pg_attribute(
+    catalog: &dyn ProjectionCatalog,
+    where_clause: &[WhereCondition],
+    limit: Option<u64>,
+    offset: Option<u64>,
+) -> QueryOutcome {
+    let columns = vec![
+        pg_catalog_oid_col("attrelid"),
+        pg_catalog_text_col("attname"),
+        pg_catalog_oid_col("atttypid"),
+        pg_catalog_int4_col("attnum"),
+        pg_catalog_bool_col("attnotnull"),
+        pg_catalog_int4_col("attlen"),
+        pg_catalog_int4_col("atttypmod"),
+    ];
+
+    let projections = catalog.list_projections();
+    let mut all_rows: Vec<Vec<Option<String>>> = Vec::new();
+    for (pi, proj_name) in projections.iter().enumerate() {
+        if let Some(proj) = catalog.get_projection(proj_name) {
+            let rel_oid = 16384 + pi;
+            for (ci, col) in proj.columns.iter().enumerate() {
+                all_rows.push(vec![
+                    Some(format!("{rel_oid}")),
+                    Some(col.name.clone()),
+                    Some(format!("{}", col.type_oid)),
+                    Some(format!("{}", ci + 1)),
+                    Some("f".into()),
+                    Some(format!("{}", col.type_size)),
+                    Some("-1".into()),
+                ]);
+            }
+        }
+    }
+
+    let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
+    let paged = apply_offset_limit(filtered, offset, limit);
+    QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
+}
+
+/// pg_type: oid, typname, typnamespace, typlen, typtype, typbasetype
+fn execute_pg_type(where_clause: &[WhereCondition], limit: Option<u64>, offset: Option<u64>) -> QueryOutcome {
+    let columns = vec![
+        pg_catalog_oid_col("oid"),
+        pg_catalog_text_col("typname"),
+        pg_catalog_oid_col("typnamespace"),
+        pg_catalog_int4_col("typlen"),
+        pg_catalog_text_col("typtype"),
+        pg_catalog_oid_col("typbasetype"),
+    ];
+
+    // Minimal set of types for BI tools.
+    let all_rows: Vec<Vec<Option<String>>> = vec![
+        vec![s("16"), s("bool"), s("11"), s("1"), s("b"), s("0")],
+        vec![s("20"), s("int8"), s("11"), s("8"), s("b"), s("0")],
+        vec![s("21"), s("int2"), s("11"), s("2"), s("b"), s("0")],
+        vec![s("23"), s("int4"), s("11"), s("4"), s("b"), s("0")],
+        vec![s("25"), s("text"), s("11"), s("-1"), s("b"), s("0")],
+        vec![s("700"), s("float4"), s("11"), s("4"), s("b"), s("0")],
+        vec![s("701"), s("float8"), s("11"), s("8"), s("b"), s("0")],
+        vec![s("1043"), s("varchar"), s("11"), s("-1"), s("b"), s("0")],
+        vec![s("1114"), s("timestamp"), s("11"), s("8"), s("b"), s("0")],
+        vec![s("1184"), s("timestamptz"), s("11"), s("8"), s("b"), s("0")],
+        vec![s("1700"), s("numeric"), s("11"), s("-1"), s("b"), s("0")],
+        vec![s("2950"), s("uuid"), s("11"), s("16"), s("b"), s("0")],
+    ];
+
+    let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
+    let paged = apply_offset_limit(filtered, offset, limit);
+    QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
+}
+
+fn s(v: &str) -> Option<String> {
+    Some(v.to_string())
+}
+
+/// pg_database: oid, datname, datdba, encoding, datcollate, datctype
+fn execute_pg_database(where_clause: &[WhereCondition], limit: Option<u64>, offset: Option<u64>) -> QueryOutcome {
+    let columns = vec![
+        pg_catalog_oid_col("oid"),
+        pg_catalog_text_col("datname"),
+        pg_catalog_oid_col("datdba"),
+        pg_catalog_int4_col("encoding"),
+        pg_catalog_text_col("datcollate"),
+        pg_catalog_text_col("datctype"),
+    ];
+
+    let all_rows: Vec<Vec<Option<String>>> = vec![vec![
+        s("16384"),
+        s("typedb"),
+        s("10"),
+        s("6"), // UTF-8
+        s("en_US.UTF-8"),
+        s("en_US.UTF-8"),
+    ]];
+
+    let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
+    let paged = apply_offset_limit(filtered, offset, limit);
+    QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -1248,5 +1526,223 @@ mod tests {
         let result = unwrap_result(execute_query(&catalog, &query));
         // Bob (25) and Diana (28) have age <= 28.5
         assert_eq!(result.rows.len(), 2);
+    }
+
+    // ── No-op commands (SET, BEGIN, COMMIT, ROLLBACK, DEALLOCATE, DISCARD) ──
+
+    #[test]
+    fn test_set_returns_command_complete() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Set { name: "client_encoding".into(), value: "UTF8".into() };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert!(result.columns.is_empty());
+        assert!(result.rows.is_empty());
+        assert_eq!(result.command_tag, Some("SET".to_string()));
+    }
+
+    #[test]
+    fn test_begin_returns_command_complete() {
+        let catalog = StubCatalog::with_people();
+        let result = unwrap_result(execute_query(&catalog, &ParsedQuery::Begin));
+        assert!(result.columns.is_empty());
+        assert_eq!(result.command_tag, Some("BEGIN".to_string()));
+    }
+
+    #[test]
+    fn test_commit_returns_command_complete() {
+        let catalog = StubCatalog::with_people();
+        let result = unwrap_result(execute_query(&catalog, &ParsedQuery::Commit));
+        assert_eq!(result.command_tag, Some("COMMIT".to_string()));
+    }
+
+    #[test]
+    fn test_rollback_returns_command_complete() {
+        let catalog = StubCatalog::with_people();
+        let result = unwrap_result(execute_query(&catalog, &ParsedQuery::Rollback));
+        assert_eq!(result.command_tag, Some("ROLLBACK".to_string()));
+    }
+
+    #[test]
+    fn test_deallocate_returns_command_complete() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Deallocate { name: Some("stmt_1".into()) };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.command_tag, Some("DEALLOCATE".to_string()));
+    }
+
+    #[test]
+    fn test_discard_all_returns_command_complete() {
+        let catalog = StubCatalog::with_people();
+        let result = unwrap_result(execute_query(&catalog, &ParsedQuery::DiscardAll));
+        assert_eq!(result.command_tag, Some("DISCARD ALL".to_string()));
+    }
+
+    // ── information_schema.schemata ────────────────────────────────
+
+    #[test]
+    fn test_info_schema_schemata_returns_three_schemas() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "schemata".into(),
+            schema: Some("information_schema".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.columns.len(), 3);
+        assert_eq!(result.rows.len(), 3);
+        let schema_names: Vec<_> = result.rows.iter().map(|r| r[1].as_deref().unwrap()).collect();
+        assert!(schema_names.contains(&"public"));
+        assert!(schema_names.contains(&"information_schema"));
+        assert!(schema_names.contains(&"pg_catalog"));
+    }
+
+    // ── pg_catalog.pg_namespace ────────────────────────────────────
+
+    #[test]
+    fn test_pg_namespace_returns_three_namespaces() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_namespace".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.columns.len(), 3);
+        assert_eq!(result.rows.len(), 3);
+        let names: Vec<_> = result.rows.iter().map(|r| r[1].as_deref().unwrap()).collect();
+        assert!(names.contains(&"pg_catalog"));
+        assert!(names.contains(&"public"));
+        assert!(names.contains(&"information_schema"));
+    }
+
+    // ── pg_catalog.pg_class ────────────────────────────────────────
+
+    #[test]
+    fn test_pg_class_lists_projections() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_class".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.rows.len(), 1); // only "people" projection
+        assert_eq!(result.rows[0][1], Some("people".to_string())); // relname
+        assert_eq!(result.rows[0][3], Some("r".to_string())); // relkind
+    }
+
+    // ── pg_catalog.pg_attribute ────────────────────────────────────
+
+    #[test]
+    fn test_pg_attribute_lists_columns() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_attribute".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        // people has 3 columns: name, age, city
+        assert_eq!(result.rows.len(), 3);
+        let col_names: Vec<_> = result.rows.iter().map(|r| r[1].as_deref().unwrap()).collect();
+        assert!(col_names.contains(&"name"));
+        assert!(col_names.contains(&"age"));
+        assert!(col_names.contains(&"city"));
+    }
+
+    // ── pg_catalog.pg_type ─────────────────────────────────────────
+
+    #[test]
+    fn test_pg_type_contains_common_types() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_type".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert!(result.rows.len() >= 10, "Should have at least 10 common types");
+        let type_names: Vec<_> = result.rows.iter().map(|r| r[1].as_deref().unwrap()).collect();
+        assert!(type_names.contains(&"int4"));
+        assert!(type_names.contains(&"text"));
+        assert!(type_names.contains(&"bool"));
+        assert!(type_names.contains(&"float8"));
+    }
+
+    // ── pg_catalog.pg_database ─────────────────────────────────────
+
+    #[test]
+    fn test_pg_database_returns_typedb() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_database".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.rows.len(), 1);
+        assert_eq!(result.rows[0][1], Some("typedb".to_string())); // datname
+    }
+
+    // ── pg_catalog unknown table ───────────────────────────────────
+
+    #[test]
+    fn test_pg_catalog_unknown_table_error() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_nonexistent".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let (severity, code, msg) = unwrap_error(execute_query(&catalog, &query));
+        assert_eq!(severity, "ERROR");
+        assert_eq!(code, "42P01");
+        assert!(msg.contains("pg_nonexistent"));
+    }
+
+    // ── command_tag on regular SELECT is None ──────────────────────
+
+    #[test]
+    fn test_regular_select_has_no_command_tag() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "people".into(),
+            schema: None,
+            columns: vec![SelectColumn::Star],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let result = unwrap_result(execute_query(&catalog, &query));
+        assert_eq!(result.command_tag, None);
     }
 }

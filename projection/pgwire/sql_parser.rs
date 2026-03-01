@@ -82,6 +82,18 @@ pub enum ParsedQuery {
     },
     /// `SHOW TABLES`
     ShowTables,
+    /// `SET <name> = <value>` or `SET <name> TO <value>` — acknowledged but ignored.
+    Set { name: String, value: String },
+    /// `BEGIN` / `START TRANSACTION` — no-op (we have no transactions).
+    Begin,
+    /// `COMMIT` — no-op.
+    Commit,
+    /// `ROLLBACK` — no-op.
+    Rollback,
+    /// `DEALLOCATE <name>` or `DEALLOCATE ALL` — no-op.
+    Deallocate { name: Option<String> },
+    /// `DISCARD ALL` — no-op (BI tools send this on connection reset).
+    DiscardAll,
 }
 
 /// Errors that can occur while parsing SQL.
@@ -135,6 +147,27 @@ pub fn parse_sql(sql: &str) -> Result<ParsedQuery, SqlParseError> {
     match statements.into_iter().next().unwrap() {
         Statement::Query(query) => convert_query(*query),
         Statement::ShowTables { .. } => Ok(ParsedQuery::ShowTables),
+        Statement::Set(set_stmt) => {
+            let (name, val) = match set_stmt {
+                ast::Set::SingleAssignment { variable, values, .. } => {
+                    (variable.to_string(), values.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", "))
+                }
+                other => (format!("{other}"), String::new()),
+            };
+            Ok(ParsedQuery::Set { name, value: val })
+        }
+        Statement::StartTransaction { .. } => Ok(ParsedQuery::Begin),
+        Statement::Commit { .. } => Ok(ParsedQuery::Commit),
+        Statement::Rollback { .. } => Ok(ParsedQuery::Rollback),
+        Statement::Deallocate { name, .. } => {
+            let n = name.to_string();
+            if n.eq_ignore_ascii_case("ALL") {
+                Ok(ParsedQuery::Deallocate { name: None })
+            } else {
+                Ok(ParsedQuery::Deallocate { name: Some(n) })
+            }
+        }
+        Statement::Discard { .. } => Ok(ParsedQuery::DiscardAll),
         other => Err(SqlParseError::Unsupported(statement_kind(&other).to_string())),
     }
 }
@@ -947,5 +980,74 @@ mod tests {
                 offset: None,
             }
         );
+    }
+
+    // ── SET ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_set_variable_eq() {
+        let result = parse_sql("SET client_encoding = 'UTF8'").unwrap();
+        match result {
+            ParsedQuery::Set { name, value } => {
+                assert!(name.contains("client_encoding"));
+                assert!(value.contains("UTF8") || value.contains("'UTF8'"));
+            }
+            other => panic!("expected Set, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_set_variable_to() {
+        let result = parse_sql("SET search_path TO public").unwrap();
+        match result {
+            ParsedQuery::Set { name, value } => {
+                assert!(name.contains("search_path"));
+                assert!(value.contains("public"));
+            }
+            other => panic!("expected Set, got {:?}", other),
+        }
+    }
+
+    // ── BEGIN / COMMIT / ROLLBACK ──────────────────────────────────
+
+    #[test]
+    fn test_begin() {
+        assert_eq!(parse_sql("BEGIN").unwrap(), ParsedQuery::Begin);
+    }
+
+    #[test]
+    fn test_start_transaction() {
+        assert_eq!(parse_sql("START TRANSACTION").unwrap(), ParsedQuery::Begin);
+    }
+
+    #[test]
+    fn test_commit() {
+        assert_eq!(parse_sql("COMMIT").unwrap(), ParsedQuery::Commit);
+    }
+
+    #[test]
+    fn test_rollback() {
+        assert_eq!(parse_sql("ROLLBACK").unwrap(), ParsedQuery::Rollback);
+    }
+
+    // ── DEALLOCATE ─────────────────────────────────────────────────
+
+    #[test]
+    fn test_deallocate_named() {
+        let result = parse_sql("DEALLOCATE stmt_1").unwrap();
+        assert_eq!(result, ParsedQuery::Deallocate { name: Some("stmt_1".to_string()) });
+    }
+
+    #[test]
+    fn test_deallocate_all() {
+        let result = parse_sql("DEALLOCATE ALL").unwrap();
+        assert_eq!(result, ParsedQuery::Deallocate { name: None });
+    }
+
+    // ── DISCARD ALL ────────────────────────────────────────────────
+
+    #[test]
+    fn test_discard_all() {
+        assert_eq!(parse_sql("DISCARD ALL").unwrap(), ParsedQuery::DiscardAll);
     }
 }

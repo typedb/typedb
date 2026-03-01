@@ -117,9 +117,11 @@
 
 ## Phase 3 — Ecosystem Polish
 
-- [ ] Full `information_schema` catalog views (tables, columns, schemata)
-- [ ] Extended Query protocol support (Parse/Bind/Execute for prepared statements)
-- [ ] `pg_catalog` compatibility for `psql \d` commands
+- [x] Full `information_schema` catalog views (tables, columns, schemata)
+- [x] Extended Query protocol support (Parse/Bind/Describe/Execute/Sync/Close)
+- [x] `pg_catalog` compatibility (`pg_namespace`, `pg_class`, `pg_attribute`, `pg_type`, `pg_database`)
+- [x] BI tool no-op commands (`SET`, `BEGIN`, `COMMIT`, `ROLLBACK`, `DEALLOCATE`, `DISCARD ALL`)
+- [x] Custom `command_tag` on `QueryResult` for correct CommandComplete tags
 - [ ] `typedb psql` convenience command
 - [ ] dbt adapter (thin Python wrapper)
 - [ ] BI tool presets (Looker, PowerBI, Metabase)

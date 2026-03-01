@@ -25,6 +25,21 @@ pub const MSG_PASSWORD: u8 = b'p';
 /// Terminate connection from client.
 pub const MSG_TERMINATE: u8 = b'X';
 
+// ── Extended Query sub-protocol (frontend → backend) ───────────────
+
+/// Parse message (prepare a named or unnamed statement).
+pub const MSG_PARSE: u8 = b'P';
+/// Bind message (bind parameters to a prepared statement).
+pub const MSG_BIND: u8 = b'B';
+/// Describe message (request description of a statement or portal).
+pub const MSG_DESCRIBE: u8 = b'D';
+/// Execute message (execute a portal).
+pub const MSG_EXECUTE: u8 = b'E';
+/// Sync message (marks the end of an extended-query cycle).
+pub const MSG_SYNC: u8 = b'S';
+/// Close message (close a statement or portal).
+pub const MSG_CLOSE: u8 = b'C';
+
 // ── Message type bytes (backend → frontend) ────────────────────────
 
 /// Authentication request/response.
@@ -43,6 +58,19 @@ pub const MSG_DATA_ROW: u8 = b'D';
 pub const MSG_COMMAND_COMPLETE: u8 = b'C';
 /// Error response.
 pub const MSG_ERROR_RESPONSE: u8 = b'E';
+
+// ── Extended Query sub-protocol (backend → frontend) ───────────────
+
+/// ParseComplete — response to Parse.
+pub const MSG_PARSE_COMPLETE: u8 = b'1';
+/// BindComplete — response to Bind.
+pub const MSG_BIND_COMPLETE: u8 = b'2';
+/// CloseComplete — response to Close.
+pub const MSG_CLOSE_COMPLETE: u8 = b'3';
+/// NoData — response to Describe when the statement produces no rows.
+pub const MSG_NO_DATA: u8 = b'n';
+/// ParameterDescription — describes parameters of a prepared statement.
+pub const MSG_PARAMETER_DESCRIPTION: u8 = b't';
 
 // ── Protocol constants ─────────────────────────────────────────────
 
@@ -235,6 +263,44 @@ pub fn encode_error_response(severity: &str, code: &str, message: &str) -> Vec<u
     buf.push(0);
     // Terminator
     buf.push(0);
+    finish_message(&mut buf);
+    buf
+}
+
+// ── Extended Query protocol encoders ───────────────────────────────
+
+/// Encode a ParseComplete ('1') message — empty body.
+pub fn encode_parse_complete() -> Vec<u8> {
+    let mut buf = begin_message(MSG_PARSE_COMPLETE);
+    finish_message(&mut buf);
+    buf
+}
+
+/// Encode a BindComplete ('2') message — empty body.
+pub fn encode_bind_complete() -> Vec<u8> {
+    let mut buf = begin_message(MSG_BIND_COMPLETE);
+    finish_message(&mut buf);
+    buf
+}
+
+/// Encode a CloseComplete ('3') message — empty body.
+pub fn encode_close_complete() -> Vec<u8> {
+    let mut buf = begin_message(MSG_CLOSE_COMPLETE);
+    finish_message(&mut buf);
+    buf
+}
+
+/// Encode a NoData ('n') message — empty body.
+pub fn encode_no_data() -> Vec<u8> {
+    let mut buf = begin_message(MSG_NO_DATA);
+    finish_message(&mut buf);
+    buf
+}
+
+/// Encode a ParameterDescription ('t') message with zero parameters.
+pub fn encode_parameter_description_empty() -> Vec<u8> {
+    let mut buf = begin_message(MSG_PARAMETER_DESCRIPTION);
+    buf.extend_from_slice(&0i16.to_be_bytes()); // zero parameters
     finish_message(&mut buf);
     buf
 }
@@ -700,6 +766,11 @@ mod tests {
             encode_data_row(&[]),
             encode_command_complete("SELECT 0"),
             encode_error_response("ERROR", "00000", "test"),
+            encode_parse_complete(),
+            encode_bind_complete(),
+            encode_close_complete(),
+            encode_no_data(),
+            encode_parameter_description_empty(),
         ];
 
         for msg in &messages {
@@ -715,5 +786,46 @@ mod tests {
                 msg.len() - 1
             );
         }
+    }
+
+    // ── Extended Query protocol encoders ───────────────────────
+
+    #[test]
+    fn parse_complete_type_byte() {
+        let msg = encode_parse_complete();
+        assert_eq!(msg[0], MSG_PARSE_COMPLETE);
+        assert_eq!(msg.len(), 5); // type + 4-byte length (just self)
+    }
+
+    #[test]
+    fn bind_complete_type_byte() {
+        let msg = encode_bind_complete();
+        assert_eq!(msg[0], MSG_BIND_COMPLETE);
+        assert_eq!(msg.len(), 5);
+    }
+
+    #[test]
+    fn close_complete_type_byte() {
+        let msg = encode_close_complete();
+        assert_eq!(msg[0], MSG_CLOSE_COMPLETE);
+        assert_eq!(msg.len(), 5);
+    }
+
+    #[test]
+    fn no_data_type_byte() {
+        let msg = encode_no_data();
+        assert_eq!(msg[0], MSG_NO_DATA);
+        assert_eq!(msg.len(), 5);
+    }
+
+    #[test]
+    fn parameter_description_empty_type_byte() {
+        let msg = encode_parameter_description_empty();
+        assert_eq!(msg[0], MSG_PARAMETER_DESCRIPTION);
+        // type(1) + length(4) + int16(2) = 7 bytes
+        assert_eq!(msg.len(), 7);
+        // The int16 should be 0 (zero parameters)
+        let num_params = i16::from_be_bytes([msg[5], msg[6]]);
+        assert_eq!(num_params, 0);
     }
 }

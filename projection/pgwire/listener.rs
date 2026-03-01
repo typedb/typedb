@@ -152,6 +152,7 @@ mod tests {
                     format_code: 0,
                 }],
                 rows: vec![vec![Some(sql.to_string())]],
+                command_tag: None,
             })
         }
     }

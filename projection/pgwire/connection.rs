@@ -16,10 +16,11 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use crate::pgwire::{
     authenticator::{decode_password_message, extract_username, AuthMode},
     messages::{
-        encode_auth_cleartext_password, encode_auth_ok, encode_backend_key_data, encode_command_complete,
-        encode_data_row, encode_error_response, encode_parameter_status, encode_ready_for_query,
-        encode_row_description, ColumnDescription, MSG_PASSWORD, MSG_QUERY, MSG_TERMINATE, PROTOCOL_VERSION_30,
-        TX_IDLE,
+        encode_auth_cleartext_password, encode_auth_ok, encode_backend_key_data, encode_bind_complete,
+        encode_close_complete, encode_command_complete, encode_data_row, encode_error_response, encode_no_data,
+        encode_parameter_description_empty, encode_parameter_status, encode_parse_complete, encode_ready_for_query,
+        encode_row_description, ColumnDescription, MSG_BIND, MSG_CLOSE, MSG_DESCRIBE, MSG_EXECUTE, MSG_PARSE,
+        MSG_PASSWORD, MSG_QUERY, MSG_SYNC, MSG_TERMINATE, PROTOCOL_VERSION_30, TX_IDLE,
     },
 };
 
@@ -30,6 +31,8 @@ use crate::pgwire::{
 pub struct QueryResult {
     pub columns: Vec<ColumnDescription>,
     pub rows: Vec<Vec<Option<String>>>,
+    /// Custom command tag (e.g. "SET", "BEGIN"). If `None`, defaults to "SELECT {row_count}".
+    pub command_tag: Option<String>,
 }
 
 /// Outcome of a query — either a result set or an error.
@@ -87,6 +90,8 @@ where
     auth_mode: AuthMode,
     process_id: i32,
     secret_key: i32,
+    /// SQL stored from a Parse message, consumed by Execute.
+    pending_sql: Option<String>,
 }
 
 impl<S, H> PgConnection<S, H>
@@ -98,7 +103,7 @@ where
     ///
     /// Defaults to `AuthMode::Trust` (no authentication).
     pub fn new(stream: S, handler: Arc<H>, params: ServerParams) -> Self {
-        Self { stream, handler, params, auth_mode: AuthMode::Trust, process_id: 1, secret_key: 0 }
+        Self { stream, handler, params, auth_mode: AuthMode::Trust, process_id: 1, secret_key: 0, pending_sql: None }
     }
 
     /// Set the authentication mode for this connection.
@@ -210,6 +215,56 @@ where
                     let sql = read_cstring_from_payload(&payload)?;
                     self.handle_query(&sql).await?;
                 }
+                // Extended Query sub-protocol —————————————————————
+                MSG_PARSE => {
+                    // Parse: store the SQL for later Execute.
+                    // Format: stmt_name\0 query\0 int16(num_params) [int32(oid)...]
+                    let (_stmt_name, pos) = read_cstring_pair_first(&payload)?;
+                    let (sql, _) = read_cstring_pair_at(&payload, pos)?;
+                    self.pending_sql = Some(sql);
+                    self.write_all(&encode_parse_complete()).await?;
+                }
+                MSG_BIND => {
+                    // Bind: we don't support parameters, just acknowledge.
+                    self.write_all(&encode_bind_complete()).await?;
+                }
+                MSG_DESCRIBE => {
+                    // Describe: send ParameterDescription (0 params) + RowDescription or NoData.
+                    self.write_all(&encode_parameter_description_empty()).await?;
+                    if let Some(sql) = &self.pending_sql {
+                        let outcome = self.handler.handle_query(sql);
+                        if let QueryOutcome::Result(ref result) = outcome {
+                            if result.columns.is_empty() {
+                                self.write_all(&encode_no_data()).await?;
+                            } else {
+                                self.write_all(&encode_row_description(&result.columns)).await?;
+                            }
+                        } else {
+                            self.write_all(&encode_no_data()).await?;
+                        }
+                    } else {
+                        self.write_all(&encode_no_data()).await?;
+                    }
+                }
+                MSG_EXECUTE => {
+                    // Execute: run the pending SQL.
+                    if let Some(sql) = self.pending_sql.take() {
+                        self.handle_execute(&sql).await?;
+                    } else {
+                        // No pending statement — send an empty CommandComplete.
+                        self.write_all(&encode_command_complete("SELECT 0")).await?;
+                    }
+                }
+                MSG_SYNC => {
+                    // Sync: flush + ReadyForQuery.
+                    self.write_all(&encode_ready_for_query(TX_IDLE)).await?;
+                    self.stream.flush().await?;
+                }
+                MSG_CLOSE => {
+                    // Close a statement or portal — just acknowledge.
+                    self.pending_sql = None;
+                    self.write_all(&encode_close_complete()).await?;
+                }
                 MSG_TERMINATE => {
                     return Err(ConnectionError::Closed);
                 }
@@ -229,17 +284,17 @@ where
         let outcome = self.handler.handle_query(sql);
         match outcome {
             QueryOutcome::Result(result) => {
-                // RowDescription
-                self.write_all(&encode_row_description(&result.columns)).await?;
-
-                // DataRow for each row
-                for row in &result.rows {
-                    let refs: Vec<Option<&str>> = row.iter().map(|v| v.as_deref()).collect();
-                    self.write_all(&encode_data_row(&refs)).await?;
+                // Only send RowDescription + DataRows if there are columns.
+                if !result.columns.is_empty() {
+                    self.write_all(&encode_row_description(&result.columns)).await?;
+                    for row in &result.rows {
+                        let refs: Vec<Option<&str>> = row.iter().map(|v| v.as_deref()).collect();
+                        self.write_all(&encode_data_row(&refs)).await?;
+                    }
                 }
 
-                // CommandComplete with row count
-                let tag = format!("SELECT {}", result.rows.len());
+                // CommandComplete with custom tag or default SELECT tag.
+                let tag = result.command_tag.unwrap_or_else(|| format!("SELECT {}", result.rows.len()));
                 self.write_all(&encode_command_complete(&tag)).await?;
             }
             QueryOutcome::Error { severity, code, message } => {
@@ -250,6 +305,28 @@ where
         // ReadyForQuery after every query response
         self.write_all(&encode_ready_for_query(TX_IDLE)).await?;
         self.stream.flush().await?;
+        Ok(())
+    }
+
+    /// Handle an Execute in the extended-query sub-protocol.
+    ///
+    /// Like `handle_query` but does NOT send RowDescription (already sent by Describe)
+    /// and does NOT send ReadyForQuery (that comes with Sync).
+    async fn handle_execute(&mut self, sql: &str) -> Result<(), ConnectionError> {
+        let outcome = self.handler.handle_query(sql);
+        match outcome {
+            QueryOutcome::Result(result) => {
+                for row in &result.rows {
+                    let refs: Vec<Option<&str>> = row.iter().map(|v| v.as_deref()).collect();
+                    self.write_all(&encode_data_row(&refs)).await?;
+                }
+                let tag = result.command_tag.unwrap_or_else(|| format!("SELECT {}", result.rows.len()));
+                self.write_all(&encode_command_complete(&tag)).await?;
+            }
+            QueryOutcome::Error { severity, code, message } => {
+                self.write_all(&encode_error_response(&severity, &code, &message)).await?;
+            }
+        }
         Ok(())
     }
 
@@ -328,6 +405,32 @@ fn read_cstring_from_payload(payload: &[u8]) -> Result<String, ConnectionError> 
         .ok_or_else(|| ConnectionError::Protocol("missing null terminator in query".into()))?;
     String::from_utf8(payload[..end].to_vec())
         .map_err(|e| ConnectionError::Protocol(format!("invalid UTF-8 in query: {e}")))
+}
+
+/// Read the first C-string from `payload` (e.g. the statement name in a Parse message).
+/// Returns (string, position after the null terminator).
+fn read_cstring_pair_first(payload: &[u8]) -> Result<(String, usize), ConnectionError> {
+    let end = payload
+        .iter()
+        .position(|&b| b == 0)
+        .ok_or_else(|| ConnectionError::Protocol("missing null terminator".into()))?;
+    let s = String::from_utf8(payload[..end].to_vec())
+        .map_err(|e| ConnectionError::Protocol(format!("invalid UTF-8: {e}")))?;
+    Ok((s, end + 1))
+}
+
+/// Read a C-string from `payload` starting at `pos`.
+fn read_cstring_pair_at(payload: &[u8], pos: usize) -> Result<(String, usize), ConnectionError> {
+    if pos >= payload.len() {
+        return Err(ConnectionError::Protocol("unexpected end of payload".into()));
+    }
+    let end = payload[pos..]
+        .iter()
+        .position(|&b| b == 0)
+        .ok_or_else(|| ConnectionError::Protocol("missing null terminator".into()))?;
+    let s = String::from_utf8(payload[pos..pos + end].to_vec())
+        .map_err(|e| ConnectionError::Protocol(format!("invalid UTF-8: {e}")))?;
+    Ok((s, pos + end + 1))
 }
 
 // ── Tests ──────────────────────────────────────────────────────────
@@ -567,6 +670,7 @@ mod tests {
                     format_code: 0,
                 }],
                 rows: vec![vec![Some("1".into())]],
+                command_tag: None,
             }),
         );
 
@@ -688,6 +792,7 @@ mod tests {
                         format_code: 0,
                     }],
                     rows: vec![vec![Some("1".into())]],
+                    command_tag: None,
                 }),
             )
             .on_query(
@@ -703,6 +808,7 @@ mod tests {
                         format_code: 0,
                     }],
                     rows: vec![vec![Some("2".into())]],
+                    command_tag: None,
                 }),
             );
 
@@ -790,6 +896,7 @@ mod tests {
                     vec![Some("2".into()), Some("bob".into())],
                     vec![Some("3".into()), None],
                 ],
+                command_tag: None,
             }),
         );
 
@@ -851,6 +958,7 @@ mod tests {
                     format_code: 0,
                 }],
                 rows: vec![],
+                command_tag: None,
             }),
         );
 
@@ -904,6 +1012,7 @@ mod tests {
                     format_code: 0,
                 }],
                 rows: vec![vec![Some("1".into())]],
+                command_tag: None,
             }),
         );
 
@@ -1095,5 +1204,238 @@ mod tests {
         let auth_count = types.iter().filter(|&&t| t == MSG_AUTHENTICATION).count();
         assert_eq!(auth_count, 1, "Trust mode should send only AuthOk (1 R message)");
         assert!(types.contains(&MSG_READY_FOR_QUERY));
+    }
+
+    // ── Extended Query Protocol ─────────────────────────────────
+
+    /// Build a Parse message: stmt_name\0 query\0 int16(0)
+    fn build_parse(stmt_name: &str, query: &str) -> Vec<u8> {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(stmt_name.as_bytes());
+        payload.push(0);
+        payload.extend_from_slice(query.as_bytes());
+        payload.push(0);
+        payload.extend_from_slice(&0i16.to_be_bytes()); // zero param types
+        let len = (payload.len() + 4) as i32;
+        let mut msg = Vec::new();
+        msg.push(MSG_PARSE);
+        msg.extend_from_slice(&len.to_be_bytes());
+        msg.extend_from_slice(&payload);
+        msg
+    }
+
+    /// Build a Bind message (minimal: unnamed statement, unnamed portal, no params).
+    fn build_bind() -> Vec<u8> {
+        let mut payload = Vec::new();
+        payload.push(0); // portal name (unnamed)
+        payload.push(0); // statement name (unnamed)
+        payload.extend_from_slice(&0i16.to_be_bytes()); // num format codes
+        payload.extend_from_slice(&0i16.to_be_bytes()); // num parameters
+        payload.extend_from_slice(&0i16.to_be_bytes()); // num result format codes
+        let len = (payload.len() + 4) as i32;
+        let mut msg = Vec::new();
+        msg.push(MSG_BIND);
+        msg.extend_from_slice(&len.to_be_bytes());
+        msg.extend_from_slice(&payload);
+        msg
+    }
+
+    /// Build a Describe message (portal variant).
+    fn build_describe_portal() -> Vec<u8> {
+        let mut payload = Vec::new();
+        payload.push(b'P'); // describe portal (not statement)
+        payload.push(0); // unnamed portal
+        let len = (payload.len() + 4) as i32;
+        let mut msg = Vec::new();
+        msg.push(MSG_DESCRIBE);
+        msg.extend_from_slice(&len.to_be_bytes());
+        msg.extend_from_slice(&payload);
+        msg
+    }
+
+    /// Build an Execute message (unnamed portal, fetch all).
+    fn build_execute() -> Vec<u8> {
+        let mut payload = Vec::new();
+        payload.push(0); // unnamed portal
+        payload.extend_from_slice(&0i32.to_be_bytes()); // max rows = 0 (all)
+        let len = (payload.len() + 4) as i32;
+        let mut msg = Vec::new();
+        msg.push(MSG_EXECUTE);
+        msg.extend_from_slice(&len.to_be_bytes());
+        msg.extend_from_slice(&payload);
+        msg
+    }
+
+    /// Build a Sync message (empty payload).
+    fn build_sync() -> Vec<u8> {
+        let mut msg = Vec::new();
+        msg.push(MSG_SYNC);
+        msg.extend_from_slice(&4i32.to_be_bytes());
+        msg
+    }
+
+    /// Build a Close message (portal variant).
+    fn build_close_portal() -> Vec<u8> {
+        let mut payload = Vec::new();
+        payload.push(b'P'); // close portal
+        payload.push(0); // unnamed portal
+        let len = (payload.len() + 4) as i32;
+        let mut msg = Vec::new();
+        msg.push(MSG_CLOSE);
+        msg.extend_from_slice(&len.to_be_bytes());
+        msg.extend_from_slice(&payload);
+        msg
+    }
+
+    #[tokio::test]
+    async fn extended_query_parse_bind_execute_sync() {
+        let handler = MockHandler::new().on_query(
+            "SELECT 1",
+            QueryOutcome::Result(QueryResult {
+                columns: vec![ColumnDescription {
+                    name: "one".into(),
+                    table_oid: 0,
+                    column_index: 0,
+                    type_oid: 23,
+                    type_size: 4,
+                    type_modifier: -1,
+                    format_code: 0,
+                }],
+                rows: vec![vec![Some("1".into())]],
+                command_tag: None,
+            }),
+        );
+
+        let (client_stream, server_stream) = tokio::io::duplex(4096);
+        let handler = Arc::new(handler);
+        let mut conn = PgConnection::new(server_stream, handler, ServerParams::default()).with_backend_key(42, 99);
+
+        let (types, _) = tokio::join!(
+            async move {
+                let mut client = client_stream;
+                let _ = client_do_handshake(&mut client).await;
+
+                // Send Parse → Bind → Execute → Sync
+                client.write_all(&build_parse("", "SELECT 1")).await.unwrap();
+                client.write_all(&build_bind()).await.unwrap();
+                client.write_all(&build_execute()).await.unwrap();
+                client.write_all(&build_sync()).await.unwrap();
+                client.flush().await.unwrap();
+
+                let mut types = Vec::new();
+                loop {
+                    let (msg_type, _) = client_read_message(&mut client).await.unwrap();
+                    types.push(msg_type);
+                    if msg_type == MSG_READY_FOR_QUERY {
+                        break;
+                    }
+                }
+
+                client.write_all(&build_terminate()).await.unwrap();
+                client.flush().await.unwrap();
+                types
+            },
+            async move { conn.run().await }
+        );
+
+        // Expected: ParseComplete(1), BindComplete(2), DataRow(D), CommandComplete(C), ReadyForQuery(Z)
+        assert!(types.contains(&MSG_PARSE_COMPLETE), "Should get ParseComplete");
+        assert!(types.contains(&MSG_BIND_COMPLETE), "Should get BindComplete");
+        assert!(types.contains(&MSG_DATA_ROW), "Should get DataRow");
+        assert!(types.contains(&MSG_COMMAND_COMPLETE), "Should get CommandComplete");
+        assert_eq!(*types.last().unwrap(), MSG_READY_FOR_QUERY);
+    }
+
+    #[tokio::test]
+    async fn extended_query_close_sends_close_complete() {
+        let handler = MockHandler::new();
+        let (client_stream, server_stream) = tokio::io::duplex(4096);
+        let handler = Arc::new(handler);
+        let mut conn = PgConnection::new(server_stream, handler, ServerParams::default()).with_backend_key(42, 99);
+
+        let (types, _) = tokio::join!(
+            async move {
+                let mut client = client_stream;
+                let _ = client_do_handshake(&mut client).await;
+
+                client.write_all(&build_close_portal()).await.unwrap();
+                client.write_all(&build_sync()).await.unwrap();
+                client.flush().await.unwrap();
+
+                let mut types = Vec::new();
+                loop {
+                    let (msg_type, _) = client_read_message(&mut client).await.unwrap();
+                    types.push(msg_type);
+                    if msg_type == MSG_READY_FOR_QUERY {
+                        break;
+                    }
+                }
+
+                client.write_all(&build_terminate()).await.unwrap();
+                client.flush().await.unwrap();
+                types
+            },
+            async move { conn.run().await }
+        );
+
+        assert!(types.contains(&MSG_CLOSE_COMPLETE), "Should get CloseComplete");
+        assert_eq!(*types.last().unwrap(), MSG_READY_FOR_QUERY);
+    }
+
+    #[tokio::test]
+    async fn extended_query_describe_sends_parameter_description() {
+        let handler = MockHandler::new().on_query(
+            "SELECT 1",
+            QueryOutcome::Result(QueryResult {
+                columns: vec![ColumnDescription {
+                    name: "x".into(),
+                    table_oid: 0,
+                    column_index: 0,
+                    type_oid: 23,
+                    type_size: 4,
+                    type_modifier: -1,
+                    format_code: 0,
+                }],
+                rows: vec![vec![Some("1".into())]],
+                command_tag: None,
+            }),
+        );
+
+        let (client_stream, server_stream) = tokio::io::duplex(4096);
+        let handler = Arc::new(handler);
+        let mut conn = PgConnection::new(server_stream, handler, ServerParams::default()).with_backend_key(42, 99);
+
+        let (types, _) = tokio::join!(
+            async move {
+                let mut client = client_stream;
+                let _ = client_do_handshake(&mut client).await;
+
+                // Parse, then Describe, then Sync
+                client.write_all(&build_parse("", "SELECT 1")).await.unwrap();
+                client.write_all(&build_describe_portal()).await.unwrap();
+                client.write_all(&build_sync()).await.unwrap();
+                client.flush().await.unwrap();
+
+                let mut types = Vec::new();
+                loop {
+                    let (msg_type, _) = client_read_message(&mut client).await.unwrap();
+                    types.push(msg_type);
+                    if msg_type == MSG_READY_FOR_QUERY {
+                        break;
+                    }
+                }
+
+                client.write_all(&build_terminate()).await.unwrap();
+                client.flush().await.unwrap();
+                types
+            },
+            async move { conn.run().await }
+        );
+
+        // Should include: ParseComplete(1), ParameterDescription(t), RowDescription(T), ReadyForQuery(Z)
+        assert!(types.contains(&MSG_PARSE_COMPLETE), "Should get ParseComplete");
+        assert!(types.contains(&MSG_PARAMETER_DESCRIPTION), "Should get ParameterDescription");
+        assert!(types.contains(&MSG_ROW_DESCRIPTION), "Should get RowDescription for SELECT");
+        assert_eq!(*types.last().unwrap(), MSG_READY_FOR_QUERY);
     }
 }
