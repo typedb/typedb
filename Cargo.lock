@@ -3472,6 +3472,17 @@ name = "project"
 version = "0.0.0"
 
 [[package]]
+name = "projection"
+version = "0.0.0"
+dependencies = [
+ "chrono",
+ "chrono-tz",
+ "encoding",
+ "sqlparser",
+ "tokio",
+]
+
+[[package]]
 name = "prost"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3592,7 +3603,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash 2.1.1",
  "rustls 0.23.23",
- "socket2 0.5.8",
+ "socket2 0.6.0",
  "thiserror 2.0.12",
  "tokio",
  "tracing",
@@ -3629,9 +3640,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.8",
+ "socket2 0.6.0",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4436,6 +4447,7 @@ dependencies = [
  "logger",
  "moka",
  "options",
+ "projection",
  "prost",
  "pwhash",
  "query",
@@ -4639,6 +4651,15 @@ name = "spin"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
+
+[[package]]
+name = "sqlparser"
+version = "0.61.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbf5ea8d4d7c808e1af1cbabebca9a2abe603bcefc22294c5b95018d53200cb7"
+dependencies = [
+ "log",
+]
 
 [[package]]
 name = "stable_deref_trait"

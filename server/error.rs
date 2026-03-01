@@ -40,5 +40,6 @@ typedb_error! {
         HttpTlsFailedConfiguration(22, "Failed to configure TLS for the HTTP server.", source: Arc<tokio_rustls::rustls::Error>),
         HttpTlsUnsetDefaultCryptoProvider(23, "Failed to install default crypto provider for the HTTP server TLS configuration."),
         HttpTlsPemFileError(24, "Invalid PEM file specified for the HTTP server.", source: Arc<tokio_rustls::rustls::pki_types::pem::Error>),
+        PgWireServe(25, "Could not serve pgwire on {address}.", address: SocketAddr, source: Arc<io::Error>),
     }
 }

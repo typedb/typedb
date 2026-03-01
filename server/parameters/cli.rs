@@ -30,6 +30,14 @@ pub struct CLIArgs {
     #[arg(long = "server.http.address")]
     pub server_http_address: Option<String>,
 
+    /// Enable/disable PgWire (Postgres wire protocol) endpoint
+    #[arg(long = "server.pgwire.enabled")]
+    pub server_pgwire_enabled: Option<bool>,
+
+    /// PgWire endpoint host and port (e.g., 0.0.0.0:5432)
+    #[arg(long = "server.pgwire.address")]
+    pub server_pgwire_address: Option<String>,
+
     /// The amount of seconds generated authentication tokens will remain valid, specified in seconds.
     /// Use smaller values for better security and bigger values for better authentication performance and convenience
     /// (min: 1 second, max: 1 year).

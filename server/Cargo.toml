@@ -119,6 +119,11 @@ dev-dependencies = {}
 		features = []
 		default-features = false
 
+	[dependencies.projection]
+		path = "../projection"
+		features = []
+		default-features = false
+
 	[dependencies.encoding]
 		path = "../encoding"
 		features = []

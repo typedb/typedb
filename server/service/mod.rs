@@ -12,6 +12,7 @@ pub(crate) mod export_service;
 pub(crate) mod grpc;
 pub mod http;
 mod import_service;
+pub(crate) mod pgwire;
 mod transaction_service;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]

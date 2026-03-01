@@ -7,6 +7,9 @@ server:
     http:
         enabled: true
         address: 0.0.0.0:8000
+    pgwire:
+        enabled: true
+        address: 0.0.0.0:5432
 
     authentication:
         token-expiration-seconds: 5000

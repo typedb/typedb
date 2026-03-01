@@ -12,6 +12,14 @@ use std::{net::SocketAddr, sync::Arc};
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
 use database::database_manager::DatabaseManager;
+use projection::{
+    catalog::MaterializedCatalog,
+    pgwire::{
+        authenticator::AuthMode,
+        connection::ServerParams,
+        listener::PgWireListener,
+    },
+};
 use resource::{
     constants::server::{GRPC_CONNECTION_KEEPALIVE, SERVER_INFO},
     server_info::ServerInfo,
@@ -25,7 +33,7 @@ use tracing::info;
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
-    service::{grpc, http},
+    service::{grpc, http, pgwire::{CatalogQueryHandler, ServerStateAuthenticator}},
     state::{BoxServerState, LocalServerState},
 };
 
@@ -105,6 +113,11 @@ impl Server {
         } else {
             None
         };
+        let pgwire_address_opt = if self.config.server.pgwire.enabled {
+            Some(Self::resolve_address(self.config.server.pgwire.address).await)
+        } else {
+            None
+        };
 
         let grpc_server = Self::serve_grpc(
             grpc_address,
@@ -118,7 +131,19 @@ impl Server {
                 http_address,
                 &self.config.server.encryption,
                 self.server_state.clone(),
-                self.shutdown_receiver,
+                self.shutdown_receiver.clone(),
+            );
+            Some(server)
+        } else {
+            None
+        };
+        let pgwire_server = if let Some(pgwire_address) = pgwire_address_opt {
+            let catalog = MaterializedCatalog::new();
+            let server = Self::serve_pgwire(
+                pgwire_address,
+                self.server_state.clone(),
+                catalog,
+                self.shutdown_receiver.clone(),
             );
             Some(server)
         } else {
@@ -126,14 +151,32 @@ impl Server {
         };
 
         Self::print_serving_information(grpc_address, http_address_opt, &self.config.server.encryption);
+        if let Some(addr) = pgwire_address_opt {
+            info!("Serving pgwire (Postgres) on {addr}");
+        }
 
         Self::spawn_shutdown_handler(self.shutdown_sender);
-        if let Some(http_server) = http_server {
-            let (grpc_result, http_result) = tokio::join!(grpc_server, http_server);
-            grpc_result?;
-            http_result?;
-        } else {
-            grpc_server.await?;
+        match (http_server, pgwire_server) {
+            (Some(http), Some(pgwire)) => {
+                let (grpc_result, http_result, pgwire_result) =
+                    tokio::join!(grpc_server, http, pgwire);
+                grpc_result?;
+                http_result?;
+                pgwire_result?;
+            }
+            (Some(http), None) => {
+                let (grpc_result, http_result) = tokio::join!(grpc_server, http);
+                grpc_result?;
+                http_result?;
+            }
+            (None, Some(pgwire)) => {
+                let (grpc_result, pgwire_result) = tokio::join!(grpc_server, pgwire);
+                grpc_result?;
+                pgwire_result?;
+            }
+            (None, None) => {
+                grpc_server.await?;
+            }
         }
         Ok(())
     }
@@ -198,6 +241,43 @@ impl Server {
             None => axum_server::bind(address).handle(shutdown_handle).serve(router_service).await,
         }
         .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
+    }
+
+    async fn serve_pgwire(
+        address: SocketAddr,
+        server_state: Arc<BoxServerState>,
+        catalog: MaterializedCatalog,
+        mut shutdown_receiver: Receiver<()>,
+    ) -> Result<(), ServerOpenError> {
+        // Build the query handler backed by the materialized catalog.
+        let handler = Arc::new(CatalogQueryHandler::new(catalog));
+
+        // Build the auth mode — cleartext password backed by the server state.
+        let authenticator = Arc::new(ServerStateAuthenticator::new(server_state));
+        let auth_mode = AuthMode::CleartextPassword(authenticator);
+
+        let params = ServerParams::default();
+
+        let listener = PgWireListener::bind(&address.to_string(), handler, params)
+            .await
+            .map_err(|source| ServerOpenError::PgWireServe { address, source: Arc::new(source) })?
+            .with_auth_mode(auth_mode);
+
+        // Bridge the server's Receiver<()> into the listener's Receiver<bool>.
+        let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
+        tokio::spawn(async move {
+            let _ = shutdown_receiver.changed().await;
+            let _ = shutdown_tx.send(true);
+        });
+
+        let _handles = listener.run(shutdown_rx).await;
+
+        // Wait for outstanding connections to finish (best-effort).
+        for handle in _handles {
+            let _ = handle.await;
+        }
+
+        Ok(())
     }
 
     async fn validate_and_resolve_http_address(

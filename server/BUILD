@@ -63,6 +63,7 @@ rust_library(
         "//executor",
         "//function",
         "//ir",
+        "//projection",
         "//query",
         "//resource",
         "//storage",

@@ -34,6 +34,8 @@ pub struct Config {
 pub struct ServerConfig {
     pub(crate) address: String,
     pub(crate) http: HttpEndpointConfig,
+    #[serde(default)]
+    pub(crate) pgwire: PgWireEndpointConfig,
     pub(crate) authentication: AuthenticationConfig,
     pub(crate) encryption: EncryptionConfig,
 }
@@ -44,6 +46,19 @@ pub struct ServerConfig {
 pub struct HttpEndpointConfig {
     pub(crate) enabled: bool,
     pub(crate) address: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct PgWireEndpointConfig {
+    pub(crate) enabled: bool,
+    pub(crate) address: String,
+}
+
+impl Default for PgWireEndpointConfig {
+    fn default() -> Self {
+        Self { enabled: false, address: "0.0.0.0:5432".to_string() }
+    }
 }
 
 #[serde_as]
@@ -179,6 +194,8 @@ impl ConfigBuilder {
             server_address,
             server_http_enabled,
             server_http_address,
+            server_pgwire_enabled,
+            server_pgwire_address,
             server_authentication_token_expiration_seconds,
             server_encryption_enabled,
             server_encryption_certificate,
@@ -197,6 +214,8 @@ impl ConfigBuilder {
             config.server.address => server_address;
             config.server.http.enabled => server_http_enabled;
             config.server.http.address => server_http_address;
+            config.server.pgwire.enabled => server_pgwire_enabled;
+            config.server.pgwire.address => server_pgwire_address;
             config.server.authentication.token_expiration => server_authentication_token_expiration_seconds.map(|secs| Duration::new(secs, 0));
 
             config.server.encryption.enabled => server_encryption_enabled;
@@ -257,6 +276,16 @@ impl ConfigBuilder {
 
     pub fn server_http_address(mut self, address: impl Into<String>) -> Self {
         self.config.server.http.address = address.into();
+        self
+    }
+
+    pub fn server_pgwire_enabled(mut self, enabled: bool) -> Self {
+        self.config.server.pgwire.enabled = enabled;
+        self
+    }
+
+    pub fn server_pgwire_address(mut self, address: impl Into<String>) -> Self {
+        self.config.server.pgwire.address = address.into();
         self
     }
 
@@ -366,5 +395,33 @@ pub mod tests {
             let args = vec!["--server.encryption.enabled", "true", "--server.encryption.certificate-key", "somekey"];
             assert_true!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
         }
+    }
+
+    #[test]
+    fn pgwire_config_parsed_from_yaml() {
+        let config = load_and_parse(config_path(), vec![]).unwrap();
+        assert_true!(config.server.pgwire.enabled);
+        assert_eq!(config.server.pgwire.address.as_str(), "0.0.0.0:5432");
+    }
+
+    #[test]
+    fn pgwire_config_cli_override() {
+        let config = load_and_parse(
+            config_path(),
+            vec!["--server.pgwire.enabled", "false", "--server.pgwire.address", "127.0.0.1:15432"],
+        )
+        .unwrap();
+        assert_true!(!config.server.pgwire.enabled);
+        assert_eq!(config.server.pgwire.address.as_str(), "127.0.0.1:15432");
+    }
+
+    #[test]
+    fn pgwire_defaults_when_section_missing() {
+        // Parse a minimal YAML that does NOT include a pgwire section.
+        // The #[serde(default)] attribute should give us the Default impl values.
+        use super::PgWireEndpointConfig;
+        let default = PgWireEndpointConfig::default();
+        assert_true!(!default.enabled);
+        assert_eq!(default.address, "0.0.0.0:5432");
     }
 }
