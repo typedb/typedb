@@ -30,11 +30,10 @@ use ir::{
         reduce::{AssignedReduction, Reduce, Reducer},
         ParameterRegistry, VariableRegistry,
     },
-    translation::pipeline::TranslatedStage,
+    translation::pipeline::{TranslatedInputs, TranslatedStage},
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
-use ir::translation::pipeline::TranslatedInputs;
 
 use crate::{
     annotation::{
@@ -190,7 +189,10 @@ fn annotate_inputs(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     translated_inputs: Option<TranslatedInputs>,
-) -> Result<(AnnotatedInputs, BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>), AnnotationError> {
+) -> Result<
+    (AnnotatedInputs, BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>),
+    AnnotationError,
+> {
     match translated_inputs {
         None => {
             let annotations = TypeAnnotations::new(BTreeMap::new(), HashMap::new());
@@ -210,10 +212,17 @@ fn annotate_inputs(
                     FunctionParameterAnnotation::Value(type_) => {
                         value_type_annotations.insert(Vertex::Variable(*var), ExpressionValueType::Single(type_));
                     }
+                    FunctionParameterAnnotation::AnyConcept => {
+                        unreachable!("Inputs cannot be AnyConcept")
+                    }
                 }
                 Ok(())
             })?;
-            let annotations = TypeAnnotations::new_with_value_annotations(vertex.clone(), constraints, value_type_annotations.clone());
+            let annotations = TypeAnnotations::new_with_value_annotations(
+                vertex.clone(),
+                constraints,
+                value_type_annotations.clone(),
+            );
 
             // Convert to running annotations format
             let mut running_type_annotations = BTreeMap::new();

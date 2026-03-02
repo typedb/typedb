@@ -5,22 +5,25 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
-use tracing::{event, Level};
 
 use answer::variable::Variable;
 use compiler::{
-    executable::{fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage},
+    executable::{
+        fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage,
+        InputsExecutable,
+    },
     query_structure::{ParametrisedPipelineStructure, PipelineStructure},
     VariablePosition,
 };
-use compiler::executable::InputsExecutable;
 use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
 use ir::pipeline::ParameterRegistry;
 use resource::profile::QueryProfile;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use tracing::{event, Level};
 
 use crate::{
+    batch::Batch,
     document::ConceptDocument,
     pipeline::{
         delete::DeleteStageExecutor,
@@ -41,7 +44,6 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::batch::Batch;
 
 pub struct Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
     last_stage: Nonterminals,

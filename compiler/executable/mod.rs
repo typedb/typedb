@@ -4,20 +4,23 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::{
+    collections::HashMap,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
+use answer::variable::Variable;
 use error::typedb_error;
 use ir::pattern::constraint::Comparator;
 use typeql::common::Span;
-use answer::variable::Variable;
-use crate::annotation::function::FunctionParameterAnnotation;
-use crate::annotation::type_annotations::TypeAnnotations;
 
-use crate::executable::{
-    fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::ConjunctionCompilationError,
+use crate::{
+    annotation::{function::FunctionParameterAnnotation, type_annotations::TypeAnnotations},
+    executable::{
+        fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::ConjunctionCompilationError,
+    },
+    VariablePosition,
 };
-use crate::VariablePosition;
 
 pub mod delete;
 pub mod fetch;
@@ -140,8 +143,6 @@ impl InputsExecutable {
     }
 
     fn output_row_mapping(&self) -> HashMap<Variable, VariablePosition> {
-        self.variables.iter().cloned().enumerate().map(|(i, v)| {
-            (v, VariablePosition::new(i as u32))
-        }).collect()
+        self.variables.iter().cloned().enumerate().map(|(i, v)| (v, VariablePosition::new(i as u32))).collect()
     }
 }

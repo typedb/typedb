@@ -9,7 +9,6 @@ use std::{
     iter::zip,
     sync::Arc,
 };
-use itertools::Itertools;
 
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
@@ -17,12 +16,13 @@ use ir::{
     pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, Pattern, Vertex},
     pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
 };
+use itertools::Itertools;
 
 use crate::{
     annotation::{
         fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
-        function::{AnnotatedPreambleFunctions, AnnotatedSchemaFunctions},
-        pipeline::AnnotatedStage,
+        function::{AnnotatedPreambleFunctions, AnnotatedSchemaFunctions, FunctionParameterAnnotation},
+        pipeline::{AnnotatedInputs, AnnotatedStage},
     },
     executable::{
         delete::executable::DeleteExecutable,
@@ -33,17 +33,15 @@ use crate::{
         modifiers::{
             DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
         },
+        next_executable_id,
         put::PutExecutable,
         reduce::{ReduceExecutable, ReduceRowsExecutable},
         update::executable::UpdateExecutable,
-        ExecutableCompilationError,
+        ExecutableCompilationError, InputsExecutable,
     },
     query_structure::ParametrisedPipelineStructure,
     VariablePosition,
 };
-use crate::annotation::function::FunctionParameterAnnotation;
-use crate::annotation::pipeline::AnnotatedInputs;
-use crate::executable::{InputsExecutable, next_executable_id};
 
 #[derive(Debug, Default, Clone)]
 pub struct TypePopulations {
@@ -194,9 +192,11 @@ pub fn compile_pipeline_and_functions(
         annotated_fetch,
         executable_inputs.variables.as_slice(),
     )?;
-    debug_assert!(executable_inputs.variables.iter().enumerate().all(|(i,v)| {
-        _input_positions.get(v) == Some(&VariablePosition::new(i as u32))
-    }));
+    debug_assert!(executable_inputs
+        .variables
+        .iter()
+        .enumerate()
+        .all(|(i, v)| { _input_positions.get(v) == Some(&VariablePosition::new(i as u32)) }));
     debug_assert!(!executable_stages.is_empty());
     Ok(ExecutablePipeline {
         pipeline_structure,

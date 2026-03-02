@@ -30,7 +30,7 @@ use resource::profile::{QueryProfile, StageProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::FixedBatch,
+    batch::{Batch, FixedBatch},
     document::{ConceptDocument, DocumentLeaf, DocumentList, DocumentMap, DocumentNode},
     error::ReadExecutionError,
     pipeline::{
@@ -45,7 +45,6 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt, Provenance,
 };
-use crate::batch::Batch;
 
 macro_rules! exactly_one_or_return_err {
     ($call:expr, $error:expr) => {{
@@ -357,10 +356,7 @@ fn execute_list_subfetch(
     let mut initial_batch = Batch::new(width, 1);
     initial_batch.append(|mut write_to| {
         input_position_mapping.iter().for_each(|(parent_row_position, local_row_position)| {
-            write_to.set(
-                *local_row_position,
-                row[parent_row_position.as_usize()].as_reference().into_owned()
-            );
+            write_to.set(*local_row_position, row[parent_row_position.as_usize()].as_reference().into_owned());
         });
     });
     let pipeline = Pipeline::build_read_pipeline(

@@ -6,39 +6,52 @@
 
 use std::{collections::HashSet, sync::Arc};
 
-use answer::Concept;
-use compiler::{annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline}, executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline}, query_structure::{extract_pipeline_structure_from, extract_query_structure_from}, transformation::transform::apply_transformations, VariablePosition};
+use answer::{variable_value::VariableValue, Concept};
+use compiler::{
+    annotation::{
+        expression::compiled_expression::ExpressionValueType,
+        function::FunctionParameterAnnotation,
+        pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
+    },
+    executable::{
+        pipeline::{compile_pipeline_and_functions, ExecutablePipeline, ExecutableStage},
+        InputsExecutable,
+    },
+    query_structure::{extract_pipeline_structure_from, extract_query_structure_from},
+    transformation::transform::apply_transformations,
+    VariablePosition,
+};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use executor::pipeline::{
-    pipeline::Pipeline,
-    stage::{ReadPipelineStage, WritePipelineStage},
+use encoding::value::{value::Value, ValueEncodable};
+use executor::{
+    batch::Batch,
+    pipeline::{
+        pipeline::Pipeline,
+        stage::{ReadPipelineStage, WritePipelineStage},
+    },
 };
 use function::function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex};
-use ir::{LiteralParseError, pipeline::{
-    fetch::FetchObject,
-    function::Function,
-    function_signature::{FunctionID, HashMapFunctionSignatureIndex},
-    ParameterRegistry, VariableRegistry,
-}, RepresentationError, translation::pipeline::{TranslatedPipeline, TranslatedStage}};
+use ir::{
+    pattern::Vertex,
+    pipeline::{
+        fetch::FetchObject,
+        function::Function,
+        function_signature::{FunctionID, HashMapFunctionSignatureIndex},
+        ParameterRegistry, VariableRegistry,
+    },
+    translation::{
+        literal::{translate_literal, FromTypeQLLiteral},
+        pipeline::{TranslatedInputs, TranslatedPipeline, TranslatedStage},
+    },
+    LiteralParseError, RepresentationError,
+};
 use resource::{
     perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
     profile::{CompileProfile, QueryProfile},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
-use typeql::Literal;
-use typeql::query::SchemaQuery;
-use answer::variable_value::VariableValue;
-use compiler::annotation::expression::compiled_expression::ExpressionValueType;
-use compiler::annotation::function::FunctionParameterAnnotation;
-use compiler::executable::InputsExecutable;
-use compiler::executable::pipeline::ExecutableStage;
-use encoding::value::value::Value;
-use encoding::value::ValueEncodable;
-use executor::batch::Batch;
-use ir::pattern::Vertex;
-use ir::translation::literal::{FromTypeQLLiteral, translate_literal};
-use ir::translation::pipeline::TranslatedInputs;
+use typeql::{query::SchemaQuery, Literal};
 
 use crate::{
     analyse::{
@@ -157,11 +170,9 @@ impl QueryManager {
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch = Arc::new(translated_fetch);
         let arced_parameters = Arc::new(parameters);
-        let executable_pipeline = match self
-            .cache
-            .as_ref()
-            .and_then(|cache| cache.get(arced_preamble.clone(), arced_inputs.clone(), arced_stages.clone(), arced_fetch.clone()))
-        {
+        let executable_pipeline = match self.cache.as_ref().and_then(|cache| {
+            cache.get(arced_preamble.clone(), arced_inputs.clone(), arced_stages.clone(), arced_fetch.clone())
+        }) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
                 executable_pipeline
@@ -190,7 +201,12 @@ impl QueryManager {
         };
 
         let ExecutablePipeline {
-            executable_functions, executable_inputs, executable_stages, executable_fetch, pipeline_structure, ..
+            executable_functions,
+            executable_inputs,
+            executable_stages,
+            executable_fetch,
+            pipeline_structure,
+            ..
         } = executable_pipeline;
         let inputs = translate_and_validate_inputs(source_query, executable_inputs, inputs)?;
 
@@ -246,11 +262,9 @@ impl QueryManager {
         let arced_fetch = Arc::new(translated_fetch);
         let arced_parameters = Arc::new(value_parameters);
 
-        let executable_pipeline = match self
-            .cache
-            .as_ref()
-            .and_then(|cache| cache.get(arced_preamble.clone(), arced_inputs.clone(), arced_stages.clone(), arced_fetch.clone()))
-        {
+        let executable_pipeline = match self.cache.as_ref().and_then(|cache| {
+            cache.get(arced_preamble.clone(), arced_inputs.clone(), arced_stages.clone(), arced_fetch.clone())
+        }) {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
                 executable_pipeline
@@ -273,7 +287,13 @@ impl QueryManager {
                 match executable_pipeline_result {
                     Ok(executable_pipeline) => {
                         if let Some(cache) = self.cache.as_ref() {
-                            cache.insert(arced_preamble, arced_inputs, arced_stages, arced_fetch, executable_pipeline.clone())
+                            cache.insert(
+                                arced_preamble,
+                                arced_inputs,
+                                arced_stages,
+                                arced_fetch,
+                                executable_pipeline.clone(),
+                            )
                         }
                         QUERY_CACHE_MISSES.increment();
                         executable_pipeline
@@ -286,7 +306,12 @@ impl QueryManager {
         };
 
         let ExecutablePipeline {
-            executable_functions, executable_inputs, executable_stages, executable_fetch, pipeline_structure, ..
+            executable_functions,
+            executable_inputs,
+            executable_stages,
+            executable_fetch,
+            pipeline_structure,
+            ..
         } = executable_pipeline;
         let inputs = match translate_and_validate_inputs(source_query, executable_inputs, inputs) {
             Ok(inputs) => inputs,
@@ -397,55 +422,68 @@ impl QueryManager {
     }
 }
 
-fn translate_and_validate_inputs(source_query: &str, inputs_executable: InputsExecutable, inputs_opt: Option<Vec<Vec<Option<String>>>>) -> Result<Batch, Box<QueryError>> {
-    let (inputs, mut batch)  = match (inputs_executable.variables.len(), inputs_opt)  {
+fn translate_and_validate_inputs(
+    source_query: &str,
+    inputs_executable: InputsExecutable,
+    inputs_opt: Option<Vec<Vec<Option<String>>>>,
+) -> Result<Batch, Box<QueryError>> {
+    let (inputs, mut batch) = match (inputs_executable.variables.len(), inputs_opt) {
         (0, None) => return Ok(Batch::new_single_empty_row()),
         (_, None) => return Err(Box::new(QueryError::BadInput {})),
         (width, Some(inputs)) => {
             let capacity = inputs.len();
             (inputs, Batch::new(width as u32, capacity))
-        },
+        }
     };
     inputs.iter().try_for_each(|row| {
         batch.append(|mut write_to| {
-            row.iter().map(|entry_opt| {
-                 if let Some(entry) = entry_opt {
-                     Value::from_typeql_literal(&typeql::parse_value(entry.as_str()).unwrap(), None)
-                         .map(|value| VariableValue::Value(value))
-                         .map_err(|typedb_source| {
-                             let typedb_source = Box::new(RepresentationError::LiteralParseError {
-                                 literal: entry.clone(), source_span: None,  typedb_source
-                             });
-                             Box::new(QueryError::Representation { source_query: source_query.to_owned(), typedb_source })
-                        })
-                 } else {
-                     // Ensure it's optional?
-                     todo!("Ensure it's optional")
-                 }
-            }).enumerate().try_for_each(|(i, value_result)| {
-                Ok::<_, Box<QueryError>>(write_to.set(VariablePosition::new(i as u32), value_result?))
-            })
+            row.iter()
+                .map(|entry_opt| {
+                    if let Some(entry) = entry_opt {
+                        Value::from_typeql_literal(&typeql::parse_value(entry.as_str()).unwrap(), None)
+                            .map(|value| VariableValue::Value(value))
+                            .map_err(|typedb_source| {
+                                let typedb_source = Box::new(RepresentationError::LiteralParseError {
+                                    literal: entry.clone(),
+                                    source_span: None,
+                                    typedb_source,
+                                });
+                                Box::new(QueryError::Representation {
+                                    source_query: source_query.to_owned(),
+                                    typedb_source,
+                                })
+                            })
+                    } else {
+                        // Ensure it's optional?
+                        todo!("Ensure it's optional")
+                    }
+                })
+                .enumerate()
+                .try_for_each(|(i, value_result)| {
+                    Ok::<_, Box<QueryError>>(write_to.set(VariablePosition::new(i as u32), value_result?))
+                })
         })
     })?;
     // validate
     batch.iter().try_for_each(|row| {
-        let types_good = row.iter().zip(inputs_executable.variables.iter()).all(|(entry, variable)| {
-            match entry {
-                VariableValue::Value(value) => {
-                    inputs_executable.annotations.value_type_annotations_of(&Vertex::Variable(*variable)) == Some(&ExpressionValueType::Single(value.value_type()))
-                }
-                VariableValue::Thing(thing) => {
-                    inputs_executable.annotations.vertex_annotations_of(&Vertex::Variable(*variable))
-                        .map_or(false, |allowed_types| allowed_types.contains(&thing.type_()))
-
-                }
-                _ => false,
+        let types_good = row.iter().zip(inputs_executable.variables.iter()).all(|(entry, variable)| match entry {
+            VariableValue::Value(value) => {
+                inputs_executable.annotations.value_type_annotations_of(&Vertex::Variable(*variable))
+                    == Some(&ExpressionValueType::Single(value.value_type()))
             }
+            VariableValue::Thing(thing) => inputs_executable
+                .annotations
+                .vertex_annotations_of(&Vertex::Variable(*variable))
+                .map_or(false, |allowed_types| allowed_types.contains(&thing.type_())),
+            _ => false,
         });
-        if types_good { Ok(()) } else { Err(Box::new(QueryError::BadInput {})) }
+        if types_good {
+            Ok(())
+        } else {
+            Err(Box::new(QueryError::BadInput {}))
+        }
     })?;
     Ok(batch)
-
 }
 
 fn translate_pipeline<Snapshot: ReadableSnapshot>(

@@ -62,7 +62,8 @@ impl QueryStructureAnnotations {
         query_structure: &QueryStructure,
     ) -> Result<Self, Box<ConceptReadError>> {
         // todo!("Use annotated inputs")
-        let AnnotatedPipeline { annotated_stages, annotated_inputs: _, annotated_fetch, annotated_preamble } = &annotated_pipeline;
+        let AnnotatedPipeline { annotated_stages, annotated_inputs: _, annotated_fetch, annotated_preamble } =
+            &annotated_pipeline;
         let pipeline =
             build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), &query_structure.query);
         let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());

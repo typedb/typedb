@@ -6,11 +6,15 @@
 
 use lending_iterator::LendingIterator;
 
-use crate::{batch::{FixedBatch, FixedBatchRowIterator}, pipeline::{
-    stage::{ExecutionContext, StageAPI},
-    PipelineExecutionError, StageIterator,
-}, row::MaybeOwnedRow, ExecutionInterrupt, Provenance};
-use crate::batch::{Batch, BatchRowIterator};
+use crate::{
+    batch::{Batch, BatchRowIterator, FixedBatch, FixedBatchRowIterator},
+    pipeline::{
+        stage::{ExecutionContext, StageAPI},
+        PipelineExecutionError, StageIterator,
+    },
+    row::MaybeOwnedRow,
+    ExecutionInterrupt, Provenance,
+};
 
 pub struct InitialStage<Snapshot> {
     context: ExecutionContext<Snapshot>,
@@ -52,9 +56,7 @@ impl LendingIterator for InitialIterator {
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.iterator.next().map(|row| {
-            Ok(row)
-        })
+        self.iterator.next().map(|row| Ok(row))
     }
 }
 

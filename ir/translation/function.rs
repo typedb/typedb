@@ -155,8 +155,9 @@ pub(crate) fn translate_function_block(
     value_parameters: &mut ParameterRegistry,
     function_block: &FunctionBlock,
 ) -> Result<FunctionBody, Box<FunctionRepresentationError>> {
-    let (_translated_inputs, stages, fetch) = translate_pipeline_stages(function_index, context, value_parameters, &function_block.stages)
-        .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
+    let (_translated_inputs, stages, fetch) =
+        translate_pipeline_stages(function_index, context, value_parameters, &function_block.stages)
+            .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
     debug_assert!(_translated_inputs.is_none());
     let has_illegal_stages = stages.iter().any(|stage| match stage {
         | TranslatedStage::Insert { .. }

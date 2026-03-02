@@ -210,9 +210,7 @@ pub(crate) fn translate_pipeline_stages(
     for (i, stage) in stages.iter().enumerate() {
         let translated = translate_stage(translation_context, value_parameters, all_function_signatures, stage)?;
         match translated {
-            Either::First(stage) => {
-                translated_stages.push(stage)
-            },
+            Either::First(stage) => translated_stages.push(stage),
             Either::Second(Either::First(inputs)) => {
                 if i != 0 {
                     return Err(Box::new(RepresentationError::NonInitialInputs { source_span: stage.span() }));
@@ -241,7 +239,7 @@ fn translate_stage(
     match typeql_stage {
         TypeQLStage::Inputs(inputs) => {
             translate_inputs_stage(translation_context, inputs).map(Either::First).map(Either::Second)
-        },
+        }
         TypeQLStage::Match(match_) => {
             translate_match(translation_context, value_parameters, all_function_signatures, match_).and_then(
                 |builder| {
@@ -262,7 +260,8 @@ fn translate_stage(
         }
         TypeQLStage::Fetch(fetch) => {
             translate_fetch(translation_context, value_parameters, all_function_signatures, fetch)
-                .map(Either::Second).map(Either::Second)
+                .map(Either::Second)
+                .map(Either::Second)
                 .map_err(|err| Box::new(RepresentationError::FetchRepresentation { typedb_source: err }))
         }
         TypeQLStage::Operator(modifier) => match modifier {

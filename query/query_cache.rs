@@ -14,10 +14,9 @@ use compiler::executable::pipeline::ExecutablePipeline;
 use concept::thing::statistics::Statistics;
 use ir::{
     pipeline::{fetch::FetchObject, function::Function},
-    translation::pipeline::TranslatedStage,
+    translation::pipeline::{TranslatedInputs, TranslatedStage},
 };
 use moka::sync::{Cache, CacheBuilder};
-use ir::translation::pipeline::TranslatedInputs;
 use resource::{
     constants::database::{QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE},
     perf_counters::QUERY_CACHE_FLUSH,
@@ -105,7 +104,12 @@ struct IRQuery {
 }
 
 impl IRQuery {
-    fn new(preamable: Arc<Vec<Function>>, inputs: Option<Arc<TranslatedInputs>>, stages: Arc<Vec<TranslatedStage>>, fetch: Arc<Option<FetchObject>>) -> Self {
+    fn new(
+        preamable: Arc<Vec<Function>>,
+        inputs: Option<Arc<TranslatedInputs>>,
+        stages: Arc<Vec<TranslatedStage>>,
+        fetch: Arc<Option<FetchObject>>,
+    ) -> Self {
         Self { preamable, inputs, stages, fetch }
     }
 }
@@ -139,8 +143,11 @@ impl StructuralEquality for IRQuery {
     fn equals(&self, other: &Self) -> bool {
         let inputs_equal = match (self.inputs.as_ref(), other.inputs.as_ref()) {
             (Some(x), Some(y)) => x.equals(y),
-            _ => false
+            _ => false,
         };
-        inputs_equal && self.preamable.equals(&other.preamable) && self.stages.equals(&other.stages) && self.fetch.equals(&other.fetch)
+        inputs_equal
+            && self.preamable.equals(&other.preamable)
+            && self.stages.equals(&other.stages)
+            && self.fetch.equals(&other.fetch)
     }
 }

@@ -1507,24 +1507,25 @@ impl TransactionService {
     }
 }
 
-fn query_inputs_from_proto(inputs: Option<typedb_protocol::query::req::QueryInput>) -> Option<Vec<Vec<Option<String>>>> {
-    inputs
-        .map(|i| {
-            i.rows
-                .into_iter()
-                .map(|row| {
-                    row.entry
-                        .into_iter()
-                        .map(|entry| {
-                            entry.entry.and_then(|entry| match entry {
-                                Entry::Empty(_) => None,
-                                Entry::UnparsedValue(str) => Some(str),
-                            })
+fn query_inputs_from_proto(
+    inputs: Option<typedb_protocol::query::req::QueryInput>,
+) -> Option<Vec<Vec<Option<String>>>> {
+    inputs.map(|i| {
+        i.rows
+            .into_iter()
+            .map(|row| {
+                row.entry
+                    .into_iter()
+                    .map(|entry| {
+                        entry.entry.and_then(|entry| match entry {
+                            Entry::Empty(_) => None,
+                            Entry::UnparsedValue(str) => Some(str),
                         })
-                        .collect()
-                })
-                .collect()
-        })
+                    })
+                    .collect()
+            })
+            .collect()
+    })
 }
 
 #[derive(Debug)]
