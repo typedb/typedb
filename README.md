@@ -160,6 +160,113 @@ Install prerequisites:
 1. Rustup
 2. `brew install protoc`
 
+## PostgreSQL Wire Protocol (pgwire) Endpoint
+
+TypeDB includes a Postgres-compatible wire protocol endpoint that lets you connect with any standard PostgreSQL client (`psql`, JDBC, Python `psycopg2`, etc.) and BI tools (Looker, Power BI, Metabase).
+
+### Connecting
+
+The pgwire endpoint is enabled by default on port **5432**. Connect with `psql`:
+
+```sh
+psql "host=localhost port=5432 user=admin dbname=typedb sslmode=disable"
+```
+
+Default credentials: `admin` / `password`.
+
+### Supported Queries
+
+**Session & metadata:**
+
+```sql
+SELECT version();
+-- TypeDB (PostgreSQL-compatible) via pgwire projection facade
+
+SELECT current_database();
+-- typedb
+
+SELECT current_user;
+-- typedb
+```
+
+**Catalog introspection (`pg_catalog`):**
+
+```sql
+SELECT * FROM pg_catalog.pg_type LIMIT 3;
+--  oid | typname | typnamespace | typlen | typtype | typbasetype
+-- -----+---------+--------------+--------+---------+------------
+--   16 | bool    |           11 |      1 | b       |           0
+--   20 | int8    |           11 |      8 | b       |           0
+--   21 | int2    |           11 |      2 | b       |           0
+
+SELECT * FROM pg_catalog.pg_namespace;
+SELECT * FROM pg_catalog.pg_database;
+SELECT * FROM pg_catalog.pg_am;
+SELECT * FROM pg_catalog.pg_settings LIMIT 5;
+```
+
+**`information_schema` views:**
+
+```sql
+SELECT * FROM information_schema.schemata;
+SELECT * FROM information_schema.tables;
+SELECT * FROM information_schema.columns;
+```
+
+**WHERE, ORDER BY, LIMIT, OFFSET:**
+
+```sql
+SELECT * FROM pg_catalog.pg_type WHERE typname = 'bool';
+--  oid | typname | typnamespace | typlen | typtype | typbasetype
+-- -----+---------+--------------+--------+---------+------------
+--   16 | bool    |           11 |      1 | b       |           0
+
+SELECT * FROM pg_catalog.pg_type WHERE oid > 100 ORDER BY typname LIMIT 4;
+--  oid  |  typname  | typnamespace | typlen | typtype | typbasetype
+-- ------+-----------+--------------+--------+---------+------------
+--   700 | float4    |           11 |      4 | b       |           0
+--   701 | float8    |           11 |      8 | b       |           0
+--  1043 | varchar   |           11 |     -1 | b       |           0
+--  1114 | timestamp |           11 |      8 | b       |           0
+
+SELECT * FROM pg_catalog.pg_type LIMIT 3 OFFSET 5;
+
+SELECT * FROM pg_catalog.pg_type ORDER BY typname DESC;
+```
+
+**BI tool compatibility (no-ops):**
+
+```sql
+SET client_encoding TO 'UTF8';
+BEGIN;
+COMMIT;
+ROLLBACK;
+DISCARD ALL;
+SHOW TABLES;
+```
+
+### Configuration
+
+In `server/config.yml`:
+
+```yaml
+server:
+    pgwire:
+        enabled: true
+        address: 0.0.0.0:5432
+```
+
+### BI Tool Presets
+
+Pre-built connection configs are available in `tools/bi-presets/` for:
+- **Looker** — LookML connection settings
+- **Power BI** — ODBC/native connector config
+- **Metabase** — Database connection template
+
+### dbt Adapter
+
+A thin dbt adapter is available in `tools/dbt-typedb/`. See `tools/dbt-typedb/README.md` for setup.
+
 ## Resources
 
 ### Developer resources

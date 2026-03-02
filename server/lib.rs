@@ -246,9 +246,8 @@ impl Server {
         // Build the query handler backed by the materialized catalog.
         let handler = Arc::new(CatalogQueryHandler::new(catalog));
 
-        // Build the auth mode — cleartext password backed by the server state.
-        let authenticator = Arc::new(ServerStateAuthenticator::new(server_state));
-        let auth_mode = AuthMode::CleartextPassword(authenticator);
+        // Build the auth mode.
+        let auth_mode = AuthMode::CleartextPassword(Arc::new(ServerStateAuthenticator::new(server_state)));
 
         let params = ServerParams::default();
 
