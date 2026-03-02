@@ -129,7 +129,7 @@ pub mod query_util {
         ExecutionInterrupt,
     };
     use function::function_manager::FunctionManager;
-    use query::query_manager::QueryManager;
+    use query::query_manager::{PipelinePayload, QueryManager};
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
 
@@ -137,7 +137,7 @@ pub mod query_util {
 
     pub fn execute_read_pipeline(
         tx: TransactionRead<WALClient>,
-        pipeline: &Pipeline,
+        pipeline: PipelinePayload,
         source_query: &str,
     ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>)
     {
@@ -174,7 +174,7 @@ pub mod query_util {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query_manager: &QueryManager,
-        pipeline: &Pipeline,
+        pipeline: PipelinePayload,
         source_query: &str,
     ) -> (
         Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>,

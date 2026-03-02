@@ -27,7 +27,7 @@ use typeql::{
 
 use crate::LiteralParseError;
 
-pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, LiteralParseError> {
+pub fn translate_literal(literal: &Literal) -> Result<Value<'static>, LiteralParseError> {
     Value::from_typeql_literal(&literal.inner, literal.span())
 }
 

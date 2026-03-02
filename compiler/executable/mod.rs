@@ -4,15 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use error::typedb_error;
 use ir::pattern::constraint::Comparator;
 use typeql::common::Span;
+use answer::variable::Variable;
+use crate::annotation::function::FunctionParameterAnnotation;
+use crate::annotation::type_annotations::TypeAnnotations;
 
 use crate::executable::{
     fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::ConjunctionCompilationError,
 };
+use crate::VariablePosition;
 
 pub mod delete;
 pub mod fetch;
@@ -119,5 +124,24 @@ typedb_error! {
             "Compound expressions are not supported in these statements yet.",
             source_span: Option<Span>,
         ),
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct InputsExecutable {
+    pub executable_id: u64,
+    pub variables: Vec<Variable>,
+    pub annotations: TypeAnnotations,
+}
+
+impl InputsExecutable {
+    pub(crate) fn new(variables: Vec<Variable>, types: TypeAnnotations) -> Self {
+        Self { executable_id: next_executable_id(), annotations: types, variables }
+    }
+
+    fn output_row_mapping(&self) -> HashMap<Variable, VariablePosition> {
+        self.variables.iter().cloned().enumerate().map(|(i, v)| {
+            (v, VariablePosition::new(i as u32))
+        }).collect()
     }
 }

@@ -126,6 +126,7 @@ pub fn extract_pipeline_structure_from(
 ) -> ParametrisedPipelineStructure {
     let branch_ids_allocated = variable_registry.branch_ids_allocated();
     let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
+    // todo!("Add inputs");
     annotated_stages.into_iter().enumerate().for_each(|(index, stage)| builder.add_stage(stage, StageIndex(index)));
     let output_variables = annotated_stages
         .iter()
@@ -187,6 +188,7 @@ pub type PipelineStructureAnnotations = Vec<ConjunctionAnnotations>;
 
 #[derive(Debug, Clone)]
 pub struct ParametrisedPipelineStructure {
+    // TODO: Add inputs
     pub stages: Vec<QueryStructureStage>,
     pub conjunctions: Vec<QueryStructureConjunction>,
     pub output_variables: Vec<StructureVariableId>,
@@ -214,7 +216,7 @@ impl ParametrisedPipelineStructure {
                 | QueryStructureStage::Put { block }
                 | QueryStructureStage::Update { block } => Some(block),
 
-                QueryStructureStage::Select { .. }
+                | QueryStructureStage::Select { .. }
                 | QueryStructureStage::Delete { .. } // Deleted edges are deleted.
                 | QueryStructureStage::Sort { .. }
                 | QueryStructureStage::Offset { .. }
@@ -235,6 +237,7 @@ impl ParametrisedPipelineStructure {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum QueryStructureStage {
+    // TODO: Add inputs
     Match {
         block: QueryStructureConjunctionID,
     },

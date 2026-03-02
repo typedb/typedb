@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
+use tracing::{event, Level};
 
 use answer::variable::Variable;
 use compiler::{
@@ -12,6 +13,7 @@ use compiler::{
     query_structure::{ParametrisedPipelineStructure, PipelineStructure},
     VariablePosition,
 };
+use compiler::executable::InputsExecutable;
 use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
 use ir::pipeline::ParameterRegistry;
@@ -39,6 +41,7 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use crate::batch::Batch;
 
 pub struct Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
     last_stage: Nonterminals,
@@ -125,16 +128,12 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         executable_stages: &[ExecutableStage],
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
-        input: Option<MaybeOwnedRow<'_>>,
+        inputs: Batch,
         query_profile: Arc<QueryProfile>,
     ) -> Result<Self, Box<PipelineError>> {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new_with_profile(snapshot, thing_manager, parameters.clone(), query_profile);
-        let mut last_stage = ReadPipelineStage::Initial(Box::new(
-            input
-                .map(|row| InitialStage::new_with(context.clone(), row))
-                .unwrap_or_else(|| InitialStage::new_empty(context)),
-        ));
+        let mut last_stage = ReadPipelineStage::Initial(Box::new(InitialStage::new(context.clone(), inputs)));
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(conjunction_executable) => {
@@ -205,15 +204,17 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
         thing_manager: Arc<ThingManager>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
+        // executable_inputs: InputsExecutable,
         executable_stages: Vec<ExecutableStage>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
+        inputs: Batch,
         query_profile: Arc<QueryProfile>,
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context =
             ExecutionContext::new_with_profile(Arc::new(snapshot), thing_manager, parameters.clone(), query_profile);
-        let mut last_stage = WritePipelineStage::Initial(Box::new(InitialStage::new_empty(context)));
+        let mut last_stage = WritePipelineStage::Initial(Box::new(InitialStage::new(context, inputs)));
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(conjunction_executable) => {

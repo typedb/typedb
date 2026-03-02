@@ -17,7 +17,10 @@ use function::function_manager::FunctionManager;
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use options::QueryOptions;
-use query::{error::QueryError, query_manager::QueryManager};
+use query::{
+    error::QueryError,
+    query_manager::{PipelinePayload, QueryManager},
+};
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
@@ -72,7 +75,7 @@ pub fn execute_schema_query(
 pub fn execute_write_query_in_schema(
     transaction: TransactionSchema<WALClient>,
     query_options: QueryOptions,
-    pipeline: typeql::query::Pipeline,
+    pipeline: PipelinePayload,
     source_query: String,
     interrupt: ExecutionInterrupt,
 ) -> (TransactionSchema<WALClient>, WriteQueryResult) {
@@ -94,7 +97,7 @@ pub fn execute_write_query_in_schema(
         &function_manager,
         &query_manager,
         query_options,
-        &pipeline,
+        pipeline,
         &source_query,
         interrupt,
     );
@@ -116,7 +119,7 @@ pub fn execute_write_query_in_schema(
 pub fn execute_write_query_in_write(
     transaction: TransactionWrite<WALClient>,
     query_options: QueryOptions,
-    pipeline: typeql::query::Pipeline,
+    pipeline: PipelinePayload,
     source_query: String,
     interrupt: ExecutionInterrupt,
 ) -> (TransactionWrite<WALClient>, WriteQueryResult) {
@@ -138,7 +141,7 @@ pub fn execute_write_query_in_write(
         &function_manager,
         &query_manager,
         query_options,
-        &pipeline,
+        pipeline,
         &source_query,
         interrupt,
     );
@@ -164,7 +167,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
     function_manager: &FunctionManager,
     query_manager: &QueryManager,
     query_options: QueryOptions,
-    pipeline: &typeql::query::Pipeline,
+    pipeline: PipelinePayload,
     source_query: &str,
     interrupt: ExecutionInterrupt,
 ) -> (Snapshot, WriteQueryResult) {

@@ -570,7 +570,7 @@ fn get_function_parameter<V: From<Variable> + Ord>(
     }
 }
 
-fn get_annotations_from_labels(
+pub(super) fn get_annotations_from_labels(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     typeql_label: &NamedTypeAny,

@@ -17,6 +17,7 @@ use ir::{
     translation::pipeline::TranslatedStage,
 };
 use moka::sync::{Cache, CacheBuilder};
+use ir::translation::pipeline::TranslatedInputs;
 use resource::{
     constants::database::{QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE},
     perf_counters::QUERY_CACHE_FLUSH,
@@ -37,21 +38,23 @@ impl QueryCache {
     pub(crate) fn get(
         &self,
         preamble: Arc<Vec<Function>>,
+        inputs: Option<Arc<TranslatedInputs>>,
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
     ) -> Option<ExecutablePipeline> {
-        let key = IRQuery::new(preamble, stages, fetch);
+        let key = IRQuery::new(preamble, inputs, stages, fetch);
         self.cache.get(&key)
     }
 
     pub(crate) fn insert(
         &self,
         preamble: Arc<Vec<Function>>,
+        inputs: Option<Arc<TranslatedInputs>>,
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
         pipeline: ExecutablePipeline,
     ) {
-        let key = IRQuery::new(preamble, stages, fetch);
+        let key = IRQuery::new(preamble, inputs, stages, fetch);
         self.cache.insert(key, pipeline);
     }
 
@@ -96,13 +99,14 @@ impl Default for QueryCache {
 #[derive(Debug)]
 struct IRQuery {
     preamable: Arc<Vec<Function>>,
+    inputs: Option<Arc<TranslatedInputs>>,
     stages: Arc<Vec<TranslatedStage>>,
     fetch: Arc<Option<FetchObject>>,
 }
 
 impl IRQuery {
-    fn new(preamable: Arc<Vec<Function>>, stages: Arc<Vec<TranslatedStage>>, fetch: Arc<Option<FetchObject>>) -> Self {
-        Self { preamable, stages, fetch }
+    fn new(preamable: Arc<Vec<Function>>, inputs: Option<Arc<TranslatedInputs>>, stages: Arc<Vec<TranslatedStage>>, fetch: Arc<Option<FetchObject>>) -> Self {
+        Self { preamable, inputs, stages, fetch }
     }
 }
 
@@ -124,12 +128,19 @@ impl StructuralEquality for IRQuery {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.preamable.hash_into(&mut hasher);
+        if let Some(inputs) = &self.inputs {
+            inputs.hash_into(&mut hasher);
+        }
         self.stages.hash_into(&mut hasher);
         self.fetch.hash_into(&mut hasher);
         hasher.finish()
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.preamable.equals(&other.preamable) && self.stages.equals(&other.stages) && self.fetch.equals(&other.fetch)
+        let inputs_equal = match (self.inputs.as_ref(), other.inputs.as_ref()) {
+            (Some(x), Some(y)) => x.equals(y),
+            _ => false
+        };
+        inputs_equal && self.preamable.equals(&other.preamable) && self.stages.equals(&other.stages) && self.fetch.equals(&other.fetch)
     }
 }

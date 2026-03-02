@@ -61,7 +61,8 @@ impl QueryStructureAnnotations {
         annotated_pipeline: &AnnotatedPipeline,
         query_structure: &QueryStructure,
     ) -> Result<Self, Box<ConceptReadError>> {
-        let AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble } = &annotated_pipeline;
+        // todo!("Use annotated inputs")
+        let AnnotatedPipeline { annotated_stages, annotated_inputs: _, annotated_fetch, annotated_preamble } = &annotated_pipeline;
         let pipeline =
             build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), &query_structure.query);
         let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());
@@ -388,7 +389,7 @@ pub fn get_last_stage_annotations(stages: &[AnnotatedStage]) -> &TypeAnnotations
             | AnnotatedStage::Update { annotations: block_annotations, block, .. } => {
                 Some(block_annotations.type_annotations_of(block.conjunction()).unwrap())
             }
-            | AnnotatedStage::Delete { .. }
+            AnnotatedStage::Delete { .. }
             | AnnotatedStage::Select(_)
             | AnnotatedStage::Sort(_)
             | AnnotatedStage::Offset(_)

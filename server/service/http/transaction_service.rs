@@ -39,7 +39,7 @@ use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
-use query::error::QueryError;
+use query::{error::QueryError, query_manager::PipelinePayload};
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
@@ -157,7 +157,7 @@ pub(crate) struct TransactionService {
     schema_lock_acquire_timeout_millis: Option<u64>,
 
     transaction: Option<Transaction>,
-    query_queue: VecDeque<(TransactionResponder, QueueOptions, typeql::query::Pipeline, String)>,
+    query_queue: VecDeque<(TransactionResponder, QueueOptions, PipelinePayload, String)>,
     running_write_query: Option<(TransactionResponder, JoinHandle<(Transaction, WriteQueryResult)>)>,
 }
 
@@ -514,7 +514,7 @@ impl TransactionService {
     async fn cancel_queued_read_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut write_queries = VecDeque::with_capacity(self.query_queue.len());
         for (responder, query_options, pipeline, source_query) in self.query_queue.drain(0..self.query_queue.len()) {
-            if query_options.is_query() && is_write_pipeline(&pipeline) {
+            if query_options.is_query() && is_write_pipeline(&pipeline.parsed) {
                 write_queries.push_back((responder, query_options, pipeline, source_query));
             } else {
                 respond_else_return_break!(
@@ -560,7 +560,7 @@ impl TransactionService {
     async fn cancel_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut read_queries = VecDeque::with_capacity(self.query_queue.len());
         for (responder, options, pipeline, source) in self.query_queue.drain(0..self.query_queue.len()) {
-            if options.is_query() && is_write_pipeline(&pipeline) {
+            if options.is_query() && is_write_pipeline(&pipeline.parsed) {
                 respond_else_return_break!(
                     responder,
                     TransactionServiceResponse::Err(TransactionServiceError::QueryInterrupted { interrupt })
@@ -577,7 +577,7 @@ impl TransactionService {
         self.finish_running_write_query_no_transmit(interrupt).await?;
         let requests: Vec<_> = self.query_queue.drain(0..self.query_queue.len()).collect();
         for (responder, options, pipeline, source_query) in requests.into_iter() {
-            if options.is_query() && is_write_pipeline(&pipeline) {
+            if options.is_query() && is_write_pipeline(&pipeline.parsed) {
                 let QueueOptions::Query(query_options) = options else { unreachable!() };
                 if let Break(()) = self.run_write_query(responder, query_options, pipeline, source_query).await {
                     return Break(());
@@ -597,9 +597,9 @@ impl TransactionService {
 
         // unblock requests until the first write request, which we begin executing if it exists
         while let Some((responder, queue_options, query_pipeline, source_query)) = self.query_queue.pop_front() {
-            match (queue_options, is_write_pipeline(&query_pipeline)) {
+            match (queue_options, is_write_pipeline(&query_pipeline.parsed)) {
                 (QueueOptions::Analyze, _) => {
-                    if let Break(()) = self.run_analyse_query(responder, query_pipeline, source_query).await {
+                    if let Break(()) = self.run_analyse_query(responder, query_pipeline.parsed, source_query).await {
                         return Break(());
                     }
                 }
@@ -654,25 +654,26 @@ impl TransactionService {
                 }
             }
             typeql::query::QueryStructure::Pipeline(pipeline) => {
+                let payload = PipelinePayload { parsed: pipeline, inputs: None }; // TODO
                 #[allow(clippy::collapsible_else_if)]
-                if is_write_pipeline(&pipeline) {
+                if is_write_pipeline(&payload.parsed) {
                     if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-                        self.query_queue.push_back((responder, QueueOptions::Query(query_options), pipeline, query));
+                        self.query_queue.push_back((responder, QueueOptions::Query(query_options), payload, query));
                         // queued queries are not handled yet so there will be no query response yet
                         Continue(())
                     } else {
-                        self.run_write_query(responder, query_options, pipeline, query).await
+                        self.run_write_query(responder, query_options, payload, query).await
                     }
                 } else {
                     if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-                        self.query_queue.push_back((responder, QueueOptions::Query(query_options), pipeline, query));
+                        self.query_queue.push_back((responder, QueueOptions::Query(query_options), payload, query));
                         // queued queries are not handled yet so there will be no query response yet
                         Continue(())
                     } else {
                         self.blocking_read_query_worker(
                             responder,
                             query_options,
-                            pipeline,
+                            payload,
                             query,
                             StorageCounters::DISABLED,
                         )
@@ -723,7 +724,7 @@ impl TransactionService {
         &mut self,
         responder: TransactionResponder,
         query_options: QueryOptions,
-        pipeline: typeql::query::Pipeline,
+        pipeline: PipelinePayload,
         source_query: String,
     ) -> ControlFlow<(), ()> {
         debug_assert!(self.running_write_query.is_none());
@@ -796,7 +797,7 @@ impl TransactionService {
     fn spawn_blocking_execute_write_query(
         &mut self,
         query_options: QueryOptions,
-        pipeline: typeql::query::Pipeline,
+        pipeline: PipelinePayload,
         source_query: String,
     ) -> Result<JoinHandle<(Transaction, WriteQueryResult)>, TransactionServiceError> {
         debug_assert!(self.running_write_query.is_none());
@@ -945,7 +946,7 @@ impl TransactionService {
         &self,
         responder: TransactionResponder,
         query_options: QueryOptions,
-        pipeline: typeql::query::Pipeline,
+        pipeline: PipelinePayload,
         source_query: String,
         storage_counters: StorageCounters,
     ) -> JoinHandle<ControlFlow<(), ()>> {
@@ -964,7 +965,7 @@ impl TransactionService {
                     &type_manager,
                     thing_manager.clone(),
                     &function_manager,
-                    &pipeline,
+                    pipeline,
                     &source_query,
                 );
                 let pipeline = match pipeline_result {
@@ -1161,7 +1162,8 @@ impl TransactionService {
         };
         if !self.query_queue.is_empty() || self.running_write_query.is_some() {
             // queued queries are not handled yet so there will be no query response yet
-            self.query_queue.push_back((responder, QueueOptions::Analyze, pipeline, query));
+            let payload = PipelinePayload { parsed: pipeline, inputs: None }; // TODO
+            self.query_queue.push_back((responder, QueueOptions::Analyze, payload, query));
             Continue(())
         } else {
             self.run_analyse_query(responder, pipeline, query).await
@@ -1187,7 +1189,7 @@ impl TransactionService {
                     &type_manager,
                     thing_manager.clone(),
                     &function_manager,
-                    &pipeline,
+                    pipeline,
                     &source_query,
                 );
                 let analysed = unwrap_or_execute_else_respond_error_and_return_break!(

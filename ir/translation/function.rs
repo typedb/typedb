@@ -8,9 +8,9 @@ use answer::variable::Variable;
 use error::{needs_update_when_feature_is_implemented, UnimplementedFeature};
 use itertools::Itertools;
 use typeql::{
-    common::Spanned,
+    common::{Span, Spanned},
     schema::definable::function::{
-        FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
+        Argument, FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },
     type_::{NamedType, NamedTypeAny},
 };
@@ -82,22 +82,8 @@ pub fn translate_function_from(
     }
 
     let argument_labels = signature.args.iter().map(|arg| arg.type_.clone()).collect();
-    let args_sources_categories = signature
-        .args
-        .iter()
-        .map(|arg| {
-            let name = arg
-                .var
-                .name()
-                .ok_or(FunctionRepresentationError::NonAnonymousVariableExpected { source_span: arg.var.span() })?
-                .to_owned();
-            Ok::<_, FunctionRepresentationError>((
-                name,
-                arg.var.span(),
-                named_type_any_to_category_and_optionality(&arg.type_),
-            ))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let args_sources_categories =
+        signature.args.iter().map(|arg| function_argument_name_and_category(arg)).collect::<Result<Vec<_>, _>>()?;
 
     let (mut context, arguments) = PipelineTranslationContext::new_function_pipeline(args_sources_categories)
         .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
@@ -152,17 +138,28 @@ pub fn translate_function_from(
     ))
 }
 
+pub(crate) fn function_argument_name_and_category(
+    arg: &Argument,
+) -> Result<(String, Option<Span>, (VariableCategory, VariableOptionality)), FunctionRepresentationError> {
+    let name = arg
+        .var
+        .name()
+        .ok_or(FunctionRepresentationError::NonAnonymousVariableExpected { source_span: arg.var.span() })?
+        .to_owned();
+    Ok::<_, FunctionRepresentationError>((name, arg.var.span(), named_type_any_to_category_and_optionality(&arg.type_)))
+}
+
 pub(crate) fn translate_function_block(
     function_index: &impl FunctionSignatureIndex,
     context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_block: &FunctionBlock,
 ) -> Result<FunctionBody, Box<FunctionRepresentationError>> {
-    let (stages, fetch) = translate_pipeline_stages(function_index, context, value_parameters, &function_block.stages)
+    let (_translated_inputs, stages, fetch) = translate_pipeline_stages(function_index, context, value_parameters, &function_block.stages)
         .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
-
+    debug_assert!(_translated_inputs.is_none());
     let has_illegal_stages = stages.iter().any(|stage| match stage {
-        TranslatedStage::Insert { .. }
+        | TranslatedStage::Insert { .. }
         | TranslatedStage::Update { .. }
         | TranslatedStage::Put { .. }
         | TranslatedStage::Delete { .. } => true,

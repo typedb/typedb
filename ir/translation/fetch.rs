@@ -155,9 +155,10 @@ fn translate_fetch_list(
         FetchStream::SubQueryFetch(stages) => {
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
-            let (translated_stages, subfetch) =
+            let (_translated_inputs, translated_stages, subfetch) =
                 translate_pipeline_stages(function_index, &mut local_context, value_parameters, stages)
                     .map_err(|err| FetchRepresentationError::SubFetchRepresentation { typedb_source: err })?;
+            debug_assert!(_translated_inputs.is_none());
             if let Some(subfetch) = subfetch {
                 let input_variables = find_sub_fetch_inputs(parent_context, &translated_stages, &subfetch);
                 Ok(FetchSome::ListSubFetch(FetchListSubFetch {

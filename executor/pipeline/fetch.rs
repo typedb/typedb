@@ -45,6 +45,7 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt, Provenance,
 };
+use crate::batch::Batch;
 
 macro_rules! exactly_one_or_return_err {
     ($call:expr, $error:expr) => {{
@@ -352,41 +353,28 @@ fn execute_list_subfetch(
     executable_subfetch: &ExecutableFetchListSubFetch,
 ) -> Result<DocumentNode, FetchExecutionError> {
     let ExecutableFetchListSubFetch { input_position_mapping, variable_registry, stages, fetch } = executable_subfetch;
-
-    let pipeline = if input_position_mapping.is_empty() {
-        Pipeline::build_read_pipeline(
-            snapshot,
-            thing_manager,
-            variable_registry.variable_names(),
-            None,
-            functions_registry,
-            stages,
-            Some(fetch.clone()),
-            parameters,
-            None,
-            query_profile,
-        )
-    } else {
-        let max_position = input_position_mapping.values().max().map(|pos| pos.as_usize()).unwrap();
-        let mut initial_row = vec![VariableValue::None; max_position + 1];
+    let width = input_position_mapping.values().max().map(|pos| pos.as_usize() as u32 + 1).unwrap_or(0);
+    let mut initial_batch = Batch::new(width, 1);
+    initial_batch.append(|mut write_to| {
         input_position_mapping.iter().for_each(|(parent_row_position, local_row_position)| {
-            initial_row[local_row_position.as_usize()] =
-                row[parent_row_position.as_usize()].as_reference().into_owned();
+            write_to.set(
+                *local_row_position,
+                row[parent_row_position.as_usize()].as_reference().into_owned()
+            );
         });
-        let initial_row = MaybeOwnedRow::new_owned(initial_row, row.multiplicity(), Provenance::INITIAL);
-        Pipeline::build_read_pipeline(
-            snapshot,
-            thing_manager,
-            variable_registry.variable_names(),
-            None,
-            functions_registry,
-            stages,
-            Some(fetch.clone()),
-            parameters,
-            Some(initial_row),
-            query_profile,
-        )
-    }
+    });
+    let pipeline = Pipeline::build_read_pipeline(
+        snapshot,
+        thing_manager,
+        variable_registry.variable_names(),
+        None,
+        functions_registry,
+        stages,
+        Some(fetch.clone()),
+        parameters,
+        initial_batch,
+        query_profile,
+    )
     .map_err(|typedb_source| FetchExecutionError::Pipeline { typedb_source })?;
 
     let (iterator, _context) = pipeline

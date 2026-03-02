@@ -6,29 +6,20 @@
 
 use lending_iterator::LendingIterator;
 
-use crate::{
-    batch::{FixedBatch, FixedBatchRowIterator},
-    pipeline::{
-        stage::{ExecutionContext, StageAPI},
-        PipelineExecutionError, StageIterator,
-    },
-    row::MaybeOwnedRow,
-    ExecutionInterrupt,
-};
+use crate::{batch::{FixedBatch, FixedBatchRowIterator}, pipeline::{
+    stage::{ExecutionContext, StageAPI},
+    PipelineExecutionError, StageIterator,
+}, row::MaybeOwnedRow, ExecutionInterrupt, Provenance};
+use crate::batch::{Batch, BatchRowIterator};
 
 pub struct InitialStage<Snapshot> {
     context: ExecutionContext<Snapshot>,
-    initial_batch: FixedBatch,
+    initial_batch: Batch,
 }
 
 impl<Snapshot> InitialStage<Snapshot> {
-    pub fn new_empty(context: ExecutionContext<Snapshot>) -> Self {
-        Self { context, initial_batch: FixedBatch::SINGLE_EMPTY_ROW }
-    }
-
-    pub fn new_with(context: ExecutionContext<Snapshot>, initial_row: MaybeOwnedRow<'_>) -> Self {
-        let batch = FixedBatch::from(initial_row);
-        Self { context, initial_batch: batch }
+    pub fn new(context: ExecutionContext<Snapshot>, initial_batch: Batch) -> Self {
+        Self { context, initial_batch }
     }
 }
 
@@ -47,13 +38,13 @@ impl<Snapshot> StageAPI<Snapshot> for InitialStage<Snapshot> {
 }
 
 pub struct InitialIterator {
-    iterator: Box<FixedBatchRowIterator>,
+    iterator: Box<BatchRowIterator>,
     index: u32,
 }
 
 impl InitialIterator {
-    fn new(batch: FixedBatch) -> Self {
-        Self { iterator: Box::new(FixedBatchRowIterator::new(Ok(batch))), index: 0 }
+    fn new(batch: Batch) -> Self {
+        Self { iterator: Box::new(batch.into_iterator()), index: 0 }
     }
 }
 
@@ -61,8 +52,8 @@ impl LendingIterator for InitialIterator {
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.iterator.next().map(|result| {
-            result.map_err(|err| Box::new(PipelineExecutionError::ReadPatternExecution { typedb_source: err.clone() }))
+        self.iterator.next().map(|row| {
+            Ok(row)
         })
     }
 }

@@ -201,6 +201,11 @@ typedb_error! {
             rhs_category: VariableCategory,
             source_span: Option<Span>,
         ),
+        NonInitialInputs(
+            29,
+            "Inputs clauses must be the first clause in a query pipeline.",
+            source_span: Option<Span>,
+        ),
         LabelWithLabel(
             30,
             "Specifying a label constraint on a label is not allowed.",

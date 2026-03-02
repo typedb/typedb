@@ -12,7 +12,7 @@ use database::transaction::{
 use diagnostics::metrics::LoadKind;
 use error::typedb_error;
 use executor::{pipeline::PipelineExecutionError, InterruptType};
-use query::error::QueryError;
+use query::{error::QueryError, query_manager::PipelinePayload};
 use resource::constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS;
 use storage::durability_client::WALClient;
 use tokio::time::Instant;
@@ -57,7 +57,7 @@ pub(crate) fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
     for stage in &pipeline.stages {
         match stage {
             Stage::Insert(_) | Stage::Put(_) | Stage::Delete(_) | Stage::Update(_) => return true,
-            Stage::Fetch(_) | Stage::Operator(_) | Stage::Match(_) => {}
+            Stage::Inputs(_) | Stage::Fetch(_) | Stage::Operator(_) | Stage::Match(_) => {}
         }
     }
     false

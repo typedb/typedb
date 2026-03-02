@@ -34,6 +34,7 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
+use ir::translation::pipeline::TranslatedInputs;
 
 use crate::{
     annotation::{
@@ -44,8 +45,9 @@ use crate::{
         },
         fetch::{annotate_fetch, AnnotatedFetch},
         function::{
-            annotate_preamble_functions, AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl,
-            AnnotatedPreambleFunctions, AnnotatedSchemaFunctions, FunctionParameterAnnotation,
+            annotate_preamble_functions, get_annotations_from_labels, AnnotatedFunctionSignatures,
+            AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions, AnnotatedSchemaFunctions,
+            FunctionParameterAnnotation,
         },
         match_inference::infer_types,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
@@ -58,8 +60,15 @@ use crate::{
 
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedPreambleFunctions,
+    pub annotated_inputs: AnnotatedInputs,
     pub annotated_stages: Vec<AnnotatedStage>,
     pub annotated_fetch: Option<AnnotatedFetch>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AnnotatedInputs {
+    pub variables: Vec<Variable>,
+    pub annotations: TypeAnnotations,
 }
 
 #[derive(Debug, Clone)]
@@ -110,6 +119,7 @@ pub fn annotate_preamble_and_pipeline(
     variable_registry: &mut VariableRegistry,
     parameters: &ParameterRegistry,
     translated_preamble: Vec<Function>,
+    translated_inputs: Option<TranslatedInputs>,
     translated_stages: Vec<TranslatedStage>,
     translated_fetch: Option<FetchObject>,
 ) -> Result<AnnotatedPipeline, AnnotationError> {
@@ -118,6 +128,9 @@ pub fn annotate_preamble_and_pipeline(
             .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
     let combined_signature_annotations =
         AnnotatedFunctionSignaturesImpl::new(&schema_function_annotations, &annotated_preamble);
+
+    let (annotated_inputs, input_type_annotations, input_value_type_annotations) =
+        annotate_inputs(snapshot, type_manager, translated_inputs)?;
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
         snapshot,
         type_manager,
@@ -126,10 +139,10 @@ pub fn annotate_preamble_and_pipeline(
         parameters,
         translated_stages,
         translated_fetch,
-        BTreeMap::new(),
-        BTreeMap::new(),
+        input_type_annotations,
+        input_value_type_annotations,
     )?;
-    Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
+    Ok(AnnotatedPipeline { annotated_stages, annotated_inputs, annotated_fetch, annotated_preamble })
 }
 
 pub(crate) fn annotate_stages_and_fetch(
@@ -171,6 +184,54 @@ pub(crate) fn annotate_stages_and_fetch(
         }
     };
     Ok((annotated_stages, annotated_fetch))
+}
+
+fn annotate_inputs(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    translated_inputs: Option<TranslatedInputs>,
+) -> Result<(AnnotatedInputs, BTreeMap<Variable, Arc<BTreeSet<Type>>>, BTreeMap<Variable, ExpressionValueType>), AnnotationError> {
+    match translated_inputs {
+        None => {
+            let annotations = TypeAnnotations::new(BTreeMap::new(), HashMap::new());
+            Ok((AnnotatedInputs { variables: Vec::new(), annotations }, BTreeMap::new(), BTreeMap::new()))
+        }
+        Some(TranslatedInputs { variables, labels, .. }) => {
+            let mut vertex = BTreeMap::new();
+            let constraints = HashMap::new();
+            let mut value_type_annotations = BTreeMap::new();
+            variables.iter().zip(labels.iter()).try_for_each(|(var, label)| {
+                let arg_annotation = get_annotations_from_labels(snapshot, type_manager, label)
+                    .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+                match arg_annotation {
+                    FunctionParameterAnnotation::Concept(types) => {
+                        vertex.insert(Vertex::Variable(*var), Arc::new(types.clone()));
+                    }
+                    FunctionParameterAnnotation::Value(type_) => {
+                        value_type_annotations.insert(Vertex::Variable(*var), ExpressionValueType::Single(type_));
+                    }
+                }
+                Ok(())
+            })?;
+            let annotations = TypeAnnotations::new_with_value_annotations(vertex.clone(), constraints, value_type_annotations.clone());
+
+            // Convert to running annotations format
+            let mut running_type_annotations = BTreeMap::new();
+            for (vertex, types) in vertex {
+                if let Vertex::Variable(var) = vertex {
+                    running_type_annotations.insert(var, types);
+                }
+            }
+            let mut running_value_annotations = BTreeMap::new();
+            for (vertex, val_type) in value_type_annotations {
+                if let Vertex::Variable(var) = vertex {
+                    running_value_annotations.insert(var, val_type);
+                }
+            }
+
+            Ok((AnnotatedInputs { variables, annotations }, running_type_annotations, running_value_annotations))
+        }
+    }
 }
 
 pub(crate) fn annotate_pipeline_stages(

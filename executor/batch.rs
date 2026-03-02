@@ -192,7 +192,7 @@ pub struct Batch {
 }
 
 impl Batch {
-    pub(crate) fn new(width: u32, capacity: usize) -> Self {
+    pub fn new(width: u32, capacity: usize) -> Self {
         let size = width as usize * capacity;
         Batch {
             width,
@@ -200,6 +200,12 @@ impl Batch {
             multiplicities: Vec::with_capacity(capacity),
             provenance: Vec::with_capacity(capacity),
         }
+    }
+
+    pub fn new_single_empty_row() -> Batch {
+        let mut this = Self::new(0, 1);
+        this.append_row(MaybeOwnedRow::empty());
+        this
     }
 
     pub fn len(&self) -> usize {
@@ -227,7 +233,7 @@ impl Batch {
         self.append(|mut appended| appended.copy_from_row(row))
     }
 
-    pub(crate) fn append<T>(&mut self, writer: impl FnOnce(Row<'_>) -> T) -> T {
+    pub fn append<T>(&mut self, writer: impl FnOnce(Row<'_>) -> T) -> T {
         self.data.resize(self.data.len() + self.width as usize, VariableValue::None);
         self.multiplicities.push(1);
         self.provenance.push(Provenance::INITIAL);

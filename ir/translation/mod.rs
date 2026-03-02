@@ -49,16 +49,25 @@ impl PipelineTranslationContext {
     pub fn new_function_pipeline(
         input_variables: Vec<(String, Option<Span>, (VariableCategory, VariableOptionality))>,
     ) -> Result<(Self, Vec<Variable>), Box<RepresentationError>> {
+        let mut this = Self::new();
         let mut last_stage_visible_variables = HashMap::new();
         let mut variable_registry = VariableRegistry::new();
         let mut variables = Vec::with_capacity(input_variables.len());
-        for (name, source_span, (category, _optionality)) in input_variables {
-            let variable = variable_registry.register_function_argument(name.as_str(), category, source_span)?;
-            last_stage_visible_variables.insert(name.clone(), variable);
-            variables.push(variable);
+        for input_variable in input_variables {
+            variables.push(this.register_input_variable(input_variable)?);
         }
         let this = Self { variable_registry, last_stage_visible_variables };
         Ok((this, variables))
+    }
+
+    pub(crate) fn register_input_variable(
+        &mut self,
+        input_variable: (String, Option<Span>, (VariableCategory, VariableOptionality)),
+    ) -> Result<Variable, Box<RepresentationError>> {
+        let (name, source_span, (category, _optionality)) = input_variable;
+        let variable = self.variable_registry.register_function_argument(name.as_str(), category, source_span)?;
+        self.last_stage_visible_variables.insert(name.clone(), variable);
+        Ok(variable)
     }
 
     pub fn new_block_builder_context<'a>(
