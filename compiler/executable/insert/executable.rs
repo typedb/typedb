@@ -67,7 +67,7 @@ pub fn compile(
         .unwrap_or(true));
     let mut variable_positions = desired_output_variable_positions.unwrap_or_else(|| input_variables.clone());
 
-    let concept_instructions = add_inserted_concepts(
+    let concept_instructions_map = add_inserted_concepts(
         block.conjunction(),
         block_annotations,
         variable_registry,
@@ -100,6 +100,11 @@ pub fn compile(
         return Err(Box::new(WriteCompilationError::OptionalVariableUsedOutsideTry { source_span, variable }));
     }
 
+    let input_variables_for_nested = input_variables
+        .iter()
+        .map(|(v, p)| (v.clone(), p.clone()))
+        .chain(concept_instructions_map.iter().map(|(var, instr)| (var.clone(), instr.inserted_position().0)))
+        .collect::<HashMap<Variable, VariablePosition>>();
     let mut optional_inserts = Vec::with_capacity(block.conjunction().nested_patterns().len());
     for nested_pattern in block.conjunction().nested_patterns() {
         let NestedPattern::Optional(optional) = nested_pattern else {
@@ -110,11 +115,12 @@ pub fn compile(
             block_annotations,
             &mut variable_positions,
             variable_registry,
-            input_variables,
+            &input_variables_for_nested,
             source_span,
         )?);
     }
 
+    let concept_instructions = concept_instructions_map_to_vec(concept_instructions_map);
     Ok(InsertExecutable {
         executable_id: next_executable_id(),
         concept_instructions,
@@ -140,7 +146,7 @@ impl OptionalInsert {
         input_variables: &HashMap<Variable, VariablePosition>,
         stage_source_span: Option<Span>,
     ) -> Result<Self, Box<WriteCompilationError>> {
-        let concept_instructions = add_inserted_concepts(
+        let concept_instructions_map = add_inserted_concepts(
             optional.conjunction(),
             block_annotations,
             variable_registry,
@@ -165,6 +171,7 @@ impl OptionalInsert {
             .filter_map(|id| input_variables.get(&id).copied())
             .collect();
 
+        let concept_instructions = concept_instructions_map_to_vec(concept_instructions_map);
         Ok(Self { concept_instructions, connection_instructions, required_input_variables })
     }
 }
@@ -176,7 +183,7 @@ pub(crate) fn add_inserted_concepts(
     input_variables: &HashMap<Variable, VariablePosition>,
     output_variables: &mut HashMap<Variable, VariablePosition>,
     stage_source_span: Option<Span>,
-) -> Result<Vec<ConceptInstruction>, Box<WriteCompilationError>> {
+) -> Result<HashMap<Variable, ConceptInstruction>, Box<WriteCompilationError>> {
     let constraints = conjunction.constraints();
     let type_annotations =
         block_annotations.type_annotations_of(conjunction).expect("insert conjunction must have type annotations");
@@ -293,9 +300,7 @@ pub(crate) fn add_inserted_concepts(
             }
         };
     }
-    let concept_instructions_vec =
-        concept_instructions.into_values().sorted_by_key(ConceptInstruction::inserted_position).collect();
-    Ok(concept_instructions_vec)
+    Ok(concept_instructions)
 }
 
 fn add_connections(
@@ -531,4 +536,10 @@ pub(crate) fn resolve_links_roles(
             }
         })
         .collect()
+}
+
+pub(crate) fn concept_instructions_map_to_vec(
+    as_map: HashMap<Variable, ConceptInstruction>,
+) -> Vec<ConceptInstruction> {
+    as_map.into_values().sorted_by_key(ConceptInstruction::inserted_position).collect()
 }
