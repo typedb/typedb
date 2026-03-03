@@ -52,6 +52,9 @@ features = {}
 	[dependencies.resource]
 		workspace = true
 
+	[dependencies.fail_point]
+		workspace = true
+
 	[dependencies.logger]
 		workspace = true
 
