@@ -30,9 +30,7 @@ features = {}
 		workspace = true
 
 	[dependencies.ir]
-		path = "../../../../ir"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.typeql]
 		workspace = true
