@@ -23,6 +23,14 @@ use server::{
 use tokio::runtime::Runtime;
 
 fn main() {
+    #[cfg(not(debug_assertions))]
+    if std::env::var(fail_point::FAIL_POINT_ENV).is_ok() {
+        tracing::warn!(
+            "{} is set, but `debug_assertions` are not enabled; fail points will not trigger",
+            FAIL_POINT_ENV
+        );
+    }
+
     initialise_abort_on_panic();
     let cli_args: CLIArgs = CLIArgs::parse();
     let config_file = match cli_args.config_file_override.as_ref() {
