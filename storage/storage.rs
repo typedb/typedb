@@ -19,6 +19,11 @@ use std::{
 
 use ::error::typedb_error;
 use bytes::{byte_array::ByteArray, Bytes};
+use fail_point::{
+    fail_point, COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS, COMMIT_DATA_UNSYNC_IN_WAL,
+    COMMIT_REJECTED_WITHOUT_PERSISTING_STATUS, STORAGE_DELETED_KEYSPACES_BUT_NOT_WAL, STORAGE_EMPTY_STORAGE_DIR,
+    STORAGE_MISSING_STORAGE_DIR,
+};
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use keyspace::KeyspaceDeleteError;
@@ -90,6 +95,7 @@ impl<Durability> MVCCStorage<Durability> {
             name: name.as_ref().to_owned(),
             source: Arc::new(error),
         })?;
+        fail_point!(STORAGE_EMPTY_STORAGE_DIR);
         Self::register_durability_record_types(&mut durability_client);
         let keyspaces = Self::create_keyspaces::<KS>(name.as_ref(), &storage_dir)?;
 
@@ -134,8 +140,10 @@ impl<Durability> MVCCStorage<Durability> {
         } else {
             fs::remove_dir_all(&storage_dir)
                 .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
+            fail_point!(STORAGE_MISSING_STORAGE_DIR);
             fs::create_dir_all(&storage_dir)
                 .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
+            fail_point!(STORAGE_EMPTY_STORAGE_DIR);
             let keyspaces = Self::create_keyspaces::<KS>(name, &storage_dir)?;
             trace!("No checkpoint found, loading from WAL");
             let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
@@ -240,6 +248,8 @@ impl<Durability> MVCCStorage<Durability> {
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
         commit_profile.snapshot_durable_write_data_submitted();
 
+        fail_point!(COMMIT_DATA_UNSYNC_IN_WAL);
+
         let sync_notifier = self.durability_client.request_sync();
         let validate_result =
             self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
@@ -257,6 +267,8 @@ impl<Durability> MVCCStorage<Durability> {
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_storage_written();
 
+                fail_point!(COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS);
+
                 // Inform the isolation manager and increment the watermark
                 self.isolation_manager
                     .applied(commit_sequence_number)
@@ -272,6 +284,8 @@ impl<Durability> MVCCStorage<Durability> {
             Ok(ValidatedCommit::Conflict(conflict)) => {
                 sync_notifier.recv().unwrap();
                 commit_profile.snapshot_durable_write_data_confirmed();
+
+                fail_point!(COMMIT_REJECTED_WITHOUT_PERSISTING_STATUS);
 
                 Self::persist_commit_status(false, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
@@ -356,9 +370,13 @@ impl<Durability> MVCCStorage<Durability> {
 
         self.keyspaces.delete().map_err(|errs| KeyspaceDelete { name: self.name.clone(), errors: errs })?;
 
+        fail_point!(STORAGE_DELETED_KEYSPACES_BUT_NOT_WAL);
+
         self.durability_client
             .delete_durability()
             .map_err(|err| DurabilityDelete { name: self.name.clone(), typedb_source: err })?;
+
+        fail_point!(STORAGE_EMPTY_STORAGE_DIR);
 
         if self.path.exists() {
             std::fs::remove_dir_all(&self.path).map_err(|error| {

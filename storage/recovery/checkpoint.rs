@@ -15,6 +15,7 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use error::typedb_error;
+use fail_point::{fail_point, CHECKPOINT_CLEANUP_FAIL, CHECKPOINT_DIR_CREATE_FAIL, CHECKPOINT_METADATA_WRITE_FAIL};
 use itertools::Itertools;
 use same_file::is_same_file;
 use tracing::{debug, trace};
@@ -242,6 +243,8 @@ impl CheckpointWriter {
             .checkpoint(&self.temporary_directory)
             .map_err(|error| KeyspaceCheckpoint { dir: self.temporary_directory.clone(), source: error })?;
 
+        fail_point!(CHECKPOINT_METADATA_WRITE_FAIL);
+
         let metadata_file_path = self.temporary_directory.join(STORAGE_METADATA_FILE_NAME);
         write_file(&metadata_file_path, watermark.number().to_string().as_bytes())
             .map_err(|e| MetadataWrite { file_path: metadata_file_path, source: Arc::new(e) })?;
@@ -276,8 +279,12 @@ impl CheckpointWriter {
             return Err(MissingStorageData { dir: self.temporary_directory.clone() });
         }
 
+        fail_point!(CHECKPOINT_DIR_CREATE_FAIL);
+
         fs::rename(&self.temporary_directory, &self.checkpoint_directory)
             .map_err(|error| CheckpointDirCreate { dir: self.checkpoint_directory.clone(), source: Arc::new(error) })?;
+
+        fail_point!(CHECKPOINT_CLEANUP_FAIL);
 
         let previous_checkpoints: Vec<_> = fs::read_dir(self.checkpoint_directory.parent().unwrap())
             .and_then(|entries| {

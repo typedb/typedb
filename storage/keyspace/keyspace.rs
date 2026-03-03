@@ -12,6 +12,7 @@ use std::{
 };
 
 use bytes::{util::MB, Bytes};
+use fail_point::{fail_point, KEYSPACE_CHECKPOINT_FAIL, KEYSPACE_DELETE_FAIL, KEYSPACE_OPEN_FAIL};
 use itertools::Itertools;
 use resource::{constants::storage::ROCKSDB_CACHE_SIZE_MB, profile::StorageCounters};
 use rocksdb::{checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
@@ -74,6 +75,7 @@ impl Keyspaces {
             keyspaces
                 .validate_new_keyspace(keyspace)
                 .map_err(|error| KeyspaceOpenError::Validation { source: error })?;
+            fail_point!(KEYSPACE_OPEN_FAIL);
             keyspaces.keyspaces.push(Keyspace::open(path, keyspace, &keyspace.rocks_configuration(&cache))?);
             keyspaces.index[keyspace.id().0 as usize] = Some(KeyspaceId(keyspaces.keyspaces.len() as u8 - 1));
         }
@@ -122,13 +124,21 @@ impl Keyspaces {
 
     pub(crate) fn checkpoint(&self, current_checkpoint_dir: &Path) -> Result<(), KeyspaceCheckpointError> {
         for keyspace in &self.keyspaces {
+            fail_point!(KEYSPACE_CHECKPOINT_FAIL);
             keyspace.checkpoint(current_checkpoint_dir)?;
         }
         Ok(())
     }
 
     pub(crate) fn delete(self) -> Result<(), Vec<KeyspaceDeleteError>> {
-        let errors = self.keyspaces.into_iter().filter_map(|keyspace| keyspace.delete().err()).collect_vec();
+        let errors = self
+            .keyspaces
+            .into_iter()
+            .filter_map(|keyspace| {
+                fail_point!(KEYSPACE_DELETE_FAIL);
+                keyspace.delete().err()
+            })
+            .collect_vec();
         if !errors.is_empty() {
             return Err(errors);
         }
@@ -232,7 +242,7 @@ impl Keyspace {
     }
 
     pub(crate) fn prefix_length(&self) -> Option<usize> {
-        self.prefix_length.clone()
+        self.prefix_length
     }
 
     pub(crate) fn put(&self, key: &[u8], value: &[u8]) -> Result<(), KeyspaceError> {

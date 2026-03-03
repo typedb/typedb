@@ -38,6 +38,7 @@ use encoding::{
     EncodingKeyspace,
 };
 use error::typedb_error;
+use fail_point::{fail_point, UNFINISHED_CHECKPOINT};
 use function::{function_cache::FunctionCache, FunctionError};
 use query::query_cache::QueryCache;
 use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
@@ -47,7 +48,7 @@ use storage::{
     sequence_number::SequenceNumber,
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
-use tracing::{debug, event, Level};
+use tracing::{debug, event, trace, Level};
 
 use crate::{
     transaction::TransactionError,
@@ -287,7 +288,7 @@ impl Database<WALClient> {
             schema_txn_lock.clone(),
             query_cache.clone(),
         );
-        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), name.to_owned(), SequenceNumber::MIN, storage.clone());
+        let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
 
         Ok(Database::<WALClient> {
             name: name.to_owned(),
@@ -393,7 +394,7 @@ impl Database<WALClient> {
             query_cache.clone(),
         );
         let checkpoint_fn =
-            make_checkpoint_fn(path.to_owned(), name.to_owned(), checkpoint_sequence_number, storage.clone());
+            make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
 
         let database = Database::<WALClient> {
             name: name.to_owned(),
@@ -421,14 +422,12 @@ impl Database<WALClient> {
     }
 
     fn checkpoint(&self) -> Result<(), CheckpointCreateError> {
-        let checkpoint = CheckpointWriter::new(&self.path)?;
-        self.storage.checkpoint(&checkpoint)?;
-        checkpoint.finish()?;
-        Ok(())
+        checkpoint_storage(&self.name, &self.path, &self.storage)
     }
 
     #[allow(clippy::drop_non_drop)]
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
+        trace!("Deleting database '{}'.", self.name);
         drop(self._statistics_updater);
         drop(self._checkpointer);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
@@ -508,22 +507,32 @@ impl Database<WALClient> {
 }
 
 fn make_checkpoint_fn(
-    path: PathBuf,
     database_name: String,
+    path: PathBuf,
     mut prev_checkpoint: SequenceNumber,
     storage: Arc<MVCCStorage<WALClient>>,
 ) -> impl FnMut() {
     move || {
         let watermark = storage.snapshot_watermark();
         if prev_checkpoint < watermark {
-            debug!("Starting checkpoint for database {database_name}");
-            let checkpoint = CheckpointWriter::new(&path).unwrap();
-            storage.checkpoint(&checkpoint).unwrap();
-            checkpoint.finish().unwrap();
-            debug!("Finished checkpoint for database {database_name}");
+            checkpoint_storage(&database_name, &path, &storage).unwrap();
             prev_checkpoint = watermark;
         }
     }
+}
+
+fn checkpoint_storage(
+    database_name: &str,
+    path: &Path,
+    storage: &MVCCStorage<WALClient>,
+) -> Result<(), CheckpointCreateError> {
+    debug!("Starting checkpoint for database {database_name}");
+    let checkpoint = CheckpointWriter::new(path)?;
+    storage.checkpoint(&checkpoint)?;
+    fail_point!(UNFINISHED_CHECKPOINT);
+    checkpoint.finish()?;
+    debug!("Finished checkpoint for database {database_name}");
+    Ok(())
 }
 
 fn make_update_statistics_fn(
