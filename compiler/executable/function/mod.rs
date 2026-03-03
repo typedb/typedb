@@ -64,9 +64,14 @@ impl ExecutableFunctionRegistry {
         self.schema_functions.clone()
     }
 
-    pub fn replace_preamble_parameters(&mut self, preamble_parameters: impl Iterator<Item = Arc<ParameterRegistry>>) {
-        self.preamble_functions.iter_mut().zip(preamble_parameters.into_iter()).for_each(|(mut func, params)| {
-            (&mut func.1).parameter_registry = params;
+    pub fn replace_preamble_parameters(
+        &mut self,
+        preamble_parameters: impl Iterator<Item = (usize, Arc<ParameterRegistry>)>,
+    ) {
+        preamble_parameters.for_each(|(index, params)| {
+            if let Some(func) = self.preamble_functions.get_mut(&index) {
+                func.parameter_registry = params;
+            }
         })
     }
 }

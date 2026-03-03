@@ -42,7 +42,7 @@ impl QueryCache {
     ) -> Option<ExecutablePipeline> {
         let key = IRQuery::new(preamble.clone(), stages, fetch);
         self.cache.get(&key).map(|mut found| {
-            let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone()));
+            let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();
             found.executable_functions.replace_preamble_parameters(replacement);
             found
         })
