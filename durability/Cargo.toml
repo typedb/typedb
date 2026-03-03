@@ -46,6 +46,9 @@ features = {}
 	[dependencies.lz4]
 		workspace = true
 
+	[dependencies.fail_point]
+		workspace = true
+
 	[dependencies.error]
 		workspace = true
 
