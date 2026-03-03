@@ -7,7 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use clap::Parser;
 use logger::initialise_logging_global;
