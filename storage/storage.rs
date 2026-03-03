@@ -447,6 +447,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     // --- direct access to storage, bypassing MVCC and returning raw key/value pairs ---
 
+    #[cfg(debug_assertions)] // put_raw is only used in tests, this will make typedb fail to compile in release if it's used anywhere in the binary
     pub fn put_raw(&self, key: StorageKeyReference<'_>, value: &Bytes<'_, BUFFER_VALUE_INLINE>) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
         self.keyspaces
