@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::HashMap, sync::Arc};
+use std::{
+    borrow::Cow,
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use answer::{variable_value::VariableValue, Thing};
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
@@ -206,12 +210,12 @@ impl ReducerAPI for CountExecutor {
 
 #[derive(Debug, Clone)]
 struct CountVarExecutor {
-    count: u64,
+    values: HashSet<VariableValue<'static>>,
     target: VariablePosition,
 }
 impl CountVarExecutor {
     fn new(target: VariablePosition) -> Self {
-        Self { count: 0, target }
+        Self { values: HashSet::new(), target }
     }
 }
 
@@ -222,13 +226,16 @@ impl ReducerAPI for CountVarExecutor {
         _: &ExecutionContext<Snapshot>,
         _: StorageCounters,
     ) {
-        if &VariableValue::None != row.get(self.target) {
-            self.count += row.multiplicity();
+        match row.get(self.target) {
+            VariableValue::None => (),
+            other => {
+                self.values.insert(other.to_owned());
+            }
         }
     }
 
     fn finalise(self) -> Option<VariableValue<'static>> {
-        Some(VariableValue::Value(Value::Integer(self.count as i64)))
+        Some(VariableValue::Value(Value::Integer(self.values.len() as i64)))
     }
 }
 
