@@ -143,11 +143,9 @@ impl<Durability> MVCCStorage<Durability> {
                 trace!("Finished applying commits from WAL.");
                 (keyspaces, next_sequence_number)
             }
-            Some(checkpoint) => {
-                checkpoint
-                    .recover_storage::<KS, _>(&storage_dir, &durability_client)
-                    .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
-            }
+            Some(checkpoint) => checkpoint
+                .recover_storage::<KS, _>(&storage_dir, &durability_client)
+                .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?,
         };
 
         let isolation_manager = IsolationManager::new(next_sequence_number);

@@ -8,6 +8,7 @@ use std::cmp::Ordering;
 
 use bytes::byte_array::ByteArray;
 use lending_iterator::{LendingIterator, Seekable};
+use resource::constants::kv::ITERATOR_CONTINUE_CONDITION_INLINE;
 
 use crate::{rocks::iterator::RocksRangeIterator, KVStoreError};
 
@@ -42,8 +43,8 @@ impl Seekable<[u8]> for KVRangeIterator {
 }
 
 pub(crate) enum ContinueCondition {
-    ExactPrefix(ByteArray<48>),
-    EndPrefixInclusive(ByteArray<48>),
-    EndPrefixExclusive(ByteArray<48>),
+    ExactPrefix(ByteArray<{ ITERATOR_CONTINUE_CONDITION_INLINE }>),
+    EndPrefixInclusive(ByteArray<{ ITERATOR_CONTINUE_CONDITION_INLINE }>),
+    EndPrefixExclusive(ByteArray<{ ITERATOR_CONTINUE_CONDITION_INLINE }>),
     Always,
 }
