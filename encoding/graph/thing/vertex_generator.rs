@@ -337,7 +337,7 @@ impl ThingVertexGenerator {
         }
     }
 
-    pub fn find_attribute_id_string_noinline<const INLINE_LENGTH: usize, Snapshot: WritableSnapshot>(
+    pub fn find_attribute_id_string_noinline<const INLINE_LENGTH: usize, Snapshot: ReadableSnapshot>(
         &self,
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
