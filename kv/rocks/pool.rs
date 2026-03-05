@@ -9,8 +9,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-pub trait Poolable {}
-
 #[derive(Debug)]
 pub struct LIFOPool<T> {
     pool: Arc<Mutex<Vec<T>>>,
@@ -25,11 +23,11 @@ impl<T> Default for LIFOPool<T> {
 
 impl<T> Clone for LIFOPool<T> {
     fn clone(&self) -> Self {
-        Self { pool: self.pool.clone(), size_cap: self.size_cap.clone() }
+        Self { pool: self.pool.clone(), size_cap: self.size_cap }
     }
 }
 
-impl<T: Poolable> LIFOPool<T> {
+impl<T> LIFOPool<T> {
     pub fn new_capped(size: usize) -> Self {
         Self { pool: Default::default(), size_cap: Some(size) }
     }
@@ -52,12 +50,12 @@ impl<T: Poolable> LIFOPool<T> {
     }
 }
 
-pub struct PoolRecycleGuard<T: Poolable> {
+pub struct PoolRecycleGuard<T> {
     item: Option<T>,
     pool: LIFOPool<T>,
 }
 
-impl<T: Poolable> Deref for PoolRecycleGuard<T> {
+impl<T> Deref for PoolRecycleGuard<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -65,13 +63,13 @@ impl<T: Poolable> Deref for PoolRecycleGuard<T> {
     }
 }
 
-impl<T: Poolable> DerefMut for PoolRecycleGuard<T> {
+impl<T> DerefMut for PoolRecycleGuard<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.item.as_mut().unwrap()
     }
 }
 
-impl<T: Poolable> Drop for PoolRecycleGuard<T> {
+impl<T> Drop for PoolRecycleGuard<T> {
     fn drop(&mut self) {
         debug_assert!(self.item.is_some());
         let item = self.item.take().unwrap();

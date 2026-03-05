@@ -6,11 +6,9 @@
 use rocksdb::{DBRawIterator, DB};
 
 use crate::rocks::{
-    pool::{LIFOPool, PoolRecycleGuard, Poolable},
+    pool::{LIFOPool, PoolRecycleGuard},
     RocksKVStore,
 };
-
-impl Poolable for DBRawIterator<'static> {}
 
 #[derive(Default)]
 pub struct RocksRawIteratorPool {
