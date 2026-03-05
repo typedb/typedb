@@ -95,10 +95,9 @@ workspace_refs(
 # ===========================================================
 
 bazel_dep(name = "typedb_dependencies", version = "0.0.0")
-git_override(
+local_path_override(
     module_name = "typedb_dependencies",
-    remote = "https://github.com/typedb/dependencies",
-    commit = "ccdb36af9a868eeb6116d508db05a5b93e688e79",
+    path = "../dependencies",
 )
 
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
