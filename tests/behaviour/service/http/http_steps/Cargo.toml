@@ -49,11 +49,6 @@ features = {}
 		version = "0.19.1"
 		default-features = false
 
-	[dependencies.macro_rules_attribute]
-		features = ["default"]
-		version = "0.2.2"
-		default-features = false
-
 	[dependencies.params]
 		path = "../../../../../tests/behaviour/steps/params"
 		features = []
@@ -62,6 +57,11 @@ features = {}
 	[dependencies.futures]
 		features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
 		version = "0.3.31"
+		default-features = false
+
+	[dependencies.serde-json]
+		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
+		version = "1.0.143"
 		default-features = false
 
 	[dependencies.encoding]
@@ -89,6 +89,11 @@ features = {}
 		version = "2.5.4"
 		default-features = false
 
+	[dependencies.macro-rules-attribute]
+		features = ["default"]
+		version = "0.2.2"
+		default-features = false
+
 	[dependencies.regex]
 		features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
 		version = "1.11.1"
@@ -106,8 +111,8 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		git = "https://github.com/typedb/typeql"
-		tag = "3.8.0"
+		rev = "7f6e802c91ce0a1e6e0d9a6eaff4de377158ed17"
+		git = "https://github.com/typedb/typeql+"
 		default-features = false
 
 	[dependencies.chrono]
@@ -118,11 +123,6 @@ features = {}
 	[dependencies.hyper]
 		features = ["client", "default", "full", "h2", "http1", "http2", "runtime", "server", "socket2", "stream", "tcp"]
 		version = "0.14.32"
-		default-features = false
-
-	[dependencies.serde_json]
-		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.143"
 		default-features = false
 
 	[dependencies.hyper-rustls]
