@@ -151,114 +151,140 @@ impl ThingVertexGenerator {
         &self.large_value_hasher
     }
 
-    pub fn create_entity<Snapshot: WritableSnapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex {
+    pub fn create_entity<Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
+    where
+        Snapshot: WritableSnapshot,
+    {
         let entity_id = self.entity_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::new(entity_id));
         snapshot.insert(vertex.into_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_relation<Snapshot: WritableSnapshot>(
-        &self,
-        type_id: TypeID,
-        snapshot: &mut Snapshot,
-    ) -> ObjectVertex {
+    pub fn create_relation<Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex
+    where
+        Snapshot: WritableSnapshot,
+    {
         let relation_id = self.relation_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
         let vertex = ObjectVertex::build_relation(type_id, ObjectID::new(relation_id));
         snapshot.insert(vertex.into_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_attribute_boolean<Snapshot: WritableSnapshot>(
+    pub fn create_attribute_boolean<Snapshot>(
         &self,
         type_id: TypeID,
         value: BooleanBytes,
         snapshot: &mut Snapshot,
-    ) -> AttributeVertex {
+    ) -> AttributeVertex
+    where
+        Snapshot: WritableSnapshot,
+    {
         let boolean_attribute_id = self.create_attribute_id_boolean(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Boolean(boolean_attribute_id));
         snapshot.put(vertex.into_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_attribute_integer<Snapshot: WritableSnapshot>(
+    pub fn create_attribute_integer<Snapshot>(
         &self,
         type_id: TypeID,
         value: IntegerBytes,
         snapshot: &mut Snapshot,
-    ) -> AttributeVertex {
+    ) -> AttributeVertex
+    where
+        Snapshot: WritableSnapshot,
+    {
         let integer_attribute_id = self.create_attribute_id_integer(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Integer(integer_attribute_id));
         snapshot.put(vertex.into_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_attribute_double<Snapshot: WritableSnapshot>(
+    pub fn create_attribute_double<Snapshot>(
         &self,
         type_id: TypeID,
         value: DoubleBytes,
         snapshot: &mut Snapshot,
-    ) -> AttributeVertex {
+    ) -> AttributeVertex
+    where
+        Snapshot: WritableSnapshot,
+    {
         let double_attribute_id = self.create_attribute_id_double(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Double(double_attribute_id));
         snapshot.put(vertex.into_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_attribute_decimal<Snapshot: WritableSnapshot>(
+    pub fn create_attribute_decimal<Snapshot>(
         &self,
         type_id: TypeID,
         value: DecimalBytes,
         snapshot: &mut Snapshot,
-    ) -> AttributeVertex {
+    ) -> AttributeVertex
+    where
+        Snapshot: WritableSnapshot,
+    {
         let decimal_attribute_id = self.create_attribute_id_decimal(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Decimal(decimal_attribute_id));
         snapshot.put(vertex.into_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_attribute_date<Snapshot: WritableSnapshot>(
+    pub fn create_attribute_date<Snapshot>(
         &self,
         type_id: TypeID,
         value: DateBytes,
         snapshot: &mut Snapshot,
-    ) -> AttributeVertex {
+    ) -> AttributeVertex
+    where
+        Snapshot: WritableSnapshot,
+    {
         let date_attribute_id = self.create_attribute_id_date(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Date(date_attribute_id));
         snapshot.put(vertex.into_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_attribute_date_time<Snapshot: WritableSnapshot>(
+    pub fn create_attribute_date_time<Snapshot>(
         &self,
         type_id: TypeID,
         value: DateTimeBytes,
         snapshot: &mut Snapshot,
-    ) -> AttributeVertex {
+    ) -> AttributeVertex
+    where
+        Snapshot: WritableSnapshot,
+    {
         let date_time_attribute_id = self.create_attribute_id_date_time(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::DateTime(date_time_attribute_id));
         snapshot.put(vertex.into_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_attribute_date_time_tz<Snapshot: WritableSnapshot>(
+    pub fn create_attribute_date_time_tz<Snapshot>(
         &self,
         type_id: TypeID,
         value: DateTimeTZBytes,
         snapshot: &mut Snapshot,
-    ) -> AttributeVertex {
+    ) -> AttributeVertex
+    where
+        Snapshot: WritableSnapshot,
+    {
         let date_time_tz_attribute_id = self.create_attribute_id_date_time_tz(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::DateTimeTZ(date_time_tz_attribute_id));
         snapshot.put(vertex.into_storage_key().into_owned_array());
         vertex
     }
 
-    pub fn create_attribute_duration<Snapshot: WritableSnapshot>(
+    pub fn create_attribute_duration<Snapshot>(
         &self,
         type_id: TypeID,
         value: DurationBytes,
         snapshot: &mut Snapshot,
-    ) -> AttributeVertex {
+    ) -> AttributeVertex
+    where
+        Snapshot: WritableSnapshot,
+    {
         let duration_attribute_id = self.create_attribute_id_duration(value);
         let vertex = AttributeVertex::new(type_id, AttributeID::Duration(duration_attribute_id));
         snapshot.put(vertex.into_storage_key().into_owned_array());
@@ -307,24 +333,30 @@ impl ThingVertexGenerator {
     /// We do not need to retain a reverse index from String -> ID, since 99.9% of the time the prefix + hash
     /// lets us retrieve the ID from the forward index by prefix (ID -> String).
     ///
-    pub fn create_attribute_string<const INLINE_LENGTH: usize, Snapshot: WritableSnapshot>(
+    pub fn create_attribute_string<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         value: StringBytes<INLINE_LENGTH>,
         snapshot: &mut Snapshot,
-    ) -> Result<AttributeVertex, Arc<SnapshotIteratorError>> {
+    ) -> Result<AttributeVertex, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: WritableSnapshot,
+    {
         let string_attribute_id = self.create_attribute_id_string(type_id, value.as_reference(), snapshot)?;
         let vertex = AttributeVertex::new(type_id, AttributeID::String(string_attribute_id));
         snapshot.put_val(vertex.into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         Ok(vertex)
     }
 
-    pub fn create_attribute_id_string<const INLINE_LENGTH: usize, Snapshot: WritableSnapshot>(
+    pub fn create_attribute_id_string<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &mut Snapshot,
-    ) -> Result<StringAttributeID, Arc<SnapshotIteratorError>> {
+    ) -> Result<StringAttributeID, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: WritableSnapshot,
+    {
         if StringAttributeID::is_inlineable(string.as_reference()) {
             Ok(StringAttributeID::build_inline_id(string))
         } else {
@@ -337,34 +369,43 @@ impl ThingVertexGenerator {
         }
     }
 
-    pub fn find_attribute_id_string_noinline<const INLINE_LENGTH: usize, Snapshot: ReadableSnapshot>(
+    pub fn find_attribute_id_string_noinline<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         string: StringBytes<INLINE_LENGTH>,
         snapshot: &Snapshot,
-    ) -> Result<Option<StringAttributeID>, Arc<SnapshotIteratorError>> {
+    ) -> Result<Option<StringAttributeID>, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: ReadableSnapshot,
+    {
         assert!(!StringAttributeID::is_inlineable(string.as_reference()));
         StringAttributeID::find_hashed_id(type_id, string, snapshot, &self.large_value_hasher)
     }
 
-    pub fn create_attribute_struct<const INLINE_LENGTH: usize, Snapshot: WritableSnapshot>(
+    pub fn create_attribute_struct<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         value: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &mut Snapshot,
-    ) -> Result<AttributeVertex, Arc<SnapshotIteratorError>> {
+    ) -> Result<AttributeVertex, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: WritableSnapshot,
+    {
         let struct_attribute_id = self.create_attribute_id_struct(type_id, value.as_reference(), snapshot)?;
         let vertex = AttributeVertex::new(type_id, AttributeID::Struct(struct_attribute_id));
         snapshot.put_val(vertex.into_storage_key().into_owned_array(), ByteArray::from(value.bytes()));
         Ok(vertex)
     }
 
-    pub fn create_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot: WritableSnapshot>(
+    pub fn create_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &mut Snapshot,
-    ) -> Result<StructAttributeID, Arc<SnapshotIteratorError>> {
+    ) -> Result<StructAttributeID, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: WritableSnapshot,
+    {
         // We don't inline structs
         let id = StructAttributeID::build_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)?;
         let hash = id.get_hash_hash();
@@ -374,12 +415,15 @@ impl ThingVertexGenerator {
         Ok(id)
     }
 
-    pub fn find_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot: ReadableSnapshot>(
+    pub fn find_attribute_id_struct<const INLINE_LENGTH: usize, Snapshot>(
         &self,
         type_id: TypeID,
         struct_bytes: StructBytes<'_, INLINE_LENGTH>,
         snapshot: &Snapshot,
-    ) -> Result<Option<StructAttributeID>, Arc<SnapshotIteratorError>> {
+    ) -> Result<Option<StructAttributeID>, Arc<SnapshotIteratorError>>
+    where
+        Snapshot: ReadableSnapshot,
+    {
         StructAttributeID::find_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)
     }
 
