@@ -39,7 +39,6 @@ use storage::{
     isolation_manager::CommitType,
     iterator::MVCCReadError,
     key_value::{StorageKeyArray, StorageKeyReference},
-    keyspace::IteratorPool,
     recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
@@ -549,14 +548,7 @@ fn write_to_delta<D>(
                     Write::Delete => Ok(1),
                 }
             } else if open_sequence_number.next() < first_commit_sequence_number {
-                if storage
-                    .get::<0>(
-                        &IteratorPool::new(),
-                        write_key,
-                        commit_sequence_number.previous(),
-                        StorageCounters::DISABLED,
-                    )?
-                    .is_some()
+                if storage.get::<0>(write_key, commit_sequence_number.previous(), StorageCounters::DISABLED)?.is_some()
                 {
                     // exists in storage before PUT is committed
                     Ok(0)

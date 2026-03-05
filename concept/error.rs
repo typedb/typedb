@@ -23,7 +23,7 @@ use crate::{
 
 typedb_error!(
     pub ConceptWriteError(component = "Concept write", prefix = "COW") {
-        SnapshotGet(1, "Concept write failed due to a snapshot read error.", source: SnapshotGetError),
+        SnapshotGet(1, "Concept write failed due to a snapshot read error.", typedb_source: SnapshotGetError),
         SnapshotIterate(2, "Concept write failed due to a snapshot iteration error.", source: Arc<SnapshotIteratorError>),
         ConceptRead(3, "Concept write failed due to a concept read error.", typedb_source: Box<ConceptReadError>),
         SchemaValidation(4, "Concept write failed due to a schema validation error.", typedb_source: Box<SchemaValidationError>),
@@ -43,7 +43,7 @@ typedb_error!(
 impl From<Box<ConceptReadError>> for Box<ConceptWriteError> {
     fn from(error: Box<ConceptReadError>) -> Self {
         Box::new(match *error {
-            ConceptReadError::SnapshotGet { source } => ConceptWriteError::SnapshotGet { source },
+            ConceptReadError::SnapshotGet { typedb_source } => ConceptWriteError::SnapshotGet { typedb_source },
             ConceptReadError::SnapshotIterate { source } => ConceptWriteError::SnapshotIterate { source },
             ConceptReadError::Encoding { source, .. } => ConceptWriteError::Encoding { source },
             _ => ConceptWriteError::ConceptRead { typedb_source: error },
@@ -53,7 +53,7 @@ impl From<Box<ConceptReadError>> for Box<ConceptWriteError> {
 
 typedb_error! {
     pub ConceptReadError(component = "Concept read", prefix = "COR") {
-        SnapshotGet(1, "Failed to read key from storage snapshot.", source: SnapshotGetError),
+        SnapshotGet(1, "Failed to read key from storage snapshot.", typedb_source: SnapshotGetError),
         SnapshotIterate(2, "Failed to open iterator on storage snapshot.", source: Arc<SnapshotIteratorError>),
         Encoding(3, "Concept encoding error.", source: EncodingError),
         OrderingValueMissing(4, "Ordering type missing."),

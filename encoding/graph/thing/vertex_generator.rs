@@ -10,9 +10,9 @@ use std::sync::{
 };
 
 use bytes::{byte_array::ByteArray, Bytes};
+use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 use storage::{
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
     MVCCStorage,

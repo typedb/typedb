@@ -4,45 +4,31 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt, sync::Arc};
+use std::sync::Arc;
 
-use crate::keyspace::KeyspaceError;
+use error::{typedb_error, TypeDBError};
+use kv::keyspaces::KeyspacesError;
 
-#[derive(Debug)]
-pub struct MVCCStorageError {
-    pub storage_name: Arc<String>,
-    pub kind: MVCCStorageErrorKind,
-}
-
-#[derive(Debug)]
-pub enum MVCCStorageErrorKind {
-    FailedToDeleteStorage { source: std::io::Error },
-    KeyspaceError { source: Arc<dyn Error + Sync + Send>, keyspace_name: &'static str },
-    KeyspaceDeleteError { source: KeyspaceError },
-}
-
-impl fmt::Display for MVCCStorageError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.kind {
-            MVCCStorageErrorKind::FailedToDeleteStorage { source, .. } => {
-                write!(f, "MVCCStorageError.FailedToDeleteStorage caused by: '{}'", source)
-            }
-            MVCCStorageErrorKind::KeyspaceError { source, keyspace_name, .. } => {
-                write!(f, "MVCCStorageError.KeyspaceError in keyspace '{}' caused by: '{}'", keyspace_name, source)
-            }
-            MVCCStorageErrorKind::KeyspaceDeleteError { source, .. } => {
-                write!(f, "MVCCStorageError.KeyspaceDeleteError caused by: '{}'", source)
-            }
-        }
+typedb_error!(
+    pub MVCCStorageError(component = "MVCC Storage", prefix = "MST") {
+        FailedToDeleteStorage(
+            1,
+            "Failed to delete MVCC storage '{storage_name}'.",
+            storage_name: String,
+            source: Arc<std::io::Error>
+        ),
+        KeyspaceError(
+            2,
+            "Error in keyspace '{keyspace_name}' of MVV storage '{storage_name}'.",
+            storage_name: String,
+            keyspace_name: &'static str,
+            typedb_source: Arc<dyn TypeDBError>
+        ),
+        KeyspaceDeleteError(
+            3,
+            "Failed to delete keyspaces for storage '{storage_name}'.",
+            storage_name: String,
+            typedb_source: KeyspacesError
+        ),
     }
-}
-
-impl Error for MVCCStorageError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match &self.kind {
-            MVCCStorageErrorKind::FailedToDeleteStorage { source, .. } => Some(source),
-            MVCCStorageErrorKind::KeyspaceError { source, .. } => Some(source),
-            MVCCStorageErrorKind::KeyspaceDeleteError { source } => Some(source),
-        }
-    }
-}
+);

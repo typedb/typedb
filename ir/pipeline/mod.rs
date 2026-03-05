@@ -40,7 +40,7 @@ pub mod reduce;
 typedb_error! {
     pub FunctionReadError(component = "Function read", prefix = "FNR") {
         FunctionIDNotFound(1, "Function '{name}' not found by its internal ID '{id}'.", name: String, id: FunctionID),
-        FunctionRetrieval(2, "Error retrieving function.", source: SnapshotGetError),
+        FunctionRetrieval(2, "Error retrieving function.", typedb_source: SnapshotGetError),
         FunctionsScan(3, "Error scanning functions.", source: Arc<SnapshotIteratorError>),
         FormatError(4, "Formatting error", source: fmt::Error),
     }

@@ -83,7 +83,6 @@ use crate::service::{
     transaction_service::{
         init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
     },
-    IncludeInvolvedBlocks,
 };
 
 macro_rules! unwrap_or_execute_and_return {
@@ -982,10 +981,10 @@ impl TransactionService {
                 Ok(analyzed) => {
                     match encode_analyzed_query(&*transaction.snapshot, &*transaction.type_manager, analyzed) {
                         Ok(encoded) => ImmediateAnalyzeResponse::analyzed_query(encoded),
-                        Err(err) => ImmediateAnalyzeResponse::non_fatal_err(err),
+                        Err(err) => ImmediateAnalyzeResponse::non_fatal_err(*err),
                     }
                 }
-                Err(err) => ImmediateAnalyzeResponse::non_fatal_err(err),
+                Err(err) => ImmediateAnalyzeResponse::non_fatal_err(*err),
             };
             let _ = Self::respond_analyze_response(&self.response_sender, req_id, resp).await;
         });
@@ -1288,7 +1287,7 @@ impl TransactionService {
                     &source_query,
                 );
                 let pipeline = unwrap_or_execute_and_return!(pipeline, |err| {
-                    Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
+                    Self::submit_response_sync(&sender, StreamQueryResponse::done_err(*err));
                 });
                 Self::respond_read_query_sync(
                     query_options,
@@ -1355,7 +1354,7 @@ impl TransactionService {
                 }
 
                 let document = unwrap_or_execute_and_return!(next, |err| {
-                    Self::submit_response_sync(sender, StreamQueryResponse::done_err(err));
+                    Self::submit_response_sync(sender, StreamQueryResponse::done_err(*err));
                 });
 
                 let encoded_document = encode_document(
@@ -1426,7 +1425,7 @@ impl TransactionService {
                 }
 
                 let row = unwrap_or_execute_and_return!(next, |err| {
-                    Self::submit_response_sync(sender, StreamQueryResponse::done_err(err));
+                    Self::submit_response_sync(sender, StreamQueryResponse::done_err(*err));
                 });
 
                 let encoded_row = encode_row(

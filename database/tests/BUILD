@@ -18,7 +18,6 @@ rust_test(
         "//storage",
         "//util/test:test_utils",
 
-        "@crates//:rocksdb",
         "@crates//:tracing",
     ]
 )
@@ -36,7 +35,6 @@ rust_test(
         "//storage",
         "//util/test:test_utils",
 
-        "@crates//:rocksdb",
         "@crates//:tracing",
         "@crates//:tokio",
     ]

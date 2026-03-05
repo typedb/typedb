@@ -11,15 +11,12 @@ use std::{
 
 use bytes::Bytes;
 use lending_iterator::LendingIterator;
+use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
 use resource::{
     constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE},
     profile::StorageCounters,
 };
-use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    key_value::StorageKey,
-    snapshot::WritableSnapshot,
-};
+use storage::{key_value::StorageKey, snapshot::WritableSnapshot};
 
 use crate::{
     error::EncodingError,

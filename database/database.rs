@@ -393,7 +393,7 @@ impl Database<WALClient> {
         };
 
         if checkpoint_sequence_number < wal_last_sequence_number {
-            database.checkpoint().map_err(|err| CheckpointCreate { name: name.to_string(), source: err })?;
+            database.checkpoint().map_err(|err| CheckpointCreate { name: name.to_string(), typedb_source: err })?;
         }
         event!(Level::TRACE, "Finished loading database '{}'", &name);
         Ok(database)
@@ -529,7 +529,7 @@ typedb_error! {
         DurabilityClientOpen(6, "Error opening durability client.", typedb_source:DurabilityClientError),
         DurabilityClientRead(7, "Error reading from durability client.", typedb_source: DurabilityClientError),
         CheckpointLoad(8, "Error loading checkpoint for database '{name}'.", name: String, typedb_source: CheckpointLoadError),
-        CheckpointCreate(9, "Error creating checkpoint for database '{name}'.", name: String, source: CheckpointCreateError),
+        CheckpointCreate(9, "Error creating checkpoint for database '{name}'.", name: String, typedb_source: CheckpointCreateError),
         Encoding(10, "Data encoding error.", source: EncodingError),
         StatisticsInitialise(11, "Error initialising statistics manager.", typedb_source: StatisticsError),
         TypeCacheInitialise(12, "Error initialising type cache.", typedb_source: TypeCacheCreateError),

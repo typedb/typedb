@@ -7,20 +7,22 @@
 use std::iter::empty;
 
 use bytes::byte_array::ByteArray;
+use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 use storage::{
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::IteratorPool,
     sequence_number::SequenceNumber,
     snapshot::{
         buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::Write, ReadableSnapshot, SnapshotGetError,
     },
 };
 
-#[derive(Default)]
-pub struct MockSnapshot {
-    iterator_pool: IteratorPool,
+pub struct MockSnapshot;
+
+impl Default for MockSnapshot {
+    fn default() -> Self {
+        Self
+    }
 }
 
 impl MockSnapshot {
@@ -60,7 +62,7 @@ impl ReadableSnapshot for MockSnapshot {
         SnapshotRangeIterator::new_empty()
     }
 
-    fn any_in_range<'this, const PS: usize>(&'this self, _: &KeyRange<StorageKey<'this, PS>>, _: bool) -> bool {
+    fn any_in_range<const PS: usize>(&self, _: &KeyRange<StorageKey<'_, PS>>, _: bool) -> bool {
         false
     }
 
@@ -74,24 +76,15 @@ impl ReadableSnapshot for MockSnapshot {
         empty()
     }
 
-    fn iterate_writes_range<'this, const PS: usize>(
-        &'this self,
-        _: &KeyRange<StorageKey<'this, PS>>,
-    ) -> BufferRangeIterator {
+    fn iterate_writes_range<const PS: usize>(&self, _: &KeyRange<StorageKey<'_, PS>>) -> BufferRangeIterator {
         BufferRangeIterator::new_empty()
     }
 
-    fn iterate_storage_range<'this, const PS: usize>(
-        &'this self,
-        _: &KeyRange<StorageKey<'this, PS>>,
+    fn iterate_storage_range<const PS: usize>(
+        &self,
+        _: &KeyRange<StorageKey<'_, PS>>,
         _: StorageCounters,
     ) -> SnapshotRangeIterator {
         SnapshotRangeIterator::new_empty()
     }
-
-    fn iterator_pool(&self) -> &IteratorPool {
-        &self.iterator_pool
-    }
-
-    // fn close_resources(&self) {}
 }

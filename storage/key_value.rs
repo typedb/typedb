@@ -7,11 +7,10 @@
 use std::{borrow::Borrow, cmp::Ordering, fmt};
 
 use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
+use kv::keyspaces::{KeyspaceId, KeyspaceSet};
 use lending_iterator::higher_order::Hkt;
 use primitive::prefix::Prefix;
 use serde::{Deserialize, Serialize};
-
-use crate::keyspace::{KeyspaceId, KeyspaceSet};
 
 #[derive(Debug, Clone)]
 pub enum StorageKey<'bytes, const S: usize> {

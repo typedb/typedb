@@ -7,10 +7,8 @@
 use std::{path::Path, sync::Arc};
 
 use durability::wal::WAL;
-use storage::{
-    durability_client::WALClient, keyspace::KeyspaceSet, recovery::checkpoint::Checkpoint, MVCCStorage,
-    StorageOpenError,
-};
+use kv::keyspaces::KeyspaceSet;
+use storage::{durability_client::WALClient, recovery::checkpoint::Checkpoint, MVCCStorage, StorageOpenError};
 
 pub mod mock_snapshot;
 
@@ -19,10 +17,10 @@ macro_rules! test_keyspace_set {
     {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
         #[derive(Clone, Copy)]
         enum TestKeyspaceSet { $($variant),* }
-        impl storage::keyspace::KeyspaceSet for TestKeyspaceSet {
+        impl kv::keyspaces::KeyspaceSet for TestKeyspaceSet {
             fn iter() -> impl Iterator<Item = Self> { [$(Self::$variant),*].into_iter() }
-            fn id(&self) -> storage::keyspace::KeyspaceId {
-                match *self { $(Self::$variant => storage::keyspace::KeyspaceId($id)),* }
+            fn id(&self) -> kv::keyspaces::KeyspaceId {
+                match *self { $(Self::$variant => kv::keyspaces::KeyspaceId($id)),* }
             }
             fn name(&self) -> &'static str {
                 match *self { $(Self::$variant => $name),* }

@@ -10,23 +10,28 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct SinglePool<T> {
+pub struct LIFOPool<T> {
     pool: Arc<Mutex<Vec<T>>>,
+    size_cap: Option<usize>,
 }
 
-impl<T> Default for SinglePool<T> {
+impl<T> Default for LIFOPool<T> {
     fn default() -> Self {
-        Self { pool: Default::default() }
+        Self { pool: Default::default(), size_cap: None }
     }
 }
 
-impl<T> Clone for SinglePool<T> {
+impl<T> Clone for LIFOPool<T> {
     fn clone(&self) -> Self {
-        Self { pool: self.pool.clone() }
+        Self { pool: self.pool.clone(), size_cap: self.size_cap }
     }
 }
 
-impl<T> SinglePool<T> {
+impl<T> LIFOPool<T> {
+    pub fn new_capped(size: usize) -> Self {
+        Self { pool: Default::default(), size_cap: Some(size) }
+    }
+
     pub fn get_or_create(&self, create_fn: impl FnOnce() -> T) -> PoolRecycleGuard<T> {
         let mut unlocked = self.pool.lock().unwrap();
         if let Some(item) = unlocked.pop() {
@@ -39,13 +44,15 @@ impl<T> SinglePool<T> {
 
     fn recycle(&self, item: T) {
         let mut unlocked = self.pool.lock().unwrap();
-        unlocked.push(item);
+        if self.size_cap.is_some_and(|cap| unlocked.len() < cap) {
+            unlocked.push(item);
+        }
     }
 }
 
 pub struct PoolRecycleGuard<T> {
     item: Option<T>,
-    pool: SinglePool<T>,
+    pool: LIFOPool<T>,
 }
 
 impl<T> Deref for PoolRecycleGuard<T> {

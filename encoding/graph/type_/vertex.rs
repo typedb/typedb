@@ -7,11 +7,9 @@
 use std::{fmt, hash::Hash};
 
 use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
+use kv::keyspaces::KeyspaceSet;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{
-    key_value::{StorageKey, StorageKeyArray},
-    keyspace::KeyspaceSet,
-};
+use storage::key_value::{StorageKey, StorageKeyArray};
 
 use crate::{
     error::EncodingError,

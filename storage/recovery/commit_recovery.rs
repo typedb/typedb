@@ -8,15 +8,17 @@ use std::{collections::BTreeMap, sync::Arc};
 
 use durability::RawRecord;
 use error::typedb_error;
+use kv::{
+    keyspaces::{Keyspaces, KeyspacesError},
+    write_batches::WriteBatches,
+};
 use tracing::{event, Level};
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
-    keyspace::{KeyspaceError, Keyspaces},
     sequence_number::SequenceNumber,
-    write_batches::WriteBatches,
-    MVCCStorage,
+    FromOperationsBuffer, MVCCStorage,
 };
 
 /// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.
@@ -124,7 +126,7 @@ pub(crate) fn apply_recovered(
     }
 
     for write_batches in pending_writes {
-        keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+        keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { typedb_source: error })?;
     }
 
     Ok(())
@@ -146,6 +148,6 @@ typedb_error! {
             "Missing initial WAL records - expected first record number '{expected_sequence_number}', but found '{first_record_sequence_number}'.",
             expected_sequence_number: SequenceNumber, first_record_sequence_number: SequenceNumber
         ),
-        KeyspaceWrite(5, "Error writing recovered commits to keyspace.", source: KeyspaceError),
+        KeyspaceWrite(5, "Error writing recovered commits to keyspace.", typedb_source: KeyspacesError),
     }
 }

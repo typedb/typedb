@@ -4,24 +4,25 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
+use std::{cmp::Ordering, sync::Arc};
 
 use bytes::byte_array::ByteArray;
+use error::{typedb_error, TypeDBError};
+use kv::{iterator::KVRangeIterator, keyspaces::KeyspaceId};
 use lending_iterator::{LendingIterator, Peekable, Seekable};
+use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
-    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
-    keyspace::{iterator::KeyspaceRangeIterator, IteratorPool, KeyspaceError, KeyspaceId},
     sequence_number::SequenceNumber,
 };
 
 pub(crate) struct MVCCRangeIterator {
     storage_name: Arc<String>,
     keyspace_id: KeyspaceId,
-    iterator: Peekable<KeyspaceRangeIterator>,
+    iterator: Peekable<KVRangeIterator>,
     open_sequence_number: SequenceNumber,
     storage_counters: StorageCounters,
 
@@ -36,17 +37,17 @@ impl MVCCRangeIterator {
     //
     pub(crate) fn new<D, const PS: usize>(
         storage: &MVCCStorage<D>,
-        iterpool: &IteratorPool,
         range: &KeyRange<StorageKey<'_, PS>>,
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
     ) -> Self {
-        let keyspace = storage.get_keyspace(range.start().get_value().keyspace_id());
+        let keyspace_id = range.start().get_value().keyspace_id();
+        let keyspace = storage.get_keyspace(keyspace_id);
         let mapped_range = range.map(|key| key.as_bytes(), |fixed_width| fixed_width);
-        let iterator = keyspace.iterate_range(iterpool, &mapped_range, storage_counters.clone());
+        let iterator = keyspace.iterate_range(&mapped_range, storage_counters.clone());
         MVCCRangeIterator {
             storage_name: storage.name(),
-            keyspace_id: keyspace.id(),
+            keyspace_id,
             iterator: Peekable::new(iterator),
             open_sequence_number,
             last_visible_key: None,
@@ -56,9 +57,13 @@ impl MVCCRangeIterator {
     }
 
     pub(crate) fn peek(&mut self) -> Option<&Result<(StorageKeyReference<'_>, &[u8]), MVCCReadError>> {
-        type Item<'a> = <MVCCRangeIterator as LendingIterator>::Item<'a>;
         if self.item.is_none() {
-            self.item = unsafe { std::mem::transmute::<Option<Item<'_>>, Option<Item<'static>>>(self.next()) };
+            self.item = unsafe {
+                std::mem::transmute::<
+                    Option<Result<(StorageKeyReference<'_>, &[u8]), MVCCReadError>>,
+                    Option<Result<(StorageKeyReference<'static>, &'static [u8]), MVCCReadError>>,
+                >(self.next())
+            };
         }
         self.item.as_ref()
     }
@@ -102,8 +107,8 @@ impl LendingIterator for MVCCRangeIterator {
                 }
                 Err(error) => {
                     return Some(Err(MVCCReadError::Keyspace {
-                        storage_name: self.storage_name.clone(),
-                        source: Arc::new(error.clone()),
+                        storage_name: (*self.storage_name).clone(),
+                        typedb_source: error.into(),
                     }))
                 }
             };
@@ -136,21 +141,26 @@ impl Seekable<[u8]> for MVCCRangeIterator {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum MVCCReadError {
-    Keyspace { storage_name: Arc<String>, source: Arc<KeyspaceError> },
-}
+typedb_error!(
+    pub MVCCReadError(component = "MVCC Read", prefix = "MVR") {
+        Keyspace(
+            1,
+            "Error reading from keyspace in MVCC storage '{storage_name}'.",
+            storage_name: String,
+            typedb_source: Arc<dyn TypeDBError>
+        ),
+    }
+);
 
-impl fmt::Display for MVCCReadError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
+impl std::fmt::Display for MVCCReadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use error::TypeDBError;
+        write!(f, "{}", self.format_code_and_description())
     }
 }
 
-impl Error for MVCCReadError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::Keyspace { source, .. } => Some(source),
-        }
+impl std::error::Error for MVCCReadError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
     }
 }

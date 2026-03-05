@@ -11,11 +11,13 @@ rust_library(
     srcs = glob(["test_utils_storage/*.rs"]),
     crate_root = "test_utils_storage/lib.rs",
     deps = [
-        "//common/logger",
         "//common/bytes",
+        "//common/logger",
+        "//common/primitive",
         "//durability",
-        "//storage",
+        "//kv",
         "//resource",
+        "//storage",
     ]
 )
 
@@ -30,9 +32,10 @@ rust_test(
         "//common/lending_iterator",
         "//common/logger",
         "//common/primitive",
-        "//storage",
         "//durability",
+        "//kv",
         "//resource",
+        "//storage",
         "//util/test:test_utils",
         ":test_utils_storage",
 
@@ -54,6 +57,7 @@ rust_test(
         "//common/logger",
         "//common/primitive",
         "//durability",
+        "//kv",
         "//resource",
         "//storage",
         "//util/test:test_utils",
@@ -74,9 +78,10 @@ rust_test(
         "//common/bytes",
         "//common/logger",
         "//common/primitive",
-        "//storage",
         "//durability",
+        "//kv",
         "//resource",
+        "//storage",
         "//util/test:test_utils",
         ":test_utils_storage",
 
@@ -97,9 +102,10 @@ rust_test(
         "//common/bytes",
         "//common/logger",
         "//common/primitive",
-        "//storage",
         "//durability",
+        "//kv",
         "//resource",
+        "//storage",
         "//util/test:test_utils",
         ":test_utils_storage",
 
@@ -120,6 +126,7 @@ rust_test(
         "//common/logger",
         "//common/primitive",
         "//durability",
+        "//kv",
         "//resource",
         "//storage",
         "//util/test:test_utils",

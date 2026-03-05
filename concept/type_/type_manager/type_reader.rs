@@ -23,14 +23,12 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     Keyable,
 };
+use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::StorageCounters,
 };
-use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    snapshot::ReadableSnapshot,
-};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
@@ -69,7 +67,7 @@ impl TypeReader {
     {
         let key = LabelToTypeVertexIndex::build(label).into_storage_key();
         match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference(), StorageCounters::DISABLED) {
-            Err(error) => Err(Box::new(ConceptReadError::SnapshotGet { source: error })),
+            Err(error) => Err(Box::new(ConceptReadError::SnapshotGet { typedb_source: error })),
             Ok(None) => Ok(None),
             Ok(Some(value)) => match T::from_bytes(Bytes::Array(value)) {
                 Ok(type_) => Ok(Some(type_)),
@@ -108,7 +106,7 @@ impl TypeReader {
         let index_key = NameToStructDefinitionIndex::build(name);
         let bytes = snapshot
             .get(index_key.into_storage_key().as_reference(), StorageCounters::DISABLED)
-            .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?;
+            .map_err(|source| Box::new(ConceptReadError::SnapshotGet { typedb_source: source }))?;
         Ok(bytes.map(|value| DefinitionKey::new(Bytes::Array(value))))
     }
 
@@ -121,7 +119,7 @@ impl TypeReader {
                 definition_key.clone().into_storage_key().as_reference(),
                 StorageCounters::DISABLED,
             )
-            .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?;
+            .map_err(|source| Box::new(ConceptReadError::SnapshotGet { typedb_source: source }))?;
         Ok(StructDefinition::from_bytes(&bytes.unwrap()))
     }
 
@@ -480,7 +478,7 @@ impl TypeReader {
                 |value| PROPERTY::from_value_bytes(value),
                 StorageCounters::DISABLED,
             )
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?;
         Ok(property)
     }
 
@@ -515,7 +513,7 @@ impl TypeReader {
                 |value| PROPERTY::from_value_bytes(value),
                 StorageCounters::DISABLED,
             )
-            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { typedb_source: err }))?;
         Ok(property)
     }
 
