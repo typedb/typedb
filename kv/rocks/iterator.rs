@@ -58,21 +58,15 @@ impl RocksRangeIterator {
 
     fn accept_value(condition: &ContinueCondition, value: &<Self as LendingIterator>::Item<'_>) -> bool {
         match value {
-            Ok((key, _)) => {
+            &Ok((key, _)) => {
                 match condition {
                     ContinueCondition::ExactPrefix(prefix) => key.starts_with(prefix),
                     ContinueCondition::EndPrefixInclusive(end_inclusive) => {
-                        // if the key is shorter than the end, and the end starts with the key, then it must be OK
-                        //  example: A will be included when searching up to and including AA
-                        // otherwise, the key is longer and we check the corresponding ranges
-                        end_inclusive.starts_with(key) || &key[0..end_inclusive.len()] <= end_inclusive
+                        // Either the key is before the end prefix in the dictionary order, OR starts with the end prefix.
+                        // E.g. 'ABC' is sorted after 'AB', but will be included in the iterator output because it starts with AB.
+                        key <= end_inclusive || key.starts_with(end_inclusive)
                     }
-                    ContinueCondition::EndPrefixExclusive(end_exclusive) => {
-                        // if the key is shorter than the end, and the end starts with the key, then it must be OK
-                        //  example: A will be included when searching up to but not including AA
-                        // otherwise, the key is longer and we check the corresponding ranges
-                        end_exclusive.starts_with(key) || &key[0..end_exclusive.len()] < end_exclusive
-                    }
+                    ContinueCondition::EndPrefixExclusive(end_exclusive) => key < end_exclusive,
                     ContinueCondition::Always => true,
                 }
             }
