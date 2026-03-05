@@ -80,9 +80,9 @@ impl RocksRangeIterator {
         }
     }
 
-    pub(crate) fn new<'a, const INLINE_BYTES: usize>(
+    pub(crate) fn new<const INLINE_BYTES: usize>(
         kv_store: &RocksKVStore,
-        range: &KeyRange<Bytes<'a, INLINE_BYTES>>,
+        range: &KeyRange<Bytes<'_, INLINE_BYTES>>,
         storage_counters: StorageCounters,
     ) -> Self {
         let start_prefix = match range.start() {
@@ -95,9 +95,9 @@ impl RocksRangeIterator {
             }
         };
         let raw_iterator = if Self::can_use_prefix(kv_store.prefix_length, range) {
-            kv_store.iterpool().get_iterator_prefixed(&kv_store)
+            kv_store.iterpool().get_iterator_prefixed(kv_store)
         } else {
-            kv_store.iterpool().get_iterator_unprefixed(&kv_store)
+            kv_store.iterpool().get_iterator_unprefixed(kv_store)
         };
         let mut iterator = DBIterator::new_from(raw_iterator, start_prefix.as_ref(), storage_counters);
         if matches!(range.start(), RangeStart::ExcludeFirstWithPrefix(_)) {
@@ -134,10 +134,7 @@ impl LendingIterator for RocksRangeIterator {
         // validate next against the Condition
         let item = match next {
             None => None,
-            Some(result) => match Self::accept_value(&self.continue_condition, &result) {
-                true => Some(result),
-                false => None,
-            },
+            Some(result) => Self::accept_value(&self.continue_condition, &result).then_some(result),
         };
         if item.is_none() {
             self.is_finished = true;
@@ -174,15 +171,9 @@ impl IteratorItemState {
     pub fn take_value_else_retain(&mut self) -> Self {
         // this method protects us from losing the Finished or Error state
         match self {
-            IteratorItemState::None => {
-                // unchanged
-                Self::None
-            }
+            IteratorItemState::None => Self::None, // unchanged
             IteratorItemState::Some(_) => mem::replace(self, IteratorItemState::None),
-            IteratorItemState::Finished => {
-                // unchanged, keep finished
-                Self::Finished
-            }
+            IteratorItemState::Finished => Self::Finished, // unchanged, keep finished
             IteratorItemState::Err(err) => Self::Err(err.clone()),
         }
     }
@@ -270,15 +261,9 @@ impl Seekable<[u8]> for DBIterator {
             return;
         } else if let IteratorItemState::Some((item_key, _)) = &self.state {
             match (*item_key).cmp(key) {
-                Ordering::Less => {
-                    // fall through
-                }
-                Ordering::Equal => {
-                    return;
-                }
-                Ordering::Greater => {
-                    unreachable!("Cannot seek DBIterator to a value ordered behind the current item")
-                }
+                Ordering::Less => (), // fall through
+                Ordering::Equal => return,
+                Ordering::Greater => unreachable!("Cannot seek DBIterator to a value ordered behind the current item"),
             }
         }
         self.state.take_value_else_retain();
