@@ -11,6 +11,7 @@ use std::{fs::File, os::raw::c_int, path::Path, sync::Arc};
 use bytes::byte_array::ByteArray;
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
 use durability::wal::WAL;
+use kv::keyspaces::{KeyspaceId, KeyspaceSet};
 use pprof::ProfilerGuard;
 use primitive::key_range::KeyRange;
 use resource::{
@@ -20,7 +21,6 @@ use resource::{
 use storage::{
     durability_client::WALClient,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
     MVCCStorage,
 };
