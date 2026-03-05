@@ -14,7 +14,7 @@ use std::{
 };
 
 use bytes::{util::MB, Bytes};
-use error::typedb_error;
+use error::{typedb_error, TypeDBError};
 use primitive::key_range::KeyRange;
 use resource::{constants::storage::ROCKSDB_CACHE_SIZE_MB, profile::StorageCounters};
 use rocksdb::{
@@ -25,7 +25,7 @@ use rocksdb::{
 use crate::{
     keyspaces::{KeyspaceId, KeyspaceSet, Keyspaces, KeyspacesError},
     rocks::iterator::RocksRangeIterator,
-    KVStore, KVStoreError, KVStoreID,
+    KVStore, KVStoreID,
 };
 
 pub struct RocksKVStore {
@@ -55,7 +55,7 @@ impl RocksKVStore {
         prefix_length: Option<usize>,
         name: &'static str,
         id: KVStoreID,
-    ) -> Result<Self, Box<dyn KVStoreError>> {
+    ) -> Result<Self, Box<dyn TypeDBError>> {
         use RocksKVError::Open;
         let path = storage_path.join(name);
         let kv_storage = DB::open(&options, &path).map_err(|error| Open { name, source: error })?;
@@ -165,13 +165,13 @@ impl RocksKVStore {
         self.name
     }
 
-    pub fn put(&self, key: &[u8], value: &[u8]) -> Result<(), Box<dyn KVStoreError>> {
+    pub fn put(&self, key: &[u8], value: &[u8]) -> Result<(), Box<dyn TypeDBError>> {
         self.rocks
             .put_opt(key, value, &self.write_options)
             .map_err(|error| RocksKVError::Put { name: self.name, source: error }.into())
     }
 
-    pub fn get<M, V>(&self, key: &[u8], mut mapper: M) -> Result<Option<V>, Box<dyn KVStoreError>>
+    pub fn get<M, V>(&self, key: &[u8], mut mapper: M) -> Result<Option<V>, Box<dyn TypeDBError>>
     where
         M: FnMut(&[u8]) -> V,
     {
@@ -198,13 +198,13 @@ impl RocksKVStore {
         RocksRangeIterator::new(self, range, storage_counters)
     }
 
-    pub fn write(&self, write_batch: WriteBatch) -> Result<(), Box<dyn KVStoreError>> {
+    pub fn write(&self, write_batch: WriteBatch) -> Result<(), Box<dyn TypeDBError>> {
         self.rocks
             .write_opt(write_batch, &self.write_options)
             .map_err(|error| RocksKVError::BatchWrite { name: self.name, source: error }.into())
     }
 
-    pub fn checkpoint(&self, checkpoint_dir: &Path) -> Result<(), Box<dyn KVStoreError>> {
+    pub fn checkpoint(&self, checkpoint_dir: &Path) -> Result<(), Box<dyn TypeDBError>> {
         use RocksKVError::{CheckpointExists, CreateRocksDBCheckpoint};
 
         let checkpoint_dir = checkpoint_dir.join(self.name);
@@ -219,14 +219,14 @@ impl RocksKVStore {
         Ok(())
     }
 
-    pub fn delete(self) -> Result<(), Box<dyn KVStoreError>> {
+    pub fn delete(self) -> Result<(), Box<dyn TypeDBError>> {
         drop(self.rocks);
         fs::remove_dir_all(self.path.clone())
             .map_err(|error| RocksKVError::DeleteErrorDirectoryRemove { name: self.name, source: Arc::new(error) })?;
         Ok(())
     }
 
-    pub fn reset(&mut self) -> Result<(), Box<dyn KVStoreError>> {
+    pub fn reset(&mut self) -> Result<(), Box<dyn TypeDBError>> {
         let iterator = self.rocks.iterator(IteratorMode::Start);
         for entry in iterator {
             let (key, _) = entry.map_err(|err| RocksKVError::Iterate { name: self.name, source: err })?;
@@ -235,7 +235,7 @@ impl RocksKVStore {
         Ok(())
     }
 
-    pub fn estimate_size_in_bytes(&self) -> Result<u64, Box<dyn KVStoreError>> {
+    pub fn estimate_size_in_bytes(&self) -> Result<u64, Box<dyn TypeDBError>> {
         let property_name = rocks_constants::PROPERTY_ESTIMATE_LIVE_DATA_SIZE;
         self.rocks
             .property_int_value(property_name)
@@ -243,7 +243,7 @@ impl RocksKVStore {
             .map(|result_opt| result_opt.unwrap_or(0))
     }
 
-    pub fn estimate_key_count(&self) -> Result<u64, Box<dyn KVStoreError>> {
+    pub fn estimate_key_count(&self) -> Result<u64, Box<dyn TypeDBError>> {
         let property_name = rocks_constants::PROPERTY_ESTIMATE_NUM_KEYS;
         self.rocks
             .property_int_value(property_name)
@@ -281,8 +281,6 @@ impl std::error::Error for RocksKVError {
         None
     }
 }
-
-impl KVStoreError for RocksKVError {}
 
 impl std::fmt::Debug for RocksKVStore {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

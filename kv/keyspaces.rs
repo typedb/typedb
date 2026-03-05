@@ -5,10 +5,10 @@
  */
 use std::{fmt, path::Path, sync::Arc};
 
-use error::typedb_error;
+use error::{typedb_error, TypeDBError};
 use serde::{Deserialize, Serialize};
 
-use crate::{write_batches::WriteBatches, KVStore, KVStoreError, KVStoreID};
+use crate::{write_batches::WriteBatches, KVStore, KVStoreID};
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyspaceId(pub u8);
@@ -147,7 +147,7 @@ impl Keyspaces {
 
 typedb_error!(
     pub KeyspacesError(component = "Keyspaces error", prefix = "KSE") {
-        KVStoreError(1, "KV store error.", typedb_source: Arc<dyn KVStoreError>),
+        KVStoreError(1, "KV store error.", typedb_source: Arc<dyn TypeDBError>),
         IdReserved(2, "Keyspace ID {id} is reserved and cannot be used for new keyspace '{name}'.", name: &'static str, id: u8),
         IdTooLarge(3, "Keyspace ID is too large. Name: {name}, id: {id} > max allowed id: {max_id}.", name: &'static str, id: u8, max_id: u8 ),
         NameExists(4, "Keyspace name '{name}' exists and cannot be created again.", name: &'static str),

@@ -210,8 +210,8 @@ fn execute_schema_transaction(
                 .into_schema(),
             &schema_define,
         )
-        .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
-    transaction.commit().1.map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
+        .map_err(|err| err as Box<dyn TypeDBError>)?;
+    transaction.commit().1?;
     Ok(())
 }
 

@@ -6,6 +6,7 @@
 use std::{cmp::Ordering, mem, mem::transmute};
 
 use bytes::{byte_array::ByteArray, Bytes};
+use error::TypeDBError;
 use lending_iterator::{LendingIterator, Seekable};
 use primitive::key_range::{KeyRange, RangeEnd, RangeStart};
 use resource::profile::StorageCounters;
@@ -14,7 +15,6 @@ use rocksdb::DBRawIterator;
 use crate::{
     iterator::ContinueCondition,
     rocks::{pool::PoolRecycleGuard, RocksKVError, RocksKVStore},
-    KVStoreError,
 };
 
 type KeyValue<'a> = (&'a [u8], &'a [u8]);
@@ -118,7 +118,7 @@ impl RocksRangeIterator {
 
 impl LendingIterator for RocksRangeIterator {
     type Item<'a>
-    = Result<(&'a [u8], &'a [u8]), Box<dyn KVStoreError>>
+        = Result<(&'a [u8], &'a [u8]), Box<dyn TypeDBError>>
     where
         Self: 'a;
 

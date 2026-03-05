@@ -7,12 +7,13 @@
 use std::cmp::Ordering;
 
 use bytes::byte_array::ByteArray;
+use error::TypeDBError;
 use lending_iterator::{LendingIterator, Seekable};
 use resource::constants::kv::ITERATOR_CONTINUE_CONDITION_INLINE;
 
-use crate::{rocks::iterator::RocksRangeIterator, KVStoreError};
+use crate::rocks::iterator::RocksRangeIterator;
 
-pub type KVIteratorItem<'a> = Result<(&'a [u8], &'a [u8]), Box<dyn KVStoreError>>;
+pub type KVIteratorItem<'a> = Result<(&'a [u8], &'a [u8]), Box<dyn TypeDBError>>;
 
 pub enum KVRangeIterator {
     RocksDB(RocksRangeIterator),

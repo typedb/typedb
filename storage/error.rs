@@ -6,8 +6,8 @@
 
 use std::sync::Arc;
 
-use error::typedb_error;
-use kv::{keyspaces::KeyspacesError, KVStoreError};
+use error::{typedb_error, TypeDBError};
+use kv::keyspaces::KeyspacesError;
 
 typedb_error!(
     pub MVCCStorageError(component = "MVCC Storage", prefix = "MST") {
@@ -22,7 +22,7 @@ typedb_error!(
             "Error in keyspace '{keyspace_name}' of MVV storage '{storage_name}'.",
             storage_name: String,
             keyspace_name: &'static str,
-            typedb_source: Arc<dyn KVStoreError>
+            typedb_source: Arc<dyn TypeDBError>
         ),
         KeyspaceDeleteError(
             3,

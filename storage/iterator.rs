@@ -7,8 +7,8 @@
 use std::{cmp::Ordering, sync::Arc};
 
 use bytes::byte_array::ByteArray;
-use error::typedb_error;
-use kv::{iterator::KVRangeIterator, keyspaces::KeyspaceId, KVStoreError};
+use error::{typedb_error, TypeDBError};
+use kv::{iterator::KVRangeIterator, keyspaces::KeyspaceId};
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 use primitive::key_range::KeyRange;
 use resource::profile::StorageCounters;
@@ -147,7 +147,7 @@ typedb_error!(
             1,
             "Error reading from keyspace in MVCC storage '{storage_name}'.",
             storage_name: String,
-            typedb_source: Arc<dyn KVStoreError>
+            typedb_source: Arc<dyn TypeDBError>
         ),
     }
 );

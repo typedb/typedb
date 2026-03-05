@@ -44,13 +44,13 @@ impl KVStore {
         }
     }
 
-    pub fn put(&self, key: &[u8], value: &[u8]) -> Result<(), Box<dyn KVStoreError>> {
+    pub fn put(&self, key: &[u8], value: &[u8]) -> Result<(), Box<dyn TypeDBError>> {
         match self {
             Self::RocksDB(s) => s.put(key, value),
         }
     }
 
-    pub fn get<M, V>(&self, key: &[u8], mapper: M) -> Result<Option<V>, Box<dyn KVStoreError>>
+    pub fn get<M, V>(&self, key: &[u8], mapper: M) -> Result<Option<V>, Box<dyn TypeDBError>>
     where
         M: FnMut(&[u8]) -> V,
     {
@@ -78,48 +78,40 @@ impl KVStore {
         }
     }
 
-    pub fn write(&self, write_batch: write_batches::KVWriteBatch) -> Result<(), Box<dyn KVStoreError>> {
+    pub fn write(&self, write_batch: write_batches::KVWriteBatch) -> Result<(), Box<dyn TypeDBError>> {
         match (self, write_batch) {
             (Self::RocksDB(s), write_batches::KVWriteBatch::RocksDB(b)) => s.write(b),
         }
     }
 
-    pub fn checkpoint(&self, checkpoint_dir: &Path) -> Result<(), Box<dyn KVStoreError>> {
+    pub fn checkpoint(&self, checkpoint_dir: &Path) -> Result<(), Box<dyn TypeDBError>> {
         match self {
             Self::RocksDB(s) => s.checkpoint(checkpoint_dir),
         }
     }
 
-    pub fn delete(self) -> Result<(), Box<dyn KVStoreError>> {
+    pub fn delete(self) -> Result<(), Box<dyn TypeDBError>> {
         match self {
             Self::RocksDB(s) => s.delete(),
         }
     }
 
-    pub fn reset(&mut self) -> Result<(), Box<dyn KVStoreError>> {
+    pub fn reset(&mut self) -> Result<(), Box<dyn TypeDBError>> {
         match self {
             Self::RocksDB(s) => s.reset(),
         }
     }
 
-    pub fn estimate_size_in_bytes(&self) -> Result<u64, Box<dyn KVStoreError>> {
+    pub fn estimate_size_in_bytes(&self) -> Result<u64, Box<dyn TypeDBError>> {
         match self {
             Self::RocksDB(s) => s.estimate_size_in_bytes(),
         }
     }
 
-    pub fn estimate_key_count(&self) -> Result<u64, Box<dyn KVStoreError>> {
+    pub fn estimate_key_count(&self) -> Result<u64, Box<dyn TypeDBError>> {
         match self {
             Self::RocksDB(s) => s.estimate_key_count(),
         }
-    }
-}
-
-pub trait KVStoreError: TypeDBError + Send + Sync + std::fmt::Debug {}
-
-impl<T: KVStoreError + 'static> From<T> for Box<dyn KVStoreError> {
-    fn from(value: T) -> Self {
-        Box::new(value)
     }
 }
 
