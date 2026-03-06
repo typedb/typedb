@@ -11,5 +11,5 @@ async fn test_migration() {
     // Bazel specific path: when running the test in bazel, the external data from
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
-    assert!(Context::test("../typedb_behaviour/concept/migration/migration.feature", true).await);
+    assert!(Context::test("../typedb_behaviour+/concept/migration/migration.feature", true).await);
 }
