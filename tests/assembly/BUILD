@@ -9,6 +9,8 @@ rust_test(
     name = "test_assembly",
     srcs = ["assembly.rs"],
     deps = [
+        "//resource",
+
         "@crates//:tokio",
     ],
     data = ["//:assemble-typedb-all", ":script.tql"],
