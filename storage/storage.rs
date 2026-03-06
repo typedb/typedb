@@ -138,8 +138,12 @@ impl<Durability> MVCCStorage<Durability> {
                 .recover_storage::<KS, _>(name, &storage_dir, &durability_client)
                 .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
         } else {
-            fs::remove_dir_all(&storage_dir)
-                .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
+            match fs::remove_dir_all(&storage_dir) {
+                Err(err) if err.kind() != io::ErrorKind::NotFound => {
+                    return Err(StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) });
+                }
+                _ => (),
+            }
             fail_point!(STORAGE_MISSING_STORAGE_DIR);
             fs::create_dir_all(&storage_dir)
                 .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
