@@ -118,6 +118,7 @@ fn extract_typedb() {
 fn run_test_against_server(server_process: &mut Child) {
     enum Instruction {
         Command(&'static str),
+        Parallel(&'static str),
         Sleep(Duration),
     }
 
@@ -126,7 +127,7 @@ fn run_test_against_server(server_process: &mut Child) {
         Instruction::Command(
             r#"
 transaction schema foo
-define entity person, owns name; attribute name, value string; end;
+define entity person, owns name @card(0..1); attribute name, value string; end;
 commit"#,
         ),
         Instruction::Sleep(CHECKPOINT_INTERVAL),
@@ -137,27 +138,48 @@ insert $john isa person, has name "John"; end;
 commit"#,
         ),
         Instruction::Sleep(CHECKPOINT_INTERVAL),
+        Instruction::Parallel(
+            r#"
+transaction write foo
+match $john isa person, has name $name;
+delete has $name of $john; end;
+commit"#,
+        ),
         Instruction::Command("database delete foo"),
+        Instruction::Command("database create foo"),
+        Instruction::Command(
+            r#"
+transaction schema foo
+define entity person, owns name @card(0..1); attribute name, value string; end;
+commit"#,
+        ),
     ];
 
     for inst in instructions {
         match inst {
             Instruction::Command(command) => {
-                let status = build_cmd(&format!(
-                    concat!(
-                        "typedb-extracted/typedb console --username=admin --password=password",
-                        "--address=localhost:1729 --tls-disabled --command='{command}'"
-                    ),
-                    command = command,
-                ))
-                .output()
-                .expect("Failed to run console script")
-                .status;
+                let status = build_console_command(command).output().expect("Failed to run console script").status;
                 if !status.success() {
                     break;
                 }
             }
+            Instruction::Parallel(command) => {
+                let mut cmd = build_console_command(command);
+                let mut cmd2 = build_console_command(command);
+                thread::spawn(move || cmd.output().unwrap());
+                cmd2.output().unwrap();
+            }
             Instruction::Sleep(duration) => wait_process_timeout(server_process, duration).unwrap(),
         }
     }
+}
+
+fn build_console_command(command: &str) -> Command {
+    build_cmd(&format!(
+        concat!(
+            "typedb-extracted/typedb console --username=admin --password=password ",
+            "--address=localhost:1729 --tls-disabled --command='{command}'"
+        ),
+        command = command,
+    ))
 }
