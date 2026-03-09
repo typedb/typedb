@@ -14,7 +14,7 @@ use std::{
 use cache::CACHE_DB_NAME_PREFIX;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
-use tracing::{event, warn, Level};
+use tracing::{debug, event, warn, Level};
 
 use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
 
@@ -158,6 +158,7 @@ impl DatabaseManager {
 
     pub fn delete_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
         let name = name.as_ref();
+        debug!("Deleting database {name}");
         if Self::is_internal_database(name) {
             return Err(DatabaseDeleteError::InternalDatabaseDeletionProhibited {});
         }

@@ -30,7 +30,7 @@ use fail_point::{
 use itertools::Itertools;
 use logger::result::ResultExt;
 use resource::constants::storage::WAL_SYNC_INTERVAL_MICROSECONDS;
-use tracing::warn;
+use tracing::{debug, warn};
 
 use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, DurabilityServiceError, RawRecord};
 
@@ -130,7 +130,9 @@ impl DurabilityService for WAL {
     fn unsequenced_write(&self, record_type: DurabilityRecordType, bytes: &[u8]) -> Result<(), DurabilityServiceError> {
         debug_assert!(self.registered_types.contains_key(&record_type));
         let mut files = self.files.write().unwrap();
-        let raw_record = RawRecord { sequence_number: self.previous(), record_type, bytes: Cow::Borrowed(bytes) };
+        let sequence_number = self.previous();
+        debug!("Writing unsequenced record with {sequence_number}");
+        let raw_record = RawRecord { sequence_number, record_type, bytes: Cow::Borrowed(bytes) };
         files.write_record(raw_record)?;
         Ok(())
     }
@@ -142,10 +144,11 @@ impl DurabilityService for WAL {
     ) -> Result<DurabilitySequenceNumber, DurabilityServiceError> {
         debug_assert!(self.registered_types.contains_key(&record_type));
         let mut files = self.files.write().unwrap();
-        let seq = self.increment();
-        let raw_record = RawRecord { sequence_number: seq, record_type, bytes: Cow::Borrowed(bytes) };
+        let sequence_number = self.increment();
+        debug!("Writing unsequenced record with {sequence_number}");
+        let raw_record = RawRecord { sequence_number, record_type, bytes: Cow::Borrowed(bytes) };
         files.write_record(raw_record)?;
-        Ok(seq)
+        Ok(sequence_number)
     }
 
     fn iter_any_from(
