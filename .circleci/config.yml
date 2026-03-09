@@ -117,8 +117,8 @@ commands:
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
           export VERSION=$(git rev-parse HEAD)
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          # bazel run --config=ci --jobs=8 --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-<<parameters.image-arch>> \
-          #   --define container-version="$VERSION-<<parameters.image-arch>>" //:deploy-docker-snapshot-<<parameters.image-arch>>
+          bazel run --config=ci --jobs=8 --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-<<parameters.image-arch>> \
+            --define container-version="$VERSION-<<parameters.image-arch>>" //:deploy-docker-snapshot-<<parameters.image-arch>>
 
   # TODO: Migrate to bazel sh_binary
   deploy-docker-snapshot-multiarch:
