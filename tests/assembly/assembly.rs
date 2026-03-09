@@ -7,7 +7,7 @@
 use std::{
     fs,
     path::Path,
-    process::{Child, Command, Output, Stdio},
+    process::{Child, Command, Output},
     thread,
     time::{Duration, Instant},
 };
@@ -36,13 +36,32 @@ fn wait_process_timeout(process: &mut Child, timeout: Duration) -> std::io::Resu
     Ok(())
 }
 
+const BOOT_DURATION: Duration = Duration::from_secs(10);
+
+macro_rules! start_server {
+    () => {{
+        let output = build_cmd("typedb-extracted/typedb server --development-mode.enabled=true")
+            .spawn()
+            .expect("Failed to run console script");
+        std::thread::sleep(BOOT_DURATION);
+        output
+    }};
+    ($env:expr => $value:expr) => {{
+        let output = build_cmd("typedb-extracted/typedb server --development-mode.enabled=true")
+            .env($env, $value)
+            .stdout(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .spawn()
+            .expect("Failed to run console script");
+        std::thread::sleep(BOOT_DURATION);
+        output
+    }};
+}
+
 #[test]
 fn test_assembly() {
     extract_typedb();
-    let server_process = build_cmd("typedb-extracted/typedb server --development-mode.enabled=true")
-        .spawn()
-        .expect("Failed to spawn server process");
-    thread::sleep(Duration::from_secs(10));
+    let server_process = start_server!();
     let console_process_output = build_cmd(concat!(
         "typedb-extracted/typedb console --username=admin --password=password --address=localhost:1729 ",
         "--tls-disabled --script=tests/assembly/script.tql",
@@ -63,26 +82,21 @@ fn test_assembly() {
 fn test_fail_point_always() {
     for fail_point in fail_point::ALL {
         extract_typedb();
-        let mut server_process = build_cmd("typedb-extracted/typedb server --development-mode.enabled=true")
-            .env(fail_point::FAIL_POINT_ENV, format!("{fail_point}=panic"))
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn()
-            .expect("Failed to spawn server process");
-        thread::sleep(Duration::from_secs(10));
+        let directive = format!("{fail_point}=panic");
+        let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => &directive);
         run_test_against_server(&mut server_process);
         wait_process_timeout(&mut server_process, CHECKPOINT_INTERVAL).unwrap();
+
         if server_process.try_wait().unwrap().is_none() {
             kill_process(server_process).unwrap();
-            eprintln!("Fail point {fail_point} is never triggered");
+            let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => directive);
+            if server_process.try_wait().unwrap().is_none() {
+                kill_process(server_process).unwrap();
+                panic!("Fail point {fail_point} is never triggered");
+            }
         }
 
-        let mut server_process = build_cmd("typedb-extracted/typedb server --development-mode.enabled=true")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .expect("Failed to spawn server process");
-        thread::sleep(Duration::from_secs(10));
+        let mut server_process = start_server!();
         match server_process.try_wait().unwrap() {
             None => _ = kill_process(server_process).unwrap(),
             Some(_) => {
