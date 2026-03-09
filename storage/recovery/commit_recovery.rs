@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, error::Error, sync::Arc};
 
 use durability::RawRecord;
 use error::typedb_error;
@@ -81,12 +81,13 @@ pub fn load_commit_data_from(
 }
 
 pub(crate) fn apply_recovered(
+    database_name: &str,
     recovered_commits: BTreeMap<SequenceNumber, RecoveryCommitStatus>,
     durability_client: &impl DurabilityClient,
     keyspaces: &Keyspaces,
 ) -> Result<(), StorageRecoveryError> {
     event!(Level::TRACE, "Applying recovered commits");
-    use StorageRecoveryError::{DurabilityClientRead, DurabilityClientWrite, KeyspaceWrite};
+    use StorageRecoveryError::{DurabilityClientRead, DurabilityClientWrite, Internal, KeyspaceWrite};
 
     if recovered_commits.is_empty() {
         return Ok(());
@@ -94,15 +95,32 @@ pub(crate) fn apply_recovered(
 
     let isolation_manager = IsolationManager::new(*recovered_commits.first_key_value().unwrap().0);
 
-    let mut pending_writes = Vec::new();
+    let mut pending_writes = BTreeMap::new();
     for (commit_sequence_number, commit) in recovered_commits {
         match commit {
             RecoveryCommitStatus::Validated(commit_record) => {
-                pending_writes.push(WriteBatches::from_operations(commit_sequence_number, commit_record.operations()));
+                pending_writes.insert(
+                    commit_sequence_number,
+                    WriteBatches::from_operations(commit_sequence_number, commit_record.operations()),
+                );
                 isolation_manager.load_validated(commit_sequence_number, commit_record);
             }
             RecoveryCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),
             RecoveryCommitStatus::Pending(commit_record) => {
+                while pending_writes
+                    .first_key_value()
+                    .is_some_and(|(&seq, _)| seq <= commit_record.open_sequence_number())
+                {
+                    // must have been applied for a transaction to have been opened on this open_sequence_number
+                    let Some((sequence_number, _)) = pending_writes.pop_first() else {
+                        unreachable!("just checked first is Some(_)")
+                    };
+                    isolation_manager.applied(sequence_number).map_err(|error| Internal {
+                        name: Arc::new(database_name.to_owned()),
+                        source: Arc::new(error),
+                    })?;
+                }
+
                 let read_guard = isolation_manager.opened_for_read(commit_record.open_sequence_number());
                 let validated_commit = isolation_manager
                     .validate_commit(commit_sequence_number, commit_record, durability_client)
@@ -112,7 +130,7 @@ pub(crate) fn apply_recovered(
                     ValidatedCommit::Write(write_batches) => {
                         MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
-                        pending_writes.push(write_batches);
+                        pending_writes.insert(commit_sequence_number, write_batches);
                     }
                     ValidatedCommit::Conflict(_) => {
                         MVCCStorage::persist_commit_status(false, commit_sequence_number, durability_client)
@@ -123,7 +141,7 @@ pub(crate) fn apply_recovered(
         }
     }
 
-    for write_batches in pending_writes {
+    for write_batches in pending_writes.into_values() {
         keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
     }
 
@@ -147,5 +165,6 @@ typedb_error! {
             expected_sequence_number: SequenceNumber, first_record_sequence_number: SequenceNumber
         ),
         KeyspaceWrite(5, "Error writing recovered commits to keyspace.", source: KeyspaceError),
+        Internal(6, "Storage recovery for database '{name}' failed with internal error.", name: Arc<String>, source: Arc<dyn Error + Send + Sync + 'static>),
     }
 }
