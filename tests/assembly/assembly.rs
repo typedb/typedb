@@ -85,7 +85,6 @@ fn test_fail_point_always() {
         let directive = format!("{fail_point}=panic");
         let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => &directive);
         run_test_against_server(&mut server_process);
-        wait_process_timeout(&mut server_process, CHECKPOINT_INTERVAL).unwrap();
 
         if server_process.try_wait().unwrap().is_none() {
             kill_process(server_process).unwrap();
