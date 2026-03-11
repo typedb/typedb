@@ -2,6 +2,15 @@ diff --git a/BUILD b/BUILD
 index 938c1752f..fdaf1f296 100644
 --- a/BUILD
 +++ b/BUILD
+@@ -22,7 +22,7 @@ load("@typedb_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
+ load("@typedb_bazel_distribution//brew:rules.bzl", "deploy_brew")
+
+ exports_files(
+-    ["VERSION", "deployment.bzl", "LICENSE", "README.md"],
++    ["VERSION", "deployment.bzl", "LICENSE", "README.md", "typedb_server_bin.exe"],
+ )
+
+ genrule(
 @@ -78,9 +78,9 @@ alias(
  # The directory structure for distribution
  pkg_files(
