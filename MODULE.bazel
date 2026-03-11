@@ -59,6 +59,13 @@ use_repo(maven, "maven")
 
 # Rust crates
 crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+# ring crate requires additional data files for Windows MSVC builds
+crate.annotation(
+    crate = "ring",
+    build_script_data_glob = ["**"],
+    data_glob = ["**"],
+    compile_data_glob = ["**"],
+)
 use_repo(crate, "crates")
 
 # ===========================================================

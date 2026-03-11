@@ -75,7 +75,7 @@ alias(
     })
 )
 
-# The directory structure for distribution
+# The directory structure for distribution (Unix)
 pkg_files(
     name = "package-layout-server",
     srcs = ["//:typedb_server_bin", "//binary:typedb", "//server:config.yml"],
@@ -86,9 +86,25 @@ pkg_files(
     attributes = binary_permissions,
 )
 
+# The directory structure for distribution (Windows)
+pkg_files(
+    name = "package-layout-server-windows",
+    srcs = ["//:typedb_server_bin", "//binary:typedb.bat", "//server:config.yml"],
+    renames = {
+        "//:typedb_server_bin" : "server/typedb_server_bin.exe",
+        "//server:config.yml" : "server/config.yml",
+    },
+    attributes = binary_permissions,
+)
+
 pkg_tar(
     name = "package-typedb-server-only",
     srcs = [":package-layout-server"],
+)
+
+pkg_tar(
+    name = "package-typedb-server-only-windows",
+    srcs = [":package-layout-server-windows"],
 )
 
 assemble_zip(
@@ -141,7 +157,7 @@ assemble_zip(
     empty_directories = empty_directories,
     output_filename = "typedb-server-windows-x86_64",
     permissions = other_permissions,
-    targets = ["//:package-typedb-server-only"],
+    targets = ["//:package-typedb-server-only-windows"],
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_win_x86_64,
 )

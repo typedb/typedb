@@ -22,3 +22,6 @@ test --incompatible_strict_action_env --test_env=PATH
 
 # CI configuration: disables disk cache to prevent cache size issues in CI environments
 build:ci --disk_cache=
+
+# Windows: enable proper symlink support
+startup --windows_enable_symlinks
