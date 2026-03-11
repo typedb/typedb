@@ -107,19 +107,15 @@ pub(crate) fn apply_recovered(
             }
             RecoveryCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),
             RecoveryCommitStatus::Pending(commit_record) => {
-                while pending_writes
-                    .first_key_value()
-                    .is_some_and(|(&seq, _)| seq <= commit_record.open_sequence_number())
-                {
-                    // must have been applied for a transaction to have been opened on this open_sequence_number
-                    let Some((sequence_number, _)) = pending_writes.pop_first() else {
-                        unreachable!("just checked first is Some(_)")
-                    };
+                let tail = pending_writes.split_off(&commit_record.open_sequence_number().next());
+                for (sequence_number, write_batches) in pending_writes {
+                    keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
                     isolation_manager.applied(sequence_number).map_err(|error| Internal {
                         name: Arc::new(database_name.to_owned()),
                         source: Arc::new(error),
                     })?;
                 }
+                pending_writes = tail;
 
                 let read_guard = isolation_manager.opened_for_read(commit_record.open_sequence_number());
                 let validated_commit = isolation_manager
