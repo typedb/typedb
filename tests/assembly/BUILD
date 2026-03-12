@@ -9,6 +9,7 @@ rust_test(
     name = "test_assembly",
     srcs = ["assembly.rs"],
     deps = [
+        "//common/fail_point",
         "//resource",
 
         "@crates//:tokio",
