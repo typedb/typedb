@@ -130,7 +130,7 @@ features = {}
 		version = "0.3.31"
 		default-features = false
 
-	[dependencies.serde-json]
+	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
 		version = "1.0.143"
 		default-features = false
@@ -140,7 +140,7 @@ features = {}
 		features = []
 		default-features = false
 
-	[dependencies.macro-rules-attribute]
+	[dependencies.macro_rules_attribute]
 		features = ["default"]
 		version = "0.2.2"
 		default-features = false

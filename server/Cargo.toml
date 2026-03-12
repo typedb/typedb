@@ -22,7 +22,7 @@ dev-dependencies = {}
 		features = []
 		default-features = false
 
-	[dependencies.serde-with]
+	[dependencies.serde_with]
 		features = ["alloc", "default", "macros", "std"]
 		version = "3.14.0"
 		default-features = false
@@ -224,7 +224,7 @@ dev-dependencies = {}
 		version = "0.6.6"
 		default-features = false
 
-	[dependencies.serde-yaml2]
+	[dependencies.serde_yaml2]
 		features = []
 		version = "0.1.3"
 		default-features = false
@@ -244,7 +244,7 @@ dev-dependencies = {}
 		version = "0.3.31"
 		default-features = false
 
-	[dependencies.serde-json]
+	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
 		version = "1.0.143"
 		default-features = false

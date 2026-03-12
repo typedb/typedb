@@ -39,7 +39,7 @@ features = {}
 		version = "0.3.31"
 		default-features = false
 
-	[dependencies.serde-json]
+	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
 		version = "1.0.143"
 		default-features = false
