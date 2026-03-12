@@ -89,6 +89,7 @@ impl CheckpointReader {
 
     pub(crate) fn recover_storage<KS: KeyspaceSet, Durability: DurabilityClient>(
         &self,
+        database_name: &str,
         keyspaces_dir: &Path,
         durability_client: &Durability,
     ) -> Result<(Keyspaces, SequenceNumber), CheckpointLoadError> {
@@ -116,7 +117,7 @@ impl CheckpointReader {
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
         trace!("Applying missing commits");
-        apply_recovered(recovered_commits, durability_client, &keyspaces)
+        apply_recovered(database_name, recovered_commits, durability_client, &keyspaces)
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         Ok((keyspaces, next_sequence_number))
     }

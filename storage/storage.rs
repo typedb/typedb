@@ -129,7 +129,7 @@ impl<Durability> MVCCStorage<Durability> {
         Self::register_durability_record_types(&mut durability_client);
         let (keyspaces, next_sequence_number) = if let Some(checkpoint) = checkpoint {
             checkpoint
-                .recover_storage::<KS, _>(&storage_dir, &durability_client)
+                .recover_storage::<KS, _>(name, &storage_dir, &durability_client)
                 .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
         } else {
             fs::remove_dir_all(&storage_dir)
@@ -141,7 +141,7 @@ impl<Durability> MVCCStorage<Durability> {
             let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client, usize::MAX)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
-            apply_recovered(commits, &durability_client, &keyspaces)
+            apply_recovered(name, commits, &durability_client, &keyspaces)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             trace!("Finished applying commits from WAL.");
             (keyspaces, next_sequence_number)
