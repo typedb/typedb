@@ -15,22 +15,14 @@ features = {}
 [dependencies]
 
 	[dependencies.durability]
-		path = "../../durability"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.concept]
-		path = "../../concept"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.storage]
-		path = "../../storage"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.encoding]
-		path = "../../encoding"
-		features = []
-		default-features = false
+		workspace = true
 
