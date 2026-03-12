@@ -23,7 +23,7 @@ use resource::profile::CommitProfile;
 use storage::{
     durability_client::WALClient,
     key_value::StorageKeyReference,
-    recovery::checkpoint::{CheckpointReader, CheckpointWriter},
+    recovery::checkpoint::CheckpointWriter,
     snapshot::{CommittableSnapshot, WritableSnapshot},
     MVCCStorage,
 };
