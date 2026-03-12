@@ -52,7 +52,7 @@ use crate::{
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
         QueryType,
     },
-    state::ArcServerState,
+    state::ServerState,
 };
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
@@ -67,7 +67,7 @@ struct TransactionInfo {
 
 #[derive(Clone, Debug)]
 pub(crate) struct HTTPTypeDBService {
-    server_state: ArcServerState,
+    server_state: Arc<ServerState>,
     // TODO: If TransactionId proves itself to be stable, we could substitute Uuid with it
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
 }
@@ -76,7 +76,7 @@ impl HTTPTypeDBService {
     const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
     const QUERY_ENDPOINT_COMMIT_DEFAULT: bool = true;
 
-    pub(crate) fn new(server_state: ArcServerState, background_tasks: TokioTaskSpawner) -> Self {
+    pub(crate) fn new(server_state: Arc<ServerState>, background_tasks: TokioTaskSpawner) -> Self {
         let transaction_services = Arc::new(RwLock::new(HashMap::new()));
         let controlled_transactions = transaction_services.clone();
         background_tasks.spawn_interval(
@@ -221,11 +221,11 @@ impl HTTPTypeDBService {
 
     async fn version(_version: ProtocolVersion, State(service): State<Arc<HTTPTypeDBService>>) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             None::<&str>,
             ActionKind::ServerVersion,
             || async {
-                let info = service.server_state.distribution_info().await;
+                let info = service.server_state.distribution_info();
                 Ok::<_, HttpServiceError>(JsonBody(encode_server_version(
                     info.distribution.to_string(),
                     info.version.to_string(),
@@ -249,7 +249,7 @@ impl HTTPTypeDBService {
         JsonBody(payload): JsonBody<SigninPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             None::<&str>,
             ActionKind::SignIn,
             || async {
@@ -266,7 +266,7 @@ impl HTTPTypeDBService {
 
     async fn servers(_version: ProtocolVersion, State(service): State<Arc<HTTPTypeDBService>>) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             None::<&str>,
             ActionKind::ServersAll,
             || async {
@@ -283,7 +283,7 @@ impl HTTPTypeDBService {
 
     async fn databases(_version: ProtocolVersion, State(service): State<Arc<HTTPTypeDBService>>) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             None::<&str>,
             ActionKind::DatabasesAll,
             || async {
@@ -304,7 +304,7 @@ impl HTTPTypeDBService {
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(&database_path.database_name),
             ActionKind::DatabasesGet,
             || async {
@@ -328,7 +328,7 @@ impl HTTPTypeDBService {
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(&database_path.database_name),
             ActionKind::DatabasesCreate,
             || async {
@@ -348,7 +348,7 @@ impl HTTPTypeDBService {
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(&database_path.database_name),
             ActionKind::DatabaseDelete,
             || async {
@@ -368,7 +368,7 @@ impl HTTPTypeDBService {
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(&database_path.database_name),
             ActionKind::DatabaseSchema,
             || async {
@@ -389,7 +389,7 @@ impl HTTPTypeDBService {
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(&database_path.database_name),
             ActionKind::DatabaseTypeSchema,
             || async {
@@ -410,7 +410,7 @@ impl HTTPTypeDBService {
         accessor: Accessor,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             None::<&str>,
             ActionKind::UsersAll,
             || async {
@@ -432,7 +432,7 @@ impl HTTPTypeDBService {
         user_path: UserPath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             None::<&str>,
             ActionKind::UsersGet,
             || async {
@@ -455,7 +455,7 @@ impl HTTPTypeDBService {
         JsonBody(payload): JsonBody<CreateUserPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             None::<&str>,
             ActionKind::UsersCreate,
             || async {
@@ -480,7 +480,7 @@ impl HTTPTypeDBService {
         JsonBody(payload): JsonBody<UpdateUserPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             None::<&str>,
             ActionKind::UsersUpdate,
             || async {
@@ -505,7 +505,7 @@ impl HTTPTypeDBService {
         user_path: UserPath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             None::<&str>,
             ActionKind::UsersDelete,
             || async {
@@ -528,7 +528,7 @@ impl HTTPTypeDBService {
         JsonBody(payload): JsonBody<TransactionOpenPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(payload.database_name.clone()),
             ActionKind::TransactionOpen,
             || async {
@@ -552,7 +552,7 @@ impl HTTPTypeDBService {
         let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionCommit,
             || async {
@@ -578,7 +578,7 @@ impl HTTPTypeDBService {
         };
 
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionClose,
             || async {
@@ -602,7 +602,7 @@ impl HTTPTypeDBService {
         let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionRollback,
             || async {
@@ -627,7 +627,7 @@ impl HTTPTypeDBService {
         let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionAnalyse,
             || async {
@@ -652,7 +652,7 @@ impl HTTPTypeDBService {
         let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionQuery,
             || async {
@@ -677,7 +677,7 @@ impl HTTPTypeDBService {
         JsonBody(payload): JsonBody<QueryPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.server_state.diagnostics_manager().await,
+            service.server_state.diagnostics_manager(),
             Some(payload.transaction_open_payload.database_name.clone()),
             ActionKind::OneshotQuery,
             || async {

@@ -68,7 +68,7 @@ use crate::{
         },
         QueryType, TransactionType,
     },
-    state::ArcServerState,
+    state::ServerState,
 };
 
 macro_rules! respond_error_and_return_break {
@@ -149,7 +149,7 @@ fn respond_transaction_response(
 
 #[derive(Debug)]
 pub(crate) struct TransactionService {
-    server_state: ArcServerState,
+    server_state: Arc<ServerState>,
 
     request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
     query_interrupt_sender: broadcast::Sender<InterruptType>,
@@ -231,7 +231,7 @@ impl fmt::Display for QueryAnswerWarning {
 
 impl TransactionService {
     pub(crate) fn new(
-        server_state: ArcServerState,
+        server_state: Arc<ServerState>,
         request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
@@ -311,7 +311,7 @@ impl TransactionService {
             return Err(TransactionServiceError::CannotOpen { typedb_source });
         }
 
-        self.server_state.diagnostics_manager().await.increment_load_count(
+        self.server_state.diagnostics_manager().increment_load_count(
             ClientEndpoint::Http,
             &database_name,
             transaction.load_kind(),
@@ -324,7 +324,7 @@ impl TransactionService {
     }
 
     pub(crate) async fn listen(&mut self) {
-        let mut global_shutdown_receiver = self.server_state.shutdown_receiver().await;
+        let mut global_shutdown_receiver = self.server_state.shutdown_receiver();
         loop {
             let control = if let Some((_, write_query_worker)) = &mut self.running_write_query {
                 tokio::select! { biased;
@@ -431,7 +431,7 @@ impl TransactionService {
             respond_error_and_return_break!(responder, TransactionServiceError::ServiceFailedQueueCleanup {});
         }
 
-        let diagnostics_manager = self.server_state.diagnostics_manager().await;
+        let diagnostics_manager = self.server_state.diagnostics_manager();
         let server_state = self.server_state.clone();
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
@@ -522,7 +522,7 @@ impl TransactionService {
         match self.transaction.take() {
             None => (),
             Some(Transaction::Read(transaction)) => {
-                self.server_state.diagnostics_manager().await.decrement_load_count(
+                self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::ReadTransactions,
@@ -530,7 +530,7 @@ impl TransactionService {
                 transaction.close()
             }
             Some(Transaction::Write(transaction)) => {
-                self.server_state.diagnostics_manager().await.decrement_load_count(
+                self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
@@ -538,7 +538,7 @@ impl TransactionService {
                 transaction.close()
             }
             Some(Transaction::Schema(transaction)) => {
-                self.server_state.diagnostics_manager().await.decrement_load_count(
+                self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,
