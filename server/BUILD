@@ -100,7 +100,7 @@ rust_library(
         "@crates//:uuid",
         "@crates//:xxhash-rust",
         "@crates//:yaml-rust2",
-        "@typedb_protocol//grpc/rust:typedb_protocol",
+        "//library/protocol:typedb_protocol",
         "@typeql//rust:typeql",
     ],
 )

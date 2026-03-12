@@ -20,7 +20,7 @@ bazel_dep(name = "bazel_skylib", version = "1.7.1")
 # ===========================================================
 
 # Rust
-bazel_dep(name = "rules_rust", version = "0.56.0")
+bazel_dep(name = "rules_rust", version = "0.69.0")
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
     edition = "2021",
@@ -59,6 +59,18 @@ use_repo(maven, "maven")
 
 # Rust crates
 crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "crates",
+    cargo_lockfile = "//library/crates:Cargo.lock",
+    manifests = ["//library/crates:Cargo.toml"],
+    supported_platform_triples = [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+    ],
+)
 # ring crate requires additional data files for Windows MSVC builds
 crate.annotation(
     crate = "ring",
@@ -66,11 +78,6 @@ crate.annotation(
     data_glob = ["**"],
     compile_data_glob = ["**"],
     build_script_rundir = ".",
-    build_script_env = {
-        # MSVC uses /I for include paths; cc-rs reads CFLAGS for extra flags
-        "CFLAGS": "/I.",
-        "CXXFLAGS": "/I.",
-    },
 )
 # windows crate generates .lib files needed for Windows MSVC builds
 crate.annotation(
@@ -165,32 +172,48 @@ http_file(
 # ===========================================================
 
 bazel_dep(name = "typedb_dependencies", version = "0.0.0")
-git_override(
+local_path_override(
     module_name = "typedb_dependencies",
-    remote = "https://github.com/typedb/dependencies",
-    commit = "5243b487cec48bd5b18ef744964f42b249bee7f8",
+    path = "../dependencies",
 )
+# git_override(
+#     module_name = "typedb_dependencies",
+#     remote = "https://github.com/typedb/dependencies",
+#     commit = "5243b487cec48bd5b18ef744964f42b249bee7f8",
+# )
 
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
-git_override(
+local_path_override(
     module_name = "typedb_bazel_distribution",
-    remote = "https://github.com/typedb/bazel-distribution",
-    commit = "b42e1df8f3d87beeb84869419d8ec6c982f079b8",
+    path = "../bazel-distribution",
 )
+# git_override(
+#     module_name = "typedb_bazel_distribution",
+#     remote = "https://github.com/typedb/bazel-distribution",
+#     commit = "b42e1df8f3d87beeb84869419d8ec6c982f079b8",
+# )
 
 bazel_dep(name = "typeql", version = "0.0.0")
-git_override(
+local_path_override(
     module_name = "typeql",
-    remote = "https://github.com/typedb/typeql",
-    commit = "a11320e749860876b46a9cd7f37b937b56fbee1e",
+    path = "../typeql",
 )
+# git_override(
+#     module_name = "typeql",
+#     remote = "https://github.com/typedb/typeql",
+#     commit = "a11320e749860876b46a9cd7f37b937b56fbee1e",
+# )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
-git_override(
+local_path_override(
     module_name = "typedb_protocol",
-    remote = "https://github.com/typedb/typedb-protocol",
-    commit = "20c4e5799c5c8f8262c3fde01a1c4bfce334a6fa",
+    path = "../typedb-protocol",
 )
+# git_override(
+#     module_name = "typedb_protocol",
+#     remote = "https://github.com/typedb/typedb-protocol",
+#     commit = "20c4e5799c5c8f8262c3fde01a1c4bfce334a6fa",
+# )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
