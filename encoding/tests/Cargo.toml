@@ -15,32 +15,20 @@ features = {}
 [dependencies]
 
 	[dependencies.test_utils]
-		path = "../../util/test"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.tracing]
-		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.41"
-		default-features = false
+		workspace = true
 
 	[dependencies.logger]
-		path = "../../common/logger"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.durability]
-		path = "../../durability"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.storage]
-		path = "../../storage"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.encoding]
-		path = "../../encoding"
-		features = []
-		default-features = false
+		workspace = true
 

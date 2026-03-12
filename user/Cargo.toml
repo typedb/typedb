@@ -15,53 +15,32 @@ features = {}
 [dependencies]
 
 	[dependencies.database]
-		path = "../database"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.system]
-		path = "../system"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.answer]
-		path = "../answer"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.resource]
-		path = "../resource"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.executor]
-		path = "../executor"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.query]
-		path = "../query"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.typeql]
-		features = []
-		git = "https://github.com/typedb/typeql"
-		tag = "3.8.0"
-		default-features = false
+		workspace = true
 
 	[dependencies.storage]
-		path = "../storage"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.error]
-		path = "../common/error"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.lending_iterator]
-		path = "../common/lending_iterator"
-		features = []
-		default-features = false
+		workspace = true
 
