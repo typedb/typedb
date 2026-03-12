@@ -65,6 +65,34 @@ crate.annotation(
     build_script_data_glob = ["**"],
     data_glob = ["**"],
     compile_data_glob = ["**"],
+    build_script_rundir = ".",
+    build_script_env = {
+        # MSVC uses /I for include paths; cc-rs reads CFLAGS for extra flags
+        "CFLAGS": "/I.",
+        "CXXFLAGS": "/I.",
+    },
+)
+# windows crate generates .lib files needed for Windows MSVC builds
+crate.annotation(
+    crate = "windows",
+    build_script_data_glob = ["**"],
+    data_glob = ["**"],
+    compile_data_glob = ["**"],
+    build_script_rundir = ".",
+)
+crate.annotation(
+    crate = "windows_x86_64_msvc",
+    build_script_data_glob = ["**"],
+    data_glob = ["**"],
+    compile_data_glob = ["**"],
+    build_script_rundir = ".",
+)
+# librocksdb-sys needs access to windows crate generated libraries
+crate.annotation(
+    crate = "librocksdb-sys",
+    build_script_data_glob = ["**"],
+    data_glob = ["**"],
+    compile_data_glob = ["**"],
 )
 use_repo(crate, "crates")
 
