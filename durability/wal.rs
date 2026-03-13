@@ -23,10 +23,14 @@ use std::{
     time::{Duration, Instant},
 };
 
+use fail_point::{
+    fail_point, WAL_EMPTY_WAL_DIR, WAL_PARTIAL_HEADER_SEQ, WAL_PARTIAL_HEADER_SEQ_LEN, WAL_RECORD_ONLY_HEADER,
+    WAL_RECORD_UNFLUSHED,
+};
 use itertools::Itertools;
 use logger::result::ResultExt;
 use resource::constants::storage::WAL_SYNC_INTERVAL_MICROSECONDS;
-use tracing::warn;
+use tracing::{debug, warn};
 
 use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, DurabilityServiceError, RawRecord};
 
@@ -52,6 +56,7 @@ impl WAL {
             Err(WALError::CreateErrorDirectoryExists { directory: wal_dir.clone() })?
         } else {
             fs::create_dir_all(wal_dir.clone()).map_err(|err| WALError::CreateError { source: Arc::new(err) })?;
+            fail_point!(WAL_EMPTY_WAL_DIR);
         }
 
         let files = Files::open(wal_dir.clone())?;
@@ -125,7 +130,9 @@ impl DurabilityService for WAL {
     fn unsequenced_write(&self, record_type: DurabilityRecordType, bytes: &[u8]) -> Result<(), DurabilityServiceError> {
         debug_assert!(self.registered_types.contains_key(&record_type));
         let mut files = self.files.write().unwrap();
-        let raw_record = RawRecord { sequence_number: self.previous(), record_type, bytes: Cow::Borrowed(bytes) };
+        let sequence_number = self.previous();
+        debug!("Writing unsequenced record with {sequence_number}");
+        let raw_record = RawRecord { sequence_number, record_type, bytes: Cow::Borrowed(bytes) };
         files.write_record(raw_record)?;
         Ok(())
     }
@@ -137,10 +144,11 @@ impl DurabilityService for WAL {
     ) -> Result<DurabilitySequenceNumber, DurabilityServiceError> {
         debug_assert!(self.registered_types.contains_key(&record_type));
         let mut files = self.files.write().unwrap();
-        let seq = self.increment();
-        let raw_record = RawRecord { sequence_number: seq, record_type, bytes: Cow::Borrowed(bytes) };
+        let sequence_number = self.increment();
+        debug!("Writing unsequenced record with {sequence_number}");
+        let raw_record = RawRecord { sequence_number, record_type, bytes: Cow::Borrowed(bytes) };
         files.write_record(raw_record)?;
-        Ok(seq)
+        Ok(sequence_number)
     }
 
     fn iter_any_from(
@@ -294,7 +302,10 @@ impl Files {
             },
         )?;
 
+        fail_point!(WAL_RECORD_ONLY_HEADER);
+
         writer.write_all(&compressed_bytes)?;
+        fail_point!(WAL_RECORD_UNFLUSHED);
         writer.flush()?;
 
         self.files.last_mut().unwrap().len = writer.stream_position()?;
@@ -327,7 +338,9 @@ impl Files {
 
 fn write_header(file: &mut BufWriter<StdFile>, header: RecordHeader) -> io::Result<()> {
     file.write_all(&header.sequence_number.to_be_bytes())?;
+    fail_point!(WAL_PARTIAL_HEADER_SEQ);
     file.write_all(&header.len.to_be_bytes())?;
+    fail_point!(WAL_PARTIAL_HEADER_SEQ_LEN);
     file.write_all(&[header.record_type])?;
     Ok(())
 }

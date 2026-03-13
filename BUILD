@@ -40,6 +40,7 @@ rust_binary(
         "main.rs",
     ],
     deps = [
+        "//common/fail_point",
         "//common/logger",
         "//database",
         "//resource",
@@ -48,6 +49,7 @@ rust_binary(
         "@crates//:clap",
         "@crates//:sentry",
         "@crates//:tokio",
+        "@crates//:tracing",
     ],
     data = ["//:config_at_root"]
 )

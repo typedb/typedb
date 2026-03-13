@@ -18,6 +18,7 @@ rust_library(
     deps = [
         "//common/bytes",
         "//common/error",
+        "//common/fail_point",
         "//common/lending_iterator",
         "//common/logger",
         "//common/primitive",

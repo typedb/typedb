@@ -15,87 +15,54 @@ features = {}
 [dev-dependencies]
 
 	[dev-dependencies.test_utils]
-		path = "../util/test"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.test_utils_encoding]
-		path = "../encoding/tests"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.durability]
-		path = "../durability"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.test_utils_concept]
-		path = "../concept/tests"
-		features = []
-		default-features = false
+		workspace = true
 
 [dependencies]
 
 	[dependencies.tracing]
-		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.41"
-		default-features = false
+		workspace = true
 
 	[dependencies.answer]
-		path = "../answer"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.resource]
-		path = "../resource"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.serde]
-		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.219"
-		default-features = false
+		workspace = true
 
 	[dependencies.concept]
-		path = "../concept"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.ir]
-		path = "../ir"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.typeql]
-		features = []
-		git = "https://github.com/typedb/typeql"
-		tag = "3.8.0"
-		default-features = false
+		workspace = true
 
 	[dependencies.storage]
-		path = "../storage"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.encoding]
-		path = "../encoding"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.error]
-		path = "../common/error"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.chrono]
-		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-		version = "0.4.41"
-		default-features = false
+		workspace = true
 
 	[dependencies.itertools]
-		features = ["default", "use_alloc", "use_std"]
-		version = "0.10.5"
-		default-features = false
+		workspace = true
 
 [[test]]
 	path = "tests/transformation.rs"

@@ -15,13 +15,8 @@ features = {}
 [dependencies]
 
 	[dependencies.resource]
-		path = "../../resource"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.typeql]
-		features = []
-		git = "https://github.com/typedb/typeql"
-		tag = "3.8.0"
-		default-features = false
+		workspace = true
 

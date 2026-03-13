@@ -24,7 +24,7 @@ pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Dat
         None => {
             database_manager
                 .put_database_unrestricted(SYSTEM_DB)
-                .unwrap_or_else(|_| panic!("Unable to create the {} database.", SYSTEM_DB));
+                .unwrap_or_else(|error| panic!("Unable to create the {} database: {:?}", SYSTEM_DB, error));
             let db = database_manager
                 .database_unrestricted(SYSTEM_DB)
                 .unwrap_or_else(|| panic!("The {} database could not be found.", SYSTEM_DB));
@@ -32,22 +32,28 @@ pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Dat
             tx_util
                 .schema_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
                     let query = typeql::parse_query(SCHEMA)
-                        .unwrap_or_else(|_| {
-                            panic!("Unexpected error occurred when parsing the schema for the {} database.", SYSTEM_DB)
+                        .unwrap_or_else(|error| {
+                            panic!(
+                                "Unexpected error occurred when parsing the schema for the {} database: {:?}",
+                                SYSTEM_DB, error,
+                            )
                         })
                         .into_structure()
                         .into_schema();
                     query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, SCHEMA).unwrap_or_else(
-                        |_| {
-                            panic!("Unexpected error occurred when defining the schema for the {} database.", SYSTEM_DB)
+                        |error| {
+                            panic!(
+                                "Unexpected error occurred when defining the schema for the {} database: {:?}",
+                                SYSTEM_DB, error,
+                            )
                         },
                     );
                 })
                 .1
-                .unwrap_or_else(|_| {
+                .unwrap_or_else(|error| {
                     panic!(
-                        "Unexpected error occurred when committing the schema transaction for {} database.",
-                        SYSTEM_DB
+                        "Unexpected error occurred when committing the schema transaction for {} database: {:?}",
+                        SYSTEM_DB, error,
                     )
                 });
             db

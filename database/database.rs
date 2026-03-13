@@ -25,7 +25,10 @@ use concept::{
 };
 use concurrency::IntervalRunner;
 use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
-use durability::{wal::WAL, DurabilityServiceError};
+use durability::{
+    wal::{WALError, WAL},
+    DurabilityServiceError,
+};
 use encoding::{
     error::EncodingError,
     graph::{
@@ -35,16 +38,17 @@ use encoding::{
     EncodingKeyspace,
 };
 use error::typedb_error;
+use fail_point::{fail_point, UNFINISHED_CHECKPOINT};
 use function::{function_cache::FunctionCache, FunctionError};
 use query::query_cache::QueryCache;
 use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
+    recovery::checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
     sequence_number::SequenceNumber,
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
-use tracing::{event, Level};
+use tracing::{debug, event, trace, Level};
 
 use crate::{
     transaction::TransactionError,
@@ -277,9 +281,14 @@ impl Database<WALClient> {
         let schema_txn_lock = Arc::new(RwLock::default());
 
         let query_cache = Arc::new(QueryCache::new());
-        let update_statistics =
-            make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
-        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), SequenceNumber::MIN, storage.clone());
+        let update_statistics = make_update_statistics_fn(
+            name.to_owned(),
+            storage.clone(),
+            schema.clone(),
+            schema_txn_lock.clone(),
+            query_cache.clone(),
+        );
+        let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
 
         Ok(Database::<WALClient> {
             name: name.to_owned(),
@@ -298,8 +307,8 @@ impl Database<WALClient> {
 
     fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
-            CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, StatisticsInitialise, StorageOpen,
-            TypeCacheInitialise, WALOpen,
+            CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, NotADatabase, StatisticsInitialise,
+            StorageOpen, TypeCacheInitialise, WALOpen,
         };
         let name = name.as_ref();
         event!(
@@ -311,14 +320,21 @@ impl Database<WALClient> {
         );
 
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
-        let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
+        let wal = match WAL::load(path) {
+            Ok(wal) => wal,
+            Err(DurabilityServiceError::WAL { source: WALError::LoadErrorDirectoryMissing { .. } }) => {
+                return Err(NotADatabase { name: name.to_owned() })
+            }
+            Err(err) => return Err(WALOpen { source: err }),
+        };
+
         let wal_last_sequence_number = wal.previous();
 
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
 
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
-        let checkpoint = Checkpoint::open_latest(path)
+        let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
             .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
         let storage = Arc::new(
             MVCCStorage::load::<EncodingKeyspace>(&name, path, wal_client, &checkpoint)
@@ -370,9 +386,15 @@ impl Database<WALClient> {
         };
 
         let query_cache = Arc::new(QueryCache::new());
-        let update_statistics =
-            make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
-        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), checkpoint_sequence_number, storage.clone());
+        let update_statistics = make_update_statistics_fn(
+            name.to_owned(),
+            storage.clone(),
+            schema.clone(),
+            schema_txn_lock.clone(),
+            query_cache.clone(),
+        );
+        let checkpoint_fn =
+            make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
 
         let database = Database::<WALClient> {
             name: name.to_owned(),
@@ -400,14 +422,12 @@ impl Database<WALClient> {
     }
 
     fn checkpoint(&self) -> Result<(), CheckpointCreateError> {
-        let checkpoint = Checkpoint::new(&self.path)?;
-        self.storage.checkpoint(&checkpoint)?;
-        checkpoint.finish()?;
-        Ok(())
+        checkpoint_storage(&self.name, &self.path, &self.storage)
     }
 
     #[allow(clippy::drop_non_drop)]
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
+        trace!("Deleting database '{}'.", self.name);
         drop(self._statistics_updater);
         drop(self._checkpointer);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
@@ -487,6 +507,7 @@ impl Database<WALClient> {
 }
 
 fn make_checkpoint_fn(
+    database_name: String,
     path: PathBuf,
     mut prev_checkpoint: SequenceNumber,
     storage: Arc<MVCCStorage<WALClient>>,
@@ -494,15 +515,28 @@ fn make_checkpoint_fn(
     move || {
         let watermark = storage.snapshot_watermark();
         if prev_checkpoint < watermark {
-            let checkpoint = Checkpoint::new(&path).unwrap();
-            storage.checkpoint(&checkpoint).unwrap();
-            checkpoint.finish().unwrap();
+            checkpoint_storage(&database_name, &path, &storage).unwrap();
             prev_checkpoint = watermark;
         }
     }
 }
 
+fn checkpoint_storage(
+    database_name: &str,
+    path: &Path,
+    storage: &MVCCStorage<WALClient>,
+) -> Result<(), CheckpointCreateError> {
+    debug!("Starting checkpoint for database {database_name}");
+    let checkpoint = CheckpointWriter::new(path)?;
+    storage.checkpoint(&checkpoint)?;
+    fail_point!(UNFINISHED_CHECKPOINT);
+    checkpoint.finish()?;
+    debug!("Finished checkpoint for database {database_name}");
+    Ok(())
+}
+
 fn make_update_statistics_fn(
+    database_name: String,
     storage: Arc<MVCCStorage<WALClient>>,
     schema: Arc<RwLock<Schema>>,
     schema_txn_lock: Arc<RwLock<()>>,
@@ -512,9 +546,11 @@ fn make_update_statistics_fn(
         if storage.snapshot_watermark() > (*schema).read().unwrap().thing_statistics.sequence_number {
             let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
+            debug!("Starting updating statistics for database {database_name}");
             new_statistics.may_synchronise(&storage).expect("Statistics sync failed");
             query_cache.may_evict(&new_statistics);
             schema.write().unwrap().thing_statistics = Arc::new(new_statistics);
+            debug!("Finished updating statistics for database {database_name}");
         }
     }
 }
@@ -536,6 +572,7 @@ typedb_error! {
         FunctionCacheInitialise(13, "Error initialising function cache.", typedb_source: FunctionError),
         FileDelete(14, "Error while deleting file for '{name}'", name: String, source: Arc<io::Error>),
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
+        NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
     }
 }
 

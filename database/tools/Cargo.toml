@@ -12,24 +12,16 @@ features = {}
 [dependencies]
 
 	[dependencies.clap]
-		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.45"
-		default-features = false
+		workspace = true
 
 	[dependencies.durability]
-		path = "../../durability"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.concept]
-		path = "../../concept"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.storage]
-		path = "../../storage"
-		features = []
-		default-features = false
+		workspace = true
 
 [[bin]]
 	path = "replay_wal.rs"

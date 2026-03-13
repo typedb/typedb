@@ -27,6 +27,7 @@ rust_library(
     ]),
     deps = [
         "//common/error",
+        "//common/fail_point",
         "//common/logger",
         "//resource",
 

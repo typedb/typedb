@@ -5,25 +5,21 @@
 features = {}
 
 [package]
-	name = "streamer"
+	name = "fail_point"
 	edition = "2021"
 	version = "0.0.0"
 
+[lib]
+	path = "lib.rs"
+
 [dependencies]
 
-	[dependencies.durability]
+	[dependencies.rand]
 		workspace = true
 
-	[dependencies.bincode]
+	[dependencies.tracing]
 		workspace = true
 
 	[dependencies.itertools]
 		workspace = true
-
-	[dependencies.durability_test_common]
-		workspace = true
-
-[[bin]]
-	path = "streamer.rs"
-	name = "streamer"
 

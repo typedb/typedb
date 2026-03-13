@@ -15,27 +15,17 @@ features = {}
 [dependencies]
 
 	[dependencies.resource]
-		path = "../../resource"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.bytes]
-		path = "../../common/bytes"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.logger]
-		path = "../../common/logger"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.durability]
-		path = "../../durability"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.storage]
-		path = "../../storage"
-		features = []
-		default-features = false
+		workspace = true
 

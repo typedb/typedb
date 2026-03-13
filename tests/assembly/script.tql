@@ -1,3 +1,367 @@
 database create foo
 database list
-database delete foo
+transaction schema foo
+define
+    entity person, owns name;
+    attribute name, value string;
+    relation marriage, relates spouse;
+    person plays marriage:spouse;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    (spouse: $john, spouse: $jane) isa marriage;
+end;
+commit

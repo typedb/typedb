@@ -15,122 +15,78 @@ features = {}
 [dev-dependencies]
 
 	[dev-dependencies.test_utils]
-		path = "../util/test"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.rand]
-		features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
-		version = "0.8.5"
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.xoshiro]
-		features = []
-		version = "0.0.5"
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.database]
-		path = "../database"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.criterion]
-		features = ["cargo_bench_support", "default", "plotters", "rayon"]
-		version = "0.5.1"
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.test_utils_storage]
-		path = "../storage/tests"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.pprof]
-		features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
-		version = "0.13.0"
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.rand_core]
-		features = ["default", "std"]
-		version = "0.3.1"
-		default-features = false
+		workspace = true
 
 [dependencies]
 
 	[dependencies.tracing]
-		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.41"
-		default-features = false
+		workspace = true
 
 	[dependencies.primitive]
-		path = "../common/primitive"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.serde]
-		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.219"
-		default-features = false
+		workspace = true
 
 	[dependencies.resource]
-		path = "../resource"
-		features = []
-		default-features = false
+		workspace = true
+
+	[dependencies.fail_point]
+		workspace = true
 
 	[dependencies.logger]
-		path = "../common/logger"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.durability]
-		path = "../durability"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.error]
-		path = "../common/error"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.itertools]
-		features = ["default", "use_alloc", "use_std"]
-		version = "0.10.5"
-		default-features = false
+		workspace = true
 
 	[dependencies.bytes]
-		path = "../common/bytes"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.bincode]
-		features = []
-		version = "1.3.3"
-		default-features = false
+		workspace = true
 
 	[dependencies.rocksdb]
-		features = ["bindgen-runtime", "lz4"]
-		version = "0.23.0"
-		default-features = false
+		workspace = true
 
 	[dependencies.same-file]
-		features = []
-		version = "1.0.6"
-		default-features = false
+		workspace = true
 
 	[dependencies.typeql]
-		features = []
-		git = "https://github.com/typedb/typeql"
-		tag = "3.8.0"
-		default-features = false
+		workspace = true
 
 	[dependencies.chrono]
-		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-		version = "0.4.41"
-		default-features = false
+		workspace = true
 
 	[dependencies.lending_iterator]
-		path = "../common/lending_iterator"
-		features = []
-		default-features = false
+		workspace = true
 
 [[bench]]
 	name = "bench_rocks"

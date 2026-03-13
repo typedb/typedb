@@ -1240,6 +1240,7 @@ dependencies = [
  "encoding",
  "error",
  "executor",
+ "fail_point",
  "function",
  "ir",
  "itertools 0.10.5",
@@ -1363,6 +1364,7 @@ dependencies = [
  "criterion",
  "durability_test_common",
  "error",
+ "fail_point",
  "itertools 0.10.5",
  "logger",
  "lz4",
@@ -1530,6 +1532,15 @@ dependencies = [
  "tracing",
  "typeql",
  "unicase",
+]
+
+[[package]]
+name = "fail_point"
+version = "0.0.0"
+dependencies = [
+ "itertools 0.10.5",
+ "rand 0.8.5",
+ "tracing",
 ]
 
 [[package]]
@@ -2221,7 +2232,7 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.26.2",
  "tower-service",
- "webpki-roots 1.0.4",
+ "webpki-roots 1.0.6",
 ]
 
 [[package]]
@@ -3592,7 +3603,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash 2.1.1",
  "rustls 0.23.23",
- "socket2 0.5.8",
+ "socket2 0.6.0",
  "thiserror 2.0.12",
  "tokio",
  "tracing",
@@ -3629,9 +3640,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.8",
+ "socket2 0.6.0",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4692,6 +4703,7 @@ dependencies = [
  "database",
  "durability",
  "error",
+ "fail_point",
  "itertools 0.10.5",
  "lending_iterator",
  "logger",
@@ -5076,9 +5088,9 @@ dependencies = [
 
 [[package]]
 name = "tinyvec"
-version = "1.9.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09b3661f17e86524eccd4371ab0429194e0d7c008abb45f7a7495b1719463c71"
+checksum = "bfa5fdc3bce6191a1dbc8c02d5c8bffcf557bafa17c124c5264a458f1b0613fa"
 dependencies = [
  "tinyvec_macros",
 ]
@@ -5424,6 +5436,7 @@ dependencies = [
  "clap",
  "database",
  "executor",
+ "fail_point",
  "function",
  "http_steps",
  "lending_iterator",
@@ -5437,6 +5450,7 @@ dependencies = [
  "storage",
  "test_utils",
  "tokio",
+ "tracing",
  "typeql",
 ]
 
@@ -5759,14 +5773,14 @@ version = "0.26.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "521bc38abb08001b01866da9f51eb7c5d647a19260e00054a8c7fd5f9e57f7a9"
 dependencies = [
- "webpki-roots 1.0.4",
+ "webpki-roots 1.0.6",
 ]
 
 [[package]]
 name = "webpki-roots"
-version = "1.0.4"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2878ef029c47c6e8cf779119f20fcf52bde7ad42a731b2a304bc221df17571e"
+checksum = "22cfaf3c063993ff62e73cb4311efde4db1efb31ab78a3e5c457939ad5cc0bed"
 dependencies = [
  "rustls-pki-types",
 ]

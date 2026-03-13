@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use clap::Parser;
 use resource::constants::server::SERVER_INFO;
@@ -84,7 +84,7 @@ pub struct CLIArgs {
 }
 
 impl CLIArgs {
-    pub fn resolve_path_from_pwd(path: &PathBuf) -> PathBuf {
+    pub fn resolve_path_from_pwd(path: &Path) -> PathBuf {
         std::env::current_dir().expect("Could not read working directory").join(path)
     }
 }
