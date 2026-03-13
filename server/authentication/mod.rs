@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::sync::Arc;
+
 use axum::RequestPartsExt;
 use axum_extra::{
     headers::{authorization::Bearer, Authorization},
@@ -54,7 +55,8 @@ pub(crate) async fn authenticate<T>(
 
     match extract_parts_authorization_token(parts.clone()).await {
         Some(token) => {
-            let accessor = server_state.users().token_get_owner(&token).await.ok_or(AuthenticationError::InvalidToken {})?;
+            let accessor =
+                server_state.users().token_get_owner(&token).await.ok_or(AuthenticationError::InvalidToken {})?;
             parts.extensions.insert(Accessor(accessor));
             Ok(http::Request::from_parts(parts, body))
         }

@@ -8,12 +8,11 @@ use std::{fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
 
+use super::BoxServerStatus;
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},
     status::{LocalServerStatus, ServerStatus},
 };
-
-use super::BoxServerStatus;
 
 #[async_trait]
 pub trait ServerManager: Debug + Send + Sync {
@@ -21,11 +20,8 @@ pub trait ServerManager: Debug + Send + Sync {
 
     async fn servers_all(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError>;
 
-    async fn servers_register(
-        &self,
-        clustering_id: u64,
-        clustering_address: String,
-    ) -> Result<(), ArcServerStateError>;
+    async fn servers_register(&self, clustering_id: u64, clustering_address: String)
+        -> Result<(), ArcServerStateError>;
 
     async fn servers_deregister(&self, clustering_id: u64) -> Result<(), ArcServerStateError>;
 }

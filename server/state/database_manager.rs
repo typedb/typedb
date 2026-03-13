@@ -94,9 +94,7 @@ impl LocalServerDatabaseManager {
     }
 }
 
-pub fn get_database_schema<D: DurabilityClient>(
-    database: Arc<Database<D>>,
-) -> Result<String, LocalServerStateError> {
+pub fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, LocalServerStateError> {
     let transaction = TransactionRead::open(database, options::TransactionOptions::default())
         .map_err(|typedb_source| LocalServerStateError::FailedToOpenPrerequisiteTransaction { typedb_source })?;
     let schema = get_transaction_schema(&transaction)

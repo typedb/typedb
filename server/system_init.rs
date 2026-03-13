@@ -26,7 +26,6 @@ use crate::{
     state::ServerState,
 };
 
-
 pub const SYSTEM_DB: &str = concat!(internal_database_prefix!(), "system");
 
 pub async fn initialise_system_database(
@@ -73,7 +72,10 @@ async fn initialise_system_database_schema(
     server_state: &ServerState,
 ) -> Result<(), ArcServerStateError> {
     if let (mut transaction_profile, Some(commit_record)) = get_system_database_schema_commit_record(db).await? {
-        server_state.databases().database_schema_commit(SYSTEM_DB, commit_record, transaction_profile.commit_profile()).await?;
+        server_state
+            .databases()
+            .database_schema_commit(SYSTEM_DB, commit_record, transaction_profile.commit_profile())
+            .await?;
     }
     Ok(())
 }
@@ -101,7 +103,10 @@ pub async fn initialise_default_user(
     server_state: &ServerState,
 ) -> Result<(), ArcServerStateError> {
     if let (mut transaction_profile, Some(commit_record)) = get_default_user_commit_record(user_manager).await? {
-        server_state.databases().database_data_commit(SYSTEM_DB, commit_record, &mut transaction_profile.commit_profile()).await?;
+        server_state
+            .databases()
+            .database_data_commit(SYSTEM_DB, commit_record, &mut transaction_profile.commit_profile())
+            .await?;
     }
     Ok(())
 }

@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::sync::Arc;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use database::transaction::{TransactionError, TransactionId, TransactionRead, TransactionSchema, TransactionWrite};
 use diagnostics::metrics::LoadKind;
@@ -107,8 +106,10 @@ pub(crate) async fn commit_schema_transaction(
             let database = commit_intent.database_drop_guard;
             // After server state's execution, another snapshot is built, acquiring an alternative read drop guard
             let (_snapshot_guard, commit_record) = commit_intent.schema_snapshot.into_commit_record();
-            let commit_result =
-                server_state.databases().database_schema_commit(database.name(), commit_record, profile.commit_profile()).await;
+            let commit_result = server_state
+                .databases()
+                .database_schema_commit(database.name(), commit_record, profile.commit_profile())
+                .await;
             (profile, commit_result)
         }
         (profile, Err(typedb_source)) => {
@@ -129,8 +130,10 @@ pub(crate) async fn commit_write_transaction(
             let database = commit_intent.database_drop_guard;
             // After server state's execution, another snapshot is built, acquiring an alternative read drop guard
             let (_snapshot_guard, commit_record) = commit_intent.write_snapshot.into_commit_record();
-            let commit_result =
-                server_state.databases().database_schema_commit(database.name(), commit_record, profile.commit_profile()).await;
+            let commit_result = server_state
+                .databases()
+                .database_schema_commit(database.name(), commit_record, profile.commit_profile())
+                .await;
             (profile, commit_result)
         }
         (profile, Err(typedb_source)) => {

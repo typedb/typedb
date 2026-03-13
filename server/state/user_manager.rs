@@ -5,25 +5,22 @@
  */
 
 use std::{
-    collections::HashMap,
     fmt::Debug,
     sync::{Arc, RwLock as StdRwLock},
 };
 
 use async_trait::async_trait;
-use database::{database_manager::DatabaseManager, transaction::TransactionId};
+use database::database_manager::DatabaseManager;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot};
 use system::concepts::{Credential, User};
-use tokio::sync::{mpsc::Sender, RwLock};
 use user::{permission_manager::PermissionManager, user_manager::UserManager};
 
+use super::{LocalServerTransactionManager, ServerTransactionManager};
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
     error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},
     system_init::SYSTEM_DB,
 };
-
-use super::TransactionInfo;
 
 #[async_trait]
 pub trait ServerUserManager: Debug + Send + Sync {
@@ -67,21 +64,21 @@ pub struct LocalServerUserManager {
     token_manager: Arc<TokenManager>,
     user_manager: StdRwLock<Option<Arc<UserManager>>>,
     credential_verifier: StdRwLock<Option<Arc<CredentialVerifier>>>,
-    transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>,
+    transaction_manager: Arc<dyn ServerTransactionManager>,
 }
 
 impl LocalServerUserManager {
     pub fn new(
         database_manager: Arc<DatabaseManager>,
         token_manager: Arc<TokenManager>,
-        transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>,
+        transaction_manager: Arc<dyn ServerTransactionManager>,
     ) -> Self {
         Self {
             database_manager,
             token_manager,
             user_manager: StdRwLock::new(None),
             credential_verifier: StdRwLock::new(None),
-            transactions,
+            transaction_manager,
         }
     }
 
@@ -96,15 +93,6 @@ impl LocalServerUserManager {
         match self.credential_verifier.read().unwrap().clone() {
             Some(credential_verifier) => Ok(credential_verifier),
             None => Err(LocalServerStateError::NotInitialised {}),
-        }
-    }
-
-    async fn close_user_transactions(&self, username: &str) {
-        let transactions = self.transactions.read().await;
-        for (_, TransactionInfo { owner, close_sender, .. }) in transactions.iter() {
-            if username == owner {
-                let _ = close_sender.send(()).await;
-            }
         }
     }
 }
@@ -202,7 +190,7 @@ impl ServerUserManager for LocalServerUserManager {
         })?;
 
         self.token_manager.invalidate_user(username).await;
-        self.close_user_transactions(username).await;
+        self.transaction_manager.close_by_owner(username).await;
         Ok(())
     }
 
@@ -224,7 +212,7 @@ impl ServerUserManager for LocalServerUserManager {
         })?;
 
         self.token_manager.invalidate_user(username).await;
-        self.close_user_transactions(username).await;
+        self.transaction_manager.close_by_owner(username).await;
         Ok(())
     }
 

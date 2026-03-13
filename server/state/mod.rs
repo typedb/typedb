@@ -6,60 +6,36 @@
 
 pub mod database_manager;
 pub mod server_manager;
+pub mod transaction_manager;
 pub mod user_manager;
 
-use std::{
-    collections::{HashMap, HashSet},
-    net::SocketAddr,
-    path::PathBuf,
-    sync::Arc,
-    time::Duration,
-};
+use std::{collections::HashSet, net::SocketAddr, path::PathBuf, sync::Arc};
 
-use itertools::Itertools;
-
-use concurrency::{IntervalRunner, IntervalTaskParameters, TokioTaskSpawner};
-use database::{
-    database_manager::DatabaseManager,
-    transaction::TransactionId,
-};
+use concurrency::{IntervalRunner, TokioTaskSpawner};
+use database::database_manager::DatabaseManager;
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use resource::{
-    constants::{common::SECONDS_IN_MINUTE, server::DATABASE_METRICS_UPDATE_INTERVAL},
-    distribution_info::DistributionInfo,
-};
-use tokio::{
-    net::lookup_host,
-    sync::{mpsc::Sender, watch::Receiver, RwLock},
-};
+use itertools::Itertools;
+use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo};
+use tokio::{net::lookup_host, sync::watch::Receiver};
 use user::user_manager::UserManager;
 
+pub use self::{
+    database_manager::{
+        get_database_schema, get_functions_syntax, get_types_syntax, LocalServerDatabaseManager, ServerDatabaseManager,
+    },
+    server_manager::{LocalServerManager, ServerManager},
+    transaction_manager::{LocalServerTransactionManager, ServerTransactionManager},
+    user_manager::{LocalServerUserManager, ServerUserManager},
+};
 use crate::{
     authentication::token_manager::TokenManager,
     error::{ArcServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
-    service::TransactionType,
     status::{LocalServerStatus, ServerStatus},
     system_init::SYSTEM_DB,
 };
 
-pub use self::{
-    database_manager::{
-        LocalServerDatabaseManager, ServerDatabaseManager,
-        get_database_schema, get_functions_syntax, get_types_syntax,
-    },
-    server_manager::{LocalServerManager, ServerManager},
-    user_manager::{LocalServerUserManager, ServerUserManager},
-};
-
 pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
-
-#[derive(Debug)]
-pub struct TransactionInfo {
-    pub(crate) transaction_type: TransactionType,
-    pub(crate) owner: String,
-    pub(crate) close_sender: Sender<()>,
-}
 
 #[derive(Debug)]
 pub struct ServerState {
@@ -68,19 +44,17 @@ pub struct ServerState {
     grpc_connection_address: String, // reference info (can be an alias), do not resolve!
     http_address: Option<SocketAddr>,
     diagnostics_manager: Arc<DiagnosticsManager>,
-    transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>,
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
     _database_diagnostics_updater: IntervalRunner,
 
     server_manager: Arc<dyn ServerManager>,
     database_manager: Arc<dyn ServerDatabaseManager>,
+    transaction_manager: Arc<dyn ServerTransactionManager>,
     user_manager: Arc<dyn ServerUserManager>,
 }
 
 impl ServerState {
-    const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
-
     pub async fn new(
         distribution_info: DistributionInfo,
         config: Config,
@@ -131,11 +105,8 @@ impl ServerState {
             None
         };
 
-        let server_status = LocalServerStatus::from_addresses(
-            grpc_serving_address,
-            grpc_connection_address_str.clone(),
-            http_address,
-        );
+        let server_status =
+            LocalServerStatus::from_addresses(grpc_serving_address, grpc_connection_address_str.clone(), http_address);
 
         Ok(ServerStateBuilder {
             distribution_info,
@@ -151,6 +122,7 @@ impl ServerState {
             background_task_spawner,
             server_manager_override: None,
             database_manager_override: None,
+            transaction_manager_override: None,
             user_manager_override: None,
         })
     }
@@ -179,6 +151,10 @@ impl ServerState {
         &*self.database_manager
     }
 
+    pub fn transactions(&self) -> &dyn ServerTransactionManager {
+        &*self.transaction_manager
+    }
+
     pub fn users(&self) -> &dyn ServerUserManager {
         &*self.user_manager
     }
@@ -195,34 +171,6 @@ impl ServerState {
         self.background_task_spawner.clone()
     }
 
-    // --- Direct methods (transaction tracking) ---
-
-    pub async fn transactions_add(
-        &self,
-        transaction_id: TransactionId,
-        transaction_type: TransactionType,
-        owner: String,
-        close_sender: Sender<()>,
-    ) -> Result<(), ArcServerStateError> {
-        let mut transactions_lock = self.transactions.write().await;
-        transactions_lock.insert(transaction_id, TransactionInfo { transaction_type, owner, close_sender });
-        Ok(())
-    }
-
-    pub async fn transactions_close_types(&self, types: HashSet<TransactionType>) -> Result<(), ArcServerStateError> {
-        let mut txs = self.transactions.write().await;
-
-        let to_close: Vec<_> =
-            txs.iter().filter(|(_, info)| types.contains(&info.transaction_type)).map(|(id, _)| *id).collect();
-
-        for id in to_close {
-            if let Some(info) = txs.remove(&id) {
-                let _ = info.close_sender.send(()).await;
-            }
-        }
-        Ok(())
-    }
-
     // --- Initialisation ---
 
     pub fn is_initialised(&self) -> bool {
@@ -230,11 +178,12 @@ impl ServerState {
     }
 
     pub async fn initialise(&self) -> Result<(), ArcServerStateError> {
-        let system_database = if let Some(system_database) = self.database_manager.manager().database_unrestricted(SYSTEM_DB) {
-            system_database
-        } else {
-            crate::system_init::initialise_system_database(self).await?
-        };
+        let system_database =
+            if let Some(system_database) = self.database_manager.manager().database_unrestricted(SYSTEM_DB) {
+                system_database
+            } else {
+                crate::system_init::initialise_system_database(self).await?
+            };
 
         let user_manager = Arc::new(UserManager::new(system_database));
         crate::system_init::initialise_default_user(&user_manager, self).await?;
@@ -314,11 +263,6 @@ impl ServerState {
         }
         Ok(http_address)
     }
-
-    async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>) {
-        let mut transactions = transactions.write().await;
-        transactions.retain(|_, info| !info.close_sender.is_closed());
-    }
 }
 
 pub struct ServerStateBuilder {
@@ -334,9 +278,10 @@ pub struct ServerStateBuilder {
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
 
-    database_manager_override: Option<Arc<dyn ServerDatabaseManager>>,
-    user_manager_override: Option<Arc<dyn ServerUserManager>>,
     server_manager_override: Option<Arc<dyn ServerManager>>,
+    database_manager_override: Option<Arc<dyn ServerDatabaseManager>>,
+    transaction_manager_override: Option<Arc<dyn ServerTransactionManager>>,
+    user_manager_override: Option<Arc<dyn ServerUserManager>>,
 }
 
 impl ServerStateBuilder {
@@ -352,6 +297,10 @@ impl ServerStateBuilder {
         self.background_task_spawner.clone()
     }
 
+    pub fn server_status(&self) -> LocalServerStatus {
+        self.server_status.clone()
+    }
+
     pub fn server_manager(mut self, manager: Arc<dyn ServerManager>) -> Self {
         self.server_manager_override = Some(manager);
         self
@@ -362,15 +311,19 @@ impl ServerStateBuilder {
         self
     }
 
+    pub fn transaction_manager(mut self, transaction_manager: Arc<dyn ServerTransactionManager>) -> Self {
+        self.transaction_manager_override = Some(transaction_manager);
+        self
+    }
+
     pub fn user_manager(mut self, manager: Arc<dyn ServerUserManager>) -> Self {
         self.user_manager_override = Some(manager);
         self
     }
 
     pub fn build(self) -> ServerState {
-        let server_manager = self.server_manager_override.unwrap_or_else(|| {
-            Arc::new(LocalServerManager::new(self.server_status))
-        });
+        let server_manager =
+            self.server_manager_override.unwrap_or_else(|| Arc::new(LocalServerManager::new(self.server_status)));
 
         let database_manager = self.database_manager_override.unwrap_or_else(|| {
             Arc::new(LocalServerDatabaseManager::new(
@@ -379,30 +332,17 @@ impl ServerStateBuilder {
             ))
         });
 
-        let transactions = Arc::new(RwLock::new(HashMap::new()));
+        let transaction_manager = self
+            .transaction_manager_override
+            .unwrap_or_else(|| Arc::new(LocalServerTransactionManager::new(self.background_task_spawner.clone())));
 
         let user_manager = self.user_manager_override.unwrap_or_else(|| {
             Arc::new(LocalServerUserManager::new(
                 self.database_manager_raw.clone(),
                 self.token_manager.clone(),
-                transactions.clone(),
+                transaction_manager.clone(),
             ))
         });
-
-        let controlled_transactions = transactions.clone();
-        self.background_task_spawner.spawn_interval(
-            move || {
-                let transactions = controlled_transactions.clone();
-                async move {
-                    ServerState::cleanup_closed_transactions(transactions).await;
-                }
-            },
-            IntervalTaskParameters::new_with_delay(
-                ServerState::TRANSACTION_CHECK_INTERVAL,
-                ServerState::TRANSACTION_CHECK_INTERVAL,
-                false,
-            ),
-        );
 
         ServerState {
             distribution_info: self.distribution_info,
@@ -410,12 +350,12 @@ impl ServerStateBuilder {
             grpc_connection_address: self.grpc_connection_address,
             http_address: self.http_address,
             diagnostics_manager: self.diagnostics_manager,
-            transactions,
             shutdown_receiver: self.shutdown_receiver,
             background_task_spawner: self.background_task_spawner,
             _database_diagnostics_updater: self.database_diagnostics_updater,
             server_manager,
             database_manager,
+            transaction_manager,
             user_manager,
         }
     }

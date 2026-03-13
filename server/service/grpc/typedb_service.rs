@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{pin::Pin, time::Instant};
-use std::sync::Arc;
+use std::{pin::Pin, sync::Arc, time::Instant};
+
 use diagnostics::metrics::ActionKind;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
@@ -183,8 +183,12 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             None::<&str>,
             ActionKind::ServersGet,
             || async {
-                let status =
-                    self.server_state.servers().server_status().await.map_err(|err| err.into_error_message().into_status())?;
+                let status = self
+                    .server_state
+                    .servers()
+                    .server_status()
+                    .await
+                    .map_err(|err| err.into_error_message().into_status())?;
                 Ok(Response::new(servers_get_res(status.to_proto())))
             },
         )
@@ -496,7 +500,11 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             None::<&str>,
             ActionKind::DatabasesImport,
             || async {
-                self.server_state.databases().databases_import(service).await.map_err(|err| err.into_error_message().into_status())
+                self.server_state
+                    .databases()
+                    .databases_import(service)
+                    .await
+                    .map_err(|err| err.into_error_message().into_status())
             },
         )
         .await?;

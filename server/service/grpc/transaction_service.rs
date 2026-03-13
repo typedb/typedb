@@ -487,7 +487,8 @@ impl TransactionService {
 
         let transaction_add_result = self
             .server_state
-            .transactions_add(transaction.id(), transaction.type_(), self.owner.clone(), self.close_sender.clone())
+            .transactions()
+            .add(transaction.id(), transaction.type_(), self.owner.clone(), self.close_sender.clone())
             .await;
         if let Err(typedb_source) = transaction_add_result {
             transaction.close();
