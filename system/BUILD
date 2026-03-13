@@ -29,7 +29,7 @@ rust_library(
         "@crates//:pwhash",
         "@crates//:uuid",
     ],
-    data = ["schema.tql"]
+    compile_data = ["schema.tql"]
 )
 
 rustfmt_test(

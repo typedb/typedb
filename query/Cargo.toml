@@ -133,8 +133,8 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
+		rev = "7f6e802c91ce0a1e6e0d9a6eaff4de377158ed17"
 		git = "https://github.com/typedb/typeql"
-		tag = "3.8.0"
 		default-features = false
 
 	[dependencies.compiler]
@@ -156,14 +156,14 @@ features = {}
 	harness = false
 
 [[test]]
-	path = "tests/fetch.rs"
-	name = "test_fetch"
+	path = "tests/define.rs"
+	name = "test_define"
 
 [[test]]
 	path = "tests/unimplemented.rs"
 	name = "test_unimplemented"
 
 [[test]]
-	path = "tests/define.rs"
-	name = "test_define"
+	path = "tests/fetch.rs"
+	name = "test_fetch"
 

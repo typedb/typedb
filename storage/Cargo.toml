@@ -24,6 +24,11 @@ features = {}
 		version = "0.8.5"
 		default-features = false
 
+	[dev-dependencies.rand_core]
+		features = ["default", "std"]
+		version = "0.3.1"
+		default-features = false
+
 	[dev-dependencies.xoshiro]
 		features = []
 		version = "0.0.5"
@@ -47,11 +52,6 @@ features = {}
 	[dev-dependencies.pprof]
 		features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
 		version = "0.13.0"
-		default-features = false
-
-	[dev-dependencies.rand_core]
-		features = ["default", "std"]
-		version = "0.3.1"
 		default-features = false
 
 [dependencies]
@@ -118,8 +118,8 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
+		rev = "7f6e802c91ce0a1e6e0d9a6eaff4de377158ed17"
 		git = "https://github.com/typedb/typeql"
-		tag = "3.8.0"
 		default-features = false
 
 	[dependencies.chrono]
@@ -141,8 +141,12 @@ features = {}
 	harness = false
 
 [[test]]
-	path = "tests/test_isolation.rs"
-	name = "test_isolation"
+	path = "tests/test_storage.rs"
+	name = "test_storage"
+
+[[test]]
+	path = "tests/test_mvcc.rs"
+	name = "test_mvcc"
 
 [[test]]
 	path = "tests/test_recovery.rs"
@@ -153,10 +157,6 @@ features = {}
 	name = "test_snapshot"
 
 [[test]]
-	path = "tests/test_mvcc.rs"
-	name = "test_mvcc"
-
-[[test]]
-	path = "tests/test_storage.rs"
-	name = "test_storage"
+	path = "tests/test_isolation.rs"
+	name = "test_isolation"
 

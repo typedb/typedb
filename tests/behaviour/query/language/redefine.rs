@@ -14,7 +14,7 @@ async fn test_definable_redefine() {
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
     #[cfg(feature = "bazel")]
-    let path = "../typedb_behaviour/query/language/redefine.feature";
+    let path = "../typedb_behaviour+/query/language/redefine.feature";
 
     #[cfg(not(feature = "bazel"))]
     let path = "bazel-typedb/external/typedb_behaviour/query/language/redefine.feature";

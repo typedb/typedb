@@ -86,8 +86,8 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
+		rev = "7f6e802c91ce0a1e6e0d9a6eaff4de377158ed17"
 		git = "https://github.com/typedb/typeql"
-		tag = "3.8.0"
 		default-features = false
 
 	[dependencies.compiler]
@@ -120,11 +120,6 @@ features = {}
 		features = []
 		default-features = false
 
-	[dependencies.macro_rules_attribute]
-		features = ["default"]
-		version = "0.2.2"
-		default-features = false
-
 	[dependencies.params]
 		path = "../../../tests/behaviour/steps/params"
 		features = []
@@ -135,9 +130,19 @@ features = {}
 		version = "0.3.31"
 		default-features = false
 
+	[dependencies.serde_json]
+		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
+		version = "1.0.143"
+		default-features = false
+
 	[dependencies.encoding]
 		path = "../../../encoding"
 		features = []
+		default-features = false
+
+	[dependencies.macro_rules_attribute]
+		features = ["default"]
+		version = "0.2.2"
 		default-features = false
 
 	[dependencies.answer]
@@ -148,11 +153,6 @@ features = {}
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
 		version = "0.4.41"
-		default-features = false
-
-	[dependencies.serde_json]
-		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.143"
 		default-features = false
 
 	[dependencies.lending_iterator]

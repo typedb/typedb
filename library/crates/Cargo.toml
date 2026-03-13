@@ -1,0 +1,78 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# This file lists all external crate dependencies for rules_rust crate_universe.
+# It is NOT used for Cargo builds directly - those use the workspace Cargo.toml.
+# See: https://bazelbuild.github.io/rules_rust/crate_universe.html
+
+[package]
+name = "typedb-crates"
+version = "0.0.0"
+
+[lib]
+path = "" # ignored by cargo generate-lockfile
+
+[workspace]
+# Empty workspace to exclude from parent workspace
+
+[dependencies]
+async-trait = "0.1.89"
+axum = { version = "0.7.9", features = ["ws"] }
+base64 = "0.22.1"
+axum-extra = { version = "0.9.6", features = ["typed-header", "multipart"] }
+axum-server = { version = "0.7.2", features = ["tls-rustls-no-provider"] }
+bincode = "1.3.3"
+chrono = { version = "0.4.41", features = ["serde"] }
+chrono-tz = { version = "0.9.0", features = ["case-insensitive"] }
+clap = { version = "4.5.45", features = ["derive"] }
+futures = { version = "0.3.31", features = ["executor", "thread-pool"] }
+http = "1.3.1"
+hyper = { version = "0.14.32", features = ["full"] }
+hyper-rustls = "0.25.0"
+itertools = "0.10.5"
+jsonwebtoken = "9.3.1"
+lz4 = "1.28.1"
+moka = { version = "0.12.10", features = ["sync"] }
+paste = "1.0.15"
+prost = "0.13.5"
+pwhash = "1.0.0"
+rand = "0.8.5"
+regex = "1.11.1"
+rocksdb = { version = "0.23.0", features = ["lz4", "bindgen-runtime"], default_features = false }
+rustls-pemfile = "2.2.0"
+same-file = "1.0.6"
+seahash = "4.1.0"
+smallvec = "1.15.0"
+sentry = { version = "0.36.0", features = ["ureq", "rustls", "backtrace", "panic", "contexts"], default_features = false }
+serde = { version = "1.0.219", features = ["derive", "rc"] }
+serde_json = { version = "1.0.143", features = ["preserve_order", "raw_value"] }
+serde_with = "3.14.0"
+serde_yaml2 = "0.1.3"
+sysinfo = "0.33.1"
+tempdir = "0.3.7"
+tokio = { version = "1.47.1", features = ["full"] }
+tokio-rustls = { version = "0.26.2", features = ["ring"], default-features = false }
+tokio-stream = { version = "0.1.17", features = ["net", "time"] }
+tonic = { version = "0.12.3", features = ["tls", "tls-roots"] }
+tonic-types = "0.12.3"
+tower = "0.4.13"
+tower-http = { version = "0.6.6", features = ["cors"] }
+tracing = "0.1.41"
+tracing-appender = "0.2.3"
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+unicase = "2.8.1"
+url = { version = "2.5.4", features = ["serde"] }
+uuid = { version = "1.18.0", features = ["fast-rng", "v4", "serde"] }
+xxhash-rust = { version = "0.8.15", features = ["xxh3"] }
+yaml-rust2 = { version = "0.10.3", features = ["encoding"] }
+
+[dev-dependencies]
+async-std = { version = "1.13.2", features = ["attributes"] }
+criterion = { version = "0.5.1", features = ["plotters"] }
+cucumber = "0.19.1"
+macro_rules_attribute = "0.2.2"
+pprof = { version = "0.13.0", features = ["flamegraph", "criterion"] }
+rand_core = "0.3.1"
+smol = "1.3.0"
+xoshiro = "0.0.5"

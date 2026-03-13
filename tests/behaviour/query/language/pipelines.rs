@@ -14,7 +14,7 @@ async fn test_write_pipelines() {
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
     #[cfg(feature = "bazel")]
-    let path = "../typedb_behaviour/query/language/pipelines.feature";
+    let path = "../typedb_behaviour+/query/language/pipelines.feature";
 
     #[cfg(not(feature = "bazel"))]
     let path = "bazel-typedb/external/typedb_behaviour/query/language/pipelines.feature";

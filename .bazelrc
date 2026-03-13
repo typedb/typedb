@@ -2,11 +2,26 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+# Enable isolated extension usages (required by typedb_dependencies crate extension)
+common --experimental_isolated_extension_usages
+
+# Fix macOS deployment target for Bzlmod mode (Bazel 8+)
+# Without this, Bazel auto-detects the system macOS version (e.g., 26.x) and sets
+# -mmacosx-version-min=26.x, which conflicts with RocksDB's -mmacosx-version-min=10.11
+# causing C++17 aligned allocation errors. macOS 11.0 is compatible with both.
+build --macos_minimum_os=11.0
+
 try-import ./.bazel-remote-cache.rc
 
-build --incompatible_strict_action_env --@io_bazel_rules_docker//transitions:enable=false --remote_download_toplevel --disk_cache=~/.cache/bazel
+# Allow empty globs (many checkstyle_test patterns may not match)
+common --noincompatible_disallow_empty_glob
+
+build --incompatible_strict_action_env --remote_download_toplevel --disk_cache=~/.cache/bazel
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env --test_env=PATH
 
 # CI configuration: disables disk cache to prevent cache size issues in CI environments
 build:ci --disk_cache=
+
+# Windows: enable proper symlink support
+startup --windows_enable_symlinks
