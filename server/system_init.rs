@@ -29,12 +29,12 @@ use crate::{
 pub const SYSTEM_DB: &str = concat!(internal_database_prefix!(), "system");
 
 pub async fn initialise_system_database(
-    server_state: &dyn ServerState,
+    server_state: &ServerState,
 ) -> Result<Arc<Database<WALClient>>, ArcServerStateError> {
-    server_state.databases_create_unrestricted(SYSTEM_DB).await?;
+    server_state.databases().databases_create_unrestricted(SYSTEM_DB).await?;
     let db = server_state
-        .database_manager()
-        .await
+        .databases()
+        .manager()
         .database_unrestricted(SYSTEM_DB)
         .expect("Critical: system database is absent");
     initialise_system_database_schema(db.clone(), server_state).await?;
@@ -69,10 +69,13 @@ pub async fn get_system_database_schema_commit_record(
 
 async fn initialise_system_database_schema(
     db: Arc<Database<WALClient>>,
-    server_state: &dyn ServerState,
+    server_state: &ServerState,
 ) -> Result<(), ArcServerStateError> {
     if let (mut transaction_profile, Some(commit_record)) = get_system_database_schema_commit_record(db).await? {
-        server_state.database_schema_commit(SYSTEM_DB, commit_record, transaction_profile.commit_profile()).await?;
+        server_state
+            .databases()
+            .database_schema_commit(SYSTEM_DB, commit_record, transaction_profile.commit_profile())
+            .await?;
     }
     Ok(())
 }
@@ -97,10 +100,13 @@ pub async fn get_default_user_commit_record(
 
 pub async fn initialise_default_user(
     user_manager: &user::user_manager::UserManager,
-    server_state: &dyn ServerState,
+    server_state: &ServerState,
 ) -> Result<(), ArcServerStateError> {
     if let (mut transaction_profile, Some(commit_record)) = get_default_user_commit_record(user_manager).await? {
-        server_state.database_data_commit(SYSTEM_DB, commit_record, &mut transaction_profile.commit_profile()).await?;
+        server_state
+            .databases()
+            .database_data_commit(SYSTEM_DB, commit_record, &mut transaction_profile.commit_profile())
+            .await?;
     }
     Ok(())
 }

@@ -3,6 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::sync::Arc;
+
 use axum::RequestPartsExt;
 use axum_extra::{
     headers::{authorization::Bearer, Authorization},
@@ -12,7 +14,7 @@ use error::typedb_error;
 use http::Extensions;
 use tonic::metadata::MetadataMap;
 
-use crate::state::ArcServerState;
+use crate::state::ServerState;
 
 pub(crate) mod credential_verifier;
 pub(crate) mod token_manager;
@@ -46,14 +48,15 @@ pub(crate) fn extract_metadata_accessor(metadata: &MetadataMap) -> Option<String
 }
 
 pub(crate) async fn authenticate<T>(
-    server_state: ArcServerState,
+    server_state: Arc<ServerState>,
     request: http::Request<T>,
 ) -> Result<http::Request<T>, AuthenticationError> {
     let (mut parts, body) = request.into_parts();
 
     match extract_parts_authorization_token(parts.clone()).await {
         Some(token) => {
-            let accessor = server_state.token_get_owner(&token).await.ok_or(AuthenticationError::InvalidToken {})?;
+            let accessor =
+                server_state.users().token_get_owner(&token).await.ok_or(AuthenticationError::InvalidToken {})?;
             parts.extensions.insert(Accessor(accessor));
             Ok(http::Request::from_parts(parts, body))
         }

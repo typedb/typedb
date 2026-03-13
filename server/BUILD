@@ -36,6 +36,7 @@ rust_library(
         "authentication/**/*.rs",
         "parameters/**/*.rs",
         "service/**/*.rs",
+        "state/**/*.rs",
     ]),
     crate_features = select({
         ":development_mode": [],
