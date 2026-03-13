@@ -2,9 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-# Enable isolated extension usages for crate universe
-common --experimental_isolated_extension_usages
-
 # Fix macOS deployment target for Bzlmod mode (Bazel 8+)
 # Without this, Bazel auto-detects the system macOS version (e.g., 26.x) and sets
 # -mmacosx-version-min=26.x, which conflicts with RocksDB's -mmacosx-version-min=10.11

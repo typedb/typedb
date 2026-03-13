@@ -129,8 +129,8 @@ workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_ref
 workspace_refs(
     name = "typedb_workspace_refs",
     workspace_commit_dict = {
-        "typeql+": "a11320e749860876b46a9cd7f37b937b56fbee1e",
-        "typedb_protocol+": "20c4e5799c5c8f8262c3fde01a1c4bfce334a6fa",
+        "typeql+": "d0209e61faaf23bfb5615a3486b13ffca7c79c3d",
+        "typedb_protocol+": "e2254052e430f07182996a0310f946ce2a718b2a",
     },
     workspace_tag_dict = {},
 )
@@ -179,7 +179,7 @@ local_path_override(
 # git_override(
 #     module_name = "typedb_dependencies",
 #     remote = "https://github.com/typedb/dependencies",
-#     commit = "5243b487cec48bd5b18ef744964f42b249bee7f8",
+#     commit = "1fbd83797f42d12b3a83cee80f3a0b9b70e73359",
 # )
 
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
@@ -190,7 +190,7 @@ local_path_override(
 # git_override(
 #     module_name = "typedb_bazel_distribution",
 #     remote = "https://github.com/typedb/bazel-distribution",
-#     commit = "b42e1df8f3d87beeb84869419d8ec6c982f079b8",
+#     commit = "cea906afdc16d34a9a55d3c0b2f5a89a88706c9c",
 # )
 
 bazel_dep(name = "typeql", version = "0.0.0")
@@ -201,7 +201,7 @@ local_path_override(
 # git_override(
 #     module_name = "typeql",
 #     remote = "https://github.com/typedb/typeql",
-#     commit = "a11320e749860876b46a9cd7f37b937b56fbee1e",
+#     commit = "d0209e61faaf23bfb5615a3486b13ffca7c79c3d",
 # )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
@@ -212,12 +212,12 @@ local_path_override(
 # git_override(
 #     module_name = "typedb_protocol",
 #     remote = "https://github.com/typedb/typedb-protocol",
-#     commit = "20c4e5799c5c8f8262c3fde01a1c4bfce334a6fa",
+#     commit = "e2254052e430f07182996a0310f946ce2a718b2a",
 # )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
     module_name = "typedb_behaviour",
     remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "cd459e2e769e8b6f20cf8d869d7c342f89ca6223",
+    commit = "4b8315c8e0cd70ae8082e14af9967551e5a4cbad",
 )
