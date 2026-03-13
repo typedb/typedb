@@ -442,6 +442,7 @@ impl TransactionService {
         let database_name = open_req.database;
         let database = self
             .server_state
+            .databases()
             .databases_get_for_transaction(database_name.as_ref(), transaction_type)
             .await
             .map_err(|typedb_source| typedb_source.into_error_message().into_status())?

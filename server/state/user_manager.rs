@@ -56,7 +56,7 @@ pub trait ServerUserManager: Debug + Send + Sync {
 
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 
-    fn user_manager(&self) -> Option<Arc<UserManager>>;
+    fn manager(&self) -> Option<Arc<UserManager>>;
 
     async fn load(&self);
 }
@@ -163,7 +163,7 @@ impl ServerUserManager for LocalServerUserManager {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
-        let user_manager = self.user_manager().ok_or(LocalServerStateError::NotInitialised {})?;
+        let user_manager = self.manager().ok_or(LocalServerStateError::NotInitialised {})?;
 
         let (mut transaction_profile, commit_intent) = user_manager
             .create(&user, &credential)
@@ -187,7 +187,7 @@ impl ServerUserManager for LocalServerUserManager {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
-        let user_manager = self.user_manager().ok_or(LocalServerStateError::NotInitialised {})?;
+        let user_manager = self.manager().ok_or(LocalServerStateError::NotInitialised {})?;
 
         let (mut transaction_profile, commit_intent_result) =
             user_manager.update(username, &user_update, &credential_update);
@@ -211,7 +211,7 @@ impl ServerUserManager for LocalServerUserManager {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
-        let user_manager = self.user_manager().ok_or(LocalServerStateError::NotInitialised {})?;
+        let user_manager = self.manager().ok_or(LocalServerStateError::NotInitialised {})?;
 
         let (mut transaction_profile, commit_intent) = user_manager
             .delete(username)
@@ -247,7 +247,7 @@ impl ServerUserManager for LocalServerUserManager {
         self.token_manager.get_valid_token_owner(token).await
     }
 
-    fn user_manager(&self) -> Option<Arc<UserManager>> {
+    fn manager(&self) -> Option<Arc<UserManager>> {
         self.user_manager.read().unwrap().clone()
     }
 

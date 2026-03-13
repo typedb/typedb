@@ -10,7 +10,6 @@ pub mod user_manager;
 
 use std::{
     collections::{HashMap, HashSet},
-    fmt::Debug,
     net::SocketAddr,
     path::PathBuf,
     sync::Arc,
@@ -28,35 +27,21 @@ use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use resource::{
     constants::{common::SECONDS_IN_MINUTE, server::DATABASE_METRICS_UPDATE_INTERVAL},
     distribution_info::DistributionInfo,
-    profile::CommitProfile,
 };
-use storage::{
-    durability_client::WALClient,
-    record::CommitRecord,
-    snapshot::snapshot_id::SnapshotId,
-};
-use durability::DurabilitySequenceNumber;
-use system::concepts::{Credential, User};
 use tokio::{
     net::lookup_host,
     sync::{mpsc::Sender, watch::Receiver, RwLock},
-    task::JoinHandle,
 };
 use user::user_manager::UserManager;
 
 use crate::{
-    authentication::{token_manager::TokenManager, Accessor},
+    authentication::token_manager::TokenManager,
     error::{ArcServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
-    service::{
-        grpc::migration::import_service::DatabaseImportService,
-        TransactionType,
-    },
+    service::TransactionType,
     status::{LocalServerStatus, ServerStatus},
     system_init::SYSTEM_DB,
 };
-
-use database::Database;
 
 pub use self::{
     database_manager::{
@@ -186,12 +171,16 @@ impl ServerState {
         self.http_address
     }
 
-    pub fn database_manager(&self) -> Arc<DatabaseManager> {
-        self.database_manager.database_manager()
+    pub fn servers(&self) -> &dyn ServerManager {
+        &*self.server_manager
     }
 
-    pub fn user_manager(&self) -> Option<Arc<UserManager>> {
-        self.user_manager.user_manager()
+    pub fn databases(&self) -> &dyn ServerDatabaseManager {
+        &*self.database_manager
+    }
+
+    pub fn users(&self) -> &dyn ServerUserManager {
+        &*self.user_manager
     }
 
     pub fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
@@ -204,157 +193,6 @@ impl ServerState {
 
     pub fn background_task_spawner(&self) -> TokioTaskSpawner {
         self.background_task_spawner.clone()
-    }
-
-    // --- Async delegation: server manager (TODO: REMOVE AFTER) ---
-
-    pub async fn server_status(&self) -> Result<BoxServerStatus, ArcServerStateError> {
-        self.server_manager.server_status().await
-    }
-
-    pub async fn servers_statuses(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError> {
-        self.server_manager.servers_all().await
-    }
-
-    pub async fn servers_register(
-        &self,
-        clustering_id: u64,
-        clustering_address: String,
-    ) -> Result<(), ArcServerStateError> {
-        self.server_manager.servers_register(clustering_id, clustering_address).await
-    }
-
-    pub async fn servers_deregister(&self, clustering_id: u64) -> Result<(), ArcServerStateError> {
-        self.server_manager.servers_deregister(clustering_id).await
-    }
-
-    // --- Async delegation: database manager (TODO: REMOVE AFTER) ---
-
-    pub async fn databases_all(&self) -> Result<Vec<String>, ArcServerStateError> {
-        self.database_manager.databases_all().await
-    }
-
-    pub async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError> {
-        self.database_manager.databases_contains(name).await
-    }
-
-    pub async fn databases_get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
-        self.database_manager.databases_get(name).await
-    }
-
-    pub async fn databases_get_unrestricted(
-        &self,
-        name: &str,
-    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
-        self.database_manager.databases_get_unrestricted(name).await
-    }
-
-    pub async fn databases_get_for_transaction(
-        &self,
-        name: &str,
-        transaction_type: TransactionType,
-    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
-        self.database_manager.databases_get_for_transaction(name, transaction_type).await
-    }
-
-    pub async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError> {
-        self.database_manager.databases_create(name).await
-    }
-
-    pub async fn databases_create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError> {
-        self.database_manager.databases_create_unrestricted(name).await
-    }
-
-    pub async fn databases_import(&self, service: DatabaseImportService) -> Result<JoinHandle<()>, ArcServerStateError> {
-        self.database_manager.databases_import(service).await
-    }
-
-    pub async fn database_schema(&self, name: &str) -> Result<String, ArcServerStateError> {
-        self.database_manager.database_schema(name).await
-    }
-
-    pub async fn database_type_schema(&self, name: &str) -> Result<String, ArcServerStateError> {
-        self.database_manager.database_type_schema(name).await
-    }
-
-    pub async fn database_schema_commit(
-        &self,
-        name: &str,
-        commit_record: CommitRecord,
-        commit_profile: &mut CommitProfile,
-    ) -> Result<(), ArcServerStateError> {
-        self.database_manager.database_schema_commit(name, commit_record, commit_profile).await
-    }
-
-    pub async fn database_data_commit(
-        &self,
-        name: &str,
-        commit_record: CommitRecord,
-        commit_profile: &mut CommitProfile,
-    ) -> Result<(), ArcServerStateError> {
-        self.database_manager.database_data_commit(name, commit_record, commit_profile).await
-    }
-
-    pub async fn database_commit_record_exists(
-        &self,
-        name: &str,
-        open_sequence_number: DurabilitySequenceNumber,
-        snapshot_id: SnapshotId,
-    ) -> Result<bool, ArcServerStateError> {
-        self.database_manager.database_commit_record_exists(name, open_sequence_number, snapshot_id).await
-    }
-
-    pub async fn database_delete(&self, name: &str) -> Result<(), ArcServerStateError> {
-        self.database_manager.database_delete(name).await
-    }
-
-    // --- Async delegation: user manager (TODO: REMOVE AFTER) ---
-
-    pub async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError> {
-        self.user_manager.users_all(accessor).await
-    }
-
-    pub async fn users_contains(&self, accessor: Accessor, name: &str) -> Result<bool, ArcServerStateError> {
-        self.user_manager.users_contains(accessor, name).await
-    }
-
-    pub async fn users_get(&self, accessor: Accessor, name: &str) -> Result<User, ArcServerStateError> {
-        self.user_manager.users_get(accessor, name).await
-    }
-
-    pub async fn users_create(
-        &self,
-        accessor: Accessor,
-        user: User,
-        credential: Credential,
-    ) -> Result<(), ArcServerStateError> {
-        self.user_manager.users_create(accessor, user, credential).await
-    }
-
-    pub async fn users_update(
-        &self,
-        accessor: Accessor,
-        username: &str,
-        user_update: Option<User>,
-        credential_update: Option<Credential>,
-    ) -> Result<(), ArcServerStateError> {
-        self.user_manager.users_update(accessor, username, user_update, credential_update).await
-    }
-
-    pub async fn users_delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError> {
-        self.user_manager.users_delete(accessor, username).await
-    }
-
-    pub async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError> {
-        self.user_manager.user_verify_password(username, password).await
-    }
-
-    pub async fn token_create(&self, username: String, password: String) -> Result<String, ArcServerStateError> {
-        self.user_manager.token_create(username, password).await
-    }
-
-    pub async fn token_get_owner(&self, token: &str) -> Option<String> {
-        self.user_manager.token_get_owner(token).await
     }
 
     // --- Direct methods (transaction tracking) ---
@@ -388,11 +226,11 @@ impl ServerState {
     // --- Initialisation ---
 
     pub fn is_initialised(&self) -> bool {
-        self.database_manager().database_unrestricted(SYSTEM_DB).is_some()
+        self.database_manager.manager().database_unrestricted(SYSTEM_DB).is_some()
     }
 
     pub async fn initialise(&self) -> Result<(), ArcServerStateError> {
-        let system_database = if let Some(system_database) = self.database_manager().database_unrestricted(SYSTEM_DB) {
+        let system_database = if let Some(system_database) = self.database_manager.manager().database_unrestricted(SYSTEM_DB) {
             system_database
         } else {
             crate::system_init::initialise_system_database(self).await?

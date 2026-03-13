@@ -79,7 +79,7 @@ pub trait ServerDatabaseManager: Debug + Send + Sync {
 
     async fn database_delete(&self, name: &str) -> Result<(), ArcServerStateError>;
 
-    fn database_manager(&self) -> Arc<DatabaseManager>;
+    fn manager(&self) -> Arc<DatabaseManager>;
 }
 
 #[derive(Debug)]
@@ -243,7 +243,7 @@ impl ServerDatabaseManager for LocalServerDatabaseManager {
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeDeleted { typedb_source: err }))
     }
 
-    fn database_manager(&self) -> Arc<DatabaseManager> {
+    fn manager(&self) -> Arc<DatabaseManager> {
         self.database_manager.clone()
     }
 }

@@ -108,7 +108,7 @@ pub(crate) async fn commit_schema_transaction(
             // After server state's execution, another snapshot is built, acquiring an alternative read drop guard
             let (_snapshot_guard, commit_record) = commit_intent.schema_snapshot.into_commit_record();
             let commit_result =
-                server_state.database_schema_commit(database.name(), commit_record, profile.commit_profile()).await;
+                server_state.databases().database_schema_commit(database.name(), commit_record, profile.commit_profile()).await;
             (profile, commit_result)
         }
         (profile, Err(typedb_source)) => {
@@ -130,7 +130,7 @@ pub(crate) async fn commit_write_transaction(
             // After server state's execution, another snapshot is built, acquiring an alternative read drop guard
             let (_snapshot_guard, commit_record) = commit_intent.write_snapshot.into_commit_record();
             let commit_result =
-                server_state.database_schema_commit(database.name(), commit_record, profile.commit_profile()).await;
+                server_state.databases().database_schema_commit(database.name(), commit_record, profile.commit_profile()).await;
             (profile, commit_result)
         }
         (profile, Err(typedb_source)) => {

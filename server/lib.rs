@@ -252,6 +252,7 @@ impl Server {
 
         Self::print_serving_information(
             server_state
+                .servers()
                 .server_status()
                 .await
                 .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?,
@@ -396,6 +397,6 @@ impl Server {
     }
 
     pub fn database_manager(&self) -> Arc<DatabaseManager> {
-        self.server_state.database_manager()
+        self.server_state.databases().manager()
     }
 }

@@ -267,6 +267,7 @@ impl TransactionService {
 
         let database = self
             .server_state
+            .databases()
             .databases_get_for_transaction(database_name.as_str(), type_)
             .await
             .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?
