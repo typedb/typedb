@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, error::Error, sync::Arc};
 
 use durability::RawRecord;
 use error::typedb_error;
@@ -81,12 +81,13 @@ pub fn load_commit_data_from(
 }
 
 pub(crate) fn apply_recovered(
+    database_name: &str,
     recovered_commits: BTreeMap<SequenceNumber, RecoveryCommitStatus>,
     durability_client: &impl DurabilityClient,
     keyspaces: &Keyspaces,
 ) -> Result<(), StorageRecoveryError> {
     event!(Level::TRACE, "Applying recovered commits");
-    use StorageRecoveryError::{DurabilityClientRead, DurabilityClientWrite, KeyspaceWrite};
+    use StorageRecoveryError::{DurabilityClientRead, DurabilityClientWrite, Internal, KeyspaceWrite};
 
     if recovered_commits.is_empty() {
         return Ok(());
@@ -94,12 +95,15 @@ pub(crate) fn apply_recovered(
 
     let isolation_manager = IsolationManager::new(*recovered_commits.first_key_value().unwrap().0);
 
-    let mut pending_writes = Vec::new();
     for (commit_sequence_number, commit) in recovered_commits {
         match commit {
             RecoveryCommitStatus::Validated(commit_record) => {
-                pending_writes.push(WriteBatches::from_operations(commit_sequence_number, commit_record.operations()));
+                let write_batches = WriteBatches::from_operations(commit_sequence_number, commit_record.operations());
                 isolation_manager.load_validated(commit_sequence_number, commit_record);
+                keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+                isolation_manager
+                    .applied(commit_sequence_number)
+                    .map_err(|error| Internal { name: Arc::new(database_name.to_owned()), source: Arc::new(error) })?;
             }
             RecoveryCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),
             RecoveryCommitStatus::Pending(commit_record) => {
@@ -112,7 +116,11 @@ pub(crate) fn apply_recovered(
                     ValidatedCommit::Write(write_batches) => {
                         MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
-                        pending_writes.push(write_batches);
+                        keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+                        isolation_manager.applied(commit_sequence_number).map_err(|error| Internal {
+                            name: Arc::new(database_name.to_owned()),
+                            source: Arc::new(error),
+                        })?;
                     }
                     ValidatedCommit::Conflict(_) => {
                         MVCCStorage::persist_commit_status(false, commit_sequence_number, durability_client)
@@ -121,10 +129,6 @@ pub(crate) fn apply_recovered(
                 }
             }
         }
-    }
-
-    for write_batches in pending_writes {
-        keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
     }
 
     Ok(())
@@ -147,5 +151,6 @@ typedb_error! {
             expected_sequence_number: SequenceNumber, first_record_sequence_number: SequenceNumber
         ),
         KeyspaceWrite(5, "Error writing recovered commits to keyspace.", source: KeyspaceError),
+        Internal(6, "Storage recovery for database '{name}' failed with internal error.", name: Arc<String>, source: Arc<dyn Error + Send + Sync + 'static>),
     }
 }
