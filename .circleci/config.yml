@@ -202,6 +202,7 @@ jobs:
     working_directory: ~/typedb
     steps:
       - checkout
+      - run: .circleci\windows\setup_local_deps.bat
       - run: .circleci\windows\prepare.bat
       - run: REM "Restore .circleci\windows\test_assembly.bat"
       - run: .circleci\windows\deploy_snapshot.bat
