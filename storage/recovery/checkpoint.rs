@@ -13,11 +13,11 @@ use std::{
     sync::Arc,
 };
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use error::typedb_error;
 use itertools::Itertools;
 use same_file::is_same_file;
-use tracing::trace;
+use tracing::{debug, trace};
 
 use crate::{
     durability_client::DurabilityClient,
@@ -47,26 +47,7 @@ impl CheckpointReader {
         }
 
         fs::read_dir(&checkpoint_dir)
-            .and_then(|mut entries| {
-                entries.try_fold(None, |cur, entry| {
-                    let path = entry?.path();
-                    if path.extension() == Some(TEMP_FILE_EXTENSION.as_ref()) {
-                        // skip unfinished checkpoint
-                        return Ok(cur);
-                    }
-
-                    if cur.as_ref().is_some_and(|cur: &CheckpointReader| cur.directory > path) {
-                        return Ok(cur);
-                    }
-
-                    let checkpoint = CheckpointReader { directory: path };
-                    if checkpoint.is_complete::<KS>()? {
-                        Ok(Some(checkpoint))
-                    } else {
-                        Ok(cur)
-                    }
-                })
-            })
+            .and_then(latest_complete_checkpoint::<KS>)
             .map_err(|error| CheckpointRead { dir: checkpoint_dir, source: Arc::new(error) })
     }
 
@@ -149,6 +130,61 @@ impl CheckpointReader {
         let metadata_file_path = self.directory.join(STORAGE_METADATA_FILE_NAME);
         fs::exists(metadata_file_path)
     }
+}
+
+fn latest_complete_checkpoint<KS: KeyspaceSet>(mut entries: fs::ReadDir) -> io::Result<Option<CheckpointReader>> {
+    let latest: io::Result<_> = entries.try_fold(None, |cur, entry| {
+        let path = entry?.path();
+        if path.extension() == Some(TEMP_FILE_EXTENSION.as_ref()) {
+            // skip unfinished checkpoint
+            return Ok(cur);
+        }
+
+        let Some(timestamp) = parse_directory_name_timestamp(&path) else {
+            // skip unparseable checkpoint
+            return Ok(cur);
+        };
+
+        if cur.as_ref().is_some_and(|(cur_timestamp, _)| cur_timestamp > &timestamp) {
+            return Ok(cur);
+        }
+
+        let checkpoint = CheckpointReader { directory: path };
+        if checkpoint.is_complete::<KS>()? {
+            Ok(Some((timestamp, checkpoint)))
+        } else {
+            Ok(cur)
+        }
+    });
+
+    match latest? {
+        Some((_, checkpoint_reader)) => Ok(Some(checkpoint_reader)),
+        None => Ok(None),
+    }
+}
+
+fn parse_directory_name_timestamp(path: &PathBuf) -> Option<DateTime<Utc>> {
+    let Some(dir_name) = path.file_name() else {
+        debug!("Encountered path with no directory name during checkpoint recovery: {path:?}, skipping");
+        return None;
+    };
+
+    let Some(dir_name) = dir_name.to_str() else {
+        debug!("Encountered directory with non-UTF8 name during checkpoint recovery: {path:?}, skipping");
+        return None;
+    };
+
+    let Ok(micros) = dir_name.parse() else {
+        debug!("Encountered directory with non-timestamp name during checkpoint recovery: {path:?}, skipping");
+        return None;
+    };
+
+    let Some(timestamp) = DateTime::from_timestamp_micros(micros) else {
+        debug!("Encountered directory with timestamp name outside the range of UTC datetimes: {path:?}, skipping");
+        return None;
+    };
+
+    Some(timestamp)
 }
 
 fn restore_storage_from_checkpoint(keyspace_dir: PathBuf, keyspace_checkpoint_dir: PathBuf) -> io::Result<()> {
