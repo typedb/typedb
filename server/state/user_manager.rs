@@ -11,7 +11,6 @@ use std::{
 
 use async_trait::async_trait;
 use database::database_manager::DatabaseManager;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot};
 use system::concepts::{Credential, User};
 use user::{permission_manager::PermissionManager, user_manager::UserManager};
 
@@ -152,16 +151,9 @@ impl ServerUserManager for LocalServerUserManager {
         }
 
         let user_manager = self.manager().ok_or(LocalServerStateError::NotInitialised {})?;
-
-        let (mut transaction_profile, commit_intent) = user_manager
+        user_manager
             .create(&user, &credential)
-            .map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeCreated { typedb_source })?;
-
-        let commit_profile = transaction_profile.commit_profile();
-        let database = self.database_manager.database_unrestricted(SYSTEM_DB).unwrap();
-        database.data_commit_with_snapshot(commit_intent.write_snapshot, commit_profile).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
-        })
+            .map_err(|typedb_source| arc_server_state_err(LocalServerStateError::UserCannotBeCreated { typedb_source }))
     }
 
     async fn users_update(
@@ -176,17 +168,8 @@ impl ServerUserManager for LocalServerUserManager {
         }
 
         let user_manager = self.manager().ok_or(LocalServerStateError::NotInitialised {})?;
-
-        let (mut transaction_profile, commit_intent_result) =
-            user_manager.update(username, &user_update, &credential_update);
-
-        let commit_intent = commit_intent_result
-            .map_err(|typedb_source| LocalServerStateError::UserCannotBeUpdated { typedb_source })?;
-
-        let commit_profile = transaction_profile.commit_profile();
-        let database = self.database_manager.database_unrestricted(SYSTEM_DB).unwrap();
-        database.data_commit_with_snapshot(commit_intent.write_snapshot, commit_profile).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
+        user_manager.update(username, &user_update, &credential_update).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::UserCannotBeUpdated { typedb_source })
         })?;
 
         self.token_manager.invalidate_user(username).await;
@@ -200,15 +183,8 @@ impl ServerUserManager for LocalServerUserManager {
         }
 
         let user_manager = self.manager().ok_or(LocalServerStateError::NotInitialised {})?;
-
-        let (mut transaction_profile, commit_intent) = user_manager
-            .delete(username)
-            .map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeDeleted { typedb_source })?;
-
-        let commit_profile = transaction_profile.commit_profile();
-        let database = self.database_manager.database_unrestricted(SYSTEM_DB).unwrap();
-        database.data_commit_with_snapshot(commit_intent.write_snapshot, commit_profile).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
+        user_manager.delete(username).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::UserCannotBeDeleted { typedb_source })
         })?;
 
         self.token_manager.invalidate_user(username).await;

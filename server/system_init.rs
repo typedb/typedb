@@ -11,15 +11,13 @@ use resource::{
     internal_database_prefix,
     profile::TransactionProfile,
 };
-use storage::{
-    durability_client::WALClient, isolation_manager::ReaderDropGuard, record::CommitRecord,
-    snapshot::CommittableSnapshot,
-};
+use storage::{durability_client::WALClient, record::CommitRecord, snapshot::CommittableSnapshot};
 use system::{
     concepts::{Credential, PasswordHash, User},
     repositories::SCHEMA,
     util::transaction_util::TransactionUtil,
 };
+use user::{errors::UserCreateError, user_manager::UserManager};
 
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},
@@ -80,33 +78,12 @@ async fn initialise_system_database_schema(
     Ok(())
 }
 
-pub async fn get_default_user_commit_record(
-    user_manager: &user::user_manager::UserManager,
-) -> Result<(TransactionProfile, Option<CommitRecord>), LocalServerStateError> {
-    let create_result = user_manager.create(
+pub fn initialise_default_user(user_manager: &UserManager) -> Result<(), UserCreateError> {
+    match user_manager.create(
         &User::new(DEFAULT_USER_NAME.to_string()),
         &Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
-    );
-
-    let (transaction_profile, commit_intent) =
-        create_result.map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeCreated { typedb_source })?;
-    let commit_record_opt = commit_intent
-        .write_snapshot
-        .has_changes()
-        .then(|| commit_intent.write_snapshot.into_commit_record())
-        .map(|(_drop_guard, record)| record);
-    Ok((transaction_profile, commit_record_opt))
-}
-
-pub async fn initialise_default_user(
-    user_manager: &user::user_manager::UserManager,
-    server_state: &ServerState,
-) -> Result<(), ArcServerStateError> {
-    if let (mut transaction_profile, Some(commit_record)) = get_default_user_commit_record(user_manager).await? {
-        server_state
-            .databases()
-            .database_data_commit(SYSTEM_DB, commit_record, &mut transaction_profile.commit_profile())
-            .await?;
+    ) {
+        Ok(()) | Err(UserCreateError::UserAlreadyExist { .. }) => Ok(()),
+        Err(err) => Err(err),
     }
-    Ok(())
 }

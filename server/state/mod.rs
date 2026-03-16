@@ -29,7 +29,7 @@ pub use self::{
 };
 use crate::{
     authentication::token_manager::TokenManager,
-    error::{ArcServerStateError, ServerOpenError},
+    error::{arc_server_state_err, ArcServerStateError, LocalServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
     status::{LocalServerStatus, ServerStatus},
     system_init::SYSTEM_DB,
@@ -185,8 +185,10 @@ impl ServerState {
                 crate::system_init::initialise_system_database(self).await?
             };
 
-        let user_manager = Arc::new(UserManager::new(system_database));
-        crate::system_init::initialise_default_user(&user_manager, self).await?;
+        let user_manager = UserManager::new(system_database);
+        crate::system_init::initialise_default_user(&user_manager).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::UserCannotBeCreated { typedb_source })
+        })?;
 
         Ok(())
     }
