@@ -95,28 +95,18 @@ pub(crate) fn apply_recovered(
 
     let isolation_manager = IsolationManager::new(*recovered_commits.first_key_value().unwrap().0);
 
-    let mut pending_writes = BTreeMap::new();
     for (commit_sequence_number, commit) in recovered_commits {
         match commit {
             RecoveryCommitStatus::Validated(commit_record) => {
-                pending_writes.insert(
-                    commit_sequence_number,
-                    WriteBatches::from_operations(commit_sequence_number, commit_record.operations()),
-                );
+                let write_batches = WriteBatches::from_operations(commit_sequence_number, commit_record.operations());
                 isolation_manager.load_validated(commit_sequence_number, commit_record);
+                keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+                isolation_manager
+                    .applied(commit_sequence_number)
+                    .map_err(|error| Internal { name: Arc::new(database_name.to_owned()), source: Arc::new(error) })?;
             }
             RecoveryCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),
             RecoveryCommitStatus::Pending(commit_record) => {
-                let tail = pending_writes.split_off(&commit_record.open_sequence_number().next());
-                for (sequence_number, write_batches) in pending_writes {
-                    keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
-                    isolation_manager.applied(sequence_number).map_err(|error| Internal {
-                        name: Arc::new(database_name.to_owned()),
-                        source: Arc::new(error),
-                    })?;
-                }
-                pending_writes = tail;
-
                 let read_guard = isolation_manager.opened_for_read(commit_record.open_sequence_number());
                 let validated_commit = isolation_manager
                     .validate_commit(commit_sequence_number, commit_record, durability_client)
@@ -126,7 +116,11 @@ pub(crate) fn apply_recovered(
                     ValidatedCommit::Write(write_batches) => {
                         MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
-                        pending_writes.insert(commit_sequence_number, write_batches);
+                        keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+                        isolation_manager.applied(commit_sequence_number).map_err(|error| Internal {
+                            name: Arc::new(database_name.to_owned()),
+                            source: Arc::new(error),
+                        })?;
                     }
                     ValidatedCommit::Conflict(_) => {
                         MVCCStorage::persist_commit_status(false, commit_sequence_number, durability_client)
@@ -135,10 +129,6 @@ pub(crate) fn apply_recovered(
                 }
             }
         }
-    }
-
-    for write_batches in pending_writes.into_values() {
-        keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
     }
 
     Ok(())
