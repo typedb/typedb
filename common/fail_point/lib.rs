@@ -76,7 +76,7 @@ fn init_registry() -> Registry {
             let Some((key, value)) = cfg.split_once('=') else {
                 panic!("Could not parse failpoint configuration '{cfg}'")
             };
-            (key.to_owned(), value.parse().unwrap())
+            (key.trim().to_owned(), value.parse().unwrap())
         })
         .collect()
 }
@@ -107,7 +107,7 @@ impl FromStr for FailPoint {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self { actions: Mutex::new(s.split("->").map(Action::from_str).try_collect()?) })
+        Ok(Self { actions: Mutex::new(s.trim().split("->").map(Action::from_str).try_collect()?) })
     }
 }
 
