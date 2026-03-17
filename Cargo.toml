@@ -82,6 +82,10 @@ features = {}
 	name = "test_assembly"
 
 [[test]]
+	path = "tests/assembly/fail_points.rs"
+	name = "test_fail_points"
+
+[[test]]
 	path = "tests/behaviour/debug/debug.rs"
 	name = "test_debug"
 
