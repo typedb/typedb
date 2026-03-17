@@ -15,7 +15,5 @@ features = {}
 [dependencies]
 
 	[dependencies.resource]
-		path = "../../resource"
-		features = []
-		default-features = false
+		workspace = true
 

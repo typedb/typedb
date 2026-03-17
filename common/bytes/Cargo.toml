@@ -15,22 +15,14 @@ features = {}
 [dependencies]
 
 	[dependencies.primitive]
-		path = "../../common/primitive"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.serde]
-		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.219"
-		default-features = false
+		workspace = true
 
 	[dependencies.base64]
-		features = ["alloc", "default", "std"]
-		version = "0.22.1"
-		default-features = false
+		workspace = true
 
 	[dependencies.lending_iterator]
-		path = "../../common/lending_iterator"
-		features = []
-		default-features = false
+		workspace = true
 

@@ -15,137 +15,84 @@ features = {}
 [dev-dependencies]
 
 	[dev-dependencies.test_utils]
-		path = "../util/test"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.rand]
-		features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
-		version = "0.8.5"
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.test_utils_encoding]
-		path = "../encoding/tests"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.criterion]
-		features = ["cargo_bench_support", "default", "plotters", "rayon"]
-		version = "0.5.1"
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.bytes]
-		path = "../common/bytes"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.durability]
-		path = "../durability"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.pprof]
-		features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
-		version = "0.13.0"
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.test_utils_concept]
-		path = "../concept/tests"
-		features = []
-		default-features = false
+		workspace = true
 
 [dependencies]
 
 	[dependencies.tokio]
-		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.47.1"
-		default-features = false
+		workspace = true
 
 	[dependencies.tracing]
-		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.41"
-		default-features = false
+		workspace = true
 
 	[dependencies.serde]
-		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.219"
-		default-features = false
+		workspace = true
 
 	[dependencies.resource]
-		path = "../resource"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.structural_equality]
-		path = "../common/structural_equality"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.concept]
-		path = "../concept"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.ir]
-		path = "../ir"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.moka]
-		features = ["default", "sync"]
-		version = "0.12.10"
-		default-features = false
+		workspace = true
 
 	[dependencies.storage]
-		path = "../storage"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.encoding]
-		path = "../encoding"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.error]
-		path = "../common/error"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.itertools]
-		features = ["default", "use_alloc", "use_std"]
-		version = "0.10.5"
-		default-features = false
+		workspace = true
 
 	[dependencies.answer]
-		path = "../answer"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.executor]
-		path = "../executor"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.function]
-		path = "../function"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.typeql]
-		features = []
-		git = "https://github.com/typedb/typeql"
-		tag = "3.8.0"
-		default-features = false
+		workspace = true
 
 	[dependencies.compiler]
-		path = "../compiler"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.lending_iterator]
-		path = "../common/lending_iterator"
-		features = []
-		default-features = false
+		workspace = true
 
 [[bench]]
 	name = "bench_insert_queries"
