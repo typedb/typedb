@@ -154,14 +154,14 @@ build:
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test --config=ci //tests/assembly:test_assembly --test_arg="assembly"
+        bazel test --config=ci //tests/assembly:test_assembly
 
     test-fail-points:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test --config=ci //tests/assembly:test_assembly --test_arg="--test-threads=1" --test_arg="fail_point"
+        bazel test --config=ci //tests/assembly:test_fail_points --test_arg="--test-threads=1"
 
     test-behaviour-service:
       image: typedb-ubuntu-22.04
