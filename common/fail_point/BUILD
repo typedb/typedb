@@ -33,6 +33,7 @@ checkstyle_test(
     include = glob(["*", "*/*", "*/*/*"]),
     exclude = glob([
         "Cargo.*",
+        "README.md",
     ]),
     license_type = "mpl-header",
 )
