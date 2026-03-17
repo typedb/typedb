@@ -15,7 +15,10 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use error::typedb_error;
-use fail_point::{fail_point, CHECKPOINT_CLEANUP_FAIL, CHECKPOINT_DIR_CREATE_FAIL, CHECKPOINT_METADATA_WRITE_FAIL};
+use fail_point::{
+    fail_point, CHECKPOINT_CLEANUP_FAIL, CHECKPOINT_CLEANUP_PARTIAL_FAIL, CHECKPOINT_DIR_CREATE_FAIL,
+    CHECKPOINT_EMPTY_EXTENSION_FILE, CHECKPOINT_FILE_EMPTY, CHECKPOINT_FILE_SYNC_FAIL, CHECKPOINT_METADATA_WRITE_FAIL,
+};
 use itertools::Itertools;
 use same_file::is_same_file;
 use tracing::{debug, trace};
@@ -264,6 +267,7 @@ impl CheckpointWriter {
         {
             let mut file =
                 File::create(&tmp).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
+            fail_point!(CHECKPOINT_EMPTY_EXTENSION_FILE);
             data.serialise_into(&mut file)
                 .map_err(|err| ExtensionSerialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
         }
@@ -296,6 +300,7 @@ impl CheckpointWriter {
             .map_err(|error| CheckpointDirRead { dir: self.checkpoint_directory.clone(), source: Arc::new(error) })?;
 
         for previous_checkpoint in previous_checkpoints {
+            fail_point!(CHECKPOINT_CLEANUP_PARTIAL_FAIL);
             fs::remove_dir_all(&previous_checkpoint)
                 .map_err(|error| OldCheckpointRemove { dir: previous_checkpoint, source: Arc::new(error) })?
         }
@@ -306,7 +311,9 @@ impl CheckpointWriter {
 
 fn write_file(path: &Path, bytes: &[u8]) -> io::Result<()> {
     let mut file = File::create(path)?;
+    fail_point!(CHECKPOINT_FILE_EMPTY);
     file.write_all(bytes)?;
+    fail_point!(CHECKPOINT_FILE_SYNC_FAIL);
     file.sync_all()?;
     Ok(())
 }
@@ -314,7 +321,9 @@ fn write_file(path: &Path, bytes: &[u8]) -> io::Result<()> {
 fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
     let mut source_file = File::open(source)?;
     let mut destination_file = File::create(destination)?;
+    fail_point!(CHECKPOINT_FILE_EMPTY);
     io::copy(&mut source_file, &mut destination_file)?;
+    fail_point!(CHECKPOINT_FILE_SYNC_FAIL);
     destination_file.sync_all()?;
     Ok(())
 }
