@@ -59,7 +59,6 @@ pub fn compile(
         .constraints()
         .iter()
         .flat_map(|constraint| constraint.ids())
-        .chain(deleted_concepts.iter().cloned())
         .find(|var| variable_registry.is_variable_optional(*var));
 
     if let Some(var) = unsafely_used_optional_variable {
