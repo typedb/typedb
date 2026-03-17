@@ -228,7 +228,7 @@ impl CheckpointWriter {
                 .map_err(|error| CheckpointDirCreate { dir: checkpoint_dir.clone(), source: Arc::new(error) })?
         }
 
-        let checkpoint_directory = checkpoint_dir.join(format!("{}", Utc::now().timestamp_micros(),));
+        let checkpoint_directory = checkpoint_dir.join(format!("{}", Utc::now().timestamp_micros()));
         let temporary_directory = checkpoint_directory.with_extension(TEMP_FILE_EXTENSION);
         fs::create_dir_all(&temporary_directory)
             .map_err(|error| CheckpointDirCreate { dir: checkpoint_dir.clone(), source: Arc::new(error) })?;
