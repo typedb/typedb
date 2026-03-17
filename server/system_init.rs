@@ -17,9 +17,9 @@ use system::{
     repositories::SCHEMA,
     util::transaction_util::TransactionUtil,
 };
-use user::{errors::UserCreateError, user_manager::UserManager};
 
 use crate::{
+    authentication::Accessor,
     error::{ArcServerStateError, LocalServerStateError},
     state::ServerState,
 };
@@ -78,12 +78,18 @@ async fn initialise_system_database_schema(
     Ok(())
 }
 
-pub fn initialise_default_user(user_manager: &UserManager) -> Result<(), UserCreateError> {
-    match user_manager.create(
-        &User::new(DEFAULT_USER_NAME.to_string()),
-        &Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
-    ) {
-        Ok(()) | Err(UserCreateError::UserAlreadyExist { .. }) => Ok(()),
-        Err(err) => Err(err),
+pub async fn initialise_default_user(server_state: &ServerState) -> Result<(), ArcServerStateError> {
+    let accessor = Accessor(DEFAULT_USER_NAME.to_string());
+    let exists = server_state.users().users_contains(accessor.clone(), DEFAULT_USER_NAME).await?;
+    if !exists {
+        server_state
+            .users()
+            .users_create(
+                accessor,
+                User::new(DEFAULT_USER_NAME.to_string()),
+                Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
+            )
+            .await?;
     }
+    Ok(())
 }

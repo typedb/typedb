@@ -180,7 +180,7 @@ impl ServerDatabaseManager for LocalServerDatabaseManager {
             Some(db) => get_database_schema(db),
             None => Err(LocalServerStateError::DatabaseNotFound { name: name.to_string() }),
         }
-        .map_err(|err| arc_server_state_err(err))
+        .map_err(arc_server_state_err)
     }
 
     async fn database_type_schema(&self, name: &str) -> Result<String, ArcServerStateError> {

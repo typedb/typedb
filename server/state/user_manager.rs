@@ -11,6 +11,7 @@ use std::{
 
 use async_trait::async_trait;
 use database::database_manager::DatabaseManager;
+use resource::constants::server::DEFAULT_USER_NAME;
 use system::concepts::{Credential, User};
 use user::{permission_manager::PermissionManager, user_manager::UserManager};
 
@@ -52,9 +53,9 @@ pub trait ServerUserManager: Debug + Send + Sync {
 
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 
-    fn manager(&self) -> Option<Arc<UserManager>>;
+    fn manager(&self) -> Result<Arc<UserManager>, ArcServerStateError>;
 
-    async fn load(&self);
+    fn is_initialised(&self) -> bool;
 }
 
 #[derive(Debug)]
@@ -81,18 +82,32 @@ impl LocalServerUserManager {
         }
     }
 
-    fn get_user_manager(&self) -> Result<Arc<UserManager>, LocalServerStateError> {
-        match self.user_manager.read().unwrap().clone() {
-            Some(user_manager) => Ok(user_manager),
-            None => Err(LocalServerStateError::NotInitialised {}),
+    fn try_initialise(&self) {
+        if let Some(system_db) = self.database_manager.database_unrestricted(SYSTEM_DB) {
+            let user_manager = Arc::new(UserManager::new(system_db));
+            if !user_manager.contains(DEFAULT_USER_NAME).unwrap_or(false) {
+                return;
+            }
+            let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
+            *self.user_manager.write().unwrap() = Some(user_manager);
+            *self.credential_verifier.write().unwrap() = Some(credential_verifier);
         }
     }
 
-    fn get_credential_verifier(&self) -> Result<Arc<CredentialVerifier>, LocalServerStateError> {
-        match self.credential_verifier.read().unwrap().clone() {
-            Some(credential_verifier) => Ok(credential_verifier),
-            None => Err(LocalServerStateError::NotInitialised {}),
+    fn get_user_manager(&self) -> Result<Arc<UserManager>, LocalServerStateError> {
+        if let Some(um) = self.user_manager.read().unwrap().clone() {
+            return Ok(um);
         }
+        self.try_initialise();
+        self.user_manager.read().unwrap().clone().ok_or(LocalServerStateError::NotInitialised {})
+    }
+
+    fn get_credential_verifier(&self) -> Result<Arc<CredentialVerifier>, LocalServerStateError> {
+        if let Some(cv) = self.credential_verifier.read().unwrap().clone() {
+            return Ok(cv);
+        }
+        self.try_initialise();
+        self.credential_verifier.read().unwrap().clone().ok_or(LocalServerStateError::NotInitialised {})
     }
 }
 
@@ -150,7 +165,7 @@ impl ServerUserManager for LocalServerUserManager {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
-        let user_manager = self.manager().ok_or(LocalServerStateError::NotInitialised {})?;
+        let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
         user_manager
             .create(&user, &credential)
             .map_err(|typedb_source| arc_server_state_err(LocalServerStateError::UserCannotBeCreated { typedb_source }))
@@ -167,7 +182,7 @@ impl ServerUserManager for LocalServerUserManager {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
-        let user_manager = self.manager().ok_or(LocalServerStateError::NotInitialised {})?;
+        let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
         user_manager.update(username, &user_update, &credential_update).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::UserCannotBeUpdated { typedb_source })
         })?;
@@ -182,7 +197,7 @@ impl ServerUserManager for LocalServerUserManager {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
 
-        let user_manager = self.manager().ok_or(LocalServerStateError::NotInitialised {})?;
+        let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
         user_manager.delete(username).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::UserCannotBeDeleted { typedb_source })
         })?;
@@ -211,15 +226,15 @@ impl ServerUserManager for LocalServerUserManager {
         self.token_manager.get_valid_token_owner(token).await
     }
 
-    fn manager(&self) -> Option<Arc<UserManager>> {
-        self.user_manager.read().unwrap().clone()
+    fn manager(&self) -> Result<Arc<UserManager>, ArcServerStateError> {
+        self.get_user_manager().map_err(arc_server_state_err)
     }
 
-    async fn load(&self) {
-        let system_database = self.database_manager.database_unrestricted(SYSTEM_DB).unwrap();
-        let user_manager = Arc::new(UserManager::new(system_database));
-        let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
-        *self.user_manager.write().unwrap() = Some(user_manager);
-        *self.credential_verifier.write().unwrap() = Some(credential_verifier);
+    fn is_initialised(&self) -> bool {
+        if self.user_manager.read().unwrap().is_some() {
+            return true;
+        }
+        self.try_initialise();
+        self.user_manager.read().unwrap().is_some()
     }
 }

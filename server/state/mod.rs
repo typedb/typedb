@@ -17,7 +17,6 @@ use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use itertools::Itertools;
 use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo};
 use tokio::{net::lookup_host, sync::watch::Receiver};
-use user::user_manager::UserManager;
 
 pub use self::{
     database_manager::{
@@ -29,10 +28,9 @@ pub use self::{
 };
 use crate::{
     authentication::token_manager::TokenManager,
-    error::{arc_server_state_err, ArcServerStateError, LocalServerStateError, ServerOpenError},
+    error::{ArcServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
     status::{LocalServerStatus, ServerStatus},
-    system_init::SYSTEM_DB,
 };
 
 pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
@@ -174,34 +172,16 @@ impl ServerState {
     // --- Initialisation ---
 
     pub fn is_initialised(&self) -> bool {
-        self.database_manager.manager().database_unrestricted(SYSTEM_DB).is_some()
+        self.user_manager.is_initialised()
     }
 
     pub async fn initialise(&self) -> Result<(), ArcServerStateError> {
-        let system_database =
-            if let Some(system_database) = self.database_manager.manager().database_unrestricted(SYSTEM_DB) {
-                system_database
-            } else {
-                crate::system_init::initialise_system_database(self).await?
-            };
-
-        let user_manager = UserManager::new(system_database);
-        crate::system_init::initialise_default_user(&user_manager).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::UserCannotBeCreated { typedb_source })
-        })?;
-
-        Ok(())
-    }
-
-    pub async fn load(&self) {
-        self.user_manager.load().await;
-    }
-
-    pub async fn initialise_and_load(&self) -> Result<(), ArcServerStateError> {
-        if !self.is_initialised() {
-            self.initialise().await?;
+        if self.is_initialised() {
+            return Ok(());
         }
-        self.load().await;
+        // TODO: We check that these exist in user_manager, but initialise here. It's dangerous
+        crate::system_init::initialise_system_database(self).await?;
+        crate::system_init::initialise_default_user(self).await?;
         Ok(())
     }
 

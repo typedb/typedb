@@ -105,7 +105,7 @@ impl ServerBuilder {
                 .await?
                 .build();
                 server_state
-                    .initialise_and_load()
+                    .initialise()
                     .await
                     .map_err(|error| ServerOpenError::ServerState { typedb_source: error })?;
                 Arc::new(server_state)
