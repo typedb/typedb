@@ -17,7 +17,7 @@ use chrono::{DateTime, Utc};
 use error::typedb_error;
 use fail_point::{
     fail_point, CHECKPOINT_CLEANUP_FAIL, CHECKPOINT_CLEANUP_PARTIAL_FAIL, CHECKPOINT_DIR_CREATE_FAIL,
-    CHECKPOINT_EMPTY_EXTENSION_FILE, CHECKPOINT_FILE_EMPTY, CHECKPOINT_FILE_SYNC_FAIL, CHECKPOINT_METADATA_WRITE_FAIL,
+    CHECKPOINT_FILE_EMPTY, CHECKPOINT_FILE_SYNC_FAIL, CHECKPOINT_METADATA_WRITE_FAIL,
 };
 use itertools::Itertools;
 use same_file::is_same_file;
@@ -267,7 +267,6 @@ impl CheckpointWriter {
         {
             let mut file =
                 File::create(&tmp).map_err(|err| ExtensionIO { name: T::NAME.to_string(), source: Arc::new(err) })?;
-            fail_point!(CHECKPOINT_EMPTY_EXTENSION_FILE);
             data.serialise_into(&mut file)
                 .map_err(|err| ExtensionSerialise { name: T::NAME.to_string(), source: Arc::new(err) })?;
         }
