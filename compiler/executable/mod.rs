@@ -121,7 +121,7 @@ typedb_error! {
         ),
         OptionalVariableUsedOutsideTry(
             14,
-            "The optional variable '{variable}' was used outside a 'try' block.",
+            "A write stage uses the optional variable '{variable}' outside a 'try' block.",
             variable: String,
             source_span: Option<Span>,
         ),
