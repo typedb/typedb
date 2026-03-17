@@ -119,5 +119,11 @@ typedb_error! {
             "Compound expressions are not supported in these statements yet.",
             source_span: Option<Span>,
         ),
+        OptionalVariableUsedOutsideTry(
+            14,
+            "A write stage uses the optional variable '{variable}' outside a 'try' block.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
     }
 }

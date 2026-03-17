@@ -69,6 +69,22 @@ pub fn compile(
         input_variables,
     )?;
 
+    let unsafely_used_optional_variable = block
+        .conjunction()
+        .constraints()
+        .iter()
+        .flat_map(|constraint| constraint.ids())
+        .find(|var| variable_registry.is_variable_optional(*var));
+
+    if let Some(var) = unsafely_used_optional_variable {
+        let variable = variable_registry
+            .variable_names()
+            .get(&var)
+            .cloned()
+            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+        return Err(Box::new(WriteCompilationError::OptionalVariableUsedOutsideTry { source_span, variable }));
+    }
+
     let mut optional_updates = Vec::with_capacity(block.conjunction().nested_patterns().len());
     for nested_pattern in block.conjunction().nested_patterns() {
         let NestedPattern::Optional(optional) = nested_pattern else {

@@ -268,7 +268,7 @@ impl VariableRegistry {
         self.variable_optionality.get(&variable).cloned()
     }
 
-    pub(crate) fn is_variable_optional(&self, variable: Variable) -> bool {
+    pub fn is_variable_optional(&self, variable: Variable) -> bool {
         match self.variable_optionality.get(&variable).unwrap_or(&VariableOptionality::Required) {
             VariableOptionality::Required => false,
             VariableOptionality::Optional => true,
