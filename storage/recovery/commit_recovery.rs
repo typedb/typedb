@@ -8,6 +8,7 @@ use std::{collections::BTreeMap, error::Error, sync::Arc};
 
 use durability::RawRecord;
 use error::typedb_error;
+use fail_point::{fail_point, RECOVERY_PARTIAL_WRITE};
 use tracing::{event, trace, Level};
 
 use crate::{
@@ -147,6 +148,7 @@ pub(crate) fn apply_recovered(
                 let write_batches = WriteBatches::from_operations(commit_sequence_number, commit_record.operations());
                 isolation_manager.load_validated(commit_sequence_number, commit_record);
                 keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+                fail_point!(RECOVERY_PARTIAL_WRITE);
                 isolation_manager
                     .applied(commit_sequence_number)
                     .map_err(|error| Internal { name: Arc::new(database_name.to_owned()), source: Arc::new(error) })?;
@@ -163,6 +165,7 @@ pub(crate) fn apply_recovered(
                         MVCCStorage::persist_commit_status(true, commit_sequence_number, durability_client)
                             .map_err(|error| DurabilityClientWrite { typedb_source: error })?;
                         keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
+                        fail_point!(RECOVERY_PARTIAL_WRITE);
                         isolation_manager.applied(commit_sequence_number).map_err(|error| Internal {
                             name: Arc::new(database_name.to_owned()),
                             source: Arc::new(error),
