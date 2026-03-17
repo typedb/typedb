@@ -26,50 +26,22 @@ use crate::{
 
 pub const SYSTEM_DB: &str = concat!(internal_database_prefix!(), "system");
 
-pub async fn initialise_system_database(
-    server_state: &ServerState,
-) -> Result<Arc<Database<WALClient>>, ArcServerStateError> {
+pub async fn initialise_system_database(server_state: &ServerState) -> Result<(), ArcServerStateError> {
+    if server_state.databases().manager().database_unrestricted(SYSTEM_DB).is_some() {
+        return Ok(());
+    }
     server_state.databases().databases_create_unrestricted(SYSTEM_DB).await?;
+    Ok(())
+}
+
+pub async fn initialise_system_database_schema(server_state: &ServerState) -> Result<(), ArcServerStateError> {
     let db = server_state
         .databases()
         .manager()
         .database_unrestricted(SYSTEM_DB)
-        .expect("Critical: system database is absent");
-    initialise_system_database_schema(db.clone(), server_state).await?;
-    Ok(db)
-}
-
-pub async fn get_system_database_schema_commit_record(
-    db: Arc<Database<WALClient>>,
-) -> Result<(TransactionProfile, Option<CommitRecord>), ArcServerStateError> {
-    let tx_util = TransactionUtil::new(db);
-    let (mut transaction_profile, finalise_result) =
-        tx_util.schema_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
-            let query = typeql::parse_query(SCHEMA)
-                .unwrap_or_else(|_| {
-                    panic!("Unexpected error occurred when parsing the schema for the {} database.", SYSTEM_DB)
-                })
-                .into_structure()
-                .into_schema();
-            query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, SCHEMA).unwrap_or_else(|_| {
-                panic!("Unexpected error occurred when defining the schema for the {} database.", SYSTEM_DB)
-            });
-        });
-    let commit_intent =
-        finalise_result.map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;
-    let commit_record_opt = commit_intent
-        .schema_snapshot
-        .has_changes()
-        .then(|| commit_intent.schema_snapshot.into_commit_record())
-        .map(|(_drop_guard, record)| record);
-    Ok((transaction_profile, commit_record_opt))
-}
-
-async fn initialise_system_database_schema(
-    db: Arc<Database<WALClient>>,
-    server_state: &ServerState,
-) -> Result<(), ArcServerStateError> {
-    if let (mut transaction_profile, Some(commit_record)) = get_system_database_schema_commit_record(db).await? {
+        .expect("Critical: system database must exist before schema initialisation");
+    let (mut transaction_profile, commit_record_opt) = get_system_database_schema_commit_record(db).await?;
+    if let Some(commit_record) = commit_record_opt {
         server_state
             .databases()
             .database_schema_commit(SYSTEM_DB, commit_record, transaction_profile.commit_profile())
@@ -92,4 +64,30 @@ pub async fn initialise_default_user(server_state: &ServerState) -> Result<(), A
             .await?;
     }
     Ok(())
+}
+
+pub async fn get_system_database_schema_commit_record(
+    db: Arc<Database<WALClient>>,
+) -> Result<(TransactionProfile, Option<CommitRecord>), ArcServerStateError> {
+    let tx_util = TransactionUtil::new(db);
+    let (transaction_profile, finalise_result) =
+        tx_util.schema_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
+            let query = typeql::parse_query(SCHEMA)
+                .unwrap_or_else(|_| {
+                    panic!("Unexpected error occurred when parsing the schema for the {} database.", SYSTEM_DB)
+                })
+                .into_structure()
+                .into_schema();
+            query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, SCHEMA).unwrap_or_else(|_| {
+                panic!("Unexpected error occurred when defining the schema for the {} database.", SYSTEM_DB)
+            });
+        });
+    let commit_intent =
+        finalise_result.map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;
+    let commit_record_opt = commit_intent
+        .schema_snapshot
+        .has_changes()
+        .then(|| commit_intent.schema_snapshot.into_commit_record())
+        .map(|(_drop_guard, record)| record);
+    Ok((transaction_profile, commit_record_opt))
 }

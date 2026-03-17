@@ -179,8 +179,8 @@ impl ServerState {
         if self.is_initialised() {
             return Ok(());
         }
-        // TODO: We check that these exist in user_manager, but initialise here. It's dangerous
         crate::system_init::initialise_system_database(self).await?;
+        crate::system_init::initialise_system_database_schema(self).await?;
         crate::system_init::initialise_default_user(self).await?;
         Ok(())
     }

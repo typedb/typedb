@@ -85,9 +85,6 @@ impl LocalServerUserManager {
     fn try_initialise(&self) {
         if let Some(system_db) = self.database_manager.database_unrestricted(SYSTEM_DB) {
             let user_manager = Arc::new(UserManager::new(system_db));
-            if !user_manager.contains(DEFAULT_USER_NAME).unwrap_or(false) {
-                return;
-            }
             let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
             *self.user_manager.write().unwrap() = Some(user_manager);
             *self.credential_verifier.write().unwrap() = Some(credential_verifier);
@@ -208,6 +205,9 @@ impl ServerUserManager for LocalServerUserManager {
     }
 
     async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError> {
+        if !self.is_initialised() {
+            return Err(Arc::new(LocalServerStateError::NotInitialised {}));
+        }
         match self.get_credential_verifier() {
             Ok(credential_verifier) => match credential_verifier.verify_password(username, password) {
                 Ok(()) => Ok(()),
@@ -231,10 +231,10 @@ impl ServerUserManager for LocalServerUserManager {
     }
 
     fn is_initialised(&self) -> bool {
-        if self.user_manager.read().unwrap().is_some() {
-            return true;
-        }
-        self.try_initialise();
-        self.user_manager.read().unwrap().is_some()
+        let Some(system_db) = self.database_manager.database_unrestricted(SYSTEM_DB) else {
+            return false;
+        };
+        let user_manager = UserManager::new(system_db);
+        user_manager.contains(DEFAULT_USER_NAME).unwrap_or(false)
     }
 }
