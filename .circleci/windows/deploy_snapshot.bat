@@ -17,4 +17,3 @@ SET DEPLOY_ARTIFACT_PASSWORD=%REPO_TYPEDB_PASSWORD%
 git rev-parse HEAD > version_snapshot.txt
 set /p VER=<version_snapshot.txt
 bazel --windows_enable_symlinks run --config=ci --define version=%VER% --enable_runfiles //:deploy-typedb-server -- snapshot
-

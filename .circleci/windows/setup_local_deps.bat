@@ -25,29 +25,13 @@ call :clone_repo typedb-protocol     typedb/typedb-protocol      || exit /b 1
 call :clone_repo typeql              typedb/typeql                || exit /b 1
 call :clone_repo typedb-behaviour    typedb/typedb-behaviour      || exit /b 1
 
-REM Append local_path_override directives to MODULE.bazel
-echo. >> MODULE.bazel
-echo # Local dependency overrides for CI debugging >> MODULE.bazel
-echo local_path_override( >> MODULE.bazel
-echo     module_name = "typedb_dependencies", >> MODULE.bazel
-echo     path = "../dependencies", >> MODULE.bazel
-echo ) >> MODULE.bazel
-echo local_path_override( >> MODULE.bazel
-echo     module_name = "typedb_bazel_distribution", >> MODULE.bazel
-echo     path = "../bazel-distribution", >> MODULE.bazel
-echo ) >> MODULE.bazel
-echo local_path_override( >> MODULE.bazel
-echo     module_name = "typedb_protocol", >> MODULE.bazel
-echo     path = "../typedb-protocol", >> MODULE.bazel
-echo ) >> MODULE.bazel
-echo local_path_override( >> MODULE.bazel
-echo     module_name = "typeql", >> MODULE.bazel
-echo     path = "../typeql", >> MODULE.bazel
-echo ) >> MODULE.bazel
-echo local_path_override( >> MODULE.bazel
-echo     module_name = "typedb_behaviour", >> MODULE.bazel
-echo     path = "../typedb-behaviour", >> MODULE.bazel
-echo ) >> MODULE.bazel
+REM Replace git_override blocks with local_path_override in MODULE.bazel
+REM (Bzlmod does not allow both git_override and local_path_override for the same module)
+python .circleci\windows\replace_git_overrides.py MODULE.bazel
+if errorlevel 1 (
+    echo ERROR: Failed to replace git_overrides in MODULE.bazel
+    exit /b 1
+)
 
 echo.
 echo Local dependency overrides configured in MODULE.bazel
