@@ -11,7 +11,7 @@ env = select({
     "@typedb_bazel_distribution//platform:is_mac_x86_64" : {"TYPEDB_ASSEMBLY_ARCHIVE": "typedb-all-mac-x86_64.zip"},
     "@typedb_bazel_distribution//platform:is_mac_arm64" : {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-mac-arm64.zip"},
     "@typedb_bazel_distribution//platform:is_windows_x86_64" :  {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-windows-x86_64.zip"}
-}),
+})
 
 rust_test(
     name = "test_assembly",
