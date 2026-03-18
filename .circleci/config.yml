@@ -205,7 +205,7 @@ jobs:
       - run: .circleci\windows\setup_local_deps.bat
       - run: .circleci\windows\prepare.bat
       - run: REM "Restore .circleci\windows\test_assembly.bat"
-      - run: .circleci\windows\deploy_snapshot.bat
+      - run: REM .circleci\windows\deploy_snapshot.bat
 
   deploy-docker-snapshot-x86_64:
     executor: linux-x86_64-amazonlinux-2
