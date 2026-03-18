@@ -102,8 +102,8 @@ pub fn compile(
 
     let input_variables_for_nested = input_variables
         .iter()
-        .map(|(v, p)| (v.clone(), p.clone()))
-        .chain(concept_instructions_map.iter().map(|(var, instr)| (var.clone(), instr.inserted_position().0)))
+        .map(|(&v, &p)| (v, p))
+        .chain(concept_instructions_map.iter().map(|(&var, instr)| (var, instr.inserted_position().0)))
         .collect::<HashMap<Variable, VariablePosition>>();
     let mut optional_inserts = Vec::with_capacity(block.conjunction().nested_patterns().len());
     for nested_pattern in block.conjunction().nested_patterns() {
