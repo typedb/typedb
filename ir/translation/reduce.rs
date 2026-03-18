@@ -5,7 +5,7 @@
  */
 
 use typeql::{
-    common::Spanned, query::stage::reduce::Reducer as TypeQLReducer, token::ReduceOperator as TypeQLReduceOperator,
+    common::Spanned, query::stage::reduce::Reducer as TypeQLReducer, token::ReduceOperatorStat as TypeQLReduceOperatorStat, token::ReduceOperatorCollect as TypeQLReduceOperatorCollect,
 };
 
 use crate::{
@@ -82,27 +82,21 @@ pub(crate) fn build_reducer(
         TypeQLReducer::Stat(stat) => {
             let var = verify_variable_available!(context, stat.variable => ReduceVariableNotAvailable)?;
             match &stat.reduce_operator {
-                TypeQLReduceOperator::Sum => Ok(Reducer::Sum(var)),
-                TypeQLReduceOperator::Max => Ok(Reducer::Max(var)),
-                TypeQLReduceOperator::Mean => Ok(Reducer::Mean(var)),
-                TypeQLReduceOperator::Median => Ok(Reducer::Median(var)),
-                TypeQLReduceOperator::Min => Ok(Reducer::Min(var)),
-                TypeQLReduceOperator::Std => Ok(Reducer::Std(var)),
-                TypeQLReduceOperator::Count | TypeQLReduceOperator::List => unreachable!(), // Not stats
+                TypeQLReduceOperatorStat::Sum => Ok(Reducer::Sum(var)),
+                TypeQLReduceOperatorStat::Max => Ok(Reducer::Max(var)),
+                TypeQLReduceOperatorStat::Mean => Ok(Reducer::Mean(var)),
+                TypeQLReduceOperatorStat::Median => Ok(Reducer::Median(var)),
+                TypeQLReduceOperatorStat::Min => Ok(Reducer::Min(var)),
+                TypeQLReduceOperatorStat::Std => Ok(Reducer::Std(var)),
             }
         }
         TypeQLReducer::Collect(collect) => {
             match &collect.reduce_operator {
-                TypeQLReduceOperator::List => Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-                    feature: error::UnimplementedFeature::Lists,
-                })),
-                TypeQLReduceOperator::Count
-                | TypeQLReduceOperator::Sum
-                | TypeQLReduceOperator::Max
-                | TypeQLReduceOperator::Mean
-                | TypeQLReduceOperator::Median
-                | TypeQLReduceOperator::Min
-                | TypeQLReduceOperator::Std => unreachable!(), // Not collect
+                TypeQLReduceOperatorCollect::List => {
+                    Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                        feature: error::UnimplementedFeature::Lists,
+                    }))
+                }
             }
         }
     }
