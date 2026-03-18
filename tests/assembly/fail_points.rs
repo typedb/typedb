@@ -36,7 +36,7 @@ fn wait_process_timeout(process: &mut Child, timeout: Duration) -> std::io::Resu
     Ok(())
 }
 
-const BOOT_DURATION: Duration = Duration::from_secs(10);
+const BOOT_DURATION: Duration = Duration::from_secs(2);
 
 macro_rules! start_server {
     () => {{
@@ -69,7 +69,7 @@ fn test_fail_point_always() {
         let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => &directive);
         setup();
 
-        run_test_against_server(&mut server_process);
+        run_test_against_server(&mut server_process, fail_point);
         if server_process.try_wait().unwrap().is_none() {
             kill_process(server_process).unwrap();
             // some fail points are only triggered on second boot
@@ -103,7 +103,7 @@ fn test_fail_point_chance() {
             server_process = start_server!(fail_point::FAIL_POINT_ENV => &directive);
 
             for _ in 0..6 {
-                run_test_against_server(&mut server_process);
+                run_test_against_server(&mut server_process, fail_point);
                 if server_process.try_wait().unwrap().is_some() {
                     break; // crashed
                 }
@@ -161,11 +161,11 @@ fn setup() {
     build_console_command(command).output().expect("Failed to run console script");
 }
 
-fn run_test_against_server(server_process: &mut Child) {
+fn run_test_against_server(server_process: &mut Child, fail_point_name: &str) {
     enum Instruction {
         Command(&'static str),
         Parallel(&'static str),
-        Sleep(Duration),
+        WaitForCheckpoint,
     }
 
     let instructions = [
@@ -176,7 +176,7 @@ fn run_test_against_server(server_process: &mut Child) {
             commit
             ",
         ),
-        Instruction::Sleep(CHECKPOINT_INTERVAL),
+        Instruction::WaitForCheckpoint,
         Instruction::Command(
             r#"
             transaction write foo
@@ -184,7 +184,7 @@ fn run_test_against_server(server_process: &mut Child) {
             commit
             "#,
         ),
-        Instruction::Sleep(CHECKPOINT_INTERVAL),
+        Instruction::WaitForCheckpoint,
         Instruction::Parallel(
             "
             transaction write foo
@@ -222,7 +222,11 @@ fn run_test_against_server(server_process: &mut Child) {
                     thread.join().unwrap();
                 }
             }
-            Instruction::Sleep(duration) => wait_process_timeout(server_process, duration).unwrap(),
+            Instruction::WaitForCheckpoint => {
+                if fail_point_name.contains("CHECKPOINT") {
+                    wait_process_timeout(server_process, CHECKPOINT_INTERVAL).unwrap()
+                }
+            }
         }
     }
 }
