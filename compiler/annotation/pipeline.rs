@@ -669,7 +669,7 @@ fn determine_value_type_for_reducer(
             ExpressionValueType::List(_) => {
                 let variable_name = variable_registry.variable_names()[&variable].clone();
                 Err(AnnotationError::ReducerInputVariableIsList {
-                    reducer: reducer.name().to_owned(),
+                    reducer: reducer.name(),
                     variable: variable_name,
                     source_span: reduce_source_span,
                 })
@@ -707,7 +707,7 @@ pub fn resolve_reduce_instruction_by_value_type(
 
     let err = || {
         let var = reducer.variable().unwrap();
-        let reducer_name = reducer.name().to_owned();
+        let reducer_name = reducer.name();
         let variable_name = variable_registry.variable_names()[&var].clone();
         Err(AnnotationError::UnsupportedValueTypeForReducer {
             reducer: reducer_name,
