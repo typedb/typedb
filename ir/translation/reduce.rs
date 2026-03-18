@@ -26,7 +26,7 @@ pub fn translate_reduce(
         None => Vec::new(),
         Some(group) => group
             .iter()
-            .map(|typeql_var| verify_variable_available!(context, typeql_var => ReduceVariableNotAvailable))
+            .map(|typeql_var| verify_variable_available!(context, typeql_var => GroupByVariableNotAvailable))
             .collect::<Result<Vec<_>, _>>()?,
     };
 
