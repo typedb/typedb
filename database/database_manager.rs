@@ -346,7 +346,7 @@ impl DatabaseManager {
         if Self::is_internal_database(name) {
             return Err(DatabaseCreateError::InternalDatabaseCreationProhibited {});
         }
-        if !typeql::common::identifier::is_valid_identifier(name) {
+        if !typeql::common::identifier::is_valid_label(name) {
             return Err(DatabaseCreateError::InvalidName { name: name.to_string() });
         }
         Ok(())
