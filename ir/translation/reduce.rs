@@ -5,7 +5,9 @@
  */
 
 use typeql::{
-    common::Spanned, query::stage::reduce::Reducer as TypeQLReducer, token::ReduceOperatorStat as TypeQLReduceOperatorStat, token::ReduceOperatorCollect as TypeQLReduceOperatorCollect,
+    common::Spanned,
+    query::stage::reduce::Reducer as TypeQLReducer,
+    token::{ReduceOperatorCollect as TypeQLReduceOperatorCollect, ReduceOperatorStat as TypeQLReduceOperatorStat},
 };
 
 use crate::{
@@ -90,14 +92,10 @@ pub(crate) fn build_reducer(
                 TypeQLReduceOperatorStat::Std => Ok(Reducer::Std(var)),
             }
         }
-        TypeQLReducer::Collect(collect) => {
-            match &collect.reduce_operator {
-                TypeQLReduceOperatorCollect::List => {
-                    Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-                        feature: error::UnimplementedFeature::Lists,
-                    }))
-                }
-            }
-        }
+        TypeQLReducer::Collect(collect) => match &collect.reduce_operator {
+            TypeQLReduceOperatorCollect::List => Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                feature: error::UnimplementedFeature::Lists,
+            })),
+        },
     }
 }

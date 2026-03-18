@@ -78,7 +78,7 @@ impl From<&AnnotatedFunctionReturn> for FunctionReturnStructure {
                 let reducers = instructions
                     .iter()
                     .map(|reducer| StructureReducer {
-                        reducer: reducer.unresolved().name(),
+                        reducer: reducer.unresolved().name().to_owned(),
                         arguments: reducer.id().iter().map(|var| var.into()).collect(),
                     })
                     .collect();
@@ -544,7 +544,7 @@ impl From<&AssignedReduction> for StructureReduceAssign {
             | Reducer::Min(var)
             | Reducer::Std(var) => vec![var.into()],
         };
-        let reducer = StructureReducer { reducer: value.reduction.name(), arguments };
+        let reducer = StructureReducer { reducer: value.reduction.name().to_owned(), arguments };
         StructureReduceAssign { assigned: value.assigned.into(), reducer }
     }
 }
