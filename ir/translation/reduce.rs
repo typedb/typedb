@@ -91,5 +91,19 @@ pub(crate) fn build_reducer(
                 TypeQLReduceOperator::Count | TypeQLReduceOperator::List => unreachable!(), // Not stats
             }
         }
+        TypeQLReducer::Collect(collect) => {
+            match &collect.reduce_operator {
+                TypeQLReduceOperator::List => Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                    feature: error::UnimplementedFeature::Lists,
+                })),
+                TypeQLReduceOperator::Count
+                | TypeQLReduceOperator::Sum
+                | TypeQLReduceOperator::Max
+                | TypeQLReduceOperator::Mean
+                | TypeQLReduceOperator::Median
+                | TypeQLReduceOperator::Min
+                | TypeQLReduceOperator::Std => unreachable!(), // Not collect
+            }
+        }
     }
 }
