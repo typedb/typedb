@@ -22,6 +22,14 @@ pub fn translate_reduce(
     context: &mut PipelineTranslationContext,
     typeql_reduce: &typeql::query::stage::Reduce,
 ) -> Result<Reduce, Box<RepresentationError>> {
+    let group = match &typeql_reduce.groupby {
+        None => Vec::new(),
+        Some(group) => group
+            .iter()
+            .map(|typeql_var| verify_variable_available!(context, typeql_var => ReduceVariableNotAvailable))
+            .collect::<Result<Vec<_>, _>>()?,
+    };
+
     let mut reductions = Vec::with_capacity(typeql_reduce.reduce_assignments.len());
     for reduce_assign in &typeql_reduce.reduce_assignments {
         let reducer = build_reducer(context, &reduce_assign.reducer)?;
@@ -40,13 +48,6 @@ pub fn translate_reduce(
         reductions.push(AssignedReduction::new(assigned_var, reducer));
     }
 
-    let group = match &typeql_reduce.groupby {
-        None => Vec::new(),
-        Some(group) => group
-            .iter()
-            .map(|typeql_var| verify_variable_available!(context, typeql_var => ReduceVariableNotAvailable))
-            .collect::<Result<Vec<_>, _>>()?,
-    };
     context
         .last_stage_visible_variables
         .retain(|name, var| group.contains(var) || reductions.iter().any(|reduction| &reduction.assigned == var));
