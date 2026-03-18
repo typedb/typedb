@@ -13,11 +13,16 @@ use std::{
 
 use async_trait::async_trait;
 use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
-use database::transaction::TransactionId;
+use database::{database_manager::DatabaseManager, transaction::TransactionId};
+use options::TransactionOptions;
 use resource::constants::common::SECONDS_IN_MINUTE;
 use tokio::sync::{mpsc::Sender, RwLock};
 
-use crate::{error::ArcServerStateError, service::TransactionType};
+use crate::{
+    error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},
+    service::TransactionType,
+    transaction::{open_transaction_blocking, Transaction},
+};
 
 #[derive(Debug)]
 pub(crate) struct TransactionInfo {
@@ -28,13 +33,14 @@ pub(crate) struct TransactionInfo {
 
 #[async_trait]
 pub trait ServerTransactionManager: Debug + Send + Sync {
-    async fn add(
+    async fn open_transaction(
         &self,
-        transaction_id: TransactionId,
+        database_name: &str,
         transaction_type: TransactionType,
+        options: TransactionOptions,
         owner: String,
         close_sender: Sender<()>,
-    ) -> Result<(), ArcServerStateError>;
+    ) -> Result<Transaction, ArcServerStateError>;
 
     async fn close_by_types(&self, types: HashSet<TransactionType>);
 
@@ -43,13 +49,14 @@ pub trait ServerTransactionManager: Debug + Send + Sync {
 
 #[derive(Debug)]
 pub struct LocalServerTransactionManager {
+    database_manager: Arc<DatabaseManager>,
     transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>,
 }
 
 impl LocalServerTransactionManager {
     const CLEANUP_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
 
-    pub fn new(background_task_spawner: TokioTaskSpawner) -> Self {
+    pub fn new(database_manager: Arc<DatabaseManager>, background_task_spawner: TokioTaskSpawner) -> Self {
         let transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>> = Arc::new(RwLock::new(HashMap::new()));
         let cleanup_transactions = transactions.clone();
         background_task_spawner.spawn_interval(
@@ -62,22 +69,40 @@ impl LocalServerTransactionManager {
             },
             IntervalTaskParameters::new_with_delay(Self::CLEANUP_INTERVAL, Self::CLEANUP_INTERVAL, false),
         );
-        Self { transactions }
+        Self { database_manager, transactions }
     }
-}
 
-#[async_trait]
-impl ServerTransactionManager for LocalServerTransactionManager {
-    async fn add(
+    pub async fn add(
         &self,
         transaction_id: TransactionId,
         transaction_type: TransactionType,
         owner: String,
         close_sender: Sender<()>,
-    ) -> Result<(), ArcServerStateError> {
+    ) {
         let mut transactions = self.transactions.write().await;
         transactions.insert(transaction_id, TransactionInfo { transaction_type, owner, close_sender });
-        Ok(())
+    }
+}
+
+#[async_trait]
+impl ServerTransactionManager for LocalServerTransactionManager {
+    async fn open_transaction(
+        &self,
+        database_name: &str,
+        transaction_type: TransactionType,
+        options: TransactionOptions,
+        owner: String,
+        close_sender: Sender<()>,
+    ) -> Result<Transaction, ArcServerStateError> {
+        let database = self.database_manager.database(database_name).ok_or_else(|| {
+            arc_server_state_err(LocalServerStateError::DatabaseNotFound { name: database_name.to_string() })
+        })?;
+        let transaction =
+            open_transaction_blocking(database, transaction_type, options).await.map_err(|typedb_source| {
+                arc_server_state_err(LocalServerStateError::TransactionOpenFailed { typedb_source })
+            })?;
+        self.add(transaction.id(), transaction_type, owner, close_sender).await;
+        Ok(transaction)
     }
 
     async fn close_by_types(&self, types: HashSet<TransactionType>) {

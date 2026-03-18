@@ -16,13 +16,7 @@ pub mod http;
 pub mod import_service;
 mod transaction_service;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]
-#[serde(rename_all = "camelCase")]
-pub enum TransactionType {
-    Read,
-    Write,
-    Schema,
-}
+pub use crate::transaction::TransactionType;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]

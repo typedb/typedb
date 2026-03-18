@@ -265,53 +265,12 @@ impl TransactionService {
         let receive_time = Instant::now();
         let transaction_timeout_millis = options.transaction_timeout_millis;
 
-        let database = self
-            .server_state
-            .databases()
-            .databases_get_for_transaction(database_name.as_str(), type_)
-            .await
-            .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?
-            .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name.clone() })?;
-
-        let transaction = match type_ {
-            TransactionType::Read => {
-                let transaction = spawn_blocking(move || {
-                    TransactionRead::open(database, options)
-                        .map_err(|typedb_source| TransactionServiceError::TransactionFailed { typedb_source })
-                })
-                .await
-                .unwrap()?;
-                Transaction::Read(transaction)
-            }
-            TransactionType::Write => {
-                let transaction = spawn_blocking(move || {
-                    TransactionWrite::open(database, options)
-                        .map_err(|typedb_source| TransactionServiceError::TransactionFailed { typedb_source })
-                })
-                .await
-                .unwrap()?;
-                Transaction::Write(transaction)
-            }
-            TransactionType::Schema => {
-                let transaction = spawn_blocking(move || {
-                    TransactionSchema::open(database, options)
-                        .map_err(|typedb_source| TransactionServiceError::TransactionFailed { typedb_source })
-                })
-                .await
-                .unwrap()?;
-                Transaction::Schema(transaction)
-            }
-        };
-
-        let transaction_add_result = self
+        let transaction = self
             .server_state
             .transactions()
-            .add(transaction.id(), transaction.type_(), owner, self.close_sender.clone())
-            .await;
-        if let Err(typedb_source) = transaction_add_result {
-            transaction.close();
-            return Err(TransactionServiceError::CannotOpen { typedb_source });
-        }
+            .open_transaction(&database_name, type_, options, owner, self.close_sender.clone())
+            .await
+            .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?;
 
         self.server_state.diagnostics_manager().increment_load_count(
             ClientEndpoint::Http,

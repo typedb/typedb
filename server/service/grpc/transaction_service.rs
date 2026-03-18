@@ -440,60 +440,18 @@ impl TransactionService {
             })?);
 
         let database_name = open_req.database;
-        let database = self
-            .server_state
-            .databases()
-            .databases_get_for_transaction(database_name.as_ref(), transaction_type)
-            .await
-            .map_err(|typedb_source| typedb_source.into_error_message().into_status())?
-            .ok_or_else(|| {
-                TransactionServiceError::DatabaseNotFound { name: database_name.clone() }
-                    .into_error_message()
-                    .into_status()
-            })?;
-
-        let transaction = match transaction_type {
-            TransactionType::Read => {
-                let transaction = spawn_blocking(move || {
-                    TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
-                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
-                    })
-                })
-                .await
-                .unwrap()?;
-                Transaction::Read(transaction)
-            }
-            TransactionType::Write => {
-                let transaction = spawn_blocking(move || {
-                    TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
-                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
-                    })
-                })
-                .await
-                .unwrap()?;
-                Transaction::Write(transaction)
-            }
-            TransactionType::Schema => {
-                let transaction = spawn_blocking(move || {
-                    TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
-                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
-                    })
-                })
-                .await
-                .unwrap()?;
-                Transaction::Schema(transaction)
-            }
-        };
-
-        let transaction_add_result = self
+        let transaction = self
             .server_state
             .transactions()
-            .add(transaction.id(), transaction.type_(), self.owner.clone(), self.close_sender.clone())
-            .await;
-        if let Err(typedb_source) = transaction_add_result {
-            transaction.close();
-            return Err(typedb_source.into_error_message().into_status());
-        }
+            .open_transaction(
+                &database_name,
+                transaction_type,
+                transaction_options,
+                self.owner.clone(),
+                self.close_sender.clone(),
+            )
+            .await
+            .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
 
         self.server_state.diagnostics_manager().increment_load_count(
             ClientEndpoint::Grpc,

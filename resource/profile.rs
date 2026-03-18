@@ -116,7 +116,11 @@ impl Display for CommitProfile {
                     f,
                     "    schema update statistics update micros: {}",
                     data.schema_update_statistics_update.as_nanos() as f64 / 1000.0
-                )
+                )?;
+                for (name, duration) in &data.named_stages {
+                    writeln!(f, "    {} micros: {}", name, duration.as_nanos() as f64 / 1000.0)?;
+                }
+                Ok(())
             }
         }
     }
@@ -275,6 +279,21 @@ impl CommitProfile {
         }
     }
 
+    pub fn mark_stage_start(&mut self) {
+        if let Some(data) = &mut self.data {
+            data.set_stage_start_now();
+        }
+    }
+
+    pub fn record_completed_stage(&mut self, name: &'static str) {
+        if let Some(data) = &mut self.data {
+            let elapsed = data.stage_start_elapsed();
+            data.named_stages.push((name, elapsed));
+            data.total += elapsed;
+            data.set_stage_start_now();
+        }
+    }
+
     pub fn end(&mut self) {
         if let Some(data) = &mut self.data {
             data.total += data.stage_start_elapsed();
@@ -310,6 +329,7 @@ struct CommitProfileData {
     snapshot_durable_write_commit_status_submit: Duration,
     schema_update_caches_update: Duration,
     schema_update_statistics_update: Duration,
+    named_stages: Vec<(&'static str, Duration)>,
     total: Duration,
 }
 
@@ -333,6 +353,7 @@ impl CommitProfileData {
             snapshot_durable_write_commit_status_submit: Duration::ZERO,
             schema_update_caches_update: Duration::ZERO,
             schema_update_statistics_update: Duration::ZERO,
+            named_stages: Vec::new(),
             total: Duration::ZERO,
         }
     }

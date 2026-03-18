@@ -12,24 +12,27 @@ use std::{
 use concept::{
     error::ConceptWriteError,
     thing::{statistics::StatisticsError, thing_manager::ThingManager},
-    type_::type_manager::{type_cache::TypeCacheCreateError, TypeManager},
+    type_::type_manager::{
+        type_cache::{TypeCache, TypeCacheCreateError},
+        TypeManager,
+    },
 };
 use durability::DurabilitySequenceNumber;
 use error::typedb_error;
-use function::{function_manager::FunctionManager, FunctionError};
+use function::{function_cache::FunctionCache, function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
 use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{
-        snapshot_id::SnapshotId, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot,
-        WriteSnapshot,
+        snapshot_id::SnapshotId, CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError,
+        WritableSnapshot, WriteSnapshot,
     },
 };
 use tracing::Level;
 
-use crate::Database;
+use crate::{transaction::SchemaCommitError::TypeCacheUpdateError, Database};
 
 #[derive(Debug)]
 pub struct TransactionRead<D> {
@@ -185,15 +188,24 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot }))
     }
 
-    pub fn commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
-        let (mut profile, (database, snapshot)) = match self.finalise() {
-            (profile, Ok(DataCommitIntent { database_drop_guard, write_snapshot })) => {
-                (profile, (database_drop_guard, write_snapshot))
-            }
+    pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
+        self.profile.commit_profile().start();
+        let (mut profile, result) = self.try_commit();
+        profile.commit_profile().end();
+        (profile, result)
+    }
+
+    fn try_commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
+        use DataCommitError::SnapshotError;
+        let (mut profile, commit_intent) = match self.finalise() {
+            (profile, Ok(commit_intent)) => (profile, commit_intent),
             (profile, Err(error)) => return (profile, Err(error)),
         };
-        let result = database.data_commit_with_snapshot(snapshot, profile.commit_profile());
-        profile.commit_profile().end();
+        let result = commit_intent
+            .write_snapshot
+            .commit(profile.commit_profile())
+            .map(|_| ())
+            .map_err(|typedb_source| SnapshotError { typedb_source });
         (profile, result)
     }
 
@@ -282,7 +294,6 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
-        commit_profile.start();
         let mut snapshot = Arc::try_unwrap(self.snapshot)
             .unwrap_or_else(|_| panic!("Expected unique ownership of snapshot for schema commit"));
         if let Err(errs) = self.type_manager.validate(&snapshot) {
@@ -318,15 +329,77 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 
     pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
+        self.profile.commit_profile().start();
+        let (mut profile, result) = self.try_commit();
+        profile.commit_profile().end();
+        (profile, result)
+    }
+
+    fn try_commit(self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
+        use SchemaCommitError::{SnapshotError, StatisticsError, TypeCacheUpdateError};
         let (mut profile, commit_intent) = match self.finalise() {
             (profile, Ok(commit_intent)) => (profile, commit_intent),
             (profile, Err(error)) => return (profile, Err(error)),
         };
-        let result = commit_intent
-            .database_drop_guard
-            .schema_commit_with_snapshot(commit_intent.schema_snapshot, profile.commit_profile());
-        profile.commit_profile().end();
-        (profile, result)
+
+        // TODO: Why don't we do the same thing for local executes?
+        let database = commit_intent.database_drop_guard;
+
+        // Schema commits must wait for all other data operations to finish. No new read or write
+        // transaction may open until the commit completes.
+        let mut schema_commit_guard = database.schema.write().unwrap();
+        let mut schema = (*schema_commit_guard).clone();
+
+        let mut thing_statistics = (*schema.thing_statistics).clone();
+        let commit_profile = profile.commit_profile();
+
+        // synchronise statistics
+        if let Err(typedb_source) = thing_statistics.may_synchronise(&database.storage) {
+            return (profile, Err(StatisticsError { typedb_source }));
+        }
+
+        // flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
+        if let Err(typedb_source) = thing_statistics.durably_write(database.storage.durability()) {
+            return (profile, Err(StatisticsError { typedb_source }));
+        }
+        commit_profile.schema_update_statistics_durably_written();
+
+        let sequence_number = match commit_intent.schema_snapshot.commit(commit_profile) {
+            Ok(sequence_number) => sequence_number,
+            Err(typedb_source) => return (profile, Err(SnapshotError { typedb_source })),
+        };
+
+        if let Some(sequence_number) = sequence_number {
+            // replace schema cache
+            let type_cache = match TypeCache::new(database.storage.clone(), sequence_number) {
+                Ok(type_cache) => type_cache,
+                Err(typedb_source) => return (profile, Err(TypeCacheUpdateError { typedb_source })),
+            };
+            schema.type_cache = Arc::new(type_cache);
+            let type_manager = TypeManager::new(
+                database.definition_key_generator.clone(),
+                database.type_vertex_generator.clone(),
+                Some(schema.type_cache.clone()),
+            );
+            let function_cache = match FunctionCache::new(database.storage.clone(), &type_manager, sequence_number) {
+                Ok(function_cache) => function_cache,
+                Err(typedb_source) => return (profile, Err(SchemaCommitError::FunctionError { typedb_source })),
+            };
+            schema.function_cache = Arc::new(function_cache);
+            commit_profile.schema_update_caches_updated();
+        }
+
+        // replace statistics
+        if let Err(typedb_source) = thing_statistics.may_synchronise(&database.storage) {
+            return (profile, Err(StatisticsError { typedb_source }));
+        }
+        commit_profile.schema_update_statistics_keys_updated();
+        schema.thing_statistics = Arc::new(thing_statistics);
+
+        database.query_cache.force_reset(&schema.thing_statistics);
+
+        *schema_commit_guard = schema;
+        (profile, Ok(()))
     }
 
     pub fn rollback(&mut self) {

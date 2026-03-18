@@ -37,6 +37,7 @@ pub mod service;
 pub mod state;
 pub mod status;
 pub mod system_init;
+pub mod transaction;
 
 #[derive(Debug)]
 pub struct ServerBuilder {

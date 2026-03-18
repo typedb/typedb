@@ -5,13 +5,13 @@
  */
 use std::sync::Arc;
 
-use database::{transaction::SchemaCommitError, Database};
+use database::{transaction::SchemaCommitIntent, Database};
 use resource::{
     constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD},
     internal_database_prefix,
     profile::TransactionProfile,
 };
-use storage::{durability_client::WALClient, record::CommitRecord, snapshot::CommittableSnapshot};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot};
 use system::{
     concepts::{Credential, PasswordHash, User},
     repositories::SCHEMA,
@@ -40,12 +40,9 @@ pub async fn initialise_system_database_schema(server_state: &ServerState) -> Re
         .manager()
         .database_unrestricted(SYSTEM_DB)
         .expect("Critical: system database must exist before schema initialisation");
-    let (mut transaction_profile, commit_record_opt) = get_system_database_schema_commit_record(db).await?;
-    if let Some(commit_record) = commit_record_opt {
-        server_state
-            .databases()
-            .database_schema_commit(SYSTEM_DB, commit_record, transaction_profile.commit_profile())
-            .await?;
+    let (mut transaction_profile, commit_intent_opt) = get_system_database_schema_commit_intent(db)?;
+    if let Some(commit_intent) = commit_intent_opt {
+        server_state.databases().database_schema_commit(commit_intent, transaction_profile.commit_profile()).await?;
     }
     Ok(())
 }
@@ -66,9 +63,9 @@ pub async fn initialise_default_user(server_state: &ServerState) -> Result<(), A
     Ok(())
 }
 
-pub async fn get_system_database_schema_commit_record(
+pub fn get_system_database_schema_commit_intent(
     db: Arc<Database<WALClient>>,
-) -> Result<(TransactionProfile, Option<CommitRecord>), ArcServerStateError> {
+) -> Result<(TransactionProfile, Option<SchemaCommitIntent<WALClient>>), ArcServerStateError> {
     let tx_util = TransactionUtil::new(db);
     let (transaction_profile, finalise_result) =
         tx_util.schema_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
@@ -84,10 +81,7 @@ pub async fn get_system_database_schema_commit_record(
         });
     let commit_intent =
         finalise_result.map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;
-    let commit_record_opt = commit_intent
-        .schema_snapshot
-        .has_changes()
-        .then(|| commit_intent.schema_snapshot.into_commit_record())
-        .map(|(_drop_guard, record)| record);
-    Ok((transaction_profile, commit_record_opt))
+    let has_changes = commit_intent.schema_snapshot.has_changes();
+    let commit_intent_opt = if has_changes { Some(commit_intent) } else { None };
+    Ok((transaction_profile, commit_intent_opt))
 }

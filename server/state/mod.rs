@@ -314,9 +314,12 @@ impl ServerStateBuilder {
             ))
         });
 
-        let transaction_manager = self
-            .transaction_manager_override
-            .unwrap_or_else(|| Arc::new(LocalServerTransactionManager::new(self.background_task_spawner.clone())));
+        let transaction_manager = self.transaction_manager_override.unwrap_or_else(|| {
+            Arc::new(LocalServerTransactionManager::new(
+                self.database_manager_raw.clone(),
+                self.background_task_spawner.clone(),
+            ))
+        });
 
         let user_manager = self.user_manager_override.unwrap_or_else(|| {
             Arc::new(LocalServerUserManager::new(

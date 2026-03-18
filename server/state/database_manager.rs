@@ -8,13 +8,17 @@ use std::{fmt::Debug, sync::Arc};
 
 use async_trait::async_trait;
 use concurrency::TokioTaskSpawner;
-use database::{database_manager::DatabaseManager, transaction::TransactionRead, Database};
+use database::{
+    database_manager::DatabaseManager,
+    transaction::{DataCommitError, DataCommitIntent, SchemaCommitError, SchemaCommitIntent, TransactionRead},
+    Database,
+};
 use durability::DurabilitySequenceNumber;
 use resource::profile::CommitProfile;
 use storage::{
     durability_client::{DurabilityClient, WALClient},
     record::CommitRecord,
-    snapshot::{snapshot_id::SnapshotId, CommittableSnapshot},
+    snapshot::{snapshot_id::SnapshotId, CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
 };
 use tokio::task::JoinHandle;
 
@@ -40,12 +44,6 @@ pub trait ServerDatabaseManager: Debug + Send + Sync {
         name: &str,
     ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
 
-    async fn databases_get_for_transaction(
-        &self,
-        name: &str,
-        transaction_type: TransactionType,
-    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
-
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError>;
 
     async fn databases_create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError>;
@@ -58,15 +56,13 @@ pub trait ServerDatabaseManager: Debug + Send + Sync {
 
     async fn database_schema_commit(
         &self,
-        name: &str,
-        commit_record: CommitRecord,
+        commit_intent: SchemaCommitIntent<WALClient>,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError>;
 
     async fn database_data_commit(
         &self,
-        name: &str,
-        commit_record: CommitRecord,
+        commit_intent: DataCommitIntent<WALClient>,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError>;
 
@@ -151,14 +147,6 @@ impl ServerDatabaseManager for LocalServerDatabaseManager {
         Ok(self.database_manager.database_unrestricted(name))
     }
 
-    async fn databases_get_for_transaction(
-        &self,
-        name: &str,
-        _transaction_type: TransactionType,
-    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
-        self.databases_get(name).await
-    }
-
     async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager
             .put_database(name)
@@ -195,29 +183,25 @@ impl ServerDatabaseManager for LocalServerDatabaseManager {
 
     async fn database_schema_commit(
         &self,
-        name: &str,
-        commit_record: CommitRecord,
+        commit_intent: SchemaCommitIntent<WALClient>,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError> {
-        let Some(database) = self.databases_get_unrestricted(name).await? else {
-            return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
-        };
-        database.schema_commit_with_commit_record(commit_record, commit_profile).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source })
+        commit_intent.schema_snapshot.commit(commit_profile).map(|_| ()).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseSchemaCommitFailed {
+                typedb_source: SchemaCommitError::SnapshotError { typedb_source },
+            })
         })
     }
 
     async fn database_data_commit(
         &self,
-        name: &str,
-        commit_record: CommitRecord,
+        commit_intent: DataCommitIntent<WALClient>,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError> {
-        let Some(database) = self.databases_get_unrestricted(name).await? else {
-            return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
-        };
-        database.data_commit_with_commit_record(commit_record, commit_profile).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
+        commit_intent.write_snapshot.commit(commit_profile).map(|_| ()).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed {
+                typedb_source: DataCommitError::SnapshotError { typedb_source },
+            })
         })
     }
 

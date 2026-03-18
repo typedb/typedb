@@ -80,6 +80,7 @@ typedb_error! {
         DatabaseDataCommitFailed(18, "Data commit failed.", typedb_source: DataCommitError),
         DatabaseCommitRecordExistsFailed(19, "Commit record check failed.", typedb_source: DatabaseOpenError),
         NotSupportedByDistribution(20, "Not supported by this distribution: {description}", description: String),
+        TransactionOpenFailed(21, "Failed to open transaction.", typedb_source: TransactionError),
     }
 }
 

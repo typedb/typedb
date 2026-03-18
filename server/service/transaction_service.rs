@@ -5,8 +5,7 @@
  */
 use std::{sync::Arc, time::Duration};
 
-use database::transaction::{TransactionError, TransactionId, TransactionRead, TransactionSchema, TransactionWrite};
-use diagnostics::metrics::LoadKind;
+use database::transaction::{TransactionError, TransactionSchema, TransactionWrite};
 use error::typedb_error;
 use executor::{pipeline::PipelineExecutionError, InterruptType};
 use query::error::QueryError;
@@ -16,69 +15,13 @@ use tokio::time::Instant;
 use typeql::query::stage::Stage;
 use uuid::Uuid;
 
-pub(crate) const TRANSACTION_REQUEST_BUFFER_SIZE: usize = 10;
-
-#[derive(Debug)]
-pub enum Transaction {
-    Read(TransactionRead<WALClient>),
-    Write(TransactionWrite<WALClient>),
-    Schema(TransactionSchema<WALClient>),
-}
-
-macro_rules! with_readable_transaction {
-    ($match_:expr, |$transaction:ident| $block:block) => {{
-        match $match_ {
-            Transaction::Read($transaction) => $block
-            Transaction::Write($transaction) => $block
-            Transaction::Schema($transaction) => $block
-        }
-    }}
-}
-pub(crate) use with_readable_transaction;
-
+pub(crate) use crate::transaction::{with_readable_transaction, Transaction, TransactionType};
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},
-    service::TransactionType,
     state::ServerState,
 };
 
-impl Transaction {
-    pub fn id(&self) -> TransactionId {
-        match self {
-            Transaction::Read(transaction) => transaction.id(),
-            Transaction::Write(transaction) => transaction.id(),
-            Transaction::Schema(transaction) => transaction.id(),
-        }
-    }
-
-    pub fn type_(&self) -> TransactionType {
-        match self {
-            Transaction::Read(_) => TransactionType::Read,
-            Transaction::Write(_) => TransactionType::Write,
-            Transaction::Schema(_) => TransactionType::Schema,
-        }
-    }
-
-    pub fn load_kind(&self) -> LoadKind {
-        match self {
-            Transaction::Read(_) => LoadKind::ReadTransactions,
-            Transaction::Write(_) => LoadKind::WriteTransactions,
-            Transaction::Schema(_) => LoadKind::SchemaTransactions,
-        }
-    }
-
-    pub fn database_name(&self) -> &str {
-        with_readable_transaction!(self, |transaction| { transaction.database.name() })
-    }
-
-    pub fn close(self) {
-        match self {
-            Transaction::Read(transaction) => transaction.close(),
-            Transaction::Write(transaction) => transaction.close(),
-            Transaction::Schema(transaction) => transaction.close(),
-        }
-    }
-}
+pub(crate) const TRANSACTION_REQUEST_BUFFER_SIZE: usize = 10;
 
 pub(crate) fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
     for stage in &pipeline.stages {
@@ -103,13 +46,8 @@ pub(crate) async fn commit_schema_transaction(
             if !commit_intent.schema_snapshot.has_changes() {
                 return (profile, Ok(()));
             }
-            let database = commit_intent.database_drop_guard;
-            // After server state's execution, another snapshot is built, acquiring an alternative read drop guard
-            let (_snapshot_guard, commit_record) = commit_intent.schema_snapshot.into_commit_record();
-            let commit_result = server_state
-                .databases()
-                .database_schema_commit(database.name(), commit_record, profile.commit_profile())
-                .await;
+            let commit_result =
+                server_state.databases().database_schema_commit(commit_intent, profile.commit_profile()).await;
             (profile, commit_result)
         }
         (profile, Err(typedb_source)) => {
@@ -127,13 +65,8 @@ pub(crate) async fn commit_write_transaction(
             if !commit_intent.write_snapshot.has_changes() {
                 return (profile, Ok(()));
             }
-            let database = commit_intent.database_drop_guard;
-            // After server state's execution, another snapshot is built, acquiring an alternative read drop guard
-            let (_snapshot_guard, commit_record) = commit_intent.write_snapshot.into_commit_record();
-            let commit_result = server_state
-                .databases()
-                .database_schema_commit(database.name(), commit_record, profile.commit_profile())
-                .await;
+            let commit_result =
+                server_state.databases().database_data_commit(commit_intent, profile.commit_profile()).await;
             (profile, commit_result)
         }
         (profile, Err(typedb_source)) => {
