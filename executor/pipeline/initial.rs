@@ -3,46 +3,36 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 use lending_iterator::LendingIterator;
+use std::marker::PhantomData;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     pipeline::{
-        stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,
     },
-    row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    row::MaybeOwnedRow
+    ,
 };
 
-pub struct InitialStage<Snapshot> {
-    context: ExecutionContext<Snapshot>,
+pub struct InitialStage {
     initial_batch: FixedBatch,
 }
 
-impl<Snapshot> InitialStage<Snapshot> {
-    pub fn new_empty(context: ExecutionContext<Snapshot>) -> Self {
-        Self { context, initial_batch: FixedBatch::SINGLE_EMPTY_ROW }
+impl InitialStage {
+    pub fn new_empty() -> Self {
+        Self { initial_batch: FixedBatch::SINGLE_EMPTY_ROW }
     }
 
-    pub fn new_with(context: ExecutionContext<Snapshot>, initial_row: MaybeOwnedRow<'_>) -> Self {
+    pub fn new_with(initial_row: MaybeOwnedRow<'_>) -> Self {
         let batch = FixedBatch::from(initial_row);
-        Self { context, initial_batch: batch }
+        Self { initial_batch: batch, }
     }
-}
 
-impl<Snapshot> StageAPI<Snapshot> for InitialStage<Snapshot> {
-    type OutputIterator = InitialIterator;
-
-    fn into_iterator(
+    pub(crate) fn into_iterator(
         self,
-        _interrupt: ExecutionInterrupt,
-    ) -> Result<
-        (Self::OutputIterator, ExecutionContext<Snapshot>),
-        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
-    > {
-        Ok((InitialIterator::new(self.initial_batch), self.context))
+    ) -> InitialIterator {
+        InitialIterator::new(self.initial_batch)
     }
 }
 
@@ -52,7 +42,7 @@ pub struct InitialIterator {
 }
 
 impl InitialIterator {
-    fn new(batch: FixedBatch) -> Self {
+    pub(crate) fn new(batch: FixedBatch) -> Self {
         Self { iterator: Box::new(FixedBatchRowIterator::new(Ok(batch))), index: 0 }
     }
 }
@@ -68,3 +58,16 @@ impl LendingIterator for InitialIterator {
 }
 
 impl StageIterator for InitialIterator {}
+
+// Dummy to allow InputIterator to conform to the stage API - would be better if InputIterator isn't a stage at all?
+pub struct EmptyIterator {}
+
+impl LendingIterator for EmptyIterator {
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        None
+    }
+}
+
+impl StageIterator for EmptyIterator { }

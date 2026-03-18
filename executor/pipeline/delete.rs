@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
+use std::marker::PhantomData;
 use std::sync::Arc;
 
 use compiler::executable::delete::{
@@ -25,43 +25,45 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub struct DeleteStageExecutor<PreviousStage> {
+pub struct DeleteStageExecutor<InputIterator> {
     executable: Arc<DeleteExecutable>,
-    previous: PreviousStage,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> DeleteStageExecutor<PreviousStage> {
-    pub fn new(executable: Arc<DeleteExecutable>, previous: PreviousStage) -> Self {
-        Self { executable, previous }
+impl<InputIterator> DeleteStageExecutor<InputIterator> {
+    pub fn new(executable: Arc<DeleteExecutable>, ) -> Self {
+        Self { executable, _input_iterator: PhantomData::default() }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DeleteStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for DeleteStageExecutor<InputIterator>
 where
     Snapshot: WritableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
+    type InputIterator = InputIterator;
     type OutputIterator = WrittenRowsIterator;
 
     fn into_iterator(
         self,
+        input_iterator: InputIterator,
+        mut execution_context: ExecutionContext<Snapshot>,
         mut interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let (previous_iterator, mut context) = self.previous.into_iterator(interrupt.clone())?;
         // accumulate once, then we will operate in-place
-        let mut batch = match previous_iterator.collect_owned() {
+        let mut batch = match input_iterator.collect_owned() {
             Ok(batch) => batch,
-            Err(err) => return Err((err, context)),
+            Err(err) => return Err((err, execution_context)),
         };
 
         // TODO: all write stages will have the same block below: we could merge them
-        let profile = context.profile.profile_stage(|| String::from("Delete"), self.executable.executable_id);
+        let profile = execution_context.profile.profile_stage(|| String::from("Delete"), self.executable.executable_id);
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
-        let snapshot = Arc::get_mut(&mut context.snapshot).unwrap();
+        let snapshot = Arc::get_mut(&mut execution_context.snapshot).unwrap();
         // First delete connections
         for index in 0..batch.len() {
             let mut row = batch.get_row_mut(index);
@@ -71,32 +73,32 @@ where
             if let Err(typedb_source) = execute_delete_connections(
                 &self.executable.connection_instructions,
                 snapshot,
-                &context.thing_manager,
-                &context.parameters,
+                &execution_context.thing_manager,
+                &execution_context.parameters,
                 &mut row,
                 &profile,
                 &mut profile_index,
             ) {
-                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
+                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), execution_context));
             }
 
             for optional in &self.executable.optional_deletes {
                 if let Err(typedb_source) = execute_optional_delete(
                     optional,
                     snapshot,
-                    &context.thing_manager,
-                    &context.parameters,
+                    &execution_context.thing_manager,
+                    &execution_context.parameters,
                     &mut row,
                     &profile,
                     &mut profile_index,
                 ) {
-                    return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
+                    return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), execution_context));
                 }
             }
 
             if profile_index % CHECK_INTERRUPT_FREQUENCY_ROWS == 0 {
                 if let Some(interrupt) = interrupt.check() {
-                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), context));
+                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), execution_context));
                 }
             }
         }
@@ -107,22 +109,22 @@ where
             if let Err(typedb_source) = execute_delete_concepts(
                 &self.executable,
                 snapshot,
-                &context.thing_manager,
-                &context.parameters,
+                &execution_context.thing_manager,
+                &execution_context.parameters,
                 &mut row,
                 &profile,
             ) {
-                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
+                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), execution_context));
             }
 
             if index % CHECK_INTERRUPT_FREQUENCY_ROWS == 0 {
                 if let Some(interrupt) = interrupt.check() {
-                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), context));
+                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), execution_context));
                 }
             }
         }
 
-        Ok((WrittenRowsIterator::new(batch), context))
+        Ok((WrittenRowsIterator::new(batch), execution_context))
     }
 }
 

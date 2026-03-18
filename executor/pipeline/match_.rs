@@ -5,7 +5,7 @@
  */
 
 use std::{iter::Peekable, sync::Arc};
-
+use std::marker::PhantomData;
 use compiler::executable::{
     function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
 };
@@ -24,40 +24,42 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub struct MatchStageExecutor<PreviousStage> {
+pub struct MatchStageExecutor<StageIterator> {
     executable: Arc<ConjunctionExecutable>,
-    previous: PreviousStage,
     function_registry: Arc<ExecutableFunctionRegistry>,
+    _input_iterator: PhantomData<StageIterator>,
 }
 
-impl<PreviousStage> MatchStageExecutor<PreviousStage> {
+impl<StageIterator> MatchStageExecutor<StageIterator> {
     pub fn new(
         executable: Arc<ConjunctionExecutable>,
-        previous: PreviousStage,
         function_registry: Arc<ExecutableFunctionRegistry>,
     ) -> Self {
-        Self { executable, previous, function_registry }
+        Self { executable, function_registry, _input_iterator: PhantomData::default() }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for MatchStageExecutor<PreviousStage>
+impl<Snapshot, Iterator>  StageAPI<Snapshot> for MatchStageExecutor<Iterator>
 where
-    PreviousStage: StageAPI<Snapshot>,
+    Iterator: StageIterator,
     Snapshot: ReadableSnapshot + 'static,
 {
-    type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
+    type InputIterator = Iterator;
+    type OutputIterator = MatchStageIterator<Snapshot, Iterator>;
 
     fn into_iterator(
         self,
+        input_iterator: Iterator,
+        context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { previous: previous_stage, executable, function_registry, .. } = self;
-        let (previous_iterator, context) = previous_stage.into_iterator(interrupt.clone())?;
-        let iterator = previous_iterator;
-        Ok((MatchStageIterator::new(iterator, executable, function_registry, context.clone(), interrupt), context))
+        let Self { executable, function_registry, .. } = self;
+        // let (previous_iterator, context) = previous_stage.into_iterator(interrupt.clone())?;
+        // let iterator = previous_iterator;
+        Ok((MatchStageIterator::new(input_iterator, executable, function_registry, context.clone(), interrupt), context))
     }
 }
 
