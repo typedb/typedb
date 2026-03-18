@@ -27,6 +27,7 @@ single_version_override(
     patches = [
         "//:patches/rules_rust_windows_symlink_bin.patch",
         "//:patches/rules_rust_windows_symlink_lib.patch",
+        "//:patches/rules_rust_windows_buildscript_env.patch",
     ],
     patch_strip = 1,
 )
