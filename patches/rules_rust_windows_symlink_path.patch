@@ -1,0 +1,15 @@
+--- a/cargo/cargo_build_script_runner/bin.rs
++++ b/cargo/cargo_build_script_runner/bin.rs
+@@ -472,7 +472,11 @@ impl SymlinkResolver {
+
+             if supports_symlinks {
+                 let abs_src = std::env::current_dir().unwrap().join(src);
+-
++                // Normalize path separators on Windows: current_dir() returns
++                // backslashes but Bazel manifest paths use forward slashes,
++                // producing mixed-separator symlink targets that break MSVC
++                // cl.exe relative #include resolution.
++                let abs_src = PathBuf::from(abs_src.to_string_lossy().replace('/', "\\"));
+                 symlink(&abs_src, &abs_dest).map_err(|e| {
+                     format!(
+                         "Failed to link `{} -> {}` with {:?}",
