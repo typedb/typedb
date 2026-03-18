@@ -171,7 +171,6 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn finalise(self) -> (TransactionProfile, Result<DataCommitIntent<D>, DataCommitError>) {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
-        commit_profile.start();
         let mut snapshot = match Arc::try_unwrap(self.snapshot) {
             Err(_) => return (profile, Err(DataCommitError::SnapshotInUse {})),
             Ok(snapshot) => snapshot,
@@ -343,6 +342,9 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         };
 
         // TODO: Why don't we do the same thing for local executes?
+
+        // TODO: This part (without finalise) must  be exposed separately for Cluster to use!!!
+        // The current usage will finalise multiple times, which is incorrect!!!
         let database = commit_intent.database_drop_guard;
 
         // Schema commits must wait for all other data operations to finish. No new read or write
