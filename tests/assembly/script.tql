@@ -4,7 +4,7 @@ transaction schema foo
 define
     entity person, owns name;
     attribute name, value string;
-    relation marriage, relates spouse;
+    relation marriage, relates spouse @card(2);
     person plays marriage:spouse;
 end;
 commit
