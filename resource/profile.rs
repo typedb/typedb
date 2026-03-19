@@ -300,6 +300,44 @@ impl CommitProfile {
         }
     }
 
+    /// Fill in zero-valued profiling stages from another profile.
+    /// For each Duration field, if self's value is zero and other's is non-zero, copies other's.
+    /// Also copies commit_size and storage counters if self's are at defaults.
+    /// Appends other's named stages.
+    pub fn fill_from(&mut self, other: CommitProfile) {
+        let (Some(self_data), Some(other_data)) = (&mut self.data, other.data) else {
+            return;
+        };
+        macro_rules! fill_zero {
+            ($($field:ident),* $(,)?) => {$(
+                if self_data.$field.is_zero() {
+                    self_data.$field = other_data.$field;
+                }
+            )*};
+        }
+        fill_zero!(
+            types_validation,
+            things_finalise,
+            functions_finalise,
+            schema_update_statistics_durable_write,
+            snapshot_put_statuses_check,
+            snapshot_commit_record_create,
+            snapshot_durable_write_data_submit,
+            snapshot_isolation_validate,
+            snapshot_durable_write_data_confirm,
+            snapshot_storage_write,
+            snapshot_isolation_manager_notify,
+            snapshot_durable_write_commit_status_submit,
+            schema_update_caches_update,
+            schema_update_statistics_update,
+        );
+        if self_data.commit_size == 0 {
+            self_data.commit_size = other_data.commit_size;
+        }
+        self_data.counters = other_data.counters;
+        self_data.named_stages.extend(other_data.named_stages);
+    }
+
     pub fn storage_counters(&self) -> StorageCounters {
         match &self.data {
             None => StorageCounters::DISABLED,
