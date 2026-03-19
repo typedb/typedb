@@ -84,7 +84,6 @@ fn test_fail_point_always() {
     }
 }
 
-#[ignore]
 #[test]
 fn test_fail_point_chance() {
     for fail_point in fail_point::ALL {
