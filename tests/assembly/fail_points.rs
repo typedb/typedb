@@ -73,10 +73,11 @@ macro_rules! start_server {
 
 #[test]
 fn test_fail_point_always() {
+    extract_typedb();
     for fail_point in fail_point::ALL {
         let directive = &format!("{fail_point}=panic");
 
-        extract_typedb();
+        delete_data();
         let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => directive);
         setup();
 
@@ -97,10 +98,11 @@ fn test_fail_point_always() {
 
 #[test]
 fn test_fail_point_chance() {
+    extract_typedb();
     for fail_point in fail_point::ALL {
         let directive = &format!("{fail_point}=90%5*print->panic"); // 10% chance to panic, but guaranteed on the 6th
 
-        extract_typedb();
+        delete_data();
         let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => directive);
         setup();
 
@@ -159,6 +161,10 @@ fn extract_typedb() {
     if !extract_output.status.success() {
         panic!("{:?}", extract_output);
     }
+}
+
+fn delete_data() {
+    fs::remove_dir_all("typedb-extracted/server/data").unwrap();
 }
 
 fn setup() {
