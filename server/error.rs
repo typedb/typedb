@@ -24,7 +24,18 @@ use crate::{
     service::export_service::DatabaseExportError,
 };
 
-pub trait ServerStateError: TypeDBError + Send + Sync + Debug + 'static {}
+pub enum ErrorResponseCategory {
+    NotFound,
+    Forbidden,
+    NotImplemented,
+    Unavailable,
+    InvalidRequest,
+    Internal,
+}
+
+pub trait ServerStateError: TypeDBError + Send + Sync + Debug + 'static {
+    fn error_response_category(&self) -> ErrorResponseCategory;
+}
 
 pub type ArcServerStateError = Arc<dyn ServerStateError>;
 
@@ -84,7 +95,21 @@ typedb_error! {
     }
 }
 
-impl ServerStateError for LocalServerStateError {}
+impl ServerStateError for LocalServerStateError {
+    fn error_response_category(&self) -> ErrorResponseCategory {
+        use ErrorResponseCategory::*;
+        match self {
+            Self::Unimplemented { .. } => NotImplemented,
+            Self::OperationNotPermitted { .. } | Self::NotSupportedByDistribution { .. } => Forbidden,
+            Self::DatabaseNotFound { .. } | Self::UserNotFound { .. } => NotFound,
+            Self::NotInitialised { .. }
+            | Self::DatabaseSchemaCommitFailed { .. }
+            | Self::DatabaseDataCommitFailed { .. }
+            | Self::DatabaseCommitRecordExistsFailed { .. } => Internal,
+            _ => InvalidRequest,
+        }
+    }
+}
 
 impl From<LocalServerStateError> for ArcServerStateError {
     fn from(typedb_source: LocalServerStateError) -> Self {
