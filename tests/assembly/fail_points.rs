@@ -22,7 +22,9 @@ fn build_cmd(cmd_str: &str) -> Command {
 
 fn kill_process(mut process: Child) -> std::io::Result<Output> {
     process.kill()?;
-    process.wait_with_output()
+    let output = process.wait_with_output();
+    thread::sleep(SHUTDOWN_DURATION);
+    output
 }
 
 fn wait_process_timeout(process: &mut Child, timeout: Duration) -> std::io::Result<()> {
@@ -37,6 +39,7 @@ fn wait_process_timeout(process: &mut Child, timeout: Duration) -> std::io::Resu
 }
 
 const BOOT_DURATION: Duration = Duration::from_secs(2);
+const SHUTDOWN_DURATION: Duration = Duration::from_secs(2); // waiting for port to become free
 
 macro_rules! start_server {
     () => {{
