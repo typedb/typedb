@@ -24,11 +24,6 @@ features = {}
 		version = "0.8.5"
 		default-features = false
 
-	[dev-dependencies.rand-core]
-		features = ["default", "std"]
-		version = "0.3.1"
-		default-features = false
-
 	[dev-dependencies.xoshiro]
 		features = []
 		version = "0.0.5"
@@ -52,6 +47,11 @@ features = {}
 	[dev-dependencies.pprof]
 		features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
 		version = "0.13.0"
+		default-features = false
+
+	[dev-dependencies.rand_core]
+		features = ["default", "std"]
+		version = "0.3.1"
 		default-features = false
 
 [dependencies]
@@ -119,7 +119,7 @@ features = {}
 	[dependencies.typeql]
 		features = []
 		rev = "a11320e749860876b46a9cd7f37b937b56fbee1e"
-		git = "https://github.com/typedb/typeql+"
+		git = "https://github.com/typedb/typeql"
 		default-features = false
 
 	[dependencies.chrono]
