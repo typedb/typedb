@@ -81,7 +81,6 @@ pub fn get_system_database_schema_commit_intent(
         });
     let commit_intent =
         finalise_result.map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;
-    let has_changes = commit_intent.schema_snapshot.has_changes();
-    let commit_intent_opt = if has_changes { Some(commit_intent) } else { None };
+    let commit_intent_opt = if commit_intent.has_changes() { Some(commit_intent) } else { None };
     Ok((transaction_profile, commit_intent_opt))
 }

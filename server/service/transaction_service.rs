@@ -43,7 +43,7 @@ pub(crate) async fn commit_schema_transaction(
 ) -> (TransactionProfile, Result<(), ArcServerStateError>) {
     match transaction.finalise() {
         (mut profile, Ok(commit_intent)) => {
-            if !commit_intent.schema_snapshot.has_changes() {
+            if !commit_intent.has_changes() {
                 return (profile, Ok(()));
             }
             let commit_result =
@@ -62,7 +62,7 @@ pub(crate) async fn commit_write_transaction(
 ) -> (TransactionProfile, Result<(), ArcServerStateError>) {
     match transaction.finalise() {
         (mut profile, Ok(commit_intent)) => {
-            if !commit_intent.write_snapshot.has_changes() {
+            if !commit_intent.has_changes() {
                 return (profile, Ok(()));
             }
             let commit_result =

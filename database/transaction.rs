@@ -408,8 +408,8 @@ macro_rules! with_transaction_parts {
 }
 
 pub struct SchemaCommitIntent<D> {
-    pub database_drop_guard: DatabaseDropGuard<D>,
-    pub schema_snapshot: SchemaSnapshot<D>,
+    database_drop_guard: DatabaseDropGuard<D>,
+    schema_snapshot: SchemaSnapshot<D>,
 }
 
 impl<D: DurabilityClient> SchemaCommitIntent<D> {
@@ -420,6 +420,14 @@ impl<D: DurabilityClient> SchemaCommitIntent<D> {
     pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
         let snapshot = SchemaSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
         Self::new(database, snapshot)
+    }
+
+    pub fn has_changes(&self) -> bool {
+        self.schema_snapshot.has_changes()
+    }
+
+    pub fn database_name(&self) -> &str {
+        self.database_drop_guard.name()
     }
 
     pub fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
@@ -491,8 +499,8 @@ impl<D: DurabilityClient> SchemaCommitIntent<D> {
 }
 
 pub struct DataCommitIntent<D> {
-    pub database_drop_guard: DatabaseDropGuard<D>,
-    pub write_snapshot: WriteSnapshot<D>,
+    database_drop_guard: DatabaseDropGuard<D>,
+    write_snapshot: WriteSnapshot<D>,
 }
 
 impl<D: DurabilityClient> DataCommitIntent<D> {
@@ -503,6 +511,14 @@ impl<D: DurabilityClient> DataCommitIntent<D> {
     pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
         let snapshot = WriteSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
         Self::new(database, snapshot)
+    }
+
+    pub fn has_changes(&self) -> bool {
+        self.write_snapshot.has_changes()
+    }
+
+    pub fn database_name(&self) -> &str {
+        self.database_drop_guard.name()
     }
 
     pub fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
