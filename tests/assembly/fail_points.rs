@@ -22,9 +22,7 @@ fn build_cmd(cmd_str: &str) -> Command {
 
 fn kill_process(mut process: Child) -> std::io::Result<Output> {
     process.kill()?;
-    let output = process.wait_with_output();
-    thread::sleep(SHUTDOWN_DURATION);
-    output
+    process.wait_with_output()
 }
 
 fn wait_process_timeout(process: &mut Child, timeout: Duration) -> std::io::Result<()> {
@@ -39,26 +37,36 @@ fn wait_process_timeout(process: &mut Child, timeout: Duration) -> std::io::Resu
 }
 
 const BOOT_DURATION: Duration = Duration::from_secs(2);
-const SHUTDOWN_DURATION: Duration = Duration::from_secs(2); // waiting for port to become free
 
 macro_rules! start_server {
     () => {{
-        let process = build_cmd("typedb-extracted/typedb server --development-mode.enabled=true")
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .spawn()
-            .expect("Failed to run console script");
-        std::thread::sleep(BOOT_DURATION);
-        process
+        start_server!(@run
+            build_cmd("typedb-extracted/typedb server --development-mode.enabled=true")
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+        )
     }};
     ($env:expr => $value:expr) => {{
-        let process = build_cmd("typedb-extracted/typedb server --development-mode.enabled=true")
-            .env($env, $value)
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()
-            .expect("Failed to run console script");
-        std::thread::sleep(BOOT_DURATION);
+        start_server!(@run
+            build_cmd("typedb-extracted/typedb server --development-mode.enabled=true")
+                .env($env, $value)
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+        )
+    }};
+    (@run $cmd:expr) => {{
+        let mut process = $cmd.spawn().expect("Failed to run server");
+        for _ in 0..10 {
+            std::thread::sleep(BOOT_DURATION);
+            if process.try_wait().unwrap().is_some() {
+                let mut buf = String::new();
+                std::io::Read::read_to_string(process.stdout.as_mut().unwrap(), &mut buf).unwrap();
+                if !buf.contains("SRO11") {
+                    break;
+                }
+            }
+            process = $cmd.spawn().expect("Failed to run server");
+        }
         process
     }};
 }
@@ -66,10 +74,10 @@ macro_rules! start_server {
 #[test]
 fn test_fail_point_always() {
     for fail_point in fail_point::ALL {
-        let directive = format!("{fail_point}=panic");
+        let directive = &format!("{fail_point}=panic");
 
         extract_typedb();
-        let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => &directive);
+        let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => directive);
         setup();
 
         run_test_against_server(&mut server_process, fail_point);
@@ -90,10 +98,10 @@ fn test_fail_point_always() {
 #[test]
 fn test_fail_point_chance() {
     for fail_point in fail_point::ALL {
-        let directive = format!("{fail_point}=90%5*print->panic"); // 10% chance to panic, but guaranteed on the 6th
+        let directive = &format!("{fail_point}=90%5*print->panic"); // 10% chance to panic, but guaranteed on the 6th
 
         extract_typedb();
-        let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => &directive);
+        let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => directive);
         setup();
 
         for _ in 0..10 {
@@ -102,7 +110,7 @@ fn test_fail_point_chance() {
             }
 
             kill_process(server_process).unwrap();
-            server_process = start_server!(fail_point::FAIL_POINT_ENV => &directive);
+            server_process = start_server!(fail_point::FAIL_POINT_ENV => directive);
 
             for _ in 0..6 {
                 run_test_against_server(&mut server_process, fail_point);
