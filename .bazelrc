@@ -25,3 +25,5 @@ build:ci --disk_cache=
 
 # Windows: enable proper symlink support
 startup --windows_enable_symlinks
+startup --host_jvm_args=-Xmx2g
+build --jobs=4

@@ -24,7 +24,7 @@ features = {}
 		version = "0.8.5"
 		default-features = false
 
-	[dev-dependencies.rand_core]
+	[dev-dependencies.rand-core]
 		features = ["default", "std"]
 		version = "0.3.1"
 		default-features = false
@@ -118,8 +118,8 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "7f6e802c91ce0a1e6e0d9a6eaff4de377158ed17"
-		git = "https://github.com/typedb/typeql"
+		rev = "a11320e749860876b46a9cd7f37b937b56fbee1e"
+		git = "https://github.com/typedb/typeql+"
 		default-features = false
 
 	[dependencies.chrono]
