@@ -38,25 +38,18 @@ use encoding::{
 use error::typedb_error;
 use function::{function_cache::FunctionCache, FunctionError};
 use query::query_cache::QueryCache;
-use resource::{
-    constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL},
-    profile::CommitProfile,
-};
+use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
     recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
     sequence_number::SequenceNumber,
-    snapshot::{snapshot_id::SnapshotId, CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::snapshot_id::SnapshotId,
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
 use tracing::{event, Level};
 
 use crate::{
-    transaction::{
-        DataCommitError, SchemaCommitError,
-        SchemaCommitError::{SnapshotError, TypeCacheUpdateError},
-        TransactionError,
-    },
+    transaction::TransactionError,
     DatabaseOpenError::FunctionCacheInitialise,
     DatabaseResetError::{
         CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,

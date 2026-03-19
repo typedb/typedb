@@ -10,15 +10,14 @@ use async_trait::async_trait;
 use concurrency::TokioTaskSpawner;
 use database::{
     database_manager::DatabaseManager,
-    transaction::{DataCommitError, DataCommitIntent, SchemaCommitError, SchemaCommitIntent, TransactionRead},
+    transaction::{DataCommitIntent, SchemaCommitIntent, TransactionRead},
     Database,
 };
 use durability::DurabilitySequenceNumber;
 use resource::profile::CommitProfile;
 use storage::{
     durability_client::{DurabilityClient, WALClient},
-    record::CommitRecord,
-    snapshot::{snapshot_id::SnapshotId, CommittableSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::snapshot_id::SnapshotId,
 };
 use tokio::task::JoinHandle;
 
@@ -186,10 +185,8 @@ impl ServerDatabaseManager for LocalServerDatabaseManager {
         commit_intent: SchemaCommitIntent<WALClient>,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError> {
-        commit_intent.schema_snapshot.commit(commit_profile).map(|_| ()).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseSchemaCommitFailed {
-                typedb_source: SchemaCommitError::SnapshotError { typedb_source },
-            })
+        commit_intent.commit(commit_profile).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source })
         })
     }
 
@@ -198,10 +195,8 @@ impl ServerDatabaseManager for LocalServerDatabaseManager {
         commit_intent: DataCommitIntent<WALClient>,
         commit_profile: &mut CommitProfile,
     ) -> Result<(), ArcServerStateError> {
-        commit_intent.write_snapshot.commit(commit_profile).map(|_| ()).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed {
-                typedb_source: DataCommitError::SnapshotError { typedb_source },
-            })
+        commit_intent.commit(commit_profile).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
         })
     }
 
