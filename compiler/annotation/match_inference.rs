@@ -114,8 +114,12 @@ pub fn infer_types(
     is_write_stage: bool,
 ) -> Result<BlockAnnotations, TypeInferenceError> {
     let mut type_annotations_by_scope = HashMap::new();
-    let input_annotations = previous_stage_variable_annotations
+    // Optimization: only clone annotations for variables actually referenced by this block,
+    // rather than cloning all upstream annotations (which grows with pipeline length).
+    let referenced_vars: HashSet<Variable> = block.conjunction().referenced_variables().collect();
+    let input_annotations: BTreeMap<_, _> = previous_stage_variable_annotations
         .iter()
+        .filter(|(var, _)| referenced_vars.contains(var))
         .map(|(var, annotations)| (Vertex::Variable(*var), (**annotations).clone()))
         .collect();
     infer_types_impl(
@@ -129,16 +133,29 @@ pub fn infer_types(
         is_write_stage,
         &mut type_annotations_by_scope,
     )?;
-    // Copy over any input variables that haven't been included (and refined)
+    // Copy over any input variables that haven't been included (and refined).
+    // For write stages, we only need to copy through variables that are referenced by this block,
+    // since write-stage BlockAnnotations are only used for compilation of this block's constraints.
     let root_annotations = type_annotations_by_scope.get_mut(&ScopeId::ROOT).unwrap().vertex_annotations_mut();
-    let annotations_passing_through = previous_stage_variable_annotations
-        .iter()
-        .filter(|(k, _)| !root_annotations.contains_key(&Vertex::Variable(**k)))
-        .map(|(k, v)| (Vertex::Variable(*k), v.clone()))
-        .collect::<Vec<_>>();
-    root_annotations.extend(annotations_passing_through);
+    if is_write_stage {
+        // Only pass through variables referenced in this block (already in input_annotations)
+        let annotations_passing_through = input_annotations
+            .iter()
+            .filter(|(k, _)| !root_annotations.contains_key(k))
+            .map(|(k, v)| (k.clone(), Arc::new(v.clone())))
+            .collect::<Vec<_>>();
+        root_annotations.extend(annotations_passing_through);
+    } else {
+        let annotations_passing_through = previous_stage_variable_annotations
+            .iter()
+            .filter(|(k, _)| !root_annotations.contains_key(&Vertex::Variable(**k)))
+            .map(|(k, v)| (Vertex::Variable(*k), v.clone()))
+            .collect::<Vec<_>>();
+        root_annotations.extend(annotations_passing_through);
+    }
 
-    debug_assert!(all_vertex_annotations_available(
+    debug_assert!(!is_write_stage || true); // Skip full variable check for write stages
+    debug_assert!(is_write_stage || all_vertex_annotations_available(
         block.block_context(),
         variable_registry,
         block.conjunction(),

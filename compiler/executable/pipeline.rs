@@ -240,29 +240,25 @@ pub(crate) fn compile_pipeline_stages(
         input_variables.enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))).collect();
     let mut last_match_annotations = None;
     let mut type_populations = TypePopulations::default();
+
+    // Cache the last stage's output_row_mapping to avoid recomputing it each iteration
+    let mut cached_row_mapping: Option<HashMap<Variable, VariablePosition>> = None;
+
     for stage in annotated_stages {
         // TODO: We can filter out the variables that are no longer needed in the future stages, but are carried as selected variables from the previous one
-        let (executable_stage, referenced_types) =
-            match executable_stages.last().map(|stage| stage.output_row_mapping()) {
-                Some(row_mapping) => compile_stage(
-                    statistics,
-                    variable_registry,
-                    call_cost_provider,
-                    &row_mapping,
-                    last_match_annotations.unwrap_or(&BTreeMap::new()),
-                    function_return,
-                    stage,
-                )?,
-                None => compile_stage(
-                    statistics,
-                    variable_registry,
-                    call_cost_provider,
-                    &input_variable_positions,
-                    last_match_annotations.unwrap_or(&BTreeMap::new()),
-                    function_return,
-                    stage,
-                )?,
-            };
+        let stage_input_positions = cached_row_mapping.as_ref().unwrap_or(&input_variable_positions);
+        let (executable_stage, referenced_types) = compile_stage(
+            statistics,
+            variable_registry,
+            call_cost_provider,
+            stage_input_positions,
+            last_match_annotations.unwrap_or(&BTreeMap::new()),
+            function_return,
+            stage,
+        )?;
+        // Cache the new stage's output_row_mapping for the next iteration
+        cached_row_mapping = Some(executable_stage.output_row_mapping());
+
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
             last_match_annotations =
                 Some(block_annotations.type_annotations_of(block.conjunction()).unwrap().vertex_annotations())
