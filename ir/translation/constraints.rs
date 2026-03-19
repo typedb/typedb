@@ -223,8 +223,8 @@ fn register_typeql_type(
     type_: &TypeRef,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
-        TypeRef::Label(label) => Ok(Vertex::Label(register_type_label(constraints, label)?)),
-        TypeRef::Scoped(scoped_label) => Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?)),
+        TypeRef::Label(label) => Ok(Vertex::Label(Box::new(register_type_label(constraints, label)?))),
+        TypeRef::Scoped(scoped_label) => Ok(Vertex::Label(Box::new(register_type_scoped_label(constraints, scoped_label)?))),
         TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }
@@ -248,7 +248,7 @@ fn register_typeql_role_type(
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
         TypeRef::Label(label) => Ok(Vertex::Variable(register_type_role_name_var(constraints, label)?)),
-        TypeRef::Scoped(scoped_label) => Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?)),
+        TypeRef::Scoped(scoped_label) => Ok(Vertex::Label(Box::new(register_type_scoped_label(constraints, scoped_label)?))),
         TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }

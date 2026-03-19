@@ -92,7 +92,8 @@ pub trait Pattern {
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Vertex<ID> {
     Variable(ID),
-    Label(Label),
+    // Box large variant to reduce Vertex and all Constraint variant sizes
+    Label(Box<Label>),
     Parameter(ParameterID),
 }
 
@@ -176,7 +177,7 @@ impl<ID: StructuralEquality> StructuralEquality for Vertex<ID> {
     fn hash(&self) -> u64 {
         StructuralEquality::hash(&mem::discriminant(self)).bitxor(match self {
             Vertex::Variable(var) => StructuralEquality::hash(var),
-            Vertex::Label(label) => StructuralEquality::hash(label),
+            Vertex::Label(label) => StructuralEquality::hash(label.as_ref()),
             Vertex::Parameter(parameter) => StructuralEquality::hash(parameter),
         })
     }
@@ -184,7 +185,7 @@ impl<ID: StructuralEquality> StructuralEquality for Vertex<ID> {
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Variable(var), Self::Variable(other_var)) => var.equals(other_var),
-            (Self::Label(label), Self::Label(other_label)) => label.equals(other_label),
+            (Self::Label(label), Self::Label(other_label)) => label.as_ref().equals(other_label.as_ref()),
             (Self::Parameter(parameter), Self::Parameter(other_parameter)) => parameter.equals(other_parameter),
             // note: this style forces updating the match when the variants change
             (Self::Variable { .. }, _) | (Self::Parameter { .. }, _) | (Self::Label { .. }, _) => false,

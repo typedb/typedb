@@ -1034,7 +1034,7 @@ pub struct Label<ID> {
 impl<ID> Label<ID> {
     fn new(left: ID, type_label: encoding::value::label::Label) -> Self {
         let source_span = type_label.source_span();
-        Self { type_var: Vertex::Variable(left), type_label: Vertex::Label(type_label), source_span }
+        Self { type_var: Vertex::Variable(left), type_label: Vertex::Label(Box::new(type_label)), source_span }
     }
 
     pub fn source_span(&self) -> Option<Span> {
