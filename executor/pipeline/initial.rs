@@ -4,15 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use lending_iterator::LendingIterator;
-use std::marker::PhantomData;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
-    pipeline::{
-        PipelineExecutionError, StageIterator,
-    },
-    row::MaybeOwnedRow
-    ,
+    pipeline::{PipelineExecutionError, StageIterator},
+    row::MaybeOwnedRow,
 };
 
 pub struct InitialStage {
@@ -26,24 +22,21 @@ impl InitialStage {
 
     pub fn new_with(initial_row: MaybeOwnedRow<'_>) -> Self {
         let batch = FixedBatch::from(initial_row);
-        Self { initial_batch: batch, }
+        Self { initial_batch: batch }
     }
 
-    pub(crate) fn into_iterator(
-        self,
-    ) -> InitialIterator {
+    pub(crate) fn into_iterator(self) -> InitialIterator {
         InitialIterator::new(self.initial_batch)
     }
 }
 
 pub struct InitialIterator {
     iterator: Box<FixedBatchRowIterator>,
-    index: u32,
 }
 
 impl InitialIterator {
     pub(crate) fn new(batch: FixedBatch) -> Self {
-        Self { iterator: Box::new(FixedBatchRowIterator::new(Ok(batch))), index: 0 }
+        Self { iterator: Box::new(FixedBatchRowIterator::new(Ok(batch))) }
     }
 }
 
@@ -58,16 +51,3 @@ impl LendingIterator for InitialIterator {
 }
 
 impl StageIterator for InitialIterator {}
-
-// Dummy to allow InputIterator to conform to the stage API - would be better if InputIterator isn't a stage at all?
-pub struct EmptyIterator {}
-
-impl LendingIterator for EmptyIterator {
-    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
-
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        None
-    }
-}
-
-impl StageIterator for EmptyIterator { }

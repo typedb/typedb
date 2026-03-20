@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::marker::PhantomData;
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use compiler::executable::delete::{
     executable::{DeleteExecutable, OptionalDelete},
@@ -31,8 +30,8 @@ pub struct DeleteStageExecutor<InputIterator> {
 }
 
 impl<InputIterator> DeleteStageExecutor<InputIterator> {
-    pub fn new(executable: Arc<DeleteExecutable>, ) -> Self {
-        Self { executable, _input_iterator: PhantomData::default() }
+    pub fn new(executable: Arc<DeleteExecutable>) -> Self {
+        Self { executable, _input_iterator: PhantomData }
     }
 }
 
@@ -47,7 +46,7 @@ where
     fn into_iterator(
         self,
         input_iterator: InputIterator,
-        mut execution_context: ExecutionContext<Snapshot>,
+        mut context: ExecutionContext<Snapshot>,
         mut interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
@@ -56,14 +55,14 @@ where
         // accumulate once, then we will operate in-place
         let mut batch = match input_iterator.collect_owned() {
             Ok(batch) => batch,
-            Err(err) => return Err((err, execution_context)),
+            Err(err) => return Err((err, context)),
         };
 
         // TODO: all write stages will have the same block below: we could merge them
-        let profile = execution_context.profile.profile_stage(|| String::from("Delete"), self.executable.executable_id);
+        let profile = context.profile.profile_stage(|| String::from("Delete"), self.executable.executable_id);
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
-        let snapshot = Arc::get_mut(&mut execution_context.snapshot).unwrap();
+        let snapshot = Arc::get_mut(&mut context.snapshot).unwrap();
         // First delete connections
         for index in 0..batch.len() {
             let mut row = batch.get_row_mut(index);
@@ -73,32 +72,32 @@ where
             if let Err(typedb_source) = execute_delete_connections(
                 &self.executable.connection_instructions,
                 snapshot,
-                &execution_context.thing_manager,
-                &execution_context.parameters,
+                &context.thing_manager,
+                &context.parameters,
                 &mut row,
                 &profile,
                 &mut profile_index,
             ) {
-                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), execution_context));
+                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
             }
 
             for optional in &self.executable.optional_deletes {
                 if let Err(typedb_source) = execute_optional_delete(
                     optional,
                     snapshot,
-                    &execution_context.thing_manager,
-                    &execution_context.parameters,
+                    &context.thing_manager,
+                    &context.parameters,
                     &mut row,
                     &profile,
                     &mut profile_index,
                 ) {
-                    return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), execution_context));
+                    return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
                 }
             }
 
             if profile_index % CHECK_INTERRUPT_FREQUENCY_ROWS == 0 {
                 if let Some(interrupt) = interrupt.check() {
-                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), execution_context));
+                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), context));
                 }
             }
         }
@@ -109,22 +108,22 @@ where
             if let Err(typedb_source) = execute_delete_concepts(
                 &self.executable,
                 snapshot,
-                &execution_context.thing_manager,
-                &execution_context.parameters,
+                &context.thing_manager,
+                &context.parameters,
                 &mut row,
                 &profile,
             ) {
-                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), execution_context));
+                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
             }
 
             if index % CHECK_INTERRUPT_FREQUENCY_ROWS == 0 {
                 if let Some(interrupt) = interrupt.check() {
-                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), execution_context));
+                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), context));
                 }
             }
         }
 
-        Ok((WrittenRowsIterator::new(batch), execution_context))
+        Ok((WrittenRowsIterator::new(batch), context))
     }
 }
 

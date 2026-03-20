@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::marker::PhantomData;
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use compiler::{
     executable::{function::ExecutableFunctionRegistry, insert::VariableSource, put::PutExecutable},
@@ -32,11 +31,8 @@ pub struct PutStageExecutor<InputIterator> {
 }
 
 impl<InputIterator> PutStageExecutor<InputIterator> {
-    pub fn new(
-        executable: Arc<PutExecutable>,
-        function_registry: Arc<ExecutableFunctionRegistry>,
-    ) -> Self {
-        Self { executable, function_registry, _input_iterator: PhantomData::default() }
+    pub fn new(executable: Arc<PutExecutable>, function_registry: Arc<ExecutableFunctionRegistry>) -> Self {
+        Self { executable, function_registry, _input_iterator: PhantomData }
     }
 
     pub(crate) fn output_width(&self) -> usize {
@@ -55,18 +51,17 @@ where
     fn into_iterator(
         self,
         input_iterator: InputIterator,
-        mut execution_context: ExecutionContext<Snapshot>,
+        mut context: ExecutionContext<Snapshot>,
         mut interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self {executable, function_registry, .. } = self;
-        let result =
-            into_iterator_impl(&mut execution_context, &mut interrupt, &executable, function_registry, input_iterator);
+        let Self { executable, function_registry, .. } = self;
+        let result = into_iterator_impl(&mut context, &mut interrupt, &executable, function_registry, input_iterator);
         match result {
-            Ok(written_rows_iterator) => Ok((written_rows_iterator, execution_context)),
-            Err(err) => Err((err, execution_context)),
+            Ok(written_rows_iterator) => Ok((written_rows_iterator, context)),
+            Err(err) => Err((err, context)),
         }
     }
 }

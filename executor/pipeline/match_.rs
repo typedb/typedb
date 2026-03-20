@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{iter::Peekable, sync::Arc};
-use std::marker::PhantomData;
+use std::{iter::Peekable, marker::PhantomData, sync::Arc};
+
 use compiler::executable::{
     function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
 };
@@ -31,15 +31,12 @@ pub struct MatchStageExecutor<StageIterator> {
 }
 
 impl<StageIterator> MatchStageExecutor<StageIterator> {
-    pub fn new(
-        executable: Arc<ConjunctionExecutable>,
-        function_registry: Arc<ExecutableFunctionRegistry>,
-    ) -> Self {
-        Self { executable, function_registry, _input_iterator: PhantomData::default() }
+    pub fn new(executable: Arc<ConjunctionExecutable>, function_registry: Arc<ExecutableFunctionRegistry>) -> Self {
+        Self { executable, function_registry, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, Iterator>  StageAPI<Snapshot> for MatchStageExecutor<Iterator>
+impl<Snapshot, Iterator> StageAPI<Snapshot> for MatchStageExecutor<Iterator>
 where
     Iterator: StageIterator,
     Snapshot: ReadableSnapshot + 'static,
@@ -57,9 +54,10 @@ where
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         let Self { executable, function_registry, .. } = self;
-        // let (previous_iterator, context) = previous_stage.into_iterator(interrupt.clone())?;
-        // let iterator = previous_iterator;
-        Ok((MatchStageIterator::new(input_iterator, executable, function_registry, context.clone(), interrupt), context))
+        Ok((
+            MatchStageIterator::new(input_iterator, executable, function_registry, context.clone(), interrupt),
+            context,
+        ))
     }
 }
 

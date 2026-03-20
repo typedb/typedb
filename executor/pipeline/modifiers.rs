@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{collections::HashSet, sync::Arc};
-use std::marker::PhantomData;
+use std::{collections::HashSet, marker::PhantomData, sync::Arc};
+
 use answer::variable_value::VariableValue;
 use compiler::{
     executable::modifiers::{
@@ -35,14 +35,14 @@ pub struct SortStageExecutor<InputIterator> {
 
 impl<InputIterator> SortStageExecutor<InputIterator> {
     pub fn new(executable: Arc<SortExecutable>) -> Self {
-        Self { executable, _input_iterator: PhantomData::default() }
+        Self { executable, _input_iterator: PhantomData }
     }
 }
 
 impl<Snapshot, InputIterator> StageAPI<Snapshot> for SortStageExecutor<InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    InputIterator: StageIterator
+    InputIterator: StageIterator,
 {
     type InputIterator = InputIterator;
     type OutputIterator = SortStageIterator;
@@ -56,7 +56,7 @@ where
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self {  executable, .. } = self;
+        let Self { executable, .. } = self;
         // accumulate once, then we will operate in-place
         let batch = match input_iterator.collect_owned() {
             Ok(batch) => batch,
@@ -118,12 +118,12 @@ impl StageIterator for SortStageIterator {}
 // Offset
 pub struct OffsetStageExecutor<InputIterator> {
     offset_executable: Arc<OffsetExecutable>,
-    _input_iterator: PhantomData<InputIterator>
+    _input_iterator: PhantomData<InputIterator>,
 }
 
 impl<InputIterator> OffsetStageExecutor<InputIterator> {
     pub fn new(offset_executable: Arc<OffsetExecutable>) -> Self {
-        Self { offset_executable, _input_iterator: PhantomData::default() }
+        Self { offset_executable, _input_iterator: PhantomData }
     }
 }
 
@@ -184,12 +184,12 @@ where
 // Limit
 pub struct LimitStageExecutor<InputIterator> {
     limit_executable: Arc<LimitExecutable>,
-    _input_iterator: PhantomData<InputIterator>
+    _input_iterator: PhantomData<InputIterator>,
 }
 
 impl<InputIterator> LimitStageExecutor<InputIterator> {
-    pub fn new(limit_executable: Arc<LimitExecutable> ) -> Self {
-        Self { limit_executable, _input_iterator: PhantomData::default() }
+    pub fn new(limit_executable: Arc<LimitExecutable>) -> Self {
+        Self { limit_executable, _input_iterator: PhantomData }
     }
 }
 
@@ -210,7 +210,7 @@ where
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { limit_executable,  .. } = self;
+        let Self { limit_executable, .. } = self;
         Ok((LimitStageIterator::new(input_iterator, limit_executable.limit), context))
     }
 }
@@ -252,7 +252,7 @@ pub struct SelectStageExecutor<InputIterator> {
 
 impl<InputIterator> SelectStageExecutor<InputIterator> {
     pub fn new(select_executable: Arc<SelectExecutable>) -> Self {
-        Self { select_executable, _input_iterator: PhantomData::default() }
+        Self { select_executable, _input_iterator: PhantomData }
     }
 }
 
@@ -315,24 +315,24 @@ where
 }
 
 // Require
-pub struct RequireStageExecutor<InputInterator> {
+pub struct RequireStageExecutor<InputIterator> {
     require_executable: Arc<RequireExecutable>,
-    _input_iterator: PhantomData<InputInterator>,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<InputInterator> RequireStageExecutor<InputInterator> {
+impl<InputIterator> RequireStageExecutor<InputIterator> {
     pub fn new(require_executable: Arc<RequireExecutable>) -> Self {
-        Self { require_executable, _input_iterator: PhantomData::default() }
+        Self { require_executable, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, InputInterator> StageAPI<Snapshot> for RequireStageExecutor<InputInterator>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for RequireStageExecutor<InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    InputInterator: StageIterator,
+    InputIterator: StageIterator,
 {
-    type InputIterator = InputInterator;
-    type OutputIterator = RequireStageIterator<InputInterator>;
+    type InputIterator = InputIterator;
+    type OutputIterator = RequireStageIterator<InputIterator>;
 
     fn into_iterator(
         self,
@@ -391,7 +391,7 @@ pub struct DistinctStageExecutor<InputIterator> {
 
 impl<InputIterator> DistinctStageExecutor<InputIterator> {
     pub fn new(executable: Arc<DistinctExecutable>) -> Self {
-        Self { executable, _input_iterator: PhantomData::default() }
+        Self { executable, _input_iterator: PhantomData }
     }
 }
 

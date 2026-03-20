@@ -6,7 +6,6 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
-    iter,
     iter::zip,
     sync::Arc,
 };

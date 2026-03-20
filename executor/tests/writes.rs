@@ -218,8 +218,9 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     );
     let (input_iter, context) = initial.into_iterator();
     let insert_executor: InsertStageExecutor<ShimIterator> = InsertStageExecutor::new(Arc::new(insert_plan));
-    let (output_iter, context) =
-        insert_executor.into_iterator(input_iter, context, ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match *err {
+    let (output_iter, context) = insert_executor
+        .into_iterator(input_iter, context, ExecutionInterrupt::new_uninterruptible())
+        .map_err(|(err, _)| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source.clone(),
             _ => unreachable!(),
         })?;
@@ -310,8 +311,9 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     );
     let (input_iter, context) = initial.into_iterator();
     let delete_executor: DeleteStageExecutor<ShimIterator> = DeleteStageExecutor::new(Arc::new(delete_plan));
-    let (output_iter, context) =
-        delete_executor.into_iterator(input_iter, context, ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match *err {
+    let (output_iter, context) = delete_executor
+        .into_iterator(input_iter, context, ExecutionInterrupt::new_uninterruptible())
+        .map_err(|(err, _)| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;

@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -16,7 +15,7 @@ use crate::{
     batch::Batch,
     pipeline::{
         delete::DeleteStageExecutor,
-        initial::{InitialIterator, InitialStage},
+        initial::InitialIterator,
         insert::InsertStageExecutor,
         match_::{MatchStageExecutor, MatchStageIterator},
         modifiers::{
@@ -138,7 +137,6 @@ pub trait StageIterator:
 }
 
 pub enum ReadPipelineStage<Snapshot: ReadableSnapshot + 'static> {
-    // Initial(Box<InitialStage<ReadStageIterator<Snapshot>>>),
     Match(Box<MatchStageExecutor<ReadStageIterator<Snapshot>>>),
     Select(Box<SelectStageExecutor<ReadStageIterator<Snapshot>>>),
     Sort(Box<SortStageExecutor<ReadStageIterator<Snapshot>>>),
@@ -176,35 +174,35 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
     > {
         match self {
             ReadPipelineStage::Match(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((ReadStageIterator::Match(Box::new(iterator)), snapshot))
             }
             ReadPipelineStage::Sort(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((ReadStageIterator::Sort(iterator), snapshot))
             }
             ReadPipelineStage::Distinct(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((ReadStageIterator::Distinct(Box::new(iterator)), snapshot))
             }
             ReadPipelineStage::Offset(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((ReadStageIterator::Offset(Box::new(iterator)), snapshot))
             }
             ReadPipelineStage::Limit(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((ReadStageIterator::Limit(Box::new(iterator)), snapshot))
             }
             ReadPipelineStage::Select(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((ReadStageIterator::Select(Box::new(iterator)), snapshot))
             }
             ReadPipelineStage::Require(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((ReadStageIterator::Require(Box::new(iterator)), snapshot))
             }
             ReadPipelineStage::Reduce(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((ReadStageIterator::Reduce(Box::new(iterator)), snapshot))
             }
         }
@@ -267,7 +265,7 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
     fn into_iterator(
         self,
         input_iterator: Self::InputIterator,
-        execution_context: ExecutionContext<Snapshot>,
+        context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
@@ -275,51 +273,51 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
     > {
         match self {
             WritePipelineStage::Match(stage) => {
-                let (iterator, context) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, context) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Match(Box::new(iterator)), context))
             }
             WritePipelineStage::Insert(stage) => {
-                let (iterator, context) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, context) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), context))
             }
             WritePipelineStage::Update(stage) => {
-                let (iterator, context) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, context) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), context))
             }
             WritePipelineStage::Put(stage) => {
-                let (iterator, context) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, context) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), context))
             }
             WritePipelineStage::Delete(stage) => {
-                let (iterator, context) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, context) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), context))
             }
             WritePipelineStage::Sort(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Sort(iterator), snapshot))
             }
             WritePipelineStage::Distinct(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Distinct(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Limit(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Limit(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Offset(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Offset(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Select(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Select(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Require(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Require(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Reduce(stage) => {
-                let (iterator, snapshot) =  stage.into_iterator(input_iterator, execution_context, interrupt)?;
+                let (iterator, snapshot) = stage.into_iterator(input_iterator, context, interrupt)?;
                 Ok((WriteStageIterator::Reduce(iterator), snapshot))
             }
         }

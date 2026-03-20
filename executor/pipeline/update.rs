@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::marker::PhantomData;
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use compiler::{
     executable::{
@@ -25,14 +24,13 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     pipeline::{
         insert::prepare_output_rows,
-        stage::{ExecutionContext, StageAPI},
+        stage::{ExecutionContext, StageAPI, StageIterator},
         PipelineExecutionError, WrittenRowsIterator,
     },
     row::Row,
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
 };
-use crate::pipeline::stage::StageIterator;
 
 pub struct UpdateStageExecutor<InputIterator> {
     executable: Arc<UpdateExecutable>,
@@ -41,7 +39,7 @@ pub struct UpdateStageExecutor<InputIterator> {
 
 impl<InputIterator> UpdateStageExecutor<InputIterator> {
     pub fn new(executable: Arc<UpdateExecutable>) -> Self {
-        Self { executable, _input_iterator: PhantomData::default() }
+        Self { executable, _input_iterator: PhantomData }
     }
 
     pub(crate) fn output_width(&self) -> usize {
@@ -60,7 +58,7 @@ where
     fn into_iterator(
         self,
         input_iterator: InputIterator,
-        mut execution_context: ExecutionContext<Snapshot>,
+        mut context: ExecutionContext<Snapshot>,
         mut interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
@@ -68,7 +66,7 @@ where
     > {
         let Self { executable, .. } = self;
 
-        let profile = execution_context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
+        let profile = context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
 
         let input_output_mapping = executable
             .output_row_schema
@@ -82,11 +80,11 @@ where
         let mut batch =
             match prepare_output_rows(executable.output_width() as u32, input_iterator, &input_output_mapping) {
                 Ok(output_rows) => output_rows,
-                Err(err) => return Err((err, execution_context)),
+                Err(err) => return Err((err, context)),
             };
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so we can get mut:
-        let snapshot_mut = Arc::get_mut(&mut execution_context.snapshot).unwrap();
+        let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
         for index in 0..batch.len() {
             // TODO: parallelise -- though this requires our snapshots support parallel writes!
             let mut row = batch.get_row_mut(index);
@@ -94,21 +92,21 @@ where
             if let Err(typedb_source) = execute_update(
                 &executable,
                 snapshot_mut,
-                &execution_context.thing_manager,
-                &execution_context.parameters,
+                &context.thing_manager,
+                &context.parameters,
                 &mut row,
                 &profile,
             ) {
-                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), execution_context));
+                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
             }
 
             if index % CHECK_INTERRUPT_FREQUENCY_ROWS == 0 {
                 if let Some(interrupt) = interrupt.check() {
-                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), execution_context));
+                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), context));
                 }
             }
         }
-        Ok((WrittenRowsIterator::new(batch), execution_context))
+        Ok((WrittenRowsIterator::new(batch), context))
     }
 }
 

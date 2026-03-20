@@ -18,12 +18,12 @@ use ir::pipeline::ParameterRegistry;
 use resource::profile::QueryProfile;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::pipeline::initial::{InitialIterator, InitialStage};
 use crate::{
     document::ConceptDocument,
     pipeline::{
         delete::DeleteStageExecutor,
         fetch::FetchStageExecutor,
+        initial::{InitialIterator, InitialStage},
         insert::InsertStageExecutor,
         match_::MatchStageExecutor,
         modifiers::{
@@ -105,9 +105,8 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new_with_profile(snapshot, thing_manager, parameters.clone(), query_profile);
 
-        let initial_iterator = input
-            .map(|row| InitialStage::new_with(row))
-            .unwrap_or_else(|| InitialStage::new_empty());
+        let initial_iterator =
+            input.map(|row| InitialStage::new_with(row)).unwrap_or_else(|| InitialStage::new_empty());
         let initial_iterator = ReadStageIterator::Initial(Box::new(initial_iterator.into_iterator()));
 
         let mut stages: Vec<ReadPipelineStage<Snapshot>> = Vec::with_capacity(executable_stages.len());
@@ -218,14 +217,17 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
             Some(fetch_executor) => {
                 let (rows_iterator, context) =
                     Self::run_stages(self.initial_iterator, self.stages, self.context, execution_interrupt.clone())?;
-                Ok(fetch_executor.into_iterator::<ReadPipelineStage<Snapshot>>(rows_iterator, context, execution_interrupt))
+                Ok(fetch_executor.into_iterator::<ReadPipelineStage<Snapshot>>(
+                    rows_iterator,
+                    context,
+                    execution_interrupt,
+                ))
             }
         }
     }
 }
 
 impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage<Snapshot>> {
-
     pub fn build_write_pipeline(
         snapshot: Snapshot,
         variable_names: &HashMap<Variable, String>,
@@ -354,7 +356,11 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
             Some(fetch_executor) => {
                 let (rows_iterator, context) =
                     Self::run_stages(self.initial_iterator, self.stages, self.context, execution_interrupt.clone())?;
-                Ok(fetch_executor.into_iterator::<WritePipelineStage<Snapshot>>(rows_iterator, context, execution_interrupt))
+                Ok(fetch_executor.into_iterator::<WritePipelineStage<Snapshot>>(
+                    rows_iterator,
+                    context,
+                    execution_interrupt,
+                ))
             }
         }
     }
