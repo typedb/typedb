@@ -26,7 +26,6 @@ use crate::{
     service::{
         export_service::{get_transaction_schema, get_transaction_type_schema},
         grpc::migration::import_service::DatabaseImportService,
-        TransactionType,
     },
 };
 

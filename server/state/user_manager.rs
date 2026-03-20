@@ -15,7 +15,7 @@ use resource::constants::server::DEFAULT_USER_NAME;
 use system::concepts::{Credential, User};
 use user::{permission_manager::PermissionManager, user_manager::UserManager};
 
-use super::{LocalServerTransactionManager, ServerTransactionManager};
+use super::ServerTransactionManager;
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
     error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},

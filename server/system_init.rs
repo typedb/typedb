@@ -11,7 +11,7 @@ use resource::{
     internal_database_prefix,
     profile::TransactionProfile,
 };
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot};
+use storage::durability_client::WALClient;
 use system::{
     concepts::{Credential, PasswordHash, User},
     repositories::SCHEMA,

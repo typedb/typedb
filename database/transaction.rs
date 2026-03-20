@@ -172,6 +172,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn finalise(self) -> (TransactionProfile, Result<DataCommitIntent<D>, DataCommitError>) {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
+        commit_profile.start();
         let mut snapshot = match Arc::try_unwrap(self.snapshot) {
             Err(_) => return (profile, Err(DataCommitError::SnapshotInUse {})),
             Ok(snapshot) => snapshot,
@@ -188,19 +189,16 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot }))
     }
 
-    pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
-        self.profile.commit_profile().start();
-        let (mut profile, result) = self.try_commit();
-        profile.commit_profile().end();
-        (profile, result)
-    }
-
-    fn try_commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
+    pub fn commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
         let (mut profile, commit_intent) = match self.finalise() {
             (profile, Ok(commit_intent)) => (profile, commit_intent),
-            (profile, Err(error)) => return (profile, Err(error)),
+            (mut profile, Err(error)) => {
+                profile.commit_profile().end();
+                return (profile, Err(error));
+            }
         };
         let result = commit_intent.commit(profile.commit_profile());
+        profile.commit_profile().end();
         (profile, result)
     }
 
@@ -289,6 +287,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
+        commit_profile.start();
         let mut snapshot = Arc::try_unwrap(self.snapshot)
             .unwrap_or_else(|_| panic!("Expected unique ownership of snapshot for schema commit"));
         if let Err(errs) = self.type_manager.validate(&snapshot) {
@@ -323,19 +322,16 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot }))
     }
 
-    pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
-        self.profile.commit_profile().start();
-        let (mut profile, result) = self.try_commit();
-        profile.commit_profile().end();
-        (profile, result)
-    }
-
-    fn try_commit(self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
+    pub fn commit(self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
         let (mut profile, commit_intent) = match self.finalise() {
             (profile, Ok(commit_intent)) => (profile, commit_intent),
-            (profile, Err(error)) => return (profile, Err(error)),
+            (mut profile, Err(error)) => {
+                profile.commit_profile().end();
+                return (profile, Err(error));
+            }
         };
         let result = commit_intent.commit(profile.commit_profile());
+        profile.commit_profile().end();
         (profile, result)
     }
 

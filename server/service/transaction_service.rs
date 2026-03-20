@@ -10,12 +10,12 @@ use error::typedb_error;
 use executor::{pipeline::PipelineExecutionError, InterruptType};
 use query::error::QueryError;
 use resource::{constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS, profile::TransactionProfile};
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot};
+use storage::durability_client::WALClient;
 use tokio::time::Instant;
 use typeql::query::stage::Stage;
 use uuid::Uuid;
 
-pub(crate) use crate::transaction::{with_readable_transaction, Transaction, TransactionType};
+pub(crate) use crate::transaction::{with_readable_transaction, Transaction};
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},
     state::ServerState,

@@ -11,7 +11,7 @@ use async_trait::async_trait;
 use super::BoxServerStatus;
 use crate::{
     error::{ArcServerStateError, LocalServerStateError},
-    status::{LocalServerStatus, ServerStatus},
+    status::LocalServerStatus,
 };
 
 #[async_trait]
