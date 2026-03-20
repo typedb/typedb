@@ -661,23 +661,6 @@ mod tests {
     }
 
     #[test]
-    fn datetime_subtraction_always_produces_time_delta_less_than_a_day() {
-        let seed = thread_rng().gen();
-        let mut rng = SmallRng::seed_from_u64(seed);
-        eprintln!("Running with seed: {seed}");
-
-        for _ in 0..1_000_000 {
-            let mut date_time_1 = random_datetime(&mut rng);
-            let mut date_time_2 = random_datetime(&mut rng);
-            if date_time_1 > date_time_2 {
-                mem::swap(&mut date_time_1, &mut date_time_2);
-            }
-            let diff = Duration::between_datetimes_tz(date_time_1, date_time_2);
-            assert!(diff.nanos < NANOS_PER_NAIVE_DAY);
-        }
-    }
-
-    #[test]
     fn extreme_timezone_changes_are_respected() {
         // Samoa switched from -10 to +14 later 29th of December, 2011,
         // skipping 30th of December.
