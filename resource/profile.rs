@@ -301,7 +301,8 @@ impl CommitProfile {
     }
 
     /// Fill in zero-valued profiling stages from another profile.
-    /// For each Duration field, if self's value is zero and other's is non-zero, copies other's.
+    /// For each Duration field, if self's value is zero and other's is non-zero, copies other's
+    /// value and adds it to self's total.
     /// Also copies commit_size and storage counters if self's are at defaults.
     /// Appends other's named stages.
     pub fn fill_from(&mut self, other: CommitProfile) {
@@ -312,6 +313,7 @@ impl CommitProfile {
             ($($field:ident),* $(,)?) => {$(
                 if self_data.$field.is_zero() {
                     self_data.$field = other_data.$field;
+                    self_data.total += other_data.$field;
                 }
             )*};
         }
@@ -335,6 +337,9 @@ impl CommitProfile {
             self_data.commit_size = other_data.commit_size;
         }
         self_data.counters = other_data.counters;
+        for &(_, duration) in &other_data.named_stages {
+            self_data.total += duration;
+        }
         self_data.named_stages.extend(other_data.named_stages);
     }
 
