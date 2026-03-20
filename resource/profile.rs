@@ -300,11 +300,23 @@ impl CommitProfile {
         }
     }
 
-    /// Fill in zero-valued profiling stages from another profile.
-    /// For each Duration field, if self's value is zero and other's is non-zero, copies other's
-    /// value and adds it to self's total.
+    pub fn total(&self) -> Duration {
+        match &self.data {
+            Some(data) => data.total,
+            None => Duration::ZERO,
+        }
+    }
+
+    pub fn record_named_stage(&mut self, name: &'static str, duration: Duration) {
+        if let Some(data) = &mut self.data {
+            data.named_stages.push((name, duration));
+            data.total += duration;
+        }
+    }
+
+    /// Fill in zero-valued profiling stages from another profile, adding them to self's total.
     /// Also copies commit_size and storage counters if self's are at defaults.
-    /// Appends other's named stages.
+    /// Appends other's named stages (adding their durations to total).
     pub fn fill_from(&mut self, other: CommitProfile) {
         let (Some(self_data), Some(other_data)) = (&mut self.data, other.data) else {
             return;
