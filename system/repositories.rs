@@ -17,7 +17,7 @@ pub mod user_repository {
     use query::query_manager::QueryManager;
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use thing_manager::ThingManager;
-    use typeql::{common::identifier::is_valid_identifier, parse_query};
+    use typeql::{common::identifier::is_valid_label, parse_query};
     use uuid::Uuid;
 
     use crate::{
@@ -170,7 +170,7 @@ pub mod user_repository {
     }
 
     pub fn is_valid_typeql_value(value: &str) -> bool {
-        is_valid_identifier(value)
+        is_valid_label(value)
     }
 
     typedb_error! {
