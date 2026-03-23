@@ -6,6 +6,7 @@
 
 use std::{
     fs,
+    io::Read,
     path::Path,
     process::{Child, Command, Output},
     thread,
@@ -38,35 +39,38 @@ fn wait_process_timeout(process: &mut Child, timeout: Duration) -> std::io::Resu
 
 const BOOT_DURATION: Duration = Duration::from_secs(2);
 
-macro_rules! start_server {
-    () => {{
-        start_server!(@run |port| build_server_cmd(port))
-    }};
-    ($env:expr => $value:expr, expect $fail:expr) => {{
-        start_server!(@run |port| { let mut cmd = build_server_cmd(port); cmd.env($env, $value); cmd }, $fail)
-    }};
-    (@run $cmd:expr $(, $fail:expr)?) => {{
-        let mut port = 1729;
-        loop {
-            let mut process = $cmd(port).spawn().expect("Failed to run server");
-            thread::sleep(BOOT_DURATION);
-            match process.try_wait().unwrap() {
-                Some(_) => {
-                    let mut buf = String::new();
-                    std::io::Read::read_to_string(process.stderr.as_mut().unwrap(), &mut buf).unwrap();
-                    $(if buf.contains($fail) {
+fn start_server() -> (Child, u16) {
+    start_server_with_env(None, None)
+}
+
+fn start_server_with_env(env: Option<(&str, &str)>, expected_fail: Option<&str>) -> (Child, u16) {
+    let mut port = 1729;
+    loop {
+        let mut cmd = build_server_cmd(port);
+        if let Some((var, value)) = env {
+            cmd.env(var, value);
+        }
+
+        let mut process = cmd.spawn().expect("Failed to run server");
+        thread::sleep(BOOT_DURATION);
+
+        match process.try_wait().unwrap() {
+            Some(_) => {
+                let mut buf = String::new();
+                process.stderr.as_mut().unwrap().read_to_string(&mut buf).unwrap();
+                if let Some(fail) = expected_fail {
+                    if buf.contains(fail) {
                         break (process, port);
-                    })?
-                    if !buf.contains("SRO11") {
-                        panic!("Server process crashed for an unrelated reason: {buf}");
                     }
                 }
-                None => break (process, port),
+                if !buf.contains("SRO11") {
+                    panic!("Server process crashed for an unrelated reason: {buf}");
+                }
             }
-
-            port += 1;
+            None => break (process, port),
         }
-    }};
+        port += 1;
+    }
 }
 
 #[test]
@@ -76,7 +80,8 @@ fn test_fail_point_always() {
         let directive = &format!("{fail_point}=panic");
 
         delete_data();
-        let (mut server_process, port) = start_server!(fail_point::FAIL_POINT_ENV => directive, expect fail_point);
+        let (mut server_process, port) =
+            start_server_with_env(Some((fail_point::FAIL_POINT_ENV, directive)), Some(fail_point));
         setup(port);
 
         run_test_against_server(&mut server_process, fail_point, port);
@@ -84,7 +89,8 @@ fn test_fail_point_always() {
             None => {
                 kill_process(server_process).unwrap();
                 // some fail points are only triggered on second boot
-                (server_process, _) = start_server!(fail_point::FAIL_POINT_ENV => directive, expect fail_point);
+                (server_process, _) =
+                    start_server_with_env(Some((fail_point::FAIL_POINT_ENV, directive)), Some(fail_point));
                 if server_process.try_wait().unwrap().is_none() {
                     kill_process(server_process).unwrap();
                     panic!("Fail point {fail_point} is never triggered");
@@ -105,7 +111,8 @@ fn test_fail_point_chance() {
         let directive = &format!("{fail_point}=90%5*print->panic"); // 10% chance to panic, but guaranteed on the 6th
 
         delete_data();
-        let (mut server_process, mut port) = start_server!(fail_point::FAIL_POINT_ENV => directive, expect fail_point);
+        let (mut server_process, mut port) =
+            start_server_with_env(Some((fail_point::FAIL_POINT_ENV, directive)), Some(fail_point));
         setup(port);
 
         for _ in 0..10 {
@@ -114,7 +121,8 @@ fn test_fail_point_chance() {
             }
             kill_process(server_process).unwrap();
 
-            (server_process, port) = start_server!(fail_point::FAIL_POINT_ENV => directive, expect fail_point);
+            (server_process, port) =
+                start_server_with_env(Some((fail_point::FAIL_POINT_ENV, directive)), Some(fail_point));
             for _ in 0..6 {
                 run_test_against_server(&mut server_process, fail_point, port);
                 if server_process.try_wait().unwrap().is_some() {
@@ -132,7 +140,7 @@ fn test_fail_point_chance() {
 }
 
 fn assert_boots(fail_point: &str) {
-    let (mut server_process, _) = start_server!();
+    let (mut server_process, _) = start_server();
     match server_process.try_wait().unwrap() {
         None => _ = kill_process(server_process).unwrap(),
         Some(_) => {
