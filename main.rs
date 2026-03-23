@@ -62,8 +62,8 @@ impl ServerApplication {
         self.runtime.block_on(async {
             let server = ServerBuilder::default().server_info(SERVER_INFO).build(self.config).await.unwrap();
             match server.serve().await {
-                Ok(_) => println!("Exited."),
-                Err(err) => println!("Exited with error: {:?}", err),
+                Ok(_) => eprintln!("Exited."),
+                Err(err) => eprintln!("Exited with error: {:?}", err),
             }
         })
     }
