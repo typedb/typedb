@@ -203,14 +203,14 @@ fn run_test_against_server(server_process: &mut Child, fail_point_name: &str, po
         ),
         Instruction::WaitForCheckpoint,
         Instruction::Parallel(
-            "
+            r#"
             transaction write foo
             match $john isa person, has name $name;
             delete has $name of $john;
-            insert $john has $name;
+            insert $john has name "<value>";
             end;
             commit
-            ",
+            "#,
         ),
         Instruction::Command("database delete foo"),
         Instruction::Command("database create foo"),
@@ -233,7 +233,9 @@ fn run_test_against_server(server_process: &mut Child, fail_point_name: &str, po
                 }
             }
             Instruction::Parallel(command) => {
-                let cmds = std::array::from_fn::<_, 10, _>(|_| build_console_command(command, port));
+                let cmds = std::array::from_fn::<_, 10, _>(|i| {
+                    build_console_command(&command.replace("<value>", &format!("{i}")), port)
+                });
                 let threads =
                     cmds.into_iter().map(|mut cmd| thread::spawn(move || cmd.output().unwrap())).collect::<Vec<_>>();
                 for thread in threads {
