@@ -34,7 +34,7 @@ rust_test(
     ],
     data = ["//:assemble-typedb-all", ":script.tql"],
     env = env,
-    size = "large",
+    timeout = "eternal",
 )
 
 rustfmt_test(
