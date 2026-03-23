@@ -72,7 +72,7 @@ macro_rules! start_server {
 #[test]
 fn test_fail_point_always() {
     extract_typedb();
-    for fail_point in fail_point::ALL.into_iter().rev() {
+    for fail_point in fail_point::ALL {
         let directive = &format!("{fail_point}=panic");
 
         delete_data();
