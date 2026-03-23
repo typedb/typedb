@@ -118,7 +118,7 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "a11320e749860876b46a9cd7f37b937b56fbee1e"
+		rev = "89b5406117d63bcd37e661066eff1ef4f5bff397"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 
@@ -141,12 +141,8 @@ features = {}
 	harness = false
 
 [[test]]
-	path = "tests/test_storage.rs"
-	name = "test_storage"
-
-[[test]]
-	path = "tests/test_mvcc.rs"
-	name = "test_mvcc"
+	path = "tests/test_isolation.rs"
+	name = "test_isolation"
 
 [[test]]
 	path = "tests/test_recovery.rs"
@@ -157,6 +153,10 @@ features = {}
 	name = "test_snapshot"
 
 [[test]]
-	path = "tests/test_isolation.rs"
-	name = "test_isolation"
+	path = "tests/test_mvcc.rs"
+	name = "test_mvcc"
+
+[[test]]
+	path = "tests/test_storage.rs"
+	name = "test_storage"
 

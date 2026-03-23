@@ -24,11 +24,6 @@ features = {}
 		features = []
 		default-features = false
 
-	[dev-dependencies.durability]
-		path = "../durability"
-		features = []
-		default-features = false
-
 	[dev-dependencies.query]
 		path = "../query"
 		features = []
@@ -36,6 +31,11 @@ features = {}
 
 	[dev-dependencies.function]
 		path = "../function"
+		features = []
+		default-features = false
+
+	[dev-dependencies.durability]
+		path = "../durability"
 		features = []
 		default-features = false
 
@@ -138,7 +138,7 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "a11320e749860876b46a9cd7f37b937b56fbee1e"
+		rev = "89b5406117d63bcd37e661066eff1ef4f5bff397"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 
@@ -158,46 +158,46 @@ features = {}
 		default-features = false
 
 [[test]]
-	path = "tests/execute_has.rs"
-	name = "test_execute_has"
-
-[[test]]
-	path = "tests/execute_relation_index.rs"
-	name = "test_execute_relation_index"
-
-[[test]]
-	path = "tests/execute_isa.rs"
-	name = "test_execute_isa"
-
-[[test]]
-	path = "tests/execute_select.rs"
-	name = "test_select"
+	path = "tests/execute_function.rs"
+	name = "test_functions"
 
 [[test]]
 	path = "tests/execute_expression.rs"
 	name = "test_execute_expression"
 
 [[test]]
+	path = "tests/efficiency.rs"
+	name = "test_efficiency"
+
+[[test]]
+	path = "tests/execute_has.rs"
+	name = "test_execute_has"
+
+[[test]]
+	path = "tests/pipelines.rs"
+	name = "test_pipelines"
+
+[[test]]
+	path = "tests/execute_select.rs"
+	name = "test_select"
+
+[[test]]
+	path = "tests/execute_relation_index.rs"
+	name = "test_execute_relation_index"
+
+[[test]]
 	path = "tests/writes.rs"
 	name = "test_writes"
-
-[[test]]
-	path = "tests/execute_function.rs"
-	name = "test_functions"
-
-[[test]]
-	path = "tests/execute_links.rs"
-	name = "test_execute_links"
 
 [[test]]
 	path = "tests/compile_execute.rs"
 	name = "test_compile_execute"
 
 [[test]]
-	path = "tests/efficiency.rs"
-	name = "test_efficiency"
+	path = "tests/execute_isa.rs"
+	name = "test_execute_isa"
 
 [[test]]
-	path = "tests/pipelines.rs"
-	name = "test_pipelines"
+	path = "tests/execute_links.rs"
+	name = "test_execute_links"
 

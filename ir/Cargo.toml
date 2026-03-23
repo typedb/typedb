@@ -93,7 +93,7 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "a11320e749860876b46a9cd7f37b937b56fbee1e"
+		rev = "89b5406117d63bcd37e661066eff1ef4f5bff397"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 
@@ -103,14 +103,14 @@ features = {}
 		default-features = false
 
 [[test]]
-	path = "tests/structural_equality.rs"
-	name = "test_structural_equality"
-
-[[test]]
 	path = "tests/pattern.rs"
 	name = "pattern"
 
 [[test]]
 	path = "tests/pipeline.rs"
 	name = "pipeline"
+
+[[test]]
+	path = "tests/structural_equality.rs"
+	name = "test_structural_equality"
 
