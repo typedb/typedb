@@ -40,57 +40,59 @@ const BOOT_DURATION: Duration = Duration::from_secs(2);
 
 macro_rules! start_server {
     () => {{
-        start_server!(@run
-            build_cmd("typedb-extracted/typedb server --development-mode.enabled=true")
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
-        )
+        start_server!(@run |port| build_server_cmd(port))
     }};
-    ($env:expr => $value:expr) => {{
-        start_server!(@run
-            build_cmd("typedb-extracted/typedb server --development-mode.enabled=true")
-                .env($env, $value)
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
-        )
+    ($env:expr => $value:expr, expect $fail:expr) => {{
+        start_server!(@run |port| { let mut cmd = build_server_cmd(port); cmd.env($env, $value); cmd }, $fail)
     }};
-    (@run $cmd:expr) => {{
-        let mut process = $cmd.spawn().expect("Failed to run server");
-        for _ in 0..10 {
-            std::thread::sleep(BOOT_DURATION);
-            if process.try_wait().unwrap().is_some() {
-                let mut buf = String::new();
-                std::io::Read::read_to_string(process.stdout.as_mut().unwrap(), &mut buf).unwrap();
-                if !buf.contains("SRO11") {
-                    break;
+    (@run $cmd:expr $(, $fail:expr)?) => {{
+        let mut port = 1729;
+        loop {
+            let mut process = $cmd(port).spawn().expect("Failed to run server");
+            thread::sleep(BOOT_DURATION);
+            match process.try_wait().unwrap() {
+                Some(_) => {
+                    let mut buf = String::new();
+                    std::io::Read::read_to_string(process.stderr.as_mut().unwrap(), &mut buf).unwrap();
+                    $(if buf.contains($fail) {
+                        break (process, port);
+                    })?
+                    if !buf.contains("SRO11") {
+                        panic!("Server process crashed for an unrelated reason: {buf}");
+                    }
                 }
+                None => break (process, port),
             }
-            process = $cmd.spawn().expect("Failed to run server");
+
+            port += 1;
         }
-        process
     }};
 }
 
 #[test]
 fn test_fail_point_always() {
     extract_typedb();
-    for fail_point in fail_point::ALL {
+    for fail_point in fail_point::ALL.into_iter().rev() {
         let directive = &format!("{fail_point}=panic");
 
         delete_data();
-        let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => directive);
-        setup();
+        let (mut server_process, port) = start_server!(fail_point::FAIL_POINT_ENV => directive, expect fail_point);
+        setup(port);
 
-        run_test_against_server(&mut server_process, fail_point);
-        if server_process.try_wait().unwrap().is_none() {
-            kill_process(server_process).unwrap();
-            // some fail points are only triggered on second boot
-            let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => directive);
-            if server_process.try_wait().unwrap().is_none() {
+        run_test_against_server(&mut server_process, fail_point, port);
+        match server_process.try_wait().unwrap() {
+            None => {
                 kill_process(server_process).unwrap();
-                panic!("Fail point {fail_point} is never triggered");
+                // some fail points are only triggered on second boot
+                (server_process, _) = start_server!(fail_point::FAIL_POINT_ENV => directive, expect fail_point);
+                if server_process.try_wait().unwrap().is_none() {
+                    kill_process(server_process).unwrap();
+                    panic!("Fail point {fail_point} is never triggered");
+                }
+                server_process.wait_with_output().unwrap()
             }
-        }
+            Some(_) => server_process.wait_with_output().unwrap(),
+        };
 
         assert_boots(fail_point);
     }
@@ -103,19 +105,18 @@ fn test_fail_point_chance() {
         let directive = &format!("{fail_point}=90%5*print->panic"); // 10% chance to panic, but guaranteed on the 6th
 
         delete_data();
-        let mut server_process = start_server!(fail_point::FAIL_POINT_ENV => directive);
-        setup();
+        let (mut server_process, mut port) = start_server!(fail_point::FAIL_POINT_ENV => directive, expect fail_point);
+        setup(port);
 
         for _ in 0..10 {
             if server_process.try_wait().unwrap().is_some() {
                 break; // crashed
             }
-
             kill_process(server_process).unwrap();
-            server_process = start_server!(fail_point::FAIL_POINT_ENV => directive);
 
+            (server_process, port) = start_server!(fail_point::FAIL_POINT_ENV => directive, expect fail_point);
             for _ in 0..6 {
-                run_test_against_server(&mut server_process, fail_point);
+                run_test_against_server(&mut server_process, fail_point, port);
                 if server_process.try_wait().unwrap().is_some() {
                     break; // crashed
                 }
@@ -131,7 +132,7 @@ fn test_fail_point_chance() {
 }
 
 fn assert_boots(fail_point: &str) {
-    let mut server_process = start_server!();
+    let (mut server_process, _) = start_server!();
     match server_process.try_wait().unwrap() {
         None => _ = kill_process(server_process).unwrap(),
         Some(_) => {
@@ -167,17 +168,17 @@ fn delete_data() {
     fs::remove_dir_all("typedb-extracted/server/data").unwrap();
 }
 
-fn setup() {
+fn setup(port: u16) {
     let command = "
         database create foo
         transaction schema foo
         define entity person, owns name @card(0..1); attribute name, value string; end;
         commit
         ";
-    build_console_command(command).output().expect("Failed to run console script");
+    build_console_command(command, port).output().expect("Failed to run console script");
 }
 
-fn run_test_against_server(server_process: &mut Child, fail_point_name: &str) {
+fn run_test_against_server(server_process: &mut Child, fail_point_name: &str, port: u16) {
     enum Instruction {
         Command(&'static str),
         Parallel(&'static str),
@@ -225,13 +226,14 @@ fn run_test_against_server(server_process: &mut Child, fail_point_name: &str) {
     for inst in instructions {
         match inst {
             Instruction::Command(command) => {
-                let status = build_console_command(command).output().expect("Failed to run console script").status;
+                let status =
+                    build_console_command(command, port).output().expect("Failed to run console script").status;
                 if !status.success() {
                     break;
                 }
             }
             Instruction::Parallel(command) => {
-                let cmds = std::array::from_fn::<_, 10, _>(|_| build_console_command(command));
+                let cmds = std::array::from_fn::<_, 10, _>(|_| build_console_command(command, port));
                 let threads =
                     cmds.into_iter().map(|mut cmd| thread::spawn(move || cmd.output().unwrap())).collect::<Vec<_>>();
                 for thread in threads {
@@ -247,12 +249,25 @@ fn run_test_against_server(server_process: &mut Child, fail_point_name: &str) {
     }
 }
 
-fn build_console_command(command: &str) -> Command {
-    build_cmd(&format!(
-        concat!(
-            "typedb-extracted/typedb console --username=admin --password=password ",
-            "--address=localhost:1729 --tls-disabled --command='{command}'"
-        ),
-        command = command,
-    ))
+fn build_server_cmd(port: u16) -> Command {
+    let mut cmd = Command::new("typedb-extracted/typedb");
+    cmd.arg("server")
+        .arg(format!("--server.address=0.0.0.0:{port}"))
+        .arg("--development-mode.enabled=true")
+        .arg("--diagnostics.monitoring.enabled=false")
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
+    cmd
+}
+
+fn build_console_command(command: &str, port: u16) -> Command {
+    let mut cmd = Command::new("typedb-extracted/typedb");
+    cmd.arg("console")
+        .arg("--username=admin")
+        .arg("--password=password")
+        .arg(format!("--address=localhost:{port}"))
+        .arg("--tls-disabled")
+        .arg("--command")
+        .arg(command);
+    cmd
 }
