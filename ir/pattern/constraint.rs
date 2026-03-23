@@ -24,7 +24,7 @@ use crate::{
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ParameterID, Pattern, ScopeId, ValueType, VariableBindingMode, Vertex,
+        BindingMode, IrID, ParameterID, Pattern, ScopeId, ValueType, VariableBindingMode, Vertex,
     },
     pipeline::{
         block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry, VariableRegistry,
@@ -76,26 +76,25 @@ impl Pattern for Constraints {
 
     fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
-            for var in constraint.binding_ids() {
+            constraint.binding_modes().for_each(|(var, mode)| {
+                let variable_binding_mode = match mode {
+                    BindingMode::RequirePrebound => VariableBindingMode::require_prebound(constraint),
+                    BindingMode::AlwaysBinding => VariableBindingMode::always_binding(constraint),
+                    BindingMode::OptionallyBinding => VariableBindingMode::optionally_binding(constraint),
+                    BindingMode::LocallyBindingInChild => {
+                        debug_assert!(false, "unreachable");
+                        return;
+                    }
+                };
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() &= VariableBindingMode::always_binding(constraint);
+                        *entry.get_mut() &= variable_binding_mode;
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableBindingMode::always_binding(constraint));
+                        vacant_entry.insert(variable_binding_mode);
                     }
                 }
-            }
-            for var in constraint.non_binding_ids() {
-                match acc.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() &= VariableBindingMode::require_prebound(constraint);
-                    }
-                    hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableBindingMode::require_prebound(constraint));
-                    }
-                }
-            }
+            });
             acc
         })
     }
@@ -653,51 +652,40 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn binding_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
-        match self {
-            Constraint::Is(is) => Box::new(is.ids()),
-            Constraint::Kind(kind) => Box::new(kind.ids()),
-            Constraint::Label(label) => Box::new(label.ids()),
-            Constraint::RoleName(role_name) => Box::new(role_name.ids()),
-            Constraint::Sub(sub) => Box::new(sub.ids()),
-            Constraint::Isa(isa) => Box::new(isa.ids()),
-            Constraint::Iid(iid) => Box::new(iid.ids()),
-            Constraint::Links(rp) => Box::new(rp.ids()),
-            Constraint::IndexedRelation(indexed) => Box::new(indexed.ids()),
-            Constraint::Has(has) => Box::new(has.ids()),
-            Constraint::ExpressionBinding(binding) => Box::new(binding.ids_assigned()),
-            Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_assigned()),
-            Constraint::Comparison(_) => Box::new(iter::empty()),
-            Constraint::Owns(owns) => Box::new(owns.ids()),
-            Constraint::Relates(relates) => Box::new(relates.ids()),
-            Constraint::Plays(plays) => Box::new(plays.ids()),
-            Constraint::Value(value) => Box::new(value.ids()),
-            Constraint::LinksDeduplication(_) => Box::new(iter::empty()),
-            Constraint::Unsatisfiable(inner) => Box::new(inner.ids()),
+    pub fn binding_modes(&self) -> Box<dyn Iterator<Item = (ID, BindingMode)> + '_> {
+        fn _all_binding<'a, ID1>(
+            it: impl Iterator<Item = ID1> + 'a,
+        ) -> Box<dyn Iterator<Item = (ID1, BindingMode)> + 'a> {
+            Box::new(it.map(|id| (id, BindingMode::AlwaysBinding)))
         }
-    }
-
-    pub fn non_binding_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
+        fn _all_required<'a, ID1>(
+            it: impl Iterator<Item = ID1> + 'a,
+        ) -> Box<dyn Iterator<Item = (ID1, BindingMode)> + 'a> {
+            Box::new(it.map(|id| (id, BindingMode::RequirePrebound)))
+        }
         match self {
-            Constraint::Is(is) => Box::new(is.ids()), // FIXME _technically_ it's legal to only have one side of `is` bound
-            | Constraint::Kind(_)
-            | Constraint::Label(_)
-            | Constraint::RoleName(_)
-            | Constraint::Sub(_)
-            | Constraint::Isa(_)
-            | Constraint::Iid(_)
-            | Constraint::Links(_)
-            | Constraint::IndexedRelation(_)
-            | Constraint::Has(_)
-            | Constraint::Owns(_)
-            | Constraint::Relates(_)
-            | Constraint::Plays(_)
-            | Constraint::Value(_)
-            | Constraint::LinksDeduplication(_)
-            | Constraint::Unsatisfiable(_) => Box::new(iter::empty()),
-            Constraint::ExpressionBinding(binding) => Box::new(binding.expression_ids()),
-            Constraint::FunctionCallBinding(binding) => Box::new(binding.function_call_arg_ids()),
-            Constraint::Comparison(comparison) => Box::new(comparison.ids()),
+            Constraint::Kind(kind) => _all_binding(kind.ids()),
+            Constraint::Label(label) => _all_binding(label.ids()),
+            Constraint::RoleName(role_name) => _all_binding(role_name.ids()),
+            Constraint::Sub(sub) => _all_binding(sub.ids()),
+            Constraint::Isa(isa) => _all_binding(isa.ids()),
+            Constraint::Iid(iid) => _all_binding(iid.ids()),
+            Constraint::Links(rp) => _all_binding(rp.ids()),
+            Constraint::IndexedRelation(indexed) => _all_binding(indexed.ids()),
+            Constraint::Has(has) => _all_binding(has.ids()),
+            Constraint::Owns(owns) => _all_binding(owns.ids()),
+            Constraint::Relates(relates) => _all_binding(relates.ids()),
+            Constraint::Plays(plays) => _all_binding(plays.ids()),
+            Constraint::Value(value) => _all_binding(value.ids()),
+
+            Constraint::Comparison(comparison) => _all_required(comparison.ids()),
+            Constraint::Is(is) => _all_required(is.ids()),
+
+            Constraint::ExpressionBinding(binding) => Box::new(binding.binding_modes()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.binding_modes()),
+
+            Constraint::Unsatisfiable(inner) => _all_binding(inner.ids()),
+            Constraint::LinksDeduplication(_) => Box::new(iter::empty()),
         }
     }
 
@@ -2111,6 +2099,12 @@ impl<ID: IrID> ExpressionBinding<ID> {
         self.ids_assigned().chain(self.expression().argument_ids())
     }
 
+    pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
+        self.ids_assigned()
+            .map(|id| (id, BindingMode::AlwaysBinding))
+            .chain(self.expression_ids().map(|id| (id, BindingMode::RequirePrebound)))
+    }
+
     pub fn ids_foreach<F>(&self, mut function: F)
     where
         F: FnMut(ID),
@@ -2217,6 +2211,12 @@ impl<ID: IrID> FunctionCallBinding<ID> {
 
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> + '_ {
         self.assigned.iter().filter_map(Vertex::as_variable)
+    }
+
+    pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
+        self.ids_assigned()
+            .map(|id| (id, BindingMode::AlwaysBinding))
+            .chain(self.function_call_arg_ids().map(|id| (id, BindingMode::RequirePrebound)))
     }
 
     pub fn vertices_assigned(&self) -> impl Iterator<Item = &Vertex<ID>> + '_ {

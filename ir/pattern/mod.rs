@@ -438,6 +438,10 @@ impl<'a> VariableBindingMode<'a> {
         Self { mode: BindingMode::AlwaysBinding, referencing_constraints: vec![constraint] }
     }
 
+    pub fn optionally_binding(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: BindingMode::OptionallyBinding, referencing_constraints: vec![constraint] }
+    }
+
     pub fn set_require_prebound(&mut self) {
         self.mode = BindingMode::RequirePrebound;
     }

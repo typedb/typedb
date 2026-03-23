@@ -8,6 +8,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use answer::{variable::Variable, Type};
 use encoding::graph::type_::Kind;
+use error::todo_must_implement;
 use ir::{
     pattern::{
         constraint::{Comparator, Constraint},
