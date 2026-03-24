@@ -4,10 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod database_manager;
-pub mod server_manager;
-pub mod transaction_manager;
-pub mod user_manager;
+pub mod database_coordinator;
+pub mod server_coordinator;
+pub mod transaction_coordinator;
+pub mod user_coordinator;
 
 use std::{collections::HashSet, net::SocketAddr, path::PathBuf, sync::Arc};
 
@@ -19,12 +19,12 @@ use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution
 use tokio::{net::lookup_host, sync::watch::Receiver};
 
 pub use self::{
-    database_manager::{
+    database_coordinator::{
         get_database_schema, get_functions_syntax, get_types_syntax, DatabaseCoordinator, LocalDatabaseCoordinator,
     },
-    server_manager::{LocalServerCoordinator, ServerCoordinator},
-    transaction_manager::{LocalTransactionCoordinator, TransactionCoordinator},
-    user_manager::{LocalUserCoordinator, UserCoordinator},
+    server_coordinator::{LocalServerCoordinator, ServerCoordinator},
+    transaction_coordinator::{LocalTransactionCoordinator, TransactionCoordinator},
+    user_coordinator::{LocalUserCoordinator, UserCoordinator},
 };
 use crate::{
     authentication::token_manager::TokenManager,
