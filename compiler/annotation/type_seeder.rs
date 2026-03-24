@@ -6,6 +6,7 @@
 
 use std::{
     borrow::Cow,
+    cell::LazyCell,
     collections::{BTreeMap, BTreeSet, HashSet},
     iter::zip,
 };
@@ -195,7 +196,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Relates(_)
                 | Constraint::Plays(_)
                 | Constraint::ExpressionBinding(_)
-                | Constraint::Comparison(_)
+                | Constraint::Comparison(_) // Done later
                 | Constraint::LinksDeduplication(_) => (),
                 Constraint::IndexedRelation(_) => {
                     unreachable!("IndexedRelations are only generated after type inference")
@@ -204,6 +205,14 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     unreachable!("Unsatisfiable are only generated after type inference")
                 }
             }
+        }
+        // This leads to better error messages
+        for c in graph.conjunction.constraints().iter().filter(|c| matches!(c, Constraint::Isa(_))) {
+            self.try_propagating_vertex_annotation(c, vertices)
+                .map_err(|typedb_source| TypeInferenceError::ConceptRead { typedb_source })?;
+        }
+        for c in graph.conjunction.constraints().iter().filter_map(|c| c.as_comparison()) {
+            c.apply(self, vertices)?;
         }
         for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
             self.seed_vertex_annotations_from_type_and_called_function_signatures(nested_graph)?;
@@ -778,6 +787,37 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
                 if let FunctionParameterAnnotation::Concept(types) = arg_annotations {
                     graph_vertices.add_or_intersect(&Vertex::Variable(arg_var), Cow::Borrowed(types));
                 }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl UnaryConstraint for Comparison<Variable> {
+    fn apply<Snapshot: ReadableSnapshot>(
+        &self,
+        context: &TypeGraphSeedingContext<'_, Snapshot>,
+        graph_vertices: &mut VertexAnnotations,
+    ) -> Result<(), TypeInferenceError> {
+        let attributes_lazy = LazyCell::new(|| {
+            Ok(context
+                .type_manager
+                .get_attribute_types(context.snapshot)
+                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
+                .iter()
+                .map(|t| TypeAnnotation::Attribute(*t))
+                .collect())
+        });
+        if let Vertex::Variable(var) = self.lhs() {
+            if context.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing()) {
+                let attributes = (*attributes_lazy).as_ref().map_err(TypeInferenceError::clone)?;
+                graph_vertices.add_or_intersect(self.lhs(), Cow::Borrowed(&attributes));
+            }
+        }
+        if let Vertex::Variable(var) = self.rhs() {
+            if context.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing()) {
+                let attributes = (*attributes_lazy).as_ref().map_err(TypeInferenceError::clone)?;
+                graph_vertices.add_or_intersect(self.rhs(), Cow::Borrowed(&attributes));
             }
         }
         Ok(())
@@ -1635,7 +1675,7 @@ pub mod tests {
     use ir::{
         pattern::{
             constraint::{Comparator, IsaKind},
-            Vertex,
+            ParameterID, Vertex,
         },
         pipeline::{block::Block, ParameterRegistry},
         translation::PipelineTranslationContext,
@@ -1729,7 +1769,7 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let (_, (_type_name, type_catname, type_dogname), _) =
+        let (_, (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         let label_owner = Label::build("owner", None);
@@ -1773,7 +1813,7 @@ pub mod tests {
         };
 
         {
-            // // Case 1: $x isa owner, has $a; $a > $b;
+            // Case 1: $x isa! owner, has $a; $a > $b;
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
@@ -1842,6 +1882,56 @@ pub mod tests {
                         ],
                     ),
                 ],
+                nested_disjunctions: vec![],
+            };
+
+            let snapshot = storage.clone().open_snapshot_write();
+            let empty_function_cache = EmptyAnnotatedFunctionSignatures;
+            let context = TypeGraphSeedingContext::new(
+                &snapshot,
+                &type_manager,
+                &empty_function_cache,
+                &translation_context.variable_registry,
+                false,
+            );
+            let graph = context.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
+            assert_eq!(expected_graph.vertices, graph.vertices);
+            assert_eq!(expected_graph.edges, graph.edges);
+        }
+
+        {
+            // Case 1: $x isa! $t; $x == 5;
+            let mut translation_context = PipelineTranslationContext::new();
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+            let mut conjunction = builder.conjunction_mut();
+
+            let var_x = conjunction.constraints_mut().get_or_declare_variable("x", None).unwrap();
+            let var_t = conjunction.constraints_mut().get_or_declare_variable("t", None).unwrap();
+            let parameter_5 = Vertex::Parameter(ParameterID::Value(
+                0,
+                ir::pattern::ValueType::Builtin(ValueType::Integer),
+                typeql::common::Span { begin_offset: 0, end_offset: 0 },
+            ));
+            // Try seeding
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_x, Vertex::Variable(var_t), None).unwrap();
+            conjunction.constraints_mut().add_comparison(var_x.into(), parameter_5, Comparator::Equal, None).unwrap();
+
+            let block = builder.finish().unwrap();
+            let conjunction = block.conjunction();
+
+            let types_x = BTreeSet::from([type_age, type_catname, type_dogname]);
+            let types_t = BTreeSet::from([type_name, type_age, type_catname, type_dogname]);
+            let constraints = conjunction.constraints();
+            let expected_graph = TypeInferenceGraph {
+                conjunction,
+                vertices: VertexAnnotations::from([(var_x.into(), types_x), (var_t.into(), types_t)]),
+                edges: vec![expected_edge(
+                    &constraints[0],
+                    var_x.into(),
+                    var_t.into(),
+                    vec![(type_age, type_age), (type_catname, type_catname), (type_dogname, type_dogname)],
+                )],
                 nested_disjunctions: vec![],
             };
 
