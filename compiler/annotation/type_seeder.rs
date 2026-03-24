@@ -185,7 +185,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::FunctionCallBinding(c) => c.apply(self, vertices)?,
                 Constraint::RoleName(c) => c.apply(self, vertices)?,
                 Constraint::Value(c) => c.apply(self, vertices)?,
-                Constraint::Comparison(c) => c.apply(self, vertices)?,
                 Constraint::Iid(_)
                 | Constraint::Is(_)
                 | Constraint::Sub(_)
@@ -196,6 +195,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Relates(_)
                 | Constraint::Plays(_)
                 | Constraint::ExpressionBinding(_)
+                | Constraint::Comparison(_) // Done later
                 | Constraint::LinksDeduplication(_) => (),
                 Constraint::IndexedRelation(_) => {
                     unreachable!("IndexedRelations are only generated after type inference")
@@ -204,6 +204,14 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     unreachable!("Unsatisfiable are only generated after type inference")
                 }
             }
+        }
+        // This leads to better error messages
+        for c in graph.conjunction.constraints().iter().filter(|c| matches!(c, Constraint::Isa(_))) {
+            self.try_propagating_vertex_annotation(c, vertices)
+                .map_err(|typedb_source| TypeInferenceError::ConceptRead { typedb_source })?;
+        }
+        for c in graph.conjunction.constraints().iter().filter_map(|c| c.as_comparison()) {
+            c.apply(self, vertices)?;
         }
         for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
             self.seed_vertex_annotations_from_type_and_called_function_signatures(nested_graph)?;
