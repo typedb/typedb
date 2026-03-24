@@ -46,10 +46,10 @@ pub struct ServerState {
     background_task_spawner: TokioTaskSpawner,
     _database_diagnostics_updater: IntervalRunner,
 
-    server_manager: Arc<dyn ServerCoordinator>,
-    database_manager: Arc<dyn DatabaseCoordinator>,
-    transaction_manager: Arc<dyn TransactionCoordinator>,
-    user_manager: Arc<dyn UserCoordinator>,
+    server_coordinator: Arc<dyn ServerCoordinator>,
+    database_coordinator: Arc<dyn DatabaseCoordinator>,
+    transaction_coordinator: Arc<dyn TransactionCoordinator>,
+    user_coordinator: Arc<dyn UserCoordinator>,
 }
 
 impl ServerState {
@@ -112,16 +112,16 @@ impl ServerState {
             grpc_connection_address: grpc_connection_address_str,
             http_address,
             server_status,
-            database_manager_raw: database_manager,
+            database_manager: database_manager,
             token_manager,
             diagnostics_manager,
             database_diagnostics_updater,
             shutdown_receiver,
             background_task_spawner,
-            server_manager_override: None,
-            database_manager_override: None,
-            transaction_manager_override: None,
-            user_manager_override: None,
+            server_coordinator_override: None,
+            database_coordinator_override: None,
+            transaction_coordinator_override: None,
+            user_coordinator_override: None,
         })
     }
 
@@ -142,19 +142,19 @@ impl ServerState {
     }
 
     pub fn servers(&self) -> &dyn ServerCoordinator {
-        &*self.server_manager
+        &*self.server_coordinator
     }
 
     pub fn databases(&self) -> &dyn DatabaseCoordinator {
-        &*self.database_manager
+        &*self.database_coordinator
     }
 
     pub fn transactions(&self) -> &dyn TransactionCoordinator {
-        &*self.transaction_manager
+        &*self.transaction_coordinator
     }
 
     pub fn users(&self) -> &dyn UserCoordinator {
-        &*self.user_manager
+        &*self.user_coordinator
     }
 
     pub fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
@@ -172,7 +172,7 @@ impl ServerState {
     // --- Initialisation ---
 
     pub fn is_initialised(&self) -> bool {
-        self.user_manager.is_initialised()
+        self.user_coordinator.is_initialised()
     }
 
     pub async fn initialise(&self) -> Result<(), ArcServerStateError> {
@@ -256,22 +256,22 @@ pub struct ServerStateBuilder {
     grpc_connection_address: String,
     http_address: Option<SocketAddr>,
     server_status: LocalServerStatus,
-    database_manager_raw: Arc<DatabaseManager>,
+    database_manager: Arc<DatabaseManager>,
     token_manager: Arc<TokenManager>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     database_diagnostics_updater: IntervalRunner,
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
 
-    server_manager_override: Option<Arc<dyn ServerCoordinator>>,
-    database_manager_override: Option<Arc<dyn DatabaseCoordinator>>,
-    transaction_manager_override: Option<Arc<dyn TransactionCoordinator>>,
-    user_manager_override: Option<Arc<dyn UserCoordinator>>,
+    server_coordinator_override: Option<Arc<dyn ServerCoordinator>>,
+    database_coordinator_override: Option<Arc<dyn DatabaseCoordinator>>,
+    transaction_coordinator_override: Option<Arc<dyn TransactionCoordinator>>,
+    user_coordinator_override: Option<Arc<dyn UserCoordinator>>,
 }
 
 impl ServerStateBuilder {
-    pub fn database_manager_raw(&self) -> Arc<DatabaseManager> {
-        self.database_manager_raw.clone()
+    pub fn database_manager(&self) -> Arc<DatabaseManager> {
+        self.database_manager.clone()
     }
 
     pub fn token_manager(&self) -> Arc<TokenManager> {
@@ -286,49 +286,49 @@ impl ServerStateBuilder {
         self.server_status.clone()
     }
 
-    pub fn server_manager(mut self, manager: Arc<dyn ServerCoordinator>) -> Self {
-        self.server_manager_override = Some(manager);
+    pub fn server_coordinator(mut self, coordinator: Arc<dyn ServerCoordinator>) -> Self {
+        self.server_coordinator_override = Some(coordinator);
         self
     }
 
-    pub fn database_manager(mut self, manager: Arc<dyn DatabaseCoordinator>) -> Self {
-        self.database_manager_override = Some(manager);
+    pub fn database_coordinator(mut self, coordinator: Arc<dyn DatabaseCoordinator>) -> Self {
+        self.database_coordinator_override = Some(coordinator);
         self
     }
 
-    pub fn transaction_manager(mut self, transaction_manager: Arc<dyn TransactionCoordinator>) -> Self {
-        self.transaction_manager_override = Some(transaction_manager);
+    pub fn transaction_coordinator(mut self, coordinator: Arc<dyn TransactionCoordinator>) -> Self {
+        self.transaction_coordinator_override = Some(coordinator);
         self
     }
 
-    pub fn user_manager(mut self, manager: Arc<dyn UserCoordinator>) -> Self {
-        self.user_manager_override = Some(manager);
+    pub fn user_coordinator(mut self, coordinator: Arc<dyn UserCoordinator>) -> Self {
+        self.user_coordinator_override = Some(coordinator);
         self
     }
 
     pub fn build(self) -> ServerState {
-        let server_manager =
-            self.server_manager_override.unwrap_or_else(|| Arc::new(LocalServerCoordinator::new(self.server_status)));
+        let server_coordinator =
+            self.server_coordinator_override.unwrap_or_else(|| Arc::new(LocalServerCoordinator::new(self.server_status)));
 
-        let database_manager = self.database_manager_override.unwrap_or_else(|| {
+        let database_coordinator = self.database_coordinator_override.unwrap_or_else(|| {
             Arc::new(LocalDatabaseCoordinator::new(
-                self.database_manager_raw.clone(),
+                self.database_manager.clone(),
                 self.background_task_spawner.clone(),
             ))
         });
 
-        let transaction_manager = self.transaction_manager_override.unwrap_or_else(|| {
+        let transaction_coordinator = self.transaction_coordinator_override.unwrap_or_else(|| {
             Arc::new(LocalTransactionCoordinator::new(
-                self.database_manager_raw.clone(),
+                self.database_manager.clone(),
                 self.background_task_spawner.clone(),
             ))
         });
 
-        let user_manager = self.user_manager_override.unwrap_or_else(|| {
+        let user_coordinator = self.user_coordinator_override.unwrap_or_else(|| {
             Arc::new(LocalUserCoordinator::new(
-                self.database_manager_raw.clone(),
+                self.database_manager.clone(),
                 self.token_manager.clone(),
-                transaction_manager.clone(),
+                transaction_coordinator.clone(),
             ))
         });
 
@@ -341,10 +341,10 @@ impl ServerStateBuilder {
             shutdown_receiver: self.shutdown_receiver,
             background_task_spawner: self.background_task_spawner,
             _database_diagnostics_updater: self.database_diagnostics_updater,
-            server_manager,
-            database_manager,
-            transaction_manager,
-            user_manager,
+            server_coordinator,
+            database_coordinator,
+            transaction_coordinator,
+            user_coordinator,
         }
     }
 }

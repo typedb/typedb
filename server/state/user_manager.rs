@@ -64,21 +64,21 @@ pub struct LocalUserCoordinator {
     token_manager: Arc<TokenManager>,
     user_manager: StdRwLock<Option<Arc<UserManager>>>,
     credential_verifier: StdRwLock<Option<Arc<CredentialVerifier>>>,
-    transaction_manager: Arc<dyn TransactionCoordinator>,
+    transaction_coordinator: Arc<dyn TransactionCoordinator>,
 }
 
 impl LocalUserCoordinator {
     pub fn new(
         database_manager: Arc<DatabaseManager>,
         token_manager: Arc<TokenManager>,
-        transaction_manager: Arc<dyn TransactionCoordinator>,
+        transaction_coordinator: Arc<dyn TransactionCoordinator>,
     ) -> Self {
         Self {
             database_manager,
             token_manager,
             user_manager: StdRwLock::new(None),
             credential_verifier: StdRwLock::new(None),
-            transaction_manager,
+            transaction_coordinator,
         }
     }
 
@@ -185,7 +185,7 @@ impl UserCoordinator for LocalUserCoordinator {
         })?;
 
         self.token_manager.invalidate_user(username).await;
-        self.transaction_manager.close_by_owner(username).await;
+        self.transaction_coordinator.close_by_owner(username).await;
         Ok(())
     }
 
@@ -200,7 +200,7 @@ impl UserCoordinator for LocalUserCoordinator {
         })?;
 
         self.token_manager.invalidate_user(username).await;
-        self.transaction_manager.close_by_owner(username).await;
+        self.transaction_coordinator.close_by_owner(username).await;
         Ok(())
     }
 
