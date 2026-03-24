@@ -49,7 +49,7 @@ pub trait TransactionCoordinator: Debug + Send + Sync {
 
 #[derive(Debug)]
 pub struct LocalTransactionCoordinator {
-    database_manager: Arc<DatabaseManager>, // TODO: Why manager?
+    database_manager: Arc<DatabaseManager>,
     transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>,
 }
 
