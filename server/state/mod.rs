@@ -20,11 +20,11 @@ use tokio::{net::lookup_host, sync::watch::Receiver};
 
 pub use self::{
     database_manager::{
-        get_database_schema, get_functions_syntax, get_types_syntax, LocalServerDatabaseManager, ServerDatabaseManager,
+        get_database_schema, get_functions_syntax, get_types_syntax, DatabaseCoordinator, LocalDatabaseCoordinator,
     },
-    server_manager::{LocalServerManager, ServerManager},
-    transaction_manager::{LocalServerTransactionManager, ServerTransactionManager},
-    user_manager::{LocalServerUserManager, ServerUserManager},
+    server_manager::{LocalServerCoordinator, ServerCoordinator},
+    transaction_manager::{LocalTransactionCoordinator, TransactionCoordinator},
+    user_manager::{LocalUserCoordinator, UserCoordinator},
 };
 use crate::{
     authentication::token_manager::TokenManager,
@@ -46,10 +46,10 @@ pub struct ServerState {
     background_task_spawner: TokioTaskSpawner,
     _database_diagnostics_updater: IntervalRunner,
 
-    server_manager: Arc<dyn ServerManager>,
-    database_manager: Arc<dyn ServerDatabaseManager>,
-    transaction_manager: Arc<dyn ServerTransactionManager>,
-    user_manager: Arc<dyn ServerUserManager>,
+    server_manager: Arc<dyn ServerCoordinator>,
+    database_manager: Arc<dyn DatabaseCoordinator>,
+    transaction_manager: Arc<dyn TransactionCoordinator>,
+    user_manager: Arc<dyn UserCoordinator>,
 }
 
 impl ServerState {
@@ -90,9 +90,9 @@ impl ServerState {
             DATABASE_METRICS_UPDATE_INTERVAL,
         );
 
-        let grpc_serving_address = Self::resolve_address(&config.server.address).await;
+        let grpc_serving_address = Self::resolve_address(&config.server.address).await?;
         let (grpc_connection_address, grpc_connection_address_str) = match config.server.connection_address {
-            Some(connection_address) => (Self::resolve_address(&connection_address).await, connection_address),
+            Some(connection_address) => (Self::resolve_address(&connection_address).await?, connection_address),
             None => (grpc_serving_address, grpc_serving_address.to_string()),
         };
         let reserved_addresses = HashSet::from([grpc_serving_address, grpc_connection_address]);
@@ -141,19 +141,19 @@ impl ServerState {
         self.http_address
     }
 
-    pub fn servers(&self) -> &dyn ServerManager {
+    pub fn servers(&self) -> &dyn ServerCoordinator {
         &*self.server_manager
     }
 
-    pub fn databases(&self) -> &dyn ServerDatabaseManager {
+    pub fn databases(&self) -> &dyn DatabaseCoordinator {
         &*self.database_manager
     }
 
-    pub fn transactions(&self) -> &dyn ServerTransactionManager {
+    pub fn transactions(&self) -> &dyn TransactionCoordinator {
         &*self.transaction_manager
     }
 
-    pub fn users(&self) -> &dyn ServerUserManager {
+    pub fn users(&self) -> &dyn UserCoordinator {
         &*self.user_manager
     }
 
@@ -227,19 +227,22 @@ impl ServerState {
         diagnostics_manager.submit_database_metrics(metrics);
     }
 
-    pub async fn resolve_address(address: &str) -> SocketAddr {
+    pub async fn resolve_address(address: &str) -> Result<SocketAddr, ServerOpenError> {
         lookup_host(address)
             .await
-            .expect(&format!("Invalid address '{}'", address))
+            .map_err(|source| ServerOpenError::AddressResolutionFailed {
+                address: address.to_string(),
+                source: Arc::new(source),
+            })?
             .next()
-            .expect(&format!("Unable to map address '{}' to any IP address", address))
+            .ok_or_else(|| ServerOpenError::AddressResolutionEmpty { address: address.to_string() })
     }
 
     async fn validate_and_resolve_http_address(
         http_address: &str,
         mut reserved_addresses: impl Iterator<Item = SocketAddr>,
     ) -> Result<SocketAddr, ServerOpenError> {
-        let http_address = Self::resolve_address(http_address).await;
+        let http_address = Self::resolve_address(http_address).await?;
         if reserved_addresses.contains(&http_address) {
             return Err(ServerOpenError::HttpConflictingAddress { address: http_address });
         }
@@ -260,10 +263,10 @@ pub struct ServerStateBuilder {
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
 
-    server_manager_override: Option<Arc<dyn ServerManager>>,
-    database_manager_override: Option<Arc<dyn ServerDatabaseManager>>,
-    transaction_manager_override: Option<Arc<dyn ServerTransactionManager>>,
-    user_manager_override: Option<Arc<dyn ServerUserManager>>,
+    server_manager_override: Option<Arc<dyn ServerCoordinator>>,
+    database_manager_override: Option<Arc<dyn DatabaseCoordinator>>,
+    transaction_manager_override: Option<Arc<dyn TransactionCoordinator>>,
+    user_manager_override: Option<Arc<dyn UserCoordinator>>,
 }
 
 impl ServerStateBuilder {
@@ -283,46 +286,46 @@ impl ServerStateBuilder {
         self.server_status.clone()
     }
 
-    pub fn server_manager(mut self, manager: Arc<dyn ServerManager>) -> Self {
+    pub fn server_manager(mut self, manager: Arc<dyn ServerCoordinator>) -> Self {
         self.server_manager_override = Some(manager);
         self
     }
 
-    pub fn database_manager(mut self, manager: Arc<dyn ServerDatabaseManager>) -> Self {
+    pub fn database_manager(mut self, manager: Arc<dyn DatabaseCoordinator>) -> Self {
         self.database_manager_override = Some(manager);
         self
     }
 
-    pub fn transaction_manager(mut self, transaction_manager: Arc<dyn ServerTransactionManager>) -> Self {
+    pub fn transaction_manager(mut self, transaction_manager: Arc<dyn TransactionCoordinator>) -> Self {
         self.transaction_manager_override = Some(transaction_manager);
         self
     }
 
-    pub fn user_manager(mut self, manager: Arc<dyn ServerUserManager>) -> Self {
+    pub fn user_manager(mut self, manager: Arc<dyn UserCoordinator>) -> Self {
         self.user_manager_override = Some(manager);
         self
     }
 
     pub fn build(self) -> ServerState {
         let server_manager =
-            self.server_manager_override.unwrap_or_else(|| Arc::new(LocalServerManager::new(self.server_status)));
+            self.server_manager_override.unwrap_or_else(|| Arc::new(LocalServerCoordinator::new(self.server_status)));
 
         let database_manager = self.database_manager_override.unwrap_or_else(|| {
-            Arc::new(LocalServerDatabaseManager::new(
+            Arc::new(LocalDatabaseCoordinator::new(
                 self.database_manager_raw.clone(),
                 self.background_task_spawner.clone(),
             ))
         });
 
         let transaction_manager = self.transaction_manager_override.unwrap_or_else(|| {
-            Arc::new(LocalServerTransactionManager::new(
+            Arc::new(LocalTransactionCoordinator::new(
                 self.database_manager_raw.clone(),
                 self.background_task_spawner.clone(),
             ))
         });
 
         let user_manager = self.user_manager_override.unwrap_or_else(|| {
-            Arc::new(LocalServerUserManager::new(
+            Arc::new(LocalUserCoordinator::new(
                 self.database_manager_raw.clone(),
                 self.token_manager.clone(),
                 transaction_manager.clone(),

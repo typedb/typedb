@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[async_trait]
-pub trait ServerManager: Debug + Send + Sync {
+pub trait ServerCoordinator: Debug + Send + Sync {
     async fn server_status(&self) -> Result<BoxServerStatus, ArcServerStateError>;
 
     async fn servers_all(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError>;
@@ -27,18 +27,18 @@ pub trait ServerManager: Debug + Send + Sync {
 }
 
 #[derive(Debug)]
-pub struct LocalServerManager {
+pub struct LocalServerCoordinator {
     server_status: LocalServerStatus,
 }
 
-impl LocalServerManager {
+impl LocalServerCoordinator {
     pub fn new(server_status: LocalServerStatus) -> Self {
         Self { server_status }
     }
 }
 
 #[async_trait]
-impl ServerManager for LocalServerManager {
+impl ServerCoordinator for LocalServerCoordinator {
     async fn server_status(&self) -> Result<BoxServerStatus, ArcServerStateError> {
         Ok(Box::new(self.server_status.clone()))
     }

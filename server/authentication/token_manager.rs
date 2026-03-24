@@ -124,7 +124,7 @@ impl TokenManager {
         if tokens_expiration_time < MIN_AUTHENTICATION_TOKEN_EXPIRATION
             || tokens_expiration_time > MAX_AUTHENTICATION_TOKEN_EXPIRATION
         {
-            Err(TokenManagerError::InvlaidTokensExpirationTime {
+            Err(TokenManagerError::InvalidTokensExpirationTime {
                 value: tokens_expiration_time.as_secs(),
                 min: MIN_AUTHENTICATION_TOKEN_EXPIRATION.as_secs(),
                 max: MAX_AUTHENTICATION_TOKEN_EXPIRATION.as_secs(),
@@ -144,6 +144,6 @@ pub(crate) struct Claims {
 
 typedb_error! {
     pub TokenManagerError(component = "Token manager", prefix = "TKM") {
-        InvlaidTokensExpirationTime(1, "Invalid tokens expiration time '{value}'. It must be between '{min}' and '{max}' seconds.", value: u64, min: u64, max: u64),
+        InvalidTokensExpirationTime(1, "Invalid tokens expiration time '{value}'. It must be between '{min}' and '{max}' seconds.", value: u64, min: u64, max: u64),
     }
 }

@@ -190,14 +190,13 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 
     pub fn commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
-        let (mut profile, commit_intent) = match self.finalise() {
-            (profile, Ok(commit_intent)) => (profile, commit_intent),
-            (mut profile, Err(error)) => {
-                profile.commit_profile().end();
-                return (profile, Err(error));
+        let (mut profile, result) = match self.finalise() {
+            (mut profile, Ok(commit_intent)) => {
+                let result = commit_intent.commit(profile.commit_profile());
+                (profile, result)
             }
+            (profile, Err(error)) => (profile, Err(error)),
         };
-        let result = commit_intent.commit(profile.commit_profile());
         profile.commit_profile().end();
         (profile, result)
     }
@@ -323,14 +322,13 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 
     pub fn commit(self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
-        let (mut profile, commit_intent) = match self.finalise() {
-            (profile, Ok(commit_intent)) => (profile, commit_intent),
-            (mut profile, Err(error)) => {
-                profile.commit_profile().end();
-                return (profile, Err(error));
+        let (mut profile, result) = match self.finalise() {
+            (mut profile, Ok(commit_intent)) => {
+                let result = commit_intent.commit(profile.commit_profile());
+                (profile, result)
             }
+            (profile, Err(error)) => (profile, Err(error)),
         };
-        let result = commit_intent.commit(profile.commit_profile());
         profile.commit_profile().end();
         (profile, result)
     }

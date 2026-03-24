@@ -30,7 +30,7 @@ use crate::{
 };
 
 #[async_trait]
-pub trait ServerDatabaseManager: Debug + Send + Sync {
+pub trait DatabaseCoordinator: Debug + Send + Sync {
     async fn databases_all(&self) -> Result<Vec<String>, ArcServerStateError>;
 
     async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
@@ -55,14 +55,14 @@ pub trait ServerDatabaseManager: Debug + Send + Sync {
     async fn database_schema_commit(
         &self,
         commit_intent: SchemaCommitIntent<WALClient>,
-        commit_profile: &mut CommitProfile,
-    ) -> Result<(), ArcServerStateError>;
+        commit_profile: CommitProfile,
+    ) -> (CommitProfile, Result<(), ArcServerStateError>);
 
     async fn database_data_commit(
         &self,
         commit_intent: DataCommitIntent<WALClient>,
-        commit_profile: &mut CommitProfile,
-    ) -> Result<(), ArcServerStateError>;
+        commit_profile: CommitProfile,
+    ) -> (CommitProfile, Result<(), ArcServerStateError>);
 
     async fn database_commit_record_exists(
         &self,
@@ -77,12 +77,12 @@ pub trait ServerDatabaseManager: Debug + Send + Sync {
 }
 
 #[derive(Debug)]
-pub struct LocalServerDatabaseManager {
+pub struct LocalDatabaseCoordinator {
     database_manager: Arc<DatabaseManager>,
     background_task_spawner: TokioTaskSpawner,
 }
 
-impl LocalServerDatabaseManager {
+impl LocalDatabaseCoordinator {
     pub fn new(database_manager: Arc<DatabaseManager>, background_task_spawner: TokioTaskSpawner) -> Self {
         Self { database_manager, background_task_spawner }
     }
@@ -125,7 +125,7 @@ pub fn get_types_syntax<D: DurabilityClient>(
 }
 
 #[async_trait]
-impl ServerDatabaseManager for LocalServerDatabaseManager {
+impl DatabaseCoordinator for LocalDatabaseCoordinator {
     async fn databases_all(&self) -> Result<Vec<String>, ArcServerStateError> {
         Ok(self.database_manager.database_names())
     }
@@ -182,21 +182,33 @@ impl ServerDatabaseManager for LocalServerDatabaseManager {
     async fn database_schema_commit(
         &self,
         commit_intent: SchemaCommitIntent<WALClient>,
-        commit_profile: &mut CommitProfile,
-    ) -> Result<(), ArcServerStateError> {
-        commit_intent.commit(commit_profile).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source })
+        mut commit_profile: CommitProfile,
+    ) -> (CommitProfile, Result<(), ArcServerStateError>) {
+        tokio::task::spawn_blocking(move || {
+            let result = commit_intent.commit(&mut commit_profile).map_err(|typedb_source| {
+                arc_server_state_err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source })
+            });
+            commit_profile.end();
+            (commit_profile, result)
         })
+        .await
+        .expect("Schema commit task panicked")
     }
 
     async fn database_data_commit(
         &self,
         commit_intent: DataCommitIntent<WALClient>,
-        commit_profile: &mut CommitProfile,
-    ) -> Result<(), ArcServerStateError> {
-        commit_intent.commit(commit_profile).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
+        mut commit_profile: CommitProfile,
+    ) -> (CommitProfile, Result<(), ArcServerStateError>) {
+        tokio::task::spawn_blocking(move || {
+            let result = commit_intent.commit(&mut commit_profile).map_err(|typedb_source| {
+                arc_server_state_err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source })
+            });
+            commit_profile.end();
+            (commit_profile, result)
         })
+        .await
+        .expect("Data commit task panicked")
     }
 
     async fn database_commit_record_exists(

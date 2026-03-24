@@ -16,7 +16,7 @@ use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
 use database::{database_manager::DatabaseManager, transaction::TransactionId};
 use options::TransactionOptions;
 use resource::constants::common::SECONDS_IN_MINUTE;
-use tokio::sync::{mpsc::Sender, RwLock};
+use tokio::sync::{mpsc::Sender, RwLock, RwLockWriteGuard};
 
 use crate::{
     error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},
@@ -32,7 +32,7 @@ pub(crate) struct TransactionInfo {
 }
 
 #[async_trait]
-pub trait ServerTransactionManager: Debug + Send + Sync {
+pub trait TransactionCoordinator: Debug + Send + Sync {
     async fn open_transaction(
         &self,
         database_name: &str,
@@ -48,12 +48,12 @@ pub trait ServerTransactionManager: Debug + Send + Sync {
 }
 
 #[derive(Debug)]
-pub struct LocalServerTransactionManager {
+pub struct LocalTransactionCoordinator {
     database_manager: Arc<DatabaseManager>,
     transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>,
 }
 
-impl LocalServerTransactionManager {
+impl LocalTransactionCoordinator {
     const CLEANUP_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
 
     pub fn new(database_manager: Arc<DatabaseManager>, background_task_spawner: TokioTaskSpawner) -> Self {
@@ -85,7 +85,7 @@ impl LocalServerTransactionManager {
 }
 
 #[async_trait]
-impl ServerTransactionManager for LocalServerTransactionManager {
+impl TransactionCoordinator for LocalTransactionCoordinator {
     async fn open_transaction(
         &self,
         database_name: &str,
@@ -117,9 +117,11 @@ impl ServerTransactionManager for LocalServerTransactionManager {
     }
 
     async fn close_by_owner(&self, username: &str) {
-        let transactions = self.transactions.read().await;
-        for (_, info) in transactions.iter() {
-            if username == info.owner {
+        let mut transactions = self.transactions.write().await;
+        let to_close: Vec<_> =
+            transactions.iter().filter(|(_, info)| username == info.owner).map(|(id, _)| *id).collect();
+        for id in to_close {
+            if let Some(info) = transactions.remove(&id) {
                 let _ = info.close_sender.send(()).await;
             }
         }

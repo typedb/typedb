@@ -15,7 +15,7 @@ use resource::constants::server::DEFAULT_USER_NAME;
 use system::concepts::{Credential, User};
 use user::{permission_manager::PermissionManager, user_manager::UserManager};
 
-use super::ServerTransactionManager;
+use super::TransactionCoordinator;
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
     error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},
@@ -23,7 +23,7 @@ use crate::{
 };
 
 #[async_trait]
-pub trait ServerUserManager: Debug + Send + Sync {
+pub trait UserCoordinator: Debug + Send + Sync {
     async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError>;
 
     async fn users_contains(&self, accessor: Accessor, name: &str) -> Result<bool, ArcServerStateError>;
@@ -59,19 +59,19 @@ pub trait ServerUserManager: Debug + Send + Sync {
 }
 
 #[derive(Debug)]
-pub struct LocalServerUserManager {
+pub struct LocalUserCoordinator {
     database_manager: Arc<DatabaseManager>,
     token_manager: Arc<TokenManager>,
     user_manager: StdRwLock<Option<Arc<UserManager>>>,
     credential_verifier: StdRwLock<Option<Arc<CredentialVerifier>>>,
-    transaction_manager: Arc<dyn ServerTransactionManager>,
+    transaction_manager: Arc<dyn TransactionCoordinator>,
 }
 
-impl LocalServerUserManager {
+impl LocalUserCoordinator {
     pub fn new(
         database_manager: Arc<DatabaseManager>,
         token_manager: Arc<TokenManager>,
-        transaction_manager: Arc<dyn ServerTransactionManager>,
+        transaction_manager: Arc<dyn TransactionCoordinator>,
     ) -> Self {
         Self {
             database_manager,
@@ -109,7 +109,7 @@ impl LocalServerUserManager {
 }
 
 #[async_trait]
-impl ServerUserManager for LocalServerUserManager {
+impl UserCoordinator for LocalUserCoordinator {
     async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError> {
         if !PermissionManager::exec_user_all_permitted(accessor.as_str()) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));

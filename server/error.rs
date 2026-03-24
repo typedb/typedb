@@ -66,6 +66,8 @@ typedb_error! {
         HttpTlsUnsetDefaultCryptoProvider(23, "Failed to install default crypto provider for the HTTP server TLS configuration."),
         HttpTlsPemFileError(24, "Invalid PEM file specified for the HTTP server.", source: Arc<tokio_rustls::rustls::pki_types::pem::Error>),
         ServerState(25, "Invalid server state.", typedb_source: ArcServerStateError),
+        AddressResolutionFailed(26, "Could not resolve address '{address}'.", address: String, source: Arc<io::Error>),
+        AddressResolutionEmpty(27, "Could not resolve address '{address}' to any IP address.", address: String),
     }
 }
 
@@ -99,8 +101,8 @@ impl ServerStateError for LocalServerStateError {
     fn error_response_category(&self) -> ErrorResponseCategory {
         use ErrorResponseCategory::*;
         match self {
-            Self::Unimplemented { .. } => NotImplemented,
-            Self::OperationNotPermitted { .. } | Self::NotSupportedByDistribution { .. } => Forbidden,
+            Self::Unimplemented { .. } | Self::NotSupportedByDistribution { .. } => NotImplemented,
+            Self::OperationNotPermitted { .. } => Forbidden,
             Self::DatabaseNotFound { .. } | Self::UserNotFound { .. } => NotFound,
             Self::NotInitialised { .. }
             | Self::DatabaseSchemaCommitFailed { .. }

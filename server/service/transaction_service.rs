@@ -12,6 +12,7 @@ use query::error::QueryError;
 use resource::{constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS, profile::TransactionProfile};
 use storage::durability_client::WALClient;
 use tokio::time::Instant;
+use tracing::{event, Level};
 use typeql::query::stage::Stage;
 use uuid::Uuid;
 
@@ -41,38 +42,54 @@ pub(crate) async fn commit_schema_transaction(
     server_state: Arc<ServerState>,
     transaction: TransactionSchema<WALClient>,
 ) -> (TransactionProfile, Result<(), ArcServerStateError>) {
-    match transaction.finalise() {
+    let (mut profile, result) = match transaction.finalise() {
         (mut profile, Ok(commit_intent)) => {
             if !commit_intent.has_changes() {
-                return (profile, Ok(()));
+                (profile, Ok(()))
+            } else {
+                let commit_profile = profile.take_commit_profile();
+                let (commit_profile, result) =
+                    server_state.databases().database_schema_commit(commit_intent, commit_profile).await;
+                profile.set_commit_profile(commit_profile);
+                (profile, result)
             }
-            let commit_result =
-                server_state.databases().database_schema_commit(commit_intent, profile.commit_profile()).await;
-            (profile, commit_result)
         }
         (profile, Err(typedb_source)) => {
             (profile, Err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }.into()))
         }
+    };
+    profile.commit_profile().end();
+    if profile.is_enabled() {
+        event!(Level::INFO, "schema commit done.\n{}", profile);
     }
+    (profile, result)
 }
 
 pub(crate) async fn commit_write_transaction(
     server_state: Arc<ServerState>,
     transaction: TransactionWrite<WALClient>,
 ) -> (TransactionProfile, Result<(), ArcServerStateError>) {
-    match transaction.finalise() {
+    let (mut profile, result) = match transaction.finalise() {
         (mut profile, Ok(commit_intent)) => {
             if !commit_intent.has_changes() {
-                return (profile, Ok(()));
+                (profile, Ok(()))
+            } else {
+                let commit_profile = profile.take_commit_profile();
+                let (commit_profile, result) =
+                    server_state.databases().database_data_commit(commit_intent, commit_profile).await;
+                profile.set_commit_profile(commit_profile);
+                (profile, result)
             }
-            let commit_result =
-                server_state.databases().database_data_commit(commit_intent, profile.commit_profile()).await;
-            (profile, commit_result)
         }
         (profile, Err(typedb_source)) => {
             (profile, Err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source }.into()))
         }
+    };
+    profile.commit_profile().end();
+    if profile.is_enabled() {
+        event!(Level::INFO, "data commit done.\n{}", profile);
     }
+    (profile, result)
 }
 
 typedb_error! {
@@ -86,7 +103,7 @@ typedb_error! {
         QueryParseFailed(7, "Query parsing failed.", typedb_source: typeql::Error),
         SchemaQueryRequiresSchemaTransaction(8, "Schema modification queries require schema transactions."),
         WriteQueryRequiresSchemaOrWriteTransaction(9, "Data modification queries require either write or schema transactions."),
-        TxnAbortSchemaQueryFailed(10, "Aborting transaction due to failed schema query.", typedb_source: QueryError),
+        SchemaQueryFailedAbortingTransaction(10, "Aborting transaction due to failed schema query.", typedb_source: Box<QueryError>),
         QueryFailed(11, "Query failed.", typedb_source: Box<QueryError>),
         NoOpenTransaction(12, "Operation failed: no open transaction."),
         QueryInterrupted(13, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
@@ -98,7 +115,7 @@ typedb_error! {
             "#,
             query_request_id: Uuid
         ),
-        ServiceFailedQueueCleanup(15, "The operation failed since the service is closing."),
+        QueueCleanupFailed(15, "The operation failed since the service is closing."),
         PipelineExecution(16, "Pipeline execution failed.", typedb_source: PipelineExecutionError),
         TransactionTimeout(17, "Operation failed: transaction timeout."),
         InvalidPrefetchSize(18, "Invalid query option: prefetch size should be >= 1, got {value} instead.", value: usize),

@@ -484,7 +484,7 @@ impl TransactionService {
         // interrupt active queries and close write transmitters
         self.interrupt_and_close_responders(InterruptType::TransactionCommitted).await;
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionCommitted).await {
-            return Err(TransactionServiceError::ServiceFailedQueueCleanup {}.into_error_message().into_status());
+            return Err(TransactionServiceError::QueueCleanupFailed {}.into_error_message().into_status());
         }
 
         // finish executing any remaining writes so they make it into the commit
@@ -503,10 +503,7 @@ impl TransactionService {
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
                 );
-                let (profile, commit_result) = commit_write_transaction(server_state, transaction).await;
-                if profile.is_enabled() {
-                    event!(Level::INFO, "commit done.\n{}", profile);
-                }
+                let (_profile, commit_result) = commit_write_transaction(server_state, transaction).await;
                 commit_result.map_err(|typedb_source| {
                     TransactionServiceError::DataCommitFailed { typedb_source }.into_error_message().into_status()
                 })
@@ -519,10 +516,7 @@ impl TransactionService {
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,
                 );
-                let (profile, commit_result) = commit_schema_transaction(server_state, transaction).await;
-                if profile.is_enabled() {
-                    event!(Level::INFO, "commit done.\n{}", profile);
-                }
+                let (_profile, commit_result) = commit_schema_transaction(server_state, transaction).await;
                 commit_result.map_err(|typedb_source| {
                     TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
                 })
@@ -855,7 +849,7 @@ impl TransactionService {
                     self.transaction = Some(Transaction::Schema(transaction));
                     let message_ok_done =
                         result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
-                            TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: *err }
+                            TransactionServiceError::SchemaQueryFailedAbortingTransaction { typedb_source: err }
                                 .into_error_message()
                                 .into_status()
                         })?;

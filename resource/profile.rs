@@ -44,6 +44,14 @@ impl TransactionProfile {
     pub fn commit_profile(&mut self) -> &mut CommitProfile {
         &mut self.commit_profile
     }
+
+    pub fn take_commit_profile(&mut self) -> CommitProfile {
+        std::mem::replace(&mut self.commit_profile, CommitProfile::DISABLED)
+    }
+
+    pub fn set_commit_profile(&mut self, commit_profile: CommitProfile) {
+        self.commit_profile = commit_profile;
+    }
 }
 
 #[derive(Debug)]
@@ -296,7 +304,9 @@ impl CommitProfile {
 
     pub fn end(&mut self) {
         if let Some(data) = &mut self.data {
-            data.total += data.stage_start_elapsed();
+            if let Some(start) = data.stage_start.take() {
+                data.total += start.elapsed();
+            }
         }
     }
 
