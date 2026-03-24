@@ -307,14 +307,12 @@ impl ServerStateBuilder {
     }
 
     pub fn build(self) -> ServerState {
-        let server_coordinator =
-            self.server_coordinator_override.unwrap_or_else(|| Arc::new(LocalServerCoordinator::new(self.server_status)));
+        let server_coordinator = self
+            .server_coordinator_override
+            .unwrap_or_else(|| Arc::new(LocalServerCoordinator::new(self.server_status)));
 
         let database_coordinator = self.database_coordinator_override.unwrap_or_else(|| {
-            Arc::new(LocalDatabaseCoordinator::new(
-                self.database_manager.clone(),
-                self.background_task_spawner.clone(),
-            ))
+            Arc::new(LocalDatabaseCoordinator::new(self.database_manager.clone(), self.background_task_spawner.clone()))
         });
 
         let transaction_coordinator = self.transaction_coordinator_override.unwrap_or_else(|| {
