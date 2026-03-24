@@ -6,6 +6,7 @@
 
 use std::{
     borrow::Cow,
+    cell::LazyCell,
     collections::{BTreeMap, BTreeSet, HashSet},
     iter::zip,
 };
@@ -185,7 +186,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::FunctionCallBinding(c) => c.apply(self, vertices)?,
                 Constraint::RoleName(c) => c.apply(self, vertices)?,
                 Constraint::Value(c) => c.apply(self, vertices)?,
-                Constraint::Iid(_)
+                | Constraint::Iid(_)
                 | Constraint::Is(_)
                 | Constraint::Sub(_)
                 | Constraint::Isa(_)
@@ -798,28 +799,25 @@ impl UnaryConstraint for Comparison<Variable> {
         context: &TypeGraphSeedingContext<'_, Snapshot>,
         graph_vertices: &mut VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
+        let attributes_lazy = LazyCell::new(|| {
+            Ok(context
+                .type_manager
+                .get_attribute_types(context.snapshot)
+                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
+                .iter()
+                .map(|t| TypeAnnotation::Attribute(*t))
+                .collect())
+        });
         if let Vertex::Variable(var) = self.lhs() {
             if context.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing()) {
-                let attributes = context
-                    .type_manager
-                    .get_attribute_types(context.snapshot)
-                    .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
-                    .iter()
-                    .map(|t| TypeAnnotation::Attribute(*t))
-                    .collect();
-                graph_vertices.add_or_intersect(self.lhs(), Cow::Owned(attributes));
+                let attributes = (*attributes_lazy).as_ref().map_err(TypeInferenceError::clone)?;
+                graph_vertices.add_or_intersect(self.lhs(), Cow::Borrowed(&attributes));
             }
         }
         if let Vertex::Variable(var) = self.rhs() {
             if context.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing()) {
-                let attributes = context
-                    .type_manager
-                    .get_attribute_types(context.snapshot)
-                    .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
-                    .iter()
-                    .map(|t| TypeAnnotation::Attribute(*t))
-                    .collect();
-                graph_vertices.add_or_intersect(self.rhs(), Cow::Owned(attributes));
+                let attributes = (*attributes_lazy).as_ref().map_err(TypeInferenceError::clone)?;
+                graph_vertices.add_or_intersect(self.rhs(), Cow::Borrowed(&attributes));
             }
         }
         Ok(())
