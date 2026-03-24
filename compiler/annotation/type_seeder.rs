@@ -1669,7 +1669,7 @@ pub mod tests {
     use ir::{
         pattern::{
             constraint::{Comparator, IsaKind},
-            Vertex,
+            ParameterID, Vertex,
         },
         pipeline::{block::Block, ParameterRegistry},
         translation::PipelineTranslationContext,
@@ -1763,7 +1763,7 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let (_, (_type_name, type_catname, type_dogname), _) =
+        let (_, (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         let label_owner = Label::build("owner", None);
@@ -1807,7 +1807,7 @@ pub mod tests {
         };
 
         {
-            // // Case 1: $x isa owner, has $a; $a > $b;
+            // Case 1: $x isa! owner, has $a; $a > $b;
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
@@ -1876,6 +1876,56 @@ pub mod tests {
                         ],
                     ),
                 ],
+                nested_disjunctions: vec![],
+            };
+
+            let snapshot = storage.clone().open_snapshot_write();
+            let empty_function_cache = EmptyAnnotatedFunctionSignatures;
+            let context = TypeGraphSeedingContext::new(
+                &snapshot,
+                &type_manager,
+                &empty_function_cache,
+                &translation_context.variable_registry,
+                false,
+            );
+            let graph = context.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
+            assert_eq!(expected_graph.vertices, graph.vertices);
+            assert_eq!(expected_graph.edges, graph.edges);
+        }
+
+        {
+            // Case 1: $x isa! $t; $x == 5;
+            let mut translation_context = PipelineTranslationContext::new();
+            let mut value_parameters = ParameterRegistry::new();
+            let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+            let mut conjunction = builder.conjunction_mut();
+
+            let var_x = conjunction.constraints_mut().get_or_declare_variable("x", None).unwrap();
+            let var_t = conjunction.constraints_mut().get_or_declare_variable("t", None).unwrap();
+            let parameter_5 = Vertex::Parameter(ParameterID::Value(
+                0,
+                ir::pattern::ValueType::Builtin(ValueType::Integer),
+                typeql::common::Span { begin_offset: 0, end_offset: 0 },
+            ));
+            // Try seeding
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_x, Vertex::Variable(var_t), None).unwrap();
+            conjunction.constraints_mut().add_comparison(var_x.into(), parameter_5, Comparator::Equal, None).unwrap();
+
+            let block = builder.finish().unwrap();
+            let conjunction = block.conjunction();
+
+            let types_x = BTreeSet::from([type_age, type_catname, type_dogname]);
+            let types_t = BTreeSet::from([type_name, type_age, type_catname, type_dogname]);
+            let constraints = conjunction.constraints();
+            let expected_graph = TypeInferenceGraph {
+                conjunction,
+                vertices: VertexAnnotations::from([(var_x.into(), types_x), (var_t.into(), types_t)]),
+                edges: vec![expected_edge(
+                    &constraints[0],
+                    var_x.into(),
+                    var_t.into(),
+                    vec![(type_age, type_age), (type_catname, type_catname), (type_dogname, type_dogname)],
+                )],
                 nested_disjunctions: vec![],
             };
 
