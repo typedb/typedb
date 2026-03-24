@@ -185,7 +185,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::FunctionCallBinding(c) => c.apply(self, vertices)?,
                 Constraint::RoleName(c) => c.apply(self, vertices)?,
                 Constraint::Value(c) => c.apply(self, vertices)?,
-                | Constraint::Iid(_)
+                Constraint::Comparison(c) => c.apply(self, vertices)?,
+                Constraint::Iid(_)
                 | Constraint::Is(_)
                 | Constraint::Sub(_)
                 | Constraint::Isa(_)
@@ -195,7 +196,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Relates(_)
                 | Constraint::Plays(_)
                 | Constraint::ExpressionBinding(_)
-                | Constraint::Comparison(_)
                 | Constraint::LinksDeduplication(_) => (),
                 Constraint::IndexedRelation(_) => {
                     unreachable!("IndexedRelations are only generated after type inference")
@@ -778,6 +778,40 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
                 if let FunctionParameterAnnotation::Concept(types) = arg_annotations {
                     graph_vertices.add_or_intersect(&Vertex::Variable(arg_var), Cow::Borrowed(types));
                 }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl UnaryConstraint for Comparison<Variable> {
+    fn apply<Snapshot: ReadableSnapshot>(
+        &self,
+        context: &TypeGraphSeedingContext<'_, Snapshot>,
+        graph_vertices: &mut VertexAnnotations,
+    ) -> Result<(), TypeInferenceError> {
+        if let Vertex::Variable(var) = self.lhs() {
+            if context.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing()) {
+                let attributes = context
+                    .type_manager
+                    .get_attribute_types(context.snapshot)
+                    .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
+                    .iter()
+                    .map(|t| TypeAnnotation::Attribute(*t))
+                    .collect();
+                graph_vertices.add_or_intersect(self.lhs(), Cow::Owned(attributes));
+            }
+        }
+        if let Vertex::Variable(var) = self.rhs() {
+            if context.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing()) {
+                let attributes = context
+                    .type_manager
+                    .get_attribute_types(context.snapshot)
+                    .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
+                    .iter()
+                    .map(|t| TypeAnnotation::Attribute(*t))
+                    .collect();
+                graph_vertices.add_or_intersect(self.rhs(), Cow::Owned(attributes));
             }
         }
         Ok(())
