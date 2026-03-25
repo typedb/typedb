@@ -94,7 +94,7 @@ impl CheckpointReader {
         }
 
         let recovery_start = checkpoint_sequence_number + 1;
-        let recovered_commits = load_commit_data_from(recovery_start, durability_client, usize::MAX)
+        let recovered_commits = load_commit_data_from(recovery_start, durability_client)
             .map_err(|err| CommitRecoveryFailed { typedb_source: err })?;
         let next_sequence_number = recovered_commits.keys().max().copied().unwrap_or(recovery_start - 1) + 1;
         trace!("Applying missing commits");

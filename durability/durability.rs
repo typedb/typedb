@@ -116,6 +116,10 @@ impl DurabilitySequenceNumber {
     pub const fn serialised_len() -> usize {
         std::mem::size_of::<u64>()
     }
+
+    pub fn saturating_sub(&self, context_size: u64) -> Self {
+        Self { number: self.number.saturating_sub(context_size).max(1) }
+    }
 }
 
 impl From<u64> for DurabilitySequenceNumber {
