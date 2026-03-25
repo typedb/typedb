@@ -147,6 +147,8 @@ impl Statistics {
         )
         .map_err(|err| ReloadCommitData { typedb_source: err })?;
 
+        let last_seq = wal_commit_records.last_key_value().map(|(&seq, _)| seq);
+
         for (seq, status) in wal_commit_records {
             match status {
                 RecoveryCommitStatus::Pending(_) => {
@@ -177,7 +179,7 @@ impl Statistics {
                         }
                     }
                 }
-                RecoveryCommitStatus::Rejected => {}
+                RecoveryCommitStatus::Rejected => (),
             }
         }
 
@@ -192,6 +194,10 @@ impl Statistics {
             || sequence_numbers_since_last_durable_write > STATISTICS_DURABLE_WRITE_SEQ_NUMBERS
         {
             self.durably_write(storage.durability())?;
+        }
+
+        if let Some(last_seq) = last_seq {
+            self.sequence_number = last_seq;
         }
 
         let millis = Instant::now().duration_since(start).as_millis();
