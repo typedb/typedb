@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, error::Error, sync::Arc};
 
 use durability::RawRecord;
 use error::typedb_error;
-use tracing::{event, Level};
+use tracing::{event, warn, Level};
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
@@ -22,22 +22,30 @@ use crate::{
 /// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.
 pub fn load_commit_data_from(
     start: SequenceNumber,
+    context_size: u64,
     durability_client: &impl DurabilityClient,
-    limit: usize,
+    num_commits_limit: usize,
+    context_memory_limit: usize,
 ) -> Result<BTreeMap<SequenceNumber, RecoveryCommitStatus>, StorageRecoveryError> {
     use StorageRecoveryError::{DurabilityClientRead, DurabilityRecordDeserialize, DurabilityRecordsMissing};
 
+    let load_start = start.saturating_sub(context_size);
+    let records = durability_client
+        .iter_from(load_start)
+        .map_err(|error| DurabilityClientRead { typedb_source: error })?
+        .peekable();
+
     let mut recovered_commits = BTreeMap::new();
+    let mut recovered_commit_sizes = BTreeMap::new();
 
-    let records =
-        durability_client.iter_from(start).map_err(|error| DurabilityClientRead { typedb_source: error })?.peekable();
+    let mut bytes_read = 0;
+
     let mut first_record = true;
-
     for record in records {
         let RawRecord { sequence_number, record_type, bytes } =
             record.map_err(|error| DurabilityClientRead { typedb_source: error })?;
         if first_record {
-            if sequence_number != start {
+            if sequence_number != load_start {
                 return Err(DurabilityRecordsMissing {
                     expected_sequence_number: start,
                     first_record_sequence_number: sequence_number,
@@ -51,6 +59,8 @@ pub fn load_commit_data_from(
                 let commit_record = CommitRecord::deserialise_from(&mut &*bytes)
                     .map_err(|error| DurabilityRecordDeserialize { source: Arc::new(error) })?;
                 recovered_commits.insert(sequence_number, RecoveryCommitStatus::Pending(commit_record));
+                recovered_commit_sizes.insert(sequence_number, bytes.len());
+                bytes_read += bytes.len();
             }
             StatusRecord::RECORD_TYPE => {
                 let StatusRecord { commit_record_sequence_number, was_committed } =
@@ -67,14 +77,24 @@ pub fn load_commit_data_from(
                     recovered_commits.insert(commit_record_sequence_number, RecoveryCommitStatus::Validated(record));
                 } else {
                     recovered_commits.insert(commit_record_sequence_number, RecoveryCommitStatus::Rejected);
+                    bytes_read -= recovered_commit_sizes.get(&commit_record_sequence_number).copied().unwrap_or(0);
                 }
             }
             _not_storage_record => {
                 // skip, not storage record
             }
         }
-        if recovered_commits.len() > limit {
-            return Ok(recovered_commits);
+
+        if recovered_commits.len() > num_commits_limit {
+            break;
+        }
+
+        while bytes_read > context_memory_limit
+            && recovered_commits.first_key_value().is_some_and(|(&seq, _)| seq < start)
+        {
+            recovered_commits.pop_first();
+            let (_, size) = recovered_commit_sizes.pop_first().expect("can't be over memory limit with zero commits");
+            bytes_read -= size;
         }
     }
     Ok(recovered_commits)

@@ -97,6 +97,7 @@ pub struct Statistics {
 impl Statistics {
     const ENCODING_VERSION: StatisticsEncodingVersion = 0;
     const COMMIT_CONTEXT_SIZE: u64 = 8;
+    const COMMIT_CONTEXT_MEMORY_LIMIT: u64 = 1 << 30; // 1 GiB
 
     pub fn new(sequence_number: SequenceNumber) -> Self {
         Statistics {
@@ -136,15 +137,18 @@ impl Statistics {
 
         let start = Instant::now();
 
-        // make it a little more likely that we capture concurrent commits
-        let load_start = DurabilitySequenceNumber::new(
-            self.sequence_number.number().saturating_sub(Self::COMMIT_CONTEXT_SIZE).max(1),
-        );
-
         let mut data_commits = BTreeMap::new();
-        for (seq, status) in load_commit_data_from(load_start, storage.durability(), usize::MAX)
-            .map_err(|err| ReloadCommitData { typedb_source: err })?
-        {
+
+        let wal_commit_records = load_commit_data_from(
+            self.sequence_number,
+            COMMIT_CONTEXT_SIZE,
+            storage.durability(),
+            usize::MAX,
+            COMMIT_CONTEXT_MEMORY_LIMIT,
+        )
+        .map_err(|err| ReloadCommitData { typedb_source: err })?;
+
+        for (seq, status) in wal_commit_records {
             match status {
                 RecoveryCommitStatus::Pending(_) => {
                     // there's a gap/incomplete data in the log that means we can't apply beyond this sequence number
