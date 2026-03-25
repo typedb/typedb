@@ -14,7 +14,7 @@ use std::{
 };
 
 use bytes::Bytes;
-use durability::{DurabilityRecordType, DurabilitySequenceNumber};
+use durability::DurabilityRecordType;
 use encoding::graph::{
     thing::{
         edge::{ThingEdgeHas, ThingEdgeIndexedRelation, ThingEdgeLinks},
