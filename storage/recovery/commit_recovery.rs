@@ -67,6 +67,12 @@ pub fn load_commit_data_from_with_context(
                 recovered_commits.insert(sequence_number, RecoveryCommitStatus::Pending(commit_record));
                 recovered_commit_sizes.insert(sequence_number, bytes.len());
                 bytes_read += bytes.len();
+                eprintln!(
+                    "Read commit @ {} with size {}; {} total in the records",
+                    sequence_number,
+                    format_size(bytes.len()),
+                    format_size(bytes_read),
+                );
             }
             StatusRecord::RECORD_TYPE => {
                 let StatusRecord { commit_record_sequence_number, was_committed } =
@@ -81,9 +87,18 @@ pub fn load_commit_data_from_with_context(
                         unreachable!("found second commit status for a record")
                     };
                     recovered_commits.insert(commit_record_sequence_number, RecoveryCommitStatus::Validated(record));
+                    eprintln!("Marked as committed commit @ {}", sequence_number);
                 } else {
                     recovered_commits.insert(commit_record_sequence_number, RecoveryCommitStatus::Rejected);
-                    bytes_read -= recovered_commit_sizes.get(&commit_record_sequence_number).copied().unwrap_or(0);
+                    let commit_record_size =
+                        recovered_commit_sizes.get(&commit_record_sequence_number).copied().unwrap_or(0);
+                    bytes_read -= commit_record_size;
+                    eprintln!(
+                        "Discarded commit @ {} with size {}; {} total in the records",
+                        sequence_number,
+                        format_size(commit_record_size),
+                        format_size(bytes_read),
+                    );
                 }
             }
             _not_storage_record => (), // skip, not storage record
@@ -93,11 +108,29 @@ pub fn load_commit_data_from_with_context(
             && recovered_commits.first_key_value().is_some_and(|(&seq, _)| seq < start)
         {
             recovered_commits.pop_first();
-            let (_, size) = recovered_commit_sizes.pop_first().expect("can't be over memory limit with zero commits");
+            let (seq, size) = recovered_commit_sizes.pop_first().expect("can't be over memory limit with zero commits");
             bytes_read -= size;
+            eprintln!(
+                "Discarded commit @ {} with size {}; {} total in the records",
+                seq,
+                format_size(size),
+                format_size(bytes_read),
+            );
         }
     }
     Ok(recovered_commits)
+}
+
+fn format_size(bytes: usize) -> String {
+    const K: usize = 1024;
+    const M: usize = 1024 * K;
+    const G: usize = 1024 * M;
+    match bytes {
+        ..K => format!("{} bytes", bytes),
+        ..M => format!("{:.2} KiB", bytes as f64 / K as f64),
+        ..G => format!("{:.2} MiB", bytes as f64 / M as f64),
+        _ => format!("{:.2} GiB", bytes as f64 / G as f64),
+    }
 }
 
 pub(crate) fn apply_recovered(
