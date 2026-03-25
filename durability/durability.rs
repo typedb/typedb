@@ -118,7 +118,7 @@ impl DurabilitySequenceNumber {
     }
 
     pub fn saturating_sub(&self, context_size: u64) -> Self {
-        Self { number: self.number.saturating_sub(context_size) }
+        Self { number: self.number.saturating_sub(context_size).max(1) }
     }
 }
 
