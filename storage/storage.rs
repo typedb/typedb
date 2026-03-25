@@ -138,7 +138,7 @@ impl<Durability> MVCCStorage<Durability> {
                 .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
             let keyspaces = Self::create_keyspaces::<KS>(name, &storage_dir)?;
             trace!("No checkpoint found, loading from WAL");
-            let commits = load_commit_data_from(SequenceNumber::MIN.next(), 0, &durability_client, 0)
+            let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
             apply_recovered(name, commits, &durability_client, &keyspaces)

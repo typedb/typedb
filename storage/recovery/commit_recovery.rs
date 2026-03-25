@@ -22,6 +22,13 @@ use crate::{
 /// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.
 pub fn load_commit_data_from(
     start: SequenceNumber,
+    durability_client: &impl DurabilityClient,
+) -> Result<BTreeMap<SequenceNumber, RecoveryCommitStatus>, StorageRecoveryError> {
+    load_commit_data_from_with_context(start, 0, durability_client, 0)
+}
+
+pub fn load_commit_data_from_with_context(
+    start: SequenceNumber,
     context_size: u64,
     durability_client: &impl DurabilityClient,
     context_memory_limit: usize,
@@ -79,9 +86,7 @@ pub fn load_commit_data_from(
                     bytes_read -= recovered_commit_sizes.get(&commit_record_sequence_number).copied().unwrap_or(0);
                 }
             }
-            _not_storage_record => {
-                // skip, not storage record
-            }
+            _not_storage_record => (), // skip, not storage record
         }
 
         while bytes_read > context_memory_limit

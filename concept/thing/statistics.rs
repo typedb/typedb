@@ -40,7 +40,7 @@ use storage::{
     iterator::MVCCReadError,
     key_value::{StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
-    recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
+    recovery::commit_recovery::{load_commit_data_from_with_context, RecoveryCommitStatus, StorageRecoveryError},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
     MVCCStorage,
@@ -139,7 +139,7 @@ impl Statistics {
 
         let mut data_commits = BTreeMap::new();
 
-        let wal_commit_records = load_commit_data_from(
+        let wal_commit_records = load_commit_data_from_with_context(
             self.sequence_number,
             Self::COMMIT_CONTEXT_SIZE,
             storage.durability(),
