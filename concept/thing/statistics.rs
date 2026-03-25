@@ -141,10 +141,10 @@ impl Statistics {
 
         let wal_commit_records = load_commit_data_from(
             self.sequence_number,
-            COMMIT_CONTEXT_SIZE,
+            Self::COMMIT_CONTEXT_SIZE,
             storage.durability(),
             usize::MAX,
-            COMMIT_CONTEXT_MEMORY_LIMIT,
+            Self::COMMIT_CONTEXT_MEMORY_LIMIT,
         )
         .map_err(|err| ReloadCommitData { typedb_source: err })?;
 
