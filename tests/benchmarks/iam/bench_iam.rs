@@ -8,7 +8,7 @@ use std::{fs::File, io::Read, path::Path, sync::Arc, time::Instant};
 
 use database::{
     database_manager::DatabaseManager,
-    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{CommittableTransaction, TransactionRead, TransactionSchema, TransactionWrite},
     Database,
 };
 use executor::{batch::Batch, pipeline::stage::StageIterator, ExecutionInterrupt};

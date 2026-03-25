@@ -7,7 +7,10 @@ use std::sync::Arc;
 
 use cucumber::gherkin::Step;
 use database::{
-    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{
+        CommittableTransaction, DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema,
+        TransactionWrite,
+    },
     Database,
 };
 use error::TypeDBError;

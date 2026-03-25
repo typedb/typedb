@@ -59,7 +59,10 @@ use crate::{
     database_manager::DatabaseManager,
     migration::Checksums,
     query::execute_schema_query,
-    transaction::{DataCommitError, SchemaCommitError, TransactionError, TransactionSchema, TransactionWrite},
+    transaction::{
+        CommittableTransaction, DataCommitError, SchemaCommitError, TransactionError, TransactionSchema,
+        TransactionWrite,
+    },
     with_transaction_parts, Database, DatabaseDeleteError,
 };
 

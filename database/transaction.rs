@@ -35,6 +35,30 @@ use tracing::Level;
 
 use crate::Database;
 
+pub trait CommitIntent: Sized {
+    type Error;
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), Self::Error>;
+}
+
+pub trait CommittableTransaction: Sized {
+    type Intent: CommitIntent<Error = Self::Error>;
+    type Error;
+
+    fn finalise(self) -> (TransactionProfile, Result<Self::Intent, Self::Error>);
+
+    fn commit(self) -> (TransactionProfile, Result<(), Self::Error>) {
+        let (mut profile, result) = match self.finalise() {
+            (mut profile, Ok(intent)) => {
+                let result = intent.commit(profile.commit_profile());
+                (profile, result)
+            }
+            (profile, Err(error)) => (profile, Err(error)),
+        };
+        profile.commit_profile().end();
+        (profile, result)
+    }
+}
+
 #[derive(Debug)]
 pub struct TransactionRead<D> {
     pub snapshot: Arc<ReadSnapshot<D>>,
@@ -169,7 +193,24 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         }
     }
 
-    pub fn finalise(self) -> (TransactionProfile, Result<DataCommitIntent<D>, DataCommitError>) {
+    pub fn rollback(&mut self) {
+        Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
+    }
+
+    pub fn close(self) {
+        drop(self)
+    }
+
+    pub fn id(&self) -> TransactionId {
+        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
+    }
+}
+
+impl<D: DurabilityClient> CommittableTransaction for TransactionWrite<D> {
+    type Intent = DataCommitIntent<D>;
+    type Error = DataCommitError;
+
+    fn finalise(self) -> (TransactionProfile, Result<DataCommitIntent<D>, DataCommitError>) {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
         commit_profile.start();
@@ -187,30 +228,6 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         commit_profile.things_finalised();
         drop(self.type_manager);
         (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot }))
-    }
-
-    pub fn commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
-        let (mut profile, result) = match self.finalise() {
-            (mut profile, Ok(commit_intent)) => {
-                let result = commit_intent.commit(profile.commit_profile());
-                (profile, result)
-            }
-            (profile, Err(error)) => (profile, Err(error)),
-        };
-        profile.commit_profile().end();
-        (profile, result)
-    }
-
-    pub fn rollback(&mut self) {
-        Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
-    }
-
-    pub fn close(self) {
-        drop(self)
-    }
-
-    pub fn id(&self) -> TransactionId {
-        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
     }
 }
 
@@ -281,7 +298,24 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
     }
 
-    pub fn finalise(self) -> (TransactionProfile, Result<SchemaCommitIntent<D>, SchemaCommitError>) {
+    pub fn rollback(&mut self) {
+        Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
+    }
+
+    pub fn close(self) {
+        drop(self)
+    }
+
+    pub fn id(&self) -> TransactionId {
+        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
+    }
+}
+
+impl<D: DurabilityClient> CommittableTransaction for TransactionSchema<D> {
+    type Intent = SchemaCommitIntent<D>;
+    type Error = SchemaCommitError;
+
+    fn finalise(self) -> (TransactionProfile, Result<SchemaCommitIntent<D>, SchemaCommitError>) {
         use SchemaCommitError::{ConceptWriteErrorsFirst, FunctionError};
 
         let mut profile = self.profile;
@@ -319,30 +353,6 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         drop(type_manager);
         (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot }))
-    }
-
-    pub fn commit(self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
-        let (mut profile, result) = match self.finalise() {
-            (mut profile, Ok(commit_intent)) => {
-                let result = commit_intent.commit(profile.commit_profile());
-                (profile, result)
-            }
-            (profile, Err(error)) => (profile, Err(error)),
-        };
-        profile.commit_profile().end();
-        (profile, result)
-    }
-
-    pub fn rollback(&mut self) {
-        Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
-    }
-
-    pub fn close(self) {
-        drop(self)
-    }
-
-    pub fn id(&self) -> TransactionId {
-        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
     }
 }
 
@@ -401,6 +411,48 @@ macro_rules! with_transaction_parts {
     }};
 }
 
+pub struct DataCommitIntent<D> {
+    database_drop_guard: DatabaseDropGuard<D>,
+    write_snapshot: WriteSnapshot<D>,
+}
+
+impl<D: DurabilityClient> DataCommitIntent<D> {
+    pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>) -> Self {
+        Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot }
+    }
+
+    pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
+        let snapshot = WriteSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
+        Self::new(database, snapshot)
+    }
+
+    pub fn has_changes(&self) -> bool {
+        self.write_snapshot.has_changes()
+    }
+
+    pub fn database_name(&self) -> &str {
+        self.database_drop_guard.name()
+    }
+
+    pub fn into_commit_record(
+        self,
+    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
+        let (reader_guard, commit_record) = self.write_snapshot.into_commit_record();
+        (self.database_drop_guard, reader_guard, commit_record)
+    }
+}
+
+impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
+    type Error = DataCommitError;
+
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
+        self.write_snapshot
+            .commit(commit_profile)
+            .map(|_| ())
+            .map_err(|typedb_source| DataCommitError::SnapshotError { typedb_source })
+    }
+}
+
 pub struct SchemaCommitIntent<D> {
     database_drop_guard: DatabaseDropGuard<D>,
     schema_snapshot: SchemaSnapshot<D>,
@@ -424,7 +476,18 @@ impl<D: DurabilityClient> SchemaCommitIntent<D> {
         self.database_drop_guard.name()
     }
 
-    pub fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
+    pub fn into_commit_record(
+        self,
+    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
+        let (reader_guard, commit_record) = self.schema_snapshot.into_commit_record();
+        (self.database_drop_guard, reader_guard, commit_record)
+    }
+}
+
+impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
+    type Error = SchemaCommitError;
+
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{StatisticsError, TypeCacheUpdateError};
         let database = &self.database_drop_guard;
 
@@ -482,51 +545,6 @@ impl<D: DurabilityClient> SchemaCommitIntent<D> {
 
         *schema_commit_guard = schema;
         Ok(())
-    }
-
-    pub fn into_commit_record(
-        self,
-    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
-        let (reader_guard, commit_record) = self.schema_snapshot.into_commit_record();
-        (self.database_drop_guard, reader_guard, commit_record)
-    }
-}
-
-pub struct DataCommitIntent<D> {
-    database_drop_guard: DatabaseDropGuard<D>,
-    write_snapshot: WriteSnapshot<D>,
-}
-
-impl<D: DurabilityClient> DataCommitIntent<D> {
-    pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>) -> Self {
-        Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot }
-    }
-
-    pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
-        let snapshot = WriteSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
-        Self::new(database, snapshot)
-    }
-
-    pub fn has_changes(&self) -> bool {
-        self.write_snapshot.has_changes()
-    }
-
-    pub fn database_name(&self) -> &str {
-        self.database_drop_guard.name()
-    }
-
-    pub fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
-        self.write_snapshot
-            .commit(commit_profile)
-            .map(|_| ())
-            .map_err(|typedb_source| DataCommitError::SnapshotError { typedb_source })
-    }
-
-    pub fn into_commit_record(
-        self,
-    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
-        let (reader_guard, commit_record) = self.write_snapshot.into_commit_record();
-        (self.database_drop_guard, reader_guard, commit_record)
     }
 }
 

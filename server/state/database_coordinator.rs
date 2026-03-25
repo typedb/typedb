@@ -10,7 +10,7 @@ use async_trait::async_trait;
 use concurrency::TokioTaskSpawner;
 use database::{
     database_manager::DatabaseManager,
-    transaction::{DataCommitIntent, SchemaCommitIntent, TransactionRead},
+    transaction::{CommitIntent, DataCommitIntent, SchemaCommitIntent, TransactionRead},
     Database,
 };
 use durability::DurabilitySequenceNumber;

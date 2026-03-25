@@ -11,8 +11,8 @@ pub mod transaction_util {
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::{
         transaction::{
-            DataCommitError, DatabaseDropGuard, SchemaCommitError, SchemaCommitIntent, TransactionRead,
-            TransactionSchema, TransactionWrite,
+            CommittableTransaction, DataCommitError, DatabaseDropGuard, SchemaCommitError, SchemaCommitIntent,
+            TransactionRead, TransactionSchema, TransactionWrite,
         },
         Database,
     };

@@ -10,7 +10,7 @@ use std::{
 
 use database::{
     database_manager::DatabaseManager,
-    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{CommittableTransaction, TransactionRead, TransactionSchema, TransactionWrite},
     Database,
 };
 use options::TransactionOptions;

@@ -5,7 +5,7 @@
  */
 use std::{sync::Arc, time::Duration};
 
-use database::transaction::{TransactionError, TransactionSchema, TransactionWrite};
+use database::transaction::{CommittableTransaction, TransactionError, TransactionSchema, TransactionWrite};
 use error::typedb_error;
 use executor::{pipeline::PipelineExecutionError, InterruptType};
 use query::error::QueryError;
