@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, error::Error, sync::Arc};
 
 use durability::RawRecord;
 use error::typedb_error;
-use tracing::{event, warn, Level};
+use tracing::{event, Level};
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
