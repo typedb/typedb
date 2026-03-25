@@ -60,8 +60,7 @@ use crate::{
     migration::Checksums,
     query::execute_schema_query,
     transaction::{
-        CommittableTransaction, DataCommitError, SchemaCommitError, TransactionError, TransactionSchema,
-        TransactionWrite,
+        CommitIntent, DataCommitError, SchemaCommitError, TransactionError, TransactionSchema, TransactionWrite,
     },
     with_transaction_parts, Database, DatabaseDeleteError,
 };
@@ -974,19 +973,25 @@ impl DatabaseImporter {
             .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source })
     }
 
+    // TODO: It's currently local-only, not extensible
     async fn commit_write_transaction(transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
         spawn_blocking(move || {
-            let (_, result) = transaction.commit();
-            result.map_err(|typedb_source| DatabaseImportError::DataCommitFailed { typedb_source })
+            let (mut profile, finalise_result) = transaction.finalise();
+            let commit_result = finalise_result.and_then(|intent| intent.commit(profile.commit_profile()));
+            profile.commit_profile().end();
+            commit_result.map_err(|typedb_source| DatabaseImportError::DataCommitFailed { typedb_source })
         })
         .await
         .expect("Expected write transaction commit completion")
     }
 
+    // TODO: It's currently local-only, not extensible
     async fn commit_schema_transaction(transaction: TransactionSchema<WALClient>) -> Result<(), SchemaCommitError> {
         spawn_blocking(move || {
-            let (_, result) = transaction.commit();
-            result
+            let (mut profile, finalise_result) = transaction.finalise();
+            let commit_result = finalise_result.and_then(|intent| intent.commit(profile.commit_profile()));
+            profile.commit_profile().end();
+            commit_result
         })
         .await
         .expect("Expected schema transaction commit completion")

@@ -40,25 +40,6 @@ pub trait CommitIntent: Sized {
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), Self::Error>;
 }
 
-pub trait CommittableTransaction: Sized {
-    type Intent: CommitIntent<Error = Self::Error>;
-    type Error;
-
-    fn finalise(self) -> (TransactionProfile, Result<Self::Intent, Self::Error>);
-
-    fn commit(self) -> (TransactionProfile, Result<(), Self::Error>) {
-        let (mut profile, result) = match self.finalise() {
-            (mut profile, Ok(intent)) => {
-                let result = intent.commit(profile.commit_profile());
-                (profile, result)
-            }
-            (profile, Err(error)) => (profile, Err(error)),
-        };
-        profile.commit_profile().end();
-        (profile, result)
-    }
-}
-
 #[derive(Debug)]
 pub struct TransactionRead<D> {
     pub snapshot: Arc<ReadSnapshot<D>>,
@@ -193,24 +174,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         }
     }
 
-    pub fn rollback(&mut self) {
-        Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
-    }
-
-    pub fn close(self) {
-        drop(self)
-    }
-
-    pub fn id(&self) -> TransactionId {
-        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
-    }
-}
-
-impl<D: DurabilityClient> CommittableTransaction for TransactionWrite<D> {
-    type Intent = DataCommitIntent<D>;
-    type Error = DataCommitError;
-
-    fn finalise(self) -> (TransactionProfile, Result<DataCommitIntent<D>, DataCommitError>) {
+    pub fn finalise(self) -> (TransactionProfile, Result<DataCommitIntent<D>, DataCommitError>) {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
         commit_profile.start();
@@ -228,6 +192,18 @@ impl<D: DurabilityClient> CommittableTransaction for TransactionWrite<D> {
         commit_profile.things_finalised();
         drop(self.type_manager);
         (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot }))
+    }
+
+    pub fn rollback(&mut self) {
+        Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
+    }
+
+    pub fn close(self) {
+        drop(self)
+    }
+
+    pub fn id(&self) -> TransactionId {
+        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
     }
 }
 
@@ -298,24 +274,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
     }
 
-    pub fn rollback(&mut self) {
-        Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
-    }
-
-    pub fn close(self) {
-        drop(self)
-    }
-
-    pub fn id(&self) -> TransactionId {
-        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
-    }
-}
-
-impl<D: DurabilityClient> CommittableTransaction for TransactionSchema<D> {
-    type Intent = SchemaCommitIntent<D>;
-    type Error = SchemaCommitError;
-
-    fn finalise(self) -> (TransactionProfile, Result<SchemaCommitIntent<D>, SchemaCommitError>) {
+    pub fn finalise(self) -> (TransactionProfile, Result<SchemaCommitIntent<D>, SchemaCommitError>) {
         use SchemaCommitError::{ConceptWriteErrorsFirst, FunctionError};
 
         let mut profile = self.profile;
@@ -353,6 +312,18 @@ impl<D: DurabilityClient> CommittableTransaction for TransactionSchema<D> {
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         drop(type_manager);
         (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot }))
+    }
+
+    pub fn rollback(&mut self) {
+        Arc::get_mut(&mut self.snapshot).expect("Expected owning snapshot on rollback").clear()
+    }
+
+    pub fn close(self) {
+        drop(self)
+    }
+
+    pub fn id(&self) -> TransactionId {
+        TransactionId::new(self.snapshot.open_sequence_number(), self.snapshot.id())
     }
 }
 

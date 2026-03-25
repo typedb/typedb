@@ -11,8 +11,8 @@ pub mod transaction_util {
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::{
         transaction::{
-            CommittableTransaction, DataCommitError, DatabaseDropGuard, SchemaCommitError, SchemaCommitIntent,
-            TransactionRead, TransactionSchema, TransactionWrite,
+            CommitIntent, DataCommitError, SchemaCommitError, SchemaCommitIntent, TransactionRead,
+            TransactionSchema, TransactionWrite,
         },
         Database,
     };
@@ -113,7 +113,9 @@ pub mod transaction_util {
                 TransactionOptions::default(),
                 profile,
             );
-            let (profile, commit_result) = tx.commit();
+            let (mut profile, finalise_result) = tx.finalise();
+            let commit_result = finalise_result.and_then(|intent| intent.commit(profile.commit_profile()));
+            profile.commit_profile().end();
             (profile, commit_result.map(|()| result))
         }
     }

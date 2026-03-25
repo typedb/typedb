@@ -8,7 +8,6 @@ use std::{
     collections::VecDeque,
     ffi::OsString,
     fmt, fs, io,
-    io::Write,
     path::{Path, PathBuf},
     sync::{
         mpsc::{sync_channel, SyncSender},

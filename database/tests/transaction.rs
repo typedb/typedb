@@ -10,7 +10,7 @@ use std::{
 
 use database::{
     database_manager::DatabaseManager,
-    transaction::{CommittableTransaction, TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
     Database,
 };
 use options::TransactionOptions;
@@ -99,7 +99,8 @@ fn open_commit_schema_transaction() {
     let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
     let tx_schema = open_schema(database.clone());
-    let (_, commit_result) = tx_schema.commit();
+    let (mut profile, finalise_result) = tx_schema.finalise();
+    let commit_result = finalise_result.and_then(|intent| intent.commit(profile.commit_profile()));
     assert_ok!(commit_result);
 }
 
@@ -127,7 +128,8 @@ fn open_commit_write_transaction() {
     let databases_path = create_tmp_storage_dir();
     let database = create_database(&databases_path);
     let tx_write = open_write(database.clone());
-    let (_, commit_result) = tx_write.commit();
+    let (mut profile, finalise_result) = tx_write.finalise();
+    let commit_result = finalise_result.and_then(|intent| intent.commit(profile.commit_profile()));
     assert_ok!(commit_result);
 }
 
@@ -316,7 +318,8 @@ fn schema_transaction_commit_unblocks_concurrent_schema_transactions() {
                 let tx_schema = open_schema(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
-                tx_schema.commit().1.expect("Expected commit");
+                let (mut profile, intent) = tx_schema.finalise();
+                intent.unwrap().commit(profile.commit_profile()).expect("Expected commit");
             });
 
             let task2 = tokio::spawn(async move {
@@ -411,7 +414,8 @@ fn schema_transaction_commit_unblocks_concurrent_write_transactions() {
                 let tx_schema = open_schema(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
-                tx_schema.commit().1.expect("Expected commit");
+                let (mut profile, intent) = tx_schema.finalise();
+                intent.unwrap().commit(profile.commit_profile()).expect("Expected commit");
             });
 
             let task2 = tokio::spawn(async move {
@@ -572,7 +576,8 @@ fn write_transaction_commit_unblocks_concurrent_schema_transactions() {
                 let tx_write = open_write(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
-                tx_write.commit().1.expect("Expected commit");
+                let (mut profile, intent) = tx_write.finalise();
+                intent.unwrap().commit(profile.commit_profile()).expect("Expected commit");
             });
 
             let task2 = tokio::spawn(async move {
