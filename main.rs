@@ -27,7 +27,7 @@ fn main() {
     if std::env::var(fail_point::FAIL_POINT_ENV).is_ok() {
         tracing::warn!(
             "{} is set, but `debug_assertions` are not enabled; fail points will not trigger",
-            FAIL_POINT_ENV
+            fail_point::FAIL_POINT_ENV
         );
     }
 
