@@ -97,7 +97,7 @@ pub struct Statistics {
 impl Statistics {
     const ENCODING_VERSION: StatisticsEncodingVersion = 0;
     const COMMIT_CONTEXT_SIZE: u64 = 8;
-    const COMMIT_CONTEXT_MEMORY_LIMIT: u64 = 1 << 30; // 1 GiB
+    const COMMIT_CONTEXT_MEMORY_LIMIT: usize = 1 << 30; // 1 GiB
 
     pub fn new(sequence_number: SequenceNumber) -> Self {
         Statistics {
@@ -143,7 +143,6 @@ impl Statistics {
             self.sequence_number,
             Self::COMMIT_CONTEXT_SIZE,
             storage.durability(),
-            usize::MAX,
             Self::COMMIT_CONTEXT_MEMORY_LIMIT,
         )
         .map_err(|err| ReloadCommitData { typedb_source: err })?;

@@ -24,7 +24,6 @@ pub fn load_commit_data_from(
     start: SequenceNumber,
     context_size: u64,
     durability_client: &impl DurabilityClient,
-    num_commits_limit: usize,
     context_memory_limit: usize,
 ) -> Result<BTreeMap<SequenceNumber, RecoveryCommitStatus>, StorageRecoveryError> {
     use StorageRecoveryError::{DurabilityClientRead, DurabilityRecordDeserialize, DurabilityRecordsMissing};
@@ -83,10 +82,6 @@ pub fn load_commit_data_from(
             _not_storage_record => {
                 // skip, not storage record
             }
-        }
-
-        if recovered_commits.len() > num_commits_limit {
-            break;
         }
 
         while bytes_read > context_memory_limit
