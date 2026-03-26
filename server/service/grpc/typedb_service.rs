@@ -107,7 +107,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                 else {
                     return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status());
                 };
-                let token = self.server_state
+                let token = self
+                    .server_state
                     .users()
                     .token_create(password_credentials.username, password_credentials.password)
                     .await
@@ -182,7 +183,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             None::<&str>,
             ActionKind::ServersGet,
             || async {
-                let status = self.server_state
+                let status = self
+                    .server_state
                     .servers()
                     .server_status()
                     .await
@@ -444,7 +446,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             Some(name.clone()),
             ActionKind::DatabasesContains,
             || async {
-                let contains = self.server_state
+                let contains = self
+                    .server_state
                     .databases()
                     .databases_contains(&name)
                     .await

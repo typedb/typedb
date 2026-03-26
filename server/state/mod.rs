@@ -169,9 +169,8 @@ impl ServerState {
         self.background_task_spawner.clone()
     }
 
-    // --- Initialisation ---
-
     pub fn is_initialised(&self) -> bool {
+        // Other coordinators don't require initialization
         self.user_coordinator.is_initialised()
     }
 
@@ -179,9 +178,12 @@ impl ServerState {
         if self.is_initialised() {
             return Ok(());
         }
+
+        // Initialize self for user_coordinator
         crate::system_init::initialise_system_database(self).await?;
         crate::system_init::initialise_system_database_schema(self).await?;
         crate::system_init::initialise_default_user(self).await?;
+
         Ok(())
     }
 

@@ -82,7 +82,7 @@ impl LocalUserCoordinator {
         }
     }
 
-    fn try_initialise(&self) {
+    fn try_load_system_managers(&self) {
         if let Some(system_db) = self.database_manager.database_unrestricted(SYSTEM_DB) {
             let user_manager = Arc::new(UserManager::new(system_db));
             let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
@@ -95,7 +95,7 @@ impl LocalUserCoordinator {
         if let Some(um) = self.user_manager.read().unwrap().clone() {
             return Ok(um);
         }
-        self.try_initialise();
+        self.try_load_system_managers();
         self.user_manager.read().unwrap().clone().ok_or(LocalServerStateError::NotInitialised {})
     }
 
@@ -103,7 +103,7 @@ impl LocalUserCoordinator {
         if let Some(cv) = self.credential_verifier.read().unwrap().clone() {
             return Ok(cv);
         }
-        self.try_initialise();
+        self.try_load_system_managers();
         self.credential_verifier.read().unwrap().clone().ok_or(LocalServerStateError::NotInitialised {})
     }
 }

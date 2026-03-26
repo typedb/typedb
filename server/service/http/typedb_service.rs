@@ -68,7 +68,6 @@ struct TransactionInfo {
 #[derive(Clone, Debug)]
 pub(crate) struct HTTPTypeDBService {
     server_state: Arc<ServerState>,
-    // TODO: If TransactionId proves itself to be stable, we could substitute Uuid with it
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
 }
 
