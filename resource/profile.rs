@@ -287,21 +287,6 @@ impl CommitProfile {
         }
     }
 
-    pub fn mark_stage_start(&mut self) {
-        if let Some(data) = &mut self.data {
-            data.set_stage_start_now();
-        }
-    }
-
-    pub fn record_completed_stage(&mut self, name: &'static str) {
-        if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start_elapsed();
-            data.named_stages.push((name, elapsed));
-            data.total += elapsed;
-            data.set_stage_start_now();
-        }
-    }
-
     pub fn end(&mut self) {
         if let Some(data) = &mut self.data {
             if let Some(start) = data.stage_start.take() {

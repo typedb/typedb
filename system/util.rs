@@ -94,7 +94,7 @@ pub mod transaction_util {
                 transaction_options,
                 profile,
             } = TransactionWrite::open(self.database.clone(), TransactionOptions::default()).unwrap();
-            let (result, snapshot) = fn_(
+            let (rows, snapshot) = fn_(
                 Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
                 type_manager.clone(),
                 thing_manager.clone(),
@@ -116,7 +116,7 @@ pub mod transaction_util {
             let (mut profile, finalise_result) = tx.finalise();
             let commit_result = finalise_result.and_then(|intent| intent.commit(profile.commit_profile()));
             profile.commit_profile().end();
-            (profile, commit_result.map(|()| result))
+            (profile, commit_result.map(|()| rows))
         }
     }
 }

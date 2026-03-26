@@ -190,7 +190,6 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             return (profile, Err(DataCommitError::ConceptWriteErrorsFirst { typedb_source: Box::new(error) }));
         };
         commit_profile.things_finalised();
-        drop(self.type_manager);
         (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot }))
     }
 
@@ -309,8 +308,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
         commit_profile.functions_finalised();
 
-        let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
-        drop(type_manager);
+        let _type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot }))
     }
 
