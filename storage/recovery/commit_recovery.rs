@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, error::Error, sync::Arc};
 
 use durability::RawRecord;
 use error::typedb_error;
-use tracing::{event, Level};
+use tracing::{event, trace, Level};
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
@@ -36,10 +36,8 @@ pub fn load_commit_data_from_with_context(
     use StorageRecoveryError::{DurabilityClientRead, DurabilityRecordDeserialize, DurabilityRecordsMissing};
 
     let load_start = start.saturating_sub(context_size);
-    let records = durability_client
-        .iter_from(load_start)
-        .map_err(|error| DurabilityClientRead { typedb_source: error })?
-        .peekable();
+    let records =
+        durability_client.iter_from(load_start).map_err(|error| DurabilityClientRead { typedb_source: error })?;
 
     let mut recovered_commits = BTreeMap::new();
     let mut recovered_commit_sizes = BTreeMap::new();
@@ -67,8 +65,8 @@ pub fn load_commit_data_from_with_context(
                 recovered_commits.insert(sequence_number, RecoveryCommitStatus::Pending(commit_record));
                 recovered_commit_sizes.insert(sequence_number, bytes.len());
                 bytes_read += bytes.len();
-                eprintln!(
-                    "Read commit @ {} with size {}; {} total in the records",
+                trace!(
+                    "Read commit @ {} with size {}; {} total",
                     sequence_number,
                     format_size(bytes.len()),
                     format_size(bytes_read),
@@ -87,14 +85,14 @@ pub fn load_commit_data_from_with_context(
                         unreachable!("found second commit status for a record")
                     };
                     recovered_commits.insert(commit_record_sequence_number, RecoveryCommitStatus::Validated(record));
-                    eprintln!("Marked as committed commit @ {}", sequence_number);
+                    trace!("Marked as committed commit @ {}", sequence_number);
                 } else {
                     recovered_commits.insert(commit_record_sequence_number, RecoveryCommitStatus::Rejected);
                     let commit_record_size =
                         recovered_commit_sizes.get(&commit_record_sequence_number).copied().unwrap_or(0);
                     bytes_read -= commit_record_size;
-                    eprintln!(
-                        "Discarded commit @ {} with size {}; {} total in the records",
+                    trace!(
+                        "Discarded commit @ {} with size {}; {} total",
                         sequence_number,
                         format_size(commit_record_size),
                         format_size(bytes_read),
@@ -110,12 +108,7 @@ pub fn load_commit_data_from_with_context(
             recovered_commits.pop_first();
             let (seq, size) = recovered_commit_sizes.pop_first().expect("can't be over memory limit with zero commits");
             bytes_read -= size;
-            eprintln!(
-                "Discarded commit @ {} with size {}; {} total in the records",
-                seq,
-                format_size(size),
-                format_size(bytes_read),
-            );
+            trace!("Discarded commit @ {} with size {}; {} total", seq, format_size(size), format_size(bytes_read));
         }
     }
     Ok(recovered_commits)
@@ -126,10 +119,10 @@ fn format_size(bytes: usize) -> String {
     const M: usize = 1024 * K;
     const G: usize = 1024 * M;
     match bytes {
-        ..K => format!("{} bytes", bytes),
-        ..M => format!("{:.2} KiB", bytes as f64 / K as f64),
-        ..G => format!("{:.2} MiB", bytes as f64 / M as f64),
-        _ => format!("{:.2} GiB", bytes as f64 / G as f64),
+        0..K => format!("{} bytes", bytes),
+        K..M => format!("{:.2} KiB", bytes as f64 / K as f64),
+        M..G => format!("{:.2} MiB", bytes as f64 / M as f64),
+        G.. => format!("{:.2} GiB", bytes as f64 / G as f64),
     }
 }
 
