@@ -221,8 +221,6 @@ impl Reporter {
 
     // Delay is calculated based on deployment id (same for every server in the same deployment)
     fn calculate_initial_delay(&self) -> Duration {
-        use chrono::Timelike;
-
         let report_interval_mins = REPORT_INTERVAL.as_secs() / SECONDS_IN_MINUTE;
         assert!(report_interval_mins == 120, "Modify the algorithm if you change the interval!");
 
