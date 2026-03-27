@@ -194,6 +194,7 @@ fn run_test_against_server(server_process: &mut Child, fail_point_name: &str, po
     }
 
     let instructions = [
+        // 1. Write the schema. Checks for crashes during commit.
         Instruction::Command(
             "
             transaction schema foo
@@ -201,7 +202,9 @@ fn run_test_against_server(server_process: &mut Child, fail_point_name: &str, po
             commit
             ",
         ),
+        // 2. Wait for checkpoint. Check for crashes during various stages of a checkpoint.
         Instruction::WaitForCheckpoint,
+        // 3. Write a data commit. This is mostly just to trigger another checkpoint.
         Instruction::Command(
             r#"
             transaction write foo
@@ -209,7 +212,9 @@ fn run_test_against_server(server_process: &mut Child, fail_point_name: &str, po
             commit
             "#,
         ),
+        // 4. Wait for checkpoint. Check for crashes during cleanup of old checkpoints.
         Instruction::WaitForCheckpoint,
+        // 5. Run a bunch of parallel transactions with conflicts. Check for crashes during aborted commits specifically.
         Instruction::Parallel(
             r#"
             transaction write foo
@@ -220,7 +225,9 @@ fn run_test_against_server(server_process: &mut Child, fail_point_name: &str, po
             commit
             "#,
         ),
+        // 6. Delete the database. Check for crashes during cleanup, and resiliency to partially deleted DB.
         Instruction::Command("database delete foo"),
+        // 7. Recreate the database. Mainly to be able to rerun this function multiple times.
         Instruction::Command("database create foo"),
         Instruction::Command(
             "
