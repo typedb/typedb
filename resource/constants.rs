@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![allow(clippy::identity_op, reason = "One hour is more clear as 1 * SECONDS_IN_HOUR")]
+
 pub mod common {
     pub const SECONDS_IN_MINUTE: u64 = 60;
     pub const MINUTES_IN_HOUR: u64 = 60;
@@ -161,7 +163,7 @@ pub mod diagnostics {
     // The key is write-only and safe to expose
     pub const POSTHOG_API_KEY: &str = "phc_pYoyROZCtNDL8obeJfLZ8cP0UKzIAxmd0JcQQ03i07T";
 
-    pub const REPORT_INTERVAL: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
+    pub const REPORT_INTERVAL: Duration = Duration::from_secs(2 * SECONDS_IN_HOUR);
     pub const REPORT_INTERVAL_MIN_DELAY: Duration = Duration::from_secs(20 * SECONDS_IN_MINUTE);
     pub const REPORT_ONCE_DELAY: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
 
