@@ -229,10 +229,10 @@ impl Reporter {
         let scheduled_minute_in_interval = hash_string_consistently(&self.deployment_id) % report_interval_mins;
 
         let mut delay = if current_minute_in_interval > scheduled_minute_in_interval {
-            REPORT_INTERVAL - Duration::from_mins(current_minute_in_interval)
-                + Duration::from_mins(scheduled_minute_in_interval)
+            REPORT_INTERVAL - Duration::from_secs(current_minute_in_interval * SECONDS_IN_MINUTE)
+                + Duration::from_secs(scheduled_minute_in_interval * SECONDS_IN_MINUTE)
         } else {
-            Duration::from_mins(scheduled_minute_in_interval - current_minute_in_interval)
+            Duration::from_secs((scheduled_minute_in_interval - current_minute_in_interval) * SECONDS_IN_MINUTE)
         };
 
         if delay < REPORT_INTERVAL_MIN_DELAY {
