@@ -221,24 +221,28 @@ impl Reporter {
 
     // Delay is calculated based on deployment id (same for every server in the same deployment)
     fn calculate_initial_delay(&self) -> Duration {
+        use chrono::Timelike;
+
         let report_interval_secs = REPORT_INTERVAL.as_secs();
         assert!(report_interval_secs == 7200, "Modify the algorithm if you change the interval!");
 
-        let current_minute = Utc::now().minute() as u64;
-        let scheduled_minute =
+        let current_minute_mod_interval =
+            (Utc::now().time().num_seconds_from_midnight() as u64 % report_interval_secs) / SECONDS_IN_MINUTE;
+        let scheduled_minute_in_interval =
             hash_string_consistently(&self.deployment_id) % (report_interval_secs / SECONDS_IN_MINUTE);
 
-        let mut delay_secs = if current_minute > scheduled_minute {
-            report_interval_secs - current_minute * SECONDS_IN_MINUTE + scheduled_minute * SECONDS_IN_MINUTE
+        let mut delay = if current_minute_mod_interval > scheduled_minute_in_interval {
+            REPORT_INTERVAL - Duration::from_mins(current_minute_mod_interval)
+                + Duration::from_mins(scheduled_minute_in_interval)
         } else {
-            (scheduled_minute - current_minute) * SECONDS_IN_MINUTE
+            Duration::from_mins(scheduled_minute_in_interval - current_minute_mod_interval)
         };
 
-        if delay_secs < REPORT_INTERVAL_MIN_DELAY.as_secs() {
+        if delay < REPORT_INTERVAL_MIN_DELAY {
             // Skip this interval's report if the delay is too short to avoid CI reports
-            delay_secs += REPORT_INTERVAL.as_secs();
+            delay += REPORT_INTERVAL;
         }
-        Duration::from_secs(delay_secs)
+        delay
     }
 
     fn report_inner_error(error: DiagnosticsReporterError) {
