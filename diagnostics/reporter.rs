@@ -222,7 +222,7 @@ impl Reporter {
     // Delay is calculated based on deployment id (same for every server in the same deployment)
     fn calculate_initial_delay(&self) -> Duration {
         let report_interval_secs = REPORT_INTERVAL.as_secs();
-        assert!(report_interval_secs == 3600, "Modify the algorithm if you change the interval!");
+        assert!(report_interval_secs == 7200, "Modify the algorithm if you change the interval!");
 
         let current_minute = Utc::now().minute() as u64;
         let scheduled_minute =
