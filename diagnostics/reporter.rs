@@ -223,13 +223,12 @@ impl Reporter {
     fn calculate_initial_delay(&self) -> Duration {
         use chrono::Timelike;
 
-        let report_interval_secs = REPORT_INTERVAL.as_secs();
-        assert!(report_interval_secs == 7200, "Modify the algorithm if you change the interval!");
+        let report_interval_mins = REPORT_INTERVAL.as_secs() / SECONDS_IN_MINUTE;
+        assert!(report_interval_mins == 120, "Modify the algorithm if you change the interval!");
 
         let current_minute_mod_interval =
-            (Utc::now().time().num_seconds_from_midnight() as u64 % report_interval_secs) / SECONDS_IN_MINUTE;
-        let scheduled_minute_in_interval =
-            hash_string_consistently(&self.deployment_id) % (report_interval_secs / SECONDS_IN_MINUTE);
+            Utc::now().time().num_seconds_from_midnight() as u64 / SECONDS_IN_MINUTE % report_interval_mins;
+        let scheduled_minute_in_interval = hash_string_consistently(&self.deployment_id) % report_interval_mins;
 
         let mut delay = if current_minute_mod_interval > scheduled_minute_in_interval {
             REPORT_INTERVAL - Duration::from_mins(current_minute_mod_interval)
