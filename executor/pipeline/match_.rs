@@ -24,25 +24,25 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub struct MatchStageExecutor<StageIterator> {
+pub struct MatchStageExecutor<InputIterator> {
     executable: Arc<ConjunctionExecutable>,
     function_registry: Arc<ExecutableFunctionRegistry>,
-    _input_iterator: PhantomData<StageIterator>,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<StageIterator> MatchStageExecutor<StageIterator> {
+impl<InputIterator> MatchStageExecutor<InputIterator> {
     pub fn new(executable: Arc<ConjunctionExecutable>, function_registry: Arc<ExecutableFunctionRegistry>) -> Self {
         Self { executable, function_registry, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, Iterator> StageAPI<Snapshot> for MatchStageExecutor<Iterator>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for MatchStageExecutor<InputIterator>
 where
-    Iterator: StageIterator,
+    InputIterator: StageIterator,
     Snapshot: ReadableSnapshot + 'static,
 {
-    type InputIterator = Iterator;
-    type OutputIterator = MatchStageIterator<Snapshot, Iterator>;
+    type InputIterator = InputIterator;
+    type OutputIterator = MatchStageIterator<Snapshot, InputIterator>;
 
     fn into_iterator(
         self,
@@ -61,18 +61,18 @@ where
     }
 }
 
-pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
+pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, InputIterator> {
     context: ExecutionContext<Snapshot>,
     executable: Arc<ConjunctionExecutable>,
     function_registry: Arc<ExecutableFunctionRegistry>,
-    source_iterator: Iterator,
+    source_iterator: InputIterator,
     current_iterator: Option<Peekable<UniqueRows<AsOwnedRows<PatternIterator<Snapshot>>>>>,
     interrupt: ExecutionInterrupt,
 }
 
-impl<Snapshot: ReadableSnapshot + 'static, Iterator> MatchStageIterator<Snapshot, Iterator> {
+impl<Snapshot: ReadableSnapshot + 'static, InputIterator> MatchStageIterator<Snapshot, InputIterator> {
     fn new(
-        iterator: Iterator,
+        iterator: InputIterator,
         executable: Arc<ConjunctionExecutable>,
         function_registry: Arc<ExecutableFunctionRegistry>,
         context: ExecutionContext<Snapshot>,
@@ -82,10 +82,10 @@ impl<Snapshot: ReadableSnapshot + 'static, Iterator> MatchStageIterator<Snapshot
     }
 }
 
-impl<Snapshot, Iterator> LendingIterator for MatchStageIterator<Snapshot, Iterator>
+impl<Snapshot, InputIterator> LendingIterator for MatchStageIterator<Snapshot, InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    Iterator: StageIterator,
+    InputIterator: StageIterator,
 {
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
@@ -126,10 +126,10 @@ where
     }
 }
 
-impl<Snapshot, Iterator> StageIterator for MatchStageIterator<Snapshot, Iterator>
+impl<Snapshot, InputIterator> StageIterator for MatchStageIterator<Snapshot, InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    Iterator: StageIterator,
+    InputIterator: StageIterator,
 {
 }
 
