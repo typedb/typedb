@@ -46,7 +46,7 @@ where
 
     fn into_iterator(
         self,
-        input_iterator: Iterator,
+        input_iterator: Self::InputIterator,
         context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Result<

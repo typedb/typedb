@@ -39,9 +39,9 @@ where
 
     fn into_iterator(
         self,
-        input_iterator: InputIterator,
+        input_iterator: Self::InputIterator,
         context: ExecutionContext<Snapshot>,
-        interrupt: ExecutionInterrupt,
+        _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),

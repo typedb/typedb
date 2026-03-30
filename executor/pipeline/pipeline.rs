@@ -172,26 +172,6 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         ))
     }
 
-    fn run_stages(
-        initial_iterator: ReadStageIterator<Snapshot>,
-        stages: Vec<ReadPipelineStage<Snapshot>>,
-        context: ExecutionContext<Snapshot>,
-        execution_interrupt: ExecutionInterrupt,
-    ) -> Result<
-        (ReadStageIterator<Snapshot>, ExecutionContext<Snapshot>),
-        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
-    > {
-        let mut current_iterator = initial_iterator;
-        let mut context = context;
-        for stage in stages {
-            let (next_iterator, next_context) =
-                stage.into_iterator(current_iterator, context, execution_interrupt.clone())?;
-            current_iterator = next_iterator;
-            context = next_context;
-        }
-        Ok((current_iterator, context))
-    }
-
     pub fn into_rows_iterator(
         self,
         execution_interrupt: ExecutionInterrupt,
@@ -224,6 +204,26 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
                 ))
             }
         }
+    }
+
+    fn run_stages(
+        initial_iterator: ReadStageIterator<Snapshot>,
+        stages: Vec<ReadPipelineStage<Snapshot>>,
+        context: ExecutionContext<Snapshot>,
+        execution_interrupt: ExecutionInterrupt,
+    ) -> Result<
+        (ReadStageIterator<Snapshot>, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
+        let mut current_iterator = initial_iterator;
+        let mut context = context;
+        for stage in stages {
+            let (next_iterator, next_context) =
+                stage.into_iterator(current_iterator, context, execution_interrupt.clone())?;
+            current_iterator = next_iterator;
+            context = next_context;
+        }
+        Ok((current_iterator, context))
     }
 }
 
