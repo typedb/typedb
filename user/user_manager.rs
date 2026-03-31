@@ -6,8 +6,8 @@
 
 use std::sync::Arc;
 
-use database::{transaction::DataCommitIntent, Database};
-use resource::{constants::server::DEFAULT_USER_NAME, profile::TransactionProfile};
+use database::Database;
+use resource::constants::server::DEFAULT_USER_NAME;
 use storage::durability_client::WALClient;
 use system::{
     concepts::{Credential, User},
@@ -44,34 +44,31 @@ impl UserManager {
         self.get(username).map(|opt| opt.is_some())
     }
 
-    pub fn create(
-        &self,
-        user: &User,
-        credential: &Credential,
-    ) -> Result<(TransactionProfile, DataCommitIntent<WALClient>), (Option<TransactionProfile>, UserCreateError)> {
+    pub fn create(&self, user: &User, credential: &Credential) -> Result<(), UserCreateError> {
         match self.contains(&user.name) {
             Ok(contains) => {
                 if contains {
-                    return Err((None, UserCreateError::UserAlreadyExist {}));
+                    return Err(UserCreateError::UserAlreadyExist {});
                 }
             }
             Err(user_get_err) => {
                 return match user_get_err {
-                    UserGetError::IllegalUsername { .. } => Err((None, UserCreateError::IllegalUsername {})),
-                    UserGetError::Unexpected { .. } => Err((None, UserCreateError::Unexpected {})),
+                    UserGetError::IllegalUsername { .. } => Err(UserCreateError::IllegalUsername {}),
+                    UserGetError::Unexpected { .. } => Err(UserCreateError::Unexpected {}),
                 }
             }
         }
-        let (transaction_profile, create_result) = self.transaction_util.write_transaction(
-            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
+        let create_result = self
+            .transaction_util
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::create(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, user, credential)
-            },
-        );
-        let create_result = match create_result {
-            Ok(commit_intent) => Ok((transaction_profile, commit_intent)),
-            Err(_query_error) => Err((Some(transaction_profile), UserCreateError::IllegalUsername {})),
-        };
-        create_result
+            })
+            .1;
+        match create_result {
+            Ok(Ok(())) => Ok(()),
+            Ok(Err(_)) => Err(UserCreateError::IllegalUsername {}),
+            Err(_) => Err(UserCreateError::Unexpected {}),
+        }
     }
 
     pub fn update(
@@ -79,9 +76,10 @@ impl UserManager {
         username: &str,
         user: &Option<User>,
         credential: &Option<Credential>,
-    ) -> (TransactionProfile, Result<DataCommitIntent<WALClient>, UserUpdateError>) {
-        let (transaction_profile, update_result) = self.transaction_util.write_transaction(
-            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
+    ) -> Result<(), UserUpdateError> {
+        let update_result = self
+            .transaction_util
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::update(
                     snapshot,
                     &type_mgr,
@@ -92,43 +90,43 @@ impl UserManager {
                     user,
                     credential,
                 )
-            },
-        );
-        let update_result =
-            update_result.map(|tuple| tuple).map_err(|_query_error| UserUpdateError::IllegalUsername {});
-        (transaction_profile, update_result)
+            })
+            .1;
+        match update_result {
+            Ok(Ok(())) => Ok(()),
+            Ok(Err(_)) => Err(UserUpdateError::IllegalUsername {}),
+            Err(_) => Err(UserUpdateError::Unexpected {}),
+        }
     }
 
-    pub fn delete(
-        &self,
-        username: &str,
-    ) -> Result<(TransactionProfile, DataCommitIntent<WALClient>), (Option<TransactionProfile>, UserDeleteError)> {
+    pub fn delete(&self, username: &str) -> Result<(), UserDeleteError> {
         if username == DEFAULT_USER_NAME {
-            return Err((None, UserDeleteError::DefaultUserCannotBeDeleted {}));
+            return Err(UserDeleteError::DefaultUserCannotBeDeleted {});
         }
         match self.contains(username) {
             Ok(contains) => {
                 if !contains {
-                    return Err((None, UserDeleteError::UserNotFound {}));
+                    return Err(UserDeleteError::UserNotFound {});
                 }
             }
             Err(user_get_err) => {
                 return match user_get_err {
-                    UserGetError::IllegalUsername { .. } => Err((None, UserDeleteError::IllegalUsername {})),
-                    UserGetError::Unexpected { .. } => Err((None, UserDeleteError::Unexpected {})),
+                    UserGetError::IllegalUsername { .. } => Err(UserDeleteError::IllegalUsername {}),
+                    UserGetError::Unexpected { .. } => Err(UserDeleteError::Unexpected {}),
                 }
             }
         }
 
-        let (transaction_profile, delete_result) = self.transaction_util.write_transaction(
-            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
+        let delete_result = self
+            .transaction_util
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::delete(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, username)
-            },
-        );
-
+            })
+            .1;
         match delete_result {
-            Ok(tuple) => Ok((transaction_profile, tuple)),
-            Err(_) => Err((Some(transaction_profile), UserDeleteError::IllegalUsername {})),
+            Ok(Ok(())) => Ok(()),
+            Ok(Err(_)) => Err(UserDeleteError::IllegalUsername {}),
+            Err(_) => Err(UserDeleteError::Unexpected {}),
         }
     }
 }

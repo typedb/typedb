@@ -11,8 +11,8 @@ pub mod transaction_util {
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::{
         transaction::{
-            DataCommitError, DataCommitIntent, DatabaseDropGuard, SchemaCommitError, SchemaCommitIntent,
-            TransactionRead, TransactionSchema, TransactionWrite,
+            CommitIntent, DataCommitError, SchemaCommitError, SchemaCommitIntent, TransactionRead, TransactionSchema,
+            TransactionWrite,
         },
         Database,
     };
@@ -83,7 +83,7 @@ pub mod transaction_util {
                 Arc<Database<WALClient>>,
                 TransactionOptions,
             ) -> (T, Arc<WriteSnapshot<WALClient>>),
-        ) -> (TransactionProfile, Result<DataCommitIntent<WALClient>, DataCommitError>) {
+        ) -> (TransactionProfile, Result<T, DataCommitError>) {
             let TransactionWrite {
                 snapshot,
                 type_manager,
@@ -94,7 +94,7 @@ pub mod transaction_util {
                 transaction_options,
                 profile,
             } = TransactionWrite::open(self.database.clone(), TransactionOptions::default()).unwrap();
-            let (_rows, snapshot) = fn_(
+            let (rows, snapshot) = fn_(
                 Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
                 type_manager.clone(),
                 thing_manager.clone(),
@@ -113,8 +113,10 @@ pub mod transaction_util {
                 TransactionOptions::default(),
                 profile,
             );
-            let (profile, result) = tx.finalise();
-            (profile, result)
+            let (mut profile, finalise_result) = tx.finalise();
+            let commit_result = finalise_result.and_then(|intent| intent.commit(profile.commit_profile()));
+            profile.commit_profile().end();
+            (profile, commit_result.map(|()| rows))
         }
     }
 }

@@ -5,16 +5,13 @@
  */
 use std::sync::Arc;
 
-use database::{transaction::SchemaCommitError, Database};
+use database::{transaction::SchemaCommitIntent, Database};
 use resource::{
     constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD},
     internal_database_prefix,
     profile::TransactionProfile,
 };
-use storage::{
-    durability_client::WALClient, isolation_manager::ReaderDropGuard, record::CommitRecord,
-    snapshot::CommittableSnapshot,
-};
+use storage::durability_client::WALClient;
 use system::{
     concepts::{Credential, PasswordHash, User},
     repositories::SCHEMA,
@@ -22,30 +19,60 @@ use system::{
 };
 
 use crate::{
-    error::{ArcServerStateError, LocalServerStateError},
+    error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},
     state::ServerState,
 };
 
 pub const SYSTEM_DB: &str = concat!(internal_database_prefix!(), "system");
 
-pub async fn initialise_system_database(
-    server_state: &dyn ServerState,
-) -> Result<Arc<Database<WALClient>>, ArcServerStateError> {
-    server_state.databases_create_unrestricted(SYSTEM_DB).await?;
-    let db = server_state
-        .database_manager()
-        .await
-        .database_unrestricted(SYSTEM_DB)
-        .expect("Critical: system database is absent");
-    initialise_system_database_schema(db.clone(), server_state).await?;
-    Ok(db)
+pub async fn initialise_system_database(server_state: &ServerState) -> Result<(), ArcServerStateError> {
+    if server_state.databases().manager().database_unrestricted(SYSTEM_DB).is_some() {
+        return Ok(());
+    }
+    server_state.databases().databases_create_unrestricted(SYSTEM_DB).await?;
+    Ok(())
 }
 
-pub async fn get_system_database_schema_commit_record(
+pub async fn initialise_system_database_schema(server_state: &ServerState) -> Result<(), ArcServerStateError> {
+    let db = server_state
+        .databases()
+        .manager()
+        .database_unrestricted(SYSTEM_DB)
+        .expect("Critical: system database must exist before schema initialisation");
+    let (mut transaction_profile, commit_intent_opt) = get_system_database_schema_commit_intent(db)?;
+    if let Some(commit_intent) = commit_intent_opt {
+        let commit_profile = transaction_profile.take_commit_profile();
+        let (commit_profile, result) =
+            server_state.databases().database_schema_commit(commit_intent, commit_profile).await;
+        transaction_profile.set_commit_profile(commit_profile);
+        result?;
+    }
+    Ok(())
+}
+
+pub async fn initialise_default_user(server_state: &ServerState) -> Result<(), ArcServerStateError> {
+    let user_manager = server_state.users().manager()?;
+    let exists = user_manager.contains(DEFAULT_USER_NAME).map_err(|typedb_source| {
+        arc_server_state_err(LocalServerStateError::UserCannotBeRetrieved { typedb_source })
+    })?;
+    if !exists {
+        user_manager
+            .create(
+                &User::new(DEFAULT_USER_NAME.to_string()),
+                &Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
+            )
+            .map_err(|typedb_source| {
+                arc_server_state_err(LocalServerStateError::UserCannotBeCreated { typedb_source })
+            })?;
+    }
+    Ok(())
+}
+
+pub fn get_system_database_schema_commit_intent(
     db: Arc<Database<WALClient>>,
-) -> Result<(TransactionProfile, Option<CommitRecord>), ArcServerStateError> {
+) -> Result<(TransactionProfile, Option<SchemaCommitIntent<WALClient>>), ArcServerStateError> {
     let tx_util = TransactionUtil::new(db);
-    let (mut transaction_profile, finalise_result) = tx_util.schema_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
+    let (transaction_profile, finalise_result) = tx_util.schema_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
         let query = typeql::parse_query(SCHEMA)
             .unwrap_or_else(|error| {
                 panic!("Unexpected error occurred when parsing the schema for the {SYSTEM_DB} database: {error:?}")
@@ -60,48 +87,6 @@ pub async fn get_system_database_schema_commit_record(
     });
     let commit_intent =
         finalise_result.map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;
-    let commit_record_opt = commit_intent
-        .schema_snapshot
-        .has_changes()
-        .then(|| commit_intent.schema_snapshot.into_commit_record())
-        .map(|(_drop_guard, record)| record);
-    Ok((transaction_profile, commit_record_opt))
-}
-
-async fn initialise_system_database_schema(
-    db: Arc<Database<WALClient>>,
-    server_state: &dyn ServerState,
-) -> Result<(), ArcServerStateError> {
-    if let (mut transaction_profile, Some(commit_record)) = get_system_database_schema_commit_record(db).await? {
-        server_state.database_schema_commit(SYSTEM_DB, commit_record, transaction_profile.commit_profile()).await?;
-    }
-    Ok(())
-}
-
-pub async fn get_default_user_commit_record(
-    user_manager: &user::user_manager::UserManager,
-) -> Result<(TransactionProfile, Option<CommitRecord>), LocalServerStateError> {
-    let create_result = user_manager.create(
-        &User::new(DEFAULT_USER_NAME.to_string()),
-        &Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
-    );
-
-    let (transaction_profile, commit_intent) =
-        create_result.map_err(|(_, typedb_source)| LocalServerStateError::UserCannotBeCreated { typedb_source })?;
-    let commit_record_opt = commit_intent
-        .write_snapshot
-        .has_changes()
-        .then(|| commit_intent.write_snapshot.into_commit_record())
-        .map(|(_drop_guard, record)| record);
-    Ok((transaction_profile, commit_record_opt))
-}
-
-pub async fn initialise_default_user(
-    user_manager: &user::user_manager::UserManager,
-    server_state: &dyn ServerState,
-) -> Result<(), ArcServerStateError> {
-    if let (mut transaction_profile, Some(commit_record)) = get_default_user_commit_record(user_manager).await? {
-        server_state.database_data_commit(SYSTEM_DB, commit_record, &mut transaction_profile.commit_profile()).await?;
-    }
-    Ok(())
+    let commit_intent_opt = if commit_intent.has_changes() { Some(commit_intent) } else { None };
+    Ok((transaction_profile, commit_intent_opt))
 }

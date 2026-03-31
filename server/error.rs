@@ -24,7 +24,18 @@ use crate::{
     service::export_service::DatabaseExportError,
 };
 
-pub trait ServerStateError: TypeDBError + Send + Sync + Debug + 'static {}
+pub enum ErrorResponseCategory {
+    NotFound,
+    Forbidden,
+    NotImplemented,
+    Unavailable,
+    InvalidRequest,
+    Internal,
+}
+
+pub trait ServerStateError: TypeDBError + Send + Sync + Debug + 'static {
+    fn error_response_category(&self) -> ErrorResponseCategory;
+}
 
 pub type ArcServerStateError = Arc<dyn ServerStateError>;
 
@@ -55,6 +66,8 @@ typedb_error! {
         HttpTlsUnsetDefaultCryptoProvider(23, "Failed to install default crypto provider for the HTTP server TLS configuration."),
         HttpTlsPemFileError(24, "Invalid PEM file specified for the HTTP server.", source: Arc<tokio_rustls::rustls::pki_types::pem::Error>),
         ServerState(25, "Invalid server state.", typedb_source: ArcServerStateError),
+        AddressResolutionFailed(26, "Could not resolve address '{address}'.", address: String, source: Arc<io::Error>),
+        AddressResolutionEmpty(27, "Could not resolve address '{address}' to any IP address.", address: String),
     }
 }
 
@@ -80,10 +93,25 @@ typedb_error! {
         DatabaseDataCommitFailed(18, "Data commit failed.", typedb_source: DataCommitError),
         DatabaseCommitRecordExistsFailed(19, "Commit record check failed.", typedb_source: DatabaseOpenError),
         NotSupportedByDistribution(20, "Not supported by this distribution: {description}", description: String),
+        TransactionOpenFailed(21, "Failed to open transaction.", typedb_source: TransactionError),
     }
 }
 
-impl ServerStateError for LocalServerStateError {}
+impl ServerStateError for LocalServerStateError {
+    fn error_response_category(&self) -> ErrorResponseCategory {
+        use ErrorResponseCategory::*;
+        match self {
+            Self::Unimplemented { .. } | Self::NotSupportedByDistribution { .. } => NotImplemented,
+            Self::OperationNotPermitted { .. } => Forbidden,
+            Self::DatabaseNotFound { .. } | Self::UserNotFound { .. } => NotFound,
+            Self::NotInitialised { .. }
+            | Self::DatabaseSchemaCommitFailed { .. }
+            | Self::DatabaseDataCommitFailed { .. }
+            | Self::DatabaseCommitRecordExistsFailed { .. } => Internal,
+            _ => InvalidRequest,
+        }
+    }
+}
 
 impl From<LocalServerStateError> for ArcServerStateError {
     fn from(typedb_source: LocalServerStateError) -> Self {

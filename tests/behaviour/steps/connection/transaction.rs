@@ -7,7 +7,9 @@ use std::sync::Arc;
 
 use cucumber::gherkin::Step;
 use database::{
-    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{
+        CommitIntent, DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite,
+    },
     Database,
 };
 use error::TypeDBError;
@@ -27,7 +29,7 @@ async fn server_open_transaction_for_database(
     tx_name: String,
     database_name: &'_ str,
 ) -> ActiveTransaction {
-    let database = server.database_manager().await.database(database_name).expect("Expected database");
+    let database = server.database_manager().database(database_name).expect("Expected database");
     match tx_name.as_str() {
         "read" => ActiveTransaction::Read(
             TransactionRead::open(database, TransactionOptions::default()).expect("Read transaction"),
@@ -118,7 +120,8 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
             ));
         }
         ActiveTransaction::Write(tx) => {
-            let (_profile, result) = tx.commit();
+            let (mut profile, result) = tx.finalise();
+            let result = result.and_then(|intent| intent.commit(profile.commit_profile()));
             if let Either::Right(error) = may_error.check(result) {
                 match error {
                     DataCommitError::ConceptWriteErrors { write_errors: errors, .. } => {
@@ -137,7 +140,8 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
         }
         ActiveTransaction::Schema(tx) => {
             let types_syntax = tx.type_manager.get_types_syntax(tx.snapshot.as_ref()).unwrap();
-            let (_profile, result) = tx.commit();
+            let (mut profile, result) = tx.finalise();
+            let result = result.and_then(|intent| intent.commit(profile.commit_profile()));
             if let Either::Right(error) = may_error.check(result) {
                 match error {
                     SchemaCommitError::ConceptWriteErrors { write_errors: errors, .. } => {
@@ -166,7 +170,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
 async fn test_schema_export(context: &mut Context, types_syntax: &str) {
     // export, re-import, and export schema and verify that's equal!
     let guard = context.server.as_ref().unwrap().lock().unwrap();
-    let database_manager = guard.database_manager().await;
+    let database_manager = guard.database_manager();
     if !types_syntax.trim().is_empty() {
         const REIMPORT_DB: &str = "schema_reimport_from_test_tmp";
         database_manager.put_database(REIMPORT_DB).unwrap();
@@ -211,7 +215,10 @@ fn execute_schema_transaction(
             &schema_define,
         )
         .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
-    transaction.commit().1.map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
+    let (mut profile, result) = transaction.finalise();
+    result
+        .and_then(|intent| intent.commit(profile.commit_profile()))
+        .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
     Ok(())
 }
 

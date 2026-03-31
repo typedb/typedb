@@ -203,7 +203,9 @@ impl DatabaseImportService {
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         let database_importer = match self.database_importer.as_mut() {
             Some(database_importer) => database_importer,
-            None => return Err(DatabaseImportServiceError::DatabaseNotFoundForItems {}),
+            None => {
+                return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "data loading".to_string() })
+            }
         };
 
         for item in items {
@@ -222,7 +224,9 @@ impl DatabaseImportService {
     async fn handle_done(&mut self) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         let database_importer = match &mut self.database_importer {
             Some(database_importer) => database_importer,
-            None => return Err(DatabaseImportServiceError::DatabaseNotFoundForDone {}),
+            None => {
+                return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "finalisation".to_string() })
+            }
         };
 
         event!(Level::DEBUG, "Finalising the imported database...");
@@ -268,7 +272,7 @@ impl DatabaseImportService {
         use typedb_protocol::migration::item;
         let MigrationItemProto { item } = item_proto;
         let Some(item) = item else {
-            return Err(DatabaseImportServiceError::EmptyItem {});
+            return Err(DatabaseImportServiceError::ImportEmptyItem {});
         };
 
         match item {

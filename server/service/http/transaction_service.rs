@@ -68,7 +68,7 @@ use crate::{
         },
         QueryType, TransactionType,
     },
-    state::ArcServerState,
+    state::ServerState,
 };
 
 macro_rules! respond_error_and_return_break {
@@ -149,7 +149,7 @@ fn respond_transaction_response(
 
 #[derive(Debug)]
 pub(crate) struct TransactionService {
-    server_state: ArcServerState,
+    server_state: Arc<ServerState>,
 
     request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
     query_interrupt_sender: broadcast::Sender<InterruptType>,
@@ -231,7 +231,7 @@ impl fmt::Display for QueryAnswerWarning {
 
 impl TransactionService {
     pub(crate) fn new(
-        server_state: ArcServerState,
+        server_state: Arc<ServerState>,
         request_stream: Receiver<(TransactionRequest, TransactionResponder)>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
@@ -265,53 +265,14 @@ impl TransactionService {
         let receive_time = Instant::now();
         let transaction_timeout_millis = options.transaction_timeout_millis;
 
-        let database = self
+        let transaction = self
             .server_state
-            .databases_get_for_transaction(database_name.as_str(), type_)
+            .transactions()
+            .open_transaction(&database_name, type_, options, owner, self.close_sender.clone())
             .await
-            .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?
-            .ok_or_else(|| TransactionServiceError::DatabaseNotFound { name: database_name.clone() })?;
+            .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?;
 
-        let transaction = match type_ {
-            TransactionType::Read => {
-                let transaction = spawn_blocking(move || {
-                    TransactionRead::open(database, options)
-                        .map_err(|typedb_source| TransactionServiceError::TransactionFailed { typedb_source })
-                })
-                .await
-                .unwrap()?;
-                Transaction::Read(transaction)
-            }
-            TransactionType::Write => {
-                let transaction = spawn_blocking(move || {
-                    TransactionWrite::open(database, options)
-                        .map_err(|typedb_source| TransactionServiceError::TransactionFailed { typedb_source })
-                })
-                .await
-                .unwrap()?;
-                Transaction::Write(transaction)
-            }
-            TransactionType::Schema => {
-                let transaction = spawn_blocking(move || {
-                    TransactionSchema::open(database, options)
-                        .map_err(|typedb_source| TransactionServiceError::TransactionFailed { typedb_source })
-                })
-                .await
-                .unwrap()?;
-                Transaction::Schema(transaction)
-            }
-        };
-
-        let transaction_add_result = self
-            .server_state
-            .transactions_add(transaction.id(), transaction.type_(), owner, self.close_sender.clone())
-            .await;
-        if let Err(typedb_source) = transaction_add_result {
-            transaction.close();
-            return Err(TransactionServiceError::CannotOpen { typedb_source });
-        }
-
-        self.server_state.diagnostics_manager().await.increment_load_count(
+        self.server_state.diagnostics_manager().increment_load_count(
             ClientEndpoint::Http,
             &database_name,
             transaction.load_kind(),
@@ -324,7 +285,7 @@ impl TransactionService {
     }
 
     pub(crate) async fn listen(&mut self) {
-        let mut global_shutdown_receiver = self.server_state.shutdown_receiver().await;
+        let mut global_shutdown_receiver = self.server_state.shutdown_receiver();
         loop {
             let control = if let Some((_, write_query_worker)) = &mut self.running_write_query {
                 tokio::select! { biased;
@@ -423,15 +384,15 @@ impl TransactionService {
         // interrupt active queries
         self.interrupt(InterruptType::TransactionCommitted).await;
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionCommitted).await {
-            respond_error_and_return_break!(responder, TransactionServiceError::ServiceFailedQueueCleanup {});
+            respond_error_and_return_break!(responder, TransactionServiceError::QueueCleanupFailed {});
         }
 
         // finish executing any remaining writes so they make it into the commit
         if let Break(()) = self.finish_queued_write_queries(InterruptType::TransactionCommitted).await {
-            respond_error_and_return_break!(responder, TransactionServiceError::ServiceFailedQueueCleanup {});
+            respond_error_and_return_break!(responder, TransactionServiceError::QueueCleanupFailed {});
         }
 
-        let diagnostics_manager = self.server_state.diagnostics_manager().await;
+        let diagnostics_manager = self.server_state.diagnostics_manager();
         let server_state = self.server_state.clone();
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
@@ -445,7 +406,7 @@ impl TransactionService {
                     LoadKind::WriteTransactions,
                 );
                 unwrap_or_execute_else_respond_error_and_return_break!(
-                    commit_write_transaction(server_state, transaction).await.1, // TODO: Use profile
+                    commit_write_transaction(server_state, transaction).await.1,
                     responder,
                     |typedb_source| { TransactionServiceError::DataCommitFailed { typedb_source } }
                 );
@@ -462,7 +423,7 @@ impl TransactionService {
                 );
 
                 unwrap_or_execute_else_respond_error_and_return_break!(
-                    commit_schema_transaction(server_state, transaction).await.1, // TODO: Use profile
+                    commit_schema_transaction(server_state, transaction).await.1,
                     responder,
                     |typedb_source| { TransactionServiceError::SchemaCommitFailed { typedb_source } }
                 );
@@ -522,7 +483,7 @@ impl TransactionService {
         match self.transaction.take() {
             None => (),
             Some(Transaction::Read(transaction)) => {
-                self.server_state.diagnostics_manager().await.decrement_load_count(
+                self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::ReadTransactions,
@@ -530,7 +491,7 @@ impl TransactionService {
                 transaction.close()
             }
             Some(Transaction::Write(transaction)) => {
-                self.server_state.diagnostics_manager().await.decrement_load_count(
+                self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
@@ -538,7 +499,7 @@ impl TransactionService {
                 transaction.close()
             }
             Some(Transaction::Schema(transaction)) => {
-                self.server_state.diagnostics_manager().await.decrement_load_count(
+                self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,
@@ -732,10 +693,10 @@ impl TransactionService {
     ) -> Result<TransactionServiceResponse, TransactionServiceError> {
         self.interrupt(InterruptType::SchemaQueryExecution).await;
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await {
-            return Err(TransactionServiceError::ServiceFailedQueueCleanup {});
+            return Err(TransactionServiceError::QueueCleanupFailed {});
         }
         if let Break(()) = self.finish_queued_write_queries(InterruptType::SchemaQueryExecution).await {
-            return Err(TransactionServiceError::ServiceFailedQueueCleanup {});
+            return Err(TransactionServiceError::QueueCleanupFailed {});
         }
 
         if let Some(transaction) = self.transaction.take() {
@@ -748,8 +709,10 @@ impl TransactionService {
                     self.transaction = Some(Transaction::Schema(transaction));
                     match result {
                         Ok(_) => return Ok(TransactionServiceResponse::Query(QueryAnswer::ResOk(QueryType::Schema))),
-                        Err(err) => {
-                            return Err(TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: *err });
+                        Err(typedb_source) => {
+                            return Err(TransactionServiceError::SchemaQueryFailedAbortingTransaction {
+                                typedb_source,
+                            });
                         }
                     }
                 }

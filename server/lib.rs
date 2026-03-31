@@ -27,7 +27,7 @@ use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig, StorageConfig},
     service::{grpc, http},
-    state::{ArcServerState, BoxServerStatus, LocalServerState},
+    state::{BoxServerStatus, ServerState},
 };
 
 pub mod authentication;
@@ -37,11 +37,12 @@ pub mod service;
 pub mod state;
 pub mod status;
 pub mod system_init;
+pub mod transaction;
 
 #[derive(Debug)]
 pub struct ServerBuilder {
     distribution_info: Option<DistributionInfo>,
-    server_state: Option<ArcServerState>,
+    server_state: Option<Arc<ServerState>>,
     shutdown_channel: Option<(Sender<()>, Receiver<()>)>,
     storage_server_id: Option<String>,
     background_tasks_tracker: Option<TokioTaskTracker>,
@@ -69,7 +70,7 @@ impl ServerBuilder {
         self
     }
 
-    pub fn server_state(mut self, server_state: ArcServerState) -> Self {
+    pub fn server_state(mut self, server_state: Arc<ServerState>) -> Self {
         self.server_state = Some(server_state);
         self
     }
@@ -94,7 +95,7 @@ impl ServerBuilder {
         let server_state = match self.server_state {
             Some(server_state) => server_state,
             None => {
-                let mut server_state = LocalServerState::new(
+                let server_state = ServerState::new(
                     distribution_info,
                     config.clone(),
                     server_id,
@@ -102,9 +103,10 @@ impl ServerBuilder {
                     shutdown_receiver.clone(),
                     background_tasks_tracker.get_spawner(),
                 )
-                .await?;
+                .await?
+                .build();
                 server_state
-                    .initialise_and_load()
+                    .initialise()
                     .await
                     .map_err(|error| ServerOpenError::ServerState { typedb_source: error })?;
                 Arc::new(server_state)
@@ -186,7 +188,7 @@ impl ServerBuilder {
 pub struct Server {
     distribution_info: DistributionInfo,
     config: Config,
-    server_state: ArcServerState,
+    server_state: Arc<ServerState>,
     shutdown_sender: Sender<()>,
     shutdown_receiver: Receiver<()>,
     background_tasks_tracker: TokioTaskTracker,
@@ -196,7 +198,7 @@ impl Server {
     pub fn new(
         distribution_info: DistributionInfo,
         config: Config,
-        server_state: ArcServerState,
+        server_state: Arc<ServerState>,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
         background_tasks_tracker: TokioTaskTracker,
@@ -223,7 +225,7 @@ impl Server {
     async fn serve_all(
         distribution_info: DistributionInfo,
         encryption_config: EncryptionConfig,
-        server_state: ArcServerState,
+        server_state: Arc<ServerState>,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
         background_tasks_spawner: TokioTaskSpawner,
@@ -231,12 +233,12 @@ impl Server {
         Self::install_default_encryption_provider()?;
 
         let grpc_server = Self::serve_grpc(
-            server_state.grpc_serving_address().await,
+            server_state.grpc_serving_address(),
             &encryption_config,
             server_state.clone(),
             shutdown_receiver.clone(),
         );
-        let http_server = if let Some(http_address) = server_state.http_address().await {
+        let http_server = if let Some(http_address) = server_state.http_address() {
             let server = Self::serve_http(
                 http_address,
                 &encryption_config,
@@ -251,6 +253,7 @@ impl Server {
 
         Self::print_serving_information(
             server_state
+                .servers()
                 .server_status()
                 .await
                 .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?,
@@ -269,7 +272,7 @@ impl Server {
     async fn serve_grpc(
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: ArcServerState,
+        server_state: Arc<ServerState>,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
@@ -295,7 +298,7 @@ impl Server {
     async fn serve_http(
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: ArcServerState,
+        server_state: Arc<ServerState>,
         mut shutdown_receiver: Receiver<()>,
         background_tasks: TokioTaskSpawner,
     ) -> Result<(), ServerOpenError> {
@@ -394,7 +397,7 @@ impl Server {
             .map_err(|_| ServerOpenError::HttpTlsUnsetDefaultCryptoProvider {})
     }
 
-    pub async fn database_manager(&self) -> Arc<DatabaseManager> {
-        self.server_state.database_manager().await
+    pub fn database_manager(&self) -> Arc<DatabaseManager> {
+        self.server_state.databases().manager()
     }
 }

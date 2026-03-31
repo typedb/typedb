@@ -12,24 +12,33 @@ use std::{
 use concept::{
     error::ConceptWriteError,
     thing::{statistics::StatisticsError, thing_manager::ThingManager},
-    type_::type_manager::{type_cache::TypeCacheCreateError, TypeManager},
+    type_::type_manager::{
+        type_cache::{TypeCache, TypeCacheCreateError},
+        TypeManager,
+    },
 };
 use durability::DurabilitySequenceNumber;
 use error::typedb_error;
-use function::{function_manager::FunctionManager, FunctionError};
+use function::{function_cache::FunctionCache, function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
-use resource::profile::TransactionProfile;
+use resource::profile::{CommitProfile, TransactionProfile};
 use storage::{
     durability_client::DurabilityClient,
+    record::CommitRecord,
     snapshot::{
-        snapshot_id::SnapshotId, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot,
-        WriteSnapshot,
+        snapshot_id::SnapshotId, CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError,
+        WritableSnapshot, WriteSnapshot,
     },
 };
 use tracing::Level;
 
 use crate::Database;
+
+pub trait CommitIntent: Sized {
+    type Error;
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), Self::Error>;
+}
 
 #[derive(Debug)]
 pub struct TransactionRead<D> {
@@ -181,20 +190,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             return (profile, Err(DataCommitError::ConceptWriteErrorsFirst { typedb_source: Box::new(error) }));
         };
         commit_profile.things_finalised();
-        drop(self.type_manager);
         (profile, Ok(DataCommitIntent { database_drop_guard: self.database, write_snapshot: snapshot }))
-    }
-
-    pub fn commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
-        let (mut profile, (database, snapshot)) = match self.finalise() {
-            (profile, Ok(DataCommitIntent { database_drop_guard, write_snapshot })) => {
-                (profile, (database_drop_guard, write_snapshot))
-            }
-            (profile, Err(error)) => return (profile, Err(error)),
-        };
-        let result = database.data_commit_with_snapshot(snapshot, profile.commit_profile());
-        profile.commit_profile().end();
-        (profile, result)
     }
 
     pub fn rollback(&mut self) {
@@ -312,21 +308,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         }
         commit_profile.functions_finalised();
 
-        let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
-        drop(type_manager);
+        let _type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         (profile, Ok(SchemaCommitIntent { database_drop_guard: self.database, schema_snapshot: snapshot }))
-    }
-
-    pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
-        let (mut profile, commit_intent) = match self.finalise() {
-            (profile, Ok(commit_intent)) => (profile, commit_intent),
-            (profile, Err(error)) => return (profile, Err(error)),
-        };
-        let result = commit_intent
-            .database_drop_guard
-            .schema_commit_with_snapshot(commit_intent.schema_snapshot, profile.commit_profile());
-        profile.commit_profile().end();
-        (profile, result)
     }
 
     pub fn rollback(&mut self) {
@@ -397,14 +380,141 @@ macro_rules! with_transaction_parts {
     }};
 }
 
-pub struct SchemaCommitIntent<D> {
-    pub database_drop_guard: DatabaseDropGuard<D>,
-    pub schema_snapshot: SchemaSnapshot<D>,
+pub struct DataCommitIntent<D> {
+    database_drop_guard: DatabaseDropGuard<D>,
+    write_snapshot: WriteSnapshot<D>,
 }
 
-pub struct DataCommitIntent<D> {
-    pub database_drop_guard: DatabaseDropGuard<D>,
-    pub write_snapshot: WriteSnapshot<D>,
+impl<D: DurabilityClient> DataCommitIntent<D> {
+    pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>) -> Self {
+        Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot }
+    }
+
+    pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
+        let snapshot = WriteSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
+        Self::new(database, snapshot)
+    }
+
+    pub fn has_changes(&self) -> bool {
+        self.write_snapshot.has_changes()
+    }
+
+    pub fn database_name(&self) -> &str {
+        self.database_drop_guard.name()
+    }
+
+    pub fn into_commit_record(
+        self,
+    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
+        let (reader_guard, commit_record) = self.write_snapshot.into_commit_record();
+        (self.database_drop_guard, reader_guard, commit_record)
+    }
+}
+
+impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
+    type Error = DataCommitError;
+
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
+        self.write_snapshot
+            .commit(commit_profile)
+            .map(|_| ())
+            .map_err(|typedb_source| DataCommitError::SnapshotError { typedb_source })
+    }
+}
+
+pub struct SchemaCommitIntent<D> {
+    database_drop_guard: DatabaseDropGuard<D>,
+    schema_snapshot: SchemaSnapshot<D>,
+}
+
+impl<D: DurabilityClient> SchemaCommitIntent<D> {
+    pub fn new(database: Arc<Database<D>>, schema_snapshot: SchemaSnapshot<D>) -> Self {
+        Self { database_drop_guard: DatabaseDropGuard::new(database), schema_snapshot }
+    }
+
+    pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
+        let snapshot = SchemaSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
+        Self::new(database, snapshot)
+    }
+
+    pub fn has_changes(&self) -> bool {
+        self.schema_snapshot.has_changes()
+    }
+
+    pub fn database_name(&self) -> &str {
+        self.database_drop_guard.name()
+    }
+
+    pub fn into_commit_record(
+        self,
+    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
+        let (reader_guard, commit_record) = self.schema_snapshot.into_commit_record();
+        (self.database_drop_guard, reader_guard, commit_record)
+    }
+}
+
+impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
+    type Error = SchemaCommitError;
+
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
+        use SchemaCommitError::{StatisticsError, TypeCacheUpdateError};
+        let database = &self.database_drop_guard;
+
+        // Schema commits must wait for all other data operations to finish. No new read or write
+        // transaction may open until the commit completes.
+        let mut schema_commit_guard = database.schema.write().unwrap();
+        let mut schema = (*schema_commit_guard).clone();
+
+        let mut thing_statistics = (*schema.thing_statistics).clone();
+
+        // synchronise statistics
+        if let Err(typedb_source) = thing_statistics.may_synchronise(&database.storage) {
+            return Err(StatisticsError { typedb_source });
+        }
+
+        // flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
+        if let Err(typedb_source) = thing_statistics.durably_write(database.storage.durability()) {
+            return Err(StatisticsError { typedb_source });
+        }
+        commit_profile.schema_update_statistics_durably_written();
+
+        let sequence_number = match self.schema_snapshot.commit(commit_profile) {
+            Ok(sequence_number) => sequence_number,
+            Err(typedb_source) => return Err(SchemaCommitError::SnapshotError { typedb_source }),
+        };
+
+        if let Some(sequence_number) = sequence_number {
+            // replace schema cache
+            let type_cache = match TypeCache::new(database.storage.clone(), sequence_number) {
+                Ok(type_cache) => type_cache,
+                Err(typedb_source) => return Err(TypeCacheUpdateError { typedb_source }),
+            };
+            schema.type_cache = Arc::new(type_cache);
+            let type_manager = TypeManager::new(
+                database.definition_key_generator.clone(),
+                database.type_vertex_generator.clone(),
+                Some(schema.type_cache.clone()),
+            );
+            let function_cache = match FunctionCache::new(database.storage.clone(), &type_manager, sequence_number) {
+                Ok(function_cache) => function_cache,
+                Err(typedb_source) => return Err(SchemaCommitError::FunctionError { typedb_source }),
+            };
+            schema.function_cache = Arc::new(function_cache);
+            commit_profile.schema_update_caches_updated();
+        }
+
+        // replace statistics
+        if let Err(typedb_source) = thing_statistics.may_synchronise(&database.storage) {
+            return Err(StatisticsError { typedb_source });
+        }
+        commit_profile.schema_update_statistics_keys_updated();
+        schema.thing_statistics = Arc::new(thing_statistics);
+
+        database.query_cache.force_reset(&schema.thing_statistics);
+
+        *schema_commit_guard = schema;
+        Ok(())
+    }
 }
 
 pub struct DatabaseDropGuard<D> {

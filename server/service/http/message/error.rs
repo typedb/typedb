@@ -8,9 +8,12 @@ use error::TypeDBError;
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::service::{
-    http::{error::HttpServiceError, message::body::JsonBody},
-    transaction_service::TransactionServiceError,
+use crate::{
+    error::ErrorResponseCategory,
+    service::{
+        http::{error::HttpServiceError, message::body::JsonBody},
+        transaction_service::TransactionServiceError,
+    },
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -30,19 +33,14 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::UnknownVersion { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::MissingPathParameter { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::InvalidPathParameter { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::State { typedb_source } => {
-                debug_assert!(
-                    typedb_source.code_prefix() == "SRV",
-                    "Expected only local server state errors. Override for "
-                );
-                match typedb_source.code_number() {
-                    1 => StatusCode::NOT_IMPLEMENTED,                  // Unimplemented
-                    2 => StatusCode::FORBIDDEN,                        // OperationNotPermitted
-                    3 | 4 => StatusCode::NOT_FOUND,                    // DatabaseNotFound | UserNotFound
-                    14 | 17 | 18 => StatusCode::INTERNAL_SERVER_ERROR, // NotInitialised | *CommitFailed
-                    _ => StatusCode::BAD_REQUEST,
-                }
-            }
+            HttpServiceError::State { typedb_source } => match typedb_source.error_response_category() {
+                ErrorResponseCategory::NotFound => StatusCode::NOT_FOUND,
+                ErrorResponseCategory::Forbidden => StatusCode::FORBIDDEN,
+                ErrorResponseCategory::NotImplemented => StatusCode::NOT_IMPLEMENTED,
+                ErrorResponseCategory::Unavailable => StatusCode::SERVICE_UNAVAILABLE,
+                ErrorResponseCategory::InvalidRequest => StatusCode::BAD_REQUEST,
+                ErrorResponseCategory::Internal => StatusCode::INTERNAL_SERVER_ERROR,
+            },
             HttpServiceError::Authentication { .. } => StatusCode::UNAUTHORIZED,
             HttpServiceError::Transaction { typedb_source } => match typedb_source {
                 TransactionServiceError::DatabaseNotFound { .. } => StatusCode::NOT_FOUND,
@@ -54,14 +52,14 @@ impl IntoResponse for HttpServiceError {
                 TransactionServiceError::QueryParseFailed { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::SchemaQueryRequiresSchemaTransaction { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::WriteQueryRequiresSchemaOrWriteTransaction { .. } => StatusCode::BAD_REQUEST,
-                TransactionServiceError::TxnAbortSchemaQueryFailed { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::SchemaQueryFailedAbortingTransaction { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::QueryFailed { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::AnalyseQueryFailed { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::AnalyseQueryExpectsPipeline { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::NoOpenTransaction { .. } => StatusCode::NOT_FOUND,
                 TransactionServiceError::QueryInterrupted { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::QueryStreamNotFound { .. } => StatusCode::NOT_FOUND,
-                TransactionServiceError::ServiceFailedQueueCleanup { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::QueueCleanupFailed { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::PipelineExecution { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::TransactionTimeout { .. } => StatusCode::REQUEST_TIMEOUT,
                 TransactionServiceError::InvalidPrefetchSize { .. } => StatusCode::BAD_REQUEST,

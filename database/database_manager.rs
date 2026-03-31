@@ -12,7 +12,6 @@ use std::{
 };
 
 use cache::CACHE_DB_NAME_PREFIX;
-use itertools::Itertools;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
 use tracing::{event, warn, Level};

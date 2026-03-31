@@ -8,7 +8,7 @@ use std::{fs::File, io::Read, path::Path, sync::Arc, time::Instant};
 
 use database::{
     database_manager::DatabaseManager,
-    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
     Database,
 };
 use executor::{batch::Batch, pipeline::stage::StageIterator, ExecutionInterrupt};
@@ -61,7 +61,8 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
         transaction_options,
         profile,
     );
-    tx.commit().1.unwrap();
+    let (mut profile, intent) = tx.finalise();
+    intent.unwrap().commit(profile.commit_profile()).unwrap();
 }
 
 fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
@@ -102,7 +103,8 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
         transaction_options,
         profile,
     );
-    tx.commit().1.unwrap();
+    let (mut profile, intent) = tx.finalise();
+    intent.unwrap().commit(profile.commit_profile()).unwrap();
 }
 
 fn setup() -> Arc<Database<WALClient>> {
