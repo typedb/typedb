@@ -516,6 +516,7 @@ checkstyle_test(
         "LICENSE",
         "MODULE.bazel.lock",
         "VERSION",
+        "WORKSPACE.bazel",
     ],
     license_type = "mpl-header",
 )
