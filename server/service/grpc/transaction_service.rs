@@ -443,13 +443,7 @@ impl TransactionService {
         let transaction = self
             .server_state
             .transactions()
-            .open_transaction(
-                &database_name,
-                transaction_type,
-                transaction_options,
-                self.owner.clone(),
-                self.close_sender.clone(),
-            )
+            .open(&database_name, transaction_type, transaction_options, self.owner.clone(), self.close_sender.clone())
             .await
             .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
 

@@ -16,14 +16,13 @@ use crate::{
 
 #[async_trait]
 pub trait ServerOperator: Debug + Send + Sync {
-    async fn server_status(&self) -> Result<BoxServerStatus, ArcServerStateError>;
+    async fn status(&self) -> Result<BoxServerStatus, ArcServerStateError>;
 
-    async fn servers_all(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError>;
+    async fn statuses(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError>;
 
-    async fn servers_register(&self, clustering_id: u64, clustering_address: String)
-        -> Result<(), ArcServerStateError>;
+    async fn register(&self, clustering_id: u64, clustering_address: String) -> Result<(), ArcServerStateError>;
 
-    async fn servers_deregister(&self, clustering_id: u64) -> Result<(), ArcServerStateError>;
+    async fn deregister(&self, clustering_id: u64) -> Result<(), ArcServerStateError>;
 }
 
 #[derive(Debug)]
@@ -39,25 +38,21 @@ impl LocalServerOperator {
 
 #[async_trait]
 impl ServerOperator for LocalServerOperator {
-    async fn server_status(&self) -> Result<BoxServerStatus, ArcServerStateError> {
+    async fn status(&self) -> Result<BoxServerStatus, ArcServerStateError> {
         Ok(Box::new(self.server_status.clone()))
     }
 
-    async fn servers_all(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError> {
-        self.server_status().await.map(|status| vec![status])
+    async fn statuses(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError> {
+        self.status().await.map(|status| vec![status])
     }
 
-    async fn servers_register(
-        &self,
-        _clustering_id: u64,
-        _clustering_address: String,
-    ) -> Result<(), ArcServerStateError> {
+    async fn register(&self, _clustering_id: u64, _clustering_address: String) -> Result<(), ArcServerStateError> {
         Err(Arc::new(LocalServerStateError::NotSupportedByDistribution {
             description: "exclusive to TypeDB Cloud and TypeDB Enterprise".to_string(),
         }))
     }
 
-    async fn servers_deregister(&self, _clustering_id: u64) -> Result<(), ArcServerStateError> {
+    async fn deregister(&self, _clustering_id: u64) -> Result<(), ArcServerStateError> {
         Err(Arc::new(LocalServerStateError::NotSupportedByDistribution {
             description: "exclusive to TypeDB Cloud and TypeDB Enterprise".to_string(),
         }))

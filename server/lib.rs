@@ -254,7 +254,7 @@ impl Server {
         Self::print_serving_information(
             server_state
                 .servers()
-                .server_status()
+                .status()
                 .await
                 .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?,
             distribution_info,

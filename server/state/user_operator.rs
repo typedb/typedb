@@ -24,20 +24,15 @@ use crate::{
 
 #[async_trait]
 pub trait UserOperator: Debug + Send + Sync {
-    async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError>;
+    async fn all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError>;
 
-    async fn users_contains(&self, accessor: Accessor, name: &str) -> Result<bool, ArcServerStateError>;
+    async fn contains(&self, accessor: Accessor, name: &str) -> Result<bool, ArcServerStateError>;
 
-    async fn users_get(&self, accessor: Accessor, name: &str) -> Result<User, ArcServerStateError>;
+    async fn get(&self, accessor: Accessor, name: &str) -> Result<User, ArcServerStateError>;
 
-    async fn users_create(
-        &self,
-        accessor: Accessor,
-        user: User,
-        credential: Credential,
-    ) -> Result<(), ArcServerStateError>;
+    async fn create(&self, accessor: Accessor, user: User, credential: Credential) -> Result<(), ArcServerStateError>;
 
-    async fn users_update(
+    async fn update(
         &self,
         accessor: Accessor,
         username: &str,
@@ -45,9 +40,9 @@ pub trait UserOperator: Debug + Send + Sync {
         credential_update: Option<Credential>,
     ) -> Result<(), ArcServerStateError>;
 
-    async fn users_delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError>;
+    async fn delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError>;
 
-    async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError>;
+    async fn verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError>;
 
     async fn token_create(&self, username: String, password: String) -> Result<String, ArcServerStateError>;
 
@@ -110,7 +105,7 @@ impl LocalUserOperator {
 
 #[async_trait]
 impl UserOperator for LocalUserOperator {
-    async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError> {
+    async fn all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError> {
         if !PermissionManager::exec_user_all_permitted(accessor.as_str()) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
@@ -121,7 +116,7 @@ impl UserOperator for LocalUserOperator {
         }
     }
 
-    async fn users_contains(&self, accessor: Accessor, name: &str) -> Result<bool, ArcServerStateError> {
+    async fn contains(&self, accessor: Accessor, name: &str) -> Result<bool, ArcServerStateError> {
         if !PermissionManager::exec_user_get_permitted(accessor.as_str(), name) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
@@ -135,7 +130,7 @@ impl UserOperator for LocalUserOperator {
         }
     }
 
-    async fn users_get(&self, accessor: Accessor, name: &str) -> Result<User, ArcServerStateError> {
+    async fn get(&self, accessor: Accessor, name: &str) -> Result<User, ArcServerStateError> {
         if !PermissionManager::exec_user_get_permitted(accessor.as_str(), name) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
@@ -152,12 +147,7 @@ impl UserOperator for LocalUserOperator {
         }
     }
 
-    async fn users_create(
-        &self,
-        accessor: Accessor,
-        user: User,
-        credential: Credential,
-    ) -> Result<(), ArcServerStateError> {
+    async fn create(&self, accessor: Accessor, user: User, credential: Credential) -> Result<(), ArcServerStateError> {
         if !PermissionManager::exec_user_create_permitted(accessor.as_str()) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
@@ -168,7 +158,7 @@ impl UserOperator for LocalUserOperator {
             .map_err(|typedb_source| arc_server_state_err(LocalServerStateError::UserCannotBeCreated { typedb_source }))
     }
 
-    async fn users_update(
+    async fn update(
         &self,
         accessor: Accessor,
         username: &str,
@@ -189,7 +179,7 @@ impl UserOperator for LocalUserOperator {
         Ok(())
     }
 
-    async fn users_delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError> {
+    async fn delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError> {
         if !PermissionManager::exec_user_delete_allowed(accessor.as_str(), username) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
         }
@@ -204,7 +194,7 @@ impl UserOperator for LocalUserOperator {
         Ok(())
     }
 
-    async fn user_verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError> {
+    async fn verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError> {
         if !self.is_initialised() {
             return Err(Arc::new(LocalServerStateError::NotInitialised {}));
         }
@@ -218,7 +208,7 @@ impl UserOperator for LocalUserOperator {
     }
 
     async fn token_create(&self, username: String, password: String) -> Result<String, ArcServerStateError> {
-        self.user_verify_password(&username, &password).await?;
+        self.verify_password(&username, &password).await?;
         Ok(self.token_manager.new_token(username).await)
     }
 

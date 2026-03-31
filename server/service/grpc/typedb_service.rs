@@ -63,7 +63,7 @@ impl GRPCTypeDBService {
 
     async fn servers_statuses(&self) -> Result<Vec<typedb_protocol::Server>, Status> {
         let statuses =
-            self.server_state.servers().servers_all().await.map_err(|err| err.into_error_message().into_status())?;
+            self.server_state.servers().statuses().await.map_err(|err| err.into_error_message().into_status())?;
         Ok(statuses.into_iter().map(|status| status.to_proto()).collect())
     }
 }
@@ -183,12 +183,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             None::<&str>,
             ActionKind::ServersGet,
             || async {
-                let status = self
-                    .server_state
-                    .servers()
-                    .server_status()
-                    .await
-                    .map_err(|err| err.into_error_message().into_status())?;
+                let status =
+                    self.server_state.servers().status().await.map_err(|err| err.into_error_message().into_status())?;
                 Ok(Response::new(servers_get_res(status.to_proto())))
             },
         )
@@ -209,7 +205,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                 let typedb_protocol::server_manager::register::Req { address, replica_id } = request;
                 self.server_state
                     .servers()
-                    .servers_register(replica_id, address)
+                    .register(replica_id, address)
                     .await
                     .map(|()| Response::new(servers_register_res()))
                     .map_err(|err| err.into_error_message().into_status())
@@ -230,7 +226,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                 let request = request.into_inner();
                 self.server_state
                     .servers()
-                    .servers_deregister(request.replica_id)
+                    .deregister(request.replica_id)
                     .await
                     .map(|()| Response::new(servers_deregister_res()))
                     .map_err(|err| err.into_error_message().into_status())
@@ -266,7 +262,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                 let name = request.into_inner().name;
                 self.server_state
                     .users()
-                    .users_get(accessor, &name)
+                    .get(accessor, &name)
                     .await
                     .map(|user| Ok(Response::new(users_get_res(user))))
                     .map_err(|err| err.into_error_message().into_status())?
@@ -288,7 +284,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     .map_err(|err| err.into_error_message().into_status())?;
                 self.server_state
                     .users()
-                    .users_all(accessor)
+                    .all(accessor)
                     .await
                     .map(|users| Ok(Response::new(users_all_res(users))))
                     .map_err(|err| err.into_error_message().into_status())?
@@ -311,7 +307,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                 let name = request.into_inner().name;
                 self.server_state
                     .users()
-                    .users_contains(accessor, name.as_str())
+                    .contains(accessor, name.as_str())
                     .await
                     .map(|contains| Response::new(users_contains_res(contains)))
                     .map_err(|err| err.into_error_message().into_status())
@@ -336,7 +332,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
 
                 self.server_state
                     .users()
-                    .users_create(accessor, user, credential)
+                    .create(accessor, user, credential)
                     .await
                     .map(|_| Response::new(user_create_res()))
                     .map_err(|err| err.into_error_message().into_status())
@@ -361,7 +357,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
 
                 self.server_state
                     .users()
-                    .users_update(accessor, &username, user_update, credential_update)
+                    .update(accessor, &username, user_update, credential_update)
                     .await
                     .map(|_| Response::new(user_update_res()))
                     .map_err(|err| err.into_error_message().into_status())
@@ -385,7 +381,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
 
                 self.server_state
                     .users()
-                    .users_delete(accessor, &name)
+                    .delete(accessor, &name)
                     .await
                     .map(|_| Response::new(users_delete_res()))
                     .map_err(|err| err.into_error_message().into_status())
@@ -404,7 +400,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             Some(name.clone()),
             ActionKind::DatabasesGet,
             || async {
-                match self.server_state.databases().databases_get(&name).await {
+                match self.server_state.databases().get(&name).await {
                     Ok(Some(db)) => Ok(Response::new(database_get_res(db.name().to_string()))),
                     Ok(None) => {
                         Err(LocalServerStateError::DatabaseNotFound { name }.into_error_message().into_status())
@@ -427,7 +423,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             || async {
                 self.server_state
                     .databases()
-                    .databases_all()
+                    .all()
                     .await
                     .map(|dbs| Response::new(database_all_res(dbs)))
                     .map_err(|err| err.into_error_message().into_status())
@@ -449,7 +445,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                 let contains = self
                     .server_state
                     .databases()
-                    .databases_contains(&name)
+                    .contains(&name)
                     .await
                     .map_err(|err| err.into_error_message().into_status())?;
                 Ok(Response::new(database_contains_res(contains)))
@@ -470,7 +466,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             || async {
                 self.server_state
                     .databases()
-                    .databases_create(&name)
+                    .create(&name)
                     .await
                     .map(|_| Response::new(database_create_res(name)))
                     .map_err(|err| err.into_error_message().into_status())
@@ -502,7 +498,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             || async {
                 self.server_state
                     .databases()
-                    .databases_import(service)
+                    .import(service)
                     .await
                     .map_err(|err| err.into_error_message().into_status())
             },
@@ -523,7 +519,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             Some(name.clone()),
             ActionKind::DatabaseSchema,
             || async {
-                match self.server_state.databases().database_schema(&name).await {
+                match self.server_state.databases().schema(&name).await {
                     Ok(schema) => Ok(Response::new(database_schema_res(schema))),
                     Err(err) => Err(err.into_error_message().into_status()),
                 }
@@ -542,7 +538,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             Some(name.clone()),
             ActionKind::DatabaseTypeSchema,
             || async {
-                match self.server_state.databases().database_type_schema(&name).await {
+                match self.server_state.databases().type_schema(&name).await {
                     Ok(schema) => Ok(Response::new(database_type_schema_res(schema))),
                     Err(err) => Err(err.into_error_message().into_status()),
                 }
@@ -563,7 +559,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             || async {
                 self.server_state
                     .databases()
-                    .database_delete(&name)
+                    .delete(&name)
                     .await
                     .map(|_| Response::new(database_delete_res()))
                     .map_err(|err| err.into_error_message().into_status())

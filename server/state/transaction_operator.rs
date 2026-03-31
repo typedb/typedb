@@ -33,7 +33,7 @@ pub(crate) struct TransactionInfo {
 
 #[async_trait]
 pub trait TransactionOperator: Debug + Send + Sync {
-    async fn open_transaction(
+    async fn open(
         &self,
         database_name: &str,
         transaction_type: TransactionType,
@@ -86,7 +86,7 @@ impl LocalTransactionOperator {
 
 #[async_trait]
 impl TransactionOperator for LocalTransactionOperator {
-    async fn open_transaction(
+    async fn open(
         &self,
         database_name: &str,
         transaction_type: TransactionType,

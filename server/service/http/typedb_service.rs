@@ -273,7 +273,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .servers()
-                    .servers_all()
+                    .statuses()
                     .await
                     .map(|servers| JsonBody(encode_servers(servers)))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
@@ -291,7 +291,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .databases()
-                    .databases_all()
+                    .all()
                     .await
                     .map(|dbs| JsonBody(encode_databases(dbs)))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
@@ -313,7 +313,7 @@ impl HTTPTypeDBService {
                 let database_name = service
                     .server_state
                     .databases()
-                    .databases_get(&database_path.database_name)
+                    .get(&database_path.database_name)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })?
                     .ok_or(HttpServiceError::NotFound {})?
@@ -338,7 +338,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .databases()
-                    .databases_create(&database_path.database_name)
+                    .create(&database_path.database_name)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -359,7 +359,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .databases()
-                    .database_delete(&database_path.database_name)
+                    .delete(&database_path.database_name)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -380,7 +380,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .databases()
-                    .database_schema(&database_path.database_name)
+                    .schema(&database_path.database_name)
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
@@ -402,7 +402,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .databases()
-                    .database_type_schema(&database_path.database_name)
+                    .type_schema(&database_path.database_name)
                     .await
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
@@ -424,7 +424,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .users()
-                    .users_all(accessor)
+                    .all(accessor)
                     .await
                     .map(|users| JsonBody(encode_users(users)))
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
@@ -447,7 +447,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .users()
-                    .users_get(accessor, &user_path.username)
+                    .get(accessor, &user_path.username)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
                     .map(|user| JsonBody(encode_user(&user)))
@@ -474,7 +474,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .users()
-                    .users_create(accessor, user, credential)
+                    .create(accessor, user, credential)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -501,7 +501,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .users()
-                    .users_update(accessor, username, user_update, credential_update)
+                    .update(accessor, username, user_update, credential_update)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
@@ -525,7 +525,7 @@ impl HTTPTypeDBService {
                 service
                     .server_state
                     .users()
-                    .users_delete(accessor, username)
+                    .delete(accessor, username)
                     .await
                     .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },

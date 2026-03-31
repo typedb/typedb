@@ -31,47 +31,44 @@ use crate::{
 
 #[async_trait]
 pub trait DatabaseOperator: Debug + Send + Sync {
-    async fn databases_all(&self) -> Result<Vec<String>, ArcServerStateError>;
+    async fn all(&self) -> Result<Vec<String>, ArcServerStateError>;
 
-    async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
+    async fn contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
 
-    async fn databases_get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
+    async fn get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
 
-    async fn databases_get_unrestricted(
-        &self,
-        name: &str,
-    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
+    async fn get_unrestricted(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError>;
 
-    async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError>;
+    async fn create(&self, name: &str) -> Result<(), ArcServerStateError>;
 
-    async fn databases_create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError>;
+    async fn create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError>;
 
-    async fn databases_import(&self, service: DatabaseImportService) -> Result<JoinHandle<()>, ArcServerStateError>;
+    async fn import(&self, service: DatabaseImportService) -> Result<JoinHandle<()>, ArcServerStateError>;
 
-    async fn database_schema(&self, name: &str) -> Result<String, ArcServerStateError>;
+    async fn schema(&self, name: &str) -> Result<String, ArcServerStateError>;
 
-    async fn database_type_schema(&self, name: &str) -> Result<String, ArcServerStateError>;
+    async fn type_schema(&self, name: &str) -> Result<String, ArcServerStateError>;
 
-    async fn database_schema_commit(
+    async fn schema_commit(
         &self,
         commit_intent: SchemaCommitIntent<WALClient>,
         commit_profile: CommitProfile,
     ) -> (CommitProfile, Result<(), ArcServerStateError>);
 
-    async fn database_data_commit(
+    async fn data_commit(
         &self,
         commit_intent: DataCommitIntent<WALClient>,
         commit_profile: CommitProfile,
     ) -> (CommitProfile, Result<(), ArcServerStateError>);
 
-    async fn database_commit_record_exists(
+    async fn commit_record_exists(
         &self,
         name: &str,
         open_sequence_number: DurabilitySequenceNumber,
         snapshot_id: SnapshotId,
     ) -> Result<bool, ArcServerStateError>;
 
-    async fn database_delete(&self, name: &str) -> Result<(), ArcServerStateError>;
+    async fn delete(&self, name: &str) -> Result<(), ArcServerStateError>;
 
     fn manager(&self) -> Arc<DatabaseManager>;
 }
@@ -126,42 +123,39 @@ pub fn get_types_syntax<D: DurabilityClient>(
 
 #[async_trait]
 impl DatabaseOperator for LocalDatabaseOperator {
-    async fn databases_all(&self) -> Result<Vec<String>, ArcServerStateError> {
+    async fn all(&self) -> Result<Vec<String>, ArcServerStateError> {
         Ok(self.database_manager.database_names())
     }
 
-    async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError> {
+    async fn contains(&self, name: &str) -> Result<bool, ArcServerStateError> {
         Ok(self.database_manager.database(name).is_some())
     }
 
-    async fn databases_get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
+    async fn get(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
         Ok(self.database_manager.database(name))
     }
 
-    async fn databases_get_unrestricted(
-        &self,
-        name: &str,
-    ) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
+    async fn get_unrestricted(&self, name: &str) -> Result<Option<Arc<Database<WALClient>>>, ArcServerStateError> {
         Ok(self.database_manager.database_unrestricted(name))
     }
 
-    async fn databases_create(&self, name: &str) -> Result<(), ArcServerStateError> {
+    async fn create(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager
             .put_database(name)
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: err }))
     }
 
-    async fn databases_create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError> {
+    async fn create_unrestricted(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager
             .put_database_unrestricted(name)
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeCreated { typedb_source: err }))
     }
 
-    async fn databases_import(&self, service: DatabaseImportService) -> Result<JoinHandle<()>, ArcServerStateError> {
+    async fn import(&self, service: DatabaseImportService) -> Result<JoinHandle<()>, ArcServerStateError> {
         Ok(self.background_task_spawner.spawn(async move { service.listen().await }))
     }
 
-    async fn database_schema(&self, name: &str) -> Result<String, ArcServerStateError> {
+    async fn schema(&self, name: &str) -> Result<String, ArcServerStateError> {
         match self.database_manager.database(name) {
             Some(db) => get_database_schema(db),
             None => Err(LocalServerStateError::DatabaseNotFound { name: name.to_string() }),
@@ -169,7 +163,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
         .map_err(arc_server_state_err)
     }
 
-    async fn database_type_schema(&self, name: &str) -> Result<String, ArcServerStateError> {
+    async fn type_schema(&self, name: &str) -> Result<String, ArcServerStateError> {
         match self.database_manager.database(name) {
             None => Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() })),
             Some(database) => match get_database_type_schema(database) {
@@ -179,7 +173,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
         }
     }
 
-    async fn database_schema_commit(
+    async fn schema_commit(
         &self,
         commit_intent: SchemaCommitIntent<WALClient>,
         mut commit_profile: CommitProfile,
@@ -195,7 +189,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
         .expect("Schema commit task panicked")
     }
 
-    async fn database_data_commit(
+    async fn data_commit(
         &self,
         commit_intent: DataCommitIntent<WALClient>,
         mut commit_profile: CommitProfile,
@@ -211,13 +205,13 @@ impl DatabaseOperator for LocalDatabaseOperator {
         .expect("Data commit task panicked")
     }
 
-    async fn database_commit_record_exists(
+    async fn commit_record_exists(
         &self,
         name: &str,
         open_sequence_number: DurabilitySequenceNumber,
         snapshot_id: SnapshotId,
     ) -> Result<bool, ArcServerStateError> {
-        let Some(database) = self.databases_get_unrestricted(name).await? else {
+        let Some(database) = self.get_unrestricted(name).await? else {
             return Err(Arc::new(LocalServerStateError::DatabaseNotFound { name: name.to_string() }));
         };
         database.commit_record_exists(open_sequence_number, snapshot_id).map_err(|typedb_source| {
@@ -225,7 +219,7 @@ impl DatabaseOperator for LocalDatabaseOperator {
         })
     }
 
-    async fn database_delete(&self, name: &str) -> Result<(), ArcServerStateError> {
+    async fn delete(&self, name: &str) -> Result<(), ArcServerStateError> {
         self.database_manager
             .delete_database(name)
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeDeleted { typedb_source: err }))

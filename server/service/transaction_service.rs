@@ -49,7 +49,7 @@ pub(crate) async fn commit_schema_transaction(
             } else {
                 let commit_profile = profile.take_commit_profile();
                 let (commit_profile, result) =
-                    server_state.databases().database_schema_commit(commit_intent, commit_profile).await;
+                    server_state.databases().schema_commit(commit_intent, commit_profile).await;
                 profile.set_commit_profile(commit_profile);
                 (profile, result)
             }
@@ -76,7 +76,7 @@ pub(crate) async fn commit_write_transaction(
             } else {
                 let commit_profile = profile.take_commit_profile();
                 let (commit_profile, result) =
-                    server_state.databases().database_data_commit(commit_intent, commit_profile).await;
+                    server_state.databases().data_commit(commit_intent, commit_profile).await;
                 profile.set_commit_profile(commit_profile);
                 (profile, result)
             }

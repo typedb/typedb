@@ -29,7 +29,7 @@ pub async fn initialise_system_database(server_state: &ServerState) -> Result<()
     if server_state.databases().manager().database_unrestricted(SYSTEM_DB).is_some() {
         return Ok(());
     }
-    server_state.databases().databases_create_unrestricted(SYSTEM_DB).await?;
+    server_state.databases().create_unrestricted(SYSTEM_DB).await?;
     Ok(())
 }
 
@@ -42,8 +42,7 @@ pub async fn initialise_system_database_schema(server_state: &ServerState) -> Re
     let (mut transaction_profile, commit_intent_opt) = get_system_database_schema_commit_intent(db)?;
     if let Some(commit_intent) = commit_intent_opt {
         let commit_profile = transaction_profile.take_commit_profile();
-        let (commit_profile, result) =
-            server_state.databases().database_schema_commit(commit_intent, commit_profile).await;
+        let (commit_profile, result) = server_state.databases().schema_commit(commit_intent, commit_profile).await;
         transaction_profile.set_commit_profile(commit_profile);
         result?;
     }
