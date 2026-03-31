@@ -39,7 +39,6 @@ use crate::{
 pub(crate) struct IsolationManager {
     initial_sequence_number: SequenceNumber,
     timeline: Timeline,
-    highest_validated_sequence_number: AtomicU64,
 }
 
 impl fmt::Display for IsolationManager {
@@ -53,7 +52,6 @@ impl IsolationManager {
         IsolationManager {
             initial_sequence_number: next_sequence_number,
             timeline: Timeline::new(next_sequence_number),
-            highest_validated_sequence_number: AtomicU64::new(next_sequence_number.number() - 1),
         }
     }
 
@@ -103,8 +101,6 @@ impl IsolationManager {
         let isolation_conflict = self.validate_all_concurrent(sequence_number, &commit_record, durability_client)?;
         if isolation_conflict.is_none() {
             window.set_validated(sequence_number);
-            // We can't increment watermark here till the status is "applied", but we do update the latest validated number
-            self.highest_validated_sequence_number.fetch_max(sequence_number.number(), Ordering::SeqCst);
         } else {
             window.set_aborted(sequence_number);
             self.timeline.may_increment_watermark(sequence_number);
@@ -242,9 +238,6 @@ impl IsolationManager {
         self.timeline.watermark()
     }
 
-    pub(crate) fn highest_validated_sequence_number(&self) -> SequenceNumber {
-        SequenceNumber::new(self.highest_validated_sequence_number.load(Ordering::SeqCst))
-    }
 
     pub fn reset(&mut self) {
         self.timeline = Timeline::new(self.initial_sequence_number);
@@ -573,13 +566,17 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
     fn get_status(&self, sequence_number: SequenceNumber) -> CommitStatus<'_> {
         let index = sequence_number - self.start;
         let status = SlotMarker::from(self.slot_status[index].load(Ordering::SeqCst));
-        let lazy_record = || self.commit_records[index].get().unwrap();
-        match status {
-            SlotMarker::Empty => CommitStatus::Empty,
-            SlotMarker::Aborted => CommitStatus::Aborted,
-            SlotMarker::Pending => CommitStatus::Pending(MaybeOwns::Borrowed(lazy_record())),
-            SlotMarker::Validated => CommitStatus::Validated(MaybeOwns::Borrowed(lazy_record())),
-            SlotMarker::Applied => CommitStatus::Applied(MaybeOwns::Borrowed(lazy_record())),
+        if let SlotMarker::Empty = status {
+            CommitStatus::Empty
+        } else {
+            let record = self.commit_records[index].get().unwrap();
+            match status {
+                SlotMarker::Empty => unreachable!(),
+                SlotMarker::Pending => CommitStatus::Pending(MaybeOwns::Borrowed(record)),
+                SlotMarker::Validated => CommitStatus::Validated(MaybeOwns::Borrowed(record)),
+                SlotMarker::Applied => CommitStatus::Applied(MaybeOwns::Borrowed(record)),
+                SlotMarker::Aborted => CommitStatus::Aborted,
+            }
         }
     }
 

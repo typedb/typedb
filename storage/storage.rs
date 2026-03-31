@@ -12,7 +12,10 @@ use std::{
     error::Error,
     fs, io,
     path::{Path, PathBuf},
-    sync::{atomic::Ordering, Arc},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
     thread::sleep,
     time::Duration,
 };
@@ -73,6 +76,7 @@ pub struct MVCCStorage<Durability> {
     keyspaces: Keyspaces,
     durability_client: Durability,
     isolation_manager: IsolationManager,
+    highest_committed_snapshot: AtomicU64,
 }
 
 impl<Durability> MVCCStorage<Durability> {
@@ -99,13 +103,15 @@ impl<Durability> MVCCStorage<Durability> {
         Self::register_durability_record_types(&mut durability_client);
         let keyspaces = Self::create_keyspaces::<KS>(name.as_ref(), &storage_dir)?;
 
-        let isolation_manager = IsolationManager::new(durability_client.current());
+        let next_sequence_number = durability_client.current();
+        let isolation_manager = IsolationManager::new(next_sequence_number);
         Ok(Self {
             name: Arc::new(name.as_ref().to_owned()),
             path: storage_dir,
             durability_client,
             keyspaces,
             isolation_manager,
+            highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
         })
     }
 
@@ -160,7 +166,14 @@ impl<Durability> MVCCStorage<Durability> {
         };
 
         let isolation_manager = IsolationManager::new(next_sequence_number);
-        Ok(Self { name: Arc::new(name.to_owned()), path: storage_dir, durability_client, keyspaces, isolation_manager })
+        Ok(Self {
+            name: Arc::new(name.to_owned()),
+            path: storage_dir,
+            durability_client,
+            keyspaces,
+            isolation_manager,
+            highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
+        })
     }
 
     fn register_durability_record_types(durability_client: &mut impl DurabilityClient) {
@@ -186,7 +199,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn open_snapshot_write(self: Arc<Self>) -> WriteSnapshot<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
-        let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
+        let possible_sequence_number = self.highest_committed_snapshot();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
         WriteSnapshot::new(self, open_sequence_number)
     }
@@ -199,7 +212,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
-        let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
+        let possible_sequence_number = self.highest_committed_snapshot();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
         ReadSnapshot::new(self, open_sequence_number)
     }
@@ -211,7 +224,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn open_snapshot_schema(self: Arc<Self>) -> SchemaSnapshot<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
-        let possible_sequence_number = self.isolation_manager.highest_validated_sequence_number();
+        let possible_sequence_number = self.highest_committed_snapshot();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
         SchemaSnapshot::new(self, open_sequence_number)
     }
@@ -260,10 +273,10 @@ impl<Durability> MVCCStorage<Durability> {
         drop(reader_guard);
         commit_profile.snapshot_isolation_validated();
 
-        match validate_result {
+        let result = match validate_result {
             Ok(ValidatedCommit::Write(write_batches)) => {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
-                                               // Write to the k-v store
+                // Write to the k-v store
                 commit_profile.snapshot_durable_write_data_confirmed();
 
                 self.keyspaces
@@ -282,7 +295,6 @@ impl<Durability> MVCCStorage<Durability> {
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 commit_profile.snapshot_durable_write_commit_status_submitted();
-
                 Ok(commit_sequence_number)
             }
             Ok(ValidatedCommit::Conflict(conflict)) => {
@@ -301,7 +313,10 @@ impl<Durability> MVCCStorage<Durability> {
                 commit_profile.snapshot_durable_write_data_confirmed();
                 Err(Durability { name: self.name.clone(), typedb_source: error })
             }
-        }
+        };
+
+        self.update_highest_committed_snapshot(commit_sequence_number);
+        result
     }
 
     fn set_initial_put_status(
@@ -443,6 +458,14 @@ impl<Durability> MVCCStorage<Durability> {
         storage_counters: StorageCounters,
     ) -> MVCCRangeIterator {
         MVCCRangeIterator::new(self, iterpool, range, open_sequence_number, storage_counters)
+    }
+
+    fn highest_committed_snapshot(&self) -> SequenceNumber {
+        SequenceNumber::new(self.highest_committed_snapshot.load(Ordering::SeqCst))
+    }
+
+    fn update_highest_committed_snapshot(&self, sequence_number: SequenceNumber) {
+        self.highest_committed_snapshot.fetch_max(sequence_number.number(), Ordering::SeqCst);
     }
 
     pub fn snapshot_watermark(&self) -> SequenceNumber {
