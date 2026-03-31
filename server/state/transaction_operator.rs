@@ -32,7 +32,7 @@ pub(crate) struct TransactionInfo {
 }
 
 #[async_trait]
-pub trait TransactionCoordinator: Debug + Send + Sync {
+pub trait TransactionOperator: Debug + Send + Sync {
     async fn open_transaction(
         &self,
         database_name: &str,
@@ -48,12 +48,12 @@ pub trait TransactionCoordinator: Debug + Send + Sync {
 }
 
 #[derive(Debug)]
-pub struct LocalTransactionCoordinator {
+pub struct LocalTransactionOperator {
     database_manager: Arc<DatabaseManager>,
     transactions: Arc<RwLock<HashMap<TransactionId, TransactionInfo>>>,
 }
 
-impl LocalTransactionCoordinator {
+impl LocalTransactionOperator {
     const CLEANUP_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
 
     pub fn new(database_manager: Arc<DatabaseManager>, background_task_spawner: TokioTaskSpawner) -> Self {
@@ -85,7 +85,7 @@ impl LocalTransactionCoordinator {
 }
 
 #[async_trait]
-impl TransactionCoordinator for LocalTransactionCoordinator {
+impl TransactionOperator for LocalTransactionOperator {
     async fn open_transaction(
         &self,
         database_name: &str,

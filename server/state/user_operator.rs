@@ -15,7 +15,7 @@ use resource::constants::server::DEFAULT_USER_NAME;
 use system::concepts::{Credential, User};
 use user::{permission_manager::PermissionManager, user_manager::UserManager};
 
-use super::TransactionCoordinator;
+use super::TransactionOperator;
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
     error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},
@@ -23,7 +23,7 @@ use crate::{
 };
 
 #[async_trait]
-pub trait UserCoordinator: Debug + Send + Sync {
+pub trait UserOperator: Debug + Send + Sync {
     async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError>;
 
     async fn users_contains(&self, accessor: Accessor, name: &str) -> Result<bool, ArcServerStateError>;
@@ -59,26 +59,26 @@ pub trait UserCoordinator: Debug + Send + Sync {
 }
 
 #[derive(Debug)]
-pub struct LocalUserCoordinator {
+pub struct LocalUserOperator {
     database_manager: Arc<DatabaseManager>,
     token_manager: Arc<TokenManager>,
     user_manager: StdRwLock<Option<Arc<UserManager>>>,
     credential_verifier: StdRwLock<Option<Arc<CredentialVerifier>>>,
-    transaction_coordinator: Arc<dyn TransactionCoordinator>,
+    transaction_operator: Arc<dyn TransactionOperator>,
 }
 
-impl LocalUserCoordinator {
+impl LocalUserOperator {
     pub fn new(
         database_manager: Arc<DatabaseManager>,
         token_manager: Arc<TokenManager>,
-        transaction_coordinator: Arc<dyn TransactionCoordinator>,
+        transaction_operator: Arc<dyn TransactionOperator>,
     ) -> Self {
         Self {
             database_manager,
             token_manager,
             user_manager: StdRwLock::new(None),
             credential_verifier: StdRwLock::new(None),
-            transaction_coordinator,
+            transaction_operator,
         }
     }
 
@@ -109,7 +109,7 @@ impl LocalUserCoordinator {
 }
 
 #[async_trait]
-impl UserCoordinator for LocalUserCoordinator {
+impl UserOperator for LocalUserOperator {
     async fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ArcServerStateError> {
         if !PermissionManager::exec_user_all_permitted(accessor.as_str()) {
             return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
@@ -185,7 +185,7 @@ impl UserCoordinator for LocalUserCoordinator {
         })?;
 
         self.token_manager.invalidate_user(username).await;
-        self.transaction_coordinator.close_by_owner(username).await;
+        self.transaction_operator.close_by_owner(username).await;
         Ok(())
     }
 
@@ -200,7 +200,7 @@ impl UserCoordinator for LocalUserCoordinator {
         })?;
 
         self.token_manager.invalidate_user(username).await;
-        self.transaction_coordinator.close_by_owner(username).await;
+        self.transaction_operator.close_by_owner(username).await;
         Ok(())
     }
 

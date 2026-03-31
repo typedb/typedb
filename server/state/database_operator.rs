@@ -30,7 +30,7 @@ use crate::{
 };
 
 #[async_trait]
-pub trait DatabaseCoordinator: Debug + Send + Sync {
+pub trait DatabaseOperator: Debug + Send + Sync {
     async fn databases_all(&self) -> Result<Vec<String>, ArcServerStateError>;
 
     async fn databases_contains(&self, name: &str) -> Result<bool, ArcServerStateError>;
@@ -77,12 +77,12 @@ pub trait DatabaseCoordinator: Debug + Send + Sync {
 }
 
 #[derive(Debug)]
-pub struct LocalDatabaseCoordinator {
+pub struct LocalDatabaseOperator {
     database_manager: Arc<DatabaseManager>,
     background_task_spawner: TokioTaskSpawner,
 }
 
-impl LocalDatabaseCoordinator {
+impl LocalDatabaseOperator {
     pub fn new(database_manager: Arc<DatabaseManager>, background_task_spawner: TokioTaskSpawner) -> Self {
         Self { database_manager, background_task_spawner }
     }
@@ -125,7 +125,7 @@ pub fn get_types_syntax<D: DurabilityClient>(
 }
 
 #[async_trait]
-impl DatabaseCoordinator for LocalDatabaseCoordinator {
+impl DatabaseOperator for LocalDatabaseOperator {
     async fn databases_all(&self) -> Result<Vec<String>, ArcServerStateError> {
         Ok(self.database_manager.database_names())
     }

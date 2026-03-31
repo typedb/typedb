@@ -4,10 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod database_coordinator;
-pub mod server_coordinator;
-pub mod transaction_coordinator;
-pub mod user_coordinator;
+pub mod database_operator;
+pub mod server_operator;
+pub mod transaction_operator;
+pub mod user_operator;
 
 use std::{collections::HashSet, net::SocketAddr, path::PathBuf, sync::Arc};
 
@@ -19,12 +19,12 @@ use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution
 use tokio::{net::lookup_host, sync::watch::Receiver};
 
 pub use self::{
-    database_coordinator::{
-        get_database_schema, get_functions_syntax, get_types_syntax, DatabaseCoordinator, LocalDatabaseCoordinator,
+    database_operator::{
+        get_database_schema, get_functions_syntax, get_types_syntax, DatabaseOperator, LocalDatabaseOperator,
     },
-    server_coordinator::{LocalServerCoordinator, ServerCoordinator},
-    transaction_coordinator::{LocalTransactionCoordinator, TransactionCoordinator},
-    user_coordinator::{LocalUserCoordinator, UserCoordinator},
+    server_operator::{LocalServerOperator, ServerOperator},
+    transaction_operator::{LocalTransactionOperator, TransactionOperator},
+    user_operator::{LocalUserOperator, UserOperator},
 };
 use crate::{
     authentication::token_manager::TokenManager,
@@ -46,10 +46,10 @@ pub struct ServerState {
     background_task_spawner: TokioTaskSpawner,
     _database_diagnostics_updater: IntervalRunner,
 
-    server_coordinator: Arc<dyn ServerCoordinator>,
-    database_coordinator: Arc<dyn DatabaseCoordinator>,
-    transaction_coordinator: Arc<dyn TransactionCoordinator>,
-    user_coordinator: Arc<dyn UserCoordinator>,
+    server_operator: Arc<dyn ServerOperator>,
+    database_operator: Arc<dyn DatabaseOperator>,
+    transaction_operator: Arc<dyn TransactionOperator>,
+    user_operator: Arc<dyn UserOperator>,
 }
 
 impl ServerState {
@@ -118,10 +118,10 @@ impl ServerState {
             database_diagnostics_updater,
             shutdown_receiver,
             background_task_spawner,
-            server_coordinator_override: None,
-            database_coordinator_override: None,
-            transaction_coordinator_override: None,
-            user_coordinator_override: None,
+            server_operator_override: None,
+            database_operator_override: None,
+            transaction_operator_override: None,
+            user_operator_override: None,
         })
     }
 
@@ -141,20 +141,20 @@ impl ServerState {
         self.http_address
     }
 
-    pub fn servers(&self) -> &dyn ServerCoordinator {
-        &*self.server_coordinator
+    pub fn servers(&self) -> &dyn ServerOperator {
+        &*self.server_operator
     }
 
-    pub fn databases(&self) -> &dyn DatabaseCoordinator {
-        &*self.database_coordinator
+    pub fn databases(&self) -> &dyn DatabaseOperator {
+        &*self.database_operator
     }
 
-    pub fn transactions(&self) -> &dyn TransactionCoordinator {
-        &*self.transaction_coordinator
+    pub fn transactions(&self) -> &dyn TransactionOperator {
+        &*self.transaction_operator
     }
 
-    pub fn users(&self) -> &dyn UserCoordinator {
-        &*self.user_coordinator
+    pub fn users(&self) -> &dyn UserOperator {
+        &*self.user_operator
     }
 
     pub fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
@@ -170,8 +170,8 @@ impl ServerState {
     }
 
     pub fn is_initialised(&self) -> bool {
-        // Other coordinators don't require initialization
-        self.user_coordinator.is_initialised()
+        // Other operators don't require initialization
+        self.user_operator.is_initialised()
     }
 
     pub async fn initialise(&self) -> Result<(), ArcServerStateError> {
@@ -179,7 +179,7 @@ impl ServerState {
             return Ok(());
         }
 
-        // Initialize self for user_coordinator
+        // Initialize self for user_operator
         crate::system_init::initialise_system_database(self).await?;
         crate::system_init::initialise_system_database_schema(self).await?;
         crate::system_init::initialise_default_user(self).await?;
@@ -265,10 +265,10 @@ pub struct ServerStateBuilder {
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
 
-    server_coordinator_override: Option<Arc<dyn ServerCoordinator>>,
-    database_coordinator_override: Option<Arc<dyn DatabaseCoordinator>>,
-    transaction_coordinator_override: Option<Arc<dyn TransactionCoordinator>>,
-    user_coordinator_override: Option<Arc<dyn UserCoordinator>>,
+    server_operator_override: Option<Arc<dyn ServerOperator>>,
+    database_operator_override: Option<Arc<dyn DatabaseOperator>>,
+    transaction_operator_override: Option<Arc<dyn TransactionOperator>>,
+    user_operator_override: Option<Arc<dyn UserOperator>>,
 }
 
 impl ServerStateBuilder {
@@ -288,47 +288,43 @@ impl ServerStateBuilder {
         self.server_status.clone()
     }
 
-    pub fn server_coordinator(mut self, coordinator: Arc<dyn ServerCoordinator>) -> Self {
-        self.server_coordinator_override = Some(coordinator);
+    pub fn server_operator(mut self, operator: Arc<dyn ServerOperator>) -> Self {
+        self.server_operator_override = Some(operator);
         self
     }
 
-    pub fn database_coordinator(mut self, coordinator: Arc<dyn DatabaseCoordinator>) -> Self {
-        self.database_coordinator_override = Some(coordinator);
+    pub fn database_operator(mut self, operator: Arc<dyn DatabaseOperator>) -> Self {
+        self.database_operator_override = Some(operator);
         self
     }
 
-    pub fn transaction_coordinator(mut self, coordinator: Arc<dyn TransactionCoordinator>) -> Self {
-        self.transaction_coordinator_override = Some(coordinator);
+    pub fn transaction_operator(mut self, operator: Arc<dyn TransactionOperator>) -> Self {
+        self.transaction_operator_override = Some(operator);
         self
     }
 
-    pub fn user_coordinator(mut self, coordinator: Arc<dyn UserCoordinator>) -> Self {
-        self.user_coordinator_override = Some(coordinator);
+    pub fn user_operator(mut self, operator: Arc<dyn UserOperator>) -> Self {
+        self.user_operator_override = Some(operator);
         self
     }
 
     pub fn build(self) -> ServerState {
-        let server_coordinator = self
-            .server_coordinator_override
-            .unwrap_or_else(|| Arc::new(LocalServerCoordinator::new(self.server_status)));
+        let server_operator =
+            self.server_operator_override.unwrap_or_else(|| Arc::new(LocalServerOperator::new(self.server_status)));
 
-        let database_coordinator = self.database_coordinator_override.unwrap_or_else(|| {
-            Arc::new(LocalDatabaseCoordinator::new(self.database_manager.clone(), self.background_task_spawner.clone()))
+        let database_operator = self.database_operator_override.unwrap_or_else(|| {
+            Arc::new(LocalDatabaseOperator::new(self.database_manager.clone(), self.background_task_spawner.clone()))
         });
 
-        let transaction_coordinator = self.transaction_coordinator_override.unwrap_or_else(|| {
-            Arc::new(LocalTransactionCoordinator::new(
-                self.database_manager.clone(),
-                self.background_task_spawner.clone(),
-            ))
+        let transaction_operator = self.transaction_operator_override.unwrap_or_else(|| {
+            Arc::new(LocalTransactionOperator::new(self.database_manager.clone(), self.background_task_spawner.clone()))
         });
 
-        let user_coordinator = self.user_coordinator_override.unwrap_or_else(|| {
-            Arc::new(LocalUserCoordinator::new(
+        let user_operator = self.user_operator_override.unwrap_or_else(|| {
+            Arc::new(LocalUserOperator::new(
                 self.database_manager.clone(),
                 self.token_manager.clone(),
-                transaction_coordinator.clone(),
+                transaction_operator.clone(),
             ))
         });
 
@@ -341,10 +337,10 @@ impl ServerStateBuilder {
             shutdown_receiver: self.shutdown_receiver,
             background_task_spawner: self.background_task_spawner,
             _database_diagnostics_updater: self.database_diagnostics_updater,
-            server_coordinator,
-            database_coordinator,
-            transaction_coordinator,
-            user_coordinator,
+            server_operator,
+            database_operator,
+            transaction_operator,
+            user_operator,
         }
     }
 }
