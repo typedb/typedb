@@ -4,18 +4,23 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::collections::BTreeMap;
-use typeql::query::stage::Stage;
-use ir::pattern::{BindingMode, Pattern};
-use ir::pipeline::function_signature::HashMapFunctionSignatureIndex;
-use ir::pipeline::ParameterRegistry;
-use ir::translation::match_::translate_match;
-use ir::translation::PipelineTranslationContext;
 
-fn binding_modes<'a>(context: &'a PipelineTranslationContext, conjunction: &impl Pattern) -> BTreeMap<&'a str, BindingMode> {
-    conjunction.variable_binding_modes().iter()
-        .filter_map(|(v, b)| {
-            context.variable_registry.get_variable_name(*v).map(|s| (s.as_str(), *b))
-        }).collect()
+use ir::{
+    pattern::{BindingMode, Pattern},
+    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+    translation::{match_::translate_match, PipelineTranslationContext},
+};
+use typeql::query::stage::Stage;
+
+fn binding_modes<'a>(
+    context: &'a PipelineTranslationContext,
+    conjunction: &impl Pattern,
+) -> BTreeMap<&'a str, BindingMode> {
+    conjunction
+        .variable_binding_modes()
+        .iter()
+        .filter_map(|(v, b)| context.variable_registry.get_variable_name(*v).map(|s| (s.as_str(), *b)))
+        .collect()
 }
 
 #[test]
@@ -41,8 +46,14 @@ fn test_negation() {
     let conjunction_modes = binding_modes(&context, conjunction);
     let negation_modes = binding_modes(&context, negation);
     let inner_modes = binding_modes(&context, negation.conjunction());
-    assert_eq!(conjunction_modes, BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild)]));
-    assert_eq!(negation_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::LocallyBindingInChild)]));
+    assert_eq!(
+        conjunction_modes,
+        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild)])
+    );
+    assert_eq!(
+        negation_modes,
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::LocallyBindingInChild)])
+    );
     assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding)]));
 }
 
@@ -78,7 +89,10 @@ fn test_disjunction() {
     let b12 = binding_modes(&context, &first_disjunction.conjunctions()[1]);
     let b21 = binding_modes(&context, &second_disjunction.conjunctions()[0]);
     let b22 = binding_modes(&context, &second_disjunction.conjunctions()[1]);
-    assert_eq!(conjunction_modes, BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild)]));
+    assert_eq!(
+        conjunction_modes,
+        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild)])
+    );
     assert_eq!(d1, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
     assert_eq!(d2, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::LocallyBindingInChild)]));
     assert_eq!(b11, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));

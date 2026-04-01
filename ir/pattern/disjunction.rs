@@ -79,14 +79,17 @@ impl Pattern for Disjunction {
         let all_branch_modes: Vec<_> = self.conjunctions.iter().map(|c| c.variable_binding_modes()).collect();
         let all_variables = all_branch_modes.iter().flat_map(|b| b.keys()).dedup().collect::<Vec<_>>();
         // Absent isn't the identity under the bitwise or operator
-        let mut binding_modes = all_variables.iter().map(|v| {
-            let mode = all_branch_modes.iter()
-                .map(|b| b.get(v).copied().unwrap_or(BindingMode::Absent))
-                .reduce(|a,b| a | b)
-                .unwrap_or(BindingMode::Absent);
-            (**v, mode)
-        })
-        .collect::<HashMap<_, _>>();
+        let mut binding_modes = all_variables
+            .iter()
+            .map(|v| {
+                let mode = all_branch_modes
+                    .iter()
+                    .map(|b| b.get(v).copied().unwrap_or(BindingMode::Absent))
+                    .reduce(|a, b| a | b)
+                    .unwrap_or(BindingMode::Absent);
+                (**v, mode)
+            })
+            .collect::<HashMap<_, _>>();
 
         // Escalate multiple branches locally-bound to Errors
         binding_modes.iter_mut().filter(|(_, mode)| mode.is_locally_binding_in_child()).for_each(|(var, mode)| {

@@ -10,9 +10,9 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
     mem,
-    ops::{BitAndAssign, BitOrAssign, BitXor},
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor},
 };
-use std::ops::{BitAnd, BitOr};
+
 use answer::variable::Variable;
 use constraint::Constraint;
 use encoding::value::label::Label;
@@ -451,9 +451,7 @@ impl BitOr for BindingMode {
             (Self::OptionallyBinding, Self::OptionallyBinding) => Self::OptionallyBinding,
             (Self::AlwaysBinding, Self::AlwaysBinding) => Self::AlwaysBinding,
             (Self::Absent, Self::Absent) => Self::Absent,
-            (Self::Absent, Self::AlwaysBinding) | (Self::AlwaysBinding, Self::Absent) => {
-                Self::LocallyBindingInChild
-            }
+            (Self::Absent, Self::AlwaysBinding) | (Self::AlwaysBinding, Self::Absent) => Self::LocallyBindingInChild,
             (Self::Absent, Self::LocallyBindingInChild) | (Self::LocallyBindingInChild, Self::Absent) => {
                 Self::LocallyBindingInChild
             }
