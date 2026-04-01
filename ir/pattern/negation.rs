@@ -16,6 +16,7 @@ use crate::{
     },
     pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };
+use crate::pattern::BindingMode;
 
 #[derive(Debug, Clone)]
 pub struct Negation {
@@ -60,17 +61,17 @@ impl Pattern for Negation {
         })
     }
 
-    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
+    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
         self.conjunction
             .variable_binding_modes()
             .into_iter()
-            .filter_map(|(var, mut mode)| {
+            .map(|(var, mode)| {
                 if mode.is_always_binding() {
                     // if it is binding, we demote it to only locally binding (only relevant in the negation)
-                    mode.set_locally_binding_in_child();
+                    (var, BindingMode::LocallyBindingInChild)
+                } else {
+                    (var, mode)
                 }
-                // everything is either locally binding or non-binding (& therefore must be from parent)
-                Some((var, mode))
             })
             .collect()
     }

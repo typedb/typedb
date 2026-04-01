@@ -74,19 +74,10 @@ impl Pattern for Constraints {
         self.constraints().iter().flat_map(|constraint| constraint.ids()).unique()
     }
 
-    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
+    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
         self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
             constraint.binding_modes().for_each(|(var, mode)| {
-                let variable_binding_mode = match mode {
-                    BindingMode::RequirePrebound => VariableBindingMode::require_prebound(constraint),
-                    BindingMode::AlwaysBinding => VariableBindingMode::always_binding(constraint),
-                    BindingMode::OptionallyBinding => VariableBindingMode::optionally_binding(constraint),
-                    BindingMode::Absent | BindingMode::LocallyBindingInChild => {
-                        debug_assert!(false, "unreachable");
-                        return;
-                    }
-                };
-                *acc.entry(var).or_default() &= variable_binding_mode;
+                *acc.entry(var).or_default() &= mode;
             });
             acc
         })

@@ -250,8 +250,8 @@ typedb_error! {
             44,
             "The variable '{variable}' is required to be bound to a value before it's used.",
             variable: String,
-            source_span: Option<Span>,
-            _rest: Vec<Option<Span>>,
+            // source_span: Option<Span>, // TODO:
+            // _rest: Vec<Option<Span>>,  // TODO:
         ),
         IllegalStatementForInsert(
             45,

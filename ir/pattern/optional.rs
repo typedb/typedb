@@ -16,6 +16,7 @@ use crate::{
     },
     pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };
+use crate::pattern::BindingMode;
 
 #[derive(Debug, Clone)]
 pub struct Optional {
@@ -75,17 +76,17 @@ impl Pattern for Optional {
         })
     }
 
-    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
+    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
         self.conjunction
             .variable_binding_modes()
             .into_iter()
             .map(|(v, mut mode)| {
                 if mode.is_always_binding() {
-                    mode.set_optionally_binding()
+                    (v, BindingMode::OptionallyBinding)
+                } else {
+                    (v, mode)
                 }
-                (v, mode)
-            })
-            .collect()
+            }).collect()
     }
 }
 

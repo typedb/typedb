@@ -85,7 +85,7 @@ fn add_optional(
     parent_conjunction: &mut ConjunctionBuilder<'_, '_>,
     optional: &typeql::pattern::Optional,
 ) -> Result<(), Box<RepresentationError>> {
-    let parent_scope = parent_conjunction.conjunction.scope_id();
+    let parent_scope = parent_conjunction.scope_id();
     let mut optional_builder = parent_conjunction.add_optional(optional.span)?;
     add_patterns(function_index, &mut optional_builder, &optional.patterns)?;
     Ok(())

@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    ops::ControlFlow,
-};
+use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
 use itertools::Itertools;
@@ -101,7 +98,8 @@ impl<'reg> BlockBuilder<'reg> {
         Self { conjunction: Conjunction::new(ScopeId::ROOT), context }
     }
 
-    pub fn finish(self) -> Result<Block, Box<RepresentationError>> {
+    pub fn finish(mut self) -> Result<Block, Box<RepresentationError>> {
+        self.conjunction_mut().compute_and_set_variable_binding_modes();
         let Self {
             conjunction,
             context:
@@ -144,11 +142,11 @@ fn validate_conjunction(
     for (var, mode) in conjunction.variable_binding_modes() {
         if mode.is_require_prebound() && block_context.get_declaring_scope(&var) != Some(ScopeId::INPUT) {
             let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
-            let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
+            // let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
             return Err(Box::new(RepresentationError::UnboundRequiredVariable {
                 variable,
-                source_span: spans[0],
-                _rest: spans,
+                // source_span: spans[0],
+                // _rest: spans,
             }));
         }
     }

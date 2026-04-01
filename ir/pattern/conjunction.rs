@@ -15,7 +15,7 @@ use answer::variable::Variable;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
-
+use error::todo_must_implement;
 use crate::{
     pattern::{
         constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
@@ -34,11 +34,12 @@ pub struct Conjunction {
     scope_id: ScopeId,
     constraints: Constraints,
     nested_patterns: Vec<NestedPattern>,
+    binding_modes: HashMap<Variable, BindingMode>
 }
 
 impl Conjunction {
     pub fn new(scope_id: ScopeId) -> Self {
-        Self { scope_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new() }
+        Self { scope_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new(), binding_modes: HashMap::new() }
     }
 
     pub fn constraints(&self) -> &[Constraint<Variable>] {
@@ -90,15 +91,16 @@ impl Pattern for Conjunction {
             .unique()
     }
 
-    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
-        let mut binding_modes = self.constraints.variable_binding_modes();
-        for nested in self.nested_patterns.iter() {
-            let nested_pattern_modes = nested.variable_binding_modes();
-            for (var, mode) in nested_pattern_modes {
-                *binding_modes.entry(var).or_default() &= mode;
-            }
-        }
-        binding_modes
+    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
+        self.binding_modes.clone()
+        // let mut binding_modes = self.constraints.variable_binding_modes();
+        // for nested in self.nested_patterns.iter() {
+        //     let nested_pattern_modes = nested.variable_binding_modes();
+        //     for (var, mode) in nested_pattern_modes {
+        //         *binding_modes.entry(var).or_default() &= mode;
+        //     }
+        // }
+        // binding_modes
     }
 }
 
@@ -136,13 +138,17 @@ impl fmt::Display for Conjunction {
 }
 
 pub struct ConjunctionBuilder<'cx, 'reg> {
-    pub(crate) context: &'cx mut BlockBuilderContext<'reg>,
-    pub(crate) conjunction: &'cx mut Conjunction,
+    context: &'cx mut BlockBuilderContext<'reg>,
+    conjunction: &'cx mut Conjunction,
 }
 
 impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
     pub fn new(context: &'cx mut BlockBuilderContext<'reg>, conjunction: &'cx mut Conjunction) -> Self {
         Self { context, conjunction }
+    }
+
+    pub fn scope_id(&self) -> ScopeId {
+        self.conjunction.scope_id()
     }
 
     pub fn constraints_mut(&mut self) -> ConstraintsBuilder<'_, 'reg> {
@@ -196,5 +202,43 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
             }
         }
         Ok(())
+    }
+
+    pub(crate) fn compute_and_set_variable_binding_modes(&mut self) {
+        compute_bottom_up_binding_modes_and_set(&mut self.conjunction);
+        update_required_for_locally_and_optionally_binding(&mut self.conjunction, &HashMap::new());
+    }
+}
+
+fn update_required_for_locally_and_optionally_binding(conjunction: &mut Conjunction, parent_binding_modes: &HashMap<Variable, BindingMode>) {
+    // todo_must_implement!("update_required_for_locally_and_optionally_binding")
+}
+
+pub(super) fn compute_bottom_up_binding_modes_and_set(conjunction: &mut Conjunction) {
+    fn update_binding_modes(of: &mut HashMap<Variable, BindingMode>, from: impl Iterator<Item=(Variable, BindingMode)>) {
+        for (var, mode) in from {
+            *of.entry(var).or_default() &= mode;
+        }
+    }
+    let Conjunction { constraints, nested_patterns, binding_modes, .. } = conjunction;
+
+    update_binding_modes(binding_modes, constraints.variable_binding_modes().into_iter());
+    for nested in nested_patterns.iter_mut() {
+        match nested {
+            NestedPattern::Disjunction(disjunction) => {
+                disjunction.conjunctions_mut().iter_mut().for_each(|c| {
+                    compute_bottom_up_binding_modes_and_set(c);
+                });
+                update_binding_modes(binding_modes, disjunction.variable_binding_modes().into_iter());
+            }
+            NestedPattern::Negation(negation) => {
+                compute_bottom_up_binding_modes_and_set(negation.conjunction_mut());
+                update_binding_modes(binding_modes, negation.variable_binding_modes().into_iter());
+            }
+            NestedPattern::Optional(optional) => {
+                compute_bottom_up_binding_modes_and_set(optional.conjunction_mut());
+                update_binding_modes(binding_modes, optional.variable_binding_modes().into_iter());
+            }
+        }
     }
 }

@@ -18,7 +18,7 @@ use typeql::common::Span;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        BindingMode, BranchID, Pattern, Scope, ScopeId, VariableBindingMode,
+        BindingMode, BranchID, Pattern, Scope, ScopeId,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
 };
@@ -55,6 +55,8 @@ impl Disjunction {
         self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_always_binding().then_some(v))
     }
 
+
+
     pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
         let unsatisfiable_branch_ids = self
             .conjunctions
@@ -77,15 +79,15 @@ impl Pattern for Disjunction {
     //      OptionallyBinding for a variable that is OptionallyBinding in all branches
     //      LocallyBinding for any binding variable that is AlwaysBinding in exactly one branch
     //      RequireBound otherwise
-    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
+    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
         }
         let all_branch_modes: Vec<_> = self.conjunctions.iter().map(|c| c.variable_binding_modes()).collect();
-        let mut binding_modes: HashMap<Variable, VariableBindingMode<'_>> = HashMap::new();
+        let mut binding_modes: HashMap<Variable, BindingMode> = HashMap::new();
         for branch_binding_modes in &all_branch_modes {
             for (var, mode) in branch_binding_modes {
-                *binding_modes.entry(*var).or_default() |= mode.clone();
+                *binding_modes.entry(*var).or_default() |= *mode;
             }
         }
         // Escalate multiple branches locally-bound to Errors
@@ -97,7 +99,7 @@ impl Pattern for Disjunction {
                     && all_branch_modes.iter().filter_map(|modes| modes.get(var)).all(|mode| mode.is_always_binding())
             );
             if always_binding_count > 1 {
-                mode.mode = BindingMode::RequirePrebound
+                *mode = BindingMode::RequirePrebound
             }
         });
         binding_modes

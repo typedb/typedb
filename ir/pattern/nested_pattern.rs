@@ -14,6 +14,7 @@ use crate::{
     pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, Pattern, VariableBindingMode},
     pipeline::block::BlockContext,
 };
+use crate::pattern::BindingMode;
 
 #[derive(Debug, Clone)]
 pub enum NestedPattern {
@@ -65,7 +66,7 @@ impl NestedPattern {
         }
     }
 
-    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
+    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
         match self {
             NestedPattern::Disjunction(disjunction) => disjunction.variable_binding_modes(),
             NestedPattern::Negation(negation) => negation.variable_binding_modes(),

@@ -85,7 +85,8 @@ pub trait Pattern {
             .filter_map(|(v, mode)| (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v))
     }
 
-    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>>;
+    // TODO: Return impl iterator
+    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode>;
 }
 
 // TODO: rename to 'Identifier' in lieu of a better name
@@ -394,13 +395,32 @@ impl fmt::Display for ValueType {
 
 // TODO: consider if this makes Scopes entirely redundant
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-enum BindingMode {
+pub enum BindingMode {
     RequirePrebound,
     AlwaysBinding,
     LocallyBindingInChild,
     OptionallyBinding,
     #[default]
     Absent,
+}
+
+impl BindingMode {
+
+    pub fn is_require_prebound(&self) -> bool {
+        *self == BindingMode::RequirePrebound
+    }
+
+    pub fn is_always_binding(&self) -> bool {
+        *self == BindingMode::AlwaysBinding
+    }
+
+    pub fn is_locally_binding_in_child(&self) -> bool {
+        *self == BindingMode::LocallyBindingInChild
+    }
+
+    pub fn is_optionally_binding(&self) -> bool {
+        *self == BindingMode::OptionallyBinding
+    }
 }
 
 impl BitAndAssign for BindingMode {

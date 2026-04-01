@@ -35,6 +35,7 @@ use ir::{
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::chain;
+use ir::pattern::BindingMode;
 use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug)]
@@ -222,7 +223,7 @@ fn enrich_annotations(
             let is_optional = conjunction
                 .variable_binding_modes()
                 .get(&variable)
-                .map(VariableBindingMode::is_optionally_binding)
+                .map(BindingMode::is_optionally_binding)
                 .unwrap_or(false);
             (StructureVariableId::from(variable), PipelineVariableAnnotationAndModifier { is_optional, annotations })
         })
