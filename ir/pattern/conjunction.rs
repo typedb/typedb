@@ -204,12 +204,54 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
 
     pub(crate) fn compute_and_set_variable_binding_modes(&mut self) {
         compute_bottom_up_binding_modes_and_set(&mut self.conjunction);
-        update_required_for_locally_and_optionally_binding(&mut self.conjunction, &HashMap::new());
+        update_required_for_locally_and_optionally_binding(&mut self.conjunction);
     }
 }
 
-fn update_required_for_locally_and_optionally_binding(conjunction: &mut Conjunction, parent_binding_modes: &HashMap<Variable, BindingMode>) {
-    // todo_must_implement!("update_required_for_locally_and_optionally_binding")
+fn update_required_for_locally_and_optionally_binding(conjunction: &mut Conjunction) {
+    fn find_variables_to_set<'a>(parent_modes: &HashMap<Variable, BindingMode>, nested_modes: impl Iterator<Item=(&'a Variable, &'a BindingMode)>) -> Vec<Variable> {
+        nested_modes.into_iter().filter(|(var, nested_mode)| {
+            debug_assert!(parent_modes.contains_key(var));
+            let parent_mode = parent_modes[var];
+            (nested_mode.is_optionally_binding() || nested_mode.is_locally_binding_in_child()) &&
+                (parent_modes[var].is_optionally_binding() || parent_modes[var].is_always_binding())
+        })
+        .map(|(var, _)| *var)
+        .collect::<Vec<_>>()
+    }
+
+    fn set_for_variables(nested_modes: &mut HashMap<Variable, BindingMode>, variables: &[Variable]) {
+        variables.iter().for_each(|variable| {
+            if let Some(mode) = nested_modes.get_mut(variable) {
+                *mode = BindingMode::RequirePrebound;
+            }
+        })
+    }
+
+    let Conjunction { nested_patterns, binding_modes, .. } = conjunction;
+
+    for nested in nested_patterns.iter_mut() {
+        match nested {
+            NestedPattern::Disjunction(disjunction) => {
+                let to_set = find_variables_to_set(binding_modes, disjunction.variable_binding_modes().iter());
+                disjunction.conjunctions_mut().iter_mut().for_each(|c| {
+                    set_for_variables(&mut c.binding_modes, &to_set);
+                    update_required_for_locally_and_optionally_binding(c);
+                });
+            }
+            NestedPattern::Negation(negation) => {
+                let to_set = find_variables_to_set(binding_modes, negation.variable_binding_modes().iter());
+                set_for_variables(&mut negation.conjunction_mut().binding_modes, &to_set);
+                update_required_for_locally_and_optionally_binding(negation.conjunction_mut());
+            }
+            NestedPattern::Optional(optional) => {
+                let to_set = find_variables_to_set(binding_modes, optional.variable_binding_modes().iter());
+                set_for_variables(&mut optional.conjunction_mut().binding_modes, &to_set);
+                update_required_for_locally_and_optionally_binding(optional.conjunction_mut());
+            }
+        }
+    }
+
 }
 
 pub(super) fn compute_bottom_up_binding_modes_and_set(conjunction: &mut Conjunction) {
