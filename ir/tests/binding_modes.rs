@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::{BTreeMap, HashMap};
-use itertools::Itertools;
+use std::collections::BTreeMap;
 use typeql::query::stage::Stage;
 use ir::pattern::{BindingMode, Pattern};
 use ir::pipeline::function_signature::HashMapFunctionSignatureIndex;
@@ -15,7 +14,7 @@ use ir::translation::PipelineTranslationContext;
 fn binding_modes<'a>(context: &'a PipelineTranslationContext, conjunction: &impl Pattern) -> BTreeMap<&'a str, BindingMode> {
     conjunction.variable_binding_modes().iter()
         .filter_map(|(v, b)| {
-            (context.variable_registry.get_variable_name(*v).map(|s| (s.as_str(), *b)))
+            context.variable_registry.get_variable_name(*v).map(|s| (s.as_str(), *b))
         }).collect()
 }
 
@@ -79,8 +78,6 @@ fn test_disjunction() {
     let b12 = binding_modes(&context, &first_disjunction.conjunctions()[1]);
     let b21 = binding_modes(&context, &second_disjunction.conjunctions()[0]);
     let b22 = binding_modes(&context, &second_disjunction.conjunctions()[1]);
-    eprintln!("d1: {}",first_disjunction);
-    eprintln!("d2: {}", second_disjunction);
     assert_eq!(conjunction_modes, BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild)]));
     assert_eq!(d1, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
     assert_eq!(d2, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::LocallyBindingInChild)]));

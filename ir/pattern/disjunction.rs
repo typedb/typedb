@@ -82,7 +82,7 @@ impl Pattern for Disjunction {
         let mut binding_modes = all_variables.iter().map(|v| {
             let mode = all_branch_modes.iter()
                 .map(|b| b.get(v).copied().unwrap_or(BindingMode::Absent))
-                .reduce(|a,b| {let mut x = a; x |= b; x})
+                .reduce(|a,b| a | b)
                 .unwrap_or(BindingMode::Absent);
             (**v, mode)
         })

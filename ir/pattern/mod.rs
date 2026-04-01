@@ -12,7 +12,7 @@ use std::{
     mem,
     ops::{BitAndAssign, BitOrAssign, BitXor},
 };
-
+use std::ops::{BitAnd, BitOr};
 use answer::variable::Variable;
 use constraint::Constraint;
 use encoding::value::label::Label;
@@ -422,38 +422,47 @@ impl BindingMode {
     }
 }
 
-impl BitAndAssign for BindingMode {
-    fn bitand_assign(&mut self, rhs: Self) {
+impl BitAnd for BindingMode {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self {
         // We upgrade (Optionally|LocallyBinding) & (Optionally|LocallyBinding) to RequirePrebound
-        match (*self, rhs) {
-            (Self::Absent, x) | (x, Self::Absent) => *self = x,
-            (Self::AlwaysBinding, _) | (_, Self::AlwaysBinding) => *self = Self::AlwaysBinding,
-            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => *self = Self::RequirePrebound,
-            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::RequirePrebound,
-            (Self::OptionallyBinding, Self::OptionallyBinding) => *self = Self::RequirePrebound,
+        match (self, rhs) {
+            (Self::Absent, x) | (x, Self::Absent) => x,
+            (Self::AlwaysBinding, _) | (_, Self::AlwaysBinding) => Self::AlwaysBinding,
+            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => Self::RequirePrebound,
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => Self::RequirePrebound,
+            (Self::OptionallyBinding, Self::OptionallyBinding) => Self::RequirePrebound,
         }
     }
 }
 
-impl BitOrAssign for BindingMode {
-    fn bitor_assign(&mut self, rhs: Self) {
+impl BitAndAssign for BindingMode {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
+    }
+}
+
+impl BitOr for BindingMode {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
         // WARNING: This is not associative.
-        match (*self, rhs) {
-            (Self::OptionallyBinding, Self::OptionallyBinding) => *self = Self::OptionallyBinding,
-            (Self::AlwaysBinding, Self::AlwaysBinding) => *self = Self::AlwaysBinding,
-            (Self::Absent, Self::Absent) => *self = Self::Absent,
+        match (self, rhs) {
+            (Self::OptionallyBinding, Self::OptionallyBinding) => Self::OptionallyBinding,
+            (Self::AlwaysBinding, Self::AlwaysBinding) => Self::AlwaysBinding,
+            (Self::Absent, Self::Absent) => Self::Absent,
             (Self::Absent, Self::AlwaysBinding) | (Self::AlwaysBinding, Self::Absent) => {
-                *self = Self::LocallyBindingInChild
+                Self::LocallyBindingInChild
             }
             (Self::Absent, Self::LocallyBindingInChild) | (Self::LocallyBindingInChild, Self::Absent) => {
-                *self = Self::LocallyBindingInChild
+                Self::LocallyBindingInChild
             }
-            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => *self = Self::RequirePrebound,
-            (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => *self = Self::RequirePrebound,
+            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => Self::RequirePrebound,
+            (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => Self::RequirePrebound,
             (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => {
                 // This preserves associativity, but doesn't escalate to errors via RequirePrebound.
                 // That's corrected in disjunction
-                *self = Self::LocallyBindingInChild
+                Self::LocallyBindingInChild
             }
         }
     }
