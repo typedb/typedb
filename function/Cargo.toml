@@ -15,92 +15,57 @@ features = {}
 [dev-dependencies]
 
 	[dev-dependencies.test_utils]
-		path = "../util/test"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.rand]
-		features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
-		version = "0.8.5"
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.tracing]
-		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.41"
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.logger]
-		path = "../common/logger"
-		features = []
-		default-features = false
+		workspace = true
 
 [dependencies]
 
 	[dependencies.primitive]
-		path = "../common/primitive"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.resource]
-		path = "../resource"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.durability]
-		path = "../durability"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.concept]
-		path = "../concept"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.ir]
-		path = "../ir"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.storage]
-		path = "../storage"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.encoding]
-		path = "../encoding"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.error]
-		path = "../common/error"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.itertools]
-		features = ["default", "use_alloc", "use_std"]
-		version = "0.10.5"
-		default-features = false
+		workspace = true
 
 	[dependencies.answer]
-		path = "../answer"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.bytes]
-		path = "../common/bytes"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.typeql]
-		features = []
-		rev = "bff6f17c22650f7f540100180b869c88b2f82270"
-		git = "https://github.com/typedb/typeql"
-		default-features = false
+		workspace = true
 
 	[dependencies.compiler]
-		path = "../compiler"
-		features = []
-		default-features = false
+		workspace = true
 
 [[test]]
 	path = "tests/test_definition.rs"

@@ -16,17 +16,11 @@ dev-dependencies = {}
 [dependencies]
 
 	[dependencies.tracing]
-		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.41"
-		default-features = false
+		workspace = true
 
 	[dependencies.tracing-appender]
-		features = []
-		version = "0.2.3"
-		default-features = false
+		workspace = true
 
 	[dependencies.tracing-subscriber]
-		features = ["alloc", "ansi", "default", "env-filter", "fmt", "matchers", "nu-ansi-term", "once_cell", "registry", "sharded-slab", "smallvec", "std", "thread_local", "tracing", "tracing-log"]
-		version = "0.3.20"
-		default-features = false
+		workspace = true
 
