@@ -9,10 +9,7 @@ use std::{collections::HashMap, fmt, mem};
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
-use crate::{
-    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, Pattern},
-};
-use crate::pattern::BindingMode;
+use crate::pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, BindingMode, Pattern};
 
 #[derive(Debug, Clone)]
 pub enum NestedPattern {

@@ -47,6 +47,16 @@ rust_test(
     ],
 )
 
+rust_test(
+    name = "binding_modes",
+    crate_root = "binding_modes.rs",
+    srcs =  ["binding_modes.rs"],
+    deps = [
+        "//ir:ir",
+        "@typeql//rust:typeql",
+    ],
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [

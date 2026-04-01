@@ -12,11 +12,10 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Pattern, Scope, ScopeId,
+        BindingMode, Pattern, Scope, ScopeId,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };
-use crate::pattern::BindingMode;
 
 #[derive(Debug, Clone)]
 pub struct Negation {

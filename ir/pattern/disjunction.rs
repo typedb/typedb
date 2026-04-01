@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt,
-};
+use std::{collections::HashMap, fmt};
 
 use answer::variable::Variable;
 use itertools::Itertools;
@@ -53,8 +50,6 @@ impl Disjunction {
         self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_always_binding().then_some(v))
     }
 
-
-
     pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
         let unsatisfiable_branch_ids = self
             .conjunctions
@@ -82,20 +77,27 @@ impl Pattern for Disjunction {
             return HashMap::new();
         }
         let all_branch_modes: Vec<_> = self.conjunctions.iter().map(|c| c.variable_binding_modes()).collect();
-        let mut binding_modes: HashMap<Variable, BindingMode> = HashMap::new();
-        for branch_binding_modes in &all_branch_modes {
-            for (var, mode) in branch_binding_modes {
-                *binding_modes.entry(*var).or_default() |= *mode;
-            }
-        }
+        let all_variables = all_branch_modes.iter().flat_map(|b| b.keys()).dedup().collect::<Vec<_>>();
+        // Absent isn't the identity under the bitwise or operator
+        let mut binding_modes = all_variables.iter().map(|v| {
+            let mode = all_branch_modes.iter()
+                .map(|b| b.get(v).copied().unwrap_or(BindingMode::Absent))
+                .reduce(|a,b| {let mut x = a; x |= b; x})
+                .unwrap_or(BindingMode::Absent);
+            (**v, mode)
+        })
+        .collect::<HashMap<_, _>>();
+
         // Escalate multiple branches locally-bound to Errors
         binding_modes.iter_mut().filter(|(_, mode)| mode.is_locally_binding_in_child()).for_each(|(var, mode)| {
             let always_binding_count =
                 all_branch_modes.iter().filter(|branch_modes| branch_modes.get(var).is_some()).count();
             debug_assert!(
                 always_binding_count >= 1
+                    && always_binding_count < self.conjunctions.len()
                     && all_branch_modes.iter().filter_map(|modes| modes.get(var)).all(|mode| mode.is_always_binding())
             );
+
             if always_binding_count > 1 {
                 *mode = BindingMode::RequirePrebound
             }

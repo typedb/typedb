@@ -405,7 +405,6 @@ pub enum BindingMode {
 }
 
 impl BindingMode {
-
     pub fn is_require_prebound(&self) -> bool {
         *self == BindingMode::RequirePrebound
     }

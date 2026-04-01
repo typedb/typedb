@@ -14,6 +14,7 @@ use answer::variable::Variable;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
+
 use crate::{
     pattern::{
         constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
@@ -32,12 +33,17 @@ pub struct Conjunction {
     scope_id: ScopeId,
     constraints: Constraints,
     nested_patterns: Vec<NestedPattern>,
-    binding_modes: HashMap<Variable, BindingMode>
+    binding_modes: HashMap<Variable, BindingMode>,
 }
 
 impl Conjunction {
     pub fn new(scope_id: ScopeId) -> Self {
-        Self { scope_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new(), binding_modes: HashMap::new() }
+        Self {
+            scope_id,
+            constraints: Constraints::new(scope_id),
+            nested_patterns: Vec::new(),
+            binding_modes: HashMap::new(),
+        }
     }
 
     pub fn constraints(&self) -> &[Constraint<Variable>] {
@@ -209,15 +215,20 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
 }
 
 fn update_required_for_locally_and_optionally_binding(conjunction: &mut Conjunction) {
-    fn find_variables_to_set<'a>(parent_modes: &HashMap<Variable, BindingMode>, nested_modes: impl Iterator<Item=(&'a Variable, &'a BindingMode)>) -> Vec<Variable> {
-        nested_modes.into_iter().filter(|(var, nested_mode)| {
-            debug_assert!(parent_modes.contains_key(var));
-            let parent_mode = parent_modes[var];
-            (nested_mode.is_optionally_binding() || nested_mode.is_locally_binding_in_child()) &&
-                (parent_modes[var].is_optionally_binding() || parent_modes[var].is_always_binding())
-        })
-        .map(|(var, _)| *var)
-        .collect::<Vec<_>>()
+    fn find_variables_to_set<'a>(
+        parent_modes: &HashMap<Variable, BindingMode>,
+        nested_modes: impl Iterator<Item = (&'a Variable, &'a BindingMode)>,
+    ) -> Vec<Variable> {
+        nested_modes
+            .into_iter()
+            .filter(|(var, nested_mode)| {
+                debug_assert!(parent_modes.contains_key(var));
+                let parent_mode = parent_modes[var];
+                (nested_mode.is_optionally_binding() || nested_mode.is_locally_binding_in_child())
+                    && (parent_modes[var].is_require_prebound() || parent_modes[var].is_always_binding())
+            })
+            .map(|(var, _)| *var)
+            .collect::<Vec<_>>()
     }
 
     fn set_for_variables(nested_modes: &mut HashMap<Variable, BindingMode>, variables: &[Variable]) {
@@ -251,11 +262,13 @@ fn update_required_for_locally_and_optionally_binding(conjunction: &mut Conjunct
             }
         }
     }
-
 }
 
 pub(super) fn compute_bottom_up_binding_modes_and_set(conjunction: &mut Conjunction) {
-    fn update_binding_modes(of: &mut HashMap<Variable, BindingMode>, from: impl Iterator<Item=(Variable, BindingMode)>) {
+    fn update_binding_modes(
+        of: &mut HashMap<Variable, BindingMode>,
+        from: impl Iterator<Item = (Variable, BindingMode)>,
+    ) {
         for (var, mode) in from {
             *of.entry(var).or_default() &= mode;
         }
