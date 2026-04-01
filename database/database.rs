@@ -27,8 +27,7 @@ use concurrency::IntervalRunner;
 use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
 use durability::{
     wal::{WALError, WAL},
-    DurabilitySequenceNumber,
-    DurabilityServiceError,
+    DurabilitySequenceNumber, DurabilityServiceError,
 };
 use encoding::{
     error::EncodingError,
@@ -44,7 +43,6 @@ use query::query_cache::QueryCache;
 use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    record::CommitRecord,
     recovery::checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
     sequence_number::SequenceNumber,
     snapshot::snapshot_id::SnapshotId,
@@ -331,7 +329,7 @@ impl Database<WALClient> {
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
         let wal = match WAL::load(path) {
             Ok(wal) => wal,
-            Err(DurabilityServiceError::WAL { source: WALError::LoadErrorDirectoryMissing { .. } }) => {
+            Err(DurabilityServiceError::WAL { source: WALError::LoadDirectoryMissing { .. } }) => {
                 return Err(NotADatabase { name: name.to_owned() })
             }
             Err(source) => return Err(WALOpen { source }),

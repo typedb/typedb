@@ -71,19 +71,18 @@ pub fn get_system_database_schema_commit_intent(
     db: Arc<Database<WALClient>>,
 ) -> Result<(TransactionProfile, Option<SchemaCommitIntent<WALClient>>), ArcServerStateError> {
     let tx_util = TransactionUtil::new(db);
-    let (transaction_profile, finalise_result) = tx_util.schema_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
-        let query = typeql::parse_query(SCHEMA)
-            .unwrap_or_else(|error| {
-                panic!("Unexpected error occurred when parsing the schema for the {SYSTEM_DB} database: {error:?}")
-            })
-            .into_structure()
-            .into_schema();
-        query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, SCHEMA).unwrap_or_else(
-            |error| {
+    let (transaction_profile, finalise_result) =
+        tx_util.schema_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
+            let query = typeql::parse_query(SCHEMA)
+                .unwrap_or_else(|error| {
+                    panic!("Unexpected error occurred when parsing the schema for the {SYSTEM_DB} database: {error:?}")
+                })
+                .into_structure()
+                .into_schema();
+            query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, SCHEMA).unwrap_or_else(|error| {
                 panic!("Unexpected error occurred when defining the schema for the {SYSTEM_DB} database: {error:?}")
-            },
-        );
-    });
+            });
+        });
     let commit_intent =
         finalise_result.map_err(|error| LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source: error })?;
     let commit_intent_opt = if commit_intent.has_changes() { Some(commit_intent) } else { None };
