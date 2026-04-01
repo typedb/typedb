@@ -11,13 +11,14 @@ use std::{
 };
 
 use answer::variable::Variable;
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        BranchID, Pattern, Scope, ScopeId, VariableBindingMode,
+        BindingMode, BranchID, Pattern, Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
 };
@@ -71,39 +72,34 @@ impl Pattern for Disjunction {
         self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
     }
 
-    /// Returns: non_binding for any variable in any branch that is required as an argument/input
-    ///          locally_binding for any binding variable that is not binding in all branches
-    ///          binding for any variable that is bound in all branches
+    /// Returns:
+    //      AlwaysBinding for a variable that is AlwaysBinding in all branches
+    //      OptionallyBinding for a variable that is OptionallyBinding in all branches
+    //      LocallyBinding for any binding variable that is AlwaysBinding in exactly one branch
+    //      RequireBound otherwise
     fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
         }
-        let mut binding_modes = self.conjunctions[0].variable_binding_modes();
-        for branch in &self.conjunctions[1..] {
-            let branch_binding_modes = branch.variable_binding_modes();
-            for (var, mode) in &mut binding_modes {
-                // Not present in this branch: local to only 1 branch in the disjunction
-                if !branch_binding_modes.contains_key(var) && mode.is_always_binding() {
-                    mode.set_locally_binding_in_child()
-                }
-            }
-            for (var, mut mode) in branch_binding_modes {
-                let entry = binding_modes.entry(var);
-                match entry {
-                    hash_map::Entry::Occupied(mut entry) => {
-                        // Eg. it's non-binding in one branch but binding in another, force it to non-binding (use weakest form)
-                        *entry.get_mut() |= mode;
-                    }
-                    hash_map::Entry::Vacant(entry) => {
-                        // Not present in first and maybe later branches ("merged" modes), so local to this branch
-                        if mode.is_always_binding() {
-                            mode.set_locally_binding_in_child();
-                        }
-                        entry.insert(mode);
-                    }
-                }
+        let all_branch_modes: Vec<_> = self.conjunctions.iter().map(|c| c.variable_binding_modes()).collect();
+        let mut binding_modes: HashMap<Variable, VariableBindingMode<'_>> = HashMap::new();
+        for branch_binding_modes in &all_branch_modes {
+            for (var, mode) in branch_binding_modes {
+                *binding_modes.entry(*var).or_default() |= mode.clone();
             }
         }
+        // Escalate multiple branches locally-bound to Errors
+        binding_modes.iter_mut().filter(|(_, mode)| mode.is_locally_binding_in_child()).for_each(|(var, mode)| {
+            let always_binding_count =
+                all_branch_modes.iter().filter(|branch_modes| branch_modes.get(var).is_some()).count();
+            debug_assert!(
+                always_binding_count >= 1
+                    && all_branch_modes.iter().filter_map(|modes| modes.get(var)).all(|mode| mode.is_always_binding())
+            );
+            if always_binding_count > 1 {
+                mode.mode = BindingMode::RequirePrebound
+            }
+        });
         binding_modes
     }
 }

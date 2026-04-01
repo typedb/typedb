@@ -418,7 +418,7 @@ impl BitAndAssign for BindingMode {
 
 impl BitOrAssign for BindingMode {
     fn bitor_assign(&mut self, rhs: Self) {
-        // We upgrade (LocallyBinding || LocallyBinding) to RequirePrebound
+        // WARNING: This is not associative.
         match (*self, rhs) {
             (Self::OptionallyBinding, Self::OptionallyBinding) => *self = Self::OptionallyBinding,
             (Self::AlwaysBinding, Self::AlwaysBinding) => *self = Self::AlwaysBinding,
@@ -426,10 +426,16 @@ impl BitOrAssign for BindingMode {
             (Self::Absent, Self::AlwaysBinding) | (Self::AlwaysBinding, Self::Absent) => {
                 *self = Self::LocallyBindingInChild
             }
-            // Everything that remains is RequirePrebound
+            (Self::Absent, Self::LocallyBindingInChild) | (Self::LocallyBindingInChild, Self::Absent) => {
+                *self = Self::LocallyBindingInChild
+            }
             (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => *self = Self::RequirePrebound,
-            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::RequirePrebound,
             (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => *self = Self::RequirePrebound,
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => {
+                // This preserves associativity, but doesn't escalate to errors via RequirePrebound.
+                // That's corrected in disjunction
+                *self = Self::LocallyBindingInChild
+            }
         }
     }
 }
