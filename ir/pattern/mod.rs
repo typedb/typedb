@@ -393,37 +393,48 @@ impl fmt::Display for ValueType {
 }
 
 // TODO: consider if this makes Scopes entirely redundant
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 enum BindingMode {
     RequirePrebound,
     AlwaysBinding,
     LocallyBindingInChild,
     OptionallyBinding,
+    #[default]
+    Absent,
 }
 
 impl BitAndAssign for BindingMode {
     fn bitand_assign(&mut self, rhs: Self) {
+        // We upgrade (Optionally|LocallyBinding) & (Optionally|LocallyBinding) to RequirePrebound
         match (*self, rhs) {
+            (Self::Absent, x) | (x, Self::Absent) => *self = x,
             (Self::AlwaysBinding, _) | (_, Self::AlwaysBinding) => *self = Self::AlwaysBinding,
             (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => *self = Self::RequirePrebound,
-            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::LocallyBindingInChild,
-            (Self::OptionallyBinding, Self::OptionallyBinding) => (),
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::RequirePrebound,
+            (Self::OptionallyBinding, Self::OptionallyBinding) => *self = Self::RequirePrebound,
         }
     }
 }
 
 impl BitOrAssign for BindingMode {
     fn bitor_assign(&mut self, rhs: Self) {
+        // We upgrade (LocallyBinding || LocallyBinding) to RequirePrebound
         match (*self, rhs) {
+            (Self::OptionallyBinding, Self::OptionallyBinding) => *self = Self::OptionallyBinding,
+            (Self::AlwaysBinding, Self::AlwaysBinding) => *self = Self::AlwaysBinding,
+            (Self::Absent, Self::Absent) => *self = Self::Absent,
+            (Self::Absent, Self::AlwaysBinding) | (Self::AlwaysBinding, Self::Absent) => {
+                *self = Self::LocallyBindingInChild
+            }
+            // Everything that remains is RequirePrebound
             (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => *self = Self::RequirePrebound,
-            (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => *self = Self::OptionallyBinding,
-            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::LocallyBindingInChild,
-            (Self::AlwaysBinding, Self::AlwaysBinding) => (),
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::RequirePrebound,
+            (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => *self = Self::RequirePrebound,
         }
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct VariableBindingMode<'a> {
     mode: BindingMode,
     referencing_constraints: Vec<&'a Constraint<Variable>>,

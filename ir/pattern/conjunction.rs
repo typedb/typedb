@@ -23,7 +23,7 @@ use crate::{
         negation::Negation,
         nested_pattern::NestedPattern,
         optional::Optional,
-        Pattern, Scope, ScopeId, VariableBindingMode,
+        BindingMode, Pattern, Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
     RepresentationError,
@@ -73,23 +73,6 @@ impl Conjunction {
     pub fn local_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
         self.referenced_variables().filter(|var| block_context.is_variable_available_in(self.scope_id, *var))
     }
-
-    pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
-        for (var, mode) in self.variable_binding_modes() {
-            let scope = block_context.get_declaring_scope(&var).unwrap();
-            // variables present in sibling scopes are "declared" in their common ancestor
-            // variables are only considered locally binding in child if the variable is locally bound in all children it is present in
-            //   because locally-binding loses to both non-binding and binding modes
-            // therefore: fail if the variable is only bound in >=1 child, but "declared" here
-            if scope == self.scope_id && (mode.is_locally_binding_in_child() || mode.is_optionally_binding()) {
-                return ControlFlow::Break((var, mode.referencing_constraints().first().and_then(|c| c.source_span())));
-            }
-        }
-        for nested in &self.nested_patterns {
-            nested.find_disjoint_variable(block_context)?;
-        }
-        ControlFlow::Continue(())
-    }
 }
 
 impl Pattern for Conjunction {
@@ -112,16 +95,7 @@ impl Pattern for Conjunction {
         for nested in self.nested_patterns.iter() {
             let nested_pattern_modes = nested.variable_binding_modes();
             for (var, mode) in nested_pattern_modes {
-                match binding_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => {
-                        // Eg. if it's binding in one part of the conjunction, but non-binding in another, it's still binding
-                        //   in this whole conjunction.
-                        *entry.get_mut() &= mode
-                    }
-                    hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(mode);
-                    }
-                }
+                *binding_modes.entry(var).or_default() &= mode;
             }
         }
         binding_modes

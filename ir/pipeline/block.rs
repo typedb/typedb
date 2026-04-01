@@ -140,10 +140,6 @@ fn validate_conjunction(
             source_span: variable_registry.source_span(variable),
         }));
     }
-    if let ControlFlow::Break((var, source_span)) = conjunction.find_disjoint_variable(block_context) {
-        let name = variable_registry.get_variable_name_or_unnamed(var).to_owned();
-        return Err(Box::new(RepresentationError::LocallyBoundVariableReuse { name, source_span }));
-    }
 
     for (var, mode) in conjunction.variable_binding_modes() {
         if mode.is_require_prebound() && block_context.get_declaring_scope(&var) != Some(ScopeId::INPUT) {

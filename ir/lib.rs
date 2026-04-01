@@ -25,13 +25,14 @@ pub mod translation;
 
 typedb_error! {
     pub RepresentationError(component = "Representation", prefix = "REP") {
-        LocallyBoundVariableReuse(
-            0,
-            "Locally-scoped variable '{name}' cannot be re-used elsewhere as a locally-scoped variable. \
-            Variables are not local if bound in a conjunction constraint, a parent scope, or bound in every branch of a disjunction.",
-            name: String,
-            source_span: Option<Span>,
-        ),
+        // TODO: Remove unused
+        // LocallyBoundVariableReuse(
+        //     0,
+        //     "Locally-scoped variable '{name}' cannot be re-used elsewhere as a locally-scoped variable. \
+        //     Variables are not local if bound in a conjunction constraint, a parent scope, or bound in every branch of a disjunction.",
+        //     name: String,
+        //     source_span: Option<Span>,
+        // ),
         VariableCategoryMismatch(
             1,
             "The variable '{variable_name}' cannot be declared as both a '{category_1}' and as a '{category_2}'.",

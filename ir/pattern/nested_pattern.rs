@@ -72,14 +72,6 @@ impl NestedPattern {
             NestedPattern::Optional(optional) => optional.variable_binding_modes(),
         }
     }
-
-    pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
-        match self {
-            NestedPattern::Disjunction(disjunction) => disjunction.find_disjoint_variable(block_context),
-            NestedPattern::Negation(negation) => negation.conjunction().find_disjoint_variable(block_context),
-            NestedPattern::Optional(optional) => optional.conjunction().find_disjoint_variable(block_context),
-        }
-    }
 }
 
 impl StructuralEquality for NestedPattern {

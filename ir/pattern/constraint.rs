@@ -81,19 +81,12 @@ impl Pattern for Constraints {
                     BindingMode::RequirePrebound => VariableBindingMode::require_prebound(constraint),
                     BindingMode::AlwaysBinding => VariableBindingMode::always_binding(constraint),
                     BindingMode::OptionallyBinding => VariableBindingMode::optionally_binding(constraint),
-                    BindingMode::LocallyBindingInChild => {
+                    BindingMode::Absent | BindingMode::LocallyBindingInChild => {
                         debug_assert!(false, "unreachable");
                         return;
                     }
                 };
-                match acc.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() &= variable_binding_mode;
-                    }
-                    hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(variable_binding_mode);
-                    }
-                }
+                *acc.entry(var).or_default() &= variable_binding_mode;
             });
             acc
         })

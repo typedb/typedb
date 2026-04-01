@@ -54,13 +54,6 @@ impl Disjunction {
         self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_always_binding().then_some(v))
     }
 
-    pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
-        for conjunction in &self.conjunctions {
-            conjunction.find_disjoint_variable(block_context)?;
-        }
-        ControlFlow::Continue(())
-    }
-
     pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
         let unsatisfiable_branch_ids = self
             .conjunctions
