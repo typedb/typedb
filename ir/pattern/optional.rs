@@ -12,7 +12,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        BranchID, Pattern, Scope, ScopeId, VariableBindingMode,
+        BranchID, Pattern, Scope, ScopeId,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };
@@ -80,7 +80,7 @@ impl Pattern for Optional {
         self.conjunction
             .variable_binding_modes()
             .into_iter()
-            .map(|(v, mut mode)| {
+            .map(|(v, mode)| {
                 if mode.is_always_binding() {
                     (v, BindingMode::OptionallyBinding)
                 } else {

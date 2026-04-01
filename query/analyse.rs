@@ -29,7 +29,7 @@ use concept::{
 use encoding::value::value_type::ValueType;
 use ir::{
     pattern::{
-        conjunction::Conjunction, nested_pattern::NestedPattern, ParameterID, Pattern, Scope, VariableBindingMode,
+        conjunction::Conjunction, nested_pattern::NestedPattern, ParameterID, Pattern, Scope,
         Vertex,
     },
     pipeline::{ParameterRegistry, VariableRegistry},

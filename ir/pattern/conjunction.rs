@@ -5,17 +5,15 @@
  */
 
 use std::{
-    collections::{hash_map, HashMap},
+    collections::HashMap,
     fmt,
     hash::{DefaultHasher, Hasher},
-    ops::ControlFlow,
 };
 
 use answer::variable::Variable;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
-use error::todo_must_implement;
 use crate::{
     pattern::{
         constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
@@ -23,7 +21,7 @@ use crate::{
         negation::Negation,
         nested_pattern::NestedPattern,
         optional::Optional,
-        BindingMode, Pattern, Scope, ScopeId, VariableBindingMode,
+        BindingMode, Pattern, Scope, ScopeId,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
     RepresentationError,

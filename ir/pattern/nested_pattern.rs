@@ -4,15 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, mem, ops::ControlFlow};
+use std::{collections::HashMap, fmt, mem};
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
-use typeql::common::Span;
 
 use crate::{
-    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, Pattern, VariableBindingMode},
-    pipeline::block::BlockContext,
+    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, Pattern},
 };
 use crate::pattern::BindingMode;
 

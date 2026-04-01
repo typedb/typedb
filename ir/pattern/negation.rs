@@ -12,7 +12,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Pattern, Scope, ScopeId, VariableBindingMode,
+        Pattern, Scope, ScopeId,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };

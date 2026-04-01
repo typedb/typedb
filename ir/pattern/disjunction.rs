@@ -5,15 +5,13 @@
  */
 
 use std::{
-    collections::{hash_map, HashMap},
+    collections::HashMap,
     fmt,
-    ops::ControlFlow,
 };
 
 use answer::variable::Variable;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
-use typeql::common::Span;
 
 use crate::{
     pattern::{

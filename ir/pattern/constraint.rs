@@ -24,7 +24,7 @@ use crate::{
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        BindingMode, IrID, ParameterID, Pattern, ScopeId, ValueType, VariableBindingMode, Vertex,
+        BindingMode, IrID, ParameterID, Pattern, ScopeId, ValueType, Vertex,
     },
     pipeline::{
         block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry, VariableRegistry,

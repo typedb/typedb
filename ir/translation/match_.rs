@@ -5,7 +5,7 @@
  */
 
 use crate::{
-    pattern::{conjunction::ConjunctionBuilder, nested_pattern::NestedPattern, Pattern, Scope},
+    pattern::{conjunction::ConjunctionBuilder, Scope},
     pipeline::{
         block::{Block, BlockBuilder},
         function_signature::FunctionSignatureIndex,
