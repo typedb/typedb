@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 pub(crate) mod export_service;
 pub(crate) mod grpc;
 pub mod http;
+pub mod admin;
 pub mod import_service;
 mod transaction_service;
 

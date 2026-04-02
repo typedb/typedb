@@ -4445,6 +4445,7 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tonic",
+ "tonic-build",
  "tonic-types",
  "tower 0.4.13",
  "tower-http",
@@ -5412,6 +5413,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "typedb-admin"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "server",
+ "tokio",
+ "tonic",
 ]
 
 [[package]]

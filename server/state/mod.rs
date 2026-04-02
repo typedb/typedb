@@ -32,6 +32,7 @@ use crate::{
     parameters::config::{Config, DiagnosticsConfig},
     status::{LocalServerStatus, ServerStatus},
 };
+use crate::status::{PrivateEndpointAddress, PublicEndpointAddress};
 
 pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
 
@@ -103,8 +104,11 @@ impl ServerState {
             None
         };
 
-        let server_status =
-            LocalServerStatus::from_addresses(grpc_serving_address, grpc_connection_address_str.clone(), http_address);
+        let server_status = LocalServerStatus::new(
+            PublicEndpointAddress::from_socket_addr(grpc_serving_address, grpc_connection_address_str.clone()),
+            PublicEndpointAddress::from_socket_addr(grpc_serving_address, grpc_connection_address_str.clone()),
+            PrivateEndpointAddress::from_socket_addr(grpc_serving_address, grpc_connection_address_str.clone()),
+            http_address);
 
         Ok(ServerStateBuilder {
             distribution_info,

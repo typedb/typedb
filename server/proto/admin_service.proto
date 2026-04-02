@@ -1,0 +1,14 @@
+syntax = "proto3";
+package typedb.admin;
+
+service TypeDBAdmin {
+    rpc server_version (ServerVersion.Req) returns (ServerVersion.Res);
+}
+
+message ServerVersion {
+    message Req {}
+    message Res {
+        string distribution = 1;
+        string version = 2;
+    }
+}

@@ -68,6 +68,7 @@ typedb_error! {
         ServerState(25, "Invalid server state.", typedb_source: ArcServerStateError),
         AddressResolutionFailed(26, "Could not resolve address '{address}'.", address: String, source: Arc<io::Error>),
         AddressResolutionEmpty(27, "Could not resolve address '{address}' to any IP address.", address: String),
+        AdminServe(28, "Could not serve admin on {address}.", address: SocketAddr, source: Arc<tonic::transport::Error>),
     }
 }
 

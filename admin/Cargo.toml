@@ -1,0 +1,17 @@
+[package]
+name = "typedb-admin"
+edition = "2021"
+version = "0.0.0"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "typedb-admin"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5.52", features = ["derive"] }
+tokio = { version = "1.48.0", features = ["full"] }
+tonic = { version = "0.12.3", features = ["transport"] }
+server = { path = "../server" }

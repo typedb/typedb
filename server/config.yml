@@ -8,6 +8,9 @@ server:
     http:
         enabled: true
         address: 0.0.0.0:8000
+    admin:
+        enabled: true
+        port: 1728
 
     authentication:
         token-expiration-seconds: 5000

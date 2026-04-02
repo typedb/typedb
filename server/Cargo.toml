@@ -191,3 +191,6 @@ dev-dependencies = {}
 	[dependencies.serde_json]
 		workspace = true
 
+[build-dependencies]
+	tonic-build = "^0.12"
+

@@ -5,7 +5,7 @@
  */
 
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
-
+use std::net::Ipv4Addr;
 use hyper::{
     header::{CONNECTION, CONTENT_LENGTH, CONTENT_TYPE},
     service::{make_service_fn, service_fn},
@@ -27,7 +27,7 @@ impl MonitoringServer {
     }
 
     pub async fn start_serving(&self) {
-        let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
+        let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, self.port));
         let diagnostics = self.diagnostics.clone();
 
         task::spawn(async move {
@@ -41,14 +41,14 @@ impl MonitoringServer {
                 }
             });
 
-            match Server::try_bind(&addr) {
+            match Server::try_bind(&address) {
                 Ok(server) => {
                     if let Err(e) = server.serve(make_svc).await {
                         eprintln!("WARNING: Diagnostics monitoring server error: '{}'", e);
                     }
                 }
                 Err(e) => {
-                    eprintln!("WARNING: Diagnostics monitoring server could not get initialised on {}: '{}'", addr, e)
+                    eprintln!("WARNING: Diagnostics monitoring server could not get initialised on {}: '{}'", address, e)
                 }
             }
         });
