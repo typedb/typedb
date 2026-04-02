@@ -663,7 +663,9 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Value(value) => _all_binding(value.ids()),
 
             Constraint::Comparison(comparison) => _all_required(comparison.ids()),
-            Constraint::Is(is) => _all_required(is.ids()),
+            // TODO: Revisit
+            // Constraint::Is(is) => _all_required(is.ids()),
+            Constraint::Is(is) => _all_binding(is.ids()),
 
             Constraint::ExpressionBinding(binding) => Box::new(binding.binding_modes()),
             Constraint::FunctionCallBinding(binding) => Box::new(binding.binding_modes()),
