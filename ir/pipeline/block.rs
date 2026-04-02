@@ -55,7 +55,7 @@ impl Block {
     }
 
     pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.block_context.referenced_variables.iter().cloned()
+        self.block_context.referenced_variables().cloned()
     }
 
     pub fn block_variables(&self) -> impl Iterator<Item = Variable> + '_ {
@@ -200,7 +200,6 @@ fn validate_is_variables_have_same_category(
 pub struct BlockContext {
     variable_declaration: HashMap<Variable, ScopeId>,
     scope_parents: HashMap<ScopeId, ScopeId>,
-    referenced_variables: HashSet<Variable>,
     scope_types: HashMap<ScopeId, ScopeType>,
 }
 
@@ -215,7 +214,6 @@ impl BlockContext {
 
     fn add_variable_declaration(&mut self, var: Variable, scope: ScopeId) {
         self.variable_declaration.insert(var, scope);
-        self.add_referenced_variable(var);
     }
 
     fn declare_scope(&mut self, scope_id: ScopeId, scope_type: ScopeType) {
@@ -236,7 +234,6 @@ impl BlockContext {
         scope: ScopeId,
     ) -> Result<(), Box<RepresentationError>> {
         debug_assert!(self.variable_declaration.contains_key(&var));
-        self.add_referenced_variable(var);
         let recorded_scope = self.variable_declaration[&var];
         if is_equal_or_parent_scope(&self.scope_parents, scope, recorded_scope) {
             // Parent defines same name: ok, reuse the variable
@@ -264,12 +261,8 @@ impl BlockContext {
         self.variable_declaration.get(var).cloned()
     }
 
-    fn add_referenced_variable(&mut self, var: Variable) {
-        self.referenced_variables.insert(var);
-    }
-
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.referenced_variables.iter().copied()
+        self.variable_declaration.keys().copied()
     }
 
     pub fn is_variable_available_in(&self, scope: ScopeId, variable: Variable) -> bool {
