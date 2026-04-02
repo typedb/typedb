@@ -208,25 +208,6 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
         Ok(())
     }
 
-    pub(crate) fn compute_and_set_variable_optionality(&mut self) {
-        let Self { conjunction, context } = self;
-        conjunction
-            .nested_patterns()
-            .iter()
-            .filter_map(|nested| match nested {
-                NestedPattern::Optional(optional) => Some(optional),
-                _ => None,
-            })
-            .for_each(|optional| {
-                for var in optional.conjunction().referenced_variables() {
-                    // if the variable is available in the parent scope, it's bound externally and passed in so not optional
-                    if !context.is_variable_available_in(conjunction.scope_id(), var) {
-                        context.set_variable_optionality(var, true)
-                    }
-                }
-            });
-    }
-
     pub(crate) fn compute_and_set_variable_binding_modes(&mut self) {
         compute_bottom_up_binding_modes_and_set(&mut self.conjunction);
         self.context.input_variables().for_each(|var| {

@@ -100,6 +100,11 @@ impl<'reg> BlockBuilder<'reg> {
 
     pub fn finish(mut self) -> Result<Block, Box<RepresentationError>> {
         self.conjunction_mut().compute_and_set_variable_binding_modes();
+        self.conjunction.variable_binding_modes().iter().for_each(|(v, mode)| {
+            if mode.is_optionally_binding() {
+                self.context.set_variable_optionality(*v, true);
+            }
+        });
         let Self {
             conjunction,
             context:

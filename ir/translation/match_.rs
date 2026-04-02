@@ -38,7 +38,6 @@ pub(crate) fn add_patterns(
         typeql::Pattern::Optional(optional) => add_optional(function_index, conjunction, optional),
         typeql::Pattern::Statement(statement) => add_statement(function_index, conjunction, statement),
     })?;
-    conjunction.compute_and_set_variable_optionality();
     Ok(())
 }
 
