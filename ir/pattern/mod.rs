@@ -75,11 +75,11 @@ pub trait Pattern {
         self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(v))
     }
 
-    fn named_visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.visible_binding_variables(block_context).filter(Variable::is_named)
+    fn named_visible_binding_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.visible_binding_variables().filter(Variable::is_named)
     }
 
-    fn visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+    fn visible_binding_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.variable_binding_modes()
             .into_iter()
             .filter_map(|(v, mode)| (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v))

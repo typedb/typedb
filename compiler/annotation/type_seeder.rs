@@ -27,7 +27,7 @@ use ir::{
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Pattern, Scope, Vertex,
+        BindingMode, Pattern, Scope, Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
@@ -161,8 +161,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         let nested_graphs =
             disjunction.conjunctions().iter().map(|conj| self.build_recursive(context, conj)).collect_vec();
         let shared_variables = disjunction
-            .referenced_variables()
-            .filter(|var| context.is_variable_available_in(parent_conjunction.scope_id(), *var))
+            .variable_binding_modes()
+            .iter()
+            .filter(|(_, mode)| matches!(*mode, BindingMode::AlwaysBinding | BindingMode::RequirePrebound))
+            .map(|(v, _)| *v)
             .collect();
         NestedTypeInferenceGraphDisjunction {
             disjunction: nested_graphs,

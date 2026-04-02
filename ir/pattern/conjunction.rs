@@ -75,8 +75,11 @@ impl Conjunction {
         }
     }
 
-    pub fn local_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        self.referenced_variables().filter(|var| block_context.is_variable_available_in(self.scope_id, *var))
+    pub fn local_and_passing_through_variables<'a>(
+        &'a self,
+        block_context: &'a BlockContext,
+    ) -> impl Iterator<Item = Variable> + 'a {
+        self.binding_modes.iter().filter(|(var, mode)| !mode.is_locally_binding_in_child()).map(|(v, _)| *v)
     }
 }
 

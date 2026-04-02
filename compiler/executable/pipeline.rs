@@ -287,7 +287,7 @@ fn compile_stage(
             // TODO: technically, we only need to select variables that are used _later_ in the pipeline, not everything
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
             selected_variables.extend(stage_input_positions.keys().copied());
-            selected_variables.extend(block.conjunction().named_visible_binding_variables(block.block_context()));
+            selected_variables.extend(block.conjunction().named_visible_binding_variables());
             let plan = crate::executable::match_::planner::compile(
                 block,
                 stage_input_annotations,
@@ -328,7 +328,7 @@ fn compile_stage(
         AnnotatedStage::Put { block, match_annotations, insert_annotations, source_span } => {
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
             selected_variables.extend(stage_input_positions.keys().copied());
-            selected_variables.extend(block.conjunction().named_visible_binding_variables(block.block_context()));
+            selected_variables.extend(block.conjunction().named_visible_binding_variables());
             let match_plan = crate::executable::match_::planner::compile(
                 block,
                 stage_input_annotations,

@@ -191,7 +191,7 @@ fn make_builder<'a>(
     let optional_variables = optional_subplans.iter().flat_map(|optional| optional.optional_variables.iter()).copied();
     plan_builder.register_variables(
         stage_inputs.keys().copied(),
-        chain!(conjunction.local_variables(block_context), optional_variables),
+        chain!(conjunction.local_and_passing_through_variables(block_context), optional_variables),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
