@@ -7,20 +7,24 @@ use std::collections::BTreeMap;
 
 use ir::{
     pattern::{BindingMode, Pattern},
-    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-    translation::{match_::translate_match, PipelineTranslationContext},
+    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry, VariableRegistry},
+    translation::{
+        match_::translate_match,
+        pipeline::{translate_pipeline, TranslatedStage},
+        PipelineTranslationContext,
+    },
     RepresentationError,
 };
 use typeql::query::stage::Stage;
 
 fn binding_modes<'a>(
-    context: &'a PipelineTranslationContext,
+    variable_registry: &'a VariableRegistry,
     conjunction: &impl Pattern,
 ) -> BTreeMap<&'a str, BindingMode> {
     conjunction
         .variable_binding_modes()
         .iter()
-        .filter_map(|(v, b)| context.variable_registry.get_variable_name(*v).map(|s| (s.as_str(), *b)))
+        .filter_map(|(v, b)| variable_registry.get_variable_name(*v).map(|s| (s.as_str(), *b)))
         .collect()
 }
 
@@ -44,9 +48,9 @@ fn test_negation() {
         .unwrap();
     let conjunction = translated_match.conjunction();
     let negation = conjunction.nested_patterns().first().unwrap().as_negation().unwrap();
-    let conjunction_modes = binding_modes(&context, conjunction);
-    let negation_modes = binding_modes(&context, negation);
-    let inner_modes = binding_modes(&context, negation.conjunction());
+    let conjunction_modes = binding_modes(&context.variable_registry, conjunction);
+    let negation_modes = binding_modes(&context.variable_registry, negation);
+    let inner_modes = binding_modes(&context.variable_registry, negation.conjunction());
     assert_eq!(
         conjunction_modes,
         BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild)])
@@ -83,13 +87,13 @@ fn test_disjunction() {
     let first_disjunction = conjunction.nested_patterns()[0].as_disjunction().unwrap();
     let second_disjunction = conjunction.nested_patterns()[1].as_disjunction().unwrap();
 
-    let conjunction_modes = binding_modes(&context, conjunction);
-    let d1 = binding_modes(&context, first_disjunction);
-    let d2 = binding_modes(&context, second_disjunction);
-    let b11 = binding_modes(&context, &first_disjunction.conjunctions()[0]);
-    let b12 = binding_modes(&context, &first_disjunction.conjunctions()[1]);
-    let b21 = binding_modes(&context, &second_disjunction.conjunctions()[0]);
-    let b22 = binding_modes(&context, &second_disjunction.conjunctions()[1]);
+    let conjunction_modes = binding_modes(&context.variable_registry, conjunction);
+    let d1 = binding_modes(&context.variable_registry, first_disjunction);
+    let d2 = binding_modes(&context.variable_registry, second_disjunction);
+    let b11 = binding_modes(&context.variable_registry, &first_disjunction.conjunctions()[0]);
+    let b12 = binding_modes(&context.variable_registry, &first_disjunction.conjunctions()[1]);
+    let b21 = binding_modes(&context.variable_registry, &second_disjunction.conjunctions()[0]);
+    let b22 = binding_modes(&context.variable_registry, &second_disjunction.conjunctions()[1]);
     assert_eq!(
         conjunction_modes,
         BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild)])
@@ -124,9 +128,9 @@ fn test_optional() {
         .unwrap();
     let conjunction = translated_match.conjunction();
     let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
-    let conjunction_modes = binding_modes(&context, conjunction);
-    let optional_modes = binding_modes(&context, optional);
-    let inner_modes = binding_modes(&context, optional.conjunction());
+    let conjunction_modes = binding_modes(&context.variable_registry, conjunction);
+    let optional_modes = binding_modes(&context.variable_registry, optional);
+    let inner_modes = binding_modes(&context.variable_registry, optional.conjunction());
     assert_eq!(
         conjunction_modes,
         BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::OptionallyBinding)])
@@ -187,7 +191,7 @@ fn problematic_is() {
         .finish()
         .unwrap();
     let conjunction = translated_match.conjunction();
-    let conjunction_modes = binding_modes(&context, conjunction);
+    let conjunction_modes = binding_modes(&context.variable_registry, conjunction);
     assert_eq!(
         conjunction_modes,
         BTreeMap::from([("a", BindingMode::AlwaysBinding), ("b", BindingMode::LocallyBindingInChild)])
@@ -248,4 +252,118 @@ fn test_disjoint_optional() {
         }
         _ => false,
     });
+}
+
+#[test]
+fn test_negation_with_inputs() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+
+    let query = r#"
+    match
+        $y isa name;
+    match
+        $x isa person;
+        not { $x has $y; };
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
+        unreachable!();
+    };
+    let conjunction = second_block.conjunction();
+    let negation = conjunction.nested_patterns().first().unwrap().as_negation().unwrap();
+    let conjunction_modes = binding_modes(&translated_pipeline.variable_registry, conjunction);
+    let negation_modes = binding_modes(&translated_pipeline.variable_registry, negation);
+    let inner_modes = binding_modes(&translated_pipeline.variable_registry, negation.conjunction());
+    assert_eq!(
+        conjunction_modes,
+        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::AlwaysBinding)])
+    );
+    assert_eq!(
+        negation_modes,
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
+    );
+    assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)]));
+}
+
+#[test]
+fn test_disjunction_with_inputs() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let query = r#"
+    match
+        $y isa person;
+    match
+        { $x has name "John"; } or { $x has name "James"; };
+        { $x has height 16; } or { $y has name "Alice"; };
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
+        unreachable!();
+    };
+    let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
+        unreachable!();
+    };
+    let first_stage_modes = binding_modes(&translated_pipeline.variable_registry, first_block.conjunction());
+
+    let conjunction = second_block.conjunction();
+
+    let first_disjunction = conjunction.nested_patterns()[0].as_disjunction().unwrap();
+    let second_disjunction = conjunction.nested_patterns()[1].as_disjunction().unwrap();
+
+    let conjunction_modes = binding_modes(&translated_pipeline.variable_registry, conjunction);
+    let d1 = binding_modes(&translated_pipeline.variable_registry, first_disjunction);
+    let d2 = binding_modes(&translated_pipeline.variable_registry, second_disjunction);
+    let b11 = binding_modes(&translated_pipeline.variable_registry, &first_disjunction.conjunctions()[0]);
+    let b12 = binding_modes(&translated_pipeline.variable_registry, &first_disjunction.conjunctions()[1]);
+    let b21 = binding_modes(&translated_pipeline.variable_registry, &second_disjunction.conjunctions()[0]);
+    let b22 = binding_modes(&translated_pipeline.variable_registry, &second_disjunction.conjunctions()[1]);
+
+    assert_eq!(first_stage_modes, BTreeMap::from([("y", BindingMode::AlwaysBinding)]));
+    assert_eq!(
+        conjunction_modes,
+        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::AlwaysBinding)])
+    );
+    assert_eq!(d1, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
+    assert_eq!(d2, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)]));
+    assert_eq!(b11, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
+    assert_eq!(b12, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
+    assert_eq!(b21, BTreeMap::from([("x", BindingMode::RequirePrebound)]));
+    assert_eq!(b22, BTreeMap::from([("y", BindingMode::RequirePrebound)]));
+}
+
+#[test]
+fn test_optional_with_inputs() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let query = r#"
+    match
+        try { $y isa name; };
+    match
+        $x isa person;
+        try { $x has $y;};
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
+        unreachable!();
+    };
+    let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
+        unreachable!();
+    };
+    let first_stage_modes = binding_modes(&translated_pipeline.variable_registry, first_block.conjunction());
+    let conjunction = second_block.conjunction();
+    let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
+    let conjunction_modes = binding_modes(&translated_pipeline.variable_registry, conjunction);
+    let optional_modes = binding_modes(&translated_pipeline.variable_registry, optional);
+    let inner_modes = binding_modes(&translated_pipeline.variable_registry, optional.conjunction());
+    assert_eq!(first_stage_modes, BTreeMap::from([("y", BindingMode::OptionallyBinding)]));
+    assert_eq!(
+        conjunction_modes,
+        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::AlwaysBinding)])
+    );
+    assert_eq!(
+        optional_modes,
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
+    );
+    assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)]));
 }
