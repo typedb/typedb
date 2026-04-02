@@ -354,7 +354,6 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                block.block_context(),
                 block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
@@ -421,7 +420,6 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                block.block_context(),
                 block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
@@ -483,7 +481,6 @@ pub mod tests {
             let block = builder.finish().unwrap();
             let err = compute_type_inference_graph(
                 &snapshot,
-                block.block_context(),
                 block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
@@ -526,7 +523,6 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                block.block_context(),
                 block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
@@ -616,7 +612,6 @@ pub mod tests {
         let snapshot = storage.clone().open_snapshot_write();
         let graph = compute_type_inference_graph(
             &snapshot,
-            block.block_context(),
             block.conjunction(),
             &translation_context.variable_registry,
             &type_manager,
@@ -723,7 +718,6 @@ pub mod tests {
         let constraints = conjunction.constraints();
         let graph = compute_type_inference_graph(
             &snapshot,
-            block.block_context(),
             block.conjunction(),
             &translation_context.variable_registry,
             &type_manager,
@@ -811,7 +805,6 @@ pub mod tests {
 
         let graph = compute_type_inference_graph(
             &snapshot,
-            block.block_context(),
             block.conjunction(),
             &translation_context.variable_registry,
             &type_manager,
@@ -924,7 +917,6 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                block.block_context(),
                 block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
@@ -993,7 +985,6 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                block.block_context(),
                 block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
@@ -1066,7 +1057,7 @@ pub mod tests {
                 &translation_context.variable_registry,
                 false,
             )
-            .create_graph(block.block_context(), &BTreeMap::new(), block.conjunction())
+            .create_graph(&BTreeMap::new(), block.conjunction())
             .unwrap();
             crate::annotation::match_inference::prune_types(&mut graph);
 
@@ -1113,7 +1104,6 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                block.block_context(),
                 block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
@@ -1191,7 +1181,6 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                block.block_context(),
                 block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
@@ -1257,7 +1246,6 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                block.block_context(),
                 block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
@@ -1318,7 +1306,6 @@ pub mod tests {
             let block = builder.finish().unwrap();
             let err = compute_type_inference_graph(
                 &snapshot,
-                block.block_context(),
                 block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
@@ -1358,7 +1345,6 @@ pub mod tests {
             let constraints = block.conjunction().constraints();
             let graph = compute_type_inference_graph(
                 &snapshot,
-                block.block_context(),
                 block.conjunction(),
                 &translation_context.variable_registry,
                 &type_manager,
@@ -1452,7 +1438,7 @@ pub mod tests {
             &translation_context.variable_registry,
             false,
         );
-        let mut graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
+        let mut graph = seeder.create_graph(&BTreeMap::new(), conjunction).unwrap();
         prune_types(&mut graph);
         if expected_graph != graph {
             // We need this because of non-determinism

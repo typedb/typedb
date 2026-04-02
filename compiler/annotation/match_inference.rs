@@ -161,7 +161,6 @@ fn infer_types_impl(
 ) -> Result<(), TypeInferenceError> {
     let mut graph = compute_type_inference_graph(
         snapshot,
-        block_context,
         conjunction,
         variable_registry,
         type_manager,
@@ -199,9 +198,7 @@ fn infer_types_in_negations_and_conjunctions(
     let optionals_in_conjunction = conjunction
         .variable_binding_modes()
         .iter()
-        .filter(|(var, mode)| {
-            mode.is_optionally_binding() && block_context.get_declaring_scope(var) != Some(ScopeId::INPUT)
-        })
+        .filter(|(var, mode)| mode.is_optionally_binding() && !block_context.is_block_input_variable(var))
         .map(|(v, _)| Vertex::Variable(*v))
         .collect::<HashSet<_>>();
     nested_disjunctions.iter_mut().flat_map(|disjunction| disjunction.disjunction.iter_mut()).try_for_each(
@@ -293,7 +290,6 @@ fn all_vertex_annotations_available(
 
 pub(crate) fn compute_type_inference_graph<'graph>(
     snapshot: &impl ReadableSnapshot,
-    block_context: &BlockContext,
     conjunction: &'graph Conjunction,
     variable_registry: &VariableRegistry,
     type_manager: &TypeManager,
@@ -308,7 +304,7 @@ pub(crate) fn compute_type_inference_graph<'graph>(
         variable_registry,
         is_write_stage,
     )
-    .create_graph(block_context, input_annotations, conjunction)?;
+    .create_graph(input_annotations, conjunction)?;
     pre_check_edges_for_trivial_unsatisfiability(&graph).map_err(|(graph, edge)| {
         construct_error_message_for_unsatisfiable_edge(snapshot, type_manager, variable_registry, graph, edge)
     })?;

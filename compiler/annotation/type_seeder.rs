@@ -29,7 +29,7 @@ use ir::{
         variable_category::VariableCategory,
         BindingMode, Pattern, Scope, Vertex,
     },
-    pipeline::{block::BlockContext, VariableRegistry},
+    pipeline::VariableRegistry,
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -62,11 +62,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
     pub(crate) fn create_graph<'graph>(
         &self,
-        context: &BlockContext,
         upstream_annotations: &BTreeMap<Vertex<Variable>, BTreeSet<TypeAnnotation>>,
         conjunction: &'graph Conjunction,
     ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
-        let mut graph = self.build_recursive(context, conjunction);
+        let mut graph = self.build_recursive(conjunction);
         // Pre-seed with upstream variable annotations.
         for variable in conjunction.referenced_variables() {
             if let Some(annotations) = upstream_annotations.get(&Vertex::Variable(variable)) {
@@ -74,7 +73,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             }
         }
         // Advanced TODO: Copying upstream binary constraints as schema constraints.
-        self.seed_types(&mut graph, context, &VertexAnnotations::default())?;
+        self.seed_types(&mut graph, &VertexAnnotations::default())?;
 
         debug_assert!(conjunction
             .constraints()
@@ -94,7 +93,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     pub(crate) fn seed_types(
         &self,
         graph: &mut TypeInferenceGraph<'_>,
-        context: &BlockContext,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
         let vars_in_pattern = graph.conjunction.referenced_variables().map(Vertex::Variable).collect::<HashSet<_>>();
@@ -116,7 +114,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
             }
             some_vertex_was_directly_annotated = self
-                .annotate_some_unannotated_vertex(graph, context)
+                .annotate_some_unannotated_vertex(graph)
                 .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
         }
 
@@ -127,16 +125,12 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })
     }
 
-    fn build_recursive<'conj>(
-        &self,
-        context: &BlockContext,
-        conjunction: &'conj Conjunction,
-    ) -> TypeInferenceGraph<'conj> {
+    fn build_recursive<'conj>(&self, conjunction: &'conj Conjunction) -> TypeInferenceGraph<'conj> {
         let mut nested_disjunctions = Vec::new();
         for pattern in conjunction.nested_patterns() {
             match pattern {
                 NestedPattern::Disjunction(disjunction) => {
-                    nested_disjunctions.push(self.build_disjunction_recursive(context, conjunction, disjunction));
+                    nested_disjunctions.push(self.build_disjunction_recursive(disjunction));
                 }
                 NestedPattern::Negation(_) | NestedPattern::Optional(_) => {
                     // Done after full type-inference for the conjunctions & disjunctions.
@@ -154,16 +148,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
     fn build_disjunction_recursive<'conj>(
         &self,
-        context: &BlockContext,
-        parent_conjunction: &'conj Conjunction,
         disjunction: &'conj Disjunction,
     ) -> NestedTypeInferenceGraphDisjunction<'conj> {
-        let nested_graphs =
-            disjunction.conjunctions().iter().map(|conj| self.build_recursive(context, conj)).collect_vec();
+        let nested_graphs = disjunction.conjunctions().iter().map(|conj| self.build_recursive(conj)).collect_vec();
         let shared_variables = disjunction
             .variable_binding_modes()
             .iter()
-            .filter(|(_, mode)| matches!(*mode, BindingMode::AlwaysBinding | BindingMode::RequirePrebound))
+            .filter(|(_, mode)| **mode != BindingMode::LocallyBindingInChild)
             .map(|(v, _)| *v)
             .collect();
         NestedTypeInferenceGraphDisjunction {
@@ -271,7 +262,6 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     fn annotate_some_unannotated_vertex(
         &self,
         graph: &mut TypeInferenceGraph<'_>,
-        context: &BlockContext,
     ) -> Result<bool, Box<ConceptReadError>> {
         // TODO: We could look for constraints (instead of variable categories) as a basis for annotation.
         //  We'd need TypeManager methods to iterate over all owns / relates / plays declarations.
@@ -296,7 +286,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             let mut any = false;
             for disj in &mut graph.nested_disjunctions {
                 for nested_graph in &mut disj.disjunction {
-                    any |= self.annotate_some_unannotated_vertex(nested_graph, context)?;
+                    any |= self.annotate_some_unannotated_vertex(nested_graph)?;
                 }
             }
             Ok(any)
@@ -1762,7 +1752,7 @@ pub mod tests {
             &translation_context.variable_registry,
             false,
         );
-        let graph = context.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
+        let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
         assert_eq!(expected_graph, graph);
     }
 
@@ -1896,7 +1886,7 @@ pub mod tests {
                 &translation_context.variable_registry,
                 false,
             );
-            let graph = context.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
+            let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);
             assert_eq!(expected_graph.edges, graph.edges);
         }
@@ -1946,7 +1936,7 @@ pub mod tests {
                 &translation_context.variable_registry,
                 false,
             );
-            let graph = context.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
+            let graph = context.create_graph(&BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);
             assert_eq!(expected_graph.edges, graph.edges);
         }
