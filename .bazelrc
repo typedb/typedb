@@ -16,6 +16,9 @@ try-import ./.bazel-remote-cache.rc
 # Allow empty globs (many checkstyle_test patterns may not match)
 common --noincompatible_disallow_empty_glob
 
+# Fix Java runfiles path resolution in Bzlmod mode (required by release note validation)
+build --legacy_external_runfiles
+
 build --incompatible_strict_action_env --remote_download_toplevel --disk_cache=~/.cache/bazel
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env --test_env=PATH
