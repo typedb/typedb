@@ -19,7 +19,7 @@ use concept::type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI};
 use encoding::value::label::Label;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, Vertex},
-    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+    pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{match_::translate_match, PipelineTranslationContext},
 };
 use itertools::Itertools;
@@ -96,7 +96,7 @@ fn translate_and_annotate(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     query: &str,
-) -> (Conjunction, BlockAnnotations) {
+) -> (Block, BlockAnnotations) {
     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let mut context = PipelineTranslationContext::new();
     let mut parameters = ParameterRegistry::new();
@@ -114,8 +114,7 @@ fn translate_and_annotate(
         false,
     )
     .unwrap();
-    let conjunction = block.into_conjunction();
-    (conjunction, type_annotations)
+    (block, type_annotations)
 }
 
 #[test]
@@ -172,7 +171,7 @@ fn run_test_relation_index_transformation_single(
     let translated =
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
 
-    let block = translated.finish().unwrap();
+    let mut block = translated.finish().unwrap();
     let mut type_annotations = infer_types(
         &snapshot,
         &block,
@@ -184,9 +183,9 @@ fn run_test_relation_index_transformation_single(
     )
     .unwrap();
 
-    let mut conjunction = block.into_conjunction();
+    let conjunction = block.conjunction_mut();
 
-    relation_index_transformation(&mut conjunction, &mut type_annotations, type_manager, &snapshot).unwrap();
+    relation_index_transformation(conjunction, &mut type_annotations, type_manager, &snapshot).unwrap();
 
     let mut indexed_relations =
         conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation());
@@ -262,7 +261,7 @@ fn run_test_relation_index_transformation_dual(
     let translated =
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
 
-    let block = translated.finish().unwrap();
+    let mut block = translated.finish().unwrap();
     let mut type_annotations = infer_types(
         &snapshot,
         &block,
@@ -274,9 +273,9 @@ fn run_test_relation_index_transformation_dual(
     )
     .unwrap();
 
-    let mut conjunction = block.into_conjunction();
+    let conjunction = block.conjunction_mut();
 
-    relation_index_transformation(&mut conjunction, &mut type_annotations, type_manager, &snapshot).unwrap();
+    relation_index_transformation(conjunction, &mut type_annotations, type_manager, &snapshot).unwrap();
 
     let var_r = Vertex::Variable(context.get_variable("r").unwrap());
     let var_x = Vertex::Variable(context.get_variable("x").unwrap());
@@ -365,7 +364,7 @@ fn run_test_relation_index_transformation_not_applied_ternary(
     let translated =
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
 
-    let block = translated.finish().unwrap();
+    let mut block = translated.finish().unwrap();
     let mut type_annotations = infer_types(
         &snapshot,
         &block,
@@ -377,9 +376,9 @@ fn run_test_relation_index_transformation_not_applied_ternary(
     )
     .unwrap();
 
-    let mut conjunction = block.into_conjunction();
+    let conjunction = block.conjunction_mut();
 
-    relation_index_transformation(&mut conjunction, &mut type_annotations, type_manager, &snapshot).unwrap();
+    relation_index_transformation(conjunction, &mut type_annotations, type_manager, &snapshot).unwrap();
 
     let mut indexed_relations =
         conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation());
@@ -441,7 +440,7 @@ fn run_test_relation_index_transformation_not_applied_ternary(
 //         &parsed,
 //     ).unwrap();
 //
-//     let block = translated.finish().unwrap();
+//     let mut block = translated.finish().unwrap();
 //     let type_annotations = infer_types(
 //         &snapshot,
 //         &block,
@@ -451,7 +450,7 @@ fn run_test_relation_index_transformation_not_applied_ternary(
 //         &EmptyAnnotatedFunctionSignatures,
 //     ).unwrap();
 //
-//     let mut conjunction = block.into_conjunction();
+//     let conjunction = block.conjunction_mut();
 //
 //     println!("before transform:\n{}", &conjunction);
 //     relation_index_transformation(
@@ -494,8 +493,9 @@ fn test_optimise_away_read_snapshot() {
 fn run_test_optimise_away(snapshot: impl ReadableSnapshot, type_manager: &TypeManager) {
     {
         let query = "match $p sub person, plays dog-ownership:owner;";
-        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
-        optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
+        let (mut block, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
+        let conjunction = block.conjunction_mut();
+        optimize_away_statically_unsatisfiable_conjunctions(conjunction, &type_annotations);
         assert!(
             conjunction.constraints().len() == 2
                 && conjunction.constraints().iter().any(|c| matches!(c, Constraint::Plays(_)))
@@ -504,15 +504,17 @@ fn run_test_optimise_away(snapshot: impl ReadableSnapshot, type_manager: &TypeMa
     }
     {
         let query = "match $p sub person, plays dog-ownership:dog;";
-        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
-        optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
+        let (mut block, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
+        let conjunction = block.conjunction_mut();
+        optimize_away_statically_unsatisfiable_conjunctions(conjunction, &type_annotations);
         assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::Unsatisfiable(_)));
     }
 
     {
         let query = "match $p sub person; { $p plays dog-ownership:dog; } or { $p plays dog-ownership:owner; };";
-        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
-        optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
+        let (mut block, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
+        let conjunction = block.conjunction_mut();
+        optimize_away_statically_unsatisfiable_conjunctions(conjunction, &type_annotations);
         assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::Sub(_)));
         let must_be_plays = conjunction
             .nested_patterns()
@@ -534,8 +536,9 @@ fn run_test_optimise_away(snapshot: impl ReadableSnapshot, type_manager: &TypeMa
 
     {
         let query = "match $p sub person; not { $p plays dog-ownership:dog; };";
-        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
-        optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
+        let (mut block, type_annotations) = translate_and_annotate(&snapshot, type_manager, query);
+        let conjunction = block.conjunction_mut();
+        optimize_away_statically_unsatisfiable_conjunctions(conjunction, &type_annotations);
         assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::Sub(_)));
         let must_be_optimised_to_unsatisfiable = conjunction
             .nested_patterns()

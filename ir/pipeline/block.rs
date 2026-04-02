@@ -46,24 +46,8 @@ impl Block {
         &self.block_context
     }
 
-    pub fn scope_id(&self) -> ScopeId {
-        Scope::scope_id(self)
-    }
-
-    fn variable_scopes(&self) -> impl Iterator<Item = (&Variable, &ScopeId)> + '_ {
-        self.block_context.variable_declaration.iter()
-    }
-
     pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.block_context.referenced_variables()
-    }
-
-    pub fn input_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_scopes().filter_map(|(&v, scope)| if scope == &ScopeId::INPUT { Some(v) } else { None })
-    }
-
-    pub fn into_conjunction(self) -> Conjunction {
-        self.conjunction
     }
 }
 
