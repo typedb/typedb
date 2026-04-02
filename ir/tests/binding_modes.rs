@@ -188,7 +188,10 @@ fn problematic_is() {
         .unwrap();
     let conjunction = translated_match.conjunction();
     let conjunction_modes = binding_modes(&context, conjunction);
-    assert_eq!(conjunction_modes, BTreeMap::from([("a", BindingMode::AlwaysBinding)]));
+    assert_eq!(
+        conjunction_modes,
+        BTreeMap::from([("a", BindingMode::AlwaysBinding), ("b", BindingMode::LocallyBindingInChild)])
+    );
 }
 
 #[test]
