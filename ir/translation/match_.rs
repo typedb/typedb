@@ -5,7 +5,7 @@
  */
 
 use crate::{
-    pattern::{conjunction::ConjunctionBuilder, nested_pattern::NestedPattern, Pattern, Scope},
+    pattern::conjunction::ConjunctionBuilder,
     pipeline::{
         block::{Block, BlockBuilder, BlockBuilderContext},
         function_signature::FunctionSignatureIndex,
@@ -73,7 +73,6 @@ fn add_optional(
     parent_conjunction: &mut ConjunctionBuilder,
     optional: &typeql::pattern::Optional,
 ) -> Result<(), Box<RepresentationError>> {
-    let parent_scope = parent_conjunction.scope_id();
     let mut optional_builder = parent_conjunction.add_optional(optional.span, context)?;
     add_patterns(function_index, context, &mut optional_builder.conjunction_mut(), &optional.patterns)?;
     Ok(())

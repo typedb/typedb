@@ -16,7 +16,7 @@ use crate::{
         nested_pattern::NestedPattern,
         BindingMode, BranchID, ContextualisedBindingMode, Pattern, Scope, ScopeId,
     },
-    pipeline::block::{BlockBuilderContext, ScopeType},
+    pipeline::block::BlockBuilderContext,
 };
 
 #[derive(Clone, Debug)]
@@ -111,8 +111,9 @@ impl DisjunctionBuilder {
     pub(crate) fn conjunctions(&self) -> impl Iterator<Item = &ConjunctionBuilder> {
         self.conjunctions.iter().map(|(_, c)| c)
     }
+
     pub fn add_conjunction(&mut self, context: &mut BlockBuilderContext<'_>) -> &mut ConjunctionBuilder {
-        let conj_scope_id = context.create_child_scope(self.scope_id, ScopeType::Conjunction);
+        let conj_scope_id = context.next_scope_id();
         let branch_id = context.next_branch_id();
         self.conjunctions.push((branch_id, ConjunctionBuilder::new(conj_scope_id)));
         &mut self.conjunctions.last_mut().unwrap().1

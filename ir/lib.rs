@@ -289,7 +289,7 @@ typedb_error! {
         OptionalInNegation(
             53,
             "Optionals are not allowed in negations as this can never return a meaningful result.",
-            source_span: Option<Span>,
+            // source_span: Option<Span>,
         ),
         InternalNotAValueBuiltin(
             100,
