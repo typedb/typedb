@@ -94,8 +94,12 @@ features = {}
 	harness = false
 
 [[test]]
-	path = "tests/test_isolation.rs"
-	name = "test_isolation"
+	path = "tests/test_storage.rs"
+	name = "test_storage"
+
+[[test]]
+	path = "tests/test_mvcc.rs"
+	name = "test_mvcc"
 
 [[test]]
 	path = "tests/test_recovery.rs"
@@ -106,10 +110,6 @@ features = {}
 	name = "test_snapshot"
 
 [[test]]
-	path = "tests/test_mvcc.rs"
-	name = "test_mvcc"
-
-[[test]]
-	path = "tests/test_storage.rs"
-	name = "test_storage"
+	path = "tests/test_isolation.rs"
+	name = "test_isolation"
 

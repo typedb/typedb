@@ -1,0 +1,168 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+module(
+    name = "typedb",
+    version = "0.0.0",
+    compatibility_level = 1,
+)
+
+# ===========================================================
+# Common
+# ===========================================================
+
+bazel_dep(name = "platforms", version = "0.0.10")
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+
+# ===========================================================
+# Languages & toolchains
+# ===========================================================
+
+# Rust
+bazel_dep(name = "rules_rust", version = "0.56.0")
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.81.0"],
+)
+use_repo(rust, "rust_toolchains")
+register_toolchains("@rust_toolchains//:all")
+
+# Kotlin
+bazel_dep(name = "rules_kotlin", version = "2.0.0")
+register_toolchains("@rules_kotlin//kotlin/internal:default_toolchain")
+
+# Python
+bazel_dep(name = "rules_python", version = "1.0.0")
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(is_default = True, python_version = "3.11", ignore_root_user_error = True)
+
+# Java
+bazel_dep(name = "rules_java", version = "8.6.2")
+
+# ===========================================================
+# Protobuf & gRPC
+# ===========================================================
+
+bazel_dep(name = "rules_proto", version = "7.1.0")
+bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
+
+# ===========================================================
+# Package managers
+# ===========================================================
+
+# Maven
+bazel_dep(name = "rules_jvm_external", version = "6.6")
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+use_repo(maven, "maven")
+
+# Rust crates
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+use_repo(crate, "crates")
+
+# ===========================================================
+# Assembly / distribution
+# ===========================================================
+
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "rules_oci", version = "2.2.7")
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+oci.pull(
+    name = "typedb-ubuntu-x86_64",
+    image = "index.docker.io/typedb/ubuntu",
+    tag = "3.1.0-amd64",
+    platforms = ["linux/amd64"],
+)
+oci.pull(
+    name = "typedb-ubuntu-arm64",
+    image = "index.docker.io/typedb/ubuntu",
+    tag = "3.1.0-arm64",
+    platforms = ["linux/arm64"],
+)
+use_repo(oci, "typedb-ubuntu-x86_64", "typedb-ubuntu-x86_64_linux_amd64", "typedb-ubuntu-arm64", "typedb-ubuntu-arm64_linux_arm64")
+
+workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
+workspace_refs(
+    name = "typedb_workspace_refs",
+    workspace_commit_dict = {
+        "typeql+": "fb6219cf30514f2d72d9400466239a363290d418",
+        "typedb_protocol+": "e4567406bdc993722554717563ffc1ac9ce0a678",
+    },
+    workspace_tag_dict = {
+        "typeql+": "3.8.3-rc0",
+        "typedb_protocol+": "3.7.1-rc1",
+    },
+)
+
+http_file = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
+http_file(
+    name = "typedb_console_artifact_linux-arm64",
+    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-arm64/versions/3.8.0/typedb-console-linux-arm64-3.8.0.tar.gz"],
+    downloaded_file_path = "typedb-console-linux-arm64-3.8.0.tar.gz",
+    sha256 = "09aa47e33a075ec3f06ed1171d5e22e4750103cfd9228e3b9996bbffae8deaf5",
+)
+http_file(
+    name = "typedb_console_artifact_linux-x86_64",
+    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-x86_64/versions/3.8.0/typedb-console-linux-x86_64-3.8.0.tar.gz"],
+    downloaded_file_path = "typedb-console-linux-x86_64-3.8.0.tar.gz",
+    sha256 = "ba3e5cc99597b8e27f8e7956afe320206eb03c77e0317b6170052a65e6c75b2d",
+)
+http_file(
+    name = "typedb_console_artifact_mac-arm64",
+    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-arm64/versions/3.8.0/typedb-console-mac-arm64-3.8.0.zip"],
+    downloaded_file_path = "typedb-console-mac-arm64-3.8.0.zip",
+    sha256 = "b1666dd6f9139696f350c13e2940dfb4f9d448d674612bf427b5078366c2b5be",
+)
+http_file(
+    name = "typedb_console_artifact_mac-x86_64",
+    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-x86_64/versions/3.8.0/typedb-console-mac-x86_64-3.8.0.zip"],
+    downloaded_file_path = "typedb-console-mac-x86_64-3.8.0.zip",
+    sha256 = "88dae59212baa3aabc7d080b939e295b983ac9e892c4489757818009501501b7",
+)
+http_file(
+    name = "typedb_console_artifact_windows-x86_64",
+    urls = ["https://repo.typedb.com/public/public-release/raw/names/typedb-console-windows-x86_64/versions/3.8.0/typedb-console-windows-x86_64-3.8.0.zip"],
+    downloaded_file_path = "typedb-console-windows-x86_64-3.8.0.zip",
+    sha256 = "274c8d7d8265a652fb864c1da7ed1a0a85d8210e35662f5032f16db8d8873cd5",
+)
+
+# ===========================================================
+# TypeDB repos
+# ===========================================================
+
+bazel_dep(name = "typedb_dependencies", version = "0.0.0")
+git_override(
+    module_name = "typedb_dependencies",
+    remote = "https://github.com/typedb/dependencies",
+    commit = "9ec8600225be54707ca5cd498ee832fcf0905668",
+)
+
+bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
+git_override(
+    module_name = "typedb_bazel_distribution",
+    remote = "https://github.com/typedb/bazel-distribution",
+    commit = "4e400ddcc52da12809db323874eb3516ee9ab5c3",
+)
+
+bazel_dep(name = "typeql", version = "0.0.0")
+git_override(
+    module_name = "typeql",
+    remote = "https://github.com/typedb/typeql",
+    tag = "3.8.3-rc0",
+)
+
+bazel_dep(name = "typedb_protocol", version = "0.0.0")
+git_override(
+    module_name = "typedb_protocol",
+    remote = "https://github.com/typedb/typedb-protocol",
+    tag = "3.7.1-rc1",
+)
+
+bazel_dep(name = "typedb_behaviour", version = "0.0.0")
+git_override(
+    module_name = "typedb_behaviour",
+    remote = "https://github.com/typedb/typedb-behaviour",
+    commit = "bc1e71c9334272178104f657b0996d9f15be66c9",
+)

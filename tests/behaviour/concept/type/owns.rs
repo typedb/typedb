@@ -14,7 +14,7 @@ async fn test_owns() {
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
     #[cfg(feature = "bazel")]
-    let path = "../typedb_behaviour/concept/type/owns.feature";
+    let path = "../typedb_behaviour+/concept/type/owns.feature";
 
     #[cfg(not(feature = "bazel"))]
     let path = "bazel-typedb/external/typedb_behaviour/concept/type/owns.feature";

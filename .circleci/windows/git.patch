@@ -1,9 +1,22 @@
 diff --git a/BUILD b/BUILD
-index 8a126f224..46feaff4f 100644
+index b00cb4a41..e8ae259e9 100644
 --- a/BUILD
 +++ b/BUILD
-@@ -71,9 +71,9 @@ alias(
- # The directory structure for distribution
+@@ -22,7 +22,7 @@ load("@typedb_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
+ load("@typedb_bazel_distribution//brew:rules.bzl", "deploy_brew")
+ 
+ exports_files(
+-    ["VERSION", "deployment.bzl", "LICENSE", "README.md"],
++    ["VERSION", "deployment.bzl", "LICENSE", "README.md", "typedb_server_bin.exe"],
+ )
+ 
+ genrule(
+@@ -75,12 +75,12 @@ alias(
+     })
+ )
+ 
+-# The directory structure for distribution (Unix)
++# The directory structure for distribution
  pkg_files(
      name = "package-layout-server",
 -    srcs = ["//:typedb_server_bin", "//binary:typedb", "//server:config.yml"],

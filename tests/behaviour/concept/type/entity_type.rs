@@ -14,7 +14,7 @@ async fn test_entity_type() {
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
     #[cfg(feature = "bazel")]
-    let path = "../typedb_behaviour/concept/type/entitytype.feature";
+    let path = "../typedb_behaviour+/concept/type/entitytype.feature";
 
     #[cfg(not(feature = "bazel"))]
     let path = "bazel-typedb/external/typedb_behaviour/concept/type/entitytype.feature";
