@@ -47,7 +47,7 @@ impl NestedPattern {
         }
     }
 
-    pub(crate) fn as_optional(&self) -> Option<&Optional> {
+    pub fn as_optional(&self) -> Option<&Optional> {
         match self {
             NestedPattern::Optional(optional) => Some(optional),
             _ => None,

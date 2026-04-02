@@ -100,3 +100,39 @@ fn test_disjunction() {
     assert_eq!(b21, BTreeMap::from([("x", BindingMode::RequirePrebound)]));
     assert_eq!(b22, BTreeMap::from([("y", BindingMode::AlwaysBinding)]));
 }
+
+#[test]
+fn test_optional() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+
+    let query = r#"
+    match
+        $x isa person;
+        try { $x has name $y; };
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
+        unreachable!()
+    };
+    let Stage::Match(typeql_match) = stages.first().unwrap() else { unreachable!() };
+    let mut context = PipelineTranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let translated_match = translate_match(&mut context, &mut value_parameters, &empty_function_index, typeql_match)
+        .unwrap()
+        .finish()
+        .unwrap();
+    let conjunction = translated_match.conjunction();
+    let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
+    let conjunction_modes = binding_modes(&context, conjunction);
+    let optional_modes = binding_modes(&context, optional);
+    let inner_modes = binding_modes(&context, optional.conjunction());
+    assert_eq!(
+        conjunction_modes,
+        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::OptionallyBinding)])
+    );
+    assert_eq!(
+        optional_modes,
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::OptionallyBinding)])
+    );
+    assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding)]));
+}
