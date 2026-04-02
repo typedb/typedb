@@ -71,7 +71,7 @@ impl IrID for Variable {}
 pub trait Pattern {
     fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
-    fn required_inputs<'a>(&'a self, _block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+    fn required_inputs<'a>(&'a self) -> impl Iterator<Item = Variable> + 'a {
         self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(v))
     }
 
