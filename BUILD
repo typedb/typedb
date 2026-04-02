@@ -348,7 +348,7 @@ oci_push(
     name = "deploy-docker-release-x86_64",
     image = ":assemble-docker-x86_64",
     repository = "index.docker.io/typedb/typedb",
-    remote_tags = ["//docker:version-x86_64"],
+    remote_tags = "//docker:version-x86_64",
     target_compatible_with = constraint_linux_x86_64,
 )
 
@@ -356,7 +356,7 @@ oci_push(
     name = "deploy-docker-release-arm64",
     image = ":assemble-docker-arm64",
     repository = "index.docker.io/typedb/typedb",
-    remote_tags = ["//docker:version-arm64"],
+    remote_tags = "//docker:version-arm64",
     target_compatible_with = constraint_linux_arm64,
 )
 
