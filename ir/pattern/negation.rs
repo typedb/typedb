@@ -48,11 +48,6 @@ impl Pattern for Negation {
         self.conjunction().referenced_variables()
     }
 
-    // Union of non-binding variables used here or below, and variables declared in parent scopes
-    fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(v))
-    }
-
     fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
         self.conjunction
             .variable_binding_modes()
