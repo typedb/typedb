@@ -14,7 +14,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         BindingMode, BranchID, Pattern, Scope, ScopeId,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
+    pipeline::block::{BlockBuilderContext, BlockContext},
 };
 
 #[derive(Debug, Clone)]
@@ -65,14 +65,7 @@ impl Pattern for Optional {
 
     // Union of non-binding variables used here or below, and variables declared in parent scopes
     fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
-            let locality = block_context.variable_locality_in_scope(v, self.scope_id());
-            if locality == VariableLocality::Parent || mode.is_require_prebound() {
-                Some(v)
-            } else {
-                None
-            }
-        })
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(v))
     }
 
     fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {

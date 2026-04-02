@@ -55,7 +55,7 @@ impl Block {
     }
 
     pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.block_context.referenced_variables().cloned()
+        self.block_context.referenced_variables()
     }
 
     pub fn block_variables(&self) -> impl Iterator<Item = Variable> + '_ {
@@ -276,24 +276,6 @@ impl BlockContext {
         let Some(&parent) = self.scope_parents.get(&child) else { return false };
         parent == ancestor || self.is_child_scope(parent, ancestor)
     }
-
-    pub fn variable_locality_in_scope(&self, var: Variable, scope: ScopeId) -> VariableLocality {
-        let var_scope = self.variable_declaration[&var];
-        if var_scope == scope {
-            VariableLocality::Local
-        } else if self.is_child_scope(scope, var_scope) {
-            VariableLocality::Parent
-        } else {
-            VariableLocality::None // or an error
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum VariableLocality {
-    Parent,
-    Local,
-    None,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
