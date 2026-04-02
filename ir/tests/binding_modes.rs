@@ -165,6 +165,33 @@ fn test_disjoint_negation() {
 }
 
 #[test]
+fn problematic_is() {
+    // This is from BDD, and fails because
+    // `is` declares itself to require both bound, but it doesn't actually.
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+
+    let query = r#"
+    match
+        { $a isa! $_; } or { $_ isa! $_; };
+        { $a is $b; $b isa! $_; } or { $a isa! $_; };
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
+        unreachable!()
+    };
+    let Stage::Match(typeql_match) = stages.first().unwrap() else { unreachable!() };
+    let mut context = PipelineTranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let translated_match = translate_match(&mut context, &mut value_parameters, &empty_function_index, typeql_match)
+        .unwrap()
+        .finish()
+        .unwrap();
+    let conjunction = translated_match.conjunction();
+    let conjunction_modes = binding_modes(&context, conjunction);
+    assert_eq!(conjunction_modes, BTreeMap::from([("a", BindingMode::AlwaysBinding)]));
+}
+
+#[test]
 fn test_disjoint_disjunction() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
 
