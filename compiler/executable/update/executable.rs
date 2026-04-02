@@ -7,7 +7,6 @@
 use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
-use error::todo_must_implement;
 use ir::{
     pattern::{constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{block::Block, VariableRegistry},
