@@ -9,6 +9,7 @@ use ir::{
     pattern::{BindingMode, Pattern},
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{match_::translate_match, PipelineTranslationContext},
+    RepresentationError,
 };
 use typeql::query::stage::Stage;
 
@@ -135,4 +136,86 @@ fn test_optional() {
         BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::OptionallyBinding)])
     );
     assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding)]));
+}
+
+#[test]
+fn test_disjoint_negation() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+
+    let query = r#"
+    match $x isa person; not { $x has name $y; }; not { $x has age $y; };
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
+        unreachable!()
+    };
+    let Stage::Match(typeql_match) = stages.first().unwrap() else { unreachable!() };
+    let mut context = PipelineTranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let translation_error = translate_match(&mut context, &mut value_parameters, &empty_function_index, typeql_match)
+        .unwrap()
+        .finish()
+        .unwrap_err();
+    assert!(match *translation_error {
+        RepresentationError::UnboundRequiredVariable { variable } => {
+            variable == "y"
+        }
+        _ => false,
+    });
+}
+
+#[test]
+fn test_disjoint_disjunction() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+
+    let query = r#"
+    match $x isa person; { $x has name $y; } or { $x has age $y; } or { $x has height $z; };
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
+        unreachable!()
+    };
+    let Stage::Match(typeql_match) = stages.first().unwrap() else { unreachable!() };
+    let mut context = PipelineTranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let translation_error = translate_match(&mut context, &mut value_parameters, &empty_function_index, typeql_match)
+        .unwrap()
+        .finish()
+        .unwrap_err();
+    assert!(match *translation_error {
+        RepresentationError::UnboundRequiredVariable { variable } => {
+            variable == "y" || variable == "z"
+        }
+        _ => false,
+    });
+}
+
+#[test]
+fn test_disjoint_optional() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+
+    let query = r#"
+    match
+        $x isa person;
+        $z isa person;
+        try { $x has name $y; };
+        try { $z has name $y; };
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
+        unreachable!()
+    };
+    let Stage::Match(typeql_match) = stages.first().unwrap() else { unreachable!() };
+    let mut context = PipelineTranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let translation_error = translate_match(&mut context, &mut value_parameters, &empty_function_index, typeql_match)
+        .unwrap()
+        .finish()
+        .unwrap_err();
+    assert!(match *translation_error {
+        RepresentationError::UnboundRequiredVariable { variable } => {
+            variable == "y"
+        }
+        _ => false,
+    });
 }
