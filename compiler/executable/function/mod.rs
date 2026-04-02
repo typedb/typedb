@@ -7,7 +7,7 @@
 use std::{collections::HashMap, fmt, sync::Arc};
 
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::pipeline::function_signature::FunctionID;
+use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
 
 use crate::executable::{function::executable::ExecutableFunction, match_::planner::vertex::Cost};
 
@@ -62,6 +62,17 @@ impl ExecutableFunctionRegistry {
 
     pub(crate) fn schema_functions(&self) -> Arc<HashMap<DefinitionKey, ExecutableFunction>> {
         self.schema_functions.clone()
+    }
+
+    pub fn replace_preamble_parameters(
+        &mut self,
+        preamble_parameters: impl Iterator<Item = (usize, Arc<ParameterRegistry>)>,
+    ) {
+        preamble_parameters.for_each(|(index, params)| {
+            if let Some(func) = self.preamble_functions.get_mut(&index) {
+                func.parameter_registry = params;
+            }
+        })
     }
 }
 

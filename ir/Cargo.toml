@@ -15,92 +15,61 @@ features = {}
 [dev-dependencies]
 
 	[dev-dependencies.resource]
-		path = "../resource"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dev-dependencies.test_utils_storage]
-		path = "../storage/tests"
-		features = []
-		default-features = false
+		workspace = true
 
 [dependencies]
 
 	[dependencies.test_utils]
-		path = "../util/test"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.primitive]
-		path = "../common/primitive"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.structural_equality]
-		path = "../common/structural_equality"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.concept]
-		path = "../concept"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.durability]
-		path = "../durability"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.storage]
-		path = "../storage"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.encoding]
-		path = "../encoding"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.error]
-		path = "../common/error"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.itertools]
-		features = ["default", "use_alloc", "use_std"]
-		version = "0.10.5"
-		default-features = false
+		workspace = true
 
 	[dependencies.regex]
-		features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
-		version = "1.11.1"
-		default-features = false
+		workspace = true
 
 	[dependencies.chrono-tz]
-		features = ["case-insensitive", "default", "std"]
-		version = "0.9.0"
-		default-features = false
+		workspace = true
 
 	[dependencies.answer]
-		path = "../answer"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.bytes]
-		path = "../common/bytes"
-		features = []
-		default-features = false
+		workspace = true
 
 	[dependencies.typeql]
-		features = []
-		rev = "89b5406117d63bcd37e661066eff1ef4f5bff397"
-		git = "https://github.com/typedb/typeql"
-		default-features = false
+		workspace = true
 
 	[dependencies.chrono]
-		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-		version = "0.4.41"
-		default-features = false
+		workspace = true
+
+[[test]]
+	path = "tests/structural_equality.rs"
+	name = "test_structural_equality"
 
 [[test]]
 	path = "tests/pattern.rs"
@@ -109,8 +78,4 @@ features = {}
 [[test]]
 	path = "tests/pipeline.rs"
 	name = "pipeline"
-
-[[test]]
-	path = "tests/structural_equality.rs"
-	name = "test_structural_equality"
 

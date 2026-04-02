@@ -25,7 +25,10 @@ use concept::{
 };
 use concurrency::IntervalRunner;
 use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
-use durability::{wal::WAL, DurabilityServiceError};
+use durability::{
+    wal::{WALError, WAL},
+    DurabilityServiceError,
+};
 use encoding::{
     error::EncodingError,
     graph::{
@@ -40,7 +43,7 @@ use query::query_cache::QueryCache;
 use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
-    recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
+    recovery::checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
     sequence_number::SequenceNumber,
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
@@ -298,8 +301,8 @@ impl Database<WALClient> {
 
     fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
-            CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, StatisticsInitialise, StorageOpen,
-            TypeCacheInitialise, WALOpen,
+            CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, NotADatabase, StatisticsInitialise,
+            StorageOpen, TypeCacheInitialise, WALOpen,
         };
         let name = name.as_ref();
         event!(
@@ -311,14 +314,21 @@ impl Database<WALClient> {
         );
 
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
-        let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
+        let wal = match WAL::load(path) {
+            Ok(wal) => wal,
+            Err(DurabilityServiceError::WAL { source: WALError::LoadErrorDirectoryMissing { .. } }) => {
+                return Err(NotADatabase { name: name.to_owned() })
+            }
+            Err(err) => return Err(WALOpen { source: err }),
+        };
+
         let wal_last_sequence_number = wal.previous();
 
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
 
         event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
-        let checkpoint = Checkpoint::open_latest(path)
+        let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
             .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
         let storage = Arc::new(
             MVCCStorage::load::<EncodingKeyspace>(&name, path, wal_client, &checkpoint)
@@ -400,7 +410,7 @@ impl Database<WALClient> {
     }
 
     fn checkpoint(&self) -> Result<(), CheckpointCreateError> {
-        let checkpoint = Checkpoint::new(&self.path)?;
+        let checkpoint = CheckpointWriter::new(&self.path)?;
         self.storage.checkpoint(&checkpoint)?;
         checkpoint.finish()?;
         Ok(())
@@ -494,7 +504,7 @@ fn make_checkpoint_fn(
     move || {
         let watermark = storage.snapshot_watermark();
         if prev_checkpoint < watermark {
-            let checkpoint = Checkpoint::new(&path).unwrap();
+            let checkpoint = CheckpointWriter::new(&path).unwrap();
             storage.checkpoint(&checkpoint).unwrap();
             checkpoint.finish().unwrap();
             prev_checkpoint = watermark;
@@ -509,7 +519,7 @@ fn make_update_statistics_fn(
     query_cache: Arc<QueryCache>,
 ) -> impl Fn() {
     move || {
-        if storage.snapshot_watermark() > (*schema).read().unwrap().thing_statistics.sequence_number {
+        if storage.snapshot_watermark() > schema.read().unwrap().thing_statistics.sequence_number {
             let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             new_statistics.may_synchronise(&storage).expect("Statistics sync failed");
@@ -536,6 +546,7 @@ typedb_error! {
         FunctionCacheInitialise(13, "Error initialising function cache.", typedb_source: FunctionError),
         FileDelete(14, "Error while deleting file for '{name}'", name: String, source: Arc<io::Error>),
         DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
+        NotADatabase(16, "Directory '{name}' already exists and does not contain a database.", name: String),
     }
 }
 

@@ -5,7 +5,9 @@
  */
 
 use typeql::{
-    common::Spanned, query::stage::reduce::Reducer as TypeQLReducer, token::ReduceOperator as TypeQLReduceOperator,
+    common::Spanned,
+    query::stage::reduce::Reducer as TypeQLReducer,
+    token::{ReduceOperatorCollect as TypeQLReduceOperatorCollect, ReduceOperatorStat as TypeQLReduceOperatorStat},
 };
 
 use crate::{
@@ -22,6 +24,14 @@ pub fn translate_reduce(
     context: &mut PipelineTranslationContext,
     typeql_reduce: &typeql::query::stage::Reduce,
 ) -> Result<Reduce, Box<RepresentationError>> {
+    let group = match &typeql_reduce.groupby {
+        None => Vec::new(),
+        Some(group) => group
+            .iter()
+            .map(|typeql_var| verify_variable_available!(context, typeql_var => GroupByVariableNotAvailable))
+            .collect::<Result<Vec<_>, _>>()?,
+    };
+
     let mut reductions = Vec::with_capacity(typeql_reduce.reduce_assignments.len());
     for reduce_assign in &typeql_reduce.reduce_assignments {
         let reducer = build_reducer(context, &reduce_assign.reducer)?;
@@ -40,13 +50,6 @@ pub fn translate_reduce(
         reductions.push(AssignedReduction::new(assigned_var, reducer));
     }
 
-    let group = match &typeql_reduce.groupby {
-        None => Vec::new(),
-        Some(group) => group
-            .iter()
-            .map(|typeql_var| verify_variable_available!(context, typeql_var => ReduceVariableNotAvailable))
-            .collect::<Result<Vec<_>, _>>()?,
-    };
     context
         .last_stage_visible_variables
         .retain(|name, var| group.contains(var) || reductions.iter().any(|reduction| &reduction.assigned == var));
@@ -81,14 +84,18 @@ pub(crate) fn build_reducer(
         TypeQLReducer::Stat(stat) => {
             let var = verify_variable_available!(context, stat.variable => ReduceVariableNotAvailable)?;
             match &stat.reduce_operator {
-                TypeQLReduceOperator::Sum => Ok(Reducer::Sum(var)),
-                TypeQLReduceOperator::Max => Ok(Reducer::Max(var)),
-                TypeQLReduceOperator::Mean => Ok(Reducer::Mean(var)),
-                TypeQLReduceOperator::Median => Ok(Reducer::Median(var)),
-                TypeQLReduceOperator::Min => Ok(Reducer::Min(var)),
-                TypeQLReduceOperator::Std => Ok(Reducer::Std(var)),
-                TypeQLReduceOperator::Count | TypeQLReduceOperator::List => unreachable!(), // Not stats
+                TypeQLReduceOperatorStat::Sum => Ok(Reducer::Sum(var)),
+                TypeQLReduceOperatorStat::Max => Ok(Reducer::Max(var)),
+                TypeQLReduceOperatorStat::Mean => Ok(Reducer::Mean(var)),
+                TypeQLReduceOperatorStat::Median => Ok(Reducer::Median(var)),
+                TypeQLReduceOperatorStat::Min => Ok(Reducer::Min(var)),
+                TypeQLReduceOperatorStat::Std => Ok(Reducer::Std(var)),
             }
         }
+        TypeQLReducer::Collect(collect) => match &collect.reduce_operator {
+            TypeQLReduceOperatorCollect::List => Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                feature: error::UnimplementedFeature::Lists,
+            })),
+        },
     }
 }

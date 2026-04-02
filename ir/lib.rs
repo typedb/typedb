@@ -201,6 +201,12 @@ typedb_error! {
             rhs_category: VariableCategory,
             source_span: Option<Span>,
         ),
+        GroupByVariableNotAvailable(
+            29,
+            "The variable '{variable}' was not available for use in the groupby clause.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
         LabelWithLabel(
             30,
             "Specifying a label constraint on a label is not allowed.",

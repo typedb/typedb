@@ -91,7 +91,7 @@ typedb_error!(
         UnsupportedValueTypeForReducer(
             15,
             "The input variable to the reducer had an unsupported value-type: '{value_type}'",
-            reducer: String,
+            reducer: &'static str,
             variable: String,
             value_type: ValueTypeCategory,
             source_span: Option<Span>,
@@ -107,7 +107,7 @@ typedb_error!(
         ReducerInputVariableIsList(
             17,
             "The input variable '{variable}' to the reducer '{reducer}' was a list.",
-            reducer: String,
+            reducer: &'static str,
             variable: String,
             source_span: Option<Span>,
         ),
