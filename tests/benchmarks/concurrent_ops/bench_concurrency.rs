@@ -29,7 +29,7 @@ use storage::durability_client::WALClient;
 use test_utils::{create_tmp_dir, TempDir};
 
 const TOTAL_OPS: usize = 300_000;
-const READ_OPS: usize = 10_000;
+const READ_OPS: usize = 100_000;
 
 const DB_NAME: &str = "bench-concurrency";
 
@@ -459,7 +459,7 @@ fn run_pure_update_benchmark(thread_counts: &[usize], batch_size: usize, show_di
 
 // --- W3: Insert Relations ---
 
-const RELATION_SEED_COUNT: usize = 1_000;
+const RELATION_SEED_COUNT: usize = 10_000;
 
 fn run_insert_relation_benchmark(thread_counts: &[usize], batch_size: usize, show_dist: bool) {
     print_header("InsertRelation", batch_size);
@@ -485,7 +485,7 @@ fn run_insert_relation_benchmark(thread_counts: &[usize], batch_size: usize, sho
 
 // --- W4/W5: Mixed read/write ---
 
-const MIXED_SEED_COUNT: usize = 1_000;
+const MIXED_SEED_COUNT: usize = 10_000;
 
 fn run_mixed_benchmark(thread_counts: &[usize], batch_size: usize, write_ratio: f64, show_dist: bool) {
     let pct = (write_ratio * 100.0) as usize;
@@ -636,8 +636,8 @@ fn run_pure_read_benchmark(thread_counts: &[usize]) {
 // --- Main ---
 
 fn main() {
-    let write_thread_counts = [1, 2, 4, 8, 16, 32, 64];
-    let read_thread_counts = [1, 2, 4, 8, 16, 32, 64];
+    let write_thread_counts = [1, 4, 8];
+    let read_thread_counts = [1, 4, 8];
     let show_dist = env::var("BENCH_DIST").is_ok();
 
     eprintln!("Concurrent Write Scalability Benchmark Suite");
@@ -650,30 +650,30 @@ fn main() {
     eprintln!();
 
     // W1: Pure Insert
-    for &batch_size in &[1000, 100, 10] {
+    for &batch_size in &[1000, 100, 1] {
         run_pure_insert_benchmark(&write_thread_counts, batch_size, show_dist);
     }
 
     // W2: Pure Update (match-insert generating Puts)
-    for &batch_size in &[1000, 100, 10] {
+    for &batch_size in &[1000, 100, 1] {
         run_pure_update_benchmark(&write_thread_counts, batch_size, show_dist);
     }
 
     // W3: Insert Relations
-    for &batch_size in &[1000, 100, 10] {
+    for &batch_size in &[1000, 100, 1] {
         run_insert_relation_benchmark(&write_thread_counts, batch_size, show_dist);
     }
 
     // W4: Mixed 50/50
-    for &batch_size in &[1000, 100, 10] {
+    for &batch_size in &[1000, 100, 1] {
         run_mixed_benchmark(&write_thread_counts, batch_size, 0.5, show_dist);
     }
-    //
-    // // W5: Mixed 20/80
-    // for &batch_size in &[1000, 100] {
-    //     run_mixed_benchmark(&write_thread_counts, batch_size, 0.2, show_dist);
-    // }
-    //
-    // // W6: Pure Read
-    // run_pure_read_benchmark(&read_thread_counts);
+
+    // W5: Mixed 20/80
+    for &batch_size in &[1000, 100, 1] {
+        run_mixed_benchmark(&write_thread_counts, batch_size, 0.2, show_dist);
+    }
+
+    // W6: Pure Read
+    run_pure_read_benchmark(&read_thread_counts);
 }
