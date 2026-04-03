@@ -328,7 +328,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         arguments: Vec<Variable>,
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
-        if let Some(variable) = assigned.iter().find(|var| self.context.is_variable_input(**var)) {
+        if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(**var)) {
             let variable = self
                 .context
                 .get_variable_name(*variable)
@@ -364,7 +364,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         function_name: &str,
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
-        if let Some(variable) = assigned.iter().find(|var| self.context.is_variable_input(**var)) {
+        if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(**var)) {
             let variable = self
                 .context
                 .get_variable_name(*variable)
@@ -430,7 +430,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         source_span: Option<Span>,
     ) -> Result<&ExpressionBinding<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available_in(self.constraints.scope, variable));
-        if self.context.is_variable_input(variable) {
+        if self.context.is_block_input_variable(variable) {
             let variable = self
                 .context
                 .get_variable_name(variable)

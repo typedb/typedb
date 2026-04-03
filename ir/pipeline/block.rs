@@ -356,12 +356,12 @@ impl<'a> BlockBuilderContext<'a> {
         self.block_context.is_variable_available_in(scope, variable)
     }
 
-    pub(crate) fn is_variable_input(&self, variable: Variable) -> bool {
-        self.block_context.variable_declaration.get(&variable) == Some(&ScopeId::INPUT)
+    pub(crate) fn is_block_input_variable(&self, variable: Variable) -> bool {
+        self.block_context.is_block_input_variable(&variable)
     }
 
     pub(crate) fn input_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.block_context.variable_declaration.keys().copied().filter(|var| self.is_variable_input(*var))
+        self.block_context.referenced_variables().filter(|var| self.is_block_input_variable(*var))
     }
 
     pub(crate) fn create_child_scope(&mut self, parent: ScopeId, scope_type: ScopeType) -> ScopeId {
