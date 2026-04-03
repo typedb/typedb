@@ -35,7 +35,7 @@ fn test_negation() {
     let query = r#"
     match $x isa person; not { $x has $y; };
     "#;
-    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
     let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
         unreachable!()
     };
@@ -72,7 +72,7 @@ fn test_disjunction() {
         { $x has name "John"; } or { $x has name "James"; };
         { $x has height 16; } or { $y has name "Alice"; };
     "#;
-    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
     let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
         unreachable!()
     };
@@ -115,7 +115,7 @@ fn test_optional() {
         $x isa person;
         try { $x has name $y; };
     "#;
-    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
     let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
         unreachable!()
     };
@@ -149,7 +149,7 @@ fn test_disjoint_negation() {
     let query = r#"
     match $x isa person; not { $x has name $y; }; not { $x has age $y; };
     "#;
-    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
     let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
         unreachable!()
     };
@@ -179,7 +179,7 @@ fn problematic_is() {
         { $a isa! $_; } or { $_ isa! $_; };
         { $a is $b; $b isa! $_; } or { $a isa! $_; };
     "#;
-    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
     let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
         unreachable!()
     };
@@ -201,11 +201,10 @@ fn problematic_is() {
 #[test]
 fn test_disjoint_disjunction() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-
     let query = r#"
     match $x isa person; { $x has name $y; } or { $x has age $y; } or { $x has height $z; };
     "#;
-    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
     let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
         unreachable!()
     };
@@ -225,6 +224,22 @@ fn test_disjoint_disjunction() {
 }
 
 #[test]
+fn test_disjoint_disjunction_again() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let query = r#"
+      match { $x isa person; } or { $x isa company; } or { $a isa name; };
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
+    let translation_error = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap_err();
+    assert!(match *translation_error {
+        RepresentationError::UnboundRequiredVariable { variable } => {
+            variable == "x"
+        }
+        _ => false,
+    });
+}
+
+#[test]
 fn test_disjoint_optional() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
 
@@ -235,7 +250,7 @@ fn test_disjoint_optional() {
         try { $x has name $y; };
         try { $z has name $y; };
     "#;
-    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
     let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else {
         unreachable!()
     };
@@ -265,7 +280,7 @@ fn test_negation_with_inputs() {
         $x isa person;
         not { $x has $y; };
     "#;
-    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
     let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
     let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
         unreachable!();
@@ -296,7 +311,7 @@ fn test_disjunction_with_inputs() {
         { $x has name "John"; } or { $x has name "James"; };
         { $x has height 16; } or { $y has name "Alice"; };
     "#;
-    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
     let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
     let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
         unreachable!();
@@ -342,7 +357,7 @@ fn test_optional_with_inputs() {
         $x isa person;
         try { $x has $y;};
     "#;
-    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
     let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
     let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
         unreachable!();
@@ -380,7 +395,7 @@ fn test_optional_skip_a_stage() {
         $x isa person;
         try { $x has $y;};
     "#;
-    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
     let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
     let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
         unreachable!();

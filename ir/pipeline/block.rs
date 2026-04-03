@@ -242,7 +242,7 @@ impl BlockContext {
     }
 
     pub fn is_block_input_variable(&self, var: &Variable) -> bool {
-        self.variable_declaration.get(var).copied() != Some(ScopeId::INPUT)
+        self.variable_declaration.get(var).copied() == Some(ScopeId::INPUT)
     }
 
     fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {

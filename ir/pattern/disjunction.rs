@@ -78,7 +78,7 @@ impl Pattern for Disjunction {
         }
         let all_branch_modes: Vec<_> = self.conjunctions.iter().map(|c| c.variable_binding_modes()).collect();
         let all_variables = all_branch_modes.iter().flat_map(|b| b.keys()).dedup().collect::<Vec<_>>();
-        // Absent isn't the identity under the bitwise or operator
+        // Note: Absent isn't the identity under the bitwise or operator, so we correct in the next step.
         let mut binding_modes = all_variables
             .iter()
             .map(|v| {
@@ -96,7 +96,7 @@ impl Pattern for Disjunction {
             let binding_branches_count =
                 all_branch_modes.iter().filter(|branch_modes| branch_modes.get(var).is_some()).count();
             if binding_branches_count > 1 {
-                *mode = BindingMode::RequirePrebound
+                *mode = BindingMode::RequirePrebound // TODO: Should I go into the branches and bind?
             }
         });
         binding_modes
