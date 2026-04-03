@@ -404,6 +404,10 @@ impl<'a> BlockBuilderContext<'a> {
         self.block_context.variable_declaration.get(&variable) == Some(&ScopeId::INPUT)
     }
 
+    pub(crate) fn input_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.block_context.variable_declaration.keys().copied().filter(|var| self.is_variable_input(*var))
+    }
+
     pub(crate) fn create_child_scope(&mut self, parent: ScopeId, scope_type: ScopeType) -> ScopeId {
         let scope = ScopeId::new(self.scope_id_allocator);
         debug_assert_ne!(scope, ScopeId::ROOT);

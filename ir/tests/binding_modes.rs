@@ -367,3 +367,47 @@ fn test_optional_with_inputs() {
     );
     assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)]));
 }
+
+#[test]
+fn test_optional_skip_a_stage() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let query = r#"
+    match
+        try { $y isa name; };
+    match
+        let $_ = 0;
+    match
+        $x isa person;
+        try { $x has $y;};
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let TranslatedStage::Match { block: first_block, .. } = &translated_pipeline.translated_stages[0] else {
+        unreachable!();
+    };
+    let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
+        unreachable!();
+    };
+    let TranslatedStage::Match { block: third_block, .. } = &translated_pipeline.translated_stages[2] else {
+        unreachable!();
+    };
+
+    let first_stage_modes = binding_modes(&translated_pipeline.variable_registry, first_block.conjunction());
+    let second_stage_modes = binding_modes(&translated_pipeline.variable_registry, second_block.conjunction());
+    let conjunction = third_block.conjunction();
+    let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
+    let conjunction_modes = binding_modes(&translated_pipeline.variable_registry, conjunction);
+    let optional_modes = binding_modes(&translated_pipeline.variable_registry, optional);
+    let inner_modes = binding_modes(&translated_pipeline.variable_registry, optional.conjunction());
+    assert_eq!(first_stage_modes, BTreeMap::from([("y", BindingMode::OptionallyBinding)]));
+    assert_eq!(second_stage_modes, BTreeMap::from([("y", BindingMode::AlwaysBinding)]));
+    assert_eq!(
+        conjunction_modes,
+        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::AlwaysBinding)])
+    );
+    assert_eq!(
+        optional_modes,
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
+    );
+    assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)]));
+}

@@ -229,11 +229,8 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
 
     pub(crate) fn compute_and_set_variable_binding_modes(&mut self) {
         compute_bottom_up_binding_modes_and_set(&mut self.conjunction);
-        self.conjunction.binding_modes.iter_mut().for_each(|(var, mode)| {
-            if self.context.is_variable_input(*var) {
-                // TODO: Should this optional if it's an optional input? I don't think so.
-                *mode = BindingMode::AlwaysBinding;
-            }
+        self.context.input_variables().for_each(|var| {
+            self.conjunction.binding_modes.insert(var, BindingMode::AlwaysBinding);
         });
         update_required_for_locally_and_optionally_binding(&mut self.conjunction);
     }
