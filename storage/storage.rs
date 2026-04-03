@@ -276,7 +276,7 @@ impl<Durability> MVCCStorage<Durability> {
         let result = match validate_result {
             Ok(ValidatedCommit::Write(write_batches)) => {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
-                // Write to the k-v store
+                                               // Write to the k-v store
                 commit_profile.snapshot_durable_write_data_confirmed();
 
                 self.keyspaces

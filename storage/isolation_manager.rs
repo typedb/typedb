@@ -238,7 +238,6 @@ impl IsolationManager {
         self.timeline.watermark()
     }
 
-
     pub fn reset(&mut self) {
         self.timeline = Timeline::new(self.initial_sequence_number);
     }

@@ -123,7 +123,13 @@ struct TimingAnalysis {
 impl TimingAnalysis {
     fn empty() -> Self {
         let zero = DistStats { mean_us: 0.0, min_us: 0.0, p50_us: 0.0, p95_us: 0.0, p99_us: 0.0, max_us: 0.0 };
-        Self { count: 0, open: zero, exec: DistStats { mean_us: 0.0, min_us: 0.0, p50_us: 0.0, p95_us: 0.0, p99_us: 0.0, max_us: 0.0 }, commit: DistStats { mean_us: 0.0, min_us: 0.0, p50_us: 0.0, p95_us: 0.0, p99_us: 0.0, max_us: 0.0 }, total: zero }
+        Self {
+            count: 0,
+            open: zero,
+            exec: DistStats { mean_us: 0.0, min_us: 0.0, p50_us: 0.0, p95_us: 0.0, p99_us: 0.0, max_us: 0.0 },
+            commit: DistStats { mean_us: 0.0, min_us: 0.0, p50_us: 0.0, p95_us: 0.0, p99_us: 0.0, max_us: 0.0 },
+            total: zero,
+        }
     }
 }
 
@@ -202,11 +208,7 @@ fn execute_insert_batch(
     tx.commit().1.unwrap();
     let t3 = Instant::now();
 
-    timings.record(
-        (t1 - t0).as_nanos() as u64,
-        (t2 - t1).as_nanos() as u64,
-        (t3 - t2).as_nanos() as u64,
-    );
+    timings.record((t1 - t0).as_nanos() as u64, (t2 - t1).as_nanos() as u64, (t3 - t2).as_nanos() as u64);
 }
 
 fn execute_update_batch(
@@ -223,9 +225,7 @@ fn execute_update_batch(
     for i in 0..ops_per_tx {
         let person_id = (batch_id * ops_per_tx + i) % seed_count;
         let score: f64 = rand::random::<u32>() as f64 / 100.0;
-        let query_str = format!(
-            r#"match $p isa person, has name "person_{person_id}"; insert $p has score {score};"#
-        );
+        let query_str = format!(r#"match $p isa person, has name "person_{person_id}"; insert $p has score {score};"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
@@ -242,11 +242,7 @@ fn execute_update_batch(
     tx.commit().1.unwrap();
     let t3 = Instant::now();
 
-    timings.record(
-        (t1 - t0).as_nanos() as u64,
-        (t2 - t1).as_nanos() as u64,
-        (t3 - t2).as_nanos() as u64,
-    );
+    timings.record((t1 - t0).as_nanos() as u64, (t2 - t1).as_nanos() as u64, (t3 - t2).as_nanos() as u64);
 }
 
 fn execute_relation_batch(
@@ -283,11 +279,7 @@ fn execute_relation_batch(
     tx.commit().1.unwrap();
     let t3 = Instant::now();
 
-    timings.record(
-        (t1 - t0).as_nanos() as u64,
-        (t2 - t1).as_nanos() as u64,
-        (t3 - t2).as_nanos() as u64,
-    );
+    timings.record((t1 - t0).as_nanos() as u64, (t2 - t1).as_nanos() as u64, (t3 - t2).as_nanos() as u64);
 }
 
 // --- Read transaction helper ---
@@ -297,7 +289,14 @@ fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
     let pipeline = query_manager
-        .prepare_read_pipeline(snapshot.clone(), type_manager, thing_manager.clone(), function_manager, &query, query_str)
+        .prepare_read_pipeline(
+            snapshot.clone(),
+            type_manager,
+            thing_manager.clone(),
+            function_manager,
+            &query,
+            query_str,
+        )
         .unwrap();
     let (rows, _context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let _batch = rows.collect_owned().unwrap();
@@ -317,7 +316,13 @@ fn print_dist(label: &str, d: &DistStats) {
     );
 }
 
-fn print_result(num_threads: usize, elapsed: std::time::Duration, total_ops: usize, timings: &PhaseTimings, show_dist: bool) {
+fn print_result(
+    num_threads: usize,
+    elapsed: std::time::Duration,
+    total_ops: usize,
+    timings: &PhaseTimings,
+    show_dist: bool,
+) {
     let ops_per_sec = total_ops as f64 / elapsed.as_secs_f64();
     let a = timings.analyze();
     eprintln!(
@@ -350,9 +355,13 @@ fn print_mixed_result(
     let a = timings.analyze();
     eprintln!(
         "Threads: {:>3} ({:>2}W+{:>2}R) | Time: {:>8.1}ms | W-ops/s: {:>10.0} | R-ops/s: {:>10.0} | [{} w-txns]",
-        num_threads, write_threads, read_threads,
+        num_threads,
+        write_threads,
+        read_threads,
         elapsed.as_secs_f64() * 1000.0,
-        w_ops_s, r_ops_s, a.count,
+        w_ops_s,
+        r_ops_s,
+        a.count,
     );
     if show_dist && a.count > 0 {
         print_dist("open", &a.open);
@@ -423,9 +432,10 @@ fn run_pure_insert_benchmark(thread_counts: &[usize], batch_size: usize, show_di
         let total_transactions = TOTAL_OPS / batch_size;
         let actual_ops = total_transactions * batch_size;
 
-        let elapsed = run_write_threads(&database, num_threads, batch_size, TOTAL_OPS, &timings, |db, batch_id, ops, t| {
-            execute_insert_batch(db, batch_id, ops, t);
-        });
+        let elapsed =
+            run_write_threads(&database, num_threads, batch_size, TOTAL_OPS, &timings, |db, batch_id, ops, t| {
+                execute_insert_batch(db, batch_id, ops, t);
+            });
 
         print_result(num_threads, elapsed, actual_ops, &timings, show_dist);
     }
@@ -550,9 +560,8 @@ fn run_mixed_benchmark(thread_counts: &[usize], batch_size: usize, write_ratio: 
                 let mut count: u64 = 0;
                 while running.load(Ordering::Relaxed) {
                     let age_threshold = (count % 100) as u32;
-                    let query_str = format!(
-                        r#"match $p isa person, has age > {age_threshold}, has name $n; limit 10;"#
-                    );
+                    let query_str =
+                        format!(r#"match $p isa person, has age > {age_threshold}, has name $n; limit 10;"#);
                     execute_read_query(&db, &query_str);
                     count += 1;
                 }
@@ -606,9 +615,8 @@ fn run_pure_read_benchmark(thread_counts: &[usize]) {
                     drop(signal.read().unwrap());
                     for i in 0..ops_per_thread {
                         let age_threshold = ((thread_id * ops_per_thread + i) % 100) as u32;
-                        let query_str = format!(
-                            r#"match $p isa person, has age > {age_threshold}, has name $n; limit 10;"#
-                        );
+                        let query_str =
+                            format!(r#"match $p isa person, has age > {age_threshold}, has name $n; limit 10;"#);
                         execute_read_query(&db, &query_str);
                     }
                 })
@@ -636,8 +644,7 @@ fn run_pure_read_benchmark(thread_counts: &[usize]) {
 // --- Main ---
 
 fn main() {
-    let write_thread_counts = [1, 4, 8];
-    let read_thread_counts = [1, 4, 8];
+    let thread_counts = [1, 4, 8];
     let show_dist = env::var("BENCH_DIST").is_ok();
 
     eprintln!("Concurrent Write Scalability Benchmark Suite");
@@ -651,29 +658,29 @@ fn main() {
 
     // W1: Pure Insert
     for &batch_size in &[1000, 100, 1] {
-        run_pure_insert_benchmark(&write_thread_counts, batch_size, show_dist);
+        run_pure_insert_benchmark(&thread_counts, batch_size, show_dist);
     }
 
     // W2: Pure Update (match-insert generating Puts)
     for &batch_size in &[1000, 100, 1] {
-        run_pure_update_benchmark(&write_thread_counts, batch_size, show_dist);
+        run_pure_update_benchmark(&thread_counts, batch_size, show_dist);
     }
 
     // W3: Insert Relations
     for &batch_size in &[1000, 100, 1] {
-        run_insert_relation_benchmark(&write_thread_counts, batch_size, show_dist);
+        run_insert_relation_benchmark(&thread_counts, batch_size, show_dist);
     }
 
     // W4: Mixed 50/50
     for &batch_size in &[1000, 100, 1] {
-        run_mixed_benchmark(&write_thread_counts, batch_size, 0.5, show_dist);
+        run_mixed_benchmark(&thread_counts, batch_size, 0.5, show_dist);
     }
 
     // W5: Mixed 20/80
     for &batch_size in &[1000, 100, 1] {
-        run_mixed_benchmark(&write_thread_counts, batch_size, 0.2, show_dist);
+        run_mixed_benchmark(&thread_counts, batch_size, 0.2, show_dist);
     }
 
     // W6: Pure Read
-    run_pure_read_benchmark(&read_thread_counts);
+    run_pure_read_benchmark(&thread_counts);
 }
