@@ -19,7 +19,8 @@ use system::{
 };
 
 use crate::{
-    error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},
+    authentication::Accessor,
+    error::{ArcServerStateError, LocalServerStateError},
     state::ServerState,
 };
 
@@ -50,19 +51,17 @@ pub async fn initialise_system_database_schema(server_state: &ServerState) -> Re
 }
 
 pub async fn initialise_default_user(server_state: &ServerState) -> Result<(), ArcServerStateError> {
-    let user_manager = server_state.users().manager()?;
-    let exists = user_manager.contains(DEFAULT_USER_NAME).map_err(|typedb_source| {
-        arc_server_state_err(LocalServerStateError::UserCannotBeRetrieved { typedb_source })
-    })?;
+    let accessor = Accessor(DEFAULT_USER_NAME.to_string());
+    let exists = server_state.users().contains(accessor.clone(), DEFAULT_USER_NAME).await?;
     if !exists {
-        user_manager
+        server_state
+            .users()
             .create(
-                &User::new(DEFAULT_USER_NAME.to_string()),
-                &Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
+                accessor,
+                User::new(DEFAULT_USER_NAME.to_string()),
+                Credential::PasswordType { password_hash: PasswordHash::from_password(DEFAULT_USER_PASSWORD) },
             )
-            .map_err(|typedb_source| {
-                arc_server_state_err(LocalServerStateError::UserCannotBeCreated { typedb_source })
-            })?;
+            .await?;
     }
     Ok(())
 }

@@ -51,7 +51,10 @@ pub mod user_repository {
         );
         let query = parse_query(&query_str).expect(unexpected_error_msg);
         let (tx, result) = execute_read_pipeline(tx, &query.into_structure().into_pipeline(), &query_str);
-        let mut rows: Vec<HashMap<String, VariableValue>> = result.expect(unexpected_error_msg);
+        let mut rows: Vec<HashMap<String, VariableValue>> = match result {
+            Ok(rows) => rows,
+            Err(_) => return Err(SystemDBError::QueryFailed {}),
+        };
         if !rows.is_empty() {
             let row = rows.pop().expect(unexpected_error_msg);
             let hash = get_string(&tx, &row, "h");
@@ -177,6 +180,7 @@ pub mod user_repository {
         pub SystemDBError(component = "System database", prefix = "SDB") {
             EmptyUpdate(1, "There is nothing to update"),
             IllegalQueryInput(2, "The specified input contains one or more illegal character(s)"),
+            QueryFailed(3, "System database query could not be executed. The system database may not be fully initialised yet."),
         }
     }
 }
