@@ -74,10 +74,6 @@ features = {}
 		workspace = true
 
 [[test]]
-	path = "tests/benchmarks/iam/bench_iam.rs"
-	name = "bench_iam"
-
-[[test]]
 	path = "tests/assembly/assembly.rs"
 	name = "test_assembly"
 
@@ -94,44 +90,44 @@ features = {}
 	name = "test_concept"
 
 [[test]]
-	path = "tests/behaviour/query/main.rs"
-	name = "test_query"
-
-[[test]]
 	path = "tests/behaviour/connection/main.rs"
 	name = "test_connection"
 
 [[test]]
-	path = "tests/behaviour/service/http/debug/debug.rs"
-	name = "test_http_debug"
-
-[[test]]
-	path = "tests/behaviour/service/http/connection/transaction.rs"
-	name = "test_http_transaction"
-
-[[test]]
-	path = "tests/behaviour/service/http/connection/database.rs"
-	name = "test_http_database"
-
-[[test]]
-	path = "tests/behaviour/service/http/driver/query.rs"
-	name = "test_http_driver_query"
-
-[[test]]
-	path = "tests/behaviour/service/http/driver/concept.rs"
-	name = "test_http_driver_concept"
+	path = "tests/behaviour/query/main.rs"
+	name = "test_query"
 
 [[test]]
 	path = "tests/behaviour/service/http/driver/http.rs"
 	name = "test_http_driver_http"
 
 [[test]]
-	path = "tests/behaviour/service/http/driver/user.rs"
-	name = "test_http_driver_user"
+	path = "tests/behaviour/service/http/driver/query.rs"
+	name = "test_http_driver_query"
 
 [[test]]
 	path = "tests/behaviour/service/http/driver/connection.rs"
 	name = "test_http_driver_connection"
+
+[[test]]
+	path = "tests/behaviour/service/http/driver/user.rs"
+	name = "test_http_driver_user"
+
+[[test]]
+	path = "tests/behaviour/service/http/driver/concept.rs"
+	name = "test_http_driver_concept"
+
+[[test]]
+	path = "tests/behaviour/service/http/debug/debug.rs"
+	name = "test_http_debug"
+
+[[test]]
+	path = "tests/behaviour/service/http/connection/database.rs"
+	name = "test_http_database"
+
+[[test]]
+	path = "tests/behaviour/service/http/connection/transaction.rs"
+	name = "test_http_transaction"
 
 [[bin]]
 	path = "main.rs"
@@ -184,14 +180,14 @@ features = {}
 			version = "1.18.0"
 			default-features = false
 
-		[workspace.dependencies.rand]
-			features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
-			version = "0.8.5"
-			default-features = false
-
 		[workspace.dependencies.seahash]
 			features = ["default"]
 			version = "4.1.0"
+			default-features = false
+
+		[workspace.dependencies.rand]
+			features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
+			version = "0.8.5"
 			default-features = false
 
 		[workspace.dependencies.prost]
@@ -219,9 +215,9 @@ features = {}
 			features = []
 			default-features = false
 
-		[workspace.dependencies.rustls-pemfile]
-			features = ["default", "std"]
-			version = "2.2.0"
+		[workspace.dependencies.sysinfo]
+			features = ["component", "default", "disk", "multithread", "network", "system", "user"]
+			version = "0.33.1"
 			default-features = false
 
 		[workspace.dependencies.xxhash-rust]
@@ -234,9 +230,9 @@ features = {}
 			version = "0.13.0"
 			default-features = false
 
-		[workspace.dependencies.sysinfo]
-			features = ["component", "default", "disk", "multithread", "network", "system", "user"]
-			version = "0.33.1"
+		[workspace.dependencies.rustls-pemfile]
+			features = ["default", "std"]
+			version = "2.2.0"
 			default-features = false
 
 		[workspace.dependencies.options]
@@ -431,14 +427,14 @@ features = {}
 			features = []
 			default-features = false
 
-		[workspace.dependencies.moka]
-			features = ["default", "sync"]
-			version = "0.12.10"
-			default-features = false
-
 		[workspace.dependencies.paste]
 			features = []
 			version = "1.0.15"
+			default-features = false
+
+		[workspace.dependencies.moka]
+			features = ["default", "sync"]
+			version = "0.12.10"
 			default-features = false
 
 		[workspace.dependencies.error]
@@ -466,14 +462,14 @@ features = {}
 			version = "0.9.0"
 			default-features = false
 
-		[workspace.dependencies.async-trait]
-			features = []
-			version = "0.1.89"
-			default-features = false
-
 		[workspace.dependencies.tracing-appender]
 			features = []
 			version = "0.2.3"
+			default-features = false
+
+		[workspace.dependencies.async-trait]
+			features = []
+			version = "0.1.89"
 			default-features = false
 
 		[workspace.dependencies.tempdir]
@@ -526,14 +522,14 @@ features = {}
 			version = "1.28.1"
 			default-features = false
 
-		[workspace.dependencies.tokio-stream]
-			features = ["default", "net", "time"]
-			version = "0.1.17"
-			default-features = false
-
 		[workspace.dependencies.test_utils_concept]
 			path = "concept/tests"
 			features = []
+			default-features = false
+
+		[workspace.dependencies.tokio-stream]
+			features = ["default", "net", "time"]
+			version = "0.1.17"
 			default-features = false
 
 		[workspace.dependencies.futures]
@@ -586,14 +582,14 @@ features = {}
 			features = []
 			default-features = false
 
-		[workspace.dependencies.axum-server]
-			features = ["arc-swap", "default", "rustls", "rustls-pemfile", "rustls-pki-types", "tls-rustls-no-provider", "tokio-rustls"]
-			version = "0.7.2"
-			default-features = false
-
 		[workspace.dependencies.async-std]
 			features = ["alloc", "async-attributes", "async-channel", "async-global-executor", "async-io", "async-lock", "attributes", "crossbeam-utils", "default", "futures-channel", "futures-core", "futures-io", "futures-lite", "gloo-timers", "kv-log-macro", "log", "memchr", "once_cell", "pin-project-lite", "pin-utils", "slab", "std", "wasm-bindgen-futures"]
 			version = "1.13.2"
+			default-features = false
+
+		[workspace.dependencies.axum-server]
+			features = ["arc-swap", "default", "rustls", "rustls-pemfile", "rustls-pki-types", "tls-rustls-no-provider", "tokio-rustls"]
+			version = "0.7.2"
 			default-features = false
 
 		[workspace.dependencies.bincode]

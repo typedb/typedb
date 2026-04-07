@@ -91,10 +91,10 @@ features = {}
 	name = "test_attribute_vertex"
 
 [[test]]
-	path = "tests/test_type_vertex.rs"
-	name = "test_type_vertex"
-
-[[test]]
 	path = "tests/test_definitions.rs"
 	name = "test_definitions"
+
+[[test]]
+	path = "tests/test_type_vertex.rs"
+	name = "test_type_vertex"
 

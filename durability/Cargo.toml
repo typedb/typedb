@@ -60,10 +60,10 @@ features = {}
 	harness = false
 
 [[test]]
-	path = "tests/basic.rs"
-	name = "basic"
-
-[[test]]
 	path = "tests/crash.rs"
 	name = "crash"
+
+[[test]]
+	path = "tests/basic.rs"
+	name = "basic"
 
