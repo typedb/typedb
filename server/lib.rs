@@ -7,10 +7,15 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{fs, net::SocketAddr, path::Path, sync::Arc};
-use std::future::Future;
-use std::net::Ipv4Addr;
-use std::pin::Pin;
+use std::{
+    fs,
+    future::Future,
+    net::{Ipv4Addr, SocketAddr},
+    path::Path,
+    pin::Pin,
+    sync::Arc,
+};
+
 use axum_server::{tls_rustls::RustlsConfig, Handle};
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};
 use database::database_manager::DatabaseManager;
@@ -43,7 +48,7 @@ pub mod system_init;
 pub mod transaction;
 
 pub mod admin_proto {
-    tonic::include_proto!("typedb.admin");
+    pub use server_admin_proto::*;
 }
 
 pub type AdminServeFuture = std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), ServerOpenError>> + Send>>;
@@ -296,9 +301,9 @@ impl Server {
         );
         servers.push(Box::pin(grpc_server));
 
-        if let Some(http_address) = server_state.http_address() {
+        if let Some(http_serving_address) = server_state.http_serving_address() {
             let http_server = Self::serve_http(
-                http_address,
+                http_serving_address,
                 &server_config.encryption,
                 server_state.clone(),
                 shutdown_receiver.clone(),
@@ -434,8 +439,13 @@ impl Server {
         if grpc_connection_address != grpc_serving_address {
             print!(" (connect through {grpc_connection_address})");
         }
-        if let Some(http_address) = server_status.http_serving_address() {
-            print!(", HTTP on {http_address}");
+        if let Some(http_serving_address) = server_status.http_serving_address() {
+            print!(", HTTP on {http_serving_address}");
+            if let Some(http_connection_address) = server_status.http_connection_address() {
+                if http_serving_address != http_connection_address {
+                    print!(" (connect through {http_connection_address})");
+                }
+            }
         }
         if let Some(admin_address) = server_status.admin_address() {
             print!(", Admin on {admin_address}");

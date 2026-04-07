@@ -70,6 +70,7 @@ rust_library(
         "//storage",
         "//system",
         "//user",
+        "//server/service/admin/proto:server_admin_proto",
         "@crates//:axum",
         "@crates//:axum-extra",
         "@crates//:axum-server",

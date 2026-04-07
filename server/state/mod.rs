@@ -14,7 +14,6 @@ use std::{collections::HashSet, net::SocketAddr, path::PathBuf, sync::Arc};
 use concurrency::{IntervalRunner, TokioTaskSpawner};
 use database::database_manager::DatabaseManager;
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use itertools::Itertools;
 use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo};
 use tokio::{net::lookup_host, sync::watch::Receiver};
 
@@ -30,9 +29,8 @@ use crate::{
     authentication::token_manager::TokenManager,
     error::{ArcServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
-    status::{LocalServerStatus, ServerStatus},
+    status::{LocalServerStatus, PrivateEndpointAddress, PublicEndpointAddress, ServerStatus},
 };
-use crate::status::{PrivateEndpointAddress, PublicEndpointAddress};
 
 pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
 
@@ -40,8 +38,7 @@ pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
 pub struct ServerState {
     distribution_info: DistributionInfo,
     grpc_serving_address: SocketAddr,
-    grpc_connection_address: String, // reference info (can be an alias), do not resolve!
-    http_address: Option<SocketAddr>,
+    http_serving_address: Option<SocketAddr>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
@@ -91,32 +88,15 @@ impl ServerState {
             DATABASE_METRICS_UPDATE_INTERVAL,
         );
 
-        let grpc_serving_address = Self::resolve_address(&config.server.address).await?;
-        let (grpc_connection_address, grpc_connection_address_str) = match config.server.connection_address {
-            Some(connection_address) => (Self::resolve_address(&connection_address).await?, connection_address),
-            None => (grpc_serving_address, grpc_serving_address.to_string()),
-        };
-        let reserved_addresses = HashSet::from([grpc_serving_address, grpc_connection_address]);
-        let reserved_addresses = reserved_addresses.into_iter();
-        let http_address = if config.server.http.enabled {
-            Some(Self::validate_and_resolve_http_address(&config.server.http.address, reserved_addresses).await?)
-        } else {
-            None
-        };
-
-        let server_status = LocalServerStatus::new(
-            PublicEndpointAddress::from_socket_addr(grpc_serving_address, grpc_connection_address_str.clone()),
-            PublicEndpointAddress::from_socket_addr(grpc_serving_address, grpc_connection_address_str.clone()),
-            PrivateEndpointAddress::from_socket_addr(grpc_serving_address, grpc_connection_address_str.clone()),
-            http_address);
+        let (grpc_serving_address, http_serving_address, server_status) =
+            Self::resolve_endpoints(&config.server).await?;
 
         Ok(ServerStateBuilder {
             distribution_info,
             grpc_serving_address,
-            grpc_connection_address: grpc_connection_address_str,
-            http_address,
+            http_serving_address,
             server_status,
-            database_manager: database_manager,
+            database_manager,
             token_manager,
             diagnostics_manager,
             database_diagnostics_updater,
@@ -137,12 +117,8 @@ impl ServerState {
         self.grpc_serving_address
     }
 
-    pub fn grpc_connection_address(&self) -> String {
-        self.grpc_connection_address.clone()
-    }
-
-    pub fn http_address(&self) -> Option<SocketAddr> {
-        self.http_address
+    pub fn http_serving_address(&self) -> Option<SocketAddr> {
+        self.http_serving_address
     }
 
     pub fn servers(&self) -> &dyn ServerOperator {
@@ -244,23 +220,52 @@ impl ServerState {
             .ok_or_else(|| ServerOpenError::AddressResolutionEmpty { address: address.to_string() })
     }
 
-    async fn validate_and_resolve_http_address(
-        http_address: &str,
-        mut reserved_addresses: impl Iterator<Item = SocketAddr>,
-    ) -> Result<SocketAddr, ServerOpenError> {
-        let http_address = Self::resolve_address(http_address).await?;
-        if reserved_addresses.contains(&http_address) {
-            return Err(ServerOpenError::HttpConflictingAddress { address: http_address });
+    async fn resolve_endpoints(
+        config: &crate::parameters::config::ServerConfig,
+    ) -> Result<(SocketAddr, Option<SocketAddr>, LocalServerStatus), ServerOpenError> {
+        let grpc_serving_address = Self::resolve_address(&config.address).await?;
+        let grpc_connection_address =
+            config.connection_address.clone().unwrap_or_else(|| grpc_serving_address.to_string());
+
+        let http_serving_address =
+            if config.http.enabled { Some(Self::resolve_address(&config.http.address).await?) } else { None };
+        let http_connection_address = http_serving_address
+            .map(|serving| config.http.connection_address.clone().unwrap_or_else(|| serving.to_string()));
+
+        let admin_address = if config.admin.enabled {
+            Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, config.admin.port)))
+        } else {
+            None
+        };
+
+        let mut reserved = HashSet::from([grpc_serving_address]);
+        if let Some(address) = http_serving_address {
+            if !reserved.insert(address) {
+                return Err(ServerOpenError::HttpConflictingAddress { address });
+            }
         }
-        Ok(http_address)
+        if let Some(address) = admin_address {
+            if !reserved.insert(address) {
+                return Err(ServerOpenError::AdminConflictingAddress { address });
+            }
+        }
+
+        let server_status = LocalServerStatus::new(
+            PublicEndpointAddress::from_socket_addr(grpc_serving_address, grpc_connection_address),
+            http_serving_address
+                .zip(http_connection_address)
+                .map(|(serv, conn)| PublicEndpointAddress::from_socket_addr(serv, conn)),
+            admin_address.map(PrivateEndpointAddress::from_socket_addr),
+        );
+
+        Ok((grpc_serving_address, http_serving_address, server_status))
     }
 }
 
 pub struct ServerStateBuilder {
     distribution_info: DistributionInfo,
     grpc_serving_address: SocketAddr,
-    grpc_connection_address: String,
-    http_address: Option<SocketAddr>,
+    http_serving_address: Option<SocketAddr>,
     server_status: LocalServerStatus,
     database_manager: Arc<DatabaseManager>,
     token_manager: Arc<TokenManager>,
@@ -335,8 +340,7 @@ impl ServerStateBuilder {
         ServerState {
             distribution_info: self.distribution_info,
             grpc_serving_address: self.grpc_serving_address,
-            grpc_connection_address: self.grpc_connection_address,
-            http_address: self.http_address,
+            http_serving_address: self.http_serving_address,
             diagnostics_manager: self.diagnostics_manager,
             shutdown_receiver: self.shutdown_receiver,
             background_task_spawner: self.background_task_spawner,

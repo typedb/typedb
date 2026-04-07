@@ -9,10 +9,7 @@ use std::fmt::Debug;
 use async_trait::async_trait;
 
 use super::BoxServerStatus;
-use crate::{
-    error::ArcServerStateError,
-    status::LocalServerStatus,
-};
+use crate::{error::ArcServerStateError, status::LocalServerStatus};
 
 #[async_trait]
 pub trait ServerOperator: Debug + Send + Sync {
@@ -36,7 +33,7 @@ impl ServerOperator for LocalServerOperator {
     async fn status(&self) -> Result<BoxServerStatus, ArcServerStateError> {
         Ok(Box::new(self.server_status.clone()))
     }
-    
+
     async fn statuses(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError> {
         self.status().await.map(|status| vec![status])
     }

@@ -191,20 +191,6 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         .await
     }
 
-    async fn servers_register(
-        &self,
-        _request: Request<typedb_protocol::server_manager::register::Req>,
-    ) -> Result<Response<typedb_protocol::server_manager::register::Res>, Status> {
-        todo!("Moved to admin service — remove from protocol")
-    }
-
-    async fn servers_deregister(
-        &self,
-        _request: Request<typedb_protocol::server_manager::deregister::Req>,
-    ) -> Result<Response<typedb_protocol::server_manager::deregister::Res>, Status> {
-        todo!("Moved to admin service — remove from protocol")
-    }
-
     async fn server_version(
         &self,
         _request: Request<typedb_protocol::server::version::Req>,

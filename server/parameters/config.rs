@@ -11,7 +11,9 @@ use std::{
     time::Duration,
 };
 
-use resource::constants::server::{ADMIN_DEFAULT_PORT, DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT};
+use resource::constants::server::{
+    ADMIN_DEFAULT_PORT, DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT,
+};
 use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
 
@@ -226,7 +228,6 @@ impl ConfigBuilder {
             config.server.address => server_address;
             config.server.http.enabled => server_http_enabled;
             config.server.http.address => server_http_address;
-            config.server.http.connection_address => server_http_connection_address;
             config.server.admin.enabled => server_admin_enabled;
             config.server.admin.port => server_admin_port;
             config.server.authentication.token_expiration => server_authentication_token_expiration_seconds.map(|secs| Duration::new(secs, 0));
@@ -248,6 +249,7 @@ impl ConfigBuilder {
         }
         override_optional_config! {
             config.server.connection_address => server_connection_address;
+            config.server.http.connection_address => server_http_connection_address;
         }
     }
 

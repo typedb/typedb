@@ -63,7 +63,11 @@ pub struct LocalServerStatus {
 }
 
 impl LocalServerStatus {
-    pub fn new(grpc: PublicEndpointAddress, http: Option<PublicEndpointAddress>, admin: Option<PrivateEndpointAddress>) -> Self {
+    pub fn new(
+        grpc: PublicEndpointAddress,
+        http: Option<PublicEndpointAddress>,
+        admin: Option<PrivateEndpointAddress>,
+    ) -> Self {
         Self { grpc, http, admin }
     }
 }
@@ -86,10 +90,7 @@ pub trait ServerStatus: Debug {
 
 impl ServerStatus for LocalServerStatus {
     fn to_proto(&self) -> typedb_protocol::Server {
-        typedb_protocol::Server {
-            address: Some(self.grpc.connection_address().to_string()),
-            replica_status: None,
-        }
+        typedb_protocol::Server { address: Some(self.grpc.connection_address().to_string()), replica_status: None }
     }
 
     fn to_http(&self) -> BoxHttpServerResponse {

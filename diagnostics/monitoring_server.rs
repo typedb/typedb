@@ -4,8 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{convert::Infallible, net::SocketAddr, sync::Arc};
-use std::net::Ipv4Addr;
+use std::{
+    convert::Infallible,
+    net::{Ipv4Addr, SocketAddr},
+    sync::Arc,
+};
+
 use hyper::{
     header::{CONNECTION, CONTENT_LENGTH, CONTENT_TYPE},
     service::{make_service_fn, service_fn},
@@ -48,7 +52,10 @@ impl MonitoringServer {
                     }
                 }
                 Err(e) => {
-                    eprintln!("WARNING: Diagnostics monitoring server could not get initialised on {}: '{}'", address, e)
+                    eprintln!(
+                        "WARNING: Diagnostics monitoring server could not get initialised on {}: '{}'",
+                        address, e
+                    )
                 }
             }
         });

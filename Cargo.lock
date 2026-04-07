@@ -4438,6 +4438,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "serde_yaml2",
+ "server_admin_proto",
  "storage",
  "system",
  "tokio",
@@ -4445,7 +4446,6 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tonic",
- "tonic-build",
  "tonic-types",
  "tower 0.4.13",
  "tower-http",
@@ -4456,6 +4456,14 @@ dependencies = [
  "uuid",
  "xxhash-rust",
  "yaml-rust2 0.10.4",
+]
+
+[[package]]
+name = "server_admin_proto"
+version = "0.0.0"
+dependencies = [
+ "prost",
+ "tonic",
 ]
 
 [[package]]
@@ -5428,7 +5436,7 @@ dependencies = [
 [[package]]
 name = "typedb-protocol"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-protocol?rev=ed427b5eee55e22eac16fec74950a3c394d5372c#ed427b5eee55e22eac16fec74950a3c394d5372c"
+source = "git+https://github.com/typedb/typedb-protocol?rev=7b2ef352e9cea4daedb333d1ff966a45f55ab701#7b2ef352e9cea4daedb333d1ff966a45f55ab701"
 dependencies = [
  "prost",
  "tonic",

@@ -50,9 +50,7 @@ where
             if let Some(connect_info) = request.extensions().get::<TcpConnectInfo>() {
                 if let Some(remote_addr) = connect_info.remote_addr() {
                     if !is_loopback(remote_addr) {
-                        return Err(
-                            Status::permission_denied("Admin service is only accessible from localhost").into()
-                        );
+                        return Err(Status::permission_denied("Admin service is only accessible from localhost").into());
                     }
                 }
             }
