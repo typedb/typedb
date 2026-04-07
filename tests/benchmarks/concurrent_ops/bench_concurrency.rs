@@ -17,6 +17,9 @@ use std::{
     time::Instant,
 };
 
+use rand_core::RngCore;
+use xoshiro::Xoshiro256Plus;
+
 use database::{
     database_manager::DatabaseManager,
     query::{execute_schema_query, execute_write_query_in_write},
@@ -188,8 +191,9 @@ fn execute_insert_batch(
     let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
     let t1 = Instant::now();
 
+    let mut rng = Xoshiro256Plus::from_seed_u64(rand::random());
     for i in 0..ops_per_tx {
-        let age: u32 = rand::random();
+        let age: u32 = rng.next_u64() as u32;
         let name_id = batch_id * ops_per_tx + i;
         let query_str = format!(r#"insert $p isa person, has name "person_{name_id}", has age {age};"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
@@ -222,9 +226,10 @@ fn execute_update_batch(
     let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
     let t1 = Instant::now();
 
+    let mut rng = Xoshiro256Plus::from_seed_u64(rand::random());
     for i in 0..ops_per_tx {
         let person_id = (batch_id * ops_per_tx + i) % seed_count;
-        let score: f64 = rand::random::<u32>() as f64 / 100.0;
+        let score: f64 = rng.next_u64() as u32 as f64 / 100.0;
         let query_str = format!(r#"match $p isa person, has name "person_{person_id}"; insert $p has score {score};"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
         let (returned_tx, result) = execute_write_query_in_write(

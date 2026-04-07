@@ -19,6 +19,8 @@ rust_test(
         "@typeql//rust:typeql",
 
         "@crates//:rand",
+        "@crates//:rand_core",
+        "@crates//:xoshiro",
     ],
     use_libtest_harness = False,
 )
