@@ -23,8 +23,7 @@ use futures::future::try_join_all;
 use rand::prelude::SliceRandom;
 use resource::{
     constants::server::{
-        DISTRIBUTION, DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
-        SERVER_ID_LENGTH,
+        DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
     },
     distribution_info::DistributionInfo,
 };
@@ -321,15 +320,15 @@ impl Server {
             servers.push(Box::pin(admin_server));
         }
 
-        Self::print_serving_information(
-            server_state
-                .servers()
-                .status()
-                .await
-                .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?,
-            distribution_info,
-            &server_config.encryption,
-        );
+        let server_status = server_state
+            .servers()
+            .status()
+            .await
+            .map_err(|typedb_source| ServerOpenError::ServerState { typedb_source })?;
+        Self::print_serving_information(&server_status, &server_config.encryption);
+        if distribution_info.is_default_distribution() {
+            Self::print_ready();
+        }
 
         Self::spawn_shutdown_handler(shutdown_sender);
         try_join_all(servers).await.map(|_| ())
@@ -427,42 +426,45 @@ impl Server {
         }
     }
 
-    fn print_serving_information(
-        server_status: BoxServerStatus,
-        distribution_info: DistributionInfo,
-        encryption_config: &EncryptionConfig,
-    ) {
+    pub fn print_serving_information(server_status: &BoxServerStatus, encryption_config: &EncryptionConfig) {
         const UNKNOWN: &str = "<UNKNOWN ADDRESS>";
+        println!("Serving:");
+
         let grpc_serving_address = server_status.grpc_serving_address().unwrap_or(UNKNOWN);
         let grpc_connection_address = server_status.grpc_connection_address().unwrap_or(UNKNOWN);
-        print!("Serving gRPC on {grpc_serving_address}");
         if grpc_connection_address != grpc_serving_address {
-            print!(" (connect through {grpc_connection_address})");
+            println!("  gRPC:  {grpc_serving_address} (connect via {grpc_connection_address})");
+        } else {
+            println!("  gRPC:  {grpc_serving_address}");
         }
+
         if let Some(http_serving_address) = server_status.http_serving_address() {
-            print!(", HTTP on {http_serving_address}");
-            if let Some(http_connection_address) = server_status.http_connection_address() {
-                if http_serving_address != http_connection_address {
-                    print!(" (connect through {http_connection_address})");
+            match server_status.http_connection_address() {
+                Some(http_connection_address) if http_connection_address != http_serving_address => {
+                    println!("  HTTP:  {http_serving_address} (connect via {http_connection_address})");
                 }
+                _ => println!("  HTTP:  {http_serving_address}"),
             }
         }
+
         if let Some(admin_address) = server_status.admin_address() {
-            print!(", Admin on {admin_address}");
+            println!("  Admin: {admin_address} (localhost only)");
         }
+
         if encryption_config.enabled {
-            println!(" with TLS enabled.");
-            println!("**To allow driver connections, drivers must also be configured to use TLS.**")
+            println!("TLS: enabled");
+            println!("  Drivers must also be configured to use TLS.");
         } else {
-            println!(" without TLS.");
-            println!("WARNING: TLS NOT ENABLED. This means connections are insecure and transmit username/password credentials unencrypted over the network.");
-            println!("**To allow driver connections, drivers must also be configured to *not* use TLS**")
+            println!("TLS: disabled");
+            println!("  WARNING: TLS NOT ENABLED. Credentials are transmitted unencrypted in plaintext.");
+            println!("  Drivers must be configured to connect *without TLS*.");
         }
-        if distribution_info.distribution == DISTRIBUTION {
-            // Same distribution -> the initialization is finished.
-            println!();
-            info!("\nReady!");
-        }
+
+        println!();
+    }
+
+    pub fn print_ready() {
+        info!("\nReady!");
     }
 
     fn spawn_shutdown_handler(shutdown_sender: Sender<()>) {

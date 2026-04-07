@@ -16,7 +16,7 @@ rust_library(
         "crate-name=typedb-admin",
     ],
     deps = [
-        "//server",
+        "//server/service/admin/proto:server_admin_proto",
         "@crates//:clap",
         "@crates//:tokio",
         "@crates//:tonic",

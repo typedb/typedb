@@ -5,7 +5,7 @@
  */
 
 use clap::Subcommand;
-use server::admin_proto;
+use server_admin_proto as admin_proto;
 
 use crate::AdminClient;
 

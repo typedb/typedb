@@ -17,10 +17,10 @@ features = {}
 	[dependencies.tokio]
 		workspace = true
 
-	[dependencies.server]
+	[dependencies.clap]
 		workspace = true
 
-	[dependencies.clap]
+	[dependencies.server_admin_proto]
 		workspace = true
 
 	[dependencies.typedb-admin]

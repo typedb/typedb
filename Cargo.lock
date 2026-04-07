@@ -5428,7 +5428,7 @@ name = "typedb-admin"
 version = "0.0.0"
 dependencies = [
  "clap",
- "server",
+ "server_admin_proto",
  "tokio",
  "tonic",
 ]

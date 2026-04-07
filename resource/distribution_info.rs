@@ -10,3 +10,9 @@ pub struct DistributionInfo {
     pub distribution: &'static str,
     pub version: &'static str,
 }
+
+impl DistributionInfo {
+    pub fn is_default_distribution(&self) -> bool {
+        self.distribution == crate::constants::server::DISTRIBUTION
+    }
+}

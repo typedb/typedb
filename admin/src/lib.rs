@@ -7,7 +7,7 @@
 pub mod cli;
 pub mod commands;
 
-use server::admin_proto::type_db_admin_client::TypeDbAdminClient;
+use server_admin_proto::type_db_admin_client::TypeDbAdminClient;
 use tonic::transport::Channel;
 
 pub type AdminClient = TypeDbAdminClient<Channel>;
