@@ -5444,6 +5444,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "typedb_admin"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "tokio",
+ "typedb-admin",
+]
+
+[[package]]
 name = "typedb_server_bin"
 version = "0.0.0"
 dependencies = [

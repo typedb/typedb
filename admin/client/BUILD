@@ -2,18 +2,24 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 package(default_visibility = ["//visibility:public"])
 
-rust_binary(
-    name = "typedb_admin",
-    srcs = ["main.rs"],
+rust_library(
+    name = "client",
+    crate_name = "typedb_admin",
+    srcs = glob(["**/*.rs"]),
+    crate_root = "lib.rs",
+    tags = [
+        "crate-name=typedb-admin",
+    ],
     deps = [
-        "//admin/client",
+        "//server/service/admin/proto:server_admin_proto",
         "@crates//:clap",
         "@crates//:tokio",
+        "@crates//:tonic",
     ],
 )
 
@@ -22,7 +28,6 @@ checkstyle_test(
     include = glob(["**/*"]),
     exclude = glob([
         "Cargo.*",
-        "client/**",
     ]),
     license_type = "mpl-header",
 )

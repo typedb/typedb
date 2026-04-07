@@ -107,10 +107,10 @@ features = {}
 	name = "test_fetch"
 
 [[test]]
-	path = "tests/unimplemented.rs"
-	name = "test_unimplemented"
-
-[[test]]
 	path = "tests/define.rs"
 	name = "test_define"
+
+[[test]]
+	path = "tests/unimplemented.rs"
+	name = "test_unimplemented"
 

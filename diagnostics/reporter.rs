@@ -33,7 +33,6 @@ use resource::constants::{
         REPORT_RETRY_DELAY_EXPONENTIAL_MULTIPLIER,
     },
 };
-use tokio::sync::watch::Receiver;
 
 use crate::{hash_string_consistently, Diagnostics};
 

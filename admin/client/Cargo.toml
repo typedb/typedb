@@ -5,9 +5,12 @@
 features = {}
 
 [package]
-	name = "typedb_admin"
+	name = "typedb-admin"
 	edition = "2021"
 	version = "0.0.0"
+
+[lib]
+	path = "lib.rs"
 
 [dependencies]
 
@@ -17,10 +20,9 @@ features = {}
 	[dependencies.clap]
 		workspace = true
 
-	[dependencies.typedb-admin]
+	[dependencies.server_admin_proto]
 		workspace = true
 
-[[bin]]
-	path = "main.rs"
-	name = "typedb_admin"
+	[dependencies.tonic]
+		workspace = true
 
