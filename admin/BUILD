@@ -8,7 +8,7 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = ["//visibility:public"])
 
 rust_binary(
-    name = "typedb_admin",
+    name = "typedb_admin_bin",
     srcs = ["main.rs"],
     deps = [
         "//admin/client",

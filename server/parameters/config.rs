@@ -37,6 +37,7 @@ pub struct ServerConfig {
     pub address: String,
     pub connection_address: Option<String>,
     pub http: HttpEndpointConfig,
+    #[serde(default)]
     pub admin: AdminConfig,
     pub authentication: AuthenticationConfig,
     pub encryption: EncryptionConfig,
