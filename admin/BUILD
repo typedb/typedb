@@ -12,6 +12,7 @@ rust_binary(
     srcs = ["main.rs"],
     deps = [
         "//admin/client",
+        "//resource",
         "@crates//:clap",
         "@crates//:tokio",
     ],

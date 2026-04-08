@@ -17,7 +17,6 @@ rust_library(
     ],
     deps = [
         "//server/service/admin/proto:server_admin_proto",
-        "@crates//:clap",
         "@crates//:tokio",
         "@crates//:tonic",
     ],

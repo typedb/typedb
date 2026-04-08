@@ -72,24 +72,16 @@ features = {}
 	name = "test_assembly"
 
 [[test]]
-	path = "tests/behaviour/service/http/driver/query.rs"
-	name = "test_http_driver_query"
+	path = "tests/benchmarks/iam/bench_iam.rs"
+	name = "bench_iam"
 
 [[test]]
-	path = "tests/behaviour/service/http/driver/connection.rs"
-	name = "test_http_driver_connection"
+	path = "tests/behaviour/connection/main.rs"
+	name = "test_connection"
 
 [[test]]
-	path = "tests/behaviour/service/http/driver/user.rs"
-	name = "test_http_driver_user"
-
-[[test]]
-	path = "tests/behaviour/service/http/driver/http.rs"
-	name = "test_http_driver_http"
-
-[[test]]
-	path = "tests/behaviour/service/http/driver/concept.rs"
-	name = "test_http_driver_concept"
+	path = "tests/behaviour/concept/main.rs"
+	name = "test_concept"
 
 [[test]]
 	path = "tests/behaviour/service/http/connection/database.rs"
@@ -100,28 +92,36 @@ features = {}
 	name = "test_http_transaction"
 
 [[test]]
-	path = "tests/behaviour/service/http/debug/debug.rs"
-	name = "test_http_debug"
+	path = "tests/behaviour/service/http/driver/concept.rs"
+	name = "test_http_driver_concept"
 
 [[test]]
-	path = "tests/behaviour/concept/main.rs"
-	name = "test_concept"
+	path = "tests/behaviour/service/http/driver/http.rs"
+	name = "test_http_driver_http"
+
+[[test]]
+	path = "tests/behaviour/service/http/driver/query.rs"
+	name = "test_http_driver_query"
+
+[[test]]
+	path = "tests/behaviour/service/http/driver/user.rs"
+	name = "test_http_driver_user"
+
+[[test]]
+	path = "tests/behaviour/service/http/driver/connection.rs"
+	name = "test_http_driver_connection"
+
+[[test]]
+	path = "tests/behaviour/service/http/debug/debug.rs"
+	name = "test_http_debug"
 
 [[test]]
 	path = "tests/behaviour/query/main.rs"
 	name = "test_query"
 
 [[test]]
-	path = "tests/behaviour/connection/main.rs"
-	name = "test_connection"
-
-[[test]]
 	path = "tests/behaviour/debug/debug.rs"
 	name = "test_debug"
-
-[[test]]
-	path = "tests/benchmarks/iam/bench_iam.rs"
-	name = "bench_iam"
 
 [[bin]]
 	path = "main.rs"
@@ -130,7 +130,7 @@ features = {}
 
 [workspace]
 	resolver = "2"
-	members = ["compiler", "util/project", "util/test", "answer", "durability/tests/common", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "resource", "encoding", "encoding/tests", "database/tools", "database", "executor", "storage", "storage/tests", "system", "common/bytes", "common/primitive", "common/error", "common/cache", "common/logger", "common/lending_iterator", "common/options", "common/concurrency", "common/structural_equality", "common/iterator", "concept/tests", "concept", "admin/client", "admin", "diagnostics", "query", "server", "server/service/admin/proto", "user", "function"]
+	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "admin", "admin/client", "encoding/tests", "encoding", "server", "server/service/admin/proto", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/cache", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
 
 	[workspace.dependencies]
 
@@ -405,6 +405,11 @@ features = {}
 			features = []
 			default-features = false
 
+		[workspace.dependencies.rustls-pemfile]
+			features = ["default", "std"]
+			version = "2.2.0"
+			default-features = false
+
 		[workspace.dependencies.pprof]
 			features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
 			version = "0.13.0"
@@ -413,11 +418,6 @@ features = {}
 		[workspace.dependencies.sysinfo]
 			features = ["component", "default", "disk", "multithread", "network", "system", "user"]
 			version = "0.33.1"
-			default-features = false
-
-		[workspace.dependencies.rustls-pemfile]
-			features = ["default", "std"]
-			version = "2.2.0"
 			default-features = false
 
 		[workspace.dependencies.same-file]

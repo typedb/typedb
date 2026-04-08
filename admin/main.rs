@@ -5,13 +5,52 @@
  */
 
 use clap::Parser;
-use typedb_admin::cli::{Cli, Command};
+use resource::constants::server::ADMIN_DEFAULT_ADDRESS;
+
+#[derive(Parser)]
+#[command(name = "typedb-admin", about = "TypeDB administration tool")]
+struct Args {
+    /// Server admin endpoint address
+    #[arg(long, default_value = ADMIN_DEFAULT_ADDRESS)]
+    address: String,
+
+    /// Execute a command and exit (repeatable)
+    #[arg(short, long)]
+    command: Vec<String>,
+
+    /// Execute commands from a script file
+    #[arg(long)]
+    script: Option<String>,
+}
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let cli = Cli::parse();
-    let mut client = typedb_admin::connect(&cli.address).await?;
-    match cli.command {
-        Command::Server { command } => typedb_admin::commands::server::execute(&mut client, command).await,
+async fn main() {
+    let args = Args::parse();
+    let registry = typedb_admin::commands::base_commands();
+
+    let address = &args.address;
+    let mut client = match typedb_admin::connect(address).await {
+        Ok(client) => client,
+        Err(err) => {
+            eprintln!("Failed to connect to {address}: {err}");
+            std::process::exit(1);
+        }
+    };
+
+    if let Some(script) = &args.script {
+        if !args.command.is_empty() {
+            eprintln!("Cannot specify both --command and --script");
+            std::process::exit(1);
+        }
+        if let Err(err) = typedb_admin::repl::run_script(&mut client, &registry, script).await {
+            eprintln!("{err}");
+            std::process::exit(1);
+        }
+    } else if !args.command.is_empty() {
+        let code = typedb_admin::repl::run_commands(&mut client, &registry, &args.command).await;
+        std::process::exit(code);
+    } else {
+        println!("Connected to {address}");
+        typedb_admin::repl::run_interactive(&mut client, &registry).await;
     }
 }

@@ -13,6 +13,31 @@ pub mod server_version {
         pub version: ::prost::alloc::string::String,
     }
 }
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct ServerStatus {}
+/// Nested message and enum types in `ServerStatus`.
+pub mod server_status {
+    #[derive(Clone, Copy, PartialEq, ::prost::Message)]
+    pub struct Req {}
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Res {
+        #[prost(message, optional, tag = "1")]
+        pub grpc: ::core::option::Option<super::EndpointStatus>,
+        #[prost(message, optional, tag = "2")]
+        pub http: ::core::option::Option<super::EndpointStatus>,
+        #[prost(string, optional, tag = "3")]
+        pub admin_address: ::core::option::Option<::prost::alloc::string::String>,
+        #[prost(bool, tag = "4")]
+        pub tls_enabled: bool,
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EndpointStatus {
+    #[prost(string, tag = "1")]
+    pub serving_address: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub connection_address: ::prost::alloc::string::String,
+}
 /// Generated client implementations.
 #[allow(non_camel_case_types)]
 pub mod type_db_admin_client {
@@ -129,6 +154,30 @@ pub mod type_db_admin_client {
                 .insert(GrpcMethod::new("typedb.admin.TypeDBAdmin", "server_version"));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn server_status(
+            &mut self,
+            request: impl tonic::IntoRequest<super::server_status::Req>,
+        ) -> std::result::Result<
+            tonic::Response<super::server_status::Res>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/typedb.admin.TypeDBAdmin/server_status",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("typedb.admin.TypeDBAdmin", "server_status"));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -150,6 +199,13 @@ pub mod type_db_admin_server {
             request: tonic::Request<super::server_version::Req>,
         ) -> std::result::Result<
             tonic::Response<super::server_version::Res>,
+            tonic::Status,
+        >;
+        async fn server_status(
+            &self,
+            request: tonic::Request<super::server_status::Req>,
+        ) -> std::result::Result<
+            tonic::Response<super::server_status::Res>,
             tonic::Status,
         >;
     }
@@ -259,6 +315,51 @@ pub mod type_db_admin_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let method = server_versionSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/typedb.admin.TypeDBAdmin/server_status" => {
+                    #[allow(non_camel_case_types)]
+                    struct server_statusSvc<T: TypeDbAdmin>(pub Arc<T>);
+                    impl<
+                        T: TypeDbAdmin,
+                    > tonic::server::UnaryService<super::server_status::Req>
+                    for server_statusSvc<T> {
+                        type Response = super::server_status::Res;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::server_status::Req>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as TypeDbAdmin>::server_status(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = server_statusSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

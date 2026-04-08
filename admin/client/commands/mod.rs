@@ -5,3 +5,10 @@
  */
 
 pub mod server;
+
+use crate::command::CommandRegistry;
+
+pub fn base_commands() -> CommandRegistry {
+    let registry = CommandRegistry::new();
+    server::register(registry)
+}

@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod cli;
+pub mod command;
 pub mod commands;
+pub mod repl;
 
 use server_admin_proto::type_db_admin_client::TypeDbAdminClient;
 use tonic::transport::Channel;

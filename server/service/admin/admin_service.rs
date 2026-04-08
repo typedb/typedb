@@ -37,4 +37,37 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
             version: distribution_info.version.to_string(),
         }))
     }
+
+    async fn server_status(
+        &self,
+        _request: Request<admin_proto::server_status::Req>,
+    ) -> Result<Response<admin_proto::server_status::Res>, Status> {
+        let status = self.server_state.servers().status().await.map_err(|err| Status::internal(format!("{err:?}")))?;
+
+        let grpc = admin_proto::EndpointStatus {
+            serving_address: status.grpc_serving_address().unwrap_or_default().to_string(),
+            connection_address: status.grpc_connection_address().unwrap_or_default().to_string(),
+        };
+
+        let http = match (status.http_serving_address(), status.http_connection_address()) {
+            (Some(serving), Some(connection)) => Some(admin_proto::EndpointStatus {
+                serving_address: serving.to_string(),
+                connection_address: connection.to_string(),
+            }),
+            (Some(serving), None) => Some(admin_proto::EndpointStatus {
+                serving_address: serving.to_string(),
+                connection_address: serving.to_string(),
+            }),
+            _ => None,
+        };
+
+        let admin_address = status.admin_address().map(|a| a.to_string());
+
+        Ok(Response::new(admin_proto::server_status::Res {
+            grpc: Some(grpc),
+            http,
+            admin_address,
+            tls_enabled: false, // TODO: expose from config when needed
+        }))
+    }
 }

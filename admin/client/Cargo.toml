@@ -17,9 +17,6 @@ features = {}
 	[dependencies.tokio]
 		workspace = true
 
-	[dependencies.clap]
-		workspace = true
-
 	[dependencies.server_admin_proto]
 		workspace = true
 
