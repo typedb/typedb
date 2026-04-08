@@ -37,6 +37,8 @@ rust_library(
         "parameters/**/*.rs",
         "service/**/*.rs",
         "state/**/*.rs",
+    ], exclude = [
+        "service/**/*_test.rs",
     ]),
     crate_features = select({
         ":development_mode": [],
@@ -116,6 +118,18 @@ rust_test(
     crate_features = ["bazel"],
     data = [":config.yml"],
     deps = [],
+)
+
+rust_test(
+    name = "test_admin_service",
+    srcs = ["service/admin/admin_service_test.rs"],
+    data = [":config.yml"],
+    deps = [
+        ":server",
+        "//resource",
+        "//util/test:test_utils",
+        "@crates//:tokio",
+    ],
 )
 
 rustfmt_test(
