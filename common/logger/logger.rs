@@ -6,7 +6,7 @@
 
 #![allow(unexpected_cfgs)]
 
-use std::{fs, io::stdout, path::PathBuf};
+use std::{fs, io::stderr, path::PathBuf};
 
 use tracing::{self, dispatcher::DefaultGuard, metadata::LevelFilter, Level};
 pub use tracing::{debug, error, info, trace};
@@ -40,7 +40,7 @@ pub fn initialise_logging_global(logdir: &PathBuf) {
     let subscriber = SubscriberBuilder::default()
         .with_max_level(Level::TRACE)
         .with_env_filter(filter)
-        .with_writer(Tee::new(stdout, file_appender))
+        .with_writer(Tee::new(stderr, file_appender))
         .with_ansi(false) // Disable ANSI colors in file output
         .with_thread_ids(true)
         .with_target(false)

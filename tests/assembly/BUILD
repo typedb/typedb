@@ -5,6 +5,14 @@
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test", "rustfmt_test")
 
+env = select({
+    "@typedb_bazel_distribution//platform:is_linux_x86_64" : {"TYPEDB_ASSEMBLY_ARCHIVE": "typedb-all-linux-x86_64.tar.gz" },
+    "@typedb_bazel_distribution//platform:is_linux_arm64" : {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-linux-arm64.tar.gz"},
+    "@typedb_bazel_distribution//platform:is_mac_x86_64" : {"TYPEDB_ASSEMBLY_ARCHIVE": "typedb-all-mac-x86_64.zip"},
+    "@typedb_bazel_distribution//platform:is_mac_arm64" : {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-mac-arm64.zip"},
+    "@typedb_bazel_distribution//platform:is_windows_x86_64" :  {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-windows-x86_64.zip"}
+})
+
 rust_test(
     name = "test_assembly",
     srcs = ["assembly.rs"],
@@ -12,13 +20,21 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["//:assemble-typedb-all", ":script.tql"],
-    env = select({
-        "@typedb_bazel_distribution//platform:is_linux_x86_64" : {"TYPEDB_ASSEMBLY_ARCHIVE": "typedb-all-linux-x86_64.tar.gz" },
-        "@typedb_bazel_distribution//platform:is_linux_arm64" : {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-linux-arm64.tar.gz"},
-        "@typedb_bazel_distribution//platform:is_mac_x86_64" : {"TYPEDB_ASSEMBLY_ARCHIVE": "typedb-all-mac-x86_64.zip"},
-        "@typedb_bazel_distribution//platform:is_mac_arm64" : {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-mac-arm64.zip"},
-        "@typedb_bazel_distribution//platform:is_windows_x86_64" :  {"TYPEDB_ASSEMBLY_ARCHIVE":"typedb-all-windows-x86_64.zip"}
-    }),
+    env = env,
+)
+
+rust_test(
+    name = "test_fail_points",
+    srcs = ["fail_points.rs"],
+    deps = [
+        "//common/fail_point",
+        "//resource",
+
+        "@crates//:tokio",
+    ],
+    data = ["//:assemble-typedb-all", ":script.tql"],
+    env = env,
+    timeout = "eternal",
 )
 
 rustfmt_test(

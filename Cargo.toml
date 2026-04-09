@@ -55,6 +55,9 @@ features = {}
 	[dependencies.database]
 		workspace = true
 
+	[dependencies.tracing]
+		workspace = true
+
 	[dependencies.resource]
 		workspace = true
 
@@ -62,6 +65,9 @@ features = {}
 		workspace = true
 
 	[dependencies.logger]
+		workspace = true
+
+	[dependencies.fail_point]
 		workspace = true
 
 	[dependencies.sentry]
@@ -74,6 +80,10 @@ features = {}
 [[test]]
 	path = "tests/assembly/assembly.rs"
 	name = "test_assembly"
+
+[[test]]
+	path = "tests/assembly/fail_points.rs"
+	name = "test_fail_points"
 
 [[test]]
 	path = "tests/behaviour/debug/debug.rs"
@@ -130,7 +140,7 @@ features = {}
 
 [workspace]
 	resolver = "2"
-	members = ["resource", "database", "database/tools", "server", "encoding/tests", "encoding", "user", "util/project", "util/test", "concept", "concept/tests", "tests/behaviour/steps/params", "tests/behaviour/steps", "tests/behaviour/service/http/http_steps", "diagnostics", "function", "compiler", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "query", "storage", "storage/tests", "answer", "common/options", "common/error", "common/concurrency", "common/iterator", "common/bytes", "common/lending_iterator", "common/structural_equality", "common/cache", "common/primitive", "common/logger", "executor", "system"]
+	members = ["resource", "database", "database/tools", "server", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "encoding/tests", "encoding", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/cache", "common/bytes", "common/lending_iterator", "common/primitive", "common/fail_point", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "query", "compiler"]
 
 	[workspace.dependencies]
 
@@ -151,6 +161,11 @@ features = {}
 
 		[workspace.dependencies.logger]
 			path = "common/logger"
+			features = []
+			default-features = false
+
+		[workspace.dependencies.fail_point]
+			path = "common/fail_point"
 			features = []
 			default-features = false
 

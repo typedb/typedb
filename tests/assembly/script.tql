@@ -1,3 +1,17 @@
 database create foo
 database list
-database delete foo
+transaction schema foo
+define
+    entity person, owns name;
+    attribute name, value string;
+    relation marriage, relates spouse @card(2);
+    person plays marriage:spouse;
+end;
+commit
+transaction write foo
+insert
+    $john isa person, has name "John";
+    $jane isa person, has name "Jane";
+    marriage (spouse: $john, spouse: $jane);
+end;
+commit

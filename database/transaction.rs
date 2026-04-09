@@ -26,7 +26,7 @@ use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
 };
-use tracing::Level;
+use tracing::{trace, Level};
 
 use crate::Database;
 
@@ -287,6 +287,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         use SchemaCommitError::{
             ConceptWriteErrorsFirst, FunctionError, SnapshotError, StatisticsError, TypeCacheUpdateError,
         };
+
+        trace!("committing schema transaction");
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
         let mut snapshot = Arc::try_unwrap(self.snapshot)
@@ -375,6 +377,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         self.database.query_cache.force_reset(&schema.thing_statistics);
 
         *schema_commit_guard = schema;
+        trace!("committed schema transaction");
+
         (profile, Ok(()))
     }
 

@@ -15,6 +15,10 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use error::typedb_error;
+use fail_point::{
+    fail_point, CHECKPOINT_CLEANUP_FAIL, CHECKPOINT_CLEANUP_PARTIAL_FAIL, CHECKPOINT_DIR_CREATE_FAIL,
+    CHECKPOINT_FILE_EMPTY, CHECKPOINT_FILE_SYNC_FAIL, CHECKPOINT_METADATA_WRITE_FAIL,
+};
 use itertools::Itertools;
 use same_file::is_same_file;
 use tracing::{debug, trace};
@@ -227,7 +231,7 @@ impl CheckpointWriter {
                 .map_err(|error| CheckpointDirCreate { dir: checkpoint_dir.clone(), source: Arc::new(error) })?
         }
 
-        let checkpoint_directory = checkpoint_dir.join(format!("{}", Utc::now().timestamp_micros(),));
+        let checkpoint_directory = checkpoint_dir.join(format!("{}", Utc::now().timestamp_micros()));
         let temporary_directory = checkpoint_directory.with_extension(TEMP_FILE_EXTENSION);
         fs::create_dir_all(&temporary_directory)
             .map_err(|error| CheckpointDirCreate { dir: checkpoint_dir.clone(), source: Arc::new(error) })?;
@@ -241,6 +245,8 @@ impl CheckpointWriter {
         keyspaces
             .checkpoint(&self.temporary_directory)
             .map_err(|error| KeyspaceCheckpoint { dir: self.temporary_directory.clone(), source: error })?;
+
+        fail_point!(CHECKPOINT_METADATA_WRITE_FAIL);
 
         let metadata_file_path = self.temporary_directory.join(STORAGE_METADATA_FILE_NAME);
         write_file(&metadata_file_path, watermark.number().to_string().as_bytes())
@@ -276,8 +282,12 @@ impl CheckpointWriter {
             return Err(MissingStorageData { dir: self.temporary_directory.clone() });
         }
 
+        fail_point!(CHECKPOINT_DIR_CREATE_FAIL);
+
         fs::rename(&self.temporary_directory, &self.checkpoint_directory)
             .map_err(|error| CheckpointDirCreate { dir: self.checkpoint_directory.clone(), source: Arc::new(error) })?;
+
+        fail_point!(CHECKPOINT_CLEANUP_FAIL);
 
         let previous_checkpoints: Vec<_> = fs::read_dir(self.checkpoint_directory.parent().unwrap())
             .and_then(|entries| {
@@ -289,6 +299,7 @@ impl CheckpointWriter {
             .map_err(|error| CheckpointDirRead { dir: self.checkpoint_directory.clone(), source: Arc::new(error) })?;
 
         for previous_checkpoint in previous_checkpoints {
+            fail_point!(CHECKPOINT_CLEANUP_PARTIAL_FAIL);
             fs::remove_dir_all(&previous_checkpoint)
                 .map_err(|error| OldCheckpointRemove { dir: previous_checkpoint, source: Arc::new(error) })?
         }
@@ -299,7 +310,9 @@ impl CheckpointWriter {
 
 fn write_file(path: &Path, bytes: &[u8]) -> io::Result<()> {
     let mut file = File::create(path)?;
+    fail_point!(CHECKPOINT_FILE_EMPTY);
     file.write_all(bytes)?;
+    fail_point!(CHECKPOINT_FILE_SYNC_FAIL);
     file.sync_all()?;
     Ok(())
 }
@@ -307,7 +320,9 @@ fn write_file(path: &Path, bytes: &[u8]) -> io::Result<()> {
 fn copy_file(source: &Path, destination: &Path) -> io::Result<()> {
     let mut source_file = File::open(source)?;
     let mut destination_file = File::create(destination)?;
+    fail_point!(CHECKPOINT_FILE_EMPTY);
     io::copy(&mut source_file, &mut destination_file)?;
+    fail_point!(CHECKPOINT_FILE_SYNC_FAIL);
     destination_file.sync_all()?;
     Ok(())
 }
