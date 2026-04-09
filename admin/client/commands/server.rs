@@ -7,7 +7,7 @@
 use server_admin_proto as admin_proto;
 
 use crate::{
-    command::{CommandDefinition, CommandRegistry, CommandResult},
+    command::{CommandDefinition, CommandRegistry, CommandResult, Result},
     AdminClient,
 };
 
@@ -27,16 +27,24 @@ pub fn register(registry: CommandRegistry) -> CommandRegistry {
         })
 }
 
-async fn server_version(client: &mut AdminClient) -> CommandResult {
+pub async fn execute_server_version(client: &mut AdminClient) -> Result<server_admin_proto::server_version::Res> {
     let response = client.server_version(admin_proto::server_version::Req {}).await?;
-    let res = response.into_inner();
+    Ok(response.into_inner())
+}
+
+pub async fn execute_server_status(client: &mut AdminClient) -> Result<server_admin_proto::server_status::Res> {
+    let response = client.server_status(admin_proto::server_status::Req {}).await?;
+    Ok(response.into_inner())
+}
+
+async fn server_version(client: &mut AdminClient) -> CommandResult {
+    let res = execute_server_version(client).await?;
     println!("{} {}", res.distribution, res.version);
     Ok(())
 }
 
 async fn server_status(client: &mut AdminClient) -> CommandResult {
-    let response = client.server_status(admin_proto::server_status::Req {}).await?;
-    let res = response.into_inner();
+    let res = execute_server_status(client).await?;
 
     if let Some(grpc) = &res.grpc {
         print!("gRPC:  {}", grpc.serving_address);

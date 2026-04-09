@@ -5,7 +5,7 @@
 features = {}
 
 [package]
-	name = "typedb_admin"
+	name = "typedb_admin_bin"
 	edition = "2021"
 	version = "0.0.0"
 
@@ -25,5 +25,5 @@ features = {}
 
 [[bin]]
 	path = "main.rs"
-	name = "typedb_admin"
+	name = "typedb_admin_bin"
 

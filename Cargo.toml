@@ -154,6 +154,11 @@ features = {}
 			features = []
 			default-features = false
 
+		[workspace.dependencies.rustyline]
+			features = ["custom-bindings", "fd-lock", "radix_trie", "with-file-history"]
+			version = "15.0.0"
+			default-features = false
+
 		[workspace.dependencies.tokio-rustls]
 			features = ["logging", "ring", "tls12"]
 			version = "0.26.4"
@@ -594,6 +599,11 @@ features = {}
 		[workspace.dependencies.futures]
 			features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
 			version = "0.3.31"
+			default-features = false
+
+		[workspace.dependencies.home]
+			features = []
+			version = "0.5.11"
 			default-features = false
 
 		[workspace.dependencies.http_steps]

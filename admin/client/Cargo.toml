@@ -17,9 +17,15 @@ features = {}
 	[dependencies.tokio]
 		workspace = true
 
+	[dependencies.rustyline]
+		workspace = true
+
 	[dependencies.server_admin_proto]
 		workspace = true
 
 	[dependencies.tonic]
+		workspace = true
+
+	[dependencies.home]
 		workspace = true
 
