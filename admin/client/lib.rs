@@ -9,17 +9,29 @@ pub mod commands;
 pub mod error;
 pub mod repl;
 
+use std::sync::Arc;
+
 use server_admin_proto::type_db_admin_client::TypeDbAdminClient;
 use tonic::transport::Channel;
 
+use crate::error::AdminError;
+
 pub type AdminClient = TypeDbAdminClient<Channel>;
 
-pub async fn connect(address: &str) -> Result<AdminClient, tonic::transport::Error> {
-    TypeDbAdminClient::connect(format_insecure_address(address)).await
+pub async fn connect(address: &str) -> Result<AdminClient, AdminError> {
+    let channel = connect_channel(address).await?;
+    Ok(TypeDbAdminClient::new(channel))
 }
 
-pub async fn connect_channel(address: &str) -> Result<Channel, tonic::transport::Error> {
-    tonic::transport::Endpoint::from_shared(format_insecure_address(address))?.connect().await
+pub async fn connect_channel(address: &str) -> Result<Channel, AdminError> {
+    tonic::transport::Endpoint::from_shared(format_insecure_address(address))
+        .map_err(|source| AdminError::ConnectionFailed {
+            address: address.to_string(),
+            source: Arc::new(source.into()),
+        })?
+        .connect()
+        .await
+        .map_err(|source| AdminError::ConnectionFailed { address: address.to_string(), source: Arc::new(source) })
 }
 
 fn format_insecure_address(address: &str) -> String {

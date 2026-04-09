@@ -32,7 +32,7 @@ async fn main() {
     let mut client = match typedb_admin::connect(address).await {
         Ok(client) => client,
         Err(err) => {
-            eprintln!("Failed to connect to {address}: {err}");
+            eprintln!("{err:?}");
             std::process::exit(1);
         }
     };
