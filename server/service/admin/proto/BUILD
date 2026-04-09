@@ -34,5 +34,8 @@ checkstyle_test(
     name = "checkstyle",
     size = "small",
     include = glob(["*"]),
+    exclude = glob([
+        "Cargo.*",
+    ]),
     license_type = "mpl-header",
 )

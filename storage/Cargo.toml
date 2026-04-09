@@ -14,10 +14,10 @@ features = {}
 
 [dev-dependencies]
 
-	[dev-dependencies.test_utils]
+	[dev-dependencies.rand]
 		workspace = true
 
-	[dev-dependencies.rand]
+	[dev-dependencies.test_utils]
 		workspace = true
 
 	[dev-dependencies.xoshiro]
@@ -86,20 +86,16 @@ features = {}
 		workspace = true
 
 [[bench]]
-	name = "bench_rocks"
-	harness = false
-
-[[bench]]
 	name = "bench_mvcc_storage"
 	harness = false
 
-[[test]]
-	path = "tests/test_isolation.rs"
-	name = "test_isolation"
+[[bench]]
+	name = "bench_rocks"
+	harness = false
 
 [[test]]
-	path = "tests/test_recovery.rs"
-	name = "test_recovery"
+	path = "tests/test_storage.rs"
+	name = "test_storage"
 
 [[test]]
 	path = "tests/test_snapshot.rs"
@@ -110,6 +106,10 @@ features = {}
 	name = "test_mvcc"
 
 [[test]]
-	path = "tests/test_storage.rs"
-	name = "test_storage"
+	path = "tests/test_recovery.rs"
+	name = "test_recovery"
+
+[[test]]
+	path = "tests/test_isolation.rs"
+	name = "test_isolation"
 

@@ -23,7 +23,7 @@ rust_library(
 )
 
 filegroup(
-    name = "logo",
+    name = "server-logo",
     srcs = ["typedb-ascii.txt"],
 )
 
@@ -46,6 +46,7 @@ checkstyle_test(
     exclude = glob([
         "Cargo.*",
         "typedb-ascii.txt",
+        "typedb-admin-ascii.txt",
     ]),
     license_type = "mpl-header",
 )

@@ -314,7 +314,6 @@ impl Server {
         if server_config.admin.enabled {
             let admin_server = admin_serve_override.unwrap_or_else(|| {
                 let address = SocketAddr::from((Ipv4Addr::LOCALHOST, server_config.admin.port));
-                assert!(address.ip().is_loopback(), "The admin server must server only on a loopback address");
                 Self::serve_admin(address, server_state.clone(), shutdown_receiver.clone())
             });
             servers.push(Box::pin(admin_server));
@@ -404,7 +403,6 @@ impl Server {
         let admin_service = service::admin::AdminService::new(server_state);
         Box::pin(async move {
             tonic::transport::Server::builder()
-                .http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE))
                 .layer(LocalhostGuardLayer)
                 .add_service(admin_proto::type_db_admin_server::TypeDbAdminServer::new(admin_service))
                 .serve_with_shutdown(address, async {

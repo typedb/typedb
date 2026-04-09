@@ -128,7 +128,11 @@ rust_test(
         ":server",
         "//resource",
         "//util/test:test_utils",
+        "@crates//:futures",
+        "@crates//:http",
         "@crates//:tokio",
+        "@crates//:tonic",
+        "@crates//:tower",
     ],
 )
 

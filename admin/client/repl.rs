@@ -129,7 +129,6 @@ async fn execute_input(
 pub fn format_error(err: &Box<dyn std::error::Error>) -> String {
     let err_str = err.to_string();
     // tonic::Status Display format: "status: <Code>, message: "<msg>", details: [...], metadata: {...}"
-    // Extract just the status code and message for cleaner output.
     if err_str.starts_with("status: ") {
         if let Some(details_start) = err_str.find(", details:") {
             let relevant = &err_str["status: ".len()..details_start];

@@ -67,7 +67,6 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
             grpc: Some(grpc),
             http,
             admin_address,
-            tls_enabled: false, // TODO: expose from config when needed
         }))
     }
 }

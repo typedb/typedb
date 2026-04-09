@@ -23,8 +23,7 @@ fn config_path() -> PathBuf {
     std::env::current_dir().unwrap().join("server/config.yml")
 }
 
-#[tokio::test]
-async fn admin_server_version() {
+async fn start_server() -> (TypeDbAdminClient<tonic::transport::Channel>, tokio::sync::watch::Sender<()>, tokio::task::JoinHandle<()>) {
     let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
     let server_dir = create_tmp_storage_dir();
     let config = ConfigBuilder::from_file(config_path())
@@ -52,7 +51,7 @@ async fn admin_server_version() {
     let mut client = None;
     for _ in 0..50 {
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-        match TypeDbAdminClient::connect(format!("http://{ADMIN_PORT}")).await {
+        match TypeDbAdminClient::connect(format!("http://127.0.0.1:{ADMIN_PORT}")).await {
             Ok(c) => {
                 client = Some(c);
                 break;
@@ -60,15 +59,45 @@ async fn admin_server_version() {
             Err(_) => continue,
         }
     }
-    let mut client = client.expect("Failed to connect to admin service");
+    let client = client.expect("Failed to connect to admin service");
+
+    (client, shutdown_sender, server_handle)
+}
+
+async fn stop_server(shutdown_sender: tokio::sync::watch::Sender<()>, server_handle: tokio::task::JoinHandle<()>) {
+    shutdown_sender.send(()).expect("Failed to send shutdown signal");
+    let _ = tokio::time::timeout(std::time::Duration::from_secs(10), server_handle).await;
+}
+
+#[tokio::test]
+async fn admin_server_version() {
+    let (mut client, shutdown_sender, server_handle) = start_server().await;
 
     let response = client.server_version(admin_proto::server_version::Req {}).await.expect("RPC failed");
     let res = response.into_inner();
     assert_eq!(res.distribution, DISTRIBUTION_INFO.distribution);
     assert_eq!(res.version, DISTRIBUTION_INFO.version);
 
-    shutdown_sender.send(()).expect("Failed to send shutdown signal");
-    let _ = tokio::time::timeout(std::time::Duration::from_secs(10), server_handle).await;
+    stop_server(shutdown_sender, server_handle).await;
+}
+
+#[tokio::test]
+async fn admin_server_status() {
+    let (mut client, shutdown_sender, server_handle) = start_server().await;
+
+    let response = client.server_status(admin_proto::server_status::Req {}).await.expect("RPC failed");
+    let res = response.into_inner();
+
+    let grpc = res.grpc.expect("gRPC endpoint status should be present");
+    assert!(!grpc.serving_address.is_empty(), "gRPC serving address should not be empty");
+    assert!(!grpc.connection_address.is_empty(), "gRPC connection address should not be empty");
+
+    assert!(res.http.is_none(), "HTTP should be disabled in test config");
+
+    let admin_address = res.admin_address.expect("Admin address should be present");
+    assert!(admin_address.contains(&ADMIN_PORT.to_string()), "Admin address should contain the configured port");
+
+    stop_server(shutdown_sender, server_handle).await;
 }
 
 mod localhost_guard_tests {
@@ -98,5 +127,65 @@ mod localhost_guard_tests {
     fn non_loopback_public_rejected() {
         let addr: SocketAddr = "8.8.8.8:1728".parse().unwrap();
         assert!(!is_loopback(addr));
+    }
+}
+
+mod localhost_guard_middleware_tests {
+    use std::{
+        net::SocketAddr,
+        task::{Context, Poll},
+    };
+
+    use futures::future::BoxFuture;
+    use http::{Request, Response};
+    use tonic::{body::BoxBody, transport::server::TcpConnectInfo, Status};
+    use tower::{Layer, Service};
+
+    use server::service::admin::localhost_guard::LocalhostGuardLayer;
+
+    /// A mock inner service that always returns OK.
+    #[derive(Clone)]
+    struct MockService;
+
+    impl Service<Request<BoxBody>> for MockService {
+        type Response = Response<BoxBody>;
+        type Error = Status;
+        type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+
+        fn call(&mut self, _request: Request<BoxBody>) -> Self::Future {
+            Box::pin(async { Ok(Response::new(BoxBody::default())) })
+        }
+    }
+
+    fn request_with_remote_addr(addr: SocketAddr) -> Request<BoxBody> {
+        let mut request = Request::new(BoxBody::default());
+        let connect_info = TcpConnectInfo {
+            local_addr: Some("127.0.0.1:1728".parse().unwrap()),
+            remote_addr: Some(addr),
+        };
+        request.extensions_mut().insert(connect_info);
+        request
+    }
+
+    #[tokio::test]
+    async fn loopback_connection_allowed() {
+        let mut service = LocalhostGuardLayer.layer(MockService);
+        let request = request_with_remote_addr("127.0.0.1:54321".parse().unwrap());
+        let result = service.call(request).await;
+        assert!(result.is_ok(), "Loopback connection should be allowed");
+    }
+
+    #[tokio::test]
+    async fn non_loopback_connection_rejected() {
+        let mut service = LocalhostGuardLayer.layer(MockService);
+        let request = request_with_remote_addr("192.168.1.100:54321".parse().unwrap());
+        let result = service.call(request).await;
+        assert!(result.is_err(), "Non-loopback connection should be rejected");
+        let status = result.unwrap_err();
+        assert_eq!(status.code(), tonic::Code::PermissionDenied);
     }
 }

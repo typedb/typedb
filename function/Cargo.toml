@@ -14,10 +14,10 @@ features = {}
 
 [dev-dependencies]
 
-	[dev-dependencies.test_utils]
+	[dev-dependencies.rand]
 		workspace = true
 
-	[dev-dependencies.rand]
+	[dev-dependencies.test_utils]
 		workspace = true
 
 	[dev-dependencies.tracing]
