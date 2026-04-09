@@ -47,14 +47,15 @@ where
     fn call(&mut self, request: Request<BoxBody>) -> Self::Future {
         let mut inner = self.inner.clone();
         Box::pin(async move {
-            if let Some(connect_info) = request.extensions().get::<TcpConnectInfo>() {
-                if let Some(remote_addr) = connect_info.remote_addr() {
-                    if !is_loopback(remote_addr) {
-                        return Err(Status::permission_denied("Admin service is only accessible from localhost").into());
-                    }
+            let remote_addr = request.extensions().get::<TcpConnectInfo>().and_then(|info| info.remote_addr());
+            match remote_addr {
+                Some(addr) if is_loopback(addr) => inner.call(request).await,
+                Some(_) => Err(Status::permission_denied("Admin service is only accessible from localhost").into()),
+                None => {
+                    Err(Status::permission_denied("Admin service requires connection info to verify localhost access")
+                        .into())
                 }
             }
-            inner.call(request).await
         })
     }
 }

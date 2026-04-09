@@ -183,4 +183,14 @@ mod localhost_guard_middleware_tests {
         let status = result.unwrap_err();
         assert_eq!(status.code(), tonic::Code::PermissionDenied);
     }
+
+    #[tokio::test]
+    async fn missing_connect_info_rejected() {
+        let mut service = LocalhostGuardLayer.layer(MockService);
+        let request = Request::new(BoxBody::default()); // no TcpConnectInfo
+        let result = service.call(request).await;
+        assert!(result.is_err(), "Missing connect info should be rejected");
+        let status = result.unwrap_err();
+        assert_eq!(status.code(), tonic::Code::PermissionDenied);
+    }
 }
