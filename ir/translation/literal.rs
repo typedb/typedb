@@ -371,6 +371,8 @@ impl FromTypeQLLiteral for AnnotationRegex {
 
 #[cfg(test)]
 pub mod tests {
+    use std::borrow::Cow;
+
     use encoding::value::{
         decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
         value::Value,
@@ -409,6 +411,13 @@ pub mod tests {
     fn parse() {
         assert_eq!(parse_value_via_typeql_expression("true").unwrap(), Value::Boolean(true));
         assert_ne!(parse_value_via_typeql_expression("false").unwrap(), Value::Boolean(true));
+
+        assert_eq!(parse_value_via_typeql_expression("\"abc\"").unwrap(), Value::String(Cow::Borrowed("abc")));
+        assert_eq!(parse_value_via_typeql_expression("\"123\"").unwrap(), Value::String(Cow::Borrowed("123")));
+        assert_eq!(
+            parse_value_via_typeql_expression(r#""\u0ca0\u005f\u0ca0""#).unwrap(),
+            Value::String(Cow::Borrowed("ಠ_ಠ"))
+        );
 
         assert_eq!(
             parse_value_via_typeql_expression("123.00456dec").unwrap(),
