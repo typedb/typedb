@@ -17,9 +17,6 @@ use std::{
     time::Instant,
 };
 
-use rand_core::RngCore;
-use xoshiro::Xoshiro256Plus;
-
 use database::{
     database_manager::DatabaseManager,
     query::{execute_schema_query, execute_write_query_in_write},
@@ -28,8 +25,10 @@ use database::{
 };
 use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
 use options::{QueryOptions, TransactionOptions};
+use rand_core::RngCore;
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_dir, TempDir};
+use xoshiro::Xoshiro256Plus;
 
 const TOTAL_OPS: usize = 300_000;
 const READ_OPS: usize = 100_000;
