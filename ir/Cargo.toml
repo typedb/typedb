@@ -68,14 +68,14 @@ features = {}
 		workspace = true
 
 [[test]]
-	path = "tests/structural_equality.rs"
-	name = "test_structural_equality"
-
-[[test]]
 	path = "tests/pattern.rs"
 	name = "pattern"
 
 [[test]]
 	path = "tests/pipeline.rs"
 	name = "pipeline"
+
+[[test]]
+	path = "tests/structural_equality.rs"
+	name = "test_structural_equality"
 

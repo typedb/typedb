@@ -11,12 +11,17 @@ use crate::AdminClient;
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 pub type CommandResult = Result<()>;
 
+pub struct CommandContext<'a> {
+    pub client: &'a mut AdminClient,
+    pub address: &'a str,
+    pub args: &'a [String],
+}
+
 pub struct CommandDefinition {
     pub tokens: &'static [&'static str],
     pub description: &'static str,
     pub args: &'static [&'static str],
-    pub executor:
-        for<'a> fn(&'a mut AdminClient, &'a [String]) -> Pin<Box<dyn Future<Output = CommandResult> + Send + 'a>>,
+    pub executor: for<'a> fn(CommandContext<'a>) -> Pin<Box<dyn Future<Output = CommandResult> + Send + 'a>>,
 }
 
 pub struct CommandRegistry {

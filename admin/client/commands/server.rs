@@ -7,7 +7,7 @@
 use server_admin_proto as admin_proto;
 
 use crate::{
-    command::{CommandDefinition, CommandRegistry, CommandResult, Result},
+    command::{CommandContext, CommandDefinition, CommandRegistry, CommandResult, Result},
     AdminClient,
 };
 
@@ -17,13 +17,13 @@ pub fn register(registry: CommandRegistry) -> CommandRegistry {
             tokens: &["server", "version"],
             description: "Show server version",
             args: &[],
-            executor: |client, _args| Box::pin(server_version(client)),
+            executor: |ctx| Box::pin(server_version(ctx.client)),
         })
         .register(CommandDefinition {
             tokens: &["server", "status"],
             description: "Show server endpoint addresses",
             args: &[],
-            executor: |client, _args| Box::pin(server_status(client)),
+            executor: |ctx| Box::pin(server_status(ctx.client)),
         })
 }
 

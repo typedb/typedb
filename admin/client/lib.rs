@@ -14,6 +14,13 @@ use tonic::transport::Channel;
 pub type AdminClient = TypeDbAdminClient<Channel>;
 
 pub async fn connect(address: &str) -> Result<AdminClient, tonic::transport::Error> {
-    let endpoint = format!("http://{address}");
-    TypeDbAdminClient::connect(endpoint).await
+    TypeDbAdminClient::connect(format_insecure_address(address)).await
+}
+
+pub async fn connect_channel(address: &str) -> Result<Channel, tonic::transport::Error> {
+    tonic::transport::Endpoint::from_shared(format_insecure_address(address))?.connect().await
+}
+
+fn format_insecure_address(address: &str) -> String {
+    format!("http://{address}")
 }

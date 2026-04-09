@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use rustyline::{error::ReadlineError, history::FileHistory, Config, Editor};
 
 use crate::{
-    command::CommandRegistry,
+    command::{CommandContext, CommandRegistry},
     commands::server::{execute_server_status, execute_server_version},
     AdminClient,
 };
@@ -47,7 +47,7 @@ pub async fn print_server_info(client: &mut AdminClient) {
     println!("Connected to {} {} ({}).", server_version.distribution, server_version.version, server_admin_address);
 }
 
-pub async fn run_interactive(client: &mut AdminClient, registry: &CommandRegistry) {
+pub async fn run_interactive(client: &mut AdminClient, address: &str, registry: &CommandRegistry) {
     println!("Type 'help' for available commands, 'exit' to quit.\n");
 
     let config = Config::builder().auto_add_history(true).build();
@@ -61,7 +61,7 @@ pub async fn run_interactive(client: &mut AdminClient, registry: &CommandRegistr
                 if input.is_empty() {
                     continue;
                 }
-                if let Err(err) = execute_input(client, registry, input).await {
+                if let Err(err) = execute_input(client, address, registry, input).await {
                     eprintln!("Error: {err}");
                 }
             }
@@ -76,9 +76,14 @@ pub async fn run_interactive(client: &mut AdminClient, registry: &CommandRegistr
     let _ = editor.save_history(&history_path());
 }
 
-pub async fn run_commands(client: &mut AdminClient, registry: &CommandRegistry, commands: &[String]) -> i32 {
+pub async fn run_commands(
+    client: &mut AdminClient,
+    address: &str,
+    registry: &CommandRegistry,
+    commands: &[String],
+) -> i32 {
     for command in commands {
-        if let Err(err) = execute_input(client, registry, command.trim()).await {
+        if let Err(err) = execute_input(client, address, registry, command.trim()).await {
             eprintln!("Error: {err}");
             return 1;
         }
@@ -88,6 +93,7 @@ pub async fn run_commands(client: &mut AdminClient, registry: &CommandRegistry, 
 
 pub async fn run_script(
     client: &mut AdminClient,
+    address: &str,
     registry: &CommandRegistry,
     path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -97,7 +103,7 @@ pub async fn run_script(
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        if let Err(err) = execute_input(client, registry, line).await {
+        if let Err(err) = execute_input(client, address, registry, line).await {
             eprintln!("Error at line {}: {err}", line_num + 1);
             return Err(err);
         }
@@ -107,6 +113,7 @@ pub async fn run_script(
 
 async fn execute_input(
     client: &mut AdminClient,
+    address: &str,
     registry: &CommandRegistry,
     input: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -119,7 +126,10 @@ async fn execute_input(
         _ => {
             let tokens: Vec<&str> = input.split_whitespace().collect();
             match registry.find(&tokens) {
-                Some((cmd, args)) => (cmd.executor)(client, &args).await.map_err(|err| format_error(&err).into()),
+                Some((cmd, args)) => {
+                    let ctx = CommandContext { client, address, args: &args };
+                    (cmd.executor)(ctx).await.map_err(|err| format_error(&err).into())
+                }
                 None => Err(format!("Unknown command: {input}. Type 'help' for available commands.").into()),
             }
         }
