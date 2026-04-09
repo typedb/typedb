@@ -63,10 +63,6 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
 
         let admin_address = status.admin_address().map(|a| a.to_string());
 
-        Ok(Response::new(admin_proto::server_status::Res {
-            grpc: Some(grpc),
-            http,
-            admin_address,
-        }))
+        Ok(Response::new(admin_proto::server_status::Res { grpc: Some(grpc), http, admin_address }))
     }
 }

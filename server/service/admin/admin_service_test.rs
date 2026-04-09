@@ -12,42 +12,54 @@ use server::{
     parameters::config::ConfigBuilder,
     ServerBuilder,
 };
-use test_utils::create_tmp_storage_dir;
+use test_utils::{create_tmp_storage_dir, TempDir};
+use tokio::sync::OnceCell;
 
 const GRPC_ADDRESS: &str = "127.0.0.1:11729";
 const ADMIN_PORT: u16 = 11728;
 const DISTRIBUTION_INFO: DistributionInfo =
     DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0-test" };
 
+static SERVER: OnceCell<(TempDir, tokio::sync::watch::Sender<()>)> = OnceCell::const_new();
+
 fn config_path() -> PathBuf {
     std::env::current_dir().unwrap().join("server/config.yml")
 }
 
-async fn start_server() -> (TypeDbAdminClient<tonic::transport::Channel>, tokio::sync::watch::Sender<()>, tokio::task::JoinHandle<()>) {
-    let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
-    let server_dir = create_tmp_storage_dir();
-    let config = ConfigBuilder::from_file(config_path())
-        .expect("Failed to load config file")
-        .server_address(GRPC_ADDRESS)
-        .server_http_enabled(false)
-        .admin_port(ADMIN_PORT)
-        .admin_enabled(true)
-        .data_directory(server_dir.as_ref())
-        .development_mode(true)
-        .build()
-        .expect("Failed to build config");
+async fn ensure_server_started() {
+    SERVER
+        .get_or_init(|| async {
+            let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+            let server_dir = create_tmp_storage_dir();
+            let config = ConfigBuilder::from_file(config_path())
+                .expect("Failed to load config file")
+                .server_address(GRPC_ADDRESS)
+                .server_http_enabled(false)
+                .admin_port(ADMIN_PORT)
+                .admin_enabled(true)
+                .data_directory(server_dir.as_ref())
+                .development_mode(true)
+                .build()
+                .expect("Failed to build config");
 
-    let server = ServerBuilder::new()
-        .distribution_info(DISTRIBUTION_INFO)
-        .shutdown_channel((shutdown_sender.clone(), shutdown_receiver))
-        .build(config)
-        .await
-        .expect("Failed to build server");
+            let server = ServerBuilder::new()
+                .distribution_info(DISTRIBUTION_INFO)
+                .shutdown_channel((shutdown_sender.clone(), shutdown_receiver))
+                .build(config)
+                .await
+                .expect("Failed to build server");
 
-    let server_handle = tokio::spawn(async move {
-        server.serve().await.expect("Server failed");
-    });
+            tokio::spawn(async move {
+                server.serve().await.expect("Server failed");
+            });
 
+            (server_dir, shutdown_sender)
+        })
+        .await;
+}
+
+async fn connect_admin_client() -> TypeDbAdminClient<tonic::transport::Channel> {
+    ensure_server_started().await;
     let mut client = None;
     for _ in 0..50 {
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -59,32 +71,21 @@ async fn start_server() -> (TypeDbAdminClient<tonic::transport::Channel>, tokio:
             Err(_) => continue,
         }
     }
-    let client = client.expect("Failed to connect to admin service");
-
-    (client, shutdown_sender, server_handle)
-}
-
-async fn stop_server(shutdown_sender: tokio::sync::watch::Sender<()>, server_handle: tokio::task::JoinHandle<()>) {
-    shutdown_sender.send(()).expect("Failed to send shutdown signal");
-    let _ = tokio::time::timeout(std::time::Duration::from_secs(10), server_handle).await;
+    client.expect("Failed to connect to admin service")
 }
 
 #[tokio::test]
 async fn admin_server_version() {
-    let (mut client, shutdown_sender, server_handle) = start_server().await;
-
+    let mut client = connect_admin_client().await;
     let response = client.server_version(admin_proto::server_version::Req {}).await.expect("RPC failed");
     let res = response.into_inner();
     assert_eq!(res.distribution, DISTRIBUTION_INFO.distribution);
     assert_eq!(res.version, DISTRIBUTION_INFO.version);
-
-    stop_server(shutdown_sender, server_handle).await;
 }
 
 #[tokio::test]
 async fn admin_server_status() {
-    let (mut client, shutdown_sender, server_handle) = start_server().await;
-
+    let mut client = connect_admin_client().await;
     let response = client.server_status(admin_proto::server_status::Req {}).await.expect("RPC failed");
     let res = response.into_inner();
 
@@ -96,8 +97,6 @@ async fn admin_server_status() {
 
     let admin_address = res.admin_address.expect("Admin address should be present");
     assert!(admin_address.contains(&ADMIN_PORT.to_string()), "Admin address should contain the configured port");
-
-    stop_server(shutdown_sender, server_handle).await;
 }
 
 mod localhost_guard_tests {
@@ -138,12 +137,10 @@ mod localhost_guard_middleware_tests {
 
     use futures::future::BoxFuture;
     use http::{Request, Response};
+    use server::service::admin::localhost_guard::LocalhostGuardLayer;
     use tonic::{body::BoxBody, transport::server::TcpConnectInfo, Status};
     use tower::{Layer, Service};
 
-    use server::service::admin::localhost_guard::LocalhostGuardLayer;
-
-    /// A mock inner service that always returns OK.
     #[derive(Clone)]
     struct MockService;
 
@@ -163,10 +160,8 @@ mod localhost_guard_middleware_tests {
 
     fn request_with_remote_addr(addr: SocketAddr) -> Request<BoxBody> {
         let mut request = Request::new(BoxBody::default());
-        let connect_info = TcpConnectInfo {
-            local_addr: Some("127.0.0.1:1728".parse().unwrap()),
-            remote_addr: Some(addr),
-        };
+        let connect_info =
+            TcpConnectInfo { local_addr: Some("127.0.0.1:1728".parse().unwrap()), remote_addr: Some(addr) };
         request.extensions_mut().insert(connect_info);
         request
     }
