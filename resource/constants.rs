@@ -33,7 +33,6 @@ pub mod server {
     pub const DISTRIBUTION: &str = "TypeDB CE";
     const VERSION: &str = include_str!("../VERSION");
     const ASCII_LOGO_SERVER: &str = include_str!("typedb-ascii.txt");
-    pub const ASCII_LOGO_ADMIN: &str = include_str!("typedb-admin-ascii.txt");
     pub const DISTRIBUTION_INFO: DistributionInfo =
         DistributionInfo { logo: ASCII_LOGO_SERVER, distribution: DISTRIBUTION, version: VERSION };
     pub const DEFAULT_CONFIG_PATH: &str = "config.yml";

@@ -11,6 +11,7 @@ use rustyline::{error::ReadlineError, history::FileHistory, Config, Editor};
 use crate::{
     command::{CommandContext, CommandRegistry},
     commands::server::{execute_server_status, execute_server_version},
+    error::AdminError,
     AdminClient,
 };
 
@@ -23,28 +24,21 @@ fn history_path() -> PathBuf {
 
 pub async fn print_server_info(client: &mut AdminClient) {
     let server_version = match execute_server_version(client).await {
-        Ok(server_version) => server_version,
+        Ok(version) => version,
         Err(err) => {
-            eprintln!("WARNING: could not retrieve server version: {}", format_error(&err.into()));
+            eprintln!("WARNING: could not retrieve server version: {err}");
             return;
         }
     };
     let server_status = match execute_server_status(client).await {
-        Ok(server_status) => server_status,
+        Ok(status) => status,
         Err(err) => {
-            eprintln!("WARNING: could not retrieve server status: {}", format_error(&err.into()));
+            eprintln!("WARNING: could not retrieve server status: {err}");
             return;
         }
     };
-    let server_admin_address = match server_status.admin_address {
-        Some(admin_address) => admin_address,
-        None => {
-            eprintln!("WARNING: could not retrieve server admin address");
-            return;
-        }
-    };
-
-    println!("Connected to {} {} ({}).", server_version.distribution, server_version.version, server_admin_address);
+    let admin_address = server_status.admin_address.unwrap_or_default();
+    println!("Connected to {} {} ({}).", server_version.distribution, server_version.version, admin_address);
 }
 
 pub async fn run_interactive(client: &mut AdminClient, address: &str, registry: &CommandRegistry) {
@@ -96,8 +90,9 @@ pub async fn run_script(
     address: &str,
     registry: &CommandRegistry,
     path: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let content = std::fs::read_to_string(path)?;
+) -> Result<(), AdminError> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|source| AdminError::ScriptReadFailed { path: path.to_string(), source })?;
     for (line_num, line) in content.lines().enumerate() {
         let line = line.trim();
         if line.is_empty() || line.starts_with('#') {
@@ -116,7 +111,7 @@ async fn execute_input(
     address: &str,
     registry: &CommandRegistry,
     input: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), AdminError> {
     match input {
         "exit" | "quit" => std::process::exit(0),
         "help" => {
@@ -128,30 +123,10 @@ async fn execute_input(
             match registry.find(&tokens) {
                 Some((cmd, args)) => {
                     let ctx = CommandContext { client, address, args: &args };
-                    (cmd.executor)(ctx).await.map_err(|err| format_error(&err).into())
+                    (cmd.executor)(ctx).await
                 }
-                None => Err(format!("Unknown command: {input}. Type 'help' for available commands.").into()),
+                None => Err(AdminError::UnknownCommand { input: input.to_string() }),
             }
         }
     }
-}
-
-pub fn format_error(err: &Box<dyn std::error::Error>) -> String {
-    let err_str = err.to_string();
-    // tonic::Status Display format: "status: <Code>, message: "<msg>", details: [...], metadata: {...}"
-    if err_str.starts_with("status: ") {
-        if let Some(details_start) = err_str.find(", details:") {
-            let relevant = &err_str["status: ".len()..details_start];
-            if let Some(msg_start) = relevant.find(", message: \"") {
-                let code = &relevant[..msg_start];
-                let message = relevant[msg_start + ", message: \"".len()..].trim_end_matches('"');
-                if message.is_empty() {
-                    return code.to_string();
-                }
-                return format!("{code}: {message}");
-            }
-            return relevant.to_string();
-        }
-    }
-    err_str
 }

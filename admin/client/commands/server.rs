@@ -7,7 +7,7 @@
 use server_admin_proto as admin_proto;
 
 use crate::{
-    command::{CommandContext, CommandDefinition, CommandRegistry, CommandResult, Result},
+    command::{CommandDefinition, CommandRegistry, CommandResult, Result},
     AdminClient,
 };
 

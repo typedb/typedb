@@ -16,20 +16,14 @@ rust_library(
         "@crates//:itertools",
     ],
     compile_data = [
-        "typedb-admin-ascii.txt",
         "typedb-ascii.txt",
         "//:VERSION",
     ],
 )
 
 filegroup(
-    name = "server-logo",
+    name = "logo",
     srcs = ["typedb-ascii.txt"],
-)
-
-filegroup(
-    name = "admin-logo",
-    srcs = ["typedb-admin-ascii.txt"],
 )
 
 rustfmt_test(
@@ -46,7 +40,6 @@ checkstyle_test(
     exclude = glob([
         "Cargo.*",
         "typedb-ascii.txt",
-        "typedb-admin-ascii.txt",
     ]),
     license_type = "mpl-header",
 )

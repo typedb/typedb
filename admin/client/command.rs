@@ -6,9 +6,9 @@
 
 use std::{future::Future, pin::Pin};
 
-use crate::AdminClient;
+use crate::{error::AdminError, AdminClient};
 
-pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+pub type Result<T> = std::result::Result<T, AdminError>;
 pub type CommandResult = Result<()>;
 
 pub struct CommandContext<'a> {

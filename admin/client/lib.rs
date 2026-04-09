@@ -6,6 +6,7 @@
 
 pub mod command;
 pub mod commands;
+pub mod error;
 pub mod repl;
 
 use server_admin_proto::type_db_admin_client::TypeDbAdminClient;

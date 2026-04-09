@@ -5,7 +5,7 @@
  */
 
 use clap::Parser;
-use resource::constants::server::{ADMIN_DEFAULT_ADDRESS, ASCII_LOGO_ADMIN};
+use resource::constants::server::ADMIN_DEFAULT_ADDRESS;
 
 #[derive(Parser)]
 #[command(name = "typedb-admin", about = "TypeDB administration tool")]
@@ -50,7 +50,6 @@ async fn main() {
         let code = typedb_admin::repl::run_commands(&mut client, address, &registry, &args.command).await;
         std::process::exit(code);
     } else {
-        println!("{ASCII_LOGO_ADMIN}");
         typedb_admin::repl::print_server_info(&mut client).await;
         typedb_admin::repl::run_interactive(&mut client, address, &registry).await;
     }
