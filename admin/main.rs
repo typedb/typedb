@@ -43,7 +43,7 @@ async fn main() {
             std::process::exit(1);
         }
         if let Err(err) = typedb_admin::repl::run_script(&mut client, address, &registry, script).await {
-            eprintln!("{err}");
+            eprintln!("{err:?}");
             std::process::exit(1);
         }
     } else if !args.command.is_empty() {

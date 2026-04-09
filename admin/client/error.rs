@@ -4,62 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
+use std::sync::Arc;
 
-#[derive(Debug)]
-pub enum AdminError {
-    ConnectionFailed { address: String, source: tonic::transport::Error },
-    RpcFailed { source: tonic::Status },
-    InvalidArgCount { usage: &'static str },
-    InvalidArgument { name: &'static str, reason: String },
-    UnknownCommand { input: String },
-    ScriptReadFailed { path: String, source: std::io::Error },
-    Other { message: String },
-}
+use error::typedb_error;
 
-impl fmt::Display for AdminError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::ConnectionFailed { address, source } => write!(f, "Failed to connect to {address}: {source}"),
-            Self::RpcFailed { source } => {
-                let code = source.code();
-                let message = source.message();
-                if message.is_empty() {
-                    write!(f, "{code}")
-                } else {
-                    write!(f, "{code}: {message}")
-                }
-            }
-            Self::InvalidArgCount { usage } => write!(f, "Usage: {usage}"),
-            Self::InvalidArgument { name, reason } => write!(f, "Invalid argument '{name}': {reason}"),
-            Self::UnknownCommand { input } => {
-                write!(f, "Unknown command: {input}. Type 'help' for available commands.")
-            }
-            Self::ScriptReadFailed { path, source } => write!(f, "Failed to read script '{path}': {source}"),
-            Self::Other { message } => write!(f, "{message}"),
-        }
-    }
-}
-
-impl std::error::Error for AdminError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::ConnectionFailed { source, .. } => Some(source),
-            Self::RpcFailed { source } => Some(source),
-            Self::ScriptReadFailed { source, .. } => Some(source),
-            _ => None,
-        }
+typedb_error! {
+    pub AdminError(component = "Admin", prefix = "ADM") {
+        ConnectionFailed(1, "Failed to connect to '{address}'.", address: String, source: Arc<tonic::transport::Error>),
+        RpcFailed(2, "{message}", message: String),
+        InvalidArgCount(3, "Invalid number of arguments. Usage: {usage}", usage: String),
+        InvalidArgument(4, "Invalid argument '{name}': {reason}", name: String, reason: String),
+        UnknownCommand(5, "Unknown command: '{input}'. Type 'help' for available commands.", input: String),
+        ScriptReadFailed(6, "Failed to read script '{path}'.", path: String, source: Arc<std::io::Error>),
     }
 }
 
 impl From<tonic::Status> for AdminError {
-    fn from(source: tonic::Status) -> Self {
-        Self::RpcFailed { source }
-    }
-}
-
-impl From<tonic::transport::Error> for AdminError {
-    fn from(source: tonic::transport::Error) -> Self {
-        Self::ConnectionFailed { address: String::new(), source }
+    fn from(status: tonic::Status) -> Self {
+        let code = status.code();
+        let message = status.message();
+        let formatted = if message.is_empty() { format!("{code}") } else { format!("{code}: {message}") };
+        Self::RpcFailed { message: formatted }
     }
 }

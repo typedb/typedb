@@ -5541,11 +5541,14 @@ dependencies = [
 name = "typedb-admin"
 version = "0.0.0"
 dependencies = [
+ "error",
  "home",
+ "resource",
  "rustyline",
  "server_admin_proto",
  "tokio",
  "tonic",
+ "typeql",
 ]
 
 [[package]]

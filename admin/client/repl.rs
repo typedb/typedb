@@ -26,14 +26,14 @@ pub async fn print_server_info(client: &mut AdminClient) {
     let server_version = match execute_server_version(client).await {
         Ok(version) => version,
         Err(err) => {
-            eprintln!("WARNING: could not retrieve server version: {err}");
+            eprintln!("WARNING: could not retrieve server version: {err:?}");
             return;
         }
     };
     let server_status = match execute_server_status(client).await {
         Ok(status) => status,
         Err(err) => {
-            eprintln!("WARNING: could not retrieve server status: {err}");
+            eprintln!("WARNING: could not retrieve server status: {err:?}");
             return;
         }
     };
@@ -56,7 +56,7 @@ pub async fn run_interactive(client: &mut AdminClient, address: &str, registry: 
                     continue;
                 }
                 if let Err(err) = execute_input(client, address, registry, input).await {
-                    eprintln!("Error: {err}");
+                    eprintln!("[Error] {err:?}");
                 }
             }
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => break,
@@ -78,7 +78,7 @@ pub async fn run_commands(
 ) -> i32 {
     for command in commands {
         if let Err(err) = execute_input(client, address, registry, command.trim()).await {
-            eprintln!("Error: {err}");
+            eprintln!("[Error] {err:?}");
             return 1;
         }
     }
@@ -91,15 +91,17 @@ pub async fn run_script(
     registry: &CommandRegistry,
     path: &str,
 ) -> Result<(), AdminError> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|source| AdminError::ScriptReadFailed { path: path.to_string(), source })?;
+    let content = std::fs::read_to_string(path).map_err(|source| AdminError::ScriptReadFailed {
+        path: path.to_string(),
+        source: std::sync::Arc::new(source),
+    })?;
     for (line_num, line) in content.lines().enumerate() {
         let line = line.trim();
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
         if let Err(err) = execute_input(client, address, registry, line).await {
-            eprintln!("Error at line {}: {err}", line_num + 1);
+            eprintln!("[Error] Line {}: {err:?}", line_num + 1);
             return Err(err);
         }
     }

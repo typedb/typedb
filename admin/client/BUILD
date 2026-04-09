@@ -16,11 +16,14 @@ rust_library(
         "crate-name=typedb-admin",
     ],
     deps = [
+        "//common/error",
+        "//resource",
         "//server/service/admin/proto:server_admin_proto",
         "@crates//:home",
         "@crates//:rustyline",
         "@crates//:tokio",
         "@crates//:tonic",
+        "@typeql//rust:typeql",
     ],
 )
 

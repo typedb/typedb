@@ -20,10 +20,19 @@ features = {}
 	[dependencies.rustyline]
 		workspace = true
 
+	[dependencies.resource]
+		workspace = true
+
 	[dependencies.server_admin_proto]
 		workspace = true
 
+	[dependencies.typeql]
+		workspace = true
+
 	[dependencies.tonic]
+		workspace = true
+
+	[dependencies.error]
 		workspace = true
 
 	[dependencies.home]
