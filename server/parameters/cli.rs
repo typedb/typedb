@@ -38,7 +38,7 @@ pub struct CLIArgs {
     #[arg(long = "server.http.address")]
     pub server_http_address: Option<String>,
 
-    /// Server connection host and port for HTTP connections (e.g., 127.0.0.1:1729)
+    /// Server connection host and port for HTTP connections (e.g., 127.0.0.1:8000)
     /// This address overrides the serving address in the server info shared publicly, which is required
     /// when these addresses differ (e.g., when using proxies)
     /// It is a reference address, which means that its resolved IP address is checked for correctness,
