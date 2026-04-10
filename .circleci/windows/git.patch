@@ -1,5 +1,5 @@
 diff --git a/BUILD b/BUILD
-index dd59a2ef3..68d21af7d 100644
+index dd59a2ef3..2dc01f4c3 100644
 --- a/BUILD
 +++ b/BUILD
 @@ -80,10 +80,10 @@ alias(
@@ -7,12 +7,12 @@ index dd59a2ef3..68d21af7d 100644
  pkg_files(
      name = "package-layout-server",
 -    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml"],
-+    srcs = ["//:typedb_server_bin.exe", "//admin:typedb_admin_bin.exe", "//binary:typedb.bat", "//server:config.yml"],
++    srcs = ["//:typedb_server_bin.exe", "//admin:typedb_admin_bin", "//binary:typedb.bat", "//server:config.yml"],
      renames = {
 -        "//:typedb_server_bin" : "server/typedb_server_bin",
 -        "//admin:typedb_admin_bin" : "admin/typedb_admin_bin",
 +        "//:typedb_server_bin.exe" : "server/typedb_server_bin.exe",
-+        "//admin:typedb_admin_bin.exe" : "admin/typedb_admin_bin.exe",
++        "//admin:typedb_admin_bin" : "admin/typedb_admin_bin.exe",
          "//server:config.yml" : "server/config.yml",
      },
      attributes = binary_permissions,
