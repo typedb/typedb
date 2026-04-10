@@ -18,6 +18,7 @@ fi
 
 print_usage() {
     echo "  Server:          typedb server [--help]"
+    echo "  Admin:           typedb admin [--help]"
     if [[ $CONSOLE_EXISTS ]]; then
       echo "  Console:         typedb console [--help]"
     fi
@@ -29,6 +30,11 @@ print_usage() {
 
 
 case "$1" in
+    admin)
+        TYPEDB_ADMIN_BIN="${TYPEDB_HOME}/admin/typedb_admin_bin"
+        exec ${TYPEDB_ADMIN_BIN} "${@:2}"
+        ;;
+
     console)
         if [[ ! $CONSOLE_EXISTS ]]; then
             echo "TypeDB console was not included in this distribution. Please download it separately."
