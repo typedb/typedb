@@ -1,18 +1,31 @@
 diff --git a/BUILD b/BUILD
-index dd59a2ef3..2dc01f4c3 100644
+index dd59a2ef3..efde2b772 100644
 --- a/BUILD
 +++ b/BUILD
-@@ -80,10 +80,10 @@ alias(
+@@ -77,13 +77,23 @@ alias(
+     })
+ )
+ 
++filegroup(
++    name = "typedb_server_bin_release",
++    srcs = ["target/release/typedb_server_bin.exe"],
++)
++
++filegroup(
++    name = "typedb_admin_bin_release",
++    srcs = ["target/release/typedb_admin_bin.exe"],
++)
++
  # The directory structure for distribution
  pkg_files(
      name = "package-layout-server",
 -    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml"],
-+    srcs = ["//:typedb_server_bin.exe", "//admin:typedb_admin_bin", "//binary:typedb.bat", "//server:config.yml"],
++    srcs = ["//:typedb_server_bin_release", "//:typedb_admin_bin_release", "//binary:typedb.bat", "//server:config.yml"],
      renames = {
 -        "//:typedb_server_bin" : "server/typedb_server_bin",
 -        "//admin:typedb_admin_bin" : "admin/typedb_admin_bin",
-+        "//:typedb_server_bin.exe" : "server/typedb_server_bin.exe",
-+        "//admin:typedb_admin_bin" : "admin/typedb_admin_bin.exe",
++        "//:typedb_server_bin_release" : "server/typedb_server_bin.exe",
++        "//:typedb_admin_bin_release" : "admin/typedb_admin_bin.exe",
          "//server:config.yml" : "server/config.yml",
      },
      attributes = binary_permissions,
