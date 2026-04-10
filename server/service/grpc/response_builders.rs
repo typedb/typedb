@@ -50,14 +50,6 @@ pub(crate) mod server {
             version: distribution_info.version.to_string(),
         }
     }
-
-    pub(crate) fn servers_register_res() -> typedb_protocol::server_manager::register::Res {
-        typedb_protocol::server_manager::register::Res {}
-    }
-
-    pub(crate) fn servers_deregister_res() -> typedb_protocol::server_manager::deregister::Res {
-        typedb_protocol::server_manager::deregister::Res {}
-    }
 }
 
 pub(crate) mod database_manager {

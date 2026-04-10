@@ -36,7 +36,7 @@ use crate::{
                 connection::connection_open_res,
                 database::{database_delete_res, database_schema_res, database_type_schema_res},
                 database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
-                server::{server_version_res, servers_deregister_res, servers_register_res},
+                server::server_version_res,
                 server_manager::{servers_all_res, servers_get_res},
                 user_manager::{
                     user_create_res, user_update_res, users_all_res, users_contains_res, users_delete_res,
@@ -186,50 +186,6 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                 let status =
                     self.server_state.servers().status().await.map_err(|err| err.into_error_message().into_status())?;
                 Ok(Response::new(servers_get_res(status.to_proto())))
-            },
-        )
-        .await
-    }
-
-    async fn servers_register(
-        &self,
-        request: Request<typedb_protocol::server_manager::register::Req>,
-    ) -> Result<Response<typedb_protocol::server_manager::register::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::ServersRegister,
-            || async {
-                let request = request.into_inner();
-
-                let typedb_protocol::server_manager::register::Req { address, replica_id } = request;
-                self.server_state
-                    .servers()
-                    .register(replica_id, address)
-                    .await
-                    .map(|()| Response::new(servers_register_res()))
-                    .map_err(|err| err.into_error_message().into_status())
-            },
-        )
-        .await
-    }
-
-    async fn servers_deregister(
-        &self,
-        request: Request<typedb_protocol::server_manager::deregister::Req>,
-    ) -> Result<Response<typedb_protocol::server_manager::deregister::Res>, Status> {
-        run_with_diagnostics_async(
-            self.server_state.diagnostics_manager(),
-            None::<&str>,
-            ActionKind::ServersDeregister,
-            || async {
-                let request = request.into_inner();
-                self.server_state
-                    .servers()
-                    .deregister(request.replica_id)
-                    .await
-                    .map(|()| Response::new(servers_deregister_res()))
-                    .map_err(|err| err.into_error_message().into_status())
             },
         )
         .await

@@ -46,6 +46,7 @@ pub(crate) async fn start_typedb(
             .expect("Failed to load config file")
             .server_address(GRPC_ADDRESS)
             .server_http_address(HTTP_ADDRESS)
+            .admin_enabled(false)
             .data_directory(server_dir.as_ref())
             .development_mode(true)
             .authentication(AuthenticationConfig { token_expiration: TEST_TOKEN_EXPIRATION })

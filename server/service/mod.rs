@@ -10,6 +10,7 @@ pub use grpc::{migration::import_service::DatabaseImportService, IntoGrpcStatus,
 use options::QueryOptions;
 use serde::{Deserialize, Serialize};
 
+pub mod admin;
 pub(crate) mod export_service;
 pub(crate) mod grpc;
 pub mod http;

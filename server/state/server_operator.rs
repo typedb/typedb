@@ -4,25 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt::Debug, sync::Arc};
+use std::fmt::Debug;
 
 use async_trait::async_trait;
 
 use super::BoxServerStatus;
-use crate::{
-    error::{ArcServerStateError, LocalServerStateError},
-    status::LocalServerStatus,
-};
+use crate::{error::ArcServerStateError, status::LocalServerStatus};
 
 #[async_trait]
 pub trait ServerOperator: Debug + Send + Sync {
     async fn status(&self) -> Result<BoxServerStatus, ArcServerStateError>;
-
     async fn statuses(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError>;
-
-    async fn register(&self, clustering_id: u64, clustering_address: String) -> Result<(), ArcServerStateError>;
-
-    async fn deregister(&self, clustering_id: u64) -> Result<(), ArcServerStateError>;
 }
 
 #[derive(Debug)]
@@ -44,17 +36,5 @@ impl ServerOperator for LocalServerOperator {
 
     async fn statuses(&self) -> Result<Vec<BoxServerStatus>, ArcServerStateError> {
         self.status().await.map(|status| vec![status])
-    }
-
-    async fn register(&self, _clustering_id: u64, _clustering_address: String) -> Result<(), ArcServerStateError> {
-        Err(Arc::new(LocalServerStateError::NotSupportedByDistribution {
-            description: "exclusive to TypeDB Cloud and TypeDB Enterprise".to_string(),
-        }))
-    }
-
-    async fn deregister(&self, _clustering_id: u64) -> Result<(), ArcServerStateError> {
-        Err(Arc::new(LocalServerStateError::NotSupportedByDistribution {
-            description: "exclusive to TypeDB Cloud and TypeDB Enterprise".to_string(),
-        }))
     }
 }

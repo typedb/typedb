@@ -83,6 +83,7 @@ build:
         bazel test --config=ci //ir:test_crate_ir --test_output=streamed
         bazel test --config=ci //query:test_crate_query --test_output=streamed
         bazel test --config=ci //server:test_crate_server --test_output=streamed
+        bazel test --config=ci //server:test_admin_service --test_output=streamed
         bazel test --config=ci //storage:test_crate_storage --test_output=streamed
 
     test-integration:

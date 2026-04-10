@@ -18,14 +18,15 @@ pub struct CLIArgs {
     #[arg(long = "config")]
     pub config_file_override: Option<String>,
 
-    /// Server serving host and port (e.g., 0.0.0.0:1729)
+    /// Server serving host and port for gRPC connections (e.g., 0.0.0.0:1729)
     #[arg(long = "server.address")]
     pub server_address: Option<String>,
 
-    /// Server connection host and port (e.g., 127.0.0.1:1729)
-    /// This address overrides the serving address in the server info shared through APIs and other outputs
+    /// Server connection host and port for gRPC connections (e.g., 127.0.0.1:1729)
+    /// This address overrides the serving address in the server info shared publicly, which is required
+    /// when these addresses differ (e.g., when using proxies)
     /// It is a reference address, which means that its resolved IP address is checked for correctness,
-    /// but the form specified here (even if it's an alias) will not be changed.
+    /// but its value is exposed _as is_, without any of the resolving modifications
     #[arg(long = "server.connection-address")]
     pub server_connection_address: Option<String>,
 
@@ -33,9 +34,26 @@ pub struct CLIArgs {
     #[arg(long = "server.http.enabled")]
     pub server_http_enabled: Option<bool>,
 
-    /// HTTP endpoint host and port (e.g., 0.0.0.0:8000)
+    /// Server serving host and port for HTTP connections (e.g., 0.0.0.0:8000)
     #[arg(long = "server.http.address")]
     pub server_http_address: Option<String>,
+
+    /// Server connection host and port for HTTP connections (e.g., 127.0.0.1:8000)
+    /// This address overrides the serving address in the server info shared publicly, which is required
+    /// when these addresses differ (e.g., when using proxies)
+    /// It is a reference address, which means that its resolved IP address is checked for correctness,
+    /// but its value is exposed _as is_, without any of the resolving modifications
+    #[arg(long = "server.http.connection-address")]
+    pub server_http_connection_address: Option<String>,
+
+    /// Enable/disable local Admin endpoint
+    #[arg(long = "server.admin.enabled")]
+    pub server_admin_enabled: Option<bool>,
+
+    /// Port for local Admin endpoint (e.g., 1728)
+    /// Serves only localhost connections
+    #[arg(long = "server.admin.port")]
+    pub server_admin_port: Option<u16>,
 
     /// The amount of seconds generated authentication tokens will remain valid, specified in seconds.
     /// Use smaller values for better security and bigger values for better authentication performance and convenience
@@ -75,11 +93,12 @@ pub struct CLIArgs {
     #[arg(long = "diagnostics.reporting.errors")]
     pub diagnostics_reporting_errors: Option<bool>,
 
-    /// Enable a diagnostics monitoring HTTP endpoint
+    /// Enable/disable diagnostics monitoring HTTP endpoint
     #[arg(long = "diagnostics.monitoring.enabled")]
     pub diagnostics_monitoring_enabled: Option<bool>,
 
-    /// Port on which to expose the diagnostics monitoring endpoint
+    /// Port for diagnostics monitoring HTTP endpoint (e.g., 4104)
+    /// Serves on 0.0.0.0
     #[arg(long = "diagnostics.monitoring.port")]
     pub diagnostics_monitoring_port: Option<u16>,
 

@@ -5,7 +5,7 @@
  */
 
 use concept::error::ConceptReadError;
-use encoding::value::{duration_value::Duration, value_type::ValueTypeCategory};
+use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 
 use crate::annotation::expression::{

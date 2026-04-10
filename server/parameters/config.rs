@@ -11,7 +11,9 @@ use std::{
     time::Duration,
 };
 
-use resource::constants::server::{DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT};
+use resource::constants::server::{
+    ADMIN_DEFAULT_PORT, DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT,
+};
 use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
 
@@ -35,6 +37,8 @@ pub struct ServerConfig {
     pub address: String,
     pub connection_address: Option<String>,
     pub http: HttpEndpointConfig,
+    #[serde(default)]
+    pub admin: AdminConfig,
     pub authentication: AuthenticationConfig,
     pub encryption: EncryptionConfig,
 }
@@ -45,6 +49,7 @@ pub struct ServerConfig {
 pub struct HttpEndpointConfig {
     pub enabled: bool,
     pub address: String,
+    pub connection_address: Option<String>,
 }
 
 #[serde_as]
@@ -80,6 +85,19 @@ impl EncryptionConfig {
 impl Default for EncryptionConfig {
     fn default() -> Self {
         Self::disabled()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct AdminConfig {
+    pub enabled: bool,
+    pub port: u16,
+}
+
+impl Default for AdminConfig {
+    fn default() -> Self {
+        Self { enabled: true, port: ADMIN_DEFAULT_PORT }
     }
 }
 
@@ -190,6 +208,9 @@ impl ConfigBuilder {
             server_connection_address,
             server_http_enabled,
             server_http_address,
+            server_http_connection_address,
+            server_admin_enabled,
+            server_admin_port,
             server_authentication_token_expiration_seconds,
             server_encryption_enabled,
             server_encryption_certificate,
@@ -208,6 +229,8 @@ impl ConfigBuilder {
             config.server.address => server_address;
             config.server.http.enabled => server_http_enabled;
             config.server.http.address => server_http_address;
+            config.server.admin.enabled => server_admin_enabled;
+            config.server.admin.port => server_admin_port;
             config.server.authentication.token_expiration => server_authentication_token_expiration_seconds.map(|secs| Duration::new(secs, 0));
 
             config.server.encryption.enabled => server_encryption_enabled;
@@ -227,6 +250,7 @@ impl ConfigBuilder {
         }
         override_optional_config! {
             config.server.connection_address => server_connection_address;
+            config.server.http.connection_address => server_http_connection_address;
         }
     }
 
@@ -277,6 +301,16 @@ impl ConfigBuilder {
 
     pub fn server_http_address(mut self, address: impl Into<String>) -> Self {
         self.config.server.http.address = address.into();
+        self
+    }
+
+    pub fn admin_enabled(mut self, enabled: bool) -> Self {
+        self.config.server.admin.enabled = enabled;
+        self
+    }
+
+    pub fn admin_port(mut self, port: u16) -> Self {
+        self.config.server.admin.port = port;
         self
     }
 

@@ -1,0 +1,33 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+syntax = "proto3";
+package typedb.admin;
+
+service TypeDBAdmin {
+    rpc server_version (ServerVersion.Req) returns (ServerVersion.Res);
+    rpc server_status (ServerStatus.Req) returns (ServerStatus.Res);
+}
+
+message ServerVersion {
+    message Req {}
+    message Res {
+        string distribution = 1;
+        string version = 2;
+    }
+}
+
+message ServerStatus {
+    message Req {}
+    message Res {
+        EndpointStatus grpc = 1;
+        optional EndpointStatus http = 2;
+        optional string admin_address = 3;
+    }
+}
+
+message EndpointStatus {
+    string serving_address = 1;
+    string connection_address = 2;
+}

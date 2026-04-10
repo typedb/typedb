@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{convert::Infallible, net::SocketAddr, sync::Arc};
+use std::{
+    convert::Infallible,
+    net::{Ipv4Addr, SocketAddr},
+    sync::Arc,
+};
 
 use hyper::{
     header::{CONNECTION, CONTENT_LENGTH, CONTENT_TYPE},
@@ -27,7 +31,7 @@ impl MonitoringServer {
     }
 
     pub async fn start_serving(&self) {
-        let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
+        let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, self.port));
         let diagnostics = self.diagnostics.clone();
 
         task::spawn(async move {
@@ -41,14 +45,17 @@ impl MonitoringServer {
                 }
             });
 
-            match Server::try_bind(&addr) {
+            match Server::try_bind(&address) {
                 Ok(server) => {
                     if let Err(e) = server.serve(make_svc).await {
                         eprintln!("WARNING: Diagnostics monitoring server error: '{}'", e);
                     }
                 }
                 Err(e) => {
-                    eprintln!("WARNING: Diagnostics monitoring server could not get initialised on {}: '{}'", addr, e)
+                    eprintln!(
+                        "WARNING: Diagnostics monitoring server could not get initialised on {}: '{}'",
+                        address, e
+                    )
                 }
             }
         });
