@@ -31,6 +31,7 @@ pub mod disjunction;
 pub mod expression;
 pub mod function_call;
 pub mod nested_pattern;
+mod builders;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct BranchID(pub u16);

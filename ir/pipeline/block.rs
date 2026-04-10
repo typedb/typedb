@@ -70,26 +70,32 @@ impl StructuralEquality for Block {
 #[derive(Debug)]
 pub struct BlockBuilder<'reg> {
     context: BlockBuilderContext<'reg>,
-    conjunction: Conjunction,
+    conjunction: ConjunctionBuilder,
 }
 
 impl<'reg> BlockBuilder<'reg> {
     fn new(context: BlockBuilderContext<'reg>) -> Self {
-        Self { conjunction: Conjunction::new(ScopeId::ROOT), context }
+        Self { conjunction: ConjunctionBuilder::new(ScopeId::ROOT), context }
+    }
+
+    pub(crate) fn DISSOLVEME_to_parts_mut(&mut self) -> (&mut BlockBuilderContext<'reg>, &mut ConjunctionBuilder) {
+        let Self { context, conjunction } = self;
+        (context, conjunction)
     }
 
     pub fn finish(mut self) -> Result<Block, Box<RepresentationError>> {
-        self.conjunction_mut().compute_and_set_variable_binding_modes();
-        self.conjunction.variable_binding_modes().iter().for_each(|(v, mode)| {
+        let Self {
+            conjunction: mut builder,
+            mut context,
+        } = self;
+        builder.compute_and_set_variable_binding_modes(&mut context);
+        let conjunction: Conjunction = if true { todo!("zzz") } else { Conjunction::new(ScopeId::ROOT) };
+        conjunction.variable_binding_modes().iter().for_each(|(v, mode)| {
             if mode.is_optionally_binding() {
-                self.context.set_variable_optionality(*v, true);
+                context.set_variable_optionality(*v, true);
             }
         });
-        let Self {
-            conjunction,
-            context:
-                BlockBuilderContext { block_context, variable_registry, variable_names_index: visible_variables, .. },
-        } = self;
+        let BlockBuilderContext { block_context, variable_registry, variable_names_index: visible_variables, .. } = context;
         validate_conjunction(&conjunction, variable_registry, &block_context)?;
         let conjunction_visible: HashSet<_> = conjunction.named_visible_binding_variables().collect();
         visible_variables
@@ -97,8 +103,8 @@ impl<'reg> BlockBuilder<'reg> {
         Ok(Block { conjunction, block_context })
     }
 
-    pub fn conjunction_mut(&mut self) -> ConjunctionBuilder<'_, 'reg> {
-        ConjunctionBuilder::new(&mut self.context, &mut self.conjunction)
+    pub fn conjunction_mut(&mut self) -> &mut ConjunctionBuilder {
+        &mut self.conjunction
     }
 
     pub fn context_mut(&mut self) -> &mut BlockBuilderContext<'reg> {

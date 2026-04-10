@@ -27,13 +27,6 @@ impl Negation {
         Self { conjunction: Conjunction::new(scope_id) }
     }
 
-    pub(super) fn new_builder<'cx, 'reg>(
-        context: &'cx mut BlockBuilderContext<'reg>,
-        negation: &'cx mut Negation,
-    ) -> ConjunctionBuilder<'cx, 'reg> {
-        ConjunctionBuilder::new(context, &mut negation.conjunction)
-    }
-
     pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
     }

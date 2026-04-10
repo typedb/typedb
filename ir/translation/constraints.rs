@@ -35,13 +35,15 @@ use crate::{
     },
     RepresentationError,
 };
+use crate::pipeline::block::BlockBuilderContext;
 
 pub(super) fn add_statement(
     function_index: &impl FunctionSignatureIndex,
-    conjunction: &mut ConjunctionBuilder<'_, '_>,
+    context: &mut BlockBuilderContext<'_>,
+    conjunction: &mut ConjunctionBuilder,
     stmt: &typeql::Statement,
 ) -> Result<(), Box<RepresentationError>> {
-    let constraints = &mut conjunction.constraints_mut();
+    let constraints = &mut conjunction.constraints_mut(context);
     match stmt {
         typeql::Statement::Is(Is { lhs, rhs, span }) => {
             let lhs = register_typeql_var(constraints, lhs)?;

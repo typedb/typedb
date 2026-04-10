@@ -28,13 +28,6 @@ impl Optional {
         Self { conjunction: Conjunction::new(scope_id), branch_id }
     }
 
-    pub(super) fn new_builder<'cx, 'reg>(
-        context: &'cx mut BlockBuilderContext<'reg>,
-        optional: &'cx mut Optional,
-    ) -> ConjunctionBuilder<'cx, 'reg> {
-        ConjunctionBuilder::new(context, &mut optional.conjunction)
-    }
-
     pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
     }

@@ -124,25 +124,23 @@ impl fmt::Display for Disjunction {
     }
 }
 
-pub struct DisjunctionBuilder<'cx, 'reg> {
-    context: &'cx mut BlockBuilderContext<'reg>,
-    disjunction: &'cx mut Disjunction,
+#[derive(Debug)]
+pub struct DisjunctionBuilder {
+    pub(super) branches: Vec<(BranchID, ConjunctionBuilder)>,
     scope_id: ScopeId,
 }
 
-impl<'cx, 'reg> DisjunctionBuilder<'cx, 'reg> {
+impl DisjunctionBuilder {
     pub fn new(
-        context: &'cx mut BlockBuilderContext<'reg>,
         scope_id: ScopeId,
-        disjunction: &'cx mut Disjunction,
     ) -> Self {
-        Self { context, disjunction, scope_id }
+        Self { scope_id, branches: Vec::new() }
     }
 
-    pub fn add_conjunction(&mut self) -> ConjunctionBuilder<'_, 'reg> {
-        let conj_scope_id = self.context.create_child_scope(self.scope_id, ScopeType::Conjunction);
-        self.disjunction.conjunctions.push(Conjunction::new(conj_scope_id));
-        self.disjunction.branch_ids.push(self.context.next_branch_id());
-        ConjunctionBuilder::new(self.context, self.disjunction.conjunctions.last_mut().unwrap())
+    pub fn add_conjunction(&mut self, context: &mut BlockBuilderContext<'_>) -> &mut ConjunctionBuilder {
+        let conj_scope_id = context.create_child_scope(self.scope_id, ScopeType::Conjunction);
+        let branch_id = context.next_branch_id();
+        self.branches.push((branch_id, ConjunctionBuilder::new(conj_scope_id)));
+        &mut self.branches.last_mut().unwrap().1
     }
 }

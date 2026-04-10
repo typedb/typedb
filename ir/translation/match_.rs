@@ -14,6 +14,7 @@ use crate::{
     translation::{constraints::add_statement, PipelineTranslationContext},
     RepresentationError,
 };
+use crate::pipeline::block::BlockBuilderContext;
 
 pub fn translate_match<'a>(
     context: &'a mut PipelineTranslationContext,
@@ -22,54 +23,62 @@ pub fn translate_match<'a>(
     match_: &typeql::query::stage::Match,
 ) -> Result<BlockBuilder<'a>, Box<RepresentationError>> {
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
-    add_patterns(function_index, &mut builder.conjunction_mut(), &match_.patterns)?;
+    let (context, conjunction) = builder.DISSOLVEME_to_parts_mut();
+    add_patterns(function_index, context, conjunction, &match_.patterns)?;
     Ok(builder)
 }
 
 pub(crate) fn add_patterns(
     function_index: &impl FunctionSignatureIndex,
-    conjunction: &mut ConjunctionBuilder<'_, '_>,
+    context: &mut BlockBuilderContext<'_>,
+    conjunction: &mut ConjunctionBuilder,
     patterns: &[typeql::Pattern],
 ) -> Result<(), Box<RepresentationError>> {
     patterns.iter().try_for_each(|pattern| match pattern {
-        typeql::Pattern::Conjunction(nested) => add_patterns(function_index, conjunction, &nested.patterns),
-        typeql::Pattern::Disjunction(disjunction) => add_disjunction(function_index, conjunction, disjunction),
-        typeql::Pattern::Negation(negation) => add_negation(function_index, conjunction, negation),
-        typeql::Pattern::Optional(optional) => add_optional(function_index, conjunction, optional),
-        typeql::Pattern::Statement(statement) => add_statement(function_index, conjunction, statement),
+        typeql::Pattern::Conjunction(nested) => add_patterns(function_index, context, conjunction, &nested.patterns),
+        typeql::Pattern::Disjunction(disjunction) => add_disjunction(function_index, context, conjunction, disjunction),
+        typeql::Pattern::Negation(negation) => add_negation(function_index, context, conjunction, negation),
+        typeql::Pattern::Optional(optional) => add_optional(function_index, context, conjunction, optional),
+        typeql::Pattern::Statement(statement) => add_statement(function_index, context, conjunction, statement),
     })?;
     Ok(())
 }
 
 fn add_disjunction(
     function_index: &impl FunctionSignatureIndex,
-    conjunction: &mut ConjunctionBuilder<'_, '_>,
+    context: &mut BlockBuilderContext<'_>,
+    conjunction: &mut ConjunctionBuilder,
     disjunction: &typeql::pattern::Disjunction,
 ) -> Result<(), Box<RepresentationError>> {
-    let mut disjunction_builder = conjunction.add_disjunction();
+    let mut disjunction_builder = conjunction.add_disjunction(context);
     disjunction
         .branches
         .iter()
-        .try_for_each(|branch| add_patterns(function_index, &mut disjunction_builder.add_conjunction(), branch))?;
+        .try_for_each(|branch| {
+            let conj = disjunction_builder.add_conjunction(context);
+            add_patterns(function_index, context, conj, branch)
+        })?;
     Ok(())
 }
 
 fn add_negation(
     function_index: &impl FunctionSignatureIndex,
-    conjunction: &mut ConjunctionBuilder<'_, '_>,
+    context: &mut BlockBuilderContext<'_>,
+    conjunction: &mut ConjunctionBuilder,
     negation: &typeql::pattern::Negation,
 ) -> Result<(), Box<RepresentationError>> {
-    let mut negation_builder = conjunction.add_negation();
-    add_patterns(function_index, &mut negation_builder, &negation.patterns)
+    let mut negation_builder = conjunction.add_negation(context);
+    add_patterns(function_index, context, &mut negation_builder, &negation.patterns)
 }
 
 fn add_optional(
     function_index: &impl FunctionSignatureIndex,
-    parent_conjunction: &mut ConjunctionBuilder<'_, '_>,
+    context: &mut BlockBuilderContext<'_>,
+    parent_conjunction: &mut ConjunctionBuilder,
     optional: &typeql::pattern::Optional,
 ) -> Result<(), Box<RepresentationError>> {
     let parent_scope = parent_conjunction.scope_id();
-    let mut optional_builder = parent_conjunction.add_optional(optional.span)?;
-    add_patterns(function_index, &mut optional_builder, &optional.patterns)?;
+    let mut optional_builder = parent_conjunction.add_optional(optional.span, context)?;
+    add_patterns(function_index, context, &mut optional_builder, &optional.patterns)?;
     Ok(())
 }
