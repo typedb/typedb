@@ -266,9 +266,7 @@ fn all_vertex_annotations_available(
 ) -> bool {
     let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap();
     (conjunction
-        .variable_binding_modes()
-        .iter()
-        .filter_map(|(v, mode)| (!mode.is_locally_binding_in_child()).then_some(*v))
+        .visible_referenced_variables()
         .filter(|var| {
             let category = variable_registry.get_variable_category(*var).unwrap();
             category.is_category_type() || category.is_category_thing()

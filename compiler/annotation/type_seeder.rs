@@ -67,7 +67,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
         let mut graph = self.build_recursive(conjunction);
         // Pre-seed with upstream variable annotations.
-        for variable in conjunction.referenced_variables() {
+        for variable in conjunction.visible_referenced_variables() {
             if let Some(annotations) = upstream_annotations.get(&Vertex::Variable(variable)) {
                 graph.vertices.add_or_intersect(&Vertex::Variable(variable), Cow::Borrowed(annotations));
             }
@@ -95,7 +95,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         graph: &mut TypeInferenceGraph<'_>,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        let vars_in_pattern = graph.conjunction.referenced_variables().map(Vertex::Variable).collect::<HashSet<_>>();
+        let vars_in_pattern = graph.conjunction.visible_referenced_variables().map(Vertex::Variable).collect::<HashSet<_>>();
         for (vertex, parent_annotations) in parent_vertices.iter() {
             if vars_in_pattern.contains(vertex) {
                 graph.vertices.insert(vertex.clone(), parent_annotations.clone());
@@ -151,12 +151,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         disjunction: &'conj Disjunction,
     ) -> NestedTypeInferenceGraphDisjunction<'conj> {
         let nested_graphs = disjunction.conjunctions().iter().map(|conj| self.build_recursive(conj)).collect_vec();
-        let shared_variables = disjunction
-            .variable_binding_modes()
-            .iter()
-            .filter(|(_, mode)| **mode != BindingMode::LocallyBindingInChild)
-            .map(|(v, _)| *v)
-            .collect();
+        let shared_variables = disjunction.visible_referenced_variables().collect();
         NestedTypeInferenceGraphDisjunction {
             disjunction: nested_graphs,
             shared_variables,

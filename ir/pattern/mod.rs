@@ -70,20 +70,25 @@ pub trait IrID: Copy + fmt::Display + fmt::Debug + Hash + Eq + PartialEq + Ord +
 impl IrID for Variable {}
 
 pub trait Pattern {
+    // A referenced variable is "visible" if it's not local to some subpattern.
+    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        todo!();
+        [].into_iter()
+    }
+
+    fn named_visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.visible_referenced_variables().filter(Variable::is_named)
+    }
+
+    // includes all variables from constraints and subpatterns. Does not include inputs.
     fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
-    fn required_inputs<'a>(&'a self) -> impl Iterator<Item = Variable> + 'a {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(v))
-    }
 
-    fn named_visible_binding_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.visible_binding_variables().filter(Variable::is_named)
-    }
-
-    fn visible_binding_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes()
-            .into_iter()
-            .filter_map(|(v, mode)| (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v))
+    // A variable is "input" if it must be bound before this is executed.
+    // TODO: This requires info from above, so maybe is a Plannable trait?
+    fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
+        todo!();
+        [].into_iter()
     }
 
     // TODO: Return impl iterator

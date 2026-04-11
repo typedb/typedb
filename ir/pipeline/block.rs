@@ -97,7 +97,7 @@ impl<'reg> BlockBuilder<'reg> {
         });
         let BlockBuilderContext { block_context, variable_registry, variable_names_index: visible_variables, .. } = context;
         validate_conjunction(&conjunction, variable_registry, &block_context)?;
-        let conjunction_visible: HashSet<_> = conjunction.named_visible_binding_variables().collect();
+        let conjunction_visible: HashSet<_> = conjunction.named_visible_referenced_variables().collect();
         visible_variables
             .retain(|name, var| conjunction_visible.contains(var) || block_context.is_block_input_variable(var));
         Ok(Block { conjunction, block_context })
