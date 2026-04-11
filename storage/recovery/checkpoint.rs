@@ -20,12 +20,13 @@ use fail_point::{
     CHECKPOINT_FILE_EMPTY, CHECKPOINT_FILE_SYNC_FAIL, CHECKPOINT_METADATA_WRITE_FAIL,
 };
 use itertools::Itertools;
+use rocksdb::Options;
 use same_file::is_same_file;
 use tracing::{debug, trace};
 
 use crate::{
     durability_client::DurabilityClient,
-    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces},
+    keyspace::{Keyspace, KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces},
     recovery::commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     sequence_number::SequenceNumber,
 };
@@ -125,12 +126,17 @@ impl CheckpointReader {
         if !self.directory.join(STORAGE_METADATA_FILE_NAME).exists() {
             return Ok(false);
         }
+
         for keyspace in KS::iter() {
             let keyspace_checkpoint_dir = self.directory.join(keyspace.name());
-            if !fs::exists(keyspace_checkpoint_dir)? {
+            if !fs::exists(&keyspace_checkpoint_dir)? {
+                return Ok(false);
+            }
+            if Keyspace::open(&keyspace_checkpoint_dir, keyspace, &Options::default()).is_err() {
                 return Ok(false);
             }
         }
+
         let metadata_file_path = self.directory.join(STORAGE_METADATA_FILE_NAME);
         fs::exists(metadata_file_path)
     }
