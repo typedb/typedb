@@ -565,17 +565,13 @@ impl<const SIZE: usize> TimelineWindow<SIZE> {
     fn get_status(&self, sequence_number: SequenceNumber) -> CommitStatus<'_> {
         let index = sequence_number - self.start;
         let status = SlotMarker::from(self.slot_status[index].load(Ordering::SeqCst));
-        if let SlotMarker::Empty = status {
-            CommitStatus::Empty
-        } else {
-            let record = self.commit_records[index].get().unwrap();
-            match status {
-                SlotMarker::Empty => unreachable!(),
-                SlotMarker::Pending => CommitStatus::Pending(MaybeOwns::Borrowed(record)),
-                SlotMarker::Validated => CommitStatus::Validated(MaybeOwns::Borrowed(record)),
-                SlotMarker::Applied => CommitStatus::Applied(MaybeOwns::Borrowed(record)),
-                SlotMarker::Aborted => CommitStatus::Aborted,
-            }
+        let lazy_record = || self.commit_records[index].get().unwrap();
+        match status {
+            SlotMarker::Empty => CommitStatus::Empty,
+            SlotMarker::Aborted => CommitStatus::Aborted,
+            SlotMarker::Pending => CommitStatus::Pending(MaybeOwns::Borrowed(lazy_record())),
+            SlotMarker::Validated => CommitStatus::Validated(MaybeOwns::Borrowed(lazy_record())),
+            SlotMarker::Applied => CommitStatus::Applied(MaybeOwns::Borrowed(lazy_record())),
         }
     }
 
