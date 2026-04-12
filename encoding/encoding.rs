@@ -7,7 +7,8 @@
 #![deny(elided_lifetimes_in_paths)]
 #![deny(unused_must_use)]
 
-use bytes::{util::MB, Bytes};
+use bytes::Bytes;
+use resource::constants::common::MB;
 use rocksdb::{BlockBasedIndexType, BlockBasedOptions, DBCompressionType, SliceTransform};
 use storage::{
     key_value::StorageKey,

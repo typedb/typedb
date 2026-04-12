@@ -18,6 +18,10 @@ pub mod common {
     pub const SECONDS_IN_MONTH: u64 = SECONDS_IN_DAY * DAYS_IN_MONTH;
     pub const SECONDS_IN_YEAR: u64 = SECONDS_IN_DAY * DAYS_IN_YEAR;
 
+    pub const KB: u64 = 1024;
+    pub const MB: u64 = 1024 * KB;
+    pub const GB: u64 = 1024 * MB;
+
     pub const ERROR_QUERY_POINTER_LINES_BEFORE: usize = 2;
     pub const ERROR_QUERY_POINTER_LINES_AFTER: usize = 2;
 }
@@ -26,7 +30,7 @@ pub mod server {
     use std::time::Duration;
 
     use crate::{
-        constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE, SECONDS_IN_YEAR},
+        constants::common::{GB, SECONDS_IN_HOUR, SECONDS_IN_MINUTE, SECONDS_IN_YEAR},
         server_info::ServerInfo,
     };
 
@@ -45,6 +49,8 @@ pub mod server {
     pub const SYSTEM_FILE_PREFIX: &str = system_file_prefix!();
 
     pub const GRPC_CONNECTION_KEEPALIVE: Duration = Duration::from_secs(2 * SECONDS_IN_HOUR);
+
+    pub const GRPC_MAX_MESSAGE_SIZE: usize = GB as usize;
 
     // TODO: Maybe we start moving these options to separate crates?
     pub const DEFAULT_PREFETCH_SIZE: usize = 32;
@@ -129,12 +135,14 @@ pub mod snapshot {
 }
 
 pub mod storage {
+    use crate::constants::common::MB;
+
     pub const TIMELINE_WINDOW_SIZE: usize = 32;
     pub const WAL_SYNC_INTERVAL_MICROSECONDS: u64 = 1000;
     pub const WATERMARK_WAIT_INTERVAL_MICROSECONDS: u64 = 50;
     pub const COMMIT_WAIT_FOR_FSYNC: bool = true;
 
-    pub const ROCKSDB_CACHE_SIZE_MB: u64 = 1024;
+    pub const ROCKSDB_CACHE_SIZE: u64 = 1024 * MB;
 }
 
 pub mod encoding {

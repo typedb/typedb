@@ -11,10 +11,10 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{util::MB, Bytes};
+use bytes::Bytes;
 use fail_point::{fail_point, KEYSPACE_CHECKPOINT_FAIL, KEYSPACE_DELETE_FAIL, KEYSPACE_OPEN_FAIL};
 use itertools::Itertools;
-use resource::{constants::storage::ROCKSDB_CACHE_SIZE_MB, profile::StorageCounters};
+use resource::{constants::storage::ROCKSDB_CACHE_SIZE, profile::StorageCounters};
 use rocksdb::{checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 use serde::{Deserialize, Serialize};
 
@@ -69,7 +69,7 @@ impl Keyspaces {
     pub(crate) fn open<KS: KeyspaceSet>(storage_dir: impl AsRef<Path>) -> Result<Self, KeyspaceOpenError> {
         let path = storage_dir.as_ref();
 
-        let cache = rocksdb::Cache::new_lru_cache((ROCKSDB_CACHE_SIZE_MB * MB) as usize);
+        let cache = rocksdb::Cache::new_lru_cache(ROCKSDB_CACHE_SIZE as usize);
         let mut keyspaces = Keyspaces::new();
         for keyspace in KS::iter() {
             keyspaces

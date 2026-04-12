@@ -11,10 +11,6 @@ use std::{
 
 use base64::Engine;
 
-pub const KB: u64 = 1024;
-pub const MB: u64 = KB * KB;
-pub const GB: u64 = MB * KB;
-
 // TODO: this needs to be optimised using bigger strides than a single byte!
 ///
 /// Performs a big-endian +1 operation that errors on overflow

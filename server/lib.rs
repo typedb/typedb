@@ -13,7 +13,7 @@ use std::{net::SocketAddr, sync::Arc};
 use axum_server::{tls_rustls::RustlsConfig, Handle};
 use database::database_manager::DatabaseManager;
 use resource::{
-    constants::server::{GRPC_CONNECTION_KEEPALIVE, SERVER_INFO},
+    constants::server::{GRPC_CONNECTION_KEEPALIVE, GRPC_MAX_MESSAGE_SIZE, SERVER_INFO},
     server_info::ServerInfo,
 };
 use tokio::{
@@ -155,7 +155,11 @@ impl Server {
         }
         grpc_server
             .layer(&authenticator)
-            .add_service(typedb_protocol::type_db_server::TypeDbServer::new(service))
+            .add_service(
+                typedb_protocol::type_db_server::TypeDbServer::new(service)
+                    .max_decoding_message_size(GRPC_MAX_MESSAGE_SIZE)
+                    .max_encoding_message_size(GRPC_MAX_MESSAGE_SIZE),
+            )
             .serve_with_shutdown(address, async {
                 // The tonic server starts a shutdown process when this closure execution finishes
                 shutdown_receiver.changed().await.expect("Expected shutdown receiver signal");
