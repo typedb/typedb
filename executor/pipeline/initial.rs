@@ -3,57 +3,40 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 use lending_iterator::LendingIterator;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
-    pipeline::{
-        stage::{ExecutionContext, StageAPI},
-        PipelineExecutionError, StageIterator,
-    },
+    pipeline::{PipelineExecutionError, StageIterator},
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
 };
 
-pub struct InitialStage<Snapshot> {
-    context: ExecutionContext<Snapshot>,
+pub struct InitialStage {
     initial_batch: FixedBatch,
 }
 
-impl<Snapshot> InitialStage<Snapshot> {
-    pub fn new_empty(context: ExecutionContext<Snapshot>) -> Self {
-        Self { context, initial_batch: FixedBatch::SINGLE_EMPTY_ROW }
+impl InitialStage {
+    pub fn new_empty() -> Self {
+        Self { initial_batch: FixedBatch::SINGLE_EMPTY_ROW }
     }
 
-    pub fn new_with(context: ExecutionContext<Snapshot>, initial_row: MaybeOwnedRow<'_>) -> Self {
+    pub fn new_with(initial_row: MaybeOwnedRow<'_>) -> Self {
         let batch = FixedBatch::from(initial_row);
-        Self { context, initial_batch: batch }
+        Self { initial_batch: batch }
     }
-}
 
-impl<Snapshot> StageAPI<Snapshot> for InitialStage<Snapshot> {
-    type OutputIterator = InitialIterator;
-
-    fn into_iterator(
-        self,
-        _interrupt: ExecutionInterrupt,
-    ) -> Result<
-        (Self::OutputIterator, ExecutionContext<Snapshot>),
-        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
-    > {
-        Ok((InitialIterator::new(self.initial_batch), self.context))
+    pub(crate) fn into_iterator(self) -> InitialIterator {
+        InitialIterator::new(self.initial_batch)
     }
 }
 
 pub struct InitialIterator {
     iterator: Box<FixedBatchRowIterator>,
-    index: u32,
 }
 
 impl InitialIterator {
-    fn new(batch: FixedBatch) -> Self {
-        Self { iterator: Box::new(FixedBatchRowIterator::new(Ok(batch))), index: 0 }
+    pub(crate) fn new(batch: FixedBatch) -> Self {
+        Self { iterator: Box::new(FixedBatchRowIterator::new(Ok(batch))) }
     }
 }
 

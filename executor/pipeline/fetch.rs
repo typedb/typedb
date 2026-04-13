@@ -225,7 +225,7 @@ fn execute_single_function(
     variable_positions: &HashMap<Variable, VariablePosition>,
     function: &ExecutableFunction,
 ) -> Result<DocumentNode, FetchExecutionError> {
-    let (mut pattern_executor, execution_context) = prepare_single_function_execution(
+    let (mut pattern_executor, context) = prepare_single_function_execution(
         snapshot,
         thing_manager,
         parameters,
@@ -239,7 +239,7 @@ fn execute_single_function(
 
     let batch = exactly_one_or_return_err!(
         pattern_executor
-            .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions)
+            .compute_next_batch(&context, &mut interrupt, &mut tabled_functions)
             .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?,
         FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() } // TODO: Can we get function name here?
     );
@@ -313,7 +313,7 @@ fn execute_list_function(
     variable_positions: &HashMap<Variable, VariablePosition>,
     function: &ExecutableFunction,
 ) -> Result<DocumentNode, FetchExecutionError> {
-    let (mut pattern_executor, execution_context) = prepare_single_function_execution(
+    let (mut pattern_executor, context) = prepare_single_function_execution(
         snapshot,
         thing_manager,
         parameters,
@@ -328,7 +328,7 @@ fn execute_list_function(
     let mut nodes = Vec::new();
     // TODO: We could create an iterator over rows in a single call here instead
     while let Some(batch) = pattern_executor
-        .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions)
+        .compute_next_batch(&context, &mut interrupt, &mut tabled_functions)
         .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?
     {
         for row in batch {

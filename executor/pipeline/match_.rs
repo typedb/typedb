@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{iter::Peekable, sync::Arc};
+use std::{iter::Peekable, marker::PhantomData, sync::Arc};
 
 use compiler::executable::{
     function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
@@ -24,55 +24,55 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub struct MatchStageExecutor<PreviousStage> {
+pub struct MatchStageExecutor<InputIterator> {
     executable: Arc<ConjunctionExecutable>,
-    previous: PreviousStage,
     function_registry: Arc<ExecutableFunctionRegistry>,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> MatchStageExecutor<PreviousStage> {
-    pub fn new(
-        executable: Arc<ConjunctionExecutable>,
-        previous: PreviousStage,
-        function_registry: Arc<ExecutableFunctionRegistry>,
-    ) -> Self {
-        Self { executable, previous, function_registry }
+impl<InputIterator> MatchStageExecutor<InputIterator> {
+    pub fn new(executable: Arc<ConjunctionExecutable>, function_registry: Arc<ExecutableFunctionRegistry>) -> Self {
+        Self { executable, function_registry, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for MatchStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for MatchStageExecutor<InputIterator>
 where
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
     Snapshot: ReadableSnapshot + 'static,
 {
-    type OutputIterator = MatchStageIterator<Snapshot, PreviousStage::OutputIterator>;
+    type InputIterator = InputIterator;
+    type OutputIterator = MatchStageIterator<Snapshot, InputIterator>;
 
     fn into_iterator(
         self,
+        input_iterator: Self::InputIterator,
+        context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { previous: previous_stage, executable, function_registry, .. } = self;
-        let (previous_iterator, context) = previous_stage.into_iterator(interrupt.clone())?;
-        let iterator = previous_iterator;
-        Ok((MatchStageIterator::new(iterator, executable, function_registry, context.clone(), interrupt), context))
+        let Self { executable, function_registry, .. } = self;
+        Ok((
+            MatchStageIterator::new(input_iterator, executable, function_registry, context.clone(), interrupt),
+            context,
+        ))
     }
 }
 
-pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, Iterator> {
+pub struct MatchStageIterator<Snapshot: ReadableSnapshot + 'static, InputIterator> {
     context: ExecutionContext<Snapshot>,
     executable: Arc<ConjunctionExecutable>,
     function_registry: Arc<ExecutableFunctionRegistry>,
-    source_iterator: Iterator,
+    source_iterator: InputIterator,
     current_iterator: Option<Peekable<UniqueRows<AsOwnedRows<PatternIterator<Snapshot>>>>>,
     interrupt: ExecutionInterrupt,
 }
 
-impl<Snapshot: ReadableSnapshot + 'static, Iterator> MatchStageIterator<Snapshot, Iterator> {
+impl<Snapshot: ReadableSnapshot + 'static, InputIterator> MatchStageIterator<Snapshot, InputIterator> {
     fn new(
-        iterator: Iterator,
+        iterator: InputIterator,
         executable: Arc<ConjunctionExecutable>,
         function_registry: Arc<ExecutableFunctionRegistry>,
         context: ExecutionContext<Snapshot>,
@@ -82,10 +82,10 @@ impl<Snapshot: ReadableSnapshot + 'static, Iterator> MatchStageIterator<Snapshot
     }
 }
 
-impl<Snapshot, Iterator> LendingIterator for MatchStageIterator<Snapshot, Iterator>
+impl<Snapshot, InputIterator> LendingIterator for MatchStageIterator<Snapshot, InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    Iterator: StageIterator,
+    InputIterator: StageIterator,
 {
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
@@ -126,10 +126,10 @@ where
     }
 }
 
-impl<Snapshot, Iterator> StageIterator for MatchStageIterator<Snapshot, Iterator>
+impl<Snapshot, InputIterator> StageIterator for MatchStageIterator<Snapshot, InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    Iterator: StageIterator,
+    InputIterator: StageIterator,
 {
 }
 

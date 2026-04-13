@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use compiler::executable::reduce::ReduceExecutable;
 use storage::snapshot::ReadableSnapshot;
@@ -19,37 +18,39 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub struct ReduceStageExecutor<PreviousStage> {
+pub struct ReduceStageExecutor<InputIterator> {
     executable: Arc<ReduceExecutable>,
-    previous: PreviousStage,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> ReduceStageExecutor<PreviousStage> {
-    pub fn new(executable: Arc<ReduceExecutable>, previous: PreviousStage) -> Self {
-        Self { executable, previous }
+impl<InputIterator> ReduceStageExecutor<InputIterator> {
+    pub fn new(executable: Arc<ReduceExecutable>) -> Self {
+        Self { executable, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for ReduceStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for ReduceStageExecutor<InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
+    type InputIterator = InputIterator;
     type OutputIterator = WrittenRowsIterator;
 
     fn into_iterator(
         self,
-        interrupt: ExecutionInterrupt,
+        input_iterator: Self::InputIterator,
+        context: ExecutionContext<Snapshot>,
+        _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { previous, executable, .. } = self;
-        let (previous_iterator, context) = previous.into_iterator(interrupt)?;
+        let Self { executable, .. } = self;
 
         let profile = context.profile.profile_stage(|| String::from("Reduce (not timed)"), executable.executable_id);
         let step_profile = profile.extend_or_get(0, || String::from("Reduction (not timed)"));
-        let rows = match reduce_iterator(&context, executable, previous_iterator) {
+        let rows = match reduce_iterator(&context, executable, input_iterator) {
             Ok(rows) => rows,
             Err(err) => return Err((err, context)),
         };

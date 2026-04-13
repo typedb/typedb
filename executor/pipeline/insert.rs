@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use compiler::{
     executable::insert::{
@@ -34,14 +33,14 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub struct InsertStageExecutor<PreviousStage> {
+pub struct InsertStageExecutor<InputIterator> {
     executable: Arc<InsertExecutable>,
-    previous: PreviousStage,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> InsertStageExecutor<PreviousStage> {
-    pub fn new(executable: Arc<InsertExecutable>, previous: PreviousStage) -> Self {
-        Self { executable, previous }
+impl<InputIterator> InsertStageExecutor<InputIterator> {
+    pub fn new(executable: Arc<InsertExecutable>) -> Self {
+        Self { executable, _input_iterator: PhantomData }
     }
 
     pub(crate) fn output_width(&self) -> usize {
@@ -49,22 +48,24 @@ impl<PreviousStage> InsertStageExecutor<PreviousStage> {
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for InsertStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for InsertStageExecutor<InputIterator>
 where
     Snapshot: WritableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
+    type InputIterator = InputIterator;
     type OutputIterator = WrittenRowsIterator;
 
     fn into_iterator(
         self,
+        input_iterator: Self::InputIterator,
+        mut context: ExecutionContext<Snapshot>,
         mut interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { executable, previous } = self;
-        let (previous_iterator, mut context) = previous.into_iterator(interrupt.clone())?;
+        let Self { executable, .. } = self;
 
         let profile = context.profile.profile_stage(|| String::from("Insert"), executable.executable_id);
 
@@ -79,7 +80,7 @@ where
             })
             .collect_vec();
         let mut batch =
-            match prepare_output_rows(executable.output_width() as u32, previous_iterator, &input_output_mapping) {
+            match prepare_output_rows(executable.output_width() as u32, input_iterator, &input_output_mapping) {
                 Ok(output_rows) => output_rows,
                 Err(err) => return Err((err, context)),
             };

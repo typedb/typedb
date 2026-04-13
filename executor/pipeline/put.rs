@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use compiler::{
     executable::{function::ExecutableFunctionRegistry, insert::VariableSource, put::PutExecutable},
@@ -25,19 +24,15 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub struct PutStageExecutor<PreviousStage> {
+pub struct PutStageExecutor<InputIterator> {
     executable: Arc<PutExecutable>,
-    previous: PreviousStage,
     function_registry: Arc<ExecutableFunctionRegistry>,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> PutStageExecutor<PreviousStage> {
-    pub fn new(
-        executable: Arc<PutExecutable>,
-        previous: PreviousStage,
-        function_registry: Arc<ExecutableFunctionRegistry>,
-    ) -> Self {
-        Self { executable, previous, function_registry }
+impl<InputIterator> PutStageExecutor<InputIterator> {
+    pub fn new(executable: Arc<PutExecutable>, function_registry: Arc<ExecutableFunctionRegistry>) -> Self {
+        Self { executable, function_registry, _input_iterator: PhantomData }
     }
 
     pub(crate) fn output_width(&self) -> usize {
@@ -45,24 +40,25 @@ impl<PreviousStage> PutStageExecutor<PreviousStage> {
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for PutStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for PutStageExecutor<InputIterator>
 where
     Snapshot: WritableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
+    type InputIterator = InputIterator;
     type OutputIterator = WrittenRowsIterator;
 
     fn into_iterator(
         self,
+        input_iterator: Self::InputIterator,
+        mut context: ExecutionContext<Snapshot>,
         mut interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { previous: previous_stage, executable, function_registry } = self;
-        let (previous_iterator, mut context) = previous_stage.into_iterator(interrupt.clone())?;
-        let result =
-            into_iterator_impl(&mut context, &mut interrupt, &executable, function_registry, previous_iterator);
+        let Self { executable, function_registry, .. } = self;
+        let result = into_iterator_impl(&mut context, &mut interrupt, &executable, function_registry, input_iterator);
         match result {
             Ok(written_rows_iterator) => Ok((written_rows_iterator, context)),
             Err(err) => Err((err, context)),

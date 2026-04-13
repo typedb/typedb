@@ -151,17 +151,9 @@ impl LendingIterator for ShimIterator {
     }
 }
 
-impl<Snapshot> StageAPI<Snapshot> for ShimStage<Snapshot> {
-    type OutputIterator = ShimIterator;
-
-    fn into_iterator(
-        self,
-        _: ExecutionInterrupt,
-    ) -> Result<
-        (Self::OutputIterator, ExecutionContext<Snapshot>),
-        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
-    > {
-        Ok((ShimIterator(AsNarrowingIterator::new(self.rows)), self.context))
+impl<Snapshot> ShimStage<Snapshot> {
+    fn into_iterator(self) -> (ShimIterator, ExecutionContext<Snapshot>) {
+        (ShimIterator(AsNarrowingIterator::new(self.rows)), self.context)
     }
 }
 
@@ -224,9 +216,11 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
             profile: Arc::new(QueryProfile::new(false)),
         },
     );
-    let insert_executor = InsertStageExecutor::new(Arc::new(insert_plan), initial);
-    let (output_iter, context) =
-        insert_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match *err {
+    let (input_iter, context) = initial.into_iterator();
+    let insert_executor: InsertStageExecutor<ShimIterator> = InsertStageExecutor::new(Arc::new(insert_plan));
+    let (output_iter, context) = insert_executor
+        .into_iterator(input_iter, context, ExecutionInterrupt::new_uninterruptible())
+        .map_err(|(err, _)| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source.clone(),
             _ => unreachable!(),
         })?;
@@ -315,9 +309,11 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
             profile: Arc::new(QueryProfile::new(false)),
         },
     );
-    let delete_executor = DeleteStageExecutor::new(Arc::new(delete_plan), initial);
-    let (output_iter, context) =
-        delete_executor.into_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(err, _)| match *err {
+    let (input_iter, context) = initial.into_iterator();
+    let delete_executor: DeleteStageExecutor<ShimIterator> = DeleteStageExecutor::new(Arc::new(delete_plan));
+    let (output_iter, context) = delete_executor
+        .into_iterator(input_iter, context, ExecutionInterrupt::new_uninterruptible())
+        .map_err(|(err, _)| match *err {
             PipelineExecutionError::WriteError { typedb_source } => typedb_source,
             _ => unreachable!(),
         })?;

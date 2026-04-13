@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use compiler::{
     executable::{
@@ -25,7 +24,7 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     pipeline::{
         insert::prepare_output_rows,
-        stage::{ExecutionContext, StageAPI},
+        stage::{ExecutionContext, StageAPI, StageIterator},
         PipelineExecutionError, WrittenRowsIterator,
     },
     row::Row,
@@ -33,14 +32,14 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub struct UpdateStageExecutor<PreviousStage> {
+pub struct UpdateStageExecutor<InputIterator> {
     executable: Arc<UpdateExecutable>,
-    previous: PreviousStage,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> UpdateStageExecutor<PreviousStage> {
-    pub fn new(executable: Arc<UpdateExecutable>, previous: PreviousStage) -> Self {
-        Self { executable, previous }
+impl<InputIterator> UpdateStageExecutor<InputIterator> {
+    pub fn new(executable: Arc<UpdateExecutable>) -> Self {
+        Self { executable, _input_iterator: PhantomData }
     }
 
     pub(crate) fn output_width(&self) -> usize {
@@ -48,22 +47,24 @@ impl<PreviousStage> UpdateStageExecutor<PreviousStage> {
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for UpdateStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for UpdateStageExecutor<InputIterator>
 where
     Snapshot: WritableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
+    type InputIterator = InputIterator;
     type OutputIterator = WrittenRowsIterator;
 
     fn into_iterator(
         self,
+        input_iterator: Self::InputIterator,
+        mut context: ExecutionContext<Snapshot>,
         mut interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { executable, previous } = self;
-        let (previous_iterator, mut context) = previous.into_iterator(interrupt.clone())?;
+        let Self { executable, .. } = self;
 
         let profile = context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
 
@@ -77,7 +78,7 @@ where
             })
             .collect_vec();
         let mut batch =
-            match prepare_output_rows(executable.output_width() as u32, previous_iterator, &input_output_mapping) {
+            match prepare_output_rows(executable.output_width() as u32, input_iterator, &input_output_mapping) {
                 Ok(output_rows) => output_rows,
                 Err(err) => return Err((err, context)),
             };

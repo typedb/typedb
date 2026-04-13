@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, marker::PhantomData, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -28,35 +28,37 @@ use crate::{
 };
 
 // Sort
-pub struct SortStageExecutor<PreviousStage> {
+pub struct SortStageExecutor<InputIterator> {
     executable: Arc<SortExecutable>,
-    previous: PreviousStage,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> SortStageExecutor<PreviousStage> {
-    pub fn new(executable: Arc<SortExecutable>, previous: PreviousStage) -> Self {
-        Self { executable, previous }
+impl<InputIterator> SortStageExecutor<InputIterator> {
+    pub fn new(executable: Arc<SortExecutable>) -> Self {
+        Self { executable, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for SortStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for SortStageExecutor<InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
+    type InputIterator = InputIterator;
     type OutputIterator = SortStageIterator;
 
     fn into_iterator(
         self,
-        interrupt: ExecutionInterrupt,
+        input_iterator: Self::InputIterator,
+        context: ExecutionContext<Snapshot>,
+        _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { previous, executable, .. } = self;
-        let (previous_iterator, context) = previous.into_iterator(interrupt)?;
+        let Self { executable, .. } = self;
         // accumulate once, then we will operate in-place
-        let batch = match previous_iterator.collect_owned() {
+        let batch = match input_iterator.collect_owned() {
             Ok(batch) => batch,
             Err(err) => return Err((err, context)),
         };
@@ -114,124 +116,128 @@ impl LendingIterator for SortStageIterator {
 impl StageIterator for SortStageIterator {}
 
 // Offset
-pub struct OffsetStageExecutor<PreviousStage> {
+pub struct OffsetStageExecutor<InputIterator> {
     offset_executable: Arc<OffsetExecutable>,
-    previous: PreviousStage,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> OffsetStageExecutor<PreviousStage> {
-    pub fn new(offset_executable: Arc<OffsetExecutable>, previous: PreviousStage) -> Self {
-        Self { offset_executable, previous }
+impl<InputIterator> OffsetStageExecutor<InputIterator> {
+    pub fn new(offset_executable: Arc<OffsetExecutable>) -> Self {
+        Self { offset_executable, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for OffsetStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for OffsetStageExecutor<InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
-    type OutputIterator = OffsetStageIterator<PreviousStage::OutputIterator>;
+    type InputIterator = InputIterator;
+    type OutputIterator = OffsetStageIterator<InputIterator>;
 
     fn into_iterator(
         self,
-        interrupt: ExecutionInterrupt,
+        input_iterator: Self::InputIterator,
+        context: ExecutionContext<Snapshot>,
+        _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { offset_executable, previous, .. } = self;
-        let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        Ok((OffsetStageIterator::new(previous_iterator, offset_executable.offset), context))
+        let Self { offset_executable, .. } = self;
+        Ok((OffsetStageIterator::new(input_iterator, offset_executable.offset), context))
     }
 }
 
-pub struct OffsetStageIterator<PreviousIterator> {
+pub struct OffsetStageIterator<InputIterator> {
     remaining: u64,
-    previous: PreviousIterator,
+    input: InputIterator,
 }
 
-impl<PreviousIterator> OffsetStageIterator<PreviousIterator> {
-    fn new(previous: PreviousIterator, offset: u64) -> Self {
-        Self { remaining: offset, previous }
+impl<InputIterator> OffsetStageIterator<InputIterator> {
+    fn new(input: InputIterator, offset: u64) -> Self {
+        Self { remaining: offset, input }
     }
 }
 
-impl<PreviousIterator> StageIterator for OffsetStageIterator<PreviousIterator> where PreviousIterator: StageIterator {}
+impl<InputIterator> StageIterator for OffsetStageIterator<InputIterator> where InputIterator: StageIterator {}
 
-impl<PreviousIterator> LendingIterator for OffsetStageIterator<PreviousIterator>
+impl<InputIterator> LendingIterator for OffsetStageIterator<InputIterator>
 where
-    PreviousIterator: StageIterator,
+    InputIterator: StageIterator,
 {
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         while self.remaining > 0 {
-            match self.previous.next() {
+            match self.input.next() {
                 None => return None,
                 Some(Err(err)) => return Some(Err(err)),
                 Some(Ok(_)) => (),
             }
             self.remaining -= 1;
         }
-        self.previous.next()
+        self.input.next()
     }
 }
 
 // Limit
-pub struct LimitStageExecutor<PreviousStage> {
+pub struct LimitStageExecutor<InputIterator> {
     limit_executable: Arc<LimitExecutable>,
-    previous: PreviousStage,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> LimitStageExecutor<PreviousStage> {
-    pub fn new(limit_executable: Arc<LimitExecutable>, previous: PreviousStage) -> Self {
-        Self { limit_executable, previous }
+impl<InputIterator> LimitStageExecutor<InputIterator> {
+    pub fn new(limit_executable: Arc<LimitExecutable>) -> Self {
+        Self { limit_executable, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for LimitStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for LimitStageExecutor<InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
-    type OutputIterator = LimitStageIterator<PreviousStage::OutputIterator>;
+    type InputIterator = InputIterator;
+    type OutputIterator = LimitStageIterator<InputIterator>;
 
     fn into_iterator(
         self,
-        interrupt: ExecutionInterrupt,
+        input_iterator: Self::InputIterator,
+        context: ExecutionContext<Snapshot>,
+        _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { limit_executable, previous, .. } = self;
-        let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        Ok((LimitStageIterator::new(previous_iterator, limit_executable.limit), context))
+        let Self { limit_executable, .. } = self;
+        Ok((LimitStageIterator::new(input_iterator, limit_executable.limit), context))
     }
 }
 
-pub struct LimitStageIterator<PreviousIterator> {
+pub struct LimitStageIterator<InputIterator> {
     remaining: u64,
-    previous: PreviousIterator,
+    input: InputIterator,
 }
 
-impl<PreviousIterator> LimitStageIterator<PreviousIterator> {
-    fn new(previous: PreviousIterator, limit: u64) -> Self {
-        Self { remaining: limit, previous }
+impl<InputIterator> LimitStageIterator<InputIterator> {
+    fn new(input: InputIterator, limit: u64) -> Self {
+        Self { remaining: limit, input }
     }
 }
 
-impl<PreviousIterator> StageIterator for LimitStageIterator<PreviousIterator> where PreviousIterator: StageIterator {}
+impl<InputIterator> StageIterator for LimitStageIterator<InputIterator> where InputIterator: StageIterator {}
 
-impl<PreviousIterator> LendingIterator for LimitStageIterator<PreviousIterator>
+impl<InputIterator> LendingIterator for LimitStageIterator<InputIterator>
 where
-    PreviousIterator: StageIterator,
+    InputIterator: StageIterator,
 {
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.remaining > 0 {
             self.remaining -= 1;
-            self.previous.next()
+            self.input.next()
         } else {
             None
         }
@@ -239,58 +245,59 @@ where
 }
 
 // Select
-pub struct SelectStageExecutor<PreviousStage> {
+pub struct SelectStageExecutor<InputIterator> {
     select_executable: Arc<SelectExecutable>,
-    previous: PreviousStage,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> SelectStageExecutor<PreviousStage> {
-    pub fn new(select_executable: Arc<SelectExecutable>, previous: PreviousStage) -> Self {
-        Self { select_executable, previous }
+impl<InputIterator> SelectStageExecutor<InputIterator> {
+    pub fn new(select_executable: Arc<SelectExecutable>) -> Self {
+        Self { select_executable, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for SelectStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for SelectStageExecutor<InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
-    type OutputIterator = SelectStageIterator<PreviousStage::OutputIterator>;
+    type InputIterator = InputIterator;
+    type OutputIterator = SelectStageIterator<InputIterator>;
 
     fn into_iterator(
         self,
-        interrupt: ExecutionInterrupt,
+        input_iterator: Self::InputIterator,
+        context: ExecutionContext<Snapshot>,
+        _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { previous, .. } = self;
-        let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        Ok((SelectStageIterator::new(previous_iterator, self.select_executable.retained_positions.clone()), context))
+        Ok((SelectStageIterator::new(input_iterator, self.select_executable.retained_positions.clone()), context))
     }
 }
 
-pub struct SelectStageIterator<PreviousIterator> {
-    previous: PreviousIterator,
+pub struct SelectStageIterator<InputIterator> {
+    input: InputIterator,
     retained_positions: HashSet<VariablePosition>,
 }
 
-impl<PreviousIterator> SelectStageIterator<PreviousIterator> {
-    fn new(previous: PreviousIterator, retained_positions: HashSet<VariablePosition>) -> Self {
-        Self { previous, retained_positions }
+impl<InputIterator> SelectStageIterator<InputIterator> {
+    fn new(input: InputIterator, retained_positions: HashSet<VariablePosition>) -> Self {
+        Self { input, retained_positions }
     }
 }
 
-impl<PreviousIterator> StageIterator for SelectStageIterator<PreviousIterator> where PreviousIterator: StageIterator {}
+impl<InputIterator> StageIterator for SelectStageIterator<InputIterator> where InputIterator: StageIterator {}
 
-impl<PreviousIterator> LendingIterator for SelectStageIterator<PreviousIterator>
+impl<InputIterator> LendingIterator for SelectStageIterator<InputIterator>
 where
-    PreviousIterator: StageIterator,
+    InputIterator: StageIterator,
 {
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.previous.next().map(|res| {
+        self.input.next().map(|res| {
             res.map(|row| {
                 let (input, mult, provenance) = row.into_owned_parts();
                 let mut output = Vec::with_capacity(input.len());
@@ -308,59 +315,61 @@ where
 }
 
 // Require
-pub struct RequireStageExecutor<PreviousStage> {
+pub struct RequireStageExecutor<InputIterator> {
     require_executable: Arc<RequireExecutable>,
-    previous: PreviousStage,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> RequireStageExecutor<PreviousStage> {
-    pub fn new(require_executable: Arc<RequireExecutable>, previous: PreviousStage) -> Self {
-        Self { require_executable, previous }
+impl<InputIterator> RequireStageExecutor<InputIterator> {
+    pub fn new(require_executable: Arc<RequireExecutable>) -> Self {
+        Self { require_executable, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for RequireStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for RequireStageExecutor<InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
-    type OutputIterator = RequireStageIterator<PreviousStage::OutputIterator>;
+    type InputIterator = InputIterator;
+    type OutputIterator = RequireStageIterator<InputIterator>;
 
     fn into_iterator(
         self,
-        interrupt: ExecutionInterrupt,
+        input_iterator: Self::InputIterator,
+        context: ExecutionContext<Snapshot>,
+        _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { require_executable, previous, .. } = self;
-        let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        Ok((RequireStageIterator::new(previous_iterator, require_executable), context))
+        let Self { require_executable, .. } = self;
+        Ok((RequireStageIterator::new(input_iterator, require_executable), context))
     }
 }
 
-pub struct RequireStageIterator<PreviousIterator: LendingIterator> {
+pub struct RequireStageIterator<InputIterator: LendingIterator> {
     require: Arc<RequireExecutable>,
-    previous: Peekable<PreviousIterator>,
+    input: Peekable<InputIterator>,
 }
 
-impl<PreviousIterator: LendingIterator> RequireStageIterator<PreviousIterator> {
-    fn new(previous: PreviousIterator, require: Arc<RequireExecutable>) -> Self {
-        Self { require, previous: Peekable::new(previous) }
+impl<InputIterator: LendingIterator> RequireStageIterator<InputIterator> {
+    fn new(input: InputIterator, require: Arc<RequireExecutable>) -> Self {
+        Self { require, input: Peekable::new(input) }
     }
 }
 
-impl<PreviousIterator> StageIterator for RequireStageIterator<PreviousIterator> where PreviousIterator: StageIterator {}
+impl<InputIterator> StageIterator for RequireStageIterator<InputIterator> where InputIterator: StageIterator {}
 
-impl<PreviousIterator> LendingIterator for RequireStageIterator<PreviousIterator>
+impl<InputIterator> LendingIterator for RequireStageIterator<InputIterator>
 where
-    PreviousIterator: StageIterator,
+    InputIterator: StageIterator,
 {
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         loop {
-            match self.previous.peek() {
+            match self.input.peek() {
                 None => return None,
                 Some(Err(err)) => return Some(Err(err.clone())),
                 Some(Ok(row)) => {
@@ -370,62 +379,64 @@ where
                 }
             }
         }
-        self.previous.next()
+        self.input.next()
     }
 }
 
 // Distinct
-pub struct DistinctStageExecutor<PreviousStage> {
+pub struct DistinctStageExecutor<InputIterator> {
     executable: Arc<DistinctExecutable>,
-    previous: PreviousStage,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> DistinctStageExecutor<PreviousStage> {
-    pub fn new(executable: Arc<DistinctExecutable>, previous: PreviousStage) -> Self {
-        Self { executable, previous }
+impl<InputIterator> DistinctStageExecutor<InputIterator> {
+    pub fn new(executable: Arc<DistinctExecutable>) -> Self {
+        Self { executable, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DistinctStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for DistinctStageExecutor<InputIterator>
 where
     Snapshot: ReadableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
-    type OutputIterator = DistinctStageIterator<PreviousStage::OutputIterator>;
+    type InputIterator = InputIterator;
+    type OutputIterator = DistinctStageIterator<InputIterator>;
 
     fn into_iterator(
         self,
-        interrupt: ExecutionInterrupt,
+        input_iterator: Self::InputIterator,
+        context: ExecutionContext<Snapshot>,
+        _interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { previous, .. } = self;
-        let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        let distinct_iterator = DistinctStageIterator::new(previous_iterator);
+        let Self { .. } = self;
+        let distinct_iterator = DistinctStageIterator::new(input_iterator);
         Ok((distinct_iterator, context))
     }
 }
 
-pub struct DistinctStageIterator<PreviousIterator> {
+pub struct DistinctStageIterator<InputIterator> {
     seen: HashSet<MaybeOwnedRow<'static>>,
-    previous: PreviousIterator,
+    input: InputIterator,
 }
 
-impl<PreviousIterator> DistinctStageIterator<PreviousIterator> {
-    fn new(previous_iterator: PreviousIterator) -> Self {
-        Self { seen: HashSet::new(), previous: previous_iterator }
+impl<InputIterator> DistinctStageIterator<InputIterator> {
+    fn new(input_iterator: InputIterator) -> Self {
+        Self { seen: HashSet::new(), input: input_iterator }
     }
 }
 
-impl<PreviousIterator> LendingIterator for DistinctStageIterator<PreviousIterator>
+impl<InputIterator> LendingIterator for DistinctStageIterator<InputIterator>
 where
-    PreviousIterator: StageIterator,
+    InputIterator: StageIterator,
 {
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        match self.previous.next() {
+        match self.input.next() {
             None => None,
             Some(Err(err)) => return Some(Err(err)),
             Some(Ok(row)) => {
@@ -439,4 +450,4 @@ where
     }
 }
 
-impl<PreviousIterator> StageIterator for DistinctStageIterator<PreviousIterator> where PreviousIterator: StageIterator {}
+impl<InputIterator> StageIterator for DistinctStageIterator<InputIterator> where InputIterator: StageIterator {}

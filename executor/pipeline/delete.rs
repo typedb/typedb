@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use compiler::executable::delete::{
     executable::{DeleteExecutable, OptionalDelete},
@@ -25,34 +24,36 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub struct DeleteStageExecutor<PreviousStage> {
+pub struct DeleteStageExecutor<InputIterator> {
     executable: Arc<DeleteExecutable>,
-    previous: PreviousStage,
+    _input_iterator: PhantomData<InputIterator>,
 }
 
-impl<PreviousStage> DeleteStageExecutor<PreviousStage> {
-    pub fn new(executable: Arc<DeleteExecutable>, previous: PreviousStage) -> Self {
-        Self { executable, previous }
+impl<InputIterator> DeleteStageExecutor<InputIterator> {
+    pub fn new(executable: Arc<DeleteExecutable>) -> Self {
+        Self { executable, _input_iterator: PhantomData }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DeleteStageExecutor<PreviousStage>
+impl<Snapshot, InputIterator> StageAPI<Snapshot> for DeleteStageExecutor<InputIterator>
 where
     Snapshot: WritableSnapshot + 'static,
-    PreviousStage: StageAPI<Snapshot>,
+    InputIterator: StageIterator,
 {
+    type InputIterator = InputIterator;
     type OutputIterator = WrittenRowsIterator;
 
     fn into_iterator(
         self,
+        input_iterator: Self::InputIterator,
+        mut context: ExecutionContext<Snapshot>,
         mut interrupt: ExecutionInterrupt,
     ) -> Result<
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let (previous_iterator, mut context) = self.previous.into_iterator(interrupt.clone())?;
         // accumulate once, then we will operate in-place
-        let mut batch = match previous_iterator.collect_owned() {
+        let mut batch = match input_iterator.collect_owned() {
             Ok(batch) => batch,
             Err(err) => return Err((err, context)),
         };
