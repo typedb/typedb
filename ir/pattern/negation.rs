@@ -14,8 +14,8 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         BindingMode, Pattern, Scope, ScopeId,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext},
 };
+use crate::pattern::nested_pattern::NestedPattern;
 
 #[derive(Debug, Clone)]
 pub struct Negation {
@@ -23,10 +23,6 @@ pub struct Negation {
 }
 
 impl Negation {
-    pub fn new(scope_id: ScopeId) -> Self {
-        Self { conjunction: Conjunction::new(scope_id) }
-    }
-
     pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
     }
@@ -37,23 +33,12 @@ impl Negation {
 }
 
 impl Pattern for Negation {
-    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.conjunction().referenced_variables()
+    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.conjunction().visible_referenced_variables()
     }
 
     fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        self.conjunction
-            .variable_binding_modes()
-            .into_iter()
-            .map(|(var, mode)| {
-                if mode.is_always_binding() {
-                    // if it is binding, we demote it to only locally binding (only relevant in the negation)
-                    (var, BindingMode::LocallyBindingInChild)
-                } else {
-                    (var, mode)
-                }
-            })
-            .collect()
+        todo!("Remove me")
     }
 }
 
@@ -76,5 +61,44 @@ impl StructuralEquality for Negation {
 impl fmt::Display for Negation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "not {}", self.conjunction)
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct NegationBuilder {
+    conjunction: ConjunctionBuilder,
+}
+
+impl NegationBuilder {
+    pub(crate) fn new(scope_id: ScopeId) -> Self {
+        Self { conjunction: ConjunctionBuilder::new(scope_id) }
+    }
+
+    pub(crate) fn finish(self) -> NestedPattern {
+        let conjunction = self.conjunction.finish();
+        NestedPattern::Negation(Negation { conjunction })
+    }
+
+    pub(crate) fn conjunction(&self) -> &ConjunctionBuilder {
+        &self.conjunction
+    }
+
+    pub fn conjunction_mut(&mut self) -> &mut ConjunctionBuilder {
+        &mut self.conjunction
+    }
+
+    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
+        self.conjunction
+            .variable_binding_modes()
+            .into_iter()
+            .map(|(var, mode)| {
+                if mode.is_always_binding() {
+                    // if it is binding, we demote it to only locally binding (only relevant in the negation)
+                    (var, BindingMode::LocallyBindingInChild)
+                } else {
+                    (var, mode)
+                }
+            })
+            .collect()
     }
 }

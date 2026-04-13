@@ -17,6 +17,7 @@ use crate::{
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
 };
+use crate::pattern::nested_pattern::NestedPattern;
 
 #[derive(Clone, Debug)]
 pub struct Disjunction {
@@ -55,8 +56,8 @@ impl Disjunction {
 }
 
 impl Pattern for Disjunction {
-    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
+    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.conjunctions().iter().flat_map(|conjunction| conjunction.visible_referenced_variables())
     }
 
     /// Returns:
@@ -65,33 +66,7 @@ impl Pattern for Disjunction {
     //      LocallyBinding for any binding variable that is AlwaysBinding in exactly one branch
     //      RequireBound otherwise
     fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        if self.conjunctions.is_empty() {
-            return HashMap::new();
-        }
-        let all_branch_modes: Vec<_> = self.conjunctions.iter().map(|c| c.variable_binding_modes()).collect();
-        let all_variables = all_branch_modes.iter().flat_map(|b| b.keys()).dedup().collect::<Vec<_>>();
-        // Note: Absent isn't the identity under the bitwise or operator, so we correct in the next step.
-        let mut binding_modes = all_variables
-            .iter()
-            .map(|v| {
-                let mode = all_branch_modes
-                    .iter()
-                    .map(|b| b.get(v).copied().unwrap_or(BindingMode::Absent))
-                    .reduce(|a, b| a | b)
-                    .unwrap_or(BindingMode::Absent);
-                (**v, mode)
-            })
-            .collect::<HashMap<_, _>>();
-
-        // Escalate multiple branches locally-bound to Errors
-        binding_modes.iter_mut().filter(|(_, mode)| mode.is_locally_binding_in_child()).for_each(|(var, mode)| {
-            let binding_branches_count =
-                all_branch_modes.iter().filter(|branch_modes| branch_modes.get(var).is_some()).count();
-            if binding_branches_count > 1 {
-                *mode = BindingMode::RequirePrebound // TODO: Should I go into the branches and bind?
-            }
-        });
-        binding_modes
+       todo!("Remove me!");
     }
 }
 
@@ -118,7 +93,7 @@ impl fmt::Display for Disjunction {
 
 #[derive(Debug)]
 pub struct DisjunctionBuilder {
-    pub(super) branches: Vec<(BranchID, ConjunctionBuilder)>,
+    conjunctions: Vec<(BranchID, ConjunctionBuilder)>,
     scope_id: ScopeId,
 }
 
@@ -126,13 +101,55 @@ impl DisjunctionBuilder {
     pub fn new(
         scope_id: ScopeId,
     ) -> Self {
-        Self { scope_id, branches: Vec::new() }
+        Self { scope_id, conjunctions: Vec::new() }
     }
 
+    pub(crate) fn finish(self) -> NestedPattern {
+        let scope_id = self.scope_id;
+        let branch_ids = self.conjunctions.iter().map(|(bid,_)| *bid).collect();
+        let conjunctions = self.conjunctions.into_iter().map(|(_, conjunction)| {
+            conjunction.finish()
+        }).collect();
+        NestedPattern::Disjunction(Disjunction { scope_id, branch_ids, conjunctions })
+    }
+
+    pub(crate) fn conjunctions(&self) -> impl Iterator<Item=&ConjunctionBuilder> {
+        self.conjunctions.iter().map(|(_, c)| c)
+    }
     pub fn add_conjunction(&mut self, context: &mut BlockBuilderContext<'_>) -> &mut ConjunctionBuilder {
         let conj_scope_id = context.create_child_scope(self.scope_id, ScopeType::Conjunction);
         let branch_id = context.next_branch_id();
-        self.branches.push((branch_id, ConjunctionBuilder::new(conj_scope_id)));
-        &mut self.branches.last_mut().unwrap().1
+        self.conjunctions.push((branch_id, ConjunctionBuilder::new(conj_scope_id)));
+        &mut self.conjunctions.last_mut().unwrap().1
+    }
+
+    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
+        if self.conjunctions.is_empty() {
+            return HashMap::new();
+        }
+        let all_branch_modes: Vec<_> = self.conjunctions.iter().map(|(_, c)| c.variable_binding_modes()).collect();
+        let all_variables = all_branch_modes.iter().flat_map(|b| b.keys()).dedup().collect::<Vec<_>>();
+        // Note: Absent isn't the identity under the bitwise or operator, so we correct in the next step.
+        let mut binding_modes = all_variables
+            .iter()
+            .map(|v| {
+                let mode = all_branch_modes
+                    .iter()
+                    .map(|b| b.get(v).copied().unwrap_or(BindingMode::Absent))
+                    .reduce(|a, b| a | b)
+                    .unwrap_or(BindingMode::Absent);
+                (**v, mode)
+            })
+            .collect::<HashMap<_, _>>();
+
+        // Escalate multiple branches locally-bound to Errors
+        binding_modes.iter_mut().filter(|(_, mode)| mode.is_locally_binding_in_child()).for_each(|(var, mode)| {
+            let binding_branches_count =
+                all_branch_modes.iter().filter(|branch_modes| branch_modes.get(var).is_some()).count();
+            if binding_branches_count > 1 {
+                *mode = BindingMode::RequirePrebound // TODO: Should I go into the branches and bind?
+            }
+        });
+        binding_modes
     }
 }

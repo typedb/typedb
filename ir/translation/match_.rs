@@ -68,7 +68,7 @@ fn add_negation(
     negation: &typeql::pattern::Negation,
 ) -> Result<(), Box<RepresentationError>> {
     let mut negation_builder = conjunction.add_negation(context);
-    add_patterns(function_index, context, &mut negation_builder, &negation.patterns)
+    add_patterns(function_index, context, &mut negation_builder.conjunction_mut(), &negation.patterns)
 }
 
 fn add_optional(
@@ -79,6 +79,6 @@ fn add_optional(
 ) -> Result<(), Box<RepresentationError>> {
     let parent_scope = parent_conjunction.scope_id();
     let mut optional_builder = parent_conjunction.add_optional(optional.span, context)?;
-    add_patterns(function_index, context, &mut optional_builder, &optional.patterns)?;
+    add_patterns(function_index, context, &mut optional_builder.conjunction_mut(), &optional.patterns)?;
     Ok(())
 }

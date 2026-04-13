@@ -5,7 +5,7 @@
  */
 
 use std::{collections::HashMap, fmt};
-
+use std::collections::HashSet;
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
@@ -16,6 +16,7 @@ use crate::{
     },
     pipeline::block::{BlockBuilderContext, BlockContext},
 };
+use crate::pattern::nested_pattern::NestedPattern;
 
 #[derive(Debug, Clone)]
 pub struct Optional {
@@ -24,10 +25,6 @@ pub struct Optional {
 }
 
 impl Optional {
-    pub fn new(scope_id: ScopeId, branch_id: BranchID) -> Self {
-        Self { conjunction: Conjunction::new(scope_id), branch_id }
-    }
-
     pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
     }
@@ -52,16 +49,12 @@ impl Optional {
 }
 
 impl Pattern for Optional {
-    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.conjunction().referenced_variables()
+    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.conjunction().visible_referenced_variables()
     }
 
     fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        self.conjunction
-            .variable_binding_modes()
-            .into_iter()
-            .map(|(v, mode)| if mode.is_always_binding() { (v, BindingMode::OptionallyBinding) } else { (v, mode) })
-            .collect()
+        todo!("REMOVE ME")
     }
 }
 
@@ -84,5 +77,40 @@ impl StructuralEquality for Optional {
 impl fmt::Display for Optional {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         error::todo_display_for_error!(f, self)
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct OptionalBuilder {
+    conjunction: ConjunctionBuilder,
+    branch_id: BranchID,
+}
+
+impl OptionalBuilder {
+    pub(crate) fn new(scope_id: ScopeId, branch_id: BranchID) -> Self {
+        let conjunction = ConjunctionBuilder::new(scope_id);
+        Self { conjunction, branch_id }
+    }
+
+    pub(crate) fn finish(self) -> NestedPattern {
+        let conjunction = self.conjunction.finish();
+        let branch_id = self.branch_id;
+        NestedPattern::Optional(Optional { branch_id, conjunction })
+    }
+
+    pub(crate) fn conjunction(&self) -> &ConjunctionBuilder {
+        &self.conjunction
+    }
+
+    pub fn conjunction_mut(&mut self) -> &mut ConjunctionBuilder {
+        &mut self.conjunction
+    }
+
+    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
+        self.conjunction
+            .variable_binding_modes()
+            .into_iter()
+            .map(|(v, mode)| if mode.is_always_binding() { (v, BindingMode::OptionallyBinding) } else { (v, mode) })
+            .collect()
     }
 }

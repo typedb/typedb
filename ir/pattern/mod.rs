@@ -71,18 +71,12 @@ impl IrID for Variable {}
 
 pub trait Pattern {
     // A referenced variable is "visible" if it's not local to some subpattern.
-    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        todo!();
-        [].into_iter()
-    }
+    // includes all variables from constraints and subpatterns. Does not include inputs.
+    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
     fn named_visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.visible_referenced_variables().filter(Variable::is_named)
     }
-
-    // includes all variables from constraints and subpatterns. Does not include inputs.
-    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
-
 
     // A variable is "input" if it must be bound before this is executed.
     // TODO: This requires info from above, so maybe is a Plannable trait?

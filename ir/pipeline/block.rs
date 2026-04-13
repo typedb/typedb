@@ -22,6 +22,8 @@ use crate::{
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
 };
+use crate::pattern::BindingMode;
+use crate::pattern::conjunction::NestedPatternBuilder;
 
 #[derive(Debug, Clone)]
 pub struct Block {
@@ -84,22 +86,27 @@ impl<'reg> BlockBuilder<'reg> {
     }
 
     pub fn finish(mut self) -> Result<Block, Box<RepresentationError>> {
-        let Self {
-            conjunction: mut builder,
-            mut context,
-        } = self;
-        builder.compute_and_set_variable_binding_modes(&mut context);
-        let conjunction: Conjunction = if true { todo!("zzz") } else { Conjunction::new(ScopeId::ROOT) };
-        conjunction.variable_binding_modes().iter().for_each(|(v, mode)| {
+        self.validate_conjunction()?;
+        let Self { conjunction, mut context, } = self;
+        let block_binding_modes = conjunction.variable_binding_modes();
+        block_binding_modes.iter().for_each(|(v, mode)| {
             if mode.is_optionally_binding() {
                 context.set_variable_optionality(*v, true);
             }
         });
-        let BlockBuilderContext { block_context, variable_registry, variable_names_index: visible_variables, .. } = context;
-        validate_conjunction(&conjunction, variable_registry, &block_context)?;
-        let conjunction_visible: HashSet<_> = conjunction.named_visible_referenced_variables().collect();
-        visible_variables
-            .retain(|name, var| conjunction_visible.contains(var) || block_context.is_block_input_variable(var));
+        let BlockBuilderContext { mut block_context, variable_registry, variable_names_index: visible_variables, .. } = context;
+        visible_variables.retain(|name, var| {
+            match block_binding_modes.get(var).copied().unwrap_or(BindingMode::Absent) {
+                BindingMode::AlwaysBinding | BindingMode::OptionallyBinding => true,
+                BindingMode::LocallyBindingInChild => false,
+                BindingMode::Absent | BindingMode::RequirePrebound => {
+                    debug_assert!(false, "Did not expect Absent or RequirePrebound");
+                    false
+                }
+            }
+        });
+        let conjunction = conjunction.finish();
+        block_context.variable_binding_modes = block_binding_modes;
         Ok(Block { conjunction, block_context })
     }
 
@@ -110,43 +117,42 @@ impl<'reg> BlockBuilder<'reg> {
     pub fn context_mut(&mut self) -> &mut BlockBuilderContext<'reg> {
         &mut self.context
     }
+
+    pub fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
+        let mut block_binding_modes = self.conjunction.variable_binding_modes();
+        block_binding_modes.extend(self.context.input_variables().map(|v| (v, BindingMode::AlwaysBinding)));
+        block_binding_modes
+    }
+
+    fn validate_conjunction(&self) -> Result<(), Box<RepresentationError>> {
+        validate_variable_categories_are_sufficiently_narrow(&self.conjunction, &self.context.variable_registry)?;
+        validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
+        validate_all_variables_are_bound(&self.variable_binding_modes(), &self.context.variable_registry)?;
+        Ok(())
+    }
 }
 
-fn validate_conjunction(
-    conjunction: &Conjunction,
+fn validate_variable_categories_are_sufficiently_narrow(
+    conjunction: &ConjunctionBuilder,
     variable_registry: &VariableRegistry,
-    block_context: &BlockContext,
 ) -> Result<(), Box<RepresentationError>> {
-    let unbound = conjunction.referenced_variables().find(|&variable| {
+    let unbound = conjunction.constraints().iter().flat_map(|c| c.ids()).find(|&variable| {
         matches!(variable_registry.get_variable_category(variable), Some(VariableCategory::AttributeOrValue) | None)
     });
     // TODO: unbound variable somewhere in the pattern is insufficient - a variable could be bound, but
     //   it's actually only required in a sibling part of the pattern ??
     if let Some(variable) = unbound {
-        return Err(Box::new(RepresentationError::UnboundVariable {
+        Err(Box::new(RepresentationError::UnboundVariable {
             variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
             source_span: variable_registry.source_span(variable),
-        }));
+        }))
+    } else {
+        Ok(())
     }
-
-    for (var, mode) in conjunction.variable_binding_modes() {
-        if mode.is_require_prebound() && !block_context.is_block_input_variable(&var) {
-            let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
-            // let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
-            return Err(Box::new(RepresentationError::UnboundRequiredVariable {
-                variable,
-                // source_span: spans[0],
-                // _rest: spans,
-            }));
-        }
-    }
-
-    validate_is_variables_have_same_category(conjunction, variable_registry)?;
-    Ok(())
 }
 
 fn validate_is_variables_have_same_category(
-    conjunction: &Conjunction,
+    conjunction: &ConjunctionBuilder,
     variable_registry: &VariableRegistry,
 ) -> Result<(), Box<RepresentationError>> {
     let is_with_mismatched_category = conjunction.constraints().iter().filter_map(|c| c.as_is()).find(|is| {
@@ -171,18 +177,35 @@ fn validate_is_variables_have_same_category(
     }
 
     conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
-        NestedPattern::Disjunction(disjunction) => disjunction
-            .conjunctions()
-            .iter()
-            .try_for_each(|inner| validate_is_variables_have_same_category(inner, variable_registry)),
-        NestedPattern::Negation(negation) => {
+        NestedPatternBuilder::Disjunction(disjunction) => {
+            disjunction.conjunctions().try_for_each(|inner| {
+                validate_is_variables_have_same_category(inner, variable_registry)
+            })
+        },
+        NestedPatternBuilder::Negation(negation) => {
             validate_is_variables_have_same_category(negation.conjunction(), variable_registry)
         }
-        NestedPattern::Optional(optional) => {
+        NestedPatternBuilder::Optional(optional) => {
             validate_is_variables_have_same_category(optional.conjunction(), variable_registry)
         }
     })?;
 
+    Ok(())
+}
+
+
+fn validate_all_variables_are_bound(block_binding_modes: &HashMap<Variable, BindingMode>, variable_registry: &VariableRegistry) -> Result<(), Box<RepresentationError>> {
+    for (var, mode) in block_binding_modes {
+        if mode.is_require_prebound() {
+            let variable = variable_registry.get_variable_name_or_unnamed(*var).to_owned();
+            // let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
+            return Err(Box::new(RepresentationError::UnboundRequiredVariable {
+                variable,
+                // source_span: spans[0],
+                // _rest: spans,
+            }));
+        }
+    }
     Ok(())
 }
 
@@ -191,6 +214,7 @@ pub struct BlockContext {
     variable_declaration: HashMap<Variable, ScopeId>,
     scope_parents: HashMap<ScopeId, ScopeId>,
     scope_types: HashMap<ScopeId, ScopeType>,
+    variable_binding_modes: HashMap<Variable, BindingMode>,
 }
 
 impl BlockContext {
@@ -255,7 +279,7 @@ impl BlockContext {
         self.variable_declaration.keys().copied()
     }
 
-    #[cfg(debug_assertions)]
+    // #[cfg(debug_assertions)]
     fn is_variable_available_in(&self, scope: ScopeId, variable: Variable) -> bool {
         let variable_scope = self.variable_declaration.get(&variable);
         let in_scope = variable_scope
@@ -357,7 +381,7 @@ impl<'a> BlockBuilderContext<'a> {
         Ok(variable)
     }
 
-    #[cfg(debug_assertions)]
+    // #[cfg(debug_assertions)]
     pub(crate) fn is_variable_available_in(&self, scope: ScopeId, variable: Variable) -> bool {
         self.block_context.is_variable_available_in(scope, variable)
     }

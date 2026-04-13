@@ -70,7 +70,7 @@ impl Constraints {
 }
 
 impl Pattern for Constraints {
-    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.constraints().iter().flat_map(|constraint| constraint.ids()).unique()
     }
 

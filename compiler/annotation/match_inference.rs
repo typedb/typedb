@@ -195,12 +195,6 @@ fn infer_types_in_negations_and_conjunctions(
     type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
 ) -> Result<(), TypeInferenceError> {
     let TypeInferenceGraph { conjunction, vertices, nested_disjunctions, .. } = parent_conjunction_graph;
-    let optionals_in_conjunction = conjunction
-        .variable_binding_modes()
-        .iter()
-        .filter(|(var, mode)| mode.is_optionally_binding() && !block_context.is_block_input_variable(var))
-        .map(|(v, _)| Vertex::Variable(*v))
-        .collect::<HashSet<_>>();
     nested_disjunctions.iter_mut().flat_map(|disjunction| disjunction.disjunction.iter_mut()).try_for_each(
         |nested| {
             infer_types_in_negations_and_conjunctions(
@@ -245,13 +239,12 @@ fn infer_types_in_negations_and_conjunctions(
                 )?;
                 let optional_root_annotations =
                     type_annotations_by_scope.get(&optional.conjunction().scope_id()).unwrap().vertex_annotations();
-                optionals_in_conjunction
-                    .iter()
-                    .filter_map(|var| optional_root_annotations.get(var).map(|annotations| (var, annotations)))
-                    .for_each(|(var, annotations)| {
-                        debug_assert!(!vertices.annotations.contains_key(var));
-                        vertices.annotations.insert(var.clone(), (**annotations).clone());
-                    });
+                optional_root_annotations.iter().filter(|(var, annotations)| {
+                    todo!("!optional.input_variables().contains(var)")
+                }).for_each(|(var, annotations)| {
+                    debug_assert!(!vertices.annotations.contains_key(var));
+                    vertices.annotations.insert(var.clone(), (**annotations).clone());
+                });
             }
         }
     }

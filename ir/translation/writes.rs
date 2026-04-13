@@ -185,7 +185,7 @@ fn add_deletables(
             DeletableKind::Optional { deletables } => {
                 debug_assert!(deletables.iter().all(|d| !matches!(d.kind, DeletableKind::Optional { .. })));
                 let optional_builder = conjunction.add_optional(deletable.span(), context)?;
-                add_deletables(context, deletables, optional_builder, deleted_concepts)?;
+                add_deletables(context, deletables, optional_builder.conjunction_mut(), deleted_concepts)?;
             }
         }
     }
