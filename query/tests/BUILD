@@ -51,12 +51,20 @@ rust_test(
     deps = deps,
 )
 
+rust_test(
+    name = "test_pipeline_stages_limit",
+    crate_root = "pipeline_stages_limit.rs",
+    srcs = ["pipeline_stages_limit.rs"],
+    deps = deps,
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [
         ":test_define",
         ":test_fetch",
         ":test_unimplemented",
+        ":test_pipeline_stages_limit",
     ],
     size = "small",
 )

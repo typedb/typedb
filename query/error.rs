@@ -35,5 +35,6 @@ typedb_error! {
         ReadPipelineExecution(15, "Error while executing read pipeline.",  source_query: String, typedb_source: Box<PipelineExecutionError>),
         QueryExecutionClosedEarly(16, "Query execution was closed before it finished, possibly due to transaction close, rollback, commit, or a server-side error (these should be visible in the server logs)."),
         QueryAnalysisFailed(17, "Error while analysing the query.", source_query: String, typedb_source: Box<ConceptReadError>),
+        PipelineStagesLimitExceeded(18, "Query pipeline has {actual} stages, which exceeds the maximum allowed {max}.", source_query: String, actual: usize, max: usize),
     }
 }

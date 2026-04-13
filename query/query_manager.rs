@@ -45,6 +45,8 @@ use crate::{
     redefine, undefine,
 };
 
+pub const MAX_PIPELINE_STAGES: usize = 1000;
+
 #[derive(Debug, Clone)]
 pub struct QueryManager {
     cache: Option<Arc<QueryCache>>,
@@ -367,6 +369,13 @@ fn translate_pipeline<Snapshot: ReadableSnapshot>(
     query: &typeql::query::Pipeline,
     source_query: &str,
 ) -> Result<TranslatedPipeline, Box<QueryError>> {
+    if query.stages.len() > MAX_PIPELINE_STAGES {
+        return Err(Box::new(QueryError::PipelineStagesLimitExceeded {
+            source_query: source_query.to_string(),
+            actual: query.stages.len(),
+            max: MAX_PIPELINE_STAGES,
+        }));
+    }
     let preamble_signatures = HashMapFunctionSignatureIndex::build(
         query.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
     );
