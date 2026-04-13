@@ -20,11 +20,7 @@ pub type BoxHttpServerResponse = Box<dyn HttpServerResponse>;
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalServerResponse {
-    // TODO: In grpc, we return only the effective connection grpc address. What shall we actually do? Here or globally?
-    pub grpc_serving_address: Option<String>,
-    pub grpc_connection_address: Option<String>,
-    pub http_serving_address: Option<String>,
-    pub http_connection_address: Option<String>,
+    pub address: Option<String>,
 }
 
 impl HttpServerResponse for LocalServerResponse {}

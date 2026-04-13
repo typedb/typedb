@@ -94,12 +94,7 @@ impl ServerStatus for LocalServerStatus {
     }
 
     fn to_http(&self) -> BoxHttpServerResponse {
-        Box::new(LocalServerResponse {
-            grpc_serving_address: Some(self.grpc.serving_address().to_string()),
-            grpc_connection_address: Some(self.grpc.connection_address().to_string()),
-            http_serving_address: self.http.as_ref().map(|http| http.serving_address().to_string()),
-            http_connection_address: self.http.as_ref().map(|http| http.connection_address().to_string()),
-        })
+        Box::new(LocalServerResponse { address: self.http.as_ref().map(|http| http.connection_address().to_string()) })
     }
 
     fn grpc_serving_address(&self) -> Option<&str> {
