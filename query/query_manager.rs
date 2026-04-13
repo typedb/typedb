@@ -28,6 +28,7 @@ use ir::{
     translation::pipeline::{TranslatedPipeline, TranslatedStage},
 };
 use resource::{
+    constants::query::MAX_PIPELINE_STAGES,
     perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
     profile::{CompileProfile, QueryProfile},
 };
@@ -44,8 +45,6 @@ use crate::{
     query_cache::QueryCache,
     redefine, undefine,
 };
-
-pub const MAX_PIPELINE_STAGES: usize = 1000;
 
 #[derive(Debug, Clone)]
 pub struct QueryManager {
