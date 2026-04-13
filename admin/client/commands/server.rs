@@ -46,8 +46,11 @@ async fn server_version(client: &mut AdminClient) -> CommandResult {
 async fn server_status(client: &mut AdminClient) -> CommandResult {
     let res = execute_server_status(client).await?;
 
+    println!("Status: running");
+    println!("Serving:");
+
     if let Some(grpc) = &res.grpc {
-        print!("gRPC:  {}", grpc.serving_address);
+        print!("  gRPC:  {}", grpc.serving_address);
         if grpc.connection_address != grpc.serving_address {
             print!(" (connect via {})", grpc.connection_address);
         }
@@ -55,7 +58,7 @@ async fn server_status(client: &mut AdminClient) -> CommandResult {
     }
 
     if let Some(http) = &res.http {
-        print!("HTTP:  {}", http.serving_address);
+        print!("  HTTP:  {}", http.serving_address);
         if http.connection_address != http.serving_address {
             print!(" (connect via {})", http.connection_address);
         }
@@ -63,7 +66,7 @@ async fn server_status(client: &mut AdminClient) -> CommandResult {
     }
 
     if let Some(admin_address) = &res.admin_address {
-        println!("Admin: {admin_address}");
+        println!("  Admin: {admin_address}");
     }
 
     Ok(())
