@@ -29,6 +29,7 @@ pub enum ErrorResponseCategory {
     Forbidden,
     NotImplemented,
     Unavailable,
+    Redirect { location: String },
     InvalidRequest,
     Internal,
 }
