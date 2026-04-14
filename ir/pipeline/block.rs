@@ -4,10 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use answer::variable::Variable;
-use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
@@ -15,9 +14,8 @@ use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
-        nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        BranchID, Pattern, Scope, ScopeId,
+        BranchID, Scope, ScopeId,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
@@ -86,11 +84,7 @@ impl<'reg> BlockBuilder<'reg> {
     }
 
     pub fn finish(mut self) -> Result<Block, Box<RepresentationError>> {
-        let block_binding_modes = ContextualisedBindingMode::for_block(
-            self.conjunction.variable_binding_modes(),
-            self.context.input_variables()
-        );
-
+        let block_binding_modes = self.variable_binding_modes();
         validate_variable_categories_are_sufficiently_narrow(&self.conjunction, &self.context.variable_registry)?;
         validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
         validate_all_variables_are_bound(&block_binding_modes, &self.context.variable_registry)?;
@@ -102,7 +96,7 @@ impl<'reg> BlockBuilder<'reg> {
         self.context.variable_names_index.retain(|_, var| {
             block_binding_modes.get(var).copied() != Some(BindingMode::LocallyBindingInChild)
         });
-        let conjunction = self.conjunction.finish(&block_binding_modes);
+        let conjunction = self.conjunction.finish(&ContextualisedBindingMode::for_block(block_binding_modes));
         let block_context = self.context.block_context;
         Ok(Block { conjunction, block_context })
     }
@@ -113,6 +107,12 @@ impl<'reg> BlockBuilder<'reg> {
 
     pub fn context_mut(&mut self) -> &mut BlockBuilderContext<'reg> {
         &mut self.context
+    }
+
+    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
+        let mut block_binding_modes = self.conjunction.variable_binding_modes();
+        block_binding_modes.extend(self.context.input_variables().map(|v| (v, BindingMode::AlwaysBinding)));
+        block_binding_modes
     }
 }
 
@@ -178,7 +178,7 @@ fn validate_is_variables_have_same_category(
 }
 
 
-fn validate_all_variables_are_bound(block_binding_modes: &ContextualisedBindingMode, variable_registry: &VariableRegistry) -> Result<(), Box<RepresentationError>> {
+fn validate_all_variables_are_bound(block_binding_modes: &HashMap<Variable, BindingMode>, variable_registry: &VariableRegistry) -> Result<(), Box<RepresentationError>> {
     for (var, mode) in block_binding_modes.iter() {
         if mode.is_require_prebound() {
             let variable = variable_registry.get_variable_name_or_unnamed(*var).to_owned();

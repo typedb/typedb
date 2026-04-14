@@ -4,12 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, mem};
+use std::{fmt, mem};
 
-use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
-use crate::pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, BindingMode, Pattern};
+use crate::pattern::{disjunction::Disjunction, negation::Negation, optional::Optional};
 
 #[derive(Debug, Clone)]
 pub enum NestedPattern {

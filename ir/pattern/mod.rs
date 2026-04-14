@@ -14,13 +14,11 @@ use std::{
 };
 
 use answer::variable::Variable;
-use constraint::Constraint;
 use encoding::value::label::Label;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
-use crate::pipeline::{block::BlockContext, VariableRegistry};
-use crate::pipeline::block::BlockBuilder;
+use crate::pipeline::VariableRegistry;
 
 pub mod conjunction;
 pub mod constraint;
@@ -32,7 +30,6 @@ pub mod disjunction;
 pub mod expression;
 pub mod function_call;
 pub mod nested_pattern;
-mod builders;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub struct BranchID(pub u16);
@@ -79,11 +76,10 @@ pub trait Pattern {
         self.visible_referenced_variables().filter(Variable::is_named)
     }
 
-    // A variable is "input" if it must be bound before this is executed.
-    // TODO: This requires info from above, so maybe is a Plannable trait?
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
 
-    fn TEST_ONLY_contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode>;
+    #[cfg(debug_assertions)] // Test only
+    fn contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode>;
 }
 
 // TODO: rename to 'Identifier' in lieu of a better name
@@ -467,9 +463,8 @@ impl BitOr for BindingMode {
 pub(crate) struct ContextualisedBindingMode(HashMap<Variable, BindingMode>);
 
 impl ContextualisedBindingMode {
-    pub(crate) fn for_block(mut root_binding_modes: HashMap<Variable, BindingMode>, inputs: impl Iterator<Item=Variable>) -> ContextualisedBindingMode {
-        root_binding_modes.extend(inputs.map(|v| (v, BindingMode::AlwaysBinding)));
-        Self(root_binding_modes)
+    pub(crate) fn for_block(block_binding_modes: HashMap<Variable, BindingMode>) -> ContextualisedBindingMode {
+        Self(block_binding_modes)
     }
 
     pub(crate) fn from(
@@ -488,14 +483,6 @@ impl ContextualisedBindingMode {
             (*var, mode)
         }).collect();
         Self(binding_modes)
-    }
-
-    pub(crate) fn iter(&self) -> impl Iterator<Item=(&Variable, &BindingMode)> + '_ {
-        self.0.iter()
-    }
-
-    pub(crate) fn get(&self, variable: &Variable) -> Option<&BindingMode> {
-        self.0.get(variable)
     }
 
     pub(crate) fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {

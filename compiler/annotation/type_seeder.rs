@@ -27,7 +27,7 @@ use ir::{
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        BindingMode, Pattern, Scope, Vertex,
+        Pattern, Scope, Vertex,
     },
     pipeline::VariableRegistry,
 };

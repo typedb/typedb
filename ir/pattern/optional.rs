@@ -5,7 +5,6 @@
  */
 
 use std::{collections::HashMap, fmt};
-use std::collections::HashSet;
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
@@ -48,7 +47,8 @@ impl Pattern for Optional {
         self.binding_modes.required_inputs()
     }
 
-    fn TEST_ONLY_contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode> {
+    #[cfg(debug_assertions)]
+    fn contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode> {
         &self.binding_modes.0
     }
 }

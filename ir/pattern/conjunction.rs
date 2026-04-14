@@ -83,7 +83,8 @@ impl Pattern for Conjunction {
         self.binding_modes.required_inputs()
     }
 
-    fn TEST_ONLY_contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode> {
+    #[cfg(debug_assertions)]
+    fn contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode> {
         &self.binding_modes.0
     }
 }
