@@ -175,7 +175,7 @@ fn insert_pipeline_annotations_recursive(
     let block_id = structure.parametrised_structure.resolve_conjunction_id(stage_index, conjunction.scope_id());
     let variable_annotations =
         variable_annotations_for_block(variable_registry, block_annotations.type_annotations_of(conjunction).unwrap());
-    pipeline_annotations[block_id.0 as usize] = enrich_annotations(conjunction, variable_annotations);
+    pipeline_annotations[block_id.0 as usize] = enrich_annotations(variable_registry, variable_annotations);
 
     conjunction.nested_patterns().iter().for_each(|nested| match nested {
         NestedPattern::Disjunction(branches) => branches.conjunctions().iter().for_each(|inner| {
@@ -212,17 +212,13 @@ fn insert_pipeline_annotations_recursive(
 }
 
 fn enrich_annotations(
-    conjunction: &Conjunction,
+    variable_registry: &VariableRegistry,
     variable_annotations: impl Iterator<Item = (Variable, PipelineVariableAnnotation)>,
 ) -> ConjunctionAnnotations {
     variable_annotations
         .map(|(variable, annotations)| {
             // TODO: We don't always have the info here :/
-            let is_optional = conjunction
-                .variable_binding_modes()
-                .get(&variable)
-                .map(BindingMode::is_optionally_binding)
-                .unwrap_or(false);
+            let is_optional = variable_registry.is_variable_optional(variable);
             (StructureVariableId::from(variable), PipelineVariableAnnotationAndModifier { is_optional, annotations })
         })
         .collect()

@@ -22,7 +22,7 @@ fn binding_modes<'a>(
     conjunction: &impl Pattern,
 ) -> BTreeMap<&'a str, BindingMode> {
     conjunction
-        .variable_binding_modes()
+        .TEST_ONLY_contextualised_binding_modes()
         .iter()
         .filter_map(|(v, b)| variable_registry.get_variable_name(*v).map(|s| (s.as_str(), *b)))
         .collect()
@@ -423,6 +423,44 @@ fn test_optional_skip_a_stage() {
     assert_eq!(
         optional_modes,
         BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
+    );
+    assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)]));
+}
+
+#[test]
+fn test_nested_negation() {
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+
+    let query = r#"
+    match
+        $x isa person;
+        not {
+            $y isa person;
+            not { $f isa friendshi, links ($x, $y); };
+        };
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
+    let translated_pipeline = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap();
+    let TranslatedStage::Match { block, .. } = &translated_pipeline.translated_stages[0] else {
+        unreachable!();
+    };
+    let conjunction = block.conjunction();
+    let outer_negation = conjunction.nested_patterns().first().unwrap().as_negation().unwrap();
+    let inner_negation = outer_negation.conjunction().nested_patterns().first().unwrap().as_negation().unwrap();
+    let conjunction_modes = binding_modes(&translated_pipeline.variable_registry, conjunction);
+    let outer_negation_modes = binding_modes(&translated_pipeline.variable_registry, outer_negation);
+    let inner_negation_modes = binding_modes(&translated_pipeline.variable_registry, inner_negation);
+    assert_eq!(
+        conjunction_modes,
+        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild), ("f", BindingMode::LocallyBindingInChild)])
+    );
+    assert_eq!(
+        outer_negation_modes,
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound), ("f", BindingMode::LocallyBindingInChild)])
+    );
+    assert_eq!(
+        inner_negation_modes,
+        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::RequirePrebound), ("f", BindingMode::LocallyBindingInChild)])
     );
     assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)]));
 }

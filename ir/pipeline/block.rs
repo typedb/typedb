@@ -22,7 +22,7 @@ use crate::{
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
 };
-use crate::pattern::BindingMode;
+use crate::pattern::{BindingMode, ContextualisedBindingMode};
 use crate::pattern::conjunction::NestedPatternBuilder;
 
 #[derive(Debug, Clone)]
@@ -105,8 +105,7 @@ impl<'reg> BlockBuilder<'reg> {
                 }
             }
         });
-        let conjunction = conjunction.finish();
-        block_context.variable_binding_modes = block_binding_modes;
+        let conjunction = conjunction.finish(&ContextualisedBindingMode::new(block_binding_modes));
         Ok(Block { conjunction, block_context })
     }
 

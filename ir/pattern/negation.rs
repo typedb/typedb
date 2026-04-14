@@ -15,11 +15,13 @@ use crate::{
         BindingMode, Pattern, Scope, ScopeId,
     },
 };
+use crate::pattern::ContextualisedBindingMode;
 use crate::pattern::nested_pattern::NestedPattern;
 
 #[derive(Debug, Clone)]
 pub struct Negation {
     conjunction: Conjunction,
+    binding_modes: ContextualisedBindingMode,
 }
 
 impl Negation {
@@ -34,11 +36,15 @@ impl Negation {
 
 impl Pattern for Negation {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.conjunction().visible_referenced_variables()
+        self.binding_modes.visible_referenced_variables()
     }
 
-    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        todo!("Remove me")
+    fn required_inputs(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.binding_modes.required_inputs()
+    }
+
+    fn TEST_ONLY_contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode> {
+        &self.binding_modes.0
     }
 }
 
@@ -74,9 +80,10 @@ impl NegationBuilder {
         Self { conjunction: ConjunctionBuilder::new(scope_id) }
     }
 
-    pub(crate) fn finish(self) -> NestedPattern {
-        let conjunction = self.conjunction.finish();
-        NestedPattern::Negation(Negation { conjunction })
+    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
+        let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
+        let conjunction = self.conjunction.finish(&binding_modes);
+        NestedPattern::Negation(Negation { conjunction, binding_modes })
     }
 
     pub(crate) fn conjunction(&self) -> &ConjunctionBuilder {

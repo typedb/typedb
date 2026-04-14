@@ -15,8 +15,9 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         BindingMode, BranchID, Pattern, Scope, ScopeId,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
+    pipeline::block::{BlockBuilderContext, ScopeType},
 };
+use crate::pattern::ContextualisedBindingMode;
 use crate::pattern::nested_pattern::NestedPattern;
 
 #[derive(Clone, Debug)]
@@ -24,13 +25,10 @@ pub struct Disjunction {
     conjunctions: Vec<Conjunction>,
     branch_ids: Vec<BranchID>,
     scope_id: ScopeId,
+    binding_modes: ContextualisedBindingMode,
 }
 
 impl Disjunction {
-    pub fn new(scope_id: ScopeId) -> Self {
-        Self { conjunctions: Vec::new(), branch_ids: Vec::new(), scope_id }
-    }
-
     pub fn conjunctions_by_branch_id(&self) -> impl Iterator<Item = (&BranchID, &Conjunction)> {
         self.branch_ids.iter().zip(self.conjunctions.iter())
     }
@@ -57,16 +55,15 @@ impl Disjunction {
 
 impl Pattern for Disjunction {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.conjunctions().iter().flat_map(|conjunction| conjunction.visible_referenced_variables())
+        self.binding_modes.visible_referenced_variables()
     }
 
-    /// Returns:
-    //      AlwaysBinding for a variable that is AlwaysBinding in all branches
-    //      OptionallyBinding for a variable that is OptionallyBinding in all branches
-    //      LocallyBinding for any binding variable that is AlwaysBinding in exactly one branch
-    //      RequireBound otherwise
-    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-       todo!("Remove me!");
+    fn required_inputs(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.binding_modes.required_inputs()
+    }
+
+    fn TEST_ONLY_contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode> {
+        &self.binding_modes.0
     }
 }
 
@@ -104,13 +101,14 @@ impl DisjunctionBuilder {
         Self { scope_id, conjunctions: Vec::new() }
     }
 
-    pub(crate) fn finish(self) -> NestedPattern {
+    pub(crate) fn finish(self, ctxd_parent_modes: &ContextualisedBindingMode) -> NestedPattern {
+        let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), ctxd_parent_modes);
         let scope_id = self.scope_id;
         let branch_ids = self.conjunctions.iter().map(|(bid,_)| *bid).collect();
         let conjunctions = self.conjunctions.into_iter().map(|(_, conjunction)| {
-            conjunction.finish()
+            conjunction.finish(&binding_modes)
         }).collect();
-        NestedPattern::Disjunction(Disjunction { scope_id, branch_ids, conjunctions })
+        NestedPattern::Disjunction(Disjunction { scope_id, branch_ids, conjunctions, binding_modes })
     }
 
     pub(crate) fn conjunctions(&self) -> impl Iterator<Item=&ConjunctionBuilder> {

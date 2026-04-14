@@ -158,11 +158,9 @@ fn make_builder<'a>(
                 .plan()?,
             ),
             NestedPattern::Optional(optional) => {
-                let optional_vars = optional
-                    .variable_binding_modes()
-                    .iter()
-                    .filter(|(v, m)| v.is_named() && m.is_optionally_binding())
-                    .map(|(v, m)| *v)
+                let required_vars = optional.required_inputs().collect::<HashSet<_>>();
+                let optional_vars = optional.visible_referenced_variables()
+                    .filter(|var| !required_vars.contains(var))
                     .collect();
                 optional_subplans.push(OptionalPlan::new(
                     optional.branch_id(),
@@ -177,7 +175,7 @@ fn make_builder<'a>(
                         statistics,
                         call_cost_provider,
                     )?
-                    .set_to_input(optional.required_inputs())
+                    .set_to_input(required_vars.into_iter())
                     .plan()?,
                 ))
             }
@@ -191,7 +189,7 @@ fn make_builder<'a>(
     let optional_variables = optional_subplans.iter().flat_map(|optional| optional.optional_variables.iter()).copied();
     plan_builder.register_variables(
         stage_inputs.keys().copied(),
-        chain!(conjunction.local_and_passing_through_variables(block_context), optional_variables),
+        chain!(conjunction.visible_referenced_variables(), optional_variables),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);

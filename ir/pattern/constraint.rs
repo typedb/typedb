@@ -67,14 +67,8 @@ impl Constraints {
         self.constraints.push(constraint);
         self.constraints.last().unwrap()
     }
-}
 
-impl Pattern for Constraints {
-    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.constraints().iter().flat_map(|constraint| constraint.ids()).unique()
-    }
-
-    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
+    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
         self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
             constraint.binding_modes().for_each(|(var, mode)| {
                 *acc.entry(var).or_default() &= mode;

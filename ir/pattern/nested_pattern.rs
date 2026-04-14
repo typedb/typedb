@@ -60,14 +60,6 @@ impl NestedPattern {
             _ => None,
         }
     }
-
-    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        match self {
-            NestedPattern::Disjunction(disjunction) => disjunction.variable_binding_modes(),
-            NestedPattern::Negation(negation) => negation.variable_binding_modes(),
-            NestedPattern::Optional(optional) => optional.variable_binding_modes(),
-        }
-    }
 }
 
 impl StructuralEquality for NestedPattern {

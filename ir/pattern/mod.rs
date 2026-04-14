@@ -80,13 +80,9 @@ pub trait Pattern {
 
     // A variable is "input" if it must be bound before this is executed.
     // TODO: This requires info from above, so maybe is a Plannable trait?
-    fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        todo!();
-        [].into_iter()
-    }
+    fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
 
-    // TODO: Return impl iterator
-    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode>;
+    fn TEST_ONLY_contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode>;
 }
 
 // TODO: rename to 'Identifier' in lieu of a better name
@@ -463,5 +459,41 @@ impl BitOr for BindingMode {
                 Self::LocallyBindingInChild
             }
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct ContextualisedBindingMode(HashMap<Variable, BindingMode>);
+
+impl ContextualisedBindingMode {
+    pub(crate) fn new(inner: HashMap<Variable, BindingMode>) -> ContextualisedBindingMode {
+        Self(inner)
+    }
+
+    pub(crate) fn from(
+        pattern_modes: HashMap<Variable, BindingMode>,
+        parent_modes: &ContextualisedBindingMode
+    ) -> ContextualisedBindingMode {
+        let binding_modes = pattern_modes.iter().map(|(var, pattern_mode)| {
+            let mode = match (pattern_mode, parent_modes.0.get(var).copied().unwrap_or(BindingMode::Absent)) {
+                (BindingMode::OptionallyBinding, BindingMode::AlwaysBinding)
+                | (BindingMode::OptionallyBinding, BindingMode::RequirePrebound)
+                | (BindingMode::LocallyBindingInChild, BindingMode::AlwaysBinding)
+                | (BindingMode::LocallyBindingInChild, BindingMode::RequirePrebound)=> {
+                    BindingMode::RequirePrebound
+                }
+                (mode, _) => *mode,
+            };
+            (*var, mode)
+        }).collect();
+        Self(binding_modes)
+    }
+
+    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.0.iter().filter_map(|(v, mode)| (!mode.is_locally_binding_in_child()).then_some(*v))
+    }
+
+    fn required_inputs(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.0.iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(*v))
     }
 }

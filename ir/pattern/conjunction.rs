@@ -17,16 +17,14 @@ use typeql::common::Span;
 use crate::{
     pattern::{
         constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
-        disjunction::{Disjunction, DisjunctionBuilder},
-        negation::Negation,
+        disjunction::DisjunctionBuilder,
         nested_pattern::NestedPattern,
-        optional::Optional,
         BindingMode, Pattern, Scope, ScopeId,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
+    pipeline::block::{BlockBuilderContext, ScopeType},
     RepresentationError,
 };
-use crate::pattern::BranchID;
+use crate::pattern::ContextualisedBindingMode;
 use crate::pattern::negation::NegationBuilder;
 use crate::pattern::optional::OptionalBuilder;
 
@@ -34,18 +32,11 @@ use crate::pattern::optional::OptionalBuilder;
 pub struct Conjunction {
     scope_id: ScopeId,
     constraints: Constraints,
-    nested_patterns: Vec<NestedPattern>
+    nested_patterns: Vec<NestedPattern>,
+    binding_modes: ContextualisedBindingMode,
 }
 
 impl Conjunction {
-    fn new(scope_id: ScopeId) -> Self {
-        Self {
-            scope_id,
-            constraints: Constraints::new(scope_id),
-            nested_patterns: Vec::new(),
-        }
-    }
-
     pub fn constraints(&self) -> &[Constraint<Variable>] {
         self.constraints.constraints()
     }
@@ -63,7 +54,14 @@ impl Conjunction {
     }
 
     pub fn set_unsatisfiable(&mut self) {
-        let mut swapped_conjunction = Self::new(self.scope_id);
+        let scope_id = self.scope_id;
+        let binding_modes = self.binding_modes.clone();
+        let mut swapped_conjunction = Self {
+            scope_id,
+            constraints: Constraints::new(scope_id),
+            nested_patterns: Vec::new(),
+            binding_modes,
+        };
         std::mem::swap(self, &mut swapped_conjunction);
         self.constraints.constraints_mut().push(Constraint::Unsatisfiable(Unsatisfiable::new(swapped_conjunction)));
     }
@@ -74,34 +72,19 @@ impl Conjunction {
             Ok(_) | Err(_) => false,
         }
     }
-
-    pub fn local_and_passing_through_variables<'a>(
-        &'a self,
-        block_context: &'a BlockContext,
-    ) -> impl Iterator<Item = Variable> + 'a {
-        todo!("self.binding_modes.iter().filter(|(var, mode)| !mode.is_locally_binding_in_child()).map(|(v, _)| *v)");
-        [].into_iter()
-    }
 }
 
 impl Pattern for Conjunction {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.constraints()
-            .iter()
-            .flat_map(|constraint| constraint.ids())
-            .chain(self.nested_patterns.iter().flat_map(|nested| -> Box<dyn Iterator<Item = Variable>> {
-                match nested {
-                    NestedPattern::Disjunction(disjunction) => Box::new(disjunction.visible_referenced_variables()),
-                    NestedPattern::Negation(negation) => Box::new(negation.visible_referenced_variables()),
-                    NestedPattern::Optional(optional) => Box::new(optional.visible_referenced_variables()),
-                }
-            }))
-            .unique()
+        self.binding_modes.visible_referenced_variables()
     }
 
-    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        todo!("Remove me")
-        // self.binding_modes.clone()
+    fn required_inputs(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.binding_modes.required_inputs()
+    }
+
+    fn TEST_ONLY_contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode> {
+        &self.binding_modes.0
     }
 }
 
@@ -146,11 +129,11 @@ pub(crate) enum NestedPatternBuilder {
 }
 
 impl NestedPatternBuilder {
-    pub(crate) fn finish(self) -> NestedPattern {
+    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
         match self {
-            NestedPatternBuilder::Disjunction(disjunction) => disjunction.finish(),
-            NestedPatternBuilder::Negation(negation) => negation.finish(),
-            NestedPatternBuilder::Optional(optional) => optional.finish(),
+            NestedPatternBuilder::Disjunction(disjunction) => disjunction.finish(parent_modes),
+            NestedPatternBuilder::Negation(negation) => negation.finish(parent_modes),
+            NestedPatternBuilder::Optional(optional) => optional.finish(parent_modes),
         }
     }
 }
@@ -180,10 +163,11 @@ impl ConjunctionBuilder {
         Self { constraints: Constraints::new(scope_id), scope_id, nested_patterns: Vec::new() } //, binding_modes: HashMap::new() }
     }
 
-    pub(crate) fn finish(self) -> Conjunction {
+    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> Conjunction {
+        let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
         let Self { scope_id, constraints, nested_patterns } = self;
-        let nested_patterns = nested_patterns.into_iter().map(|builder| builder.finish()).collect();
-        Conjunction { scope_id, constraints, nested_patterns }
+        let nested_patterns = nested_patterns.into_iter().map(|builder| builder.finish(&binding_modes)).collect();
+        Conjunction { scope_id, constraints, nested_patterns, binding_modes }
     }
 
     pub fn scope_id(&self) -> ScopeId {

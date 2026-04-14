@@ -14,14 +14,15 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         BindingMode, BranchID, Pattern, Scope, ScopeId,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext},
 };
+use crate::pattern::ContextualisedBindingMode;
 use crate::pattern::nested_pattern::NestedPattern;
 
 #[derive(Debug, Clone)]
 pub struct Optional {
     conjunction: Conjunction,
     branch_id: BranchID,
+    binding_modes: ContextualisedBindingMode,
 }
 
 impl Optional {
@@ -36,25 +37,19 @@ impl Optional {
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
         &mut self.conjunction
     }
-
-    pub fn named_visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.visible_binding_variables(block_context).filter(Variable::is_named)
-    }
-
-    fn visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes()
-            .into_iter()
-            .filter_map(|(v, mode)| (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v))
-    }
 }
 
 impl Pattern for Optional {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.conjunction().visible_referenced_variables()
+        self.binding_modes.visible_referenced_variables()
     }
 
-    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        todo!("REMOVE ME")
+    fn required_inputs(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.binding_modes.required_inputs()
+    }
+
+    fn TEST_ONLY_contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode> {
+        &self.binding_modes.0
     }
 }
 
@@ -92,10 +87,11 @@ impl OptionalBuilder {
         Self { conjunction, branch_id }
     }
 
-    pub(crate) fn finish(self) -> NestedPattern {
-        let conjunction = self.conjunction.finish();
+    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
+        let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
         let branch_id = self.branch_id;
-        NestedPattern::Optional(Optional { branch_id, conjunction })
+        let conjunction = self.conjunction.finish(&binding_modes);
+        NestedPattern::Optional(Optional { branch_id, conjunction, binding_modes })
     }
 
     pub(crate) fn conjunction(&self) -> &ConjunctionBuilder {
