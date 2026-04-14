@@ -82,11 +82,11 @@ impl IntoGrpcStatus for ProtocolError {
 }
 
 pub trait IntoProtocolErrorMessage {
-    fn into_error_message(self) -> typedb_protocol::Error;
+    fn into_proto_error_message(self) -> typedb_protocol::Error;
 }
 
 impl<T: TypeDBError + Sync> IntoProtocolErrorMessage for T {
-    fn into_error_message(self) -> typedb_protocol::Error {
+    fn into_proto_error_message(self) -> typedb_protocol::Error {
         let root_source = self.root_source_typedb_error();
         typedb_protocol::Error {
             error_code: root_source.code().to_string(),
@@ -111,7 +111,7 @@ impl IntoGrpcStatus for typedb_protocol::Error {
 impl<T: crate::error::ServerStateError + Sync> IntoGrpcStatus for T {
     fn into_status(self) -> Status {
         let category = self.error_response_category();
-        let proto_error = self.into_error_message();
+        let proto_error = self.into_proto_error_message();
         server_state_error_to_status(category, proto_error)
     }
 }
@@ -119,7 +119,7 @@ impl<T: crate::error::ServerStateError + Sync> IntoGrpcStatus for T {
 impl IntoGrpcStatus for crate::error::ArcServerStateError {
     fn into_status(self) -> Status {
         let category = self.error_response_category();
-        let proto_error = self.into_error_message();
+        let proto_error = self.into_proto_error_message();
         server_state_error_to_status(category, proto_error)
     }
 }

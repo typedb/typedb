@@ -33,14 +33,17 @@ use typedb_protocol::{
     },
 };
 
-use crate::service::{
-    grpc::{
-        diagnostics::run_with_diagnostics_async,
-        error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
-        migration::item::{decode_checksums, decode_migration_value},
-        response_builders::database_manager::database_import_res_done,
+use crate::{
+    error::LocalServerStateError,
+    service::{
+        grpc::{
+            diagnostics::run_with_diagnostics_async,
+            error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
+            migration::item::{decode_checksums, decode_migration_value},
+            response_builders::database_manager::database_import_res_done,
+        },
+        import_service::DatabaseImportServiceError,
     },
-    import_service::DatabaseImportServiceError,
 };
 
 pub(crate) const IMPORT_RESPONSE_BUFFER_SIZE: usize = 1;
@@ -151,19 +154,21 @@ impl DatabaseImportService {
                     Some(name.clone()),
                     ActionKind::DatabasesImport,
                     || async {
-                        self.handle_database_schema(name, schema)
-                            .await
-                            .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+                        self.handle_database_schema(name, schema).await.map_err(|typedb_source| {
+                            LocalServerStateError::DatabaseImport { typedb_source }.into_status()
+                        })
                     },
                 )
                 .await
             }
-            Client::ReqPart(ReqPart { items }) => {
-                self.handle_items(items).await.map_err(|typedb_source| typedb_source.into_error_message().into_status())
-            }
-            Client::Done(Done {}) => {
-                self.handle_done().await.map_err(|typedb_source| typedb_source.into_error_message().into_status())
-            }
+            Client::ReqPart(ReqPart { items }) => self
+                .handle_items(items)
+                .await
+                .map_err(|typedb_source| LocalServerStateError::DatabaseImport { typedb_source }.into_status()),
+            Client::Done(Done {}) => self
+                .handle_done()
+                .await
+                .map_err(|typedb_source| LocalServerStateError::DatabaseImport { typedb_source }.into_status()),
         }
     }
 

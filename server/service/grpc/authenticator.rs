@@ -13,6 +13,7 @@ use tower::{Layer, Service};
 
 use crate::{
     authentication::authenticate,
+    error::LocalServerStateError,
     service::grpc::{
         diagnostics::run_with_diagnostics_async,
         error::{IntoGrpcStatus, IntoProtocolErrorMessage},
@@ -40,7 +41,7 @@ impl Authenticator {
             || async {
                 authenticate(self.server_state.clone(), request)
                     .await
-                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+                    .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())
             },
         )
         .await

@@ -8,10 +8,10 @@ use database::migration::database_importer::DatabaseImportError;
 use error::typedb_error;
 
 typedb_error! {
-    pub(crate) DatabaseImportServiceError(component = "Database import service", prefix = "DIS") {
+    pub DatabaseImportServiceError(component = "Database import service", prefix = "DIS") {
         DatabaseImport(1, "Error importing database.", typedb_source: DatabaseImportError),
         ConceptDecode(2, "Cannot decode imported concept.", typedb_source: Box<ConceptDecodeError>),
-        DuplicateImport(3, "Error importing '{name}': another import operation for database '{old_name}'was already initiated through this channel. It is a sign of a corrupted file or a client bug.", name: String, old_name: String),
+        DuplicateImport(3, "Error importing '{name}': another import operation for database '{old_name}' was already initiated through this channel. It is a sign of a corrupted file or a client bug.", name: String, old_name: String),
         ImportDatabaseNotFound(4, "Imported database not found during {phase}. Make sure to use a correct client.", phase: String),
         ImportEmptyItem(5, "An empty concept item received. It is a sign of a corrupted file or a client bug."),
         AbsentAttributeValue(6, "Cannot process an attribute: value is absent."),

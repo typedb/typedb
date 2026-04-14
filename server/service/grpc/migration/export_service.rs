@@ -18,15 +18,19 @@ use tonic::Status;
 use tracing::{event, Level};
 use typedb_protocol::{database::export::Server as ProtocolServer, migration::Item as MigrationItemProto};
 
-use crate::service::{
-    export_service::{get_transaction_schema, DatabaseExportError},
-    grpc::{
-        error::{IntoGrpcStatus, IntoProtocolErrorMessage},
-        migration::item::{
-            encode_attribute_item, encode_checksums_item, encode_entity_item, encode_header_item, encode_relation_item,
-        },
-        response_builders::database::{
-            database_export_initial_res_ok, database_export_res_done, database_export_res_part_items,
+use crate::{
+    error::LocalServerStateError,
+    service::{
+        export_service::{get_transaction_schema, DatabaseExportError},
+        grpc::{
+            error::{IntoGrpcStatus, IntoProtocolErrorMessage},
+            migration::item::{
+                encode_attribute_item, encode_checksums_item, encode_entity_item, encode_header_item,
+                encode_relation_item,
+            },
+            response_builders::database::{
+                database_export_initial_res_ok, database_export_res_done, database_export_res_part_items,
+            },
         },
     },
 };
@@ -247,7 +251,11 @@ impl DatabaseExportService {
     }
 
     async fn send_error(response_sender: &ResponseSender, error: DatabaseExportError) {
-        let _ = send_response!(response_sender, Err(error.into_error_message().into_status())).ok();
+        let _ = send_response!(
+            response_sender,
+            Err(LocalServerStateError::DatabaseExport { typedb_source: error }.into_status())
+        )
+        .ok();
     }
 
     async fn send_done(response_sender: &ResponseSender) -> Result<(), DatabaseExportError> {

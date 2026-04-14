@@ -21,7 +21,7 @@ use user::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateErr
 
 use crate::{
     authentication::{token_manager::TokenManagerError, AuthenticationError},
-    service::export_service::DatabaseExportError,
+    service::{export_service::DatabaseExportError, import_service::DatabaseImportServiceError},
 };
 
 pub enum ErrorResponseCategory {
@@ -92,11 +92,12 @@ typedb_error! {
         NotInitialised(14, "Not yet initialised."),
         AuthenticationError(15, "Error when authenticating.", typedb_source: AuthenticationError),
         DatabaseExport(16, "Database export error", typedb_source: DatabaseExportError),
-        DatabaseSchemaCommitFailed(17, "Schema commit failed.", typedb_source: SchemaCommitError),
-        DatabaseDataCommitFailed(18, "Data commit failed.", typedb_source: DataCommitError),
-        DatabaseCommitRecordExistsFailed(19, "Commit record check failed.", typedb_source: DatabaseOpenError),
-        NotSupportedByDistribution(20, "Not supported by this distribution: {description}", description: String),
-        TransactionOpenFailed(21, "Failed to open transaction.", typedb_source: TransactionError),
+        DatabaseImport(17, "Database import error.", typedb_source: DatabaseImportServiceError),
+        DatabaseSchemaCommitFailed(18, "Schema commit failed.", typedb_source: SchemaCommitError),
+        DatabaseDataCommitFailed(19, "Data commit failed.", typedb_source: DataCommitError),
+        DatabaseCommitRecordExistsFailed(20, "Commit record check failed.", typedb_source: DatabaseOpenError),
+        NotSupportedByDistribution(21, "Not supported by this distribution: {description}", description: String),
+        TransactionOpenFailed(22, "Failed to open transaction.", typedb_source: TransactionError),
     }
 }
 
@@ -105,13 +106,24 @@ impl ServerStateError for LocalServerStateError {
         use ErrorResponseCategory::*;
         match self {
             Self::Unimplemented { .. } | Self::NotSupportedByDistribution { .. } => NotImplemented,
-            Self::OperationNotPermitted { .. } => Forbidden,
+            Self::OperationNotPermitted { .. } | Self::AuthenticationError { .. } => Forbidden,
             Self::DatabaseNotFound { .. } | Self::UserNotFound { .. } => NotFound,
             Self::NotInitialised { .. }
             | Self::DatabaseSchemaCommitFailed { .. }
             | Self::DatabaseDataCommitFailed { .. }
-            | Self::DatabaseCommitRecordExistsFailed { .. } => Internal,
-            _ => InvalidRequest,
+            | Self::DatabaseCommitRecordExistsFailed { .. }
+            | Self::ConceptReadError { .. }
+            | Self::FunctionReadError { .. } => Internal,
+            Self::FailedToOpenPrerequisiteTransaction { .. }
+            | Self::TransactionOpenFailed { .. }
+            | Self::UserCannotBeRetrieved { .. }
+            | Self::UserCannotBeCreated { .. }
+            | Self::UserCannotBeUpdated { .. }
+            | Self::UserCannotBeDeleted { .. }
+            | Self::DatabaseCannotBeCreated { .. }
+            | Self::DatabaseCannotBeDeleted { .. }
+            | Self::DatabaseExport { .. }
+            | Self::DatabaseImport { .. } => InvalidRequest,
         }
     }
 }

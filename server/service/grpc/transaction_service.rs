@@ -445,7 +445,7 @@ impl TransactionService {
             .transactions()
             .open(&database_name, transaction_type, transaction_options, self.owner.clone(), self.close_sender.clone())
             .await
-            .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+            .map_err(|err| err.into_status())?;
 
         self.server_state.diagnostics_manager().increment_load_count(
             ClientEndpoint::Grpc,
@@ -478,7 +478,7 @@ impl TransactionService {
         // interrupt active queries and close write transmitters
         self.interrupt_and_close_responders(InterruptType::TransactionCommitted).await;
         if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionCommitted).await {
-            return Err(TransactionServiceError::QueueCleanupFailed {}.into_error_message().into_status());
+            return Err(TransactionServiceError::QueueCleanupFailed {}.into_proto_error_message().into_status());
         }
 
         // finish executing any remaining writes so they make it into the commit
@@ -489,7 +489,7 @@ impl TransactionService {
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
-                Err(TransactionServiceError::CannotCommitReadTransaction {}.into_error_message().into_status())
+                Err(TransactionServiceError::CannotCommitReadTransaction {}.into_proto_error_message().into_status())
             }
             Transaction::Write(transaction) => spawn(async move {
                 diagnostics_manager.decrement_load_count(
@@ -499,7 +499,7 @@ impl TransactionService {
                 );
                 let (_profile, commit_result) = commit_write_transaction(server_state, transaction).await;
                 commit_result.map_err(|typedb_source| {
-                    TransactionServiceError::DataCommitFailed { typedb_source }.into_error_message().into_status()
+                    TransactionServiceError::DataCommitFailed { typedb_source }.into_proto_error_message().into_status()
                 })
             })
             .await
@@ -512,7 +512,9 @@ impl TransactionService {
                 );
                 let (_profile, commit_result) = commit_schema_transaction(server_state, transaction).await;
                 commit_result.map_err(|typedb_source| {
-                    TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
+                    TransactionServiceError::SchemaCommitFailed { typedb_source }
+                        .into_proto_error_message()
+                        .into_status()
                 })
             })
             .await
@@ -546,7 +548,7 @@ impl TransactionService {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
                 return Err(TransactionServiceError::CannotRollbackReadTransaction {}
-                    .into_error_message()
+                    .into_proto_error_message()
                     .into_status());
             }
             Transaction::Write(mut transaction) => {
@@ -630,7 +632,7 @@ impl TransactionService {
                     &self.response_sender,
                     req_id,
                     ImmediateQueryResponse::NonFatalErr(
-                        TransactionServiceError::QueryInterrupted { interrupt }.into_error_message(),
+                        TransactionServiceError::QueryInterrupted { interrupt }.into_proto_error_message(),
                     ),
                 )
                 .await?;
@@ -647,7 +649,7 @@ impl TransactionService {
             self.transaction = Some(transaction);
 
             if let Err(err) = result {
-                return Err(err.into_error_message().into_status());
+                return Err(err.into_proto_error_message().into_status());
             }
 
             // transmission of interrupt signal is ok if it fails
@@ -655,7 +657,7 @@ impl TransactionService {
                 &self.response_sender,
                 req_id,
                 ImmediateQueryResponse::NonFatalErr(
-                    TransactionServiceError::QueryInterrupted { interrupt }.into_error_message(),
+                    TransactionServiceError::QueryInterrupted { interrupt }.into_proto_error_message(),
                 ),
             )
             .await
@@ -676,7 +678,7 @@ impl TransactionService {
             }
             Err(err) => {
                 // we promote write errors to fatal status errors
-                Err(err.into_error_message().into_status())
+                Err(err.into_proto_error_message().into_status())
             }
         }
     }
@@ -689,7 +691,7 @@ impl TransactionService {
                     &self.response_sender,
                     req_id,
                     ImmediateQueryResponse::NonFatalErr(
-                        TransactionServiceError::QueryInterrupted { interrupt }.into_error_message(),
+                        TransactionServiceError::QueryInterrupted { interrupt }.into_proto_error_message(),
                     ),
                 )
                 .await?;
@@ -844,7 +846,7 @@ impl TransactionService {
                     let message_ok_done =
                         result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
                             TransactionServiceError::SchemaQueryFailedAbortingTransaction { typedb_source: err }
-                                .into_error_message()
+                                .into_proto_error_message()
                                 .into_status()
                         })?;
                     return Ok(ImmediateQueryResponse::ok(message_ok_done));
@@ -1391,7 +1393,8 @@ impl TransactionService {
             // This could be a valid state - if the driver requests Continuing a stream that has already been
             //       finished & removed, or the user committed/rolled back/closed and we cleaned up streams eagerly
             Some(ImmediateQueryResponse::NonFatalErr(
-                TransactionServiceError::QueryStreamNotFound { query_request_id: request_id }.into_error_message(),
+                TransactionServiceError::QueryStreamNotFound { query_request_id: request_id }
+                    .into_proto_error_message(),
             ))
         }
     }
@@ -1416,7 +1419,7 @@ enum ImmediateAnalyzeResponse {
 
 impl ImmediateAnalyzeResponse {
     fn non_fatal_err(error: impl IntoProtocolErrorMessage) -> Self {
-        Self::NonFatalErr(error.into_error_message())
+        Self::NonFatalErr(error.into_proto_error_message())
     }
 
     fn analyzed_query(analyzed: typedb_protocol::analyze::res::AnalyzedQuery) -> Self {
@@ -1431,7 +1434,7 @@ enum ImmediateQueryResponse {
 
 impl ImmediateQueryResponse {
     fn non_fatal_err(error: impl IntoProtocolErrorMessage) -> Self {
-        Self::NonFatalErr(error.into_error_message())
+        Self::NonFatalErr(error.into_proto_error_message())
     }
 
     fn ok(ok_message: typedb_protocol::query::initial_res::ok::Ok) -> Self {
@@ -1467,7 +1470,7 @@ impl StreamQueryResponse {
     }
 
     fn init_err(error: impl IntoProtocolErrorMessage) -> Self {
-        Self::InitErr(error.into_error_message())
+        Self::InitErr(error.into_proto_error_message())
     }
 
     fn next_row(row: typedb_protocol::ConceptRow) -> Self {
@@ -1483,7 +1486,7 @@ impl StreamQueryResponse {
     }
 
     fn done_err(error: impl IntoProtocolErrorMessage) -> Self {
-        Self::StreamDoneErr(error.into_error_message())
+        Self::StreamDoneErr(error.into_proto_error_message())
     }
 }
 
@@ -1624,7 +1627,7 @@ impl QueryStreamTransmitter {
                         response_sender,
                         transaction_server_res_part_stream_signal_error(
                             req_id,
-                            QueryError::QueryExecutionClosedEarly {}.into_error_message()
+                            QueryError::QueryExecutionClosedEarly {}.into_proto_error_message()
                         )
                     );
                     return Break(());

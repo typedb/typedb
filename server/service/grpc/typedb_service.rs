@@ -104,7 +104,10 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     password_credentials,
                 )) = authentication.credentials
                 else {
-                    return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status());
+                    return Err(LocalServerStateError::AuthenticationError {
+                        typedb_source: AuthenticationError::InvalidCredential {},
+                    }
+                    .into_status());
                 };
                 let token = self
                     .server_state
@@ -146,7 +149,10 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
                     password_credentials,
                 )) = request.credentials
                 else {
-                    return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status());
+                    return Err(LocalServerStateError::AuthenticationError {
+                        typedb_source: AuthenticationError::InvalidCredential {},
+                    }
+                    .into_status());
                 };
 
                 self.server_state
@@ -211,8 +217,9 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             None::<&str>,
             ActionKind::UsersGet,
             || async {
-                let accessor = Accessor::from_extensions(&request.extensions())
-                    .map_err(|err| err.into_error_message().into_status())?;
+                let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
+                    LocalServerStateError::AuthenticationError { typedb_source }.into_status()
+                })?;
                 let name = request.into_inner().name;
                 self.server_state
                     .users()
@@ -234,8 +241,9 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             None::<&str>,
             ActionKind::UsersAll,
             || async {
-                let accessor = Accessor::from_extensions(&request.extensions())
-                    .map_err(|err| err.into_error_message().into_status())?;
+                let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
+                    LocalServerStateError::AuthenticationError { typedb_source }.into_status()
+                })?;
                 self.server_state
                     .users()
                     .all(accessor)
@@ -256,8 +264,9 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             None::<&str>,
             ActionKind::UsersContains,
             || async {
-                let accessor = Accessor::from_extensions(&request.extensions())
-                    .map_err(|err| err.into_error_message().into_status())?;
+                let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
+                    LocalServerStateError::AuthenticationError { typedb_source }.into_status()
+                })?;
                 let name = request.into_inner().name;
                 self.server_state
                     .users()
@@ -279,10 +288,12 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             None::<&str>,
             ActionKind::UsersCreate,
             || async {
-                let accessor = Accessor::from_extensions(&request.extensions())
-                    .map_err(|err| err.into_error_message().into_status())?;
-                let (user, credential) =
-                    users_create_req(request).map_err(|err| err.into_error_message().into_status())?;
+                let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
+                    LocalServerStateError::AuthenticationError { typedb_source }.into_status()
+                })?;
+                let (user, credential) = users_create_req(request).map_err(|typedb_source| {
+                    LocalServerStateError::UserCannotBeCreated { typedb_source }.into_status()
+                })?;
 
                 self.server_state
                     .users()
@@ -304,10 +315,13 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             None::<&str>,
             ActionKind::UsersUpdate,
             || async {
-                let accessor = Accessor::from_extensions(&request.extensions())
-                    .map_err(|err| err.into_error_message().into_status())?;
+                let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
+                    LocalServerStateError::AuthenticationError { typedb_source }.into_status()
+                })?;
                 let (username, user_update, credential_update) =
-                    users_update_req(request).map_err(|err| err.into_error_message().into_status())?;
+                    users_update_req(request).map_err(|typedb_source| {
+                        LocalServerStateError::UserCannotBeUpdated { typedb_source }.into_status()
+                    })?;
 
                 self.server_state
                     .users()
@@ -329,8 +343,9 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             None::<&str>,
             ActionKind::UsersDelete,
             || async {
-                let accessor = Accessor::from_extensions(&request.extensions())
-                    .map_err(|err| err.into_error_message().into_status())?;
+                let accessor = Accessor::from_extensions(&request.extensions()).map_err(|typedb_source| {
+                    LocalServerStateError::AuthenticationError { typedb_source }.into_status()
+                })?;
                 let name = request.into_inner().name;
 
                 self.server_state
@@ -519,7 +534,9 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             .into_inner()
             .req
             .ok_or_else(|| {
-                GrpcServiceError::UnexpectedMissingField { field: "req".to_string() }.into_error_message().into_status()
+                GrpcServiceError::UnexpectedMissingField { field: "req".to_string() }
+                    .into_proto_error_message()
+                    .into_status()
             })?
             .name;
         run_with_diagnostics_async(
@@ -554,8 +571,8 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
         &self,
         request: Request<Streaming<TransactionClientProto>>,
     ) -> Result<Response<Self::transactionStream>, Status> {
-        let Accessor(accessor) =
-            Accessor::from_extensions(&request.extensions()).map_err(|err| err.into_error_message().into_status())?;
+        let Accessor(accessor) = Accessor::from_extensions(&request.extensions())
+            .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())?;
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
         let mut service = TransactionService::new(self.server_state.clone(), accessor, request_stream, response_sender);
