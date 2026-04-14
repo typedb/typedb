@@ -305,32 +305,32 @@ fn traverse_index_from_unbound() {
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-    let mut conjunction = builder.conjunction_mut();
-    let var_movie_type = conjunction.constraints_mut().get_or_declare_variable("movie_type", None).unwrap();
-    let var_casting_type = conjunction.constraints_mut().get_or_declare_variable("casting_type", None).unwrap();
+    let (context, conjunction) = builder.to_parts_mut();
+    let var_movie_type = conjunction.constraints_mut(context).get_or_declare_variable("movie_type", None).unwrap();
+    let var_casting_type = conjunction.constraints_mut(context).get_or_declare_variable("casting_type", None).unwrap();
     let var_casting_movie_type =
-        conjunction.constraints_mut().get_or_declare_variable("casting_movie_type", None).unwrap();
+        conjunction.constraints_mut(context).get_or_declare_variable("casting_movie_type", None).unwrap();
     let var_casting_character_type =
-        conjunction.constraints_mut().get_or_declare_variable("casting_character_type", None).unwrap();
+        conjunction.constraints_mut(context).get_or_declare_variable("casting_character_type", None).unwrap();
 
-    let var_movie = conjunction.constraints_mut().get_or_declare_variable("movie", None).unwrap();
-    let var_character = conjunction.constraints_mut().get_or_declare_variable("character", None).unwrap();
-    let var_casting = conjunction.constraints_mut().get_or_declare_variable("casting", None).unwrap();
+    let var_movie = conjunction.constraints_mut(context).get_or_declare_variable("movie", None).unwrap();
+    let var_character = conjunction.constraints_mut(context).get_or_declare_variable("character", None).unwrap();
+    let var_casting = conjunction.constraints_mut(context).get_or_declare_variable("casting", None).unwrap();
 
     let links_casting_character = conjunction
-        .constraints_mut()
+        .constraints_mut(context)
         .add_links(var_casting, var_character, var_casting_character_type, None)
         .unwrap()
         .clone();
     let links_casting_movie =
-        conjunction.constraints_mut().add_links(var_casting, var_movie, var_casting_movie_type, None).unwrap().clone();
+        conjunction.constraints_mut(context).add_links(var_casting, var_movie, var_casting_movie_type, None).unwrap().clone();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_movie, var_movie_type.into(), None).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_casting, var_casting_type.into(), None).unwrap();
-    conjunction.constraints_mut().add_label(var_movie_type, MOVIE_LABEL.clone()).unwrap();
-    conjunction.constraints_mut().add_label(var_casting_type, CASTING_LABEL.clone()).unwrap();
-    conjunction.constraints_mut().add_label(var_casting_movie_type, CASTING_MOVIE_LABEL.clone()).unwrap();
-    conjunction.constraints_mut().add_label(var_casting_character_type, CASTING_CHARACTER_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_movie, var_movie_type.into(), None).unwrap();
+    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_casting, var_casting_type.into(), None).unwrap();
+    conjunction.constraints_mut(context).add_label(var_movie_type, MOVIE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_label(var_casting_type, CASTING_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_label(var_casting_movie_type, CASTING_MOVIE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_label(var_casting_character_type, CASTING_CHARACTER_LABEL.clone()).unwrap();
 
     let entry = builder.finish().unwrap();
     let value_parameters = Arc::new(value_parameters);
@@ -555,36 +555,36 @@ fn traverse_index_from_bound() {
     let mut value_parameters = ParameterRegistry::new();
     let id_0_parameter = value_parameters.register_value(Value::Integer(0), Span { begin_offset: 0, end_offset: 0 });
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-    let mut conjunction = builder.conjunction_mut();
-    let var_movie_type = conjunction.constraints_mut().get_or_declare_variable("movie_type", None).unwrap();
-    let var_casting_type = conjunction.constraints_mut().get_or_declare_variable("casting_type", None).unwrap();
-    let var_id_type = conjunction.constraints_mut().get_or_declare_variable("id_type", None).unwrap();
+    let (context, conjunction) = builder.to_parts_mut();
+    let var_movie_type = conjunction.constraints_mut(context).get_or_declare_variable("movie_type", None).unwrap();
+    let var_casting_type = conjunction.constraints_mut(context).get_or_declare_variable("casting_type", None).unwrap();
+    let var_id_type = conjunction.constraints_mut(context).get_or_declare_variable("id_type", None).unwrap();
     let var_casting_movie_type =
-        conjunction.constraints_mut().get_or_declare_variable("casting_movie_type", None).unwrap();
+        conjunction.constraints_mut(context).get_or_declare_variable("casting_movie_type", None).unwrap();
     let var_casting_actor_type =
-        conjunction.constraints_mut().get_or_declare_variable("casting_actor_type", None).unwrap();
+        conjunction.constraints_mut(context).get_or_declare_variable("casting_actor_type", None).unwrap();
 
-    let var_movie = conjunction.constraints_mut().get_or_declare_variable("movie", None).unwrap();
-    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
-    let var_casting = conjunction.constraints_mut().get_or_declare_variable("casting", None).unwrap();
-    let var_id = conjunction.constraints_mut().get_or_declare_variable("id", None).unwrap();
+    let var_movie = conjunction.constraints_mut(context).get_or_declare_variable("movie", None).unwrap();
+    let var_person = conjunction.constraints_mut(context).get_or_declare_variable("person", None).unwrap();
+    let var_casting = conjunction.constraints_mut(context).get_or_declare_variable("casting", None).unwrap();
+    let var_id = conjunction.constraints_mut(context).get_or_declare_variable("id", None).unwrap();
 
     let links_casting_actor =
-        conjunction.constraints_mut().add_links(var_casting, var_person, var_casting_actor_type, None).unwrap().clone();
+        conjunction.constraints_mut(context).add_links(var_casting, var_person, var_casting_actor_type, None).unwrap().clone();
     let links_casting_movie =
-        conjunction.constraints_mut().add_links(var_casting, var_movie, var_casting_movie_type, None).unwrap().clone();
-    let movie_has_id = conjunction.constraints_mut().add_has(var_movie, var_id, None).unwrap().clone();
+        conjunction.constraints_mut(context).add_links(var_casting, var_movie, var_casting_movie_type, None).unwrap().clone();
+    let movie_has_id = conjunction.constraints_mut(context).add_has(var_movie, var_id, None).unwrap().clone();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_movie, var_movie_type.into(), None).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_casting, var_casting_type.into(), None).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_id, var_id_type.into(), None).unwrap();
-    conjunction.constraints_mut().add_label(var_movie_type, MOVIE_LABEL.clone()).unwrap();
-    conjunction.constraints_mut().add_label(var_casting_type, CASTING_LABEL.clone()).unwrap();
-    conjunction.constraints_mut().add_label(var_id_type, ID_LABEL.clone()).unwrap();
-    conjunction.constraints_mut().add_label(var_casting_movie_type, CASTING_MOVIE_LABEL.clone()).unwrap();
-    conjunction.constraints_mut().add_label(var_casting_actor_type, CASTING_ACTOR_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_movie, var_movie_type.into(), None).unwrap();
+    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_casting, var_casting_type.into(), None).unwrap();
+    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_id, var_id_type.into(), None).unwrap();
+    conjunction.constraints_mut(context).add_label(var_movie_type, MOVIE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_label(var_casting_type, CASTING_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_label(var_id_type, ID_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_label(var_casting_movie_type, CASTING_MOVIE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_label(var_casting_actor_type, CASTING_ACTOR_LABEL.clone()).unwrap();
     conjunction
-        .constraints_mut()
+        .constraints_mut(context)
         .add_comparison(Vertex::Variable(var_id), Vertex::Parameter(id_0_parameter.clone()), Comparator::Equal, None)
         .unwrap();
 
@@ -731,28 +731,28 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-    let mut conjunction = builder.conjunction_mut();
-    let var_movie_type = conjunction.constraints_mut().get_or_declare_variable("movie_type", None).unwrap();
-    let var_casting_type = conjunction.constraints_mut().get_or_declare_variable("casting_type", None).unwrap();
+    let (context, conjunction) = builder.to_parts_mut();
+    let var_movie_type = conjunction.constraints_mut(context).get_or_declare_variable("movie_type", None).unwrap();
+    let var_casting_type = conjunction.constraints_mut(context).get_or_declare_variable("casting_type", None).unwrap();
     let var_casting_movie_type =
-        conjunction.constraints_mut().get_or_declare_variable("casting_movie_type", None).unwrap();
+        conjunction.constraints_mut(context).get_or_declare_variable("casting_movie_type", None).unwrap();
     let var_casting_other_type =
-        conjunction.constraints_mut().get_or_declare_variable("casting_other_type", None).unwrap();
+        conjunction.constraints_mut(context).get_or_declare_variable("casting_other_type", None).unwrap();
 
-    let var_movie = conjunction.constraints_mut().get_or_declare_variable("movie", None).unwrap();
-    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
-    let var_casting = conjunction.constraints_mut().get_or_declare_variable("casting", None).unwrap();
+    let var_movie = conjunction.constraints_mut(context).get_or_declare_variable("movie", None).unwrap();
+    let var_person = conjunction.constraints_mut(context).get_or_declare_variable("person", None).unwrap();
+    let var_casting = conjunction.constraints_mut(context).get_or_declare_variable("casting", None).unwrap();
 
     let links_casting_other =
-        conjunction.constraints_mut().add_links(var_casting, var_person, var_casting_other_type, None).unwrap().clone();
+        conjunction.constraints_mut(context).add_links(var_casting, var_person, var_casting_other_type, None).unwrap().clone();
     let links_casting_movie =
-        conjunction.constraints_mut().add_links(var_casting, var_movie, var_casting_movie_type, None).unwrap().clone();
+        conjunction.constraints_mut(context).add_links(var_casting, var_movie, var_casting_movie_type, None).unwrap().clone();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_movie, var_movie_type.into(), None).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_casting, var_casting_type.into(), None).unwrap();
-    conjunction.constraints_mut().add_label(var_movie_type, MOVIE_LABEL.clone()).unwrap();
-    conjunction.constraints_mut().add_label(var_casting_type, CASTING_LABEL.clone()).unwrap();
-    conjunction.constraints_mut().add_label(var_casting_movie_type, CASTING_MOVIE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_movie, var_movie_type.into(), None).unwrap();
+    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_casting, var_casting_type.into(), None).unwrap();
+    conjunction.constraints_mut(context).add_label(var_movie_type, MOVIE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_label(var_casting_type, CASTING_LABEL.clone()).unwrap();
+    conjunction.constraints_mut(context).add_label(var_casting_movie_type, CASTING_MOVIE_LABEL.clone()).unwrap();
 
     let entry = builder.finish().unwrap();
 

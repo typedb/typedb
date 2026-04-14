@@ -36,7 +36,7 @@ pub fn translate_insert(
     validate_insert_patterns(&insert.patterns)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
-    let (context, conjunction) = builder.DISSOLVEME_to_parts_mut();
+    let (context, conjunction) = builder.to_parts_mut();
     add_patterns(&function_index, context, conjunction, &insert.patterns)?;
     builder.finish()
 }
@@ -92,7 +92,7 @@ pub fn translate_update(
     validate_update_patterns(context, &update.patterns)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
-    let (context, conjunction) = builder.DISSOLVEME_to_parts_mut();
+    let (context, conjunction) = builder.to_parts_mut();
     add_patterns(&function_index, context, conjunction, &update.patterns)?;
     builder.finish()
 }
@@ -105,7 +105,7 @@ pub fn translate_put(
     validate_insert_patterns(&put.patterns)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
-    let (context, conjunction) = builder.DISSOLVEME_to_parts_mut();
+    let (context, conjunction) = builder.to_parts_mut();
     add_patterns(&function_index, context, conjunction, &put.patterns)?;
     let block = builder.finish()?;
     for constraint in block.conjunction().constraints() {
@@ -137,7 +137,7 @@ pub fn translate_delete(
     validate_deleted_variables_availability(context, delete)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let mut deleted_concepts = Vec::new();
-    let (block_context, conjunction) = builder.DISSOLVEME_to_parts_mut();
+    let (block_context, conjunction) = builder.to_parts_mut();
     add_deletables(block_context, &delete.deletables, conjunction, &mut deleted_concepts)?;
     let block = builder.finish()?;
     context.last_stage_visible_variables.retain(|name, var| !deleted_concepts.contains(var));

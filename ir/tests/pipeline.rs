@@ -33,11 +33,11 @@ use ir::{
 //     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
 //     let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
 //
-//     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
-//     conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
-//     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-//     conjunction.constraints_mut().add_label(var_person_type, "person").unwrap();
-//     conjunction.constraints_mut().add_label(var_name_type, "name").unwrap();
+//     conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+//     conjunction.constraints_mut(context).add_has(var_person, var_name).unwrap();
+//     conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+//     conjunction.constraints_mut(context).add_label(var_person_type, "person").unwrap();
+//     conjunction.constraints_mut(context).add_label(var_name_type, "name").unwrap();
 //
 //     builder.add_limit(10);
 //     builder.add_sort(vec![(var_person.clone(), true), (var_name.clone(), false)]);
@@ -50,7 +50,7 @@ fn build_with_functions() {
     let mut context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(context.new_block_builder_context(&mut value_parameters));
-    let (context, conjunction) = builder.DISSOLVEME_to_parts_mut();
+    let (context, conjunction) = builder.to_parts_mut();
     let var_person = conjunction.constraints_mut(context).get_or_declare_variable("person", None).unwrap();
     let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("person_type", None).unwrap();
 

@@ -387,7 +387,7 @@ fn translate_inline_user_function_call<'a>(
     let mut builder = Block::builder(builder_context);
 
     let mut assign_vars = Vec::new();
-    let (block_context, conjunction) = builder.DISSOLVEME_to_parts_mut();
+    let (block_context, conjunction) = builder.to_parts_mut();
     for _ in &signature.returns {
         assign_vars.push(
             conjunction
@@ -420,7 +420,7 @@ fn add_expression(
     builder: &mut BlockBuilder<'_>,
     typeql_expression: &Expression,
 ) -> Result<Variable, Box<FetchRepresentationError>> {
-    let (context, conjunction) = builder.DISSOLVEME_to_parts_mut();
+    let (context, conjunction) = builder.to_parts_mut();
     let assign_var = conjunction
         .constraints_mut(context)
         .create_anonymous_variable(None)

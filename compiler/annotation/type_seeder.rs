@@ -1698,18 +1698,18 @@ pub mod tests {
         let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-        let mut conjunction = builder.conjunction_mut();
-        let var_animal = conjunction.constraints_mut().get_or_declare_variable("animal", None).unwrap();
-        let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
-        let var_animal_type = conjunction.constraints_mut().get_or_declare_variable("animal_type", None).unwrap();
-        let var_name_type = conjunction.constraints_mut().get_or_declare_variable("name_type", None).unwrap();
+        let (context, conjunction) = builder.to_parts_mut();
+        let var_animal = conjunction.constraints_mut(context).get_or_declare_variable("animal", None).unwrap();
+        let var_name = conjunction.constraints_mut(context).get_or_declare_variable("name", None).unwrap();
+        let var_animal_type = conjunction.constraints_mut(context).get_or_declare_variable("animal_type", None).unwrap();
+        let var_name_type = conjunction.constraints_mut(context).get_or_declare_variable("name_type", None).unwrap();
 
         // Try seeding
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
-        conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
-        conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.clone()).unwrap();
-        conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
+        conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+        conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
+        conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+        conjunction.constraints_mut(context).add_label(var_name_type, LABEL_NAME.clone()).unwrap();
+        conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
 
         let block = builder.finish().unwrap();
         let conjunction = block.conjunction();
@@ -1804,21 +1804,21 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let mut conjunction = builder.conjunction_mut();
+            let (context, conjunction) = builder.to_parts_mut();
 
-            let var_x = conjunction.constraints_mut().get_or_declare_variable("x", None).unwrap();
-            let var_a = conjunction.constraints_mut().get_or_declare_variable("a", None).unwrap();
-            let var_b = conjunction.constraints_mut().get_or_declare_variable("b", None).unwrap();
+            let var_x = conjunction.constraints_mut(context).get_or_declare_variable("x", None).unwrap();
+            let var_a = conjunction.constraints_mut(context).get_or_declare_variable("a", None).unwrap();
+            let var_b = conjunction.constraints_mut(context).get_or_declare_variable("b", None).unwrap();
 
             // Try seeding
             conjunction
-                .constraints_mut()
+                .constraints_mut(context)
                 .add_isa(IsaKind::Exact, var_x, Vertex::Label(label_owner.clone()), None)
                 .unwrap();
-            conjunction.constraints_mut().add_has(var_x, var_a, None).unwrap();
-            conjunction.constraints_mut().add_has(var_x, var_b, None).unwrap();
+            conjunction.constraints_mut(context).add_has(var_x, var_a, None).unwrap();
+            conjunction.constraints_mut(context).add_has(var_x, var_b, None).unwrap();
             conjunction
-                .constraints_mut()
+                .constraints_mut(context)
                 .add_comparison(var_a.into(), var_b.into(), Comparator::Greater, None)
                 .unwrap();
 
@@ -1891,18 +1891,18 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let mut conjunction = builder.conjunction_mut();
+            let (context, conjunction) = builder.to_parts_mut();
 
-            let var_x = conjunction.constraints_mut().get_or_declare_variable("x", None).unwrap();
-            let var_t = conjunction.constraints_mut().get_or_declare_variable("t", None).unwrap();
+            let var_x = conjunction.constraints_mut(context).get_or_declare_variable("x", None).unwrap();
+            let var_t = conjunction.constraints_mut(context).get_or_declare_variable("t", None).unwrap();
             let parameter_5 = Vertex::Parameter(ParameterID::Value(
                 0,
                 ir::pattern::ValueType::Builtin(ValueType::Integer),
                 typeql::common::Span { begin_offset: 0, end_offset: 0 },
             ));
             // Try seeding
-            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_x, Vertex::Variable(var_t), None).unwrap();
-            conjunction.constraints_mut().add_comparison(var_x.into(), parameter_5, Comparator::Equal, None).unwrap();
+            conjunction.constraints_mut(context).add_isa(IsaKind::Exact, var_x, Vertex::Variable(var_t), None).unwrap();
+            conjunction.constraints_mut(context).add_comparison(var_x.into(), parameter_5, Comparator::Equal, None).unwrap();
 
             let block = builder.finish().unwrap();
             let conjunction = block.conjunction();

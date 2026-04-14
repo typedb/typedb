@@ -23,7 +23,7 @@ pub fn translate_match<'a>(
     match_: &typeql::query::stage::Match,
 ) -> Result<BlockBuilder<'a>, Box<RepresentationError>> {
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
-    let (context, conjunction) = builder.DISSOLVEME_to_parts_mut();
+    let (context, conjunction) = builder.to_parts_mut();
     add_patterns(function_index, context, conjunction, &match_.patterns)?;
     Ok(builder)
 }

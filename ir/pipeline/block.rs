@@ -78,7 +78,7 @@ impl<'reg> BlockBuilder<'reg> {
         Self { conjunction: ConjunctionBuilder::new(ScopeId::ROOT), context }
     }
 
-    pub fn DISSOLVEME_to_parts_mut(&mut self) -> (&mut BlockBuilderContext<'reg>, &mut ConjunctionBuilder) {
+    pub fn to_parts_mut(&mut self) -> (&mut BlockBuilderContext<'reg>, &mut ConjunctionBuilder) {
         let Self { context, conjunction } = self;
         (context, conjunction)
     }
