@@ -95,7 +95,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         graph: &mut TypeInferenceGraph<'_>,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        let vars_in_pattern = graph.conjunction.visible_referenced_variables().map(Vertex::Variable).collect::<HashSet<_>>();
+        let vars_in_pattern =
+            graph.conjunction.visible_referenced_variables().map(Vertex::Variable).collect::<HashSet<_>>();
         for (vertex, parent_annotations) in parent_vertices.iter() {
             if vars_in_pattern.contains(vertex) {
                 graph.vertices.insert(vertex.clone(), parent_annotations.clone());
@@ -1701,11 +1702,15 @@ pub mod tests {
         let (context, conjunction) = builder.to_parts_mut();
         let var_animal = conjunction.constraints_mut(context).get_or_declare_variable("animal", None).unwrap();
         let var_name = conjunction.constraints_mut(context).get_or_declare_variable("name", None).unwrap();
-        let var_animal_type = conjunction.constraints_mut(context).get_or_declare_variable("animal_type", None).unwrap();
+        let var_animal_type =
+            conjunction.constraints_mut(context).get_or_declare_variable("animal_type", None).unwrap();
         let var_name_type = conjunction.constraints_mut(context).get_or_declare_variable("name_type", None).unwrap();
 
         // Try seeding
-        conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+        conjunction
+            .constraints_mut(context)
+            .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
+            .unwrap();
         conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
         conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
         conjunction.constraints_mut(context).add_label(var_name_type, LABEL_NAME.clone()).unwrap();
@@ -1902,7 +1907,10 @@ pub mod tests {
             ));
             // Try seeding
             conjunction.constraints_mut(context).add_isa(IsaKind::Exact, var_x, Vertex::Variable(var_t), None).unwrap();
-            conjunction.constraints_mut(context).add_comparison(var_x.into(), parameter_5, Comparator::Equal, None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_comparison(var_x.into(), parameter_5, Comparator::Equal, None)
+                .unwrap();
 
             let block = builder.finish().unwrap();
             let conjunction = block.conjunction();

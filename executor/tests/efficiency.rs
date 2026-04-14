@@ -497,8 +497,11 @@ fn value_int_equality_isa_reads() {
     let var_id_type = conjunction.constraints_mut(context).get_or_declare_variable("var_id_type", None).unwrap();
     let var_attr = conjunction.constraints_mut(context).get_or_declare_variable("attr", None).unwrap();
 
-    let isa =
-        conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_attr, var_id_type.into(), None).unwrap().clone();
+    let isa = conjunction
+        .constraints_mut(context)
+        .add_isa(IsaKind::Subtype, var_attr, var_id_type.into(), None)
+        .unwrap()
+        .clone();
     conjunction.constraints_mut(context).add_label(var_id_type, ID_LABEL.clone()).unwrap();
     conjunction
         .constraints_mut(context)
@@ -587,9 +590,11 @@ fn value_int_equality_has_reverse_reads() {
     let (context, conjunction) = builder.to_parts_mut();
 
     let var_person = conjunction.constraints_mut(context).get_or_declare_variable("var_person", None).unwrap();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
+    let var_person_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
     let var_gov_id = conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id", None).unwrap();
-    let var_gov_id_type = conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id_type", None).unwrap();
+    let var_gov_id_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id_type", None).unwrap();
 
     let has = conjunction.constraints_mut(context).add_has(var_person, var_gov_id, None).unwrap().clone();
     let _isa_person = conjunction
@@ -680,9 +685,11 @@ fn value_int_equality_has_bound_owner() {
     let (context, conjunction) = builder.to_parts_mut();
 
     let var_person = conjunction.constraints_mut(context).get_or_declare_variable("var_person", None).unwrap();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
+    let var_person_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
     let var_gov_id = conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id", None).unwrap();
-    let var_gov_id_type = conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id_type", None).unwrap();
+    let var_gov_id_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id_type", None).unwrap();
 
     let has = conjunction.constraints_mut(context).add_has(var_person, var_gov_id, None).unwrap().clone();
     let isa_person = conjunction
@@ -786,9 +793,11 @@ fn value_int_inequality_has_bound_owner() {
     let (context, conjunction) = builder.to_parts_mut();
 
     let var_person = conjunction.constraints_mut(context).get_or_declare_variable("var_person", None).unwrap();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
+    let var_person_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
     let var_gov_id = conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id", None).unwrap();
-    let var_gov_id_type = conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id_type", None).unwrap();
+    let var_gov_id_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id_type", None).unwrap();
 
     let has = conjunction.constraints_mut(context).add_has(var_person, var_gov_id, None).unwrap().clone();
     let isa_person = conjunction
@@ -903,7 +912,8 @@ fn value_inline_string_equality_has_bound_owner() {
     let (context, conjunction) = builder.to_parts_mut();
 
     let var_person = conjunction.constraints_mut(context).get_or_declare_variable("var_person", None).unwrap();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
+    let var_person_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
     let var_name = conjunction.constraints_mut(context).get_or_declare_variable("var_name", None).unwrap();
     let var_name_type = conjunction.constraints_mut(context).get_or_declare_variable("var_name_type", None).unwrap();
 
@@ -914,8 +924,11 @@ fn value_inline_string_equality_has_bound_owner() {
         .unwrap()
         .clone();
     conjunction.constraints_mut(context).add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
-    let _isa_name =
-        conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap().clone();
+    let _isa_name = conjunction
+        .constraints_mut(context)
+        .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
+        .unwrap()
+        .clone();
     conjunction.constraints_mut(context).add_label(var_name_type, NAME_LABEL.clone()).unwrap();
     conjunction
         .constraints_mut(context)
@@ -1008,7 +1021,8 @@ fn value_hashed_string_equality_has_bound_owner() {
     let (context, conjunction) = builder.to_parts_mut();
 
     let var_person = conjunction.constraints_mut(context).get_or_declare_variable("var_person", None).unwrap();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
+    let var_person_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
     let var_name = conjunction.constraints_mut(context).get_or_declare_variable("var_name", None).unwrap();
     let var_name_type = conjunction.constraints_mut(context).get_or_declare_variable("var_name_type", None).unwrap();
 
@@ -1019,8 +1033,11 @@ fn value_hashed_string_equality_has_bound_owner() {
         .unwrap()
         .clone();
     conjunction.constraints_mut(context).add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
-    let _isa_name =
-        conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap().clone();
+    let _isa_name = conjunction
+        .constraints_mut(context)
+        .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
+        .unwrap()
+        .clone();
     conjunction.constraints_mut(context).add_label(var_name_type, NAME_LABEL.clone()).unwrap();
     conjunction
         .constraints_mut(context)
@@ -1114,7 +1131,8 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
     let (context, conjunction) = builder.to_parts_mut();
 
     let var_person = conjunction.constraints_mut(context).get_or_declare_variable("var_person", None).unwrap();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
+    let var_person_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
     let var_name = conjunction.constraints_mut(context).get_or_declare_variable("var_name", None).unwrap();
     let var_name_type = conjunction.constraints_mut(context).get_or_declare_variable("var_name_type", None).unwrap();
 
@@ -1125,8 +1143,11 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
         .unwrap()
         .clone();
     conjunction.constraints_mut(context).add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
-    let _isa_name =
-        conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap().clone();
+    let _isa_name = conjunction
+        .constraints_mut(context)
+        .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
+        .unwrap()
+        .clone();
     conjunction.constraints_mut(context).add_label(var_name_type, NAME_LABEL.clone()).unwrap();
     conjunction
         .constraints_mut(context)
@@ -1235,9 +1256,11 @@ fn intersection_seeks() {
     let (context, conjunction) = builder.to_parts_mut();
 
     let var_person = conjunction.constraints_mut(context).get_or_declare_variable("var_person", None).unwrap();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
+    let var_person_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
     let var_gov_id = conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id", None).unwrap();
-    let var_gov_id_type = conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id_type", None).unwrap();
+    let var_gov_id_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id_type", None).unwrap();
     let var_age = conjunction.constraints_mut(context).get_or_declare_variable("var_age", None).unwrap();
     let var_age_type = conjunction.constraints_mut(context).get_or_declare_variable("var_age_type", None).unwrap();
 
@@ -1255,8 +1278,11 @@ fn intersection_seeks() {
         .unwrap()
         .clone();
     conjunction.constraints_mut(context).add_label(var_gov_id_type, GOV_ID_LABEL.clone()).unwrap();
-    let isa_age =
-        conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_age, var_age_type.into(), None).unwrap().clone();
+    let isa_age = conjunction
+        .constraints_mut(context)
+        .add_isa(IsaKind::Subtype, var_age, var_age_type.into(), None)
+        .unwrap()
+        .clone();
     conjunction.constraints_mut(context).add_label(var_age_type, AGE_LABEL.clone()).unwrap();
 
     conjunction
@@ -1417,9 +1443,11 @@ fn intersections_seeks_with_extra_values() {
     let (context, conjunction) = builder.to_parts_mut();
 
     let var_person = conjunction.constraints_mut(context).get_or_declare_variable("var_person", None).unwrap();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
+    let var_person_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_person_type", None).unwrap();
     let var_gov_id = conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id", None).unwrap();
-    let var_gov_id_type = conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id_type", None).unwrap();
+    let var_gov_id_type =
+        conjunction.constraints_mut(context).get_or_declare_variable("var_gov_id_type", None).unwrap();
     let var_age = conjunction.constraints_mut(context).get_or_declare_variable("var_age", None).unwrap();
     let var_age_type = conjunction.constraints_mut(context).get_or_declare_variable("var_age_type", None).unwrap();
 
@@ -1437,8 +1465,11 @@ fn intersections_seeks_with_extra_values() {
         .unwrap()
         .clone();
     conjunction.constraints_mut(context).add_label(var_gov_id_type, GOV_ID_LABEL.clone()).unwrap();
-    let isa_age =
-        conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_age, var_age_type.into(), None).unwrap().clone();
+    let isa_age = conjunction
+        .constraints_mut(context)
+        .add_isa(IsaKind::Subtype, var_age, var_age_type.into(), None)
+        .unwrap()
+        .clone();
     conjunction.constraints_mut(context).add_label(var_age_type, AGE_LABEL.clone()).unwrap();
 
     conjunction

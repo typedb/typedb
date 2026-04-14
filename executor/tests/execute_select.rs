@@ -206,7 +206,10 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let var_attribute = conjunction.constraints_mut(context).create_anonymous_variable(None).unwrap();
     let has_attribute = conjunction.constraints_mut(context).add_has(var_person, var_attribute, None).unwrap().clone();
     conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
-    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into(), None).unwrap();
+    conjunction
+        .constraints_mut(context)
+        .add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into(), None)
+        .unwrap();
     conjunction.constraints_mut(context).add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
@@ -301,7 +304,10 @@ fn unselected_named_vars_counted() {
     let var_attribute = conjunction.constraints_mut(context).get_or_declare_variable("attr", None).unwrap();
     let has_attribute = conjunction.constraints_mut(context).add_has(var_person, var_attribute, None).unwrap().clone();
     conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
-    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into(), None).unwrap();
+    conjunction
+        .constraints_mut(context)
+        .add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into(), None)
+        .unwrap();
     conjunction.constraints_mut(context).add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 

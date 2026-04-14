@@ -27,7 +27,7 @@ use crate::{
         constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
         ValueType, Vertex,
     },
-    pipeline::function_signature::FunctionSignatureIndex,
+    pipeline::{block::BlockBuilderContext, function_signature::FunctionSignatureIndex},
     translation::{
         expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
         literal::translate_literal,
@@ -35,7 +35,6 @@ use crate::{
     },
     RepresentationError,
 };
-use crate::pipeline::block::BlockBuilderContext;
 
 pub(super) fn add_statement(
     function_index: &impl FunctionSignatureIndex,

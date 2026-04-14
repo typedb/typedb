@@ -18,7 +18,11 @@ use typeql::{
 
 use crate::{
     pattern::conjunction::ConjunctionBuilder,
-    pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+    pipeline::{
+        block::{Block, BlockBuilderContext},
+        function_signature::HashMapFunctionSignatureIndex,
+        ParameterRegistry,
+    },
     translation::{
         constraints::{add_typeql_relation, register_typeql_var},
         match_::add_patterns,
@@ -26,7 +30,6 @@ use crate::{
     },
     RepresentationError,
 };
-use crate::pipeline::block::BlockBuilderContext;
 
 pub fn translate_insert(
     context: &mut PipelineTranslationContext,

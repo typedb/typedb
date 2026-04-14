@@ -13,12 +13,11 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        BindingMode, BranchID, Pattern, Scope, ScopeId,
+        nested_pattern::NestedPattern,
+        BindingMode, BranchID, ContextualisedBindingMode, Pattern, Scope, ScopeId,
     },
     pipeline::block::{BlockBuilderContext, ScopeType},
 };
-use crate::pattern::ContextualisedBindingMode;
-use crate::pattern::nested_pattern::NestedPattern;
 
 #[derive(Clone, Debug)]
 pub struct Disjunction {
@@ -58,7 +57,7 @@ impl Pattern for Disjunction {
         self.binding_modes.visible_referenced_variables()
     }
 
-    fn required_inputs(&self) -> impl Iterator<Item=Variable> + '_ {
+    fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
         self.binding_modes.required_inputs()
     }
 
@@ -96,23 +95,20 @@ pub struct DisjunctionBuilder {
 }
 
 impl DisjunctionBuilder {
-    pub fn new(
-        scope_id: ScopeId,
-    ) -> Self {
+    pub fn new(scope_id: ScopeId) -> Self {
         Self { scope_id, conjunctions: Vec::new() }
     }
 
     pub(crate) fn finish(self, ctxd_parent_modes: &ContextualisedBindingMode) -> NestedPattern {
         let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), ctxd_parent_modes);
         let scope_id = self.scope_id;
-        let branch_ids = self.conjunctions.iter().map(|(bid,_)| *bid).collect();
-        let conjunctions = self.conjunctions.into_iter().map(|(_, conjunction)| {
-            conjunction.finish(&binding_modes)
-        }).collect();
+        let branch_ids = self.conjunctions.iter().map(|(bid, _)| *bid).collect();
+        let conjunctions =
+            self.conjunctions.into_iter().map(|(_, conjunction)| conjunction.finish(&binding_modes)).collect();
         NestedPattern::Disjunction(Disjunction { scope_id, branch_ids, conjunctions, binding_modes })
     }
 
-    pub(crate) fn conjunctions(&self) -> impl Iterator<Item=&ConjunctionBuilder> {
+    pub(crate) fn conjunctions(&self) -> impl Iterator<Item = &ConjunctionBuilder> {
         self.conjunctions.iter().map(|(_, c)| c)
     }
     pub fn add_conjunction(&mut self, context: &mut BlockBuilderContext<'_>) -> &mut ConjunctionBuilder {

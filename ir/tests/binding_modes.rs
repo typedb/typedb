@@ -456,22 +456,42 @@ fn test_nested_negation() {
         binding_modes(&translated_pipeline.variable_registry, inner_negation.conjunction());
     assert_eq!(
         conjunction_modes,
-        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild), ("f", BindingMode::LocallyBindingInChild)])
+        BTreeMap::from([
+            ("x", BindingMode::AlwaysBinding),
+            ("y", BindingMode::LocallyBindingInChild),
+            ("f", BindingMode::LocallyBindingInChild)
+        ])
     );
     assert_eq!(
         outer_negation_modes,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::LocallyBindingInChild), ("f", BindingMode::LocallyBindingInChild)])
+        BTreeMap::from([
+            ("x", BindingMode::RequirePrebound),
+            ("y", BindingMode::LocallyBindingInChild),
+            ("f", BindingMode::LocallyBindingInChild)
+        ])
     );
     assert_eq!(
         inner_negation_modes,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound), ("f", BindingMode::LocallyBindingInChild)])
+        BTreeMap::from([
+            ("x", BindingMode::RequirePrebound),
+            ("y", BindingMode::RequirePrebound),
+            ("f", BindingMode::LocallyBindingInChild)
+        ])
     );
     assert_eq!(
         outer_negation_inner_conjunction_modes,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding), ("f", BindingMode::LocallyBindingInChild)])
+        BTreeMap::from([
+            ("x", BindingMode::RequirePrebound),
+            ("y", BindingMode::AlwaysBinding),
+            ("f", BindingMode::LocallyBindingInChild)
+        ])
     );
     assert_eq!(
         inner_negation_inner_conjunction_modes,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound), ("f", BindingMode::AlwaysBinding)])
+        BTreeMap::from([
+            ("x", BindingMode::RequirePrebound),
+            ("y", BindingMode::RequirePrebound),
+            ("f", BindingMode::AlwaysBinding)
+        ])
     );
 }

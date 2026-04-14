@@ -131,9 +131,9 @@ pub fn extract_pipeline_structure_from(
         .iter()
         .rev()
         .filter_map(|stage| match stage {
-            AnnotatedStage::Match { block, .. } => Some(
-                block.conjunction().named_visible_referenced_variables().collect::<Vec<_>>(),
-            ),
+            AnnotatedStage::Match { block, .. } => {
+                Some(block.conjunction().named_visible_referenced_variables().collect::<Vec<_>>())
+            }
             | AnnotatedStage::Insert { block, .. }
             | AnnotatedStage::Update { block, .. }
             | AnnotatedStage::Put { block, .. } => {

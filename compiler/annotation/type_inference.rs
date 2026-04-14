@@ -120,10 +120,12 @@ pub mod tests {
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(function_context.new_block_builder_context(&mut value_parameters));
             let (f_context, f_conjunction) = builder.to_parts_mut();
-            let f_var_animal = f_conjunction.constraints_mut(f_context).get_or_declare_variable("called_animal", None).unwrap();
+            let f_var_animal =
+                f_conjunction.constraints_mut(f_context).get_or_declare_variable("called_animal", None).unwrap();
             let f_var_animal_type =
                 f_conjunction.constraints_mut(f_context).get_or_declare_variable("called_animal_type", None).unwrap();
-            let f_var_name = f_conjunction.constraints_mut(f_context).get_or_declare_variable("called_name", None).unwrap();
+            let f_var_name =
+                f_conjunction.constraints_mut(f_context).get_or_declare_variable("called_name", None).unwrap();
             f_conjunction.constraints_mut(f_context).add_label(f_var_animal_type, LABEL_CAT.clone()).unwrap();
             f_conjunction
                 .constraints_mut(f_context)
@@ -344,9 +346,15 @@ pub mod tests {
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_name_type, LABEL_NAME.clone()).unwrap();
             conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
 
@@ -409,9 +417,15 @@ pub mod tests {
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_ANIMAL.clone()).unwrap();
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
             conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
 
@@ -472,9 +486,15 @@ pub mod tests {
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
             conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
 
@@ -513,9 +533,15 @@ pub mod tests {
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_ANIMAL.clone()).unwrap();
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_name_type, LABEL_NAME.clone()).unwrap();
             conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
 
@@ -596,13 +622,21 @@ pub mod tests {
         let mut disj = conjunction.add_disjunction(context);
 
         let mut branch1 = disj.add_conjunction(context);
-        let b1_var_animal_type = branch1.constraints_mut(context).get_or_declare_variable("b1_animal_type", None).unwrap();
-        branch1.constraints_mut(context).add_isa(IsaKind::Subtype, var_animal, b1_var_animal_type.into(), None).unwrap();
+        let b1_var_animal_type =
+            branch1.constraints_mut(context).get_or_declare_variable("b1_animal_type", None).unwrap();
+        branch1
+            .constraints_mut(context)
+            .add_isa(IsaKind::Subtype, var_animal, b1_var_animal_type.into(), None)
+            .unwrap();
         branch1.constraints_mut(context).add_label(b1_var_animal_type, LABEL_CAT.clone()).unwrap();
 
         let mut branch2 = disj.add_conjunction(context);
-        let b2_var_animal_type = branch2.constraints_mut(context).get_or_declare_variable("b2_animal_type", None).unwrap();
-        branch2.constraints_mut(context).add_isa(IsaKind::Subtype, var_animal, b2_var_animal_type.into(), None).unwrap();
+        let b2_var_animal_type =
+            branch2.constraints_mut(context).get_or_declare_variable("b2_animal_type", None).unwrap();
+        branch2
+            .constraints_mut(context)
+            .add_isa(IsaKind::Subtype, var_animal, b2_var_animal_type.into(), None)
+            .unwrap();
         branch2.constraints_mut(context).add_label(b2_var_animal_type, LABEL_DOG.clone()).unwrap();
 
         let (b1_var_animal_type, b2_var_animal_type) = (b1_var_animal_type, b2_var_animal_type);
@@ -908,9 +942,15 @@ pub mod tests {
                     .collect_tuple()
                     .unwrap();
 
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
-            conjunction.constraints_mut(context).add_isa(IsaKind::Exact, var_name, var_owned_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Exact, var_name, var_owned_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_owns(var_animal_type.into(), var_owned_type.into(), None).unwrap();
 
             let block = builder.finish().unwrap();
@@ -975,8 +1015,14 @@ pub mod tests {
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_animal, var_owner_type.into(), None).unwrap();
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_animal, var_owner_type.into(), None)
+                .unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
             conjunction.constraints_mut(context).add_owns(var_owner_type.into(), var_name_type.into(), None).unwrap();
 
@@ -1041,9 +1087,15 @@ pub mod tests {
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
             conjunction.constraints_mut(context).add_owns(var_animal_type.into(), var_name_type.into(), None).unwrap();
 
@@ -1096,7 +1148,10 @@ pub mod tests {
                 .collect_tuple()
                 .unwrap();
 
-            conjunction.constraints_mut(context).add_isa(IsaKind::Exact, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Exact, var_animal, var_animal_type.into(), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_isa(IsaKind::Exact, var_name, var_name_type.into(), None).unwrap();
             conjunction.constraints_mut(context).add_owns(var_animal_type.into(), var_name_type.into(), None).unwrap();
 
@@ -1174,7 +1229,10 @@ pub mod tests {
                 .constraints_mut(context)
                 .add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_CAT), None)
                 .unwrap();
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
@@ -1338,7 +1396,10 @@ pub mod tests {
                 .constraints_mut(context)
                 .add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_ANIMAL), None)
                 .unwrap();
-            conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME), None).unwrap();
+            conjunction
+                .constraints_mut(context)
+                .add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME), None)
+                .unwrap();
             conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();

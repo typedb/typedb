@@ -7,14 +7,13 @@
 use crate::{
     pattern::{conjunction::ConjunctionBuilder, nested_pattern::NestedPattern, Pattern, Scope},
     pipeline::{
-        block::{Block, BlockBuilder},
+        block::{Block, BlockBuilder, BlockBuilderContext},
         function_signature::FunctionSignatureIndex,
         ParameterRegistry,
     },
     translation::{constraints::add_statement, PipelineTranslationContext},
     RepresentationError,
 };
-use crate::pipeline::block::BlockBuilderContext;
 
 pub fn translate_match<'a>(
     context: &'a mut PipelineTranslationContext,
@@ -51,13 +50,10 @@ fn add_disjunction(
     disjunction: &typeql::pattern::Disjunction,
 ) -> Result<(), Box<RepresentationError>> {
     let mut disjunction_builder = conjunction.add_disjunction(context);
-    disjunction
-        .branches
-        .iter()
-        .try_for_each(|branch| {
-            let conj = disjunction_builder.add_conjunction(context);
-            add_patterns(function_index, context, conj, branch)
-        })?;
+    disjunction.branches.iter().try_for_each(|branch| {
+        let conj = disjunction_builder.add_conjunction(context);
+        add_patterns(function_index, context, conj, branch)
+    })?;
     Ok(())
 }
 

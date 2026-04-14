@@ -9,6 +9,7 @@ use std::{
     fmt,
     hash::{DefaultHasher, Hasher},
 };
+
 use answer::variable::Variable;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
@@ -18,15 +19,14 @@ use crate::{
     pattern::{
         constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
         disjunction::DisjunctionBuilder,
+        negation::NegationBuilder,
         nested_pattern::NestedPattern,
-        BindingMode, Pattern, Scope, ScopeId,
+        optional::OptionalBuilder,
+        BindingMode, ContextualisedBindingMode, Pattern, Scope, ScopeId,
     },
     pipeline::block::{BlockBuilderContext, ScopeType},
     RepresentationError,
 };
-use crate::pattern::ContextualisedBindingMode;
-use crate::pattern::negation::NegationBuilder;
-use crate::pattern::optional::OptionalBuilder;
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {
@@ -56,12 +56,8 @@ impl Conjunction {
     pub fn set_unsatisfiable(&mut self) {
         let scope_id = self.scope_id;
         let binding_modes = self.binding_modes.clone();
-        let mut swapped_conjunction = Self {
-            scope_id,
-            constraints: Constraints::new(scope_id),
-            nested_patterns: Vec::new(),
-            binding_modes,
-        };
+        let mut swapped_conjunction =
+            Self { scope_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new(), binding_modes };
         std::mem::swap(self, &mut swapped_conjunction);
         self.constraints.constraints_mut().push(Constraint::Unsatisfiable(Unsatisfiable::new(swapped_conjunction)));
     }
@@ -79,7 +75,7 @@ impl Pattern for Conjunction {
         self.binding_modes.visible_referenced_variables()
     }
 
-    fn required_inputs(&self) -> impl Iterator<Item=Variable> + '_ {
+    fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
         self.binding_modes.required_inputs()
     }
 
@@ -161,7 +157,8 @@ pub struct ConjunctionBuilder {
 
 impl ConjunctionBuilder {
     pub fn new(scope_id: ScopeId) -> Self {
-        Self { constraints: Constraints::new(scope_id), scope_id, nested_patterns: Vec::new() } //, binding_modes: HashMap::new() }
+        Self { constraints: Constraints::new(scope_id), scope_id, nested_patterns: Vec::new() }
+        //, binding_modes: HashMap::new() }
     }
 
     pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> Conjunction {
@@ -183,7 +180,10 @@ impl ConjunctionBuilder {
         &self.nested_patterns
     }
 
-    pub fn constraints_mut<'ctx, 'reg>(&'ctx mut self, context: &'ctx mut BlockBuilderContext<'reg>) -> ConstraintsBuilder<'ctx, 'reg> {
+    pub fn constraints_mut<'ctx, 'reg>(
+        &'ctx mut self,
+        context: &'ctx mut BlockBuilderContext<'reg>,
+    ) -> ConstraintsBuilder<'ctx, 'reg> {
         ConstraintsBuilder::new(context, &mut self.constraints)
     }
 
@@ -200,9 +200,7 @@ impl ConjunctionBuilder {
         let nested_scope_id = context.create_child_scope(self.scope_id, ScopeType::Negation);
         let negation = NegationBuilder::new(nested_scope_id);
         self.nested_patterns.push(NestedPatternBuilder::Negation(negation));
-        let Some(NestedPatternBuilder::Negation(builder)) = self.nested_patterns.last_mut() else {
-            unreachable!()
-        };
+        let Some(NestedPatternBuilder::Negation(builder)) = self.nested_patterns.last_mut() else { unreachable!() };
         builder
     }
 
@@ -210,15 +208,13 @@ impl ConjunctionBuilder {
         &mut self,
         source_span: Option<Span>,
         context: &mut BlockBuilderContext<'_>,
-    ) ->  Result<&mut OptionalBuilder, RepresentationError> {
+    ) -> Result<&mut OptionalBuilder, RepresentationError> {
         let nested_scope_id = context.create_child_scope(self.scope_id, ScopeType::Optional);
         let conjunction = ConjunctionBuilder::new(nested_scope_id);
         let optional = OptionalBuilder::new(nested_scope_id, context.next_branch_id());
         self.validate_optional_not_in_negation(&optional, source_span, context)?;
         self.nested_patterns.push(NestedPatternBuilder::Optional(optional));
-        let Some(NestedPatternBuilder::Optional(optional)) = self.nested_patterns.last_mut() else {
-            unreachable!()
-        };
+        let Some(NestedPatternBuilder::Optional(optional)) = self.nested_patterns.last_mut() else { unreachable!() };
         Ok(optional)
     }
 
@@ -226,7 +222,7 @@ impl ConjunctionBuilder {
         &self,
         optional: &OptionalBuilder,
         source_span: Option<Span>,
-        context: & mut BlockBuilderContext<'_>,
+        context: &mut BlockBuilderContext<'_>,
     ) -> Result<(), RepresentationError> {
         let mut scope = optional.conjunction().scope_id;
         while let Some(parent_scope) = context.get_parent_scope(scope) {

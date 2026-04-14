@@ -28,9 +28,7 @@ use concept::{
 };
 use encoding::value::value_type::ValueType;
 use ir::{
-    pattern::{
-        conjunction::Conjunction, nested_pattern::NestedPattern, ParameterID, Scope, Vertex,
-    },
+    pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, ParameterID, Scope, Vertex},
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::chain;

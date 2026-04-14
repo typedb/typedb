@@ -159,9 +159,8 @@ fn make_builder<'a>(
             ),
             NestedPattern::Optional(optional) => {
                 let required_vars = optional.required_inputs().collect::<HashSet<_>>();
-                let optional_vars = optional.visible_referenced_variables()
-                    .filter(|var| !required_vars.contains(var))
-                    .collect();
+                let optional_vars =
+                    optional.visible_referenced_variables().filter(|var| !required_vars.contains(var)).collect();
                 optional_subplans.push(OptionalPlan::new(
                     optional.branch_id(),
                     optional_vars,

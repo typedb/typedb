@@ -12,16 +12,14 @@ use typeql::common::Span;
 
 use crate::{
     pattern::{
-        conjunction::{Conjunction, ConjunctionBuilder},
+        conjunction::{Conjunction, ConjunctionBuilder, NestedPatternBuilder},
         constraint::Constraint,
         variable_category::VariableCategory,
-        BranchID, Scope, ScopeId,
+        BindingMode, BranchID, ContextualisedBindingMode, Scope, ScopeId,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
 };
-use crate::pattern::{BindingMode, ContextualisedBindingMode};
-use crate::pattern::conjunction::NestedPatternBuilder;
 
 #[derive(Debug, Clone)]
 pub struct Block {
@@ -90,12 +88,13 @@ impl<'reg> BlockBuilder<'reg> {
         validate_all_variables_are_bound(&block_binding_modes, &self.context.variable_registry)?;
 
         // Update
-        block_binding_modes.iter()
+        block_binding_modes
+            .iter()
             .filter(|(_, mode)| mode.is_optionally_binding())
-            .for_each(|(v,_)| self.context.set_variable_optionality(*v, true));
-        self.context.variable_names_index.retain(|_, var| {
-            block_binding_modes.get(var).copied() != Some(BindingMode::LocallyBindingInChild)
-        });
+            .for_each(|(v, _)| self.context.set_variable_optionality(*v, true));
+        self.context
+            .variable_names_index
+            .retain(|_, var| block_binding_modes.get(var).copied() != Some(BindingMode::LocallyBindingInChild));
         let conjunction = self.conjunction.finish(&ContextualisedBindingMode::for_block(block_binding_modes));
         let block_context = self.context.block_context;
         Ok(Block { conjunction, block_context })
@@ -161,11 +160,9 @@ fn validate_is_variables_have_same_category(
     }
 
     conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
-        NestedPatternBuilder::Disjunction(disjunction) => {
-            disjunction.conjunctions().try_for_each(|inner| {
-                validate_is_variables_have_same_category(inner, variable_registry)
-            })
-        },
+        NestedPatternBuilder::Disjunction(disjunction) => disjunction
+            .conjunctions()
+            .try_for_each(|inner| validate_is_variables_have_same_category(inner, variable_registry)),
         NestedPatternBuilder::Negation(negation) => {
             validate_is_variables_have_same_category(negation.conjunction(), variable_registry)
         }
@@ -177,8 +174,10 @@ fn validate_is_variables_have_same_category(
     Ok(())
 }
 
-
-fn validate_all_variables_are_bound(block_binding_modes: &HashMap<Variable, BindingMode>, variable_registry: &VariableRegistry) -> Result<(), Box<RepresentationError>> {
+fn validate_all_variables_are_bound(
+    block_binding_modes: &HashMap<Variable, BindingMode>,
+    variable_registry: &VariableRegistry,
+) -> Result<(), Box<RepresentationError>> {
     for (var, mode) in block_binding_modes.iter() {
         if mode.is_require_prebound() {
             let variable = variable_registry.get_variable_name_or_unnamed(*var).to_owned();

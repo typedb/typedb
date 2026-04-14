@@ -9,14 +9,11 @@ use std::{collections::HashMap, fmt};
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
-use crate::{
-    pattern::{
-        conjunction::{Conjunction, ConjunctionBuilder},
-        BindingMode, Pattern, Scope, ScopeId,
-    },
+use crate::pattern::{
+    conjunction::{Conjunction, ConjunctionBuilder},
+    nested_pattern::NestedPattern,
+    BindingMode, ContextualisedBindingMode, Pattern, Scope, ScopeId,
 };
-use crate::pattern::ContextualisedBindingMode;
-use crate::pattern::nested_pattern::NestedPattern;
 
 #[derive(Debug, Clone)]
 pub struct Negation {
@@ -39,7 +36,7 @@ impl Pattern for Negation {
         self.binding_modes.visible_referenced_variables()
     }
 
-    fn required_inputs(&self) -> impl Iterator<Item=Variable> + '_ {
+    fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
         self.binding_modes.required_inputs()
     }
 

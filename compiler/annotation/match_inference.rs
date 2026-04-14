@@ -239,12 +239,13 @@ fn infer_types_in_negations_and_conjunctions(
                 )?;
                 let optional_root_annotations =
                     type_annotations_by_scope.get(&optional.conjunction().scope_id()).unwrap().vertex_annotations();
-                optional_root_annotations.iter().filter(|(var, annotations)| {
-                    todo!("!optional.input_variables().contains(var)")
-                }).for_each(|(var, annotations)| {
-                    debug_assert!(!vertices.annotations.contains_key(var));
-                    vertices.annotations.insert(var.clone(), (**annotations).clone());
-                });
+                optional_root_annotations
+                    .iter()
+                    .filter(|(var, annotations)| todo!("!optional.input_variables().contains(var)"))
+                    .for_each(|(var, annotations)| {
+                        debug_assert!(!vertices.annotations.contains_key(var));
+                        vertices.annotations.insert(var.clone(), (**annotations).clone());
+                    });
             }
         }
     }
