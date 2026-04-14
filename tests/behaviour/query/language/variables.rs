@@ -14,10 +14,10 @@ async fn test_read_variables() {
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
     #[cfg(feature = "bazel")]
-    let path = "../typedb_behaviour/query/language/variables.feature";
+    let path = "../typedb_behaviour+/query/language/variables.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/language/variables.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/language/variables.feature";
 
     assert!(Context::test(path, true).await);
 }

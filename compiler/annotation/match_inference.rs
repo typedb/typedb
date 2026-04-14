@@ -239,9 +239,10 @@ fn infer_types_in_negations_and_conjunctions(
                 )?;
                 let optional_root_annotations =
                     type_annotations_by_scope.get(&optional.conjunction().scope_id()).unwrap().vertex_annotations();
+                let required_inputs = optional.required_inputs().collect::<HashSet<_>>();
                 optional_root_annotations
                     .iter()
-                    .filter(|(var, annotations)| todo!("!optional.input_variables().contains(var)"))
+                    .filter(|(vertex, _)| vertex.as_variable().map_or(false, |v| !required_inputs.contains(&v)))
                     .for_each(|(var, annotations)| {
                         debug_assert!(!vertices.annotations.contains_key(var));
                         vertices.annotations.insert(var.clone(), (**annotations).clone());

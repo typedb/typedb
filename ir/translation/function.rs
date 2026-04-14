@@ -109,7 +109,7 @@ pub fn translate_function_from(
         if !body.stages.iter().any(|stage| {
             if let TranslatedStage::Match { block, .. } = stage {
                 // Something that's in the input can't be invisible.
-                block.conjunction().visible_referenced_variables().contains(&arg)
+                block.conjunction().named_visible_referenced_variables().contains(&arg)
             } else {
                 false
             }

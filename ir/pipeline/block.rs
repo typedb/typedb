@@ -45,7 +45,7 @@ impl Block {
     }
 
     pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.block_context.referenced_variables()
+        self.block_context.registered_variables()
     }
 }
 
@@ -120,7 +120,7 @@ fn validate_variable_categories_are_sufficiently_narrow(
     context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
     validate_no_optionals_in_negations(conjunction, false)?;
-    let unbound = context.block_context.referenced_variables().find(|&variable| {
+    let unbound = context.block_context.registered_variables().find(|&variable| {
         matches!(
             context.variable_registry.get_variable_category(variable),
             Some(VariableCategory::AttributeOrValue) | None
@@ -143,12 +143,15 @@ fn validate_no_optionals_in_negations(
     this_conjunction_in_negation: bool,
 ) -> Result<(), Box<RepresentationError>> {
     if this_conjunction_in_negation {
-        if let Some(optional) = conjunction.nested_patterns().iter().filter_map(|nested| {
-            match nested {
+        if let Some(optional) = conjunction
+            .nested_patterns()
+            .iter()
+            .filter_map(|nested| match nested {
                 NestedPatternBuilder::Optional(optional) => Some(optional),
                 _ => None,
-            }
-        }).next() {
+            })
+            .next()
+        {
             return Err(Box::new(RepresentationError::OptionalInNegation {}));
         }
     }
@@ -245,7 +248,7 @@ impl BlockContext {
         self.input_variables.contains(var)
     }
 
-    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+    fn registered_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.variable_declaration.iter().copied()
     }
 
@@ -324,13 +327,12 @@ impl<'a> BlockBuilderContext<'a> {
         self.block_context.is_variable_available_in(scope, variable)
     }
 
-
     pub(crate) fn is_block_input_variable(&self, variable: Variable) -> bool {
         self.block_context.is_block_input_variable(&variable)
     }
 
     pub(crate) fn input_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.block_context.referenced_variables().filter(|var| self.is_block_input_variable(*var))
+        self.block_context.registered_variables().filter(|var| self.is_block_input_variable(*var))
     }
 
     pub(crate) fn next_scope_id(&mut self) -> ScopeId {

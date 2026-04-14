@@ -68,13 +68,13 @@ pub trait IrID: Copy + fmt::Display + fmt::Debug + Hash + Eq + PartialEq + Ord +
 impl IrID for Variable {}
 
 pub trait Pattern {
-    // A referenced variable is "visible" if it's not local to some subpattern.
-    // includes all variables from constraints and subpatterns. Does not include inputs.
-    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
-
     fn named_visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.visible_referenced_variables().filter(Variable::is_named)
     }
+
+    // A referenced variable is "visible" if it's not local to some subpattern.
+    // includes all variables from constraints and subpatterns. Does not include inputs.
+    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
 
