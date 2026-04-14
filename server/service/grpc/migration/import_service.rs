@@ -122,21 +122,17 @@ impl DatabaseImportService {
                 Ok(Break(()))
             }
             Some(Ok(message)) => match message.client {
-                None => {
-                    return Err(ProtocolError::MissingField {
-                        name: "client",
-                        description: "Database import message must contain a client request.",
-                    }
-                    .into_status());
+                None => Err(ProtocolError::MissingField {
+                    name: "client",
+                    description: "Database import message must contain a client request.",
                 }
+                .into_status()),
                 Some(client) => match client.client {
-                    None => {
-                        return Err(ProtocolError::MissingField {
-                            name: "client",
-                            description: "Database import message must contain a request.",
-                        }
-                        .into_status());
+                    None => Err(ProtocolError::MissingField {
+                        name: "client",
+                        description: "Database import message must contain a request.",
                     }
+                    .into_status()),
                     Some(client) => self.handle_request(client).await,
                 },
             },

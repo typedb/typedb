@@ -108,6 +108,35 @@ impl IntoGrpcStatus for typedb_protocol::Error {
     }
 }
 
+impl IntoGrpcStatus for crate::error::ArcServerStateError {
+    fn into_status(self) -> Status {
+        use crate::error::ErrorResponseCategory;
+        let category = self.error_response_category();
+        let proto_error = self.into_error_message();
+
+        let (code, message, extra_metadata) = match category {
+            ErrorResponseCategory::Redirect { location } => {
+                let mut metadata = HashMap::new();
+                metadata.insert("address".to_string(), location);
+                (Code::Unavailable, "Redirected", Some(("REDIRECT", metadata)))
+            }
+            ErrorResponseCategory::NotFound => (Code::NotFound, "Not found", None),
+            ErrorResponseCategory::Forbidden => (Code::PermissionDenied, "Forbidden", None),
+            ErrorResponseCategory::NotImplemented => (Code::Unimplemented, "Not implemented", None),
+            ErrorResponseCategory::Unavailable => (Code::Unavailable, "Unavailable", None),
+            ErrorResponseCategory::InvalidRequest => return proto_error.into_status(),
+            ErrorResponseCategory::Internal => (Code::Internal, "Internal error", None),
+        };
+
+        let mut details = ErrorDetails::with_error_info(proto_error.error_code, proto_error.domain, HashMap::new());
+        details.set_debug_info(proto_error.stack_trace, "");
+        if let Some((reason, metadata)) = extra_metadata {
+            details.set_error_info(reason, "typedb", metadata);
+        }
+        Status::with_error_details(code, message, details)
+    }
+}
+
 typedb_error! {
     pub(crate) GrpcServiceError(component = "GRPC Service", prefix = "GSR") {
         UnexpectedMissingField(1, "Invalid request: missing field '{field}'.", field: String),
