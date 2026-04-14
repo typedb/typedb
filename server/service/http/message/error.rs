@@ -35,6 +35,7 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::InvalidPathParameter { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::State { typedb_source } => match typedb_source.error_response_category() {
                 ErrorResponseCategory::NotFound => StatusCode::NOT_FOUND,
+                ErrorResponseCategory::Unauthenticated => StatusCode::UNAUTHORIZED,
                 ErrorResponseCategory::Forbidden => StatusCode::FORBIDDEN,
                 ErrorResponseCategory::NotImplemented => StatusCode::NOT_IMPLEMENTED,
                 ErrorResponseCategory::Unavailable => StatusCode::SERVICE_UNAVAILABLE,

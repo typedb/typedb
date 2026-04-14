@@ -26,6 +26,7 @@ use crate::{
 
 pub enum ErrorResponseCategory {
     NotFound,
+    Unauthenticated,
     Forbidden,
     NotImplemented,
     Unavailable,
@@ -103,18 +104,28 @@ typedb_error! {
 
 impl ServerStateError for LocalServerStateError {
     fn error_response_category(&self) -> ErrorResponseCategory {
+        use crate::authentication::AuthenticationError;
         use ErrorResponseCategory::*;
         match self {
             Self::Unimplemented { .. } | Self::NotSupportedByDistribution { .. } => NotImplemented,
-            Self::OperationNotPermitted { .. } | Self::AuthenticationError { .. } => Forbidden,
+
+            Self::AuthenticationError { typedb_source } => match typedb_source {
+                AuthenticationError::CorruptedAccessor { .. } => Internal,
+                _ => Unauthenticated,
+            },
+
+            Self::OperationNotPermitted { .. } => Forbidden,
+
             Self::DatabaseNotFound { .. } | Self::UserNotFound { .. } => NotFound,
+
+            Self::ConceptReadError { .. }
+            | Self::FunctionReadError { .. } => Internal,
+
             Self::NotInitialised { .. }
             | Self::DatabaseSchemaCommitFailed { .. }
             | Self::DatabaseDataCommitFailed { .. }
             | Self::DatabaseCommitRecordExistsFailed { .. }
-            | Self::ConceptReadError { .. }
-            | Self::FunctionReadError { .. } => Internal,
-            Self::FailedToOpenPrerequisiteTransaction { .. }
+            | Self::FailedToOpenPrerequisiteTransaction { .. }
             | Self::TransactionOpenFailed { .. }
             | Self::UserCannotBeRetrieved { .. }
             | Self::UserCannotBeCreated { .. }

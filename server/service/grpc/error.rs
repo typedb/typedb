@@ -136,6 +136,7 @@ fn server_state_error_to_status(
             (Code::Unavailable, "Redirected", Some(("REDIRECT", metadata)))
         }
         ErrorResponseCategory::NotFound => (Code::NotFound, "Not found", None),
+        ErrorResponseCategory::Unauthenticated => (Code::Unauthenticated, "Unauthenticated", None),
         ErrorResponseCategory::Forbidden => (Code::PermissionDenied, "Forbidden", None),
         ErrorResponseCategory::NotImplemented => (Code::Unimplemented, "Not implemented", None),
         ErrorResponseCategory::Unavailable => (Code::Unavailable, "Unavailable", None),
