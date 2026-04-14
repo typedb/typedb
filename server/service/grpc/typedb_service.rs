@@ -356,9 +356,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             || async {
                 match self.server_state.databases().get(&name).await {
                     Ok(Some(db)) => Ok(Response::new(database_get_res(db.name().to_string()))),
-                    Ok(None) => {
-                        Err(LocalServerStateError::DatabaseNotFound { name }.into_error_message().into_status())
-                    }
+                    Ok(None) => Err(LocalServerStateError::DatabaseNotFound { name }.into_status()),
                     Err(err) => Err(err.into_status()),
                 }
             },
@@ -530,9 +528,7 @@ impl typedb_protocol::type_db_server::TypeDb for GRPCTypeDBService {
             ActionKind::DatabaseExport,
             || async {
                 match self.server_state.databases().manager().database(&database_name) {
-                    None => Err(LocalServerStateError::DatabaseNotFound { name: database_name }
-                        .into_error_message()
-                        .into_status()),
+                    None => Err(LocalServerStateError::DatabaseNotFound { name: database_name }.into_status()),
                     Some(database) => {
                         let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
                         let service = DatabaseExportService::new(
