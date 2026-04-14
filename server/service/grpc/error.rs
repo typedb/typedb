@@ -130,10 +130,13 @@ fn server_state_error_to_status(
 ) -> Status {
     use crate::error::ErrorResponseCategory;
     let (code, message, extra_metadata) = match category {
-        ErrorResponseCategory::Redirect { location } => {
-            let mut metadata = HashMap::new();
-            metadata.insert("address".to_string(), location);
-            (Code::Unavailable, "Redirected", Some(("REDIRECT", metadata)))
+        ErrorResponseCategory::Redirect { grpc_address, .. } => match grpc_address {
+            Some(address) => {
+                let mut metadata = HashMap::new();
+                metadata.insert("address".to_string(), address);
+                (Code::Unavailable, "Redirected", Some(("REDIRECT", metadata)))
+            }
+            None => (Code::Unavailable, "Unavailable", None),
         }
         ErrorResponseCategory::NotFound => (Code::NotFound, "Not found", None),
         ErrorResponseCategory::Unauthenticated => (Code::Unauthenticated, "Unauthenticated", None),

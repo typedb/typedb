@@ -39,14 +39,17 @@ impl IntoResponse for HttpServiceError {
                 ErrorResponseCategory::Forbidden => StatusCode::FORBIDDEN,
                 ErrorResponseCategory::NotImplemented => StatusCode::NOT_IMPLEMENTED,
                 ErrorResponseCategory::Unavailable => StatusCode::SERVICE_UNAVAILABLE,
-                ErrorResponseCategory::Redirect { location } => {
-                    return (
-                        StatusCode::TEMPORARY_REDIRECT,
-                        [(http::header::LOCATION, location)],
-                        JsonBody(encode_error(self)),
-                    )
-                        .into_response();
-                }
+                ErrorResponseCategory::Redirect { http_address, .. } => match http_address {
+                    Some(location) => {
+                        return (
+                            StatusCode::TEMPORARY_REDIRECT,
+                            [(http::header::LOCATION, location)],
+                            JsonBody(encode_error(self)),
+                        )
+                            .into_response();
+                    }
+                    None => StatusCode::SERVICE_UNAVAILABLE,
+                },
                 ErrorResponseCategory::InvalidRequest => StatusCode::BAD_REQUEST,
                 ErrorResponseCategory::Internal => StatusCode::INTERNAL_SERVER_ERROR,
             },

@@ -30,7 +30,7 @@ pub enum ErrorResponseCategory {
     Forbidden,
     NotImplemented,
     Unavailable,
-    Redirect { location: String },
+    Redirect { grpc_address: Option<String>, http_address: Option<String> },
     InvalidRequest,
     Internal,
 }
