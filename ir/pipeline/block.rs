@@ -80,32 +80,30 @@ impl<'reg> BlockBuilder<'reg> {
         Self { conjunction: ConjunctionBuilder::new(ScopeId::ROOT), context }
     }
 
-    pub(crate) fn DISSOLVEME_to_parts_mut(&mut self) -> (&mut BlockBuilderContext<'reg>, &mut ConjunctionBuilder) {
+    pub fn DISSOLVEME_to_parts_mut(&mut self) -> (&mut BlockBuilderContext<'reg>, &mut ConjunctionBuilder) {
         let Self { context, conjunction } = self;
         (context, conjunction)
     }
 
     pub fn finish(mut self) -> Result<Block, Box<RepresentationError>> {
-        self.validate_conjunction()?;
-        let Self { conjunction, mut context, } = self;
-        let block_binding_modes = conjunction.variable_binding_modes();
-        block_binding_modes.iter().for_each(|(v, mode)| {
-            if mode.is_optionally_binding() {
-                context.set_variable_optionality(*v, true);
-            }
+        let block_binding_modes = ContextualisedBindingMode::for_block(
+            self.conjunction.variable_binding_modes(),
+            self.context.input_variables()
+        );
+
+        validate_variable_categories_are_sufficiently_narrow(&self.conjunction, &self.context.variable_registry)?;
+        validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
+        validate_all_variables_are_bound(&block_binding_modes, &self.context.variable_registry)?;
+
+        // Update
+        block_binding_modes.iter()
+            .filter(|(_, mode)| mode.is_optionally_binding())
+            .for_each(|(v,_)| self.context.set_variable_optionality(*v, true));
+        self.context.variable_names_index.retain(|_, var| {
+            block_binding_modes.get(var).copied() != Some(BindingMode::LocallyBindingInChild)
         });
-        let BlockBuilderContext { mut block_context, variable_registry, variable_names_index: visible_variables, .. } = context;
-        visible_variables.retain(|name, var| {
-            match block_binding_modes.get(var).copied().unwrap_or(BindingMode::Absent) {
-                BindingMode::AlwaysBinding | BindingMode::OptionallyBinding => true,
-                BindingMode::LocallyBindingInChild => false,
-                BindingMode::Absent | BindingMode::RequirePrebound => {
-                    debug_assert!(false, "Did not expect Absent or RequirePrebound");
-                    false
-                }
-            }
-        });
-        let conjunction = conjunction.finish(&ContextualisedBindingMode::new(block_binding_modes));
+        let conjunction = self.conjunction.finish(&block_binding_modes);
+        let block_context = self.context.block_context;
         Ok(Block { conjunction, block_context })
     }
 
@@ -115,19 +113,6 @@ impl<'reg> BlockBuilder<'reg> {
 
     pub fn context_mut(&mut self) -> &mut BlockBuilderContext<'reg> {
         &mut self.context
-    }
-
-    pub fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
-        let mut block_binding_modes = self.conjunction.variable_binding_modes();
-        block_binding_modes.extend(self.context.input_variables().map(|v| (v, BindingMode::AlwaysBinding)));
-        block_binding_modes
-    }
-
-    fn validate_conjunction(&self) -> Result<(), Box<RepresentationError>> {
-        validate_variable_categories_are_sufficiently_narrow(&self.conjunction, &self.context.variable_registry)?;
-        validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
-        validate_all_variables_are_bound(&self.variable_binding_modes(), &self.context.variable_registry)?;
-        Ok(())
     }
 }
 
@@ -193,8 +178,8 @@ fn validate_is_variables_have_same_category(
 }
 
 
-fn validate_all_variables_are_bound(block_binding_modes: &HashMap<Variable, BindingMode>, variable_registry: &VariableRegistry) -> Result<(), Box<RepresentationError>> {
-    for (var, mode) in block_binding_modes {
+fn validate_all_variables_are_bound(block_binding_modes: &ContextualisedBindingMode, variable_registry: &VariableRegistry) -> Result<(), Box<RepresentationError>> {
+    for (var, mode) in block_binding_modes.iter() {
         if mode.is_require_prebound() {
             let variable = variable_registry.get_variable_name_or_unnamed(*var).to_owned();
             // let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
@@ -213,7 +198,6 @@ pub struct BlockContext {
     variable_declaration: HashMap<Variable, ScopeId>,
     scope_parents: HashMap<ScopeId, ScopeId>,
     scope_types: HashMap<ScopeId, ScopeType>,
-    variable_binding_modes: HashMap<Variable, BindingMode>,
 }
 
 impl BlockContext {

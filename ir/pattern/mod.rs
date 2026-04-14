@@ -20,6 +20,7 @@ use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
 use crate::pipeline::{block::BlockContext, VariableRegistry};
+use crate::pipeline::block::BlockBuilder;
 
 pub mod conjunction;
 pub mod constraint;
@@ -466,8 +467,9 @@ impl BitOr for BindingMode {
 pub(crate) struct ContextualisedBindingMode(HashMap<Variable, BindingMode>);
 
 impl ContextualisedBindingMode {
-    pub(crate) fn new(inner: HashMap<Variable, BindingMode>) -> ContextualisedBindingMode {
-        Self(inner)
+    pub(crate) fn for_block(mut root_binding_modes: HashMap<Variable, BindingMode>, inputs: impl Iterator<Item=Variable>) -> ContextualisedBindingMode {
+        root_binding_modes.extend(inputs.map(|v| (v, BindingMode::AlwaysBinding)));
+        Self(root_binding_modes)
     }
 
     pub(crate) fn from(
@@ -476,12 +478,11 @@ impl ContextualisedBindingMode {
     ) -> ContextualisedBindingMode {
         let binding_modes = pattern_modes.iter().map(|(var, pattern_mode)| {
             let mode = match (pattern_mode, parent_modes.0.get(var).copied().unwrap_or(BindingMode::Absent)) {
-                (BindingMode::OptionallyBinding, BindingMode::AlwaysBinding)
-                | (BindingMode::OptionallyBinding, BindingMode::RequirePrebound)
-                | (BindingMode::LocallyBindingInChild, BindingMode::AlwaysBinding)
-                | (BindingMode::LocallyBindingInChild, BindingMode::RequirePrebound)=> {
+                (_, BindingMode::RequirePrebound) => BindingMode::RequirePrebound,
+                (BindingMode::LocallyBindingInChild, BindingMode::AlwaysBinding) |
+                (BindingMode::OptionallyBinding, BindingMode::AlwaysBinding) => {
                     BindingMode::RequirePrebound
-                }
+                },
                 (mode, _) => *mode,
             };
             (*var, mode)
@@ -489,11 +490,19 @@ impl ContextualisedBindingMode {
         Self(binding_modes)
     }
 
-    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub(crate) fn iter(&self) -> impl Iterator<Item=(&Variable, &BindingMode)> + '_ {
+        self.0.iter()
+    }
+
+    pub(crate) fn get(&self, variable: &Variable) -> Option<&BindingMode> {
+        self.0.get(variable)
+    }
+
+    pub(crate) fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.iter().filter_map(|(v, mode)| (!mode.is_locally_binding_in_child()).then_some(*v))
     }
 
-    fn required_inputs(&self) -> impl Iterator<Item=Variable> + '_ {
+    pub(crate) fn required_inputs(&self) -> impl Iterator<Item=Variable> + '_ {
         self.0.iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(*v))
     }
 }

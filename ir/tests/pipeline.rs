@@ -50,15 +50,14 @@ fn build_with_functions() {
     let mut context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(context.new_block_builder_context(&mut value_parameters));
-    let mut conjunction = builder.conjunction_mut();
+    let (context, conjunction) = builder.DISSOLVEME_to_parts_mut();
+    let var_person = conjunction.constraints_mut(context).get_or_declare_variable("person", None).unwrap();
+    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("person_type", None).unwrap();
 
-    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
-    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_count = conjunction.constraints_mut(context).get_or_declare_variable("count", None).unwrap();
+    let var_mean = conjunction.constraints_mut(context).get_or_declare_variable("sum", None).unwrap();
 
-    let var_count = conjunction.constraints_mut().get_or_declare_variable("count", None).unwrap();
-    let var_mean = conjunction.constraints_mut().get_or_declare_variable("sum", None).unwrap();
-
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
 
     let function_argument_categories = vec![VariableCategory::Object];
     let function_return_categories = vec![
@@ -72,7 +71,7 @@ fn build_with_functions() {
         false,
     );
     conjunction
-        .constraints_mut()
+        .constraints_mut(context)
         .add_function_binding(vec![var_count, var_mean], &function_signature, vec![var_person], "test_fn", None)
         .unwrap();
     let block = builder.finish().unwrap();
