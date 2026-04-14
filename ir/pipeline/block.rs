@@ -15,7 +15,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder, NestedPatternBuilder},
         constraint::Constraint,
         variable_category::VariableCategory,
-        BindingMode, BranchID, ContextualisedBindingMode, Scope, ScopeId,
+        BindingMode, BranchID, ContextualisedBindingMode, ScopeId,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
@@ -46,12 +46,6 @@ impl Block {
 
     pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.block_context.registered_variables()
-    }
-}
-
-impl Scope for Block {
-    fn scope_id(&self) -> ScopeId {
-        ScopeId::ROOT
     }
 }
 
@@ -244,17 +238,12 @@ impl BlockContext {
         self.variable_declaration.insert(var);
     }
 
-    pub fn is_block_input_variable(&self, var: &Variable) -> bool {
+    fn is_block_input_variable(&self, var: &Variable) -> bool {
         self.input_variables.contains(var)
     }
 
     fn registered_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.variable_declaration.iter().copied()
-    }
-
-    // #[cfg(debug_assertions)]
-    fn is_variable_available_in(&self, scope: ScopeId, variable: Variable) -> bool {
-        self.variable_declaration.contains(&variable)
     }
 }
 
@@ -298,7 +287,6 @@ impl<'a> BlockBuilderContext<'a> {
     pub(crate) fn get_or_declare_variable(
         &mut self,
         name: &str,
-        scope: ScopeId,
         source_span: Option<Span>,
     ) -> Result<Variable, Box<RepresentationError>> {
         match self.variable_names_index.get(name) {
@@ -314,17 +302,11 @@ impl<'a> BlockBuilderContext<'a> {
 
     pub(crate) fn create_anonymous_variable(
         &mut self,
-        scope: ScopeId,
         source_span: Option<Span>,
     ) -> Result<Variable, Box<RepresentationError>> {
         let variable = self.variable_registry.register_anonymous_variable(source_span)?;
         self.block_context.add_variable_declaration(variable);
         Ok(variable)
-    }
-
-    // #[cfg(debug_assertions)]
-    pub(crate) fn is_variable_available_in(&self, scope: ScopeId, variable: Variable) -> bool {
-        self.block_context.is_variable_available_in(scope, variable)
     }
 
     pub(crate) fn is_block_input_variable(&self, variable: Variable) -> bool {
