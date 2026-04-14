@@ -104,8 +104,9 @@ typedb_error! {
 
 impl ServerStateError for LocalServerStateError {
     fn error_response_category(&self) -> ErrorResponseCategory {
-        use crate::authentication::AuthenticationError;
         use ErrorResponseCategory::*;
+
+        use crate::authentication::AuthenticationError;
         match self {
             Self::Unimplemented { .. } | Self::NotSupportedByDistribution { .. } => NotImplemented,
 
@@ -118,8 +119,7 @@ impl ServerStateError for LocalServerStateError {
 
             Self::DatabaseNotFound { .. } | Self::UserNotFound { .. } => NotFound,
 
-            Self::ConceptReadError { .. }
-            | Self::FunctionReadError { .. } => Internal,
+            Self::ConceptReadError { .. } | Self::FunctionReadError { .. } => Internal,
 
             Self::NotInitialised { .. }
             | Self::DatabaseSchemaCommitFailed { .. }
