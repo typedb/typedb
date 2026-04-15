@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::BTreeMap;
-
+use std::collections::{BTreeMap, HashSet};
+use itertools::Itertools;
 use ir::{
     pattern::{BindingMode, Pattern},
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry, VariableRegistry},
@@ -35,6 +35,32 @@ macro_rules! assert_bm_eq {
     };
 }
 
+fn get_bound<'reg>(pattern: &impl Pattern, variable_registry: &'reg VariableRegistry) -> Vec<&'reg str> {
+    let required = pattern.required_inputs().collect::<HashSet<_>>();
+    pattern
+        .named_visible_referenced_variables()
+        .filter(|v| !required.contains(v))
+        .map(|v| variable_registry.get_variable_name(v).unwrap().as_str())
+        .collect::<Vec<_>>()
+}
+
+fn get_required<'reg>(pattern: &impl Pattern, variable_registry: &'reg VariableRegistry) -> Vec<&'reg str> {
+    pattern
+        .required_inputs()
+        .map(|v| variable_registry.get_variable_name(v).unwrap().as_str())
+        .collect::<Vec<_>>()
+}
+
+macro_rules! assert_vars {
+    ($registry:expr, $pattern:expr, Required $required:tt, Bound $bound:tt) => {
+        let bound: Vec<&'static str> = vec!$bound;
+        let required: Vec<&'static str> = vec!$required;
+        assert_eq!(&get_bound($pattern, $registry), &bound);
+        assert_eq!(&get_required($pattern, $registry), &required);
+    }
+}
+
+
 #[test]
 fn test_negation() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
@@ -55,6 +81,12 @@ fn test_negation() {
         .unwrap();
     let conjunction = translated_match.conjunction();
     let negation = conjunction.nested_patterns().first().unwrap().as_negation().unwrap();
+    assert_vars!(
+        &context.variable_registry,
+        conjunction,
+        Required[],
+        Bound["x"]
+    );
     assert_bm_eq!(
         &context.variable_registry,
         conjunction,
