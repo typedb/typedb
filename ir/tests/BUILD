@@ -54,6 +54,8 @@ rust_test(
     deps = [
         "//ir:ir",
         "@typeql//rust:typeql",
+
+        "@crates//:itertools",
     ],
 )
 
