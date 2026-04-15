@@ -19,13 +19,20 @@ use typeql::query::stage::Stage;
 
 fn binding_modes<'a>(
     variable_registry: &'a VariableRegistry,
-    conjunction: &impl Pattern,
+    pattern: &impl Pattern,
 ) -> BTreeMap<&'a str, BindingMode> {
-    conjunction
+    pattern
         .contextualised_binding_modes()
         .iter()
         .filter_map(|(v, b)| variable_registry.get_variable_name(*v).map(|s| (s.as_str(), *b)))
         .collect()
+}
+
+macro_rules! assert_bm_eq {
+    ($registry:expr, $pattern:expr, $expected: expr) => {
+        let actual_binding_modes = binding_modes($registry, $pattern);
+        assert_eq!(actual_binding_modes, $expected)
+    };
 }
 
 #[test]
@@ -48,18 +55,21 @@ fn test_negation() {
         .unwrap();
     let conjunction = translated_match.conjunction();
     let negation = conjunction.nested_patterns().first().unwrap().as_negation().unwrap();
-    let conjunction_modes = binding_modes(&context.variable_registry, conjunction);
-    let negation_modes = binding_modes(&context.variable_registry, negation);
-    let inner_modes = binding_modes(&context.variable_registry, negation.conjunction());
-    assert_eq!(
-        conjunction_modes,
+    assert_bm_eq!(
+        &context.variable_registry,
+        conjunction,
         BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild)])
     );
-    assert_eq!(
-        negation_modes,
+    assert_bm_eq!(
+        &context.variable_registry,
+        negation,
         BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::LocallyBindingInChild)])
     );
-    assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding)]));
+    assert_bm_eq!(
+        &context.variable_registry,
+        negation.conjunction(),
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding)])
+    );
 }
 
 #[test]
@@ -87,23 +97,25 @@ fn test_disjunction() {
     let first_disjunction = conjunction.nested_patterns()[0].as_disjunction().unwrap();
     let second_disjunction = conjunction.nested_patterns()[1].as_disjunction().unwrap();
 
-    let conjunction_modes = binding_modes(&context.variable_registry, conjunction);
-    let d1 = binding_modes(&context.variable_registry, first_disjunction);
-    let d2 = binding_modes(&context.variable_registry, second_disjunction);
-    let b11 = binding_modes(&context.variable_registry, &first_disjunction.conjunctions()[0]);
-    let b12 = binding_modes(&context.variable_registry, &first_disjunction.conjunctions()[1]);
-    let b21 = binding_modes(&context.variable_registry, &second_disjunction.conjunctions()[0]);
-    let b22 = binding_modes(&context.variable_registry, &second_disjunction.conjunctions()[1]);
-    assert_eq!(
-        conjunction_modes,
+    let b11 = &first_disjunction.conjunctions()[0];
+    let b12 = &first_disjunction.conjunctions()[1];
+    let b21 = &second_disjunction.conjunctions()[0];
+    let b22 = &second_disjunction.conjunctions()[1];
+    assert_bm_eq!(
+        &context.variable_registry,
+        conjunction,
         BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild)])
     );
-    assert_eq!(d1, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
-    assert_eq!(d2, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::LocallyBindingInChild)]));
-    assert_eq!(b11, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
-    assert_eq!(b12, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
-    assert_eq!(b21, BTreeMap::from([("x", BindingMode::RequirePrebound)]));
-    assert_eq!(b22, BTreeMap::from([("y", BindingMode::AlwaysBinding)]));
+    assert_bm_eq!(&context.variable_registry, first_disjunction, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
+    assert_bm_eq!(
+        &context.variable_registry,
+        second_disjunction,
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::LocallyBindingInChild)])
+    );
+    assert_bm_eq!(&context.variable_registry, b11, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
+    assert_bm_eq!(&context.variable_registry, b12, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
+    assert_bm_eq!(&context.variable_registry, b21, BTreeMap::from([("x", BindingMode::RequirePrebound)]));
+    assert_bm_eq!(&context.variable_registry, b22, BTreeMap::from([("y", BindingMode::AlwaysBinding)]));
 }
 
 #[test]
@@ -128,18 +140,21 @@ fn test_optional() {
         .unwrap();
     let conjunction = translated_match.conjunction();
     let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
-    let conjunction_modes = binding_modes(&context.variable_registry, conjunction);
-    let optional_modes = binding_modes(&context.variable_registry, optional);
-    let inner_modes = binding_modes(&context.variable_registry, optional.conjunction());
-    assert_eq!(
-        conjunction_modes,
+    assert_bm_eq!(
+        &context.variable_registry,
+        conjunction,
         BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::OptionallyBinding)])
     );
-    assert_eq!(
-        optional_modes,
+    assert_bm_eq!(
+        &context.variable_registry,
+        optional,
         BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::OptionallyBinding)])
     );
-    assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding)]));
+    assert_bm_eq!(
+        &context.variable_registry,
+        optional.conjunction(),
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding)])
+    );
 }
 
 #[test]
@@ -191,9 +206,9 @@ fn problematic_is() {
         .finish()
         .unwrap();
     let conjunction = translated_match.conjunction();
-    let conjunction_modes = binding_modes(&context.variable_registry, conjunction);
-    assert_eq!(
-        conjunction_modes,
+    assert_bm_eq!(
+        &context.variable_registry,
+        conjunction,
         BTreeMap::from([("a", BindingMode::AlwaysBinding), ("b", BindingMode::LocallyBindingInChild)])
     );
 }
@@ -287,18 +302,21 @@ fn test_negation_with_inputs() {
     };
     let conjunction = second_block.conjunction();
     let negation = conjunction.nested_patterns().first().unwrap().as_negation().unwrap();
-    let conjunction_modes = binding_modes(&translated_pipeline.variable_registry, conjunction);
-    let negation_modes = binding_modes(&translated_pipeline.variable_registry, negation);
-    let inner_modes = binding_modes(&translated_pipeline.variable_registry, negation.conjunction());
-    assert_eq!(
-        conjunction_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        conjunction,
         BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::RequirePrebound)])
     );
-    assert_eq!(
-        negation_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        negation,
         BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
     );
-    assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)]));
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        negation.conjunction(),
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
+    );
 }
 
 #[test]
@@ -319,32 +337,40 @@ fn test_disjunction_with_inputs() {
     let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
         unreachable!();
     };
-    let first_stage_modes = binding_modes(&translated_pipeline.variable_registry, first_block.conjunction());
-
     let conjunction = second_block.conjunction();
 
     let first_disjunction = conjunction.nested_patterns()[0].as_disjunction().unwrap();
     let second_disjunction = conjunction.nested_patterns()[1].as_disjunction().unwrap();
 
-    let conjunction_modes = binding_modes(&translated_pipeline.variable_registry, conjunction);
-    let d1 = binding_modes(&translated_pipeline.variable_registry, first_disjunction);
-    let d2 = binding_modes(&translated_pipeline.variable_registry, second_disjunction);
-    let b11 = binding_modes(&translated_pipeline.variable_registry, &first_disjunction.conjunctions()[0]);
-    let b12 = binding_modes(&translated_pipeline.variable_registry, &first_disjunction.conjunctions()[1]);
-    let b21 = binding_modes(&translated_pipeline.variable_registry, &second_disjunction.conjunctions()[0]);
-    let b22 = binding_modes(&translated_pipeline.variable_registry, &second_disjunction.conjunctions()[1]);
+    let b11 = &first_disjunction.conjunctions()[0];
+    let b12 = &first_disjunction.conjunctions()[1];
+    let b21 = &second_disjunction.conjunctions()[0];
+    let b22 = &second_disjunction.conjunctions()[1];
 
-    assert_eq!(first_stage_modes, BTreeMap::from([("y", BindingMode::AlwaysBinding)]));
-    assert_eq!(
-        conjunction_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        first_block.conjunction(),
+        BTreeMap::from([("y", BindingMode::AlwaysBinding)])
+    );
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        conjunction,
         BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::RequirePrebound)])
     );
-    assert_eq!(d1, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
-    assert_eq!(d2, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)]));
-    assert_eq!(b11, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
-    assert_eq!(b12, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
-    assert_eq!(b21, BTreeMap::from([("x", BindingMode::RequirePrebound)]));
-    assert_eq!(b22, BTreeMap::from([("y", BindingMode::RequirePrebound)]));
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        first_disjunction,
+        BTreeMap::from([("x", BindingMode::AlwaysBinding)])
+    );
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        second_disjunction,
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
+    );
+    assert_bm_eq!(&translated_pipeline.variable_registry, b11, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
+    assert_bm_eq!(&translated_pipeline.variable_registry, b12, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
+    assert_bm_eq!(&translated_pipeline.variable_registry, b21, BTreeMap::from([("x", BindingMode::RequirePrebound)]));
+    assert_bm_eq!(&translated_pipeline.variable_registry, b22, BTreeMap::from([("y", BindingMode::RequirePrebound)]));
 }
 
 #[test]
@@ -365,22 +391,28 @@ fn test_optional_with_inputs() {
     let TranslatedStage::Match { block: second_block, .. } = &translated_pipeline.translated_stages[1] else {
         unreachable!();
     };
-    let first_stage_modes = binding_modes(&translated_pipeline.variable_registry, first_block.conjunction());
     let conjunction = second_block.conjunction();
     let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
-    let conjunction_modes = binding_modes(&translated_pipeline.variable_registry, conjunction);
-    let optional_modes = binding_modes(&translated_pipeline.variable_registry, optional);
-    let inner_modes = binding_modes(&translated_pipeline.variable_registry, optional.conjunction());
-    assert_eq!(first_stage_modes, BTreeMap::from([("y", BindingMode::OptionallyBinding)]));
-    assert_eq!(
-        conjunction_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        first_block.conjunction(),
+        BTreeMap::from([("y", BindingMode::OptionallyBinding)])
+    );
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        conjunction,
         BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::RequirePrebound)])
     );
-    assert_eq!(
-        optional_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        optional,
         BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
     );
-    assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)]));
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        optional.conjunction(),
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
+    );
 }
 
 #[test]
@@ -406,25 +438,29 @@ fn test_optional_skip_a_stage() {
     let TranslatedStage::Match { block: third_block, .. } = &translated_pipeline.translated_stages[2] else {
         unreachable!();
     };
-
-    let first_stage_modes = binding_modes(&translated_pipeline.variable_registry, first_block.conjunction());
-    let second_stage_modes = binding_modes(&translated_pipeline.variable_registry, second_block.conjunction());
     let conjunction = third_block.conjunction();
     let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
-    let conjunction_modes = binding_modes(&translated_pipeline.variable_registry, conjunction);
-    let optional_modes = binding_modes(&translated_pipeline.variable_registry, optional);
-    let inner_modes = binding_modes(&translated_pipeline.variable_registry, optional.conjunction());
-    assert_eq!(first_stage_modes, BTreeMap::from([("y", BindingMode::OptionallyBinding)]));
-    assert_eq!(second_stage_modes, BTreeMap::from([]));
-    assert_eq!(
-        conjunction_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        first_block.conjunction(),
+        BTreeMap::from([("y", BindingMode::OptionallyBinding)])
+    );
+    assert_bm_eq!(&translated_pipeline.variable_registry, second_block.conjunction(), BTreeMap::from([]));
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        conjunction,
         BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::RequirePrebound)])
     );
-    assert_eq!(
-        optional_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        optional,
         BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
     );
-    assert_eq!(inner_modes, BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)]));
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        optional.conjunction(),
+        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
+    );
 }
 
 #[test]
@@ -447,47 +483,48 @@ fn test_nested_negation() {
     let conjunction = block.conjunction();
     let outer_negation = conjunction.nested_patterns().first().unwrap().as_negation().unwrap();
     let inner_negation = outer_negation.conjunction().nested_patterns().first().unwrap().as_negation().unwrap();
-    let conjunction_modes = binding_modes(&translated_pipeline.variable_registry, conjunction);
-    let outer_negation_modes = binding_modes(&translated_pipeline.variable_registry, outer_negation);
-    let outer_negation_inner_conjunction_modes =
-        binding_modes(&translated_pipeline.variable_registry, outer_negation.conjunction());
-    let inner_negation_modes = binding_modes(&translated_pipeline.variable_registry, inner_negation);
-    let inner_negation_inner_conjunction_modes =
-        binding_modes(&translated_pipeline.variable_registry, inner_negation.conjunction());
-    assert_eq!(
-        conjunction_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        conjunction,
         BTreeMap::from([
             ("x", BindingMode::AlwaysBinding),
             ("y", BindingMode::LocallyBindingInChild),
             ("f", BindingMode::LocallyBindingInChild)
         ])
     );
-    assert_eq!(
-        outer_negation_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        outer_negation,
         BTreeMap::from([
             ("x", BindingMode::RequirePrebound),
             ("y", BindingMode::LocallyBindingInChild),
             ("f", BindingMode::LocallyBindingInChild)
         ])
     );
-    assert_eq!(
-        inner_negation_modes,
+
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        inner_negation,
         BTreeMap::from([
             ("x", BindingMode::RequirePrebound),
             ("y", BindingMode::RequirePrebound),
             ("f", BindingMode::LocallyBindingInChild)
         ])
     );
-    assert_eq!(
-        outer_negation_inner_conjunction_modes,
+
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        outer_negation.conjunction(),
         BTreeMap::from([
             ("x", BindingMode::RequirePrebound),
             ("y", BindingMode::AlwaysBinding),
             ("f", BindingMode::LocallyBindingInChild)
         ])
     );
-    assert_eq!(
-        inner_negation_inner_conjunction_modes,
+
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        inner_negation.conjunction(),
         BTreeMap::from([
             ("x", BindingMode::RequirePrebound),
             ("y", BindingMode::RequirePrebound),
@@ -515,32 +552,29 @@ fn test_nested_optional() {
     let conjunction = block.conjunction();
     let outer_optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
     let inner_optional = outer_optional.conjunction().nested_patterns().first().unwrap().as_optional().unwrap();
-    let conjunction_modes = binding_modes(&translated_pipeline.variable_registry, conjunction);
-    let outer_optional_modes = binding_modes(&translated_pipeline.variable_registry, outer_optional);
-    let outer_optional_inner_conjunction_modes =
-        binding_modes(&translated_pipeline.variable_registry, outer_optional.conjunction());
-    let inner_optional_modes = binding_modes(&translated_pipeline.variable_registry, inner_optional);
-    let inner_optional_inner_conjunction_modes =
-        binding_modes(&translated_pipeline.variable_registry, inner_optional.conjunction());
-
-    assert_eq!(
-        conjunction_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        conjunction,
         BTreeMap::from([("x", BindingMode::OptionallyBinding), ("y", BindingMode::OptionallyBinding),])
     );
-    assert_eq!(
-        outer_optional_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        outer_optional,
         BTreeMap::from([("x", BindingMode::OptionallyBinding), ("y", BindingMode::OptionallyBinding),])
     );
-    assert_eq!(
-        inner_optional_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        inner_optional,
         BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::OptionallyBinding),])
     );
-    assert_eq!(
-        outer_optional_inner_conjunction_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        outer_optional.conjunction(),
         BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::OptionallyBinding),])
     );
-    assert_eq!(
-        inner_optional_inner_conjunction_modes,
+    assert_bm_eq!(
+        &translated_pipeline.variable_registry,
+        inner_optional.conjunction(),
         BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding),])
     );
 }
