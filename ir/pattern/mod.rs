@@ -77,9 +77,6 @@ pub trait Pattern {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
-
-    #[cfg(debug_assertions)] // Test only
-    fn contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode>;
 }
 
 // TODO: rename to 'Identifier' in lieu of a better name

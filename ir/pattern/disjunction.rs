@@ -60,11 +60,6 @@ impl Pattern for Disjunction {
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
         self.binding_modes.required_inputs()
     }
-
-    #[cfg(debug_assertions)]
-    fn contextualised_binding_modes(&self) -> &HashMap<Variable, BindingMode> {
-        &self.binding_modes.0
-    }
 }
 
 impl StructuralEquality for Disjunction {

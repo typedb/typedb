@@ -3,10 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::{BTreeMap, HashSet};
-use itertools::Itertools;
+use std::collections::HashSet;
+
 use ir::{
-    pattern::{BindingMode, Pattern},
+    pattern::Pattern,
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry, VariableRegistry},
     translation::{
         match_::translate_match,
@@ -15,25 +15,8 @@ use ir::{
     },
     RepresentationError,
 };
+use itertools::Itertools;
 use typeql::query::stage::Stage;
-
-fn binding_modes<'a>(
-    variable_registry: &'a VariableRegistry,
-    pattern: &impl Pattern,
-) -> BTreeMap<&'a str, BindingMode> {
-    pattern
-        .contextualised_binding_modes()
-        .iter()
-        .filter_map(|(v, b)| variable_registry.get_variable_name(*v).map(|s| (s.as_str(), *b)))
-        .collect()
-}
-
-macro_rules! assert_bm_eq {
-    ($registry:expr, $pattern:expr, $expected: expr) => {
-        let actual_binding_modes = binding_modes($registry, $pattern);
-        assert_eq!(actual_binding_modes, $expected)
-    };
-}
 
 fn get_bound<'reg>(pattern: &impl Pattern, variable_registry: &'reg VariableRegistry) -> Vec<&'reg str> {
     let required = pattern.required_inputs().collect::<HashSet<_>>();
@@ -41,6 +24,7 @@ fn get_bound<'reg>(pattern: &impl Pattern, variable_registry: &'reg VariableRegi
         .named_visible_referenced_variables()
         .filter(|v| !required.contains(v))
         .map(|v| variable_registry.get_variable_name(v).unwrap().as_str())
+        .sorted()
         .collect::<Vec<_>>()
 }
 
@@ -48,18 +32,38 @@ fn get_required<'reg>(pattern: &impl Pattern, variable_registry: &'reg VariableR
     pattern
         .required_inputs()
         .map(|v| variable_registry.get_variable_name(v).unwrap().as_str())
+        .sorted()
         .collect::<Vec<_>>()
 }
 
 macro_rules! assert_vars {
     ($registry:expr, $pattern:expr, Required $required:tt, Bound $bound:tt) => {
-        let bound: Vec<&'static str> = vec!$bound;
-        let required: Vec<&'static str> = vec!$required;
+        let mut bound: Vec<&'static str> = vec!$bound;
+        let mut required: Vec<&'static str> = vec!$required;
+        bound.sort();
+        required.sort();
         assert_eq!(&get_bound($pattern, $registry), &bound);
         assert_eq!(&get_required($pattern, $registry), &required);
     }
 }
 
+macro_rules! assert_optionals {
+    ($registry:expr, $optionals:tt) => {
+        let mut optionals: Vec<&'static str> = vec!$optionals;
+        optionals.sort();
+        assert_eq!(&get_optionals($registry), &optionals);
+    }
+}
+
+fn get_optionals(variable_registry: &VariableRegistry) -> Vec<&'_ str> {
+    variable_registry
+        .variable_names()
+        .iter()
+        .filter(|(v, _)| variable_registry.is_variable_optional(**v))
+        .map(|(_, name)| name.as_str())
+        .sorted()
+        .collect()
+}
 
 #[test]
 fn test_negation() {
@@ -81,27 +85,10 @@ fn test_negation() {
         .unwrap();
     let conjunction = translated_match.conjunction();
     let negation = conjunction.nested_patterns().first().unwrap().as_negation().unwrap();
-    assert_vars!(
-        &context.variable_registry,
-        conjunction,
-        Required[],
-        Bound["x"]
-    );
-    assert_bm_eq!(
-        &context.variable_registry,
-        conjunction,
-        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild)])
-    );
-    assert_bm_eq!(
-        &context.variable_registry,
-        negation,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::LocallyBindingInChild)])
-    );
-    assert_bm_eq!(
-        &context.variable_registry,
-        negation.conjunction(),
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding)])
-    );
+    assert_vars!(&context.variable_registry, conjunction, Required[], Bound["x"]);
+    assert_vars!(&context.variable_registry, negation, Required["x"], Bound[]);
+    assert_vars!(&context.variable_registry, negation.conjunction(), Required["x"], Bound["y"]);
+    assert_optionals!(&context.variable_registry, []);
 }
 
 #[test]
@@ -133,21 +120,14 @@ fn test_disjunction() {
     let b12 = &first_disjunction.conjunctions()[1];
     let b21 = &second_disjunction.conjunctions()[0];
     let b22 = &second_disjunction.conjunctions()[1];
-    assert_bm_eq!(
-        &context.variable_registry,
-        conjunction,
-        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::LocallyBindingInChild)])
-    );
-    assert_bm_eq!(&context.variable_registry, first_disjunction, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
-    assert_bm_eq!(
-        &context.variable_registry,
-        second_disjunction,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::LocallyBindingInChild)])
-    );
-    assert_bm_eq!(&context.variable_registry, b11, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
-    assert_bm_eq!(&context.variable_registry, b12, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
-    assert_bm_eq!(&context.variable_registry, b21, BTreeMap::from([("x", BindingMode::RequirePrebound)]));
-    assert_bm_eq!(&context.variable_registry, b22, BTreeMap::from([("y", BindingMode::AlwaysBinding)]));
+    assert_vars!(&context.variable_registry, conjunction, Required[], Bound["x"]);
+    assert_vars!(&context.variable_registry, first_disjunction, Required[], Bound["x"]);
+    assert_vars!(&context.variable_registry, second_disjunction, Required["x"], Bound[]);
+    assert_vars!(&context.variable_registry, b11, Required[], Bound["x"]);
+    assert_vars!(&context.variable_registry, b12, Required[], Bound["x"]);
+    assert_vars!(&context.variable_registry, b21, Required["x"], Bound[]);
+    assert_vars!(&context.variable_registry, b22, Required[], Bound["y"]);
+    assert_optionals!(&context.variable_registry, []);
 }
 
 #[test]
@@ -172,21 +152,10 @@ fn test_optional() {
         .unwrap();
     let conjunction = translated_match.conjunction();
     let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
-    assert_bm_eq!(
-        &context.variable_registry,
-        conjunction,
-        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::OptionallyBinding)])
-    );
-    assert_bm_eq!(
-        &context.variable_registry,
-        optional,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::OptionallyBinding)])
-    );
-    assert_bm_eq!(
-        &context.variable_registry,
-        optional.conjunction(),
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding)])
-    );
+    assert_vars!(&context.variable_registry, conjunction, Required[], Bound["x", "y"]);
+    assert_vars!(&context.variable_registry, optional, Required["x"], Bound["y"]);
+    assert_vars!(&context.variable_registry, optional.conjunction(), Required["x"], Bound["y"]);
+    assert_optionals!(&context.variable_registry, ["y"]);
 }
 
 #[test]
@@ -238,11 +207,8 @@ fn problematic_is() {
         .finish()
         .unwrap();
     let conjunction = translated_match.conjunction();
-    assert_bm_eq!(
-        &context.variable_registry,
-        conjunction,
-        BTreeMap::from([("a", BindingMode::AlwaysBinding), ("b", BindingMode::LocallyBindingInChild)])
-    );
+    assert_vars!(&context.variable_registry, conjunction, Required[], Bound["a"]);
+    assert_optionals!(&context.variable_registry, []);
 }
 
 #[test]
@@ -334,21 +300,10 @@ fn test_negation_with_inputs() {
     };
     let conjunction = second_block.conjunction();
     let negation = conjunction.nested_patterns().first().unwrap().as_negation().unwrap();
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        conjunction,
-        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::RequirePrebound)])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        negation,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        negation.conjunction(),
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
-    );
+    assert_vars!(&translated_pipeline.variable_registry, conjunction, Required["y"], Bound["x"]);
+    assert_vars!(&translated_pipeline.variable_registry, negation, Required["x", "y"], Bound[]);
+    assert_vars!(&translated_pipeline.variable_registry, negation.conjunction(), Required["x", "y"], Bound[]);
+    assert_optionals!(&translated_pipeline.variable_registry, []);
 }
 
 #[test]
@@ -379,30 +334,15 @@ fn test_disjunction_with_inputs() {
     let b21 = &second_disjunction.conjunctions()[0];
     let b22 = &second_disjunction.conjunctions()[1];
 
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        first_block.conjunction(),
-        BTreeMap::from([("y", BindingMode::AlwaysBinding)])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        conjunction,
-        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::RequirePrebound)])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        first_disjunction,
-        BTreeMap::from([("x", BindingMode::AlwaysBinding)])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        second_disjunction,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
-    );
-    assert_bm_eq!(&translated_pipeline.variable_registry, b11, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
-    assert_bm_eq!(&translated_pipeline.variable_registry, b12, BTreeMap::from([("x", BindingMode::AlwaysBinding)]));
-    assert_bm_eq!(&translated_pipeline.variable_registry, b21, BTreeMap::from([("x", BindingMode::RequirePrebound)]));
-    assert_bm_eq!(&translated_pipeline.variable_registry, b22, BTreeMap::from([("y", BindingMode::RequirePrebound)]));
+    assert_vars!(&translated_pipeline.variable_registry, first_block.conjunction(), Required[], Bound["y"]);
+    assert_vars!(&translated_pipeline.variable_registry, conjunction, Required["y"], Bound["x"]);
+    assert_vars!(&translated_pipeline.variable_registry, first_disjunction, Required[], Bound["x"]);
+    assert_vars!(&translated_pipeline.variable_registry, second_disjunction, Required["x", "y"], Bound[]);
+    assert_vars!(&translated_pipeline.variable_registry, b11, Required[], Bound["x"]);
+    assert_vars!(&translated_pipeline.variable_registry, b12, Required[], Bound["x"]);
+    assert_vars!(&translated_pipeline.variable_registry, b21, Required["x"], Bound[]);
+    assert_vars!(&translated_pipeline.variable_registry, b22, Required["y"], Bound[]);
+    assert_optionals!(&translated_pipeline.variable_registry, []);
 }
 
 #[test]
@@ -425,26 +365,11 @@ fn test_optional_with_inputs() {
     };
     let conjunction = second_block.conjunction();
     let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        first_block.conjunction(),
-        BTreeMap::from([("y", BindingMode::OptionallyBinding)])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        conjunction,
-        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::RequirePrebound)])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        optional,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        optional.conjunction(),
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
-    );
+    assert_vars!(&translated_pipeline.variable_registry, first_block.conjunction(), Required[], Bound["y"]);
+    assert_vars!(&translated_pipeline.variable_registry, conjunction, Required["y"], Bound["x"]);
+    assert_vars!(&translated_pipeline.variable_registry, optional, Required["x", "y"], Bound[]);
+    assert_vars!(&translated_pipeline.variable_registry, optional.conjunction(), Required["x", "y"], Bound[]);
+    assert_optionals!(&translated_pipeline.variable_registry, ["y"]);
 }
 
 #[test]
@@ -472,27 +397,12 @@ fn test_optional_skip_a_stage() {
     };
     let conjunction = third_block.conjunction();
     let optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        first_block.conjunction(),
-        BTreeMap::from([("y", BindingMode::OptionallyBinding)])
-    );
-    assert_bm_eq!(&translated_pipeline.variable_registry, second_block.conjunction(), BTreeMap::from([]));
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        conjunction,
-        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::RequirePrebound)])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        optional,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        optional.conjunction(),
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::RequirePrebound)])
-    );
+    assert_vars!(&translated_pipeline.variable_registry, first_block.conjunction(), Required[], Bound["y"]);
+    assert_vars!(&translated_pipeline.variable_registry, second_block.conjunction(), Required[], Bound[]);
+    assert_vars!(&translated_pipeline.variable_registry, conjunction, Required["y"], Bound["x"]);
+    assert_vars!(&translated_pipeline.variable_registry, optional, Required["x", "y"], Bound[]);
+    assert_vars!(&translated_pipeline.variable_registry, optional.conjunction(), Required["x", "y"], Bound[]);
+    assert_optionals!(&translated_pipeline.variable_registry, ["y"]);
 }
 
 #[test]
@@ -504,7 +414,7 @@ fn test_nested_negation() {
         $x isa person;
         not {
             $y isa person;
-            not { $f isa friendshi, links ($x, $y); };
+            not { $f isa friendship, links ($x, $y); };
         };
     "#;
     let parsed = typeql::parse_query(query).unwrap().into_structure();
@@ -515,54 +425,12 @@ fn test_nested_negation() {
     let conjunction = block.conjunction();
     let outer_negation = conjunction.nested_patterns().first().unwrap().as_negation().unwrap();
     let inner_negation = outer_negation.conjunction().nested_patterns().first().unwrap().as_negation().unwrap();
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        conjunction,
-        BTreeMap::from([
-            ("x", BindingMode::AlwaysBinding),
-            ("y", BindingMode::LocallyBindingInChild),
-            ("f", BindingMode::LocallyBindingInChild)
-        ])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        outer_negation,
-        BTreeMap::from([
-            ("x", BindingMode::RequirePrebound),
-            ("y", BindingMode::LocallyBindingInChild),
-            ("f", BindingMode::LocallyBindingInChild)
-        ])
-    );
-
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        inner_negation,
-        BTreeMap::from([
-            ("x", BindingMode::RequirePrebound),
-            ("y", BindingMode::RequirePrebound),
-            ("f", BindingMode::LocallyBindingInChild)
-        ])
-    );
-
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        outer_negation.conjunction(),
-        BTreeMap::from([
-            ("x", BindingMode::RequirePrebound),
-            ("y", BindingMode::AlwaysBinding),
-            ("f", BindingMode::LocallyBindingInChild)
-        ])
-    );
-
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        inner_negation.conjunction(),
-        BTreeMap::from([
-            ("x", BindingMode::RequirePrebound),
-            ("y", BindingMode::RequirePrebound),
-            ("f", BindingMode::AlwaysBinding)
-        ])
-    );
+    assert_vars!(&translated_pipeline.variable_registry, conjunction, Required[], Bound["x"]);
+    assert_vars!(&translated_pipeline.variable_registry, outer_negation, Required["x"], Bound[]);
+    assert_vars!(&translated_pipeline.variable_registry, inner_negation, Required["x", "y"], Bound[]);
+    assert_vars!(&translated_pipeline.variable_registry, outer_negation.conjunction(), Required["x"], Bound["y"]);
+    assert_vars!(&translated_pipeline.variable_registry, inner_negation.conjunction(), Required["x", "y"], Bound["f"]);
+    assert_optionals!(&translated_pipeline.variable_registry, []);
 }
 
 #[test]
@@ -584,29 +452,10 @@ fn test_nested_optional() {
     let conjunction = block.conjunction();
     let outer_optional = conjunction.nested_patterns().first().unwrap().as_optional().unwrap();
     let inner_optional = outer_optional.conjunction().nested_patterns().first().unwrap().as_optional().unwrap();
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        conjunction,
-        BTreeMap::from([("x", BindingMode::OptionallyBinding), ("y", BindingMode::OptionallyBinding),])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        outer_optional,
-        BTreeMap::from([("x", BindingMode::OptionallyBinding), ("y", BindingMode::OptionallyBinding),])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        inner_optional,
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::OptionallyBinding),])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        outer_optional.conjunction(),
-        BTreeMap::from([("x", BindingMode::AlwaysBinding), ("y", BindingMode::OptionallyBinding),])
-    );
-    assert_bm_eq!(
-        &translated_pipeline.variable_registry,
-        inner_optional.conjunction(),
-        BTreeMap::from([("x", BindingMode::RequirePrebound), ("y", BindingMode::AlwaysBinding),])
-    );
+    assert_vars!(&translated_pipeline.variable_registry, conjunction, Required[], Bound["x", "y"]);
+    assert_vars!(&translated_pipeline.variable_registry, outer_optional, Required[], Bound["x", "y"]);
+    assert_vars!(&translated_pipeline.variable_registry, inner_optional, Required["x"], Bound["y"]);
+    assert_vars!(&translated_pipeline.variable_registry, outer_optional.conjunction(), Required[], Bound["x", "y"]);
+    assert_vars!(&translated_pipeline.variable_registry, inner_optional.conjunction(), Required["x"], Bound["y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, ["x", "y"]);
 }
