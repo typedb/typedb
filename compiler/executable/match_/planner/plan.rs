@@ -1988,11 +1988,7 @@ impl ConjunctionPlan<'_> {
     ) {
         let mut optional_inputs_in_constraints = input_variables
             .into_iter()
-            .filter(|&var| {
-                variable_registry
-                    .get_variable_optionality(var)
-                    .is_some_and(|optionality| matches!(optionality, VariableOptionality::Optional))
-            })
+            .filter(|&var| variable_registry.is_variable_optional(var))
             .filter(|var| conjunction_builder.constraint_variables.contains(var))
             .peekable();
         if optional_inputs_in_constraints.peek().is_some() {

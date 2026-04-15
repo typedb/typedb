@@ -264,10 +264,6 @@ impl VariableRegistry {
         self.variable_categories.get(&variable).map(|(category, _constraint)| *category)
     }
 
-    pub fn get_variable_optionality(&self, variable: Variable) -> Option<VariableOptionality> {
-        self.variable_optionality.get(&variable).cloned()
-    }
-
     pub fn is_variable_optional(&self, variable: Variable) -> bool {
         match self.variable_optionality.get(&variable).unwrap_or(&VariableOptionality::Required) {
             VariableOptionality::Required => false,
