@@ -2154,6 +2154,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
 
     pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
         self.ids_assigned()
+            .filter(|id| !self.function_call.arguments().contains(id))
             .map(|id| (id, BindingMode::AlwaysBinding))
             .chain(self.function_call_arg_ids().map(|id| (id, BindingMode::RequirePrebound)))
     }

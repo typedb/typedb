@@ -32,6 +32,10 @@ impl<ID: IrID> FunctionCall<ID> {
         self.function_id.clone()
     }
 
+    pub(super) fn arguments(&self) -> &[ID] {
+        &self.arguments
+    }
+
     pub fn argument_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.arguments.iter().cloned()
     }

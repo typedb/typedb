@@ -80,6 +80,7 @@ impl<'reg> BlockBuilder<'reg> {
         validate_variable_categories_are_sufficiently_narrow(&self.conjunction, &self.context)?;
         validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
         validate_all_variables_are_bound(&block_binding_modes, &self.context.variable_registry)?;
+        debug_assert!(!block_binding_modes.iter().any(|(_, b)| b.is_require_prebound()));
 
         // Update
         block_binding_modes
