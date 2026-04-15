@@ -247,8 +247,8 @@ features = {}
 
 		[workspace.dependencies.typeql]
 			features = []
-			rev = "a4e255adcf2e2a8de833ff18c6248c08f51b68d3"
-			git = "https://github.com/krishnangovindraj/typeql"
+			rev = "508bdfa6687ae4c48d482318387204f1ae7bd4ac"
+			git = "https://github.com/typedb/typeql"
 			default-features = false
 
 		[workspace.dependencies.serde_with]
