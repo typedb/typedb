@@ -491,6 +491,8 @@ impl Server {
             .map_err(|_| ServerOpenError::HttpTlsUnsetDefaultCryptoProvider {})
     }
 
+    // TODO: It is only used in tests, and exposing it directly outside of the DatabaseOperator is risky.
+    // Remove?
     pub fn database_manager(&self) -> Arc<DatabaseManager> {
         self.server_state.databases().manager()
     }

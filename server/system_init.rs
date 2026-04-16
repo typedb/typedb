@@ -26,6 +26,9 @@ use crate::{
 
 pub const SYSTEM_DB: &str = concat!(internal_database_prefix!(), "system");
 
+// TODO: In some of these functions, we call `manager()`'s methods directly. It can be bad even for
+// readonly operations, because the devs of typedb extensions could expect it to be fully wired
+// through typedb. This might need an update to Operator-based calls.
 pub async fn initialise_system_database(server_state: &ServerState) -> Result<(), ArcServerStateError> {
     if server_state.databases().manager().database_unrestricted(SYSTEM_DB).is_some() {
         return Ok(());
