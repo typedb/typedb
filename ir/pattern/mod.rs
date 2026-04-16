@@ -18,7 +18,7 @@ use encoding::value::label::Label;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
-use crate::pipeline::VariableRegistry;
+use crate::{pattern::variable_category::VariableOptionality, pipeline::VariableRegistry};
 
 pub mod conjunction;
 pub mod constraint;
@@ -505,5 +505,17 @@ impl PatternVariables {
 
     pub(crate) fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
         self.0.iter().filter_map(|(v, required)| (*required == IsRequired::Required).then_some(*v))
+    }
+}
+
+#[derive(Clone, Debug, Copy)]
+pub(crate) struct AssignedVariable {
+    pub(crate) variable: Variable,
+    pub(crate) optionality: VariableOptionality,
+}
+
+impl AssignedVariable {
+    pub(crate) fn new_required(variable: Variable) -> Self {
+        Self { variable, optionality: VariableOptionality::Required }
     }
 }

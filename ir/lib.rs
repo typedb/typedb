@@ -319,12 +319,6 @@ typedb_error! {
             "The language feature is not yet implemented: {feature}.",
             feature: error::UnimplementedFeature,
         ),
-        UnimplementedOptionalType(
-            255,
-            "Optional types are not yet implemented.",
-            source_span: Option<Span>,
-            feature: error::UnimplementedFeature
-        ),
         UnimplementedListType(
             256,
             "List types are not yet implemented.",

@@ -6,7 +6,7 @@
 
 use std::{
     cmp::min,
-    collections::HashMap,
+    collections::{BTreeSet, HashMap},
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
     iter, mem,
@@ -25,7 +25,8 @@ use crate::{
         conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
-        variable_category::VariableCategory,
+        variable_category::{VariableCategory, VariableOptionality},
+        AssignedVariable, BindingMode, IrID, ParameterID, ScopeId, ValueType, Vertex,
     },
     pipeline::{
         ParameterRegistry, VariableRegistry, block::BlockBuilderContext, function_signature::FunctionSignature,
@@ -287,15 +288,15 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub(crate) fn add_builtin_function_binding(
         &mut self,
-        assigned: Vec<Variable>,
+        assigned: Vec<AssignedVariable>,
         builtin_id: super::expression::BuiltinConceptFunctionID,
         arguments: Vec<Variable>,
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
-        if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(**var)) {
+        if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(var.variable)) {
             let variable = self
                 .context
-                .get_variable_name(*variable)
+                .get_variable_name(variable.variable)
                 .cloned()
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
@@ -309,6 +310,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         for (index, var) in binding.ids_assigned().enumerate() {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
         }
+        binding.optionally_assigned.iter().for_each(|var| self.context.set_variable_optionality(*var, true));
         for (callee_arg_index, caller_var) in binding.function_call.argument_ids().enumerate() {
             self.context.set_variable_category(
                 caller_var,
@@ -322,16 +324,16 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_function_binding(
         &mut self,
-        assigned: Vec<Variable>,
+        assigned: Vec<AssignedVariable>,
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
         function_name: &str,
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
-        if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(**var)) {
+        if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(var.variable)) {
             let variable = self
                 .context
-                .get_variable_name(*variable)
+                .get_variable_name(variable.variable)
                 .cloned()
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
@@ -343,6 +345,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         for (index, var) in binding.ids_assigned().enumerate() {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
         }
+        binding.optionally_assigned.iter().for_each(|var| self.context.set_variable_optionality(*var, true));
         for (callee_arg_index, caller_var) in binding.function_call.argument_ids().enumerate() {
             self.context.set_variable_category(
                 caller_var,
@@ -356,7 +359,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     fn create_function_call(
         &mut self,
-        assigned: &[Variable],
+        assigned: &[AssignedVariable],
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
         function_name: &str,
@@ -2106,22 +2109,31 @@ impl<ID: IrID> fmt::Display for ExpressionBinding<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FunctionCallBinding<ID> {
     assigned: Vec<Vertex<ID>>,
+    optionally_assigned: BTreeSet<ID>,
     function_call: FunctionCall<ID>,
     is_stream: bool,
     source_span: Option<Span>,
 }
 
-impl<ID> FunctionCallBinding<ID> {
-    fn new(left: Vec<ID>, function_call: FunctionCall<ID>, is_stream: bool, source_span: Option<Span>) -> Self {
-        Self { assigned: left.into_iter().map(Vertex::Variable).collect(), function_call, is_stream, source_span }
-    }
-
-    pub fn source_span(&self) -> Option<Span> {
-        self.source_span
+impl FunctionCallBinding<Variable> {
+    fn new(
+        left: Vec<AssignedVariable>,
+        function_call: FunctionCall<Variable>,
+        is_stream: bool,
+        source_span: Option<Span>,
+    ) -> Self {
+        let optionally_assigned =
+            left.iter().filter(|v| v.optionality == VariableOptionality::Optional).map(|a| a.variable).collect();
+        let assigned = left.into_iter().map(|a| Vertex::Variable(a.variable)).collect();
+        Self { assigned, optionally_assigned, function_call, is_stream, source_span }
     }
 }
 
 impl<ID: IrID> FunctionCallBinding<ID> {
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
+    }
+
     pub fn assigned(&self) -> &[Vertex<ID>] {
         &self.assigned
     }
@@ -2149,7 +2161,10 @@ impl<ID: IrID> FunctionCallBinding<ID> {
     pub(crate) fn binding_modes(&self) -> impl Iterator<Item = (ID, BindingMode)> + '_ {
         self.ids_assigned()
             .filter(|id| !self.function_call.arguments().contains(id))
-            .map(|id| (id, BindingMode::AlwaysBinding))
+            .map(|id| match self.optionally_assigned.contains(&id) {
+                true => (id, BindingMode::OptionallyBinding),
+                false => (id, BindingMode::AlwaysBinding),
+            })
             .chain(self.function_call_arg_ids().map(|id| (id, BindingMode::RequirePrebound)))
     }
 
@@ -2167,6 +2182,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
     pub fn map<T: Clone + Ord>(self, mapping: &HashMap<ID, T>) -> FunctionCallBinding<T> {
         FunctionCallBinding {
             assigned: self.assigned.into_iter().map(|v| v.map(mapping)).collect(),
+            optionally_assigned: self.optionally_assigned.into_iter().map(|v| v.map(mapping)).collect(),
             function_call: self.function_call.map(mapping),
             is_stream: self.is_stream,
             source_span: self.source_span,

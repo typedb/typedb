@@ -70,17 +70,6 @@ pub fn translate_function_from(
         Output::Single(single) => &single.types,
     };
 
-    if let Some((source, _)) = output_types
-        .iter()
-        .map(|output_type| (output_type.span(), named_type_any_to_category_and_optionality(output_type)))
-        .find(|(source, (_, optionality))| *optionality == VariableOptionality::Optional)
-    {
-        Err(FunctionRepresentationError::UnimplementedFunctionOptionals {
-            source_span: source,
-            feature: UnimplementedFeature::OptionalFunctions,
-        })?;
-    }
-
     let argument_labels = signature.args.iter().map(|arg| arg.type_.clone()).collect();
     let args_sources_categories = signature
         .args
