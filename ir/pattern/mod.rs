@@ -463,22 +463,18 @@ impl ContextualisedBindingMode {
     }
 
     pub(crate) fn from(
-        pattern_modes: HashMap<Variable, BindingMode>,
+        mut pattern_modes: HashMap<Variable, BindingMode>,
         parent_modes: &ContextualisedBindingMode,
     ) -> ContextualisedBindingMode {
-        let binding_modes = pattern_modes
-            .iter()
-            .map(|(var, pattern_mode)| {
-                let mode = match (pattern_mode, parent_modes.0.get(var).copied().unwrap_or(BindingMode::Absent)) {
-                    (_, BindingMode::RequirePrebound) => BindingMode::RequirePrebound,
-                    (BindingMode::LocallyBindingInChild, BindingMode::AlwaysBinding)
-                    | (BindingMode::OptionallyBinding, BindingMode::AlwaysBinding) => BindingMode::RequirePrebound,
-                    (mode, _) => *mode,
-                };
-                (*var, mode)
-            })
-            .collect();
-        Self(binding_modes)
+        pattern_modes.iter_mut().for_each(|(var, mode)| {
+            *mode = match (*mode, parent_modes.0.get(var).copied().unwrap_or(BindingMode::Absent)) {
+                (_, BindingMode::RequirePrebound) => BindingMode::RequirePrebound,
+                (BindingMode::LocallyBindingInChild, BindingMode::AlwaysBinding)
+                | (BindingMode::OptionallyBinding, BindingMode::AlwaysBinding) => BindingMode::RequirePrebound,
+                (mode, _) => mode,
+            };
+        });
+        Self(pattern_modes)
     }
 }
 
