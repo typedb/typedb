@@ -358,9 +358,6 @@ impl Database<WALClient> {
             thing_statistics.sequence_number
         );
         thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { typedb_source: err })?;
-        // Checkpoint the post-recovery statistics so subsequent reboots short-circuit
-        // may_synchronise instead of re-deserialising the WAL range we just processed.
-        // The guard skips a redundant write when may_synchronise did not advance the watermark.
         if thing_statistics.sequence_number > thing_statistics.last_durable_write_sequence_number {
             thing_statistics
                 .durably_write(storage.durability())
