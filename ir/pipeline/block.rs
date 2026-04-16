@@ -206,12 +206,8 @@ fn validate_all_variables_are_bound(
     for (var, mode) in block_binding_modes.iter() {
         if mode.is_require_prebound() {
             let variable = variable_registry.get_variable_name_or_unnamed(*var).to_owned();
-            // let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
-            return Err(Box::new(RepresentationError::UnboundRequiredVariable {
-                variable,
-                // source_span: spans[0],
-                // _rest: spans,
-            }));
+            let source_span = variable_registry.source_span(*var);
+            return Err(Box::new(RepresentationError::UnboundRequiredVariable { variable, source_span }));
         }
     }
     Ok(())
