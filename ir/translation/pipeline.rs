@@ -19,6 +19,7 @@ use typeql::{
 };
 
 use crate::{
+    pattern::Pattern,
     pipeline::{
         block::Block,
         fetch::FetchObject,
@@ -101,7 +102,7 @@ impl TranslatedStage {
             Self::Limit(_) => Box::new(empty()),
             Self::Require(require) => Box::new(require.variables.iter().cloned()),
             Self::Distinct(distinct) => Box::new(empty()),
-            Self::Reduce(reduce) => Box::new(reduce.groupby.iter().cloned()),
+            Self::Reduce(reduce) => Box::new(reduce.variables()),
         }
     }
 }

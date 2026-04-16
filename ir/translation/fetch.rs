@@ -36,7 +36,7 @@ use crate::{
         },
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::{FunctionSignature, FunctionSignatureIndex},
-        FunctionReadError, ParameterRegistry,
+        FunctionReadError, FunctionRepresentationError, ParameterRegistry,
     },
     translation::{
         expression::{add_user_defined_function_call, build_expression},
@@ -173,8 +173,12 @@ fn translate_fetch_list(
         FetchStream::SubQueryFunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
-            let body = translate_function_block(function_index, &mut local_context, value_parameters, block)
-                .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
+            let body = translate_function_block(function_index, &mut local_context, value_parameters, block).map_err(
+                |typedb_source| FetchRepresentationError::FunctionRepresentation {
+                    declaration: block.clone(),
+                    typedb_source,
+                },
+            )?;
             if !body.return_operation.is_scalar()
                 && !matches!(body.return_operation, ReturnOperation::ReduceReducer(_, _))
             {
@@ -239,8 +243,12 @@ fn translate_fetch_single(
         FetchSingle::FunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context
             let mut local_context = parent_context.clone();
-            let body = translate_function_block(function_index, &mut local_context, value_parameters, block)
-                .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
+            let body = translate_function_block(function_index, &mut local_context, value_parameters, block).map_err(
+                |typedb_source| FetchRepresentationError::FunctionRepresentation {
+                    declaration: block.clone(),
+                    typedb_source,
+                },
+            )?;
             if body.return_operation().is_stream() {
                 return Err(Box::new(FetchRepresentationError::ExpectedSingleFunctionBlock {
                     declaration: block.clone(),
@@ -563,7 +571,8 @@ typedb_error! {
         FunctionRepresentation(
             10,
             "Failed to build inline function representation.",
-            declaration: FunctionBlock
+            declaration: FunctionBlock,
+            typedb_source: Box<FunctionRepresentationError>
         ),
         ExpectedSingleFunctionBlock(
             11,

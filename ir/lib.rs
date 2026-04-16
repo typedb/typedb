@@ -267,6 +267,13 @@ typedb_error! {
             "Illegal nested pattern provided for an update stage. Only 'try {{}}' blocks are allowed.",
             source_span: Option<Span>,
         ),
+        ReduceAssignsToExistingVariable(
+            48,
+            "The reduce stage assigns to an existing variable '{variable}'.",
+            variable: String,
+            source_span: Option<Span>,
+            existing_span: Option<Span>,
+        ),
         RegexExpectedStringLiteral(
             50,
             "Expected a string literal as regex.",

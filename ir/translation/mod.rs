@@ -77,6 +77,13 @@ impl PipelineTranslationContext {
         source_span: Option<Span>,
         reducer: Reducer,
     ) -> Result<Variable, Box<RepresentationError>> {
+        if let Some(existing_variable) = self.last_stage_visible_variables.get(name) {
+            return Err(Box::new(RepresentationError::ReduceAssignsToExistingVariable {
+                variable: name.clone().to_owned(),
+                source_span,
+                existing_span: self.variable_registry.source_span(*existing_variable),
+            }));
+        }
         let variable = self.variable_registry.register_reduce_output_variable(
             name.to_owned(),
             variable_category,
