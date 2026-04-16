@@ -177,7 +177,7 @@ fn test_disjoint_negation() {
         .finish()
         .unwrap_err();
     assert!(match *translation_error {
-        RepresentationError::UnboundRequiredVariable { variable } => {
+        RepresentationError::UnboundRequiredVariable { variable, .. } => {
             variable == "y"
         }
         _ => false,
@@ -229,7 +229,7 @@ fn test_disjoint_disjunction() {
         .finish()
         .unwrap_err();
     assert!(match *translation_error {
-        RepresentationError::UnboundRequiredVariable { variable } => {
+        RepresentationError::UnboundRequiredVariable { variable, .. } => {
             variable == "y" || variable == "z"
         }
         _ => false,
@@ -245,7 +245,7 @@ fn test_disjoint_disjunction_again() {
     let parsed = typeql::parse_query(query).unwrap().into_structure();
     let translation_error = translate_pipeline(&empty_function_index, &parsed.into_pipeline()).unwrap_err();
     assert!(match *translation_error {
-        RepresentationError::UnboundRequiredVariable { variable } => {
+        RepresentationError::UnboundRequiredVariable { variable, .. } => {
             variable == "x"
         }
         _ => false,
@@ -275,7 +275,7 @@ fn test_disjoint_optional() {
         .finish()
         .unwrap_err();
     assert!(match *translation_error {
-        RepresentationError::UnboundRequiredVariable { variable } => {
+        RepresentationError::UnboundRequiredVariable { variable, .. } => {
             variable == "y"
         }
         _ => false,

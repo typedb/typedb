@@ -43,10 +43,6 @@ impl Block {
     pub fn block_context(&self) -> &BlockContext {
         &self.block_context
     }
-
-    pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.block_context.registered_variables()
-    }
 }
 
 impl StructuralEquality for Block {

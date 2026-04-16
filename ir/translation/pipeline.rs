@@ -19,6 +19,7 @@ use typeql::{
 };
 
 use crate::{
+    pattern::Pattern,
     pipeline::{
         block::Block,
         fetch::FetchObject,
@@ -94,7 +95,7 @@ impl TranslatedStage {
             | Self::Insert { block, .. }
             | Self::Update { block, .. }
             | Self::Put { block, .. }
-            | Self::Delete { block, .. } => Box::new(block.variables()),
+            | Self::Delete { block, .. } => Box::new(block.conjunction().visible_referenced_variables()),
             Self::Select(select) => Box::new(select.variables.iter().cloned()),
             Self::Sort(sort) => Box::new(sort.variables.iter().map(|sort_var| sort_var.variable())),
             Self::Offset(_) => Box::new(empty()),
