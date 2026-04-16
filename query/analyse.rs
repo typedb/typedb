@@ -215,7 +215,6 @@ fn enrich_annotations(
 ) -> ConjunctionAnnotations {
     variable_annotations
         .map(|(variable, annotations)| {
-            // TODO: We don't always have the info here :/
             let is_optional = variable_registry.is_variable_optional(variable);
             (StructureVariableId::from(variable), PipelineVariableAnnotationAndModifier { is_optional, annotations })
         })

@@ -435,7 +435,6 @@ impl BitAndAssign for BindingMode {
 impl BitOr for BindingMode {
     type Output = Self;
     fn bitor(self, rhs: Self) -> Self {
-        // WARNING: This is not associative.
         match (self, rhs) {
             (Self::OptionallyBinding, Self::OptionallyBinding) => Self::OptionallyBinding,
             (Self::AlwaysBinding, Self::AlwaysBinding) => Self::AlwaysBinding,

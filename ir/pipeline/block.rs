@@ -121,8 +121,6 @@ fn validate_variable_categories_are_sufficiently_narrow(
             Some(VariableCategory::AttributeOrValue) | None
         )
     });
-    // TODO: unbound variable somewhere in the pattern is insufficient - a variable could be bound, but
-    //   it's actually only required in a sibling part of the pattern ??
     if let Some(variable) = unbound {
         Err(Box::new(RepresentationError::UnboundVariable {
             variable: context.variable_registry.get_variable_name_or_unnamed(variable).to_owned(),

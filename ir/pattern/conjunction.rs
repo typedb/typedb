@@ -142,18 +142,14 @@ impl NestedPatternBuilder {
 
 #[derive(Debug)]
 pub struct ConjunctionBuilder {
-    // TODO: Remove context out of here, and accept it as parameter where needed.
-    // Then do the nice stuff of creating separate builders. Get Scope out of Constraints while you're there
     scope_id: ScopeId,
     constraints: Constraints,
     nested_patterns: Vec<NestedPatternBuilder>,
-    // binding_modes: HashMap<Variable, BindingMode>,
 }
 
 impl ConjunctionBuilder {
     pub fn new(scope_id: ScopeId) -> Self {
         Self { constraints: Constraints::new(scope_id), scope_id, nested_patterns: Vec::new() }
-        //, binding_modes: HashMap::new() }
     }
 
     pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> Conjunction {

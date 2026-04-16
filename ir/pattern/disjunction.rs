@@ -120,7 +120,7 @@ impl DisjunctionBuilder {
         }
         let all_branch_modes: Vec<_> = self.conjunctions.iter().map(|(_, c)| c.variable_binding_modes()).collect();
         let all_variables = all_branch_modes.iter().flat_map(|b| b.keys()).dedup().collect::<Vec<_>>();
-        // Note: Absent isn't the identity under the bitwise or operator, so we correct in the next step.
+
         let mut binding_modes = all_variables
             .iter()
             .map(|v| {
@@ -138,7 +138,7 @@ impl DisjunctionBuilder {
             let binding_branches_count =
                 all_branch_modes.iter().filter(|branch_modes| branch_modes.get(var).is_some()).count();
             if binding_branches_count > 1 {
-                *mode = BindingMode::RequirePrebound // TODO: Should I go into the branches and bind?
+                *mode = BindingMode::RequirePrebound
             }
         });
         binding_modes
