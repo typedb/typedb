@@ -10,7 +10,7 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
     mem,
-    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor},
+    ops::{BitAnd, BitAndAssign, BitOr, BitXor},
 };
 
 use answer::variable::Variable;
@@ -480,12 +480,31 @@ impl ContextualisedBindingMode {
             .collect();
         Self(binding_modes)
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct VariableRequirements(HashMap<Variable, bool>);
+impl VariableRequirements {
+    fn from(modes: &ContextualisedBindingMode) -> Self {
+        Self(
+            modes
+                .0
+                .iter()
+                .filter_map(|(var, mode)| match mode {
+                    BindingMode::RequirePrebound => Some((*var, true)),
+                    BindingMode::AlwaysBinding | BindingMode::OptionallyBinding => Some((*var, false)),
+
+                    BindingMode::LocallyBindingInChild | BindingMode::Absent => None,
+                })
+                .collect(),
+        )
+    }
 
     pub(crate) fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.0.iter().filter_map(|(v, mode)| (!mode.is_locally_binding_in_child()).then_some(*v))
+        self.0.keys().copied()
     }
 
     pub(crate) fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.0.iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(*v))
+        self.0.iter().filter_map(|(v, required)| required.then_some(*v))
     }
 }

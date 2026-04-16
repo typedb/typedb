@@ -22,7 +22,7 @@ use crate::{
         negation::NegationBuilder,
         nested_pattern::NestedPattern,
         optional::OptionalBuilder,
-        BindingMode, ContextualisedBindingMode, Pattern, Scope, ScopeId,
+        BindingMode, ContextualisedBindingMode, Pattern, Scope, ScopeId, VariableRequirements,
     },
     pipeline::block::BlockBuilderContext,
     RepresentationError,
@@ -33,7 +33,7 @@ pub struct Conjunction {
     scope_id: ScopeId,
     constraints: Constraints,
     nested_patterns: Vec<NestedPattern>,
-    binding_modes: ContextualisedBindingMode,
+    variable_requirements: VariableRequirements,
 }
 
 impl Conjunction {
@@ -55,9 +55,13 @@ impl Conjunction {
 
     pub fn set_unsatisfiable(&mut self) {
         let scope_id = self.scope_id;
-        let binding_modes = self.binding_modes.clone();
-        let mut swapped_conjunction =
-            Self { scope_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new(), binding_modes };
+        let binding_modes = self.variable_requirements.clone();
+        let mut swapped_conjunction = Self {
+            scope_id,
+            constraints: Constraints::new(scope_id),
+            nested_patterns: Vec::new(),
+            variable_requirements: binding_modes,
+        };
         std::mem::swap(self, &mut swapped_conjunction);
         self.constraints.constraints_mut().push(Constraint::Unsatisfiable(Unsatisfiable::new(swapped_conjunction)));
     }
@@ -72,11 +76,11 @@ impl Conjunction {
 
 impl Pattern for Conjunction {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.binding_modes.visible_referenced_variables()
+        self.variable_requirements.visible_referenced_variables()
     }
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.binding_modes.required_inputs()
+        self.variable_requirements.required_inputs()
     }
 }
 
@@ -156,7 +160,8 @@ impl ConjunctionBuilder {
         let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
         let Self { scope_id, constraints, nested_patterns } = self;
         let nested_patterns = nested_patterns.into_iter().map(|builder| builder.finish(&binding_modes)).collect();
-        Conjunction { scope_id, constraints, nested_patterns, binding_modes }
+        let variable_requirements = VariableRequirements::from(&binding_modes);
+        Conjunction { scope_id, constraints, nested_patterns, variable_requirements }
     }
 
     pub fn scope_id(&self) -> ScopeId {

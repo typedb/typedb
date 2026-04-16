@@ -14,7 +14,7 @@ use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
         nested_pattern::NestedPattern,
-        BindingMode, BranchID, ContextualisedBindingMode, Pattern, Scope, ScopeId,
+        BindingMode, BranchID, ContextualisedBindingMode, Pattern, Scope, ScopeId, VariableRequirements,
     },
     pipeline::block::BlockBuilderContext,
 };
@@ -24,7 +24,7 @@ pub struct Disjunction {
     conjunctions: Vec<Conjunction>,
     branch_ids: Vec<BranchID>,
     scope_id: ScopeId,
-    binding_modes: ContextualisedBindingMode,
+    variable_requirements: VariableRequirements,
 }
 
 impl Disjunction {
@@ -54,11 +54,11 @@ impl Disjunction {
 
 impl Pattern for Disjunction {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.binding_modes.visible_referenced_variables()
+        self.variable_requirements.visible_referenced_variables()
     }
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.binding_modes.required_inputs()
+        self.variable_requirements.required_inputs()
     }
 }
 
@@ -94,13 +94,14 @@ impl DisjunctionBuilder {
         Self { scope_id, conjunctions: Vec::new() }
     }
 
-    pub(crate) fn finish(self, ctxd_parent_modes: &ContextualisedBindingMode) -> NestedPattern {
-        let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), ctxd_parent_modes);
+    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
+        let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
         let scope_id = self.scope_id;
         let branch_ids = self.conjunctions.iter().map(|(bid, _)| *bid).collect();
         let conjunctions =
             self.conjunctions.into_iter().map(|(_, conjunction)| conjunction.finish(&binding_modes)).collect();
-        NestedPattern::Disjunction(Disjunction { scope_id, branch_ids, conjunctions, binding_modes })
+        let variable_requirements = VariableRequirements::from(&binding_modes);
+        NestedPattern::Disjunction(Disjunction { scope_id, branch_ids, conjunctions, variable_requirements })
     }
 
     pub(crate) fn conjunctions(&self) -> impl Iterator<Item = &ConjunctionBuilder> {
