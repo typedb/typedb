@@ -61,7 +61,7 @@ pub mod tests {
     };
     use ir::{
         pattern::{
-            Vertex,
+            AssignedVariable, Vertex,
             constraint::{Constraint, IsaKind, SubKind},
             variable_category::{VariableCategory, VariableOptionality},
         },
@@ -158,7 +158,13 @@ pub mod tests {
             );
             conjunction
                 .constraints_mut()
-                .add_function_binding(vec![var_animal], &callee_signature, vec![], "test_fn", None)
+                .add_function_binding(
+                    vec![AssignedVariable::new_required(var_animal)],
+                    &callee_signature,
+                    vec![],
+                    "test_fn",
+                    None,
+                )
                 .unwrap();
             let entry = builder.finish().unwrap();
             (entry, entry_context, f_ir)
