@@ -14,6 +14,21 @@ features = {}
 	[dev-dependencies.test_utils]
 		workspace = true
 
+	[dev-dependencies.xoshiro]
+		workspace = true
+
+	[dev-dependencies.query]
+		workspace = true
+
+	[dev-dependencies.storage]
+		workspace = true
+
+	[dev-dependencies.steps]
+		workspace = true
+
+	[dev-dependencies.rand]
+		workspace = true
+
 	[dev-dependencies.http_steps]
 		workspace = true
 
@@ -26,19 +41,13 @@ features = {}
 	[dev-dependencies.function]
 		workspace = true
 
-	[dev-dependencies.query]
-		workspace = true
-
 	[dev-dependencies.options]
 		workspace = true
 
 	[dev-dependencies.typeql]
 		workspace = true
 
-	[dev-dependencies.storage]
-		workspace = true
-
-	[dev-dependencies.steps]
+	[dev-dependencies.rand_core]
 		workspace = true
 
 	[dev-dependencies.lending_iterator]
@@ -82,20 +91,32 @@ features = {}
 	name = "test_fail_points"
 
 [[test]]
-	path = "tests/behaviour/debug/debug.rs"
-	name = "test_debug"
+	path = "tests/benchmarks/concurrent_ops/bench_concurrency.rs"
+	name = "bench_concurrency"
 
 [[test]]
-	path = "tests/behaviour/concept/main.rs"
-	name = "test_concept"
+	path = "tests/benchmarks/iam/bench_iam.rs"
+	name = "bench_iam"
 
 [[test]]
 	path = "tests/behaviour/connection/main.rs"
 	name = "test_connection"
 
 [[test]]
-	path = "tests/behaviour/query/main.rs"
-	name = "test_query"
+	path = "tests/behaviour/concept/main.rs"
+	name = "test_concept"
+
+[[test]]
+	path = "tests/behaviour/service/http/connection/database.rs"
+	name = "test_http_database"
+
+[[test]]
+	path = "tests/behaviour/service/http/connection/transaction.rs"
+	name = "test_http_transaction"
+
+[[test]]
+	path = "tests/behaviour/service/http/driver/concept.rs"
+	name = "test_http_driver_concept"
 
 [[test]]
 	path = "tests/behaviour/service/http/driver/http.rs"
@@ -106,28 +127,24 @@ features = {}
 	name = "test_http_driver_query"
 
 [[test]]
-	path = "tests/behaviour/service/http/driver/connection.rs"
-	name = "test_http_driver_connection"
-
-[[test]]
 	path = "tests/behaviour/service/http/driver/user.rs"
 	name = "test_http_driver_user"
 
 [[test]]
-	path = "tests/behaviour/service/http/driver/concept.rs"
-	name = "test_http_driver_concept"
+	path = "tests/behaviour/service/http/driver/connection.rs"
+	name = "test_http_driver_connection"
 
 [[test]]
 	path = "tests/behaviour/service/http/debug/debug.rs"
 	name = "test_http_debug"
 
 [[test]]
-	path = "tests/behaviour/service/http/connection/database.rs"
-	name = "test_http_database"
+	path = "tests/behaviour/query/main.rs"
+	name = "test_query"
 
 [[test]]
-	path = "tests/behaviour/service/http/connection/transaction.rs"
-	name = "test_http_transaction"
+	path = "tests/behaviour/debug/debug.rs"
+	name = "test_debug"
 
 [[bin]]
 	path = "main.rs"
@@ -136,7 +153,7 @@ features = {}
 
 [workspace]
 	resolver = "2"
-	members = ["resource", "database", "database/tools", "server", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "encoding/tests", "encoding", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/cache", "common/bytes", "common/lending_iterator", "common/primitive", "common/fail_point", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "query", "compiler"]
+	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "encoding/tests", "encoding", "server", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/cache", "common/bytes", "common/lending_iterator", "common/primitive", "common/fail_point", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
 
 	[workspace.dependencies]
 
@@ -180,14 +197,14 @@ features = {}
 			version = "1.18.0"
 			default-features = false
 
-		[workspace.dependencies.seahash]
-			features = ["default"]
-			version = "4.1.0"
-			default-features = false
-
 		[workspace.dependencies.rand]
 			features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
 			version = "0.8.5"
+			default-features = false
+
+		[workspace.dependencies.seahash]
+			features = ["default"]
+			version = "4.1.0"
 			default-features = false
 
 		[workspace.dependencies.prost]
@@ -215,9 +232,9 @@ features = {}
 			features = []
 			default-features = false
 
-		[workspace.dependencies.sysinfo]
-			features = ["component", "default", "disk", "multithread", "network", "system", "user"]
-			version = "0.33.1"
+		[workspace.dependencies.rustls-pemfile]
+			features = ["default", "std"]
+			version = "2.2.0"
 			default-features = false
 
 		[workspace.dependencies.xxhash-rust]
@@ -230,9 +247,9 @@ features = {}
 			version = "0.13.0"
 			default-features = false
 
-		[workspace.dependencies.rustls-pemfile]
-			features = ["default", "std"]
-			version = "2.2.0"
+		[workspace.dependencies.sysinfo]
+			features = ["component", "default", "disk", "multithread", "network", "system", "user"]
+			version = "0.33.1"
 			default-features = false
 
 		[workspace.dependencies.options]
@@ -247,8 +264,8 @@ features = {}
 
 		[workspace.dependencies.typeql]
 			features = []
-			rev = "508bdfa6687ae4c48d482318387204f1ae7bd4ac"
 			git = "https://github.com/typedb/typeql"
+			tag = "3.8.4-rc0"
 			default-features = false
 
 		[workspace.dependencies.serde_with]
@@ -283,8 +300,8 @@ features = {}
 
 		[workspace.dependencies.typedb-protocol]
 			features = []
-			rev = "e4567406bdc993722554717563ffc1ac9ce0a678"
 			git = "https://github.com/typedb/typedb-protocol"
+			tag = "3.7.1-rc1"
 			default-features = false
 
 		[workspace.dependencies.resource]
@@ -357,24 +374,24 @@ features = {}
 			version = "0.12.3"
 			default-features = false
 
-		[workspace.dependencies.hyper-rustls]
-			features = ["acceptor", "default", "http1", "log", "logging", "native-tokio", "ring", "rustls-native-certs", "tls12", "tokio-runtime"]
-			version = "0.25.0"
-			default-features = false
-
 		[workspace.dependencies.durability_test_common]
 			path = "durability/tests/common"
 			features = []
 			default-features = false
 
-		[workspace.dependencies.lending_iterator]
-			path = "common/lending_iterator"
-			features = []
+		[workspace.dependencies.hyper-rustls]
+			features = ["acceptor", "default", "http1", "log", "logging", "native-tokio", "ring", "rustls-native-certs", "tls12", "tokio-runtime"]
+			version = "0.25.0"
 			default-features = false
 
 		[workspace.dependencies.rand_core]
 			features = ["default", "std"]
 			version = "0.3.1"
+			default-features = false
+
+		[workspace.dependencies.lending_iterator]
+			path = "common/lending_iterator"
+			features = []
 			default-features = false
 
 		[workspace.dependencies.test_utils]
@@ -427,14 +444,14 @@ features = {}
 			features = []
 			default-features = false
 
-		[workspace.dependencies.paste]
-			features = []
-			version = "1.0.15"
-			default-features = false
-
 		[workspace.dependencies.moka]
 			features = ["default", "sync"]
 			version = "0.12.10"
+			default-features = false
+
+		[workspace.dependencies.paste]
+			features = []
+			version = "1.0.15"
 			default-features = false
 
 		[workspace.dependencies.error]
@@ -462,14 +479,14 @@ features = {}
 			version = "0.9.0"
 			default-features = false
 
-		[workspace.dependencies.tracing-appender]
-			features = []
-			version = "0.2.3"
-			default-features = false
-
 		[workspace.dependencies.async-trait]
 			features = []
 			version = "0.1.89"
+			default-features = false
+
+		[workspace.dependencies.tracing-appender]
+			features = []
+			version = "0.2.3"
 			default-features = false
 
 		[workspace.dependencies.tempdir]
@@ -522,14 +539,14 @@ features = {}
 			version = "1.28.1"
 			default-features = false
 
-		[workspace.dependencies.test_utils_concept]
-			path = "concept/tests"
-			features = []
-			default-features = false
-
 		[workspace.dependencies.tokio-stream]
 			features = ["default", "net", "time"]
 			version = "0.1.17"
+			default-features = false
+
+		[workspace.dependencies.test_utils_concept]
+			path = "concept/tests"
+			features = []
 			default-features = false
 
 		[workspace.dependencies.futures]

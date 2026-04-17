@@ -89,30 +89,30 @@ features = {}
 		workspace = true
 
 [[bench]]
-	name = "bench_mvcc_storage"
-	harness = false
-
-[[bench]]
 	name = "bench_rocks"
 	harness = false
 
-[[test]]
-	path = "tests/test_mvcc.rs"
-	name = "test_mvcc"
+[[bench]]
+	name = "bench_mvcc_storage"
+	harness = false
 
 [[test]]
-	path = "tests/test_snapshot.rs"
-	name = "test_snapshot"
-
-[[test]]
-	path = "tests/test_storage.rs"
-	name = "test_storage"
+	path = "tests/test_isolation.rs"
+	name = "test_isolation"
 
 [[test]]
 	path = "tests/test_recovery.rs"
 	name = "test_recovery"
 
 [[test]]
-	path = "tests/test_isolation.rs"
-	name = "test_isolation"
+	path = "tests/test_snapshot.rs"
+	name = "test_snapshot"
+
+[[test]]
+	path = "tests/test_mvcc.rs"
+	name = "test_mvcc"
+
+[[test]]
+	path = "tests/test_storage.rs"
+	name = "test_storage"
 

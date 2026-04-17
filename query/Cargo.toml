@@ -103,12 +103,12 @@ features = {}
 	harness = false
 
 [[test]]
-	path = "tests/unimplemented.rs"
-	name = "test_unimplemented"
-
-[[test]]
 	path = "tests/fetch.rs"
 	name = "test_fetch"
+
+[[test]]
+	path = "tests/unimplemented.rs"
+	name = "test_unimplemented"
 
 [[test]]
 	path = "tests/define.rs"
