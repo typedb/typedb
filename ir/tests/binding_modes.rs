@@ -505,6 +505,30 @@ fn test_optional_return() {
 }
 
 #[test]
+fn test_optional_return_must_be_declared() {
+    let query = r#"
+    with fun first_is_opt() -> {integer, integer}:
+    match let $x = 5; try { let $y = 6; };
+    return { $x, $y };
+
+    match let $x, $y in first_is_opt();
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let preamble_signatures = HashMapFunctionSignatureIndex::build(
+        parsed.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
+    );
+    let translation_error = translate_pipeline(&preamble_signatures, &parsed).unwrap_err();
+    assert!(match *translation_error {
+        RepresentationError::FunctionRepresentation {
+            typedb_source: FunctionRepresentationError::InconsistentReturnOptionality { mismatch_index, .. },
+        } => {
+            mismatch_index == 0
+        }
+        _ => false,
+    });
+}
+
+#[test]
 fn test_optional_return_reuse_errors() {
     let query = r#"
     with fun age_opt() -> age?:

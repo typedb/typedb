@@ -92,11 +92,13 @@ typedb_error! {
             "Functions may not contain write stages.",
             source_span: Option<Span>,
         ),
-        InconsistentReturn(
+        InconsistentReturnLengths(
             8,
-            "The return statement in the body of the function did not match that in the signature. \nSignature: {signature}\nDefinition: {return_}",
+            "The size of the tuple returned by the body of the function did not match that declared in the signature. \nSignature: {signature}\nDefinition: {return_}",
             signature: Signature,
-            return_: ReturnStatement
+            return_: ReturnStatement,
+            declared_length: usize,
+            actual_length: usize,
         ),
         IllegalKeywordAsIdentifier(
             9,
@@ -120,6 +122,13 @@ typedb_error! {
             "The function declares it returns a single row but the implementation returns a stream.\nSignature: {signature}\nDefinition: {return_}",
             signature: Signature,
             return_: ReturnStatement,
+        ),
+        InconsistentReturnOptionality(
+            13,
+            "The optionality of the value returned by the function at index '{mismatch_index}' did not match that declared in the signature. \nSignature: {signature}\nDefinition: {return_}",
+            signature: Signature,
+            return_: ReturnStatement,
+            mismatch_index: usize,
         ),
     }
 }
