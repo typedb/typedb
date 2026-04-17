@@ -29,6 +29,9 @@ rust.toolchain(
 use_repo(rust, "rust_toolchains")
 register_toolchains("@rust_toolchains//:all")
 
+rust_host_tools = use_extension("@rules_rust//rust:extensions.bzl", "rust_host_tools")
+rust_host_tools.host_tools(version = "1.93.0")
+
 # Kotlin
 bazel_dep(name = "rules_kotlin", version = "2.0.0")
 register_toolchains("@rules_kotlin//kotlin/internal:default_toolchain")
