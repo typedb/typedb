@@ -27,7 +27,7 @@ use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
 use options::{QueryOptions, TransactionOptions};
 use query::query_manager::PipelinePayload;
 use rand_core::RngCore;
-use storage::{durability_client::WALClient, COMMIT_PHASE_STATS, WAL_WRITE_PHASE_STATS};
+use storage::{durability_client::WALClient, COMMIT_PHASE_STATS, FSYNC_PHASE_STATS, WAL_WRITE_PHASE_STATS};
 use test_utils::{create_tmp_dir, TempDir};
 use xoshiro::Xoshiro256Plus;
 
@@ -492,6 +492,7 @@ fn run_pure_insert_benchmark(thread_counts: &[usize], batch_size: usize, show_di
         if show_phases {
             COMMIT_PHASE_STATS.reset();
             WAL_WRITE_PHASE_STATS.reset();
+            FSYNC_PHASE_STATS.reset();
         }
 
         let elapsed =
@@ -503,6 +504,7 @@ fn run_pure_insert_benchmark(thread_counts: &[usize], batch_size: usize, show_di
         if show_phases {
             eprintln!("{}", COMMIT_PHASE_STATS.dump());
             eprintln!("{}", WAL_WRITE_PHASE_STATS.dump());
+            eprintln!("{}", FSYNC_PHASE_STATS.dump());
         }
     }
 }

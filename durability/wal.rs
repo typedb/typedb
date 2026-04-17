@@ -114,6 +114,74 @@ pub static WAL_WRITE_PHASE_STATS: WalWritePhaseStats = WalWritePhaseStats {
     async_lock_held_ns: AtomicU64::new(0),
 };
 
+/// Fsync thread telemetry — observes whether fsync is actually running, how
+/// many subscribers it serves per iteration, and how long each syscall takes.
+/// Important for distinguishing "fsync was fast" from "fsync was skipped".
+pub struct FsyncPhaseStats {
+    iterations: AtomicU64,
+    subscribers_served: AtomicU64,
+    syscalls: AtomicU64,
+    syscall_total_ns: AtomicU64,
+    syscall_max_ns: AtomicU64,
+    skipped_empty: AtomicU64,
+    skipped_disabled: AtomicU64,
+}
+
+impl FsyncPhaseStats {
+    fn record_iteration(&self) {
+        self.iterations.fetch_add(1, Ordering::Relaxed);
+    }
+    fn record_batch(&self, subscribers: usize, syscall: Option<Duration>, skipped: bool) {
+        self.subscribers_served.fetch_add(subscribers as u64, Ordering::Relaxed);
+        if skipped {
+            self.skipped_disabled.fetch_add(1, Ordering::Relaxed);
+        } else if let Some(dur) = syscall {
+            self.syscalls.fetch_add(1, Ordering::Relaxed);
+            let ns = dur.as_nanos() as u64;
+            self.syscall_total_ns.fetch_add(ns, Ordering::Relaxed);
+            self.syscall_max_ns.fetch_max(ns, Ordering::Relaxed);
+        }
+    }
+    fn record_empty(&self) {
+        self.skipped_empty.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn reset(&self) {
+        self.iterations.store(0, Ordering::Relaxed);
+        self.subscribers_served.store(0, Ordering::Relaxed);
+        self.syscalls.store(0, Ordering::Relaxed);
+        self.syscall_total_ns.store(0, Ordering::Relaxed);
+        self.syscall_max_ns.store(0, Ordering::Relaxed);
+        self.skipped_empty.store(0, Ordering::Relaxed);
+        self.skipped_disabled.store(0, Ordering::Relaxed);
+    }
+
+    pub fn dump(&self) -> String {
+        let iters = self.iterations.load(Ordering::Relaxed);
+        let subs = self.subscribers_served.load(Ordering::Relaxed);
+        let calls = self.syscalls.load(Ordering::Relaxed);
+        let total_ns = self.syscall_total_ns.load(Ordering::Relaxed);
+        let max_ns = self.syscall_max_ns.load(Ordering::Relaxed);
+        let empty = self.skipped_empty.load(Ordering::Relaxed);
+        let disabled = self.skipped_disabled.load(Ordering::Relaxed);
+        let avg_us = if calls > 0 { (total_ns / calls) as f64 / 1000.0 } else { 0.0 };
+        format!(
+            "  fsync: iterations={} subscribers_served={} syscalls={} avg_syscall={:.1}us max_syscall={:.1}us skipped_empty={} skipped_disabled={}",
+            iters, subs, calls, avg_us, max_ns as f64 / 1000.0, empty, disabled
+        )
+    }
+}
+
+pub static FSYNC_PHASE_STATS: FsyncPhaseStats = FsyncPhaseStats {
+    iterations: AtomicU64::new(0),
+    subscribers_served: AtomicU64::new(0),
+    syscalls: AtomicU64::new(0),
+    syscall_total_ns: AtomicU64::new(0),
+    syscall_max_ns: AtomicU64::new(0),
+    skipped_empty: AtomicU64::new(0),
+    skipped_disabled: AtomicU64::new(0),
+};
+
 #[derive(Debug)]
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, String>,
@@ -899,6 +967,12 @@ pub struct FsyncThreadContext {
     shutting_down: AtomicBool,
     signalling: [Mutex<Vec<Option<mpsc::Sender<()>>>>; 2],
     current_signal: AtomicU8,
+    /// When set via `TYPEDB_DISABLE_FSYNC=1`, the fsync thread notifies
+    /// subscribers *without* actually calling `sync_all`. Matches Postgres
+    /// `synchronous_commit=off` / Mongo `j:false` semantics — data is still
+    /// in the OS page cache but the crash-durability contract is broken. Only
+    /// use this to measure the theoretical commit-path ceiling; do not ship.
+    disable_fsync: bool,
 }
 
 #[derive(Debug)]
@@ -909,11 +983,20 @@ pub struct FsyncThread {
 
 impl FsyncThread {
     fn new(files: Arc<RwLock<Files>>) -> Self {
+        let disable_fsync = std::env::var("TYPEDB_DISABLE_FSYNC")
+            .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+            .unwrap_or(false);
+        if disable_fsync {
+            warn!(
+                "TYPEDB_DISABLE_FSYNC is set: WAL writes will not be fsynced. Durability is disabled."
+            );
+        }
         let context = FsyncThreadContext {
             files,
             shutting_down: AtomicBool::new(false),
             signalling: [Mutex::new(Vec::new()), Mutex::new(Vec::new())],
             current_signal: AtomicU8::new(0),
+            disable_fsync,
         };
         Self { handle: None, context: Arc::new(context) }
     }
@@ -955,27 +1038,31 @@ impl FsyncThread {
     }
 
     fn may_sync_and_update_state(context: &mut Arc<FsyncThreadContext>) {
+        FSYNC_PHASE_STATS.record_iteration();
         let current_signal = context.current_signal.load(Ordering::Relaxed);
         context.current_signal.store(1 - current_signal, Ordering::Relaxed);
         let vec_lock = context.signalling.get(current_signal as usize).unwrap().lock();
         let mut vec = vec_lock.unwrap();
         if !vec.is_empty() {
-            // Snapshot the current WAL file path under a brief read lock, then
-            // release the lock *before* opening a separate file handle and
-            // running the blocking fsync syscall. This keeps the files RwLock
-            // completely free during fsync — writers no longer queue behind the
-            // fsync thread, which was the main source of wal_write lock_wait.
-            // Fsync on a separate fd still syncs the inode's dirty pages, so
-            // data the commit-path BufWriter already flushed is covered.
-            let path = context.files.read().unwrap().current_wal_path();
-            if let Ok(f) = OpenOptions::new().read(true).append(true).open(&path) {
-                let _ = f.sync_all();
+            let subscriber_count = vec.len();
+            let mut syscall_duration = None;
+            let skipped = context.disable_fsync;
+            if !skipped {
+                let path = context.files.read().unwrap().current_wal_path();
+                if let Ok(f) = OpenOptions::new().read(true).append(true).open(&path) {
+                    let t0 = Instant::now();
+                    let _ = f.sync_all();
+                    syscall_duration = Some(t0.elapsed());
+                }
             }
+            FSYNC_PHASE_STATS.record_batch(subscriber_count, syscall_duration, skipped);
             while let Some(sender_opt) = vec.pop() {
                 if let Some(sender) = sender_opt {
                     sender.send(()).unwrap();
                 }
             }
+        } else {
+            FSYNC_PHASE_STATS.record_empty();
         }
     }
 }
