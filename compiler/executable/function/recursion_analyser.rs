@@ -14,8 +14,8 @@ use ir::{
 use crate::{
     annotation::{function::AnnotatedFunction, pipeline::AnnotatedStage},
     executable::{
-        function::{FunctionTablingType, StronglyConnectedComponentID},
         ExecutableCompilationError,
+        function::{FunctionTablingType, StronglyConnectedComponentID},
     },
 };
 

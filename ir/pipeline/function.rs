@@ -19,8 +19,8 @@ use typeql::{
 };
 
 use crate::{
-    pipeline::{reduce::Reducer, ParameterRegistry},
-    translation::{pipeline::TranslatedStage, PipelineTranslationContext},
+    pipeline::{ParameterRegistry, reduce::Reducer},
+    translation::{PipelineTranslationContext, pipeline::TranslatedStage},
 };
 
 #[derive(Debug, Clone)]

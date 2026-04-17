@@ -11,13 +11,13 @@ use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
     type_::{
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{Annotation, AnnotationError},
         attribute_type::AttributeType,
         owns::Owns,
         plays::Plays,
         relates::Relates,
         type_manager::TypeManager,
-        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 use encoding::{
@@ -25,34 +25,34 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use function::{function_manager::FunctionManager, FunctionError};
-use ir::{pipeline::VariableRegistry, translation::tokens::translate_annotation, LiteralParseError};
+use function::{FunctionError, function_manager::FunctionManager};
+use ir::{LiteralParseError, pipeline::VariableRegistry, translation::tokens::translate_annotation};
 use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    common::{error::TypeQLError, Span, Spanned},
+    Definable, TypeRef, TypeRefAny,
+    common::{Span, Spanned, error::TypeQLError},
     query::schema::Define,
     schema::definable::{
-        struct_::Field,
-        type_::{capability::Relates as TypeQLRelates, Capability as TypeQLCapability, CapabilityBase},
         Struct, Type,
+        struct_::Field,
+        type_::{Capability as TypeQLCapability, CapabilityBase, capability::Relates as TypeQLRelates},
     },
     token,
     token::Keyword,
-    Definable, TypeRef, TypeRefAny,
 };
 
 use crate::{
     definable_resolution::{
-        filter_variants, get_struct_field_value_type_optionality, resolve_attribute_type, resolve_relates,
-        resolve_relates_declared, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type,
-        resolve_value_type, try_resolve_typeql_type, type_ref_to_label_and_ordering, type_to_object_type,
-        SymbolResolutionError,
+        SymbolResolutionError, filter_variants, get_struct_field_value_type_optionality, resolve_attribute_type,
+        resolve_relates, resolve_relates_declared, resolve_role_type, resolve_struct_definition_key,
+        resolve_typeql_type, resolve_value_type, try_resolve_typeql_type, type_ref_to_label_and_ordering,
+        type_to_object_type,
     },
     definable_status::{
-        get_capability_annotation_status, get_owns_status, get_plays_status, get_relates_status,
-        get_struct_field_status, get_struct_status, get_sub_status, get_type_annotation_status, get_value_type_status,
-        DefinableStatus, DefinableStatusMode,
+        DefinableStatus, DefinableStatusMode, get_capability_annotation_status, get_owns_status, get_plays_status,
+        get_relates_status, get_struct_field_status, get_struct_status, get_sub_status, get_type_annotation_status,
+        get_value_type_status,
     },
 };
 
@@ -465,7 +465,7 @@ fn define_sub(
                     capability,
                     type_.kind(),
                     supertype.kind(),
-                ))
+                ));
             }
         }
 
@@ -741,13 +741,13 @@ fn define_relates_specialise(
                     return Err(DefineError::UnexpectedSpecialiseScopedLabel {
                         label: format!("{}", scoped),
                         source_span: scoped.span(),
-                    })
+                    });
                 }
                 TypeRef::Variable(variable) => {
                     return Err(DefineError::UnexpectedSpecialiseVariable {
                         variable: variable.name().unwrap_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME).to_owned(),
                         source_span: variable.span(),
-                    })
+                    });
                 }
             },
             TypeRefAny::List(list) => match &list.inner {
@@ -756,13 +756,13 @@ fn define_relates_specialise(
                     return Err(DefineError::UnexpectedSpecialiseScopedLabel {
                         label: format!("{}", scoped),
                         source_span: scoped.span(),
-                    })
+                    });
                 }
                 TypeRef::Variable(variable) => {
                     return Err(DefineError::UnexpectedSpecialiseVariable {
                         variable: variable.name().unwrap_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME).to_owned(),
                         source_span: variable.span(),
-                    })
+                    });
                 }
             },
         };

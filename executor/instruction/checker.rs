@@ -10,21 +10,21 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable_value::VariableValue, Thing, Type};
+use answer::{Thing, Type, variable_value::VariableValue};
 use bytes::byte_array::ByteArray;
 use compiler::{
-    executable::match_::instructions::{CheckInstruction, CheckVertex},
     ExecutorVariable,
+    executable::match_::instructions::{CheckInstruction, CheckVertex},
 };
 use concept::{
     error::ConceptReadError,
-    thing::{object::ObjectAPI, thing_manager::ThingManager, ThingAPI},
+    thing::{ThingAPI, object::ObjectAPI, thing_manager::ThingManager},
     type_::{OwnerAPI, PlayerAPI},
 };
 use encoding::{
-    graph::thing::THING_VERTEX_MAX_LENGTH,
-    value::{value::Value, ValueEncodable},
     AsBytes,
+    graph::thing::THING_VERTEX_MAX_LENGTH,
+    value::{ValueEncodable, value::Value},
 };
 use error::unimplemented_feature;
 use ir::{
@@ -250,7 +250,7 @@ impl<T> Checker<T> {
                 CheckInstruction::Plays { player, role_type } => {
                     self.filter_plays(context, row, &source, player, role_type)?
                 }
-                CheckInstruction::Isa { isa_kind, ref type_, ref thing } => {
+                CheckInstruction::Isa { isa_kind, type_, thing } => {
                     self.filter_isa(context, row, &source, *isa_kind, type_, thing)?
                 }
                 CheckInstruction::Has { owner, attribute } => {

@@ -8,24 +8,24 @@ use std::sync::Arc;
 
 use durability::wal::WAL;
 use encoding::{
+    AsBytes, EncodingKeyspace, Keyable,
     error::EncodingError,
     graph::{
+        Typed,
         type_::{
             vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
             vertex_generator::TypeVertexGenerator,
         },
-        Typed,
     },
     layout::prefix::Prefix,
-    AsBytes, EncodingKeyspace, Keyable,
 };
 use resource::profile::CommitProfile;
 use storage::{
+    MVCCStorage,
     durability_client::WALClient,
     key_value::StorageKeyReference,
     recovery::checkpoint::CheckpointWriter,
     snapshot::{CommittableSnapshot, WritableSnapshot},
-    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
 use test_utils_encoding::create_core_storage;

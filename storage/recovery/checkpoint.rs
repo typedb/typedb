@@ -16,8 +16,8 @@ use std::{
 use chrono::{DateTime, Utc};
 use error::typedb_error;
 use fail_point::{
-    fail_point, CHECKPOINT_CLEANUP_FAIL, CHECKPOINT_CLEANUP_PARTIAL_FAIL, CHECKPOINT_DIR_CREATE_FAIL,
-    CHECKPOINT_FILE_EMPTY, CHECKPOINT_FILE_SYNC_FAIL, CHECKPOINT_METADATA_WRITE_FAIL,
+    CHECKPOINT_CLEANUP_FAIL, CHECKPOINT_CLEANUP_PARTIAL_FAIL, CHECKPOINT_DIR_CREATE_FAIL, CHECKPOINT_FILE_EMPTY,
+    CHECKPOINT_FILE_SYNC_FAIL, CHECKPOINT_METADATA_WRITE_FAIL, fail_point,
 };
 use itertools::Itertools;
 use same_file::is_same_file;
@@ -26,7 +26,7 @@ use tracing::{debug, trace};
 use crate::{
     durability_client::DurabilityClient,
     keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces},
-    recovery::commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
+    recovery::commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
     sequence_number::SequenceNumber,
 };
 
@@ -94,7 +94,9 @@ impl CheckpointReader {
 
         let checkpoint_sequence_number = self.read_sequence_number()?;
         if checkpoint_sequence_number > durability_client.previous() {
-            panic!("The checkpoint is ahead of the durability service! The durability logs may have been corrupted. Aborting.");
+            panic!(
+                "The checkpoint is ahead of the durability service! The durability logs may have been corrupted. Aborting."
+            );
         }
 
         let recovery_start = checkpoint_sequence_number + 1;
@@ -154,11 +156,7 @@ fn latest_complete_checkpoint<KS: KeyspaceSet>(mut entries: fs::ReadDir) -> io::
         }
 
         let checkpoint = CheckpointReader { directory: path };
-        if checkpoint.is_complete::<KS>()? {
-            Ok(Some((timestamp, checkpoint)))
-        } else {
-            Ok(cur)
-        }
+        if checkpoint.is_complete::<KS>()? { Ok(Some((timestamp, checkpoint))) } else { Ok(cur) }
     });
 
     match latest? {

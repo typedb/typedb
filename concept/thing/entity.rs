@@ -8,13 +8,13 @@ use std::fmt;
 
 use bytes::Bytes;
 use encoding::{
+    AsBytes, Keyable, Prefixed,
     graph::{
-        thing::{vertex_object::ObjectVertex, ThingVertex},
-        type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
+        thing::{ThingVertex, vertex_object::ObjectVertex},
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
     },
     layout::prefix::Prefix,
-    AsBytes, Keyable, Prefixed,
 };
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
@@ -22,14 +22,14 @@ use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters}
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ConceptAPI, ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
+        HKInstance, ThingAPI,
         object::{Object, ObjectAPI},
         thing_manager::ThingManager,
-        HKInstance, ThingAPI,
     },
-    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
-    ConceptAPI, ConceptStatus,
+    type_::{ObjectTypeAPI, Ordering, OwnerAPI, entity_type::EntityType},
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]

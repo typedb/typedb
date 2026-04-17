@@ -5,17 +5,17 @@
  */
 
 use std::sync::{
-    atomic::{AtomicU64, Ordering},
     Arc,
+    atomic::{AtomicU64, Ordering},
 };
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use resource::profile::StorageCounters;
 use storage::{
+    MVCCStorage,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
-    snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
-    MVCCStorage,
+    snapshot::{ReadableSnapshot, WritableSnapshot, iterator::SnapshotIteratorError},
 };
 
 use super::vertex_attribute::{
@@ -23,15 +23,16 @@ use super::vertex_attribute::{
     DoubleAttributeID, DurationAttributeID, StructAttributeID,
 };
 use crate::{
+    AsBytes, Keyable,
     error::EncodingError,
     graph::{
+        Typed,
         thing::{
+            ThingVertex,
             vertex_attribute::{AttributeID, AttributeVertex, IntegerAttributeID, StringAttributeID},
             vertex_object::{ObjectID, ObjectVertex},
-            ThingVertex,
         },
-        type_::vertex::{build_type_vertex_prefix_key, TypeID, TypeIDUInt, TypeVertex},
-        Typed,
+        type_::vertex::{TypeID, TypeIDUInt, TypeVertex, build_type_vertex_prefix_key},
     },
     layout::prefix::Prefix,
     value::{
@@ -40,7 +41,6 @@ use crate::{
         duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes,
         struct_bytes::StructBytes,
     },
-    AsBytes, Keyable,
 };
 
 #[derive(Debug)]

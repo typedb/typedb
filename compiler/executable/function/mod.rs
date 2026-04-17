@@ -7,7 +7,7 @@
 use std::{collections::HashMap, fmt, sync::Arc};
 
 use encoding::graph::definition::definition_key::DefinitionKey;
-use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
+use ir::pipeline::{ParameterRegistry, function_signature::FunctionID};
 
 use crate::executable::{function::executable::ExecutableFunction, match_::planner::vertex::Cost};
 

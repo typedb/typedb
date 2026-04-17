@@ -7,10 +7,10 @@
 use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{
+    Router,
     extract::State,
     response::{IntoResponse, Redirect},
     routing::{delete, get, post, put},
-    Router,
 };
 use concurrency::TokioIntervalRunner;
 use diagnostics::metrics::ActionKind;
@@ -20,8 +20,9 @@ use resource::{constants::common::SECONDS_IN_MINUTE, server_info::ServerInfo};
 use system::concepts::{Credential, User};
 use tokio::{
     sync::{
-        mpsc::{channel, Sender},
-        oneshot, RwLock,
+        RwLock,
+        mpsc::{Sender, channel},
+        oneshot,
     },
     time::timeout,
 };
@@ -31,25 +32,25 @@ use uuid::Uuid;
 use crate::{
     authentication::Accessor,
     service::{
+        QueryType,
         http::{
             diagnostics::{run_with_diagnostics, run_with_diagnostics_async},
             error::HttpServiceError,
             message::{
                 analyze::{AnalysedQueryResponse, TransactionAnalyzePayload},
-                authentication::{encode_token, SigninPayload},
+                authentication::{SigninPayload, encode_token},
                 body::{JsonBody, PlainTextBody},
-                database::{encode_database, encode_databases, DatabasePath},
+                database::{DatabasePath, encode_database, encode_databases},
                 query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
-                transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},
-                user::{encode_user, encode_users, CreateUserPayload, UpdateUserPayload, UserPath},
-                version::{encode_server_version, ProtocolVersion, PROTOCOL_VERSION_LATEST},
+                transaction::{TransactionOpenPayload, TransactionPath, encode_transaction},
+                user::{CreateUserPayload, UpdateUserPayload, UserPath, encode_user, encode_users},
+                version::{PROTOCOL_VERSION_LATEST, ProtocolVersion, encode_server_version},
             },
             transaction_service::{
                 QueryAnswer, TransactionRequest, TransactionResponder, TransactionService, TransactionServiceResponse,
             },
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
-        QueryType,
     },
     state::BoxServerState,
 };

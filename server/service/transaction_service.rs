@@ -11,7 +11,7 @@ use database::transaction::{
 };
 use diagnostics::metrics::LoadKind;
 use error::typedb_error;
-use executor::{pipeline::PipelineExecutionError, InterruptType};
+use executor::{InterruptType, pipeline::PipelineExecutionError};
 use query::error::QueryError;
 use resource::constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS;
 use storage::durability_client::WALClient;

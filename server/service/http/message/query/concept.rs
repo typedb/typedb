@@ -7,19 +7,19 @@
 use std::borrow::Cow;
 
 use answer::{Thing, Type};
-use bytes::{util::HexBytesFormatter, Bytes};
+use bytes::{Bytes, util::HexBytesFormatter};
 use concept::{
     error::ConceptReadError,
-    thing::{attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, ThingAPI},
+    thing::{ThingAPI, attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager},
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType,
-        type_manager::TypeManager, TypeAPI,
+        TypeAPI, attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType,
+        role_type::RoleType, type_manager::TypeManager,
     },
 };
-use encoding::value::{value::Value, value_type::ValueType, ValueEncodable};
+use encoding::value::{ValueEncodable, value::Value, value_type::ValueType};
 use error::unimplemented_feature;
 use resource::profile::StorageCounters;
-use serde::{ser::SerializeStruct, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, ser::SerializeStruct};
 use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
 

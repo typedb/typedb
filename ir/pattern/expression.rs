@@ -18,8 +18,8 @@ use typeql::common::Span;
 
 use crate::{
     pattern::{
-        variable_category::{VariableCategory, VariableOptionality},
         IrID, ParameterID,
+        variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::function_signature::{FunctionID, FunctionSignature},
 };

@@ -5,13 +5,13 @@
  */
 
 use ::concept::{error::ConceptReadError, type_::type_manager::TypeManager};
-use annotations::{encode_analyzed_fetch, encode_analyzed_function, FetchStructureAnnotationsResponse};
+use annotations::{FetchStructureAnnotationsResponse, encode_analyzed_fetch, encode_analyzed_function};
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use query::analyse::AnalysedQuery;
 use serde::{Deserialize, Serialize};
 use storage::snapshot::ReadableSnapshot;
-use structure::{encode_analyzed_pipeline, AnalyzedFunctionResponse, AnalyzedPipelineResponse};
+use structure::{AnalyzedFunctionResponse, AnalyzedPipelineResponse, encode_analyzed_pipeline};
 
 use crate::service::http::message::body::JsonBody;
 

@@ -9,10 +9,10 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
 use ir::pattern::{
+    Vertex,
     conjunction::Conjunction,
     constraint::{Comparator, Constraint, IndexedRelation, Links},
     nested_pattern::NestedPattern,
-    Vertex,
 };
 use storage::snapshot::ReadableSnapshot;
 

@@ -6,17 +6,17 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
 use crate::{
-    graph::{thing::vertex_object::ObjectVertex, type_::vertex::TypeVertex, Typed},
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+    graph::{Typed, thing::vertex_object::ObjectVertex, type_::vertex::TypeVertex},
     layout::{
         infix::{Infix, InfixID},
         prefix::{Prefix, PrefixID},
     },
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 pub fn build_object_vertex_property_has_order(

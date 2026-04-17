@@ -16,16 +16,17 @@ use std::{
     mem,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
-        mpsc, Arc, Mutex, RwLock, RwLockReadGuard,
+        Arc, Mutex, RwLock, RwLockReadGuard,
+        atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
+        mpsc,
     },
-    thread::{self, sleep, JoinHandle},
+    thread::{self, JoinHandle, sleep},
     time::{Duration, Instant},
 };
 
 use fail_point::{
-    fail_point, WAL_EMPTY_WAL_DIR, WAL_PARTIAL_HEADER_SEQ, WAL_PARTIAL_HEADER_SEQ_LEN, WAL_RECORD_ONLY_HEADER,
-    WAL_RECORD_UNFLUSHED,
+    WAL_EMPTY_WAL_DIR, WAL_PARTIAL_HEADER_SEQ, WAL_PARTIAL_HEADER_SEQ_LEN, WAL_RECORD_ONLY_HEADER,
+    WAL_RECORD_UNFLUSHED, fail_point,
 };
 use itertools::Itertools;
 use logger::result::ResultExt;
@@ -293,14 +294,11 @@ impl Files {
         encoder.finish().1.map_err(|err| WALError::Compression { source: Arc::new(err) })?;
 
         let writer = self.writer.as_mut().unwrap();
-        write_header(
-            writer,
-            RecordHeader {
-                sequence_number: record.sequence_number,
-                len: compressed_bytes.len() as u64,
-                record_type: record.record_type,
-            },
-        )?;
+        write_header(writer, RecordHeader {
+            sequence_number: record.sequence_number,
+            len: compressed_bytes.len() as u64,
+            record_type: record.record_type,
+        })?;
 
         fail_point!(WAL_RECORD_ONLY_HEADER);
 

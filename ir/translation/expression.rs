@@ -13,13 +13,14 @@ use typeql::{
 };
 
 use crate::{
+    RepresentationError,
     pattern::{
+        ParameterID, Vertex,
         constraint::ConstraintsBuilder,
         expression::{
             BuiltinConceptFunctionID, BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree,
             ExpressionTreeNodeId, ListConstructor, ListIndex, ListIndexRange, Operation, Operator,
         },
-        ParameterID, Vertex,
     },
     pipeline::function_signature::FunctionSignatureIndex,
     translation::{
@@ -27,7 +28,6 @@ use crate::{
         literal::translate_literal,
         tokens::checked_identifier,
     },
-    RepresentationError,
 };
 
 pub(super) fn add_typeql_expression(
@@ -314,13 +314,13 @@ pub mod tests {
     use itertools::Itertools;
 
     use crate::{
-        pattern::{
-            expression::{Expression, Operation, Operator},
-            Vertex,
-        },
-        pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-        translation::{match_::translate_match, PipelineTranslationContext},
         RepresentationError,
+        pattern::{
+            Vertex,
+            expression::{Expression, Operation, Operator},
+        },
+        pipeline::{ParameterRegistry, block::Block, function_signature::HashMapFunctionSignatureIndex},
+        translation::{PipelineTranslationContext, match_::translate_match},
     };
 
     fn parse_query_get_match(

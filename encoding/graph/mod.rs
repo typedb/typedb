@@ -6,7 +6,7 @@
 
 use std::ops::Range;
 
-use crate::{graph::type_::vertex::TypeID, Prefixed};
+use crate::{Prefixed, graph::type_::vertex::TypeID};
 
 pub(crate) mod common;
 pub mod definition;

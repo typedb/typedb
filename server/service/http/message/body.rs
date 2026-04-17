@@ -4,12 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use axum::{
-    async_trait,
+    Json, async_trait,
     extract::{FromRequest, Request},
     response::{IntoResponse, Response},
-    Json,
 };
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
 use crate::service::http::error::HttpServiceError;
 

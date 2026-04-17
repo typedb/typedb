@@ -12,11 +12,11 @@ use std::{
 use bytes::Bytes;
 use encoding::{
     graph::{
+        Typed,
         type_::{
             edge::TypeEdge,
             vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
         },
-        Typed,
     },
     layout::prefix::Prefix,
     value::{label::Label, value_type::ValueType},
@@ -26,6 +26,7 @@ use resource::profile::StorageCounters;
 use storage::{key_range::KeyRange, snapshot::ReadableSnapshot};
 
 use crate::type_::{
+    Capability, Independent, KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
     attribute_type::AttributeType,
     constraint::{CapabilityConstraint, TypeConstraint},
     entity_type::EntityType,
@@ -36,7 +37,6 @@ use crate::type_::{
     relation_type::RelationType,
     role_type::RoleType,
     type_manager::type_reader::TypeReader,
-    Capability, Independent, KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
 };
 
 #[derive(Debug)]

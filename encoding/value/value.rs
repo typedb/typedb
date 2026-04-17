@@ -15,6 +15,7 @@ use bytes::byte_array::ByteArray;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::value::{
+    ValueEncodable,
     boolean_bytes::BooleanBytes,
     date_bytes::DateBytes,
     date_time_bytes::DateTimeBytes,
@@ -30,7 +31,6 @@ use crate::value::{
     timezone::TimeZone,
     value_struct::StructValue,
     value_type::{ValueType, ValueTypeCategory},
-    ValueEncodable,
 };
 
 #[derive(Debug, Clone, PartialEq)]

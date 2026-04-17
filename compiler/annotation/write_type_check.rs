@@ -9,23 +9,23 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
+        Vertex,
         constraint::{Constraint, Has, Links},
         nested_pattern::NestedPattern,
-        Vertex,
     },
-    pipeline::{block::Block, VariableRegistry},
+    pipeline::{VariableRegistry, block::Block},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
 use crate::annotation::{
-    type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
     TypeInferenceError,
+    type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
 };
 
 pub fn check_type_combinations_for_write(

@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use concept::type_::{
-    annotation, annotation::Annotation, constraint::Constraint, Capability, Ordering, OwnerAPI, TypeAPI,
+    Capability, Ordering, OwnerAPI, TypeAPI, annotation, annotation::Annotation, constraint::Constraint,
 };
 use cucumber::gherkin::Step;
 use itertools::Itertools;
@@ -17,9 +17,9 @@ use resource::profile::StorageCounters;
 
 use super::thing_type::get_as_object_type;
 use crate::{
-    generic_step,
+    Context, generic_step,
     transaction_context::{with_read_tx, with_schema_tx},
-    unused_step, util, when_then, Context,
+    unused_step, util, when_then,
 };
 
 #[apply(generic_step)]

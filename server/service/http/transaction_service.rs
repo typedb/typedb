@@ -19,8 +19,8 @@ use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManag
 use database::{
     database_manager::DatabaseManager,
     query::{
-        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
-        WriteQueryAnswer, WriteQueryResult,
+        StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
+        execute_write_query_in_schema, execute_write_query_in_write,
     },
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
@@ -29,10 +29,10 @@ use diagnostics::{
     metrics::{ClientEndpoint, LoadKind},
 };
 use executor::{
+    ExecutionInterrupt, InterruptType,
     batch::Batch,
     document::ConceptDocument,
-    pipeline::{pipeline::Pipeline, stage::ReadPipelineStage, PipelineExecutionError},
-    ExecutionInterrupt, InterruptType,
+    pipeline::{PipelineExecutionError, pipeline::Pipeline, stage::ReadPipelineStage},
 };
 use http::StatusCode;
 use ir::pipeline::ParameterRegistry;
@@ -44,27 +44,26 @@ use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
     sync::{broadcast, mpsc::Receiver, oneshot, watch},
-    task::{spawn_blocking, JoinHandle},
+    task::{JoinHandle, spawn_blocking},
     time::Instant,
 };
-use tracing::{event, Level};
+use tracing::{Level, event};
 use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
 use crate::service::{
+    IncludeInvolvedBlocks, QueryType, TransactionType,
     http::message::{
         analyze::{
-            encode_analyzed_query,
-            structure::{encode_analyzed_pipeline_for_studio, AnalyzedPipelineResponse},
-            AnalysedQueryResponse,
+            AnalysedQueryResponse, encode_analyzed_query,
+            structure::{AnalyzedPipelineResponse, encode_analyzed_pipeline_for_studio},
         },
         query::{document::encode_document, row::encode_row},
     },
     may_encode_pipeline_structure,
     transaction_service::{
-        init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
+        Transaction, TransactionServiceError, init_transaction_timeout, is_write_pipeline, with_readable_transaction,
     },
-    IncludeInvolvedBlocks, QueryType, TransactionType,
 };
 
 macro_rules! respond_error_and_return_break {
@@ -218,8 +217,13 @@ impl QueryAnswerWarning {
 impl fmt::Display for QueryAnswerWarning {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            QueryAnswerWarning::ReadResultsLimitExceeded { limit } => write!(f, "Read query results limit ({limit}) exceeded. Not all answers are returned."),
-            QueryAnswerWarning::WriteResultsLimitExceeded { limit } => write!(f, "Write query results limit ({limit}) exceeded. Not all answers are returned, but all the requested writes are completed.")
+            QueryAnswerWarning::ReadResultsLimitExceeded { limit } => {
+                write!(f, "Read query results limit ({limit}) exceeded. Not all answers are returned.")
+            }
+            QueryAnswerWarning::WriteResultsLimitExceeded { limit } => write!(
+                f,
+                "Write query results limit ({limit}) exceeded. Not all answers are returned, but all the requested writes are completed."
+            ),
         }
     }
 }
@@ -872,12 +876,9 @@ impl TransactionService {
             match encoded_row {
                 Ok(encoded_row) => result.push(encoded_row),
                 Err(typedb_source) => {
-                    respond_error_and_return_break!(
-                        responder,
-                        TransactionServiceError::PipelineExecution {
-                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
-                        }
-                    );
+                    respond_error_and_return_break!(responder, TransactionServiceError::PipelineExecution {
+                        typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                    });
                 }
             }
         }
@@ -926,12 +927,9 @@ impl TransactionService {
             match encoded_document {
                 Ok(encoded_document) => result.push(encoded_document),
                 Err(typedb_source) => {
-                    respond_error_and_return_break!(
-                        responder,
-                        TransactionServiceError::PipelineExecution {
-                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
-                        }
-                    );
+                    respond_error_and_return_break!(responder, TransactionServiceError::PipelineExecution {
+                        typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                    });
                 }
             }
         }
@@ -1049,12 +1047,9 @@ impl TransactionService {
                 match encoded_document {
                     Ok(encoded_document) => result.push(encoded_document),
                     Err(typedb_source) => {
-                        respond_error_and_return_break!(
-                            responder,
-                            TransactionServiceError::PipelineExecution {
-                                typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
-                            }
-                        );
+                        respond_error_and_return_break!(responder, TransactionServiceError::PipelineExecution {
+                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                        });
                     }
                 }
             }
@@ -1119,12 +1114,9 @@ impl TransactionService {
                 match encoded_row {
                     Ok(encoded_row) => result.push(encoded_row),
                     Err(typedb_source) => {
-                        respond_error_and_return_break!(
-                            responder,
-                            TransactionServiceError::PipelineExecution {
-                                typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
-                            }
-                        );
+                        respond_error_and_return_break!(responder, TransactionServiceError::PipelineExecution {
+                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                        });
                     }
                 }
             }

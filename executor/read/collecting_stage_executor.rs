@@ -190,11 +190,7 @@ impl CollectedStageIteratorTrait for ReduceStageIterator {
                 break;
             }
         }
-        if !next_batch.is_empty() {
-            Ok(Some(next_batch))
-        } else {
-            Ok(None)
-        }
+        if !next_batch.is_empty() { Ok(Some(next_batch)) } else { Ok(None) }
     }
 }
 

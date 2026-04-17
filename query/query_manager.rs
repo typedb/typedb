@@ -7,8 +7,8 @@
 use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
-    annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
-    executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
+    annotation::pipeline::{AnnotatedPipeline, annotate_preamble_and_pipeline},
+    executable::pipeline::{ExecutablePipeline, compile_pipeline_and_functions},
     query_structure::{extract_pipeline_structure_from, extract_query_structure_from},
     transformation::transform::apply_transformations,
 };
@@ -17,13 +17,13 @@ use executor::pipeline::{
     pipeline::Pipeline,
     stage::{ReadPipelineStage, WritePipelineStage},
 };
-use function::function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex};
+use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, validate_no_cycles};
 use ir::{
     pipeline::{
+        ParameterRegistry, VariableRegistry,
         fetch::FetchObject,
         function::Function,
         function_signature::{FunctionID, HashMapFunctionSignatureIndex},
-        ParameterRegistry, VariableRegistry,
     },
     translation::pipeline::{TranslatedPipeline, TranslatedStage},
 };
@@ -32,7 +32,7 @@ use resource::{
     profile::{CompileProfile, QueryProfile},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use tracing::{event, Level};
+use tracing::{Level, event};
 use typeql::query::SchemaQuery;
 
 use crate::{
@@ -308,7 +308,7 @@ impl QueryManager {
                 return Err(Box::new(QueryError::FunctionDefinition {
                     source_query: source_query.to_string(),
                     typedb_source,
-                }))
+                }));
             }
         }
         compile_profile.validation_finished();
@@ -396,7 +396,7 @@ fn annotate_and_compile_query(
             return Err(Box::new(QueryError::FunctionDefinition {
                 source_query: source_query.to_string(),
                 typedb_source,
-            }))
+            }));
         }
     }
     compile_profile.validation_finished();
@@ -408,7 +408,7 @@ fn annotate_and_compile_query(
             return Err(Box::new(QueryError::FunctionDefinition {
                 source_query: source_query.to_string(),
                 typedb_source: err,
-            }))
+            }));
         }
     };
 
@@ -426,7 +426,10 @@ fn annotate_and_compile_query(
     let mut annotated_pipeline = match annotated_pipeline {
         Ok(annotated_pipeline) => annotated_pipeline,
         Err(err) => {
-            return Err(Box::new(QueryError::Annotation { source_query: source_query.to_string(), typedb_source: err }))
+            return Err(Box::new(QueryError::Annotation {
+                source_query: source_query.to_string(),
+                typedb_source: err,
+            }));
         }
     };
     compile_profile.annotation_finished();
@@ -443,7 +446,7 @@ fn annotate_and_compile_query(
             return Err(Box::new(QueryError::Transformation {
                 source_query: source_query.to_string(),
                 typedb_source: err,
-            }))
+            }));
         }
     };
 
@@ -465,7 +468,7 @@ fn annotate_and_compile_query(
             return Err(Box::new(QueryError::ExecutableCompilation {
                 source_query: source_query.to_string(),
                 typedb_source: err,
-            }))
+            }));
         }
     };
     compile_profile.compilation_finished();

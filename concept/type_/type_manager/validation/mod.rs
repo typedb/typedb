@@ -14,9 +14,9 @@ use crate::{
     error::ConceptReadError,
     thing::thing_manager::validation::DataValidationError,
     type_::{
+        Ordering,
         annotation::{AnnotationCardinality, AnnotationCategory, AnnotationRange, AnnotationRegex, AnnotationValues},
         constraint::{ConstraintDescription, ConstraintError},
-        Ordering,
     },
 };
 

@@ -8,10 +8,10 @@ use ir::{
     pipeline::function_signature::HashMapFunctionSignatureIndex,
     translation::{
         function::translate_typeql_function,
-        pipeline::{translate_pipeline, TranslatedPipeline},
+        pipeline::{TranslatedPipeline, translate_pipeline},
     },
 };
-use structural_equality::{is_structurally_equivalent, StructuralEquality};
+use structural_equality::{StructuralEquality, is_structurally_equivalent};
 
 #[test]
 fn test_function_equivalence() {

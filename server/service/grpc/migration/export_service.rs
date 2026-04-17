@@ -9,17 +9,17 @@ use std::{
     time::{Duration, Instant},
 };
 
-use database::{migration::Checksums, transaction::TransactionRead, Database};
+use database::{Database, migration::Checksums, transaction::TransactionRead};
 use options::TransactionOptions;
 use resource::{constants::common::SECONDS_IN_DAY, profile::StorageCounters, server_info::ServerInfo};
 use storage::durability_client::WALClient;
 use tokio::sync::{mpsc::Sender, watch};
 use tonic::Status;
-use tracing::{event, Level};
+use tracing::{Level, event};
 use typedb_protocol::{database::export::Server as ProtocolServer, migration::Item as MigrationItemProto};
 
 use crate::service::{
-    export_service::{get_transaction_schema, DatabaseExportError},
+    export_service::{DatabaseExportError, get_transaction_schema},
     grpc::{
         error::{IntoGrpcStatus, IntoProtocolErrorMessage},
         migration::item::{

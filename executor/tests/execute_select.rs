@@ -12,11 +12,12 @@ use std::{
 
 use answer::variable::Variable;
 use compiler::{
+    ExecutorVariable, VariablePosition,
     annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     executable::{
         function::ExecutableFunctionRegistry,
         match_::{
-            instructions::{thing::HasInstruction, ConstraintInstruction, Inputs},
+            instructions::{ConstraintInstruction, Inputs, thing::HasInstruction},
             planner::{
                 conjunction_executable::{ConjunctionExecutable, ExecutionStep, IntersectionStep},
                 plan::PlannerStatistics,
@@ -24,28 +25,27 @@ use compiler::{
         },
         next_executable_id,
     },
-    ExecutorVariable, VariablePosition,
 };
 use concept::{
     thing::object::ObjectAPI,
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
+    type_::{Ordering, OwnerAPI, annotation::AnnotationCardinality, owns::OwnsAnnotation},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    ExecutionInterrupt, error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow,
 };
 use ir::{
     pattern::constraint::IsaKind,
-    pipeline::{block::Block, ParameterRegistry},
+    pipeline::{ParameterRegistry, block::Block},
     translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
 use storage::{
+    MVCCStorage,
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot},
-    MVCCStorage,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -431,10 +431,14 @@ fn cartesian_named_counted_checked() {
     };
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping) = position_mapping(
-        [var_person, var_age],
-        [var_person_type, var_name_type, var_age_type, var_email_type, var_name, var_email],
-    );
+    let (row_vars, variable_positions, mapping) = position_mapping([var_person, var_age], [
+        var_person_type,
+        var_name_type,
+        var_age_type,
+        var_email_type,
+        var_name,
+        var_email,
+    ]);
     let named_variables = HashSet::from([var_person, var_age, var_person_type, var_name].map(|var| mapping[&var]));
 
     // Plan

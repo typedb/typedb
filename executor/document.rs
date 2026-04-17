@@ -30,11 +30,7 @@ pub enum DocumentNode {
 
 impl DocumentNode {
     pub(crate) fn as_list_mut(&mut self) -> &mut DocumentList {
-        if let Self::List(list) = self {
-            list
-        } else {
-            panic!("Node is not a list node.")
-        }
+        if let Self::List(list) = self { list } else { panic!("Node is not a list node.") }
     }
 }
 

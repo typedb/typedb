@@ -10,15 +10,15 @@ use std::{
 };
 
 use serde::Serialize;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 use crate::{
-    metrics::{ActionKind, ClientEndpoint, ALL_CLIENT_ENDPOINTS},
+    DatabaseHashOpt, Diagnostics,
+    metrics::{ALL_CLIENT_ENDPOINTS, ActionKind, ClientEndpoint},
     reports::{
         ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport, SchemaLoadReport,
         ServerPropertiesReport, ServerReport, ServerReportSensitivePart, ToJsonMap,
     },
-    DatabaseHashOpt, Diagnostics,
 };
 
 const REPORTING_API_VERSION: usize = 2;

@@ -397,13 +397,13 @@ mod tests {
 
     use chrono::{DateTime, Days, FixedOffset, Months, NaiveDate, NaiveDateTime, NaiveTime};
     use chrono_tz::Europe::London;
-    use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
+    use rand::{Rng, SeedableRng, rngs::SmallRng, thread_rng};
     use resource::constants::common::SECONDS_IN_HOUR;
 
     use super::{DateTimeExt, Duration, MAX_YEAR, MIN_YEAR, NANOS_PER_NAIVE_DAY};
     use crate::value::{
         primitive_encoding::encode_u32,
-        timezone::{TimeZone, NUM_TZS},
+        timezone::{NUM_TZS, TimeZone},
     };
 
     fn random_naive_date(rng: &mut impl Rng) -> NaiveDate {
@@ -613,7 +613,7 @@ mod tests {
         let p1d = Duration::days(1);
         let pt24h = Duration::hours(24);
 
-        let seed = thread_rng().gen();
+        let seed = thread_rng().r#gen();
         let mut rng = SmallRng::seed_from_u64(seed);
         eprintln!("Running with seed: {seed}");
 
@@ -625,7 +625,7 @@ mod tests {
 
     #[test]
     fn date_subtraction_is_consistent() {
-        let seed = thread_rng().gen();
+        let seed = thread_rng().r#gen();
         let mut rng = SmallRng::seed_from_u64(seed);
         eprintln!("Running with seed: {seed}");
 
@@ -643,7 +643,7 @@ mod tests {
 
     #[test]
     fn datetime_subtraction_is_consistent() {
-        let seed = thread_rng().gen();
+        let seed = thread_rng().r#gen();
         let mut rng = SmallRng::seed_from_u64(seed);
         eprintln!("Running with seed: {seed}");
 

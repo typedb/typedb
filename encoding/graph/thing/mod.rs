@@ -4,15 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
 use self::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use crate::{
-    graph::{type_::vertex::TypeID, Typed},
-    layout::prefix::{Prefix, PrefixID},
     EncodingKeyspace, Keyable, Prefixed,
+    graph::{Typed, type_::vertex::TypeID},
+    layout::prefix::{Prefix, PrefixID},
 };
 
 pub mod edge;
@@ -24,11 +24,7 @@ pub mod vertex_object;
 const THING_VERTEX_LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH;
 
 const fn max(lhs: usize, rhs: usize) -> usize {
-    if lhs < rhs {
-        rhs
-    } else {
-        lhs
-    }
+    if lhs < rhs { rhs } else { lhs }
 }
 
 pub const THING_VERTEX_MAX_LENGTH: usize = max(ObjectVertex::LENGTH, AttributeVertex::MAX_LENGTH);

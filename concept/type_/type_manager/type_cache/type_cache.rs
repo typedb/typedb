@@ -14,9 +14,10 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use storage::{sequence_number::SequenceNumber, MVCCStorage};
+use storage::{MVCCStorage, sequence_number::SequenceNumber};
 
 use crate::type_::{
+    Independent, KindAPI, Ordering, OwnerAPI, PlayerAPI,
     attribute_type::AttributeType,
     constraint::{CapabilityConstraint, Constraint, ConstraintCategory, TypeConstraint},
     entity_type::EntityType,
@@ -35,7 +36,6 @@ use crate::type_::{
         selection::{CacheGetter, HasCommonTypeCache, HasObjectCache},
         struct_definition_cache::StructDefinitionCache,
     },
-    Independent, KindAPI, Ordering, OwnerAPI, PlayerAPI,
 };
 
 // TODO: could/should we slab allocate the schema cache?

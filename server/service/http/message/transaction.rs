@@ -14,10 +14,10 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::service::{
+    TransactionType,
     http::{
         error::HttpServiceError, message::from_request_parts_impl, transaction_service::TransactionServiceResponse,
     },
-    TransactionType,
 };
 
 #[derive(Serialize, Deserialize)]

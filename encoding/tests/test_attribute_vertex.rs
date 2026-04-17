@@ -8,22 +8,22 @@
 
 use std::sync::Arc;
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use durability::wal::WAL;
 use encoding::{
+    EncodingKeyspace,
     graph::{
+        Typed,
         thing::{
             vertex_attribute::{StringAttributeID, StructAttributeID},
             vertex_generator::ThingVertexGenerator,
         },
         type_::{vertex::TypeID, vertex_generator::TypeVertexGenerator},
-        Typed,
     },
     value::{string_bytes::StringBytes, struct_bytes::StructBytes},
-    EncodingKeyspace,
 };
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::CommitProfile};
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 use test_utils_encoding::create_core_storage;
 

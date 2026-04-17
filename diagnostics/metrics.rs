@@ -9,8 +9,8 @@ use std::{
     fmt,
     path::PathBuf,
     sync::{
-        atomic::{AtomicU64, Ordering},
         RwLock, RwLockReadGuard, RwLockWriteGuard,
+        atomic::{AtomicU64, Ordering},
     },
     time::Instant,
 };
@@ -20,11 +20,11 @@ use serde::{Deserialize, Serialize};
 use sysinfo::{Disks, MemoryRefreshKind, RefreshKind, System};
 
 use crate::{
+    DatabaseHash, DatabaseHashOpt,
     reports::{
         ActionReport, ConnectionLoadReport, DataLoadReport, ErrorReport, LoadReport, OsReport, SchemaLoadReport,
         ServerPropertiesReport, ServerReport, ServerReportSensitivePart,
     },
-    DatabaseHash, DatabaseHashOpt,
 };
 
 #[derive(Serialize, Deserialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
@@ -840,11 +840,7 @@ impl ActionKind {
 }
 
 fn get_delta(lhs: u64, rhs: u64) -> i64 {
-    if lhs > rhs {
-        (lhs - rhs) as i64
-    } else {
-        -((rhs - lhs) as i64)
-    }
+    if lhs > rhs { (lhs - rhs) as i64 } else { -((rhs - lhs) as i64) }
 }
 
 struct SizeInfo {

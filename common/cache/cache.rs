@@ -7,8 +7,8 @@
 use std::{collections::HashMap, error::Error, fmt, path::PathBuf};
 
 use resource::internal_database_prefix;
-use serde::{de::DeserializeOwned, Serialize};
-use tracing::{event, Level};
+use serde::{Serialize, de::DeserializeOwned};
+use tracing::{Level, event};
 use uuid::Uuid;
 
 pub const CACHE_DB_NAME_PREFIX: &str = concat!(internal_database_prefix!(), "cache-");
@@ -138,7 +138,7 @@ impl Error for CacheError {
 
 #[cfg(test)]
 pub mod tests {
-    use test_utils::{create_tmp_dir, TempDir};
+    use test_utils::{TempDir, create_tmp_dir};
 
     use crate::SpilloverCache;
     macro_rules! put {

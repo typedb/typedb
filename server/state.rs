@@ -15,10 +15,10 @@ use async_trait::async_trait;
 use concept::error::ConceptReadError;
 use concurrency::IntervalRunner;
 use database::{
-    database::DatabaseCreateError, database_manager::DatabaseManager, transaction::TransactionRead, Database,
-    DatabaseDeleteError,
+    Database, DatabaseDeleteError, database::DatabaseCreateError, database_manager::DatabaseManager,
+    transaction::TransactionRead,
 };
-use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
+use diagnostics::{Diagnostics, diagnostics_manager::DiagnosticsManager};
 use error::typedb_error;
 use ir::pipeline::FunctionReadError;
 use options::TransactionOptions;
@@ -42,11 +42,11 @@ use user::{
 
 use crate::{
     authentication::{
-        credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor, AuthenticationError,
+        Accessor, AuthenticationError, credential_verifier::CredentialVerifier, token_manager::TokenManager,
     },
     error::ServerOpenError,
     parameters::config::{Config, DiagnosticsConfig},
-    service::export_service::{get_transaction_schema, get_transaction_type_schema, DatabaseExportError},
+    service::export_service::{DatabaseExportError, get_transaction_schema, get_transaction_type_schema},
 };
 
 pub type BoxServerState = Box<dyn ServerState + Send + Sync>;

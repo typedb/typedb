@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use answer::variable::Variable;
 use ir::pipeline::modifier::SortVariable;
 
-use crate::{executable::next_executable_id, VariablePosition};
+use crate::{VariablePosition, executable::next_executable_id};
 
 #[derive(Debug)]
 pub struct SelectExecutable {

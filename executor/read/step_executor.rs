@@ -7,16 +7,16 @@
 use std::sync::Arc;
 
 use compiler::{
+    VariablePosition,
     executable::{
         function::{
-            executable::{ExecutableFunction, ExecutableReturn},
             ExecutableFunctionRegistry, FunctionTablingType,
+            executable::{ExecutableFunction, ExecutableReturn},
         },
         match_::planner::conjunction_executable::{ConjunctionExecutable, ExecutionStep},
         next_executable_id,
         pipeline::ExecutableStage,
     },
-    VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::UnimplementedFeature;

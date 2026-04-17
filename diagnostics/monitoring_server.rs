@@ -7,9 +7,9 @@
 use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 
 use hyper::{
+    Body, Request, Response, Server, StatusCode,
     header::{CONNECTION, CONTENT_LENGTH, CONTENT_TYPE},
     service::{make_service_fn, service_fn},
-    Body, Request, Response, Server, StatusCode,
 };
 use tokio::task;
 

@@ -9,7 +9,7 @@
 use std::{fs::File, os::raw::c_int, path::Path, sync::Arc};
 
 use bytes::byte_array::ByteArray;
-use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler};
 use durability::wal::WAL;
 use pprof::ProfilerGuard;
 use resource::{
@@ -17,12 +17,12 @@ use resource::{
     profile::{CommitProfile, StorageCounters},
 };
 use storage::{
+    MVCCStorage,
     durability_client::WALClient,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
-    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
 

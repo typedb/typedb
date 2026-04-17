@@ -6,17 +6,17 @@
 
 use std::{fmt, ops::Range};
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
 use serde::{
-    de::{Error, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
+    de::{Error, Visitor},
 };
 use storage::key_value::StorageKey;
 
 use crate::{
-    layout::prefix::{Prefix, PrefixID},
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
+    layout::prefix::{Prefix, PrefixID},
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]

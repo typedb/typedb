@@ -22,12 +22,12 @@ use resource::{
 use storage::{
     key_range::KeyRange,
     key_value::StorageKey,
-    snapshot::{iterator::SnapshotRangeIterator, ReadableSnapshot},
+    snapshot::{ReadableSnapshot, iterator::SnapshotRangeIterator},
 };
 
 use crate::{
     error::ConceptReadError,
-    thing::{attribute::Attribute, ThingAPI},
+    thing::{ThingAPI, attribute::Attribute},
     type_::attribute_type::AttributeType,
 };
 

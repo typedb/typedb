@@ -9,8 +9,8 @@ use std::{
     fmt,
     fmt::{Display, Formatter},
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc, RwLock,
+        atomic::{AtomicU64, Ordering},
     },
     time::{Duration, Instant},
 };
@@ -607,11 +607,7 @@ impl StepProfile {
     }
 
     pub fn storage_counters(&self) -> StorageCounters {
-        if let Some(data) = self.data.as_ref() {
-            data.storage.clone()
-        } else {
-            StorageCounters::DISABLED
-        }
+        if let Some(data) = self.data.as_ref() { data.storage.clone() } else { StorageCounters::DISABLED }
     }
 }
 

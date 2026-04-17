@@ -13,7 +13,7 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use lending_iterator::{LendingIterator, Seekable};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 

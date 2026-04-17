@@ -12,13 +12,14 @@ use std::{
 
 use answer::variable::Variable;
 use compiler::{
+    ExecutorVariable, VariablePosition,
     annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     executable::{
         function::ExecutableFunctionRegistry,
         match_::{
             instructions::{
-                thing::{HasInstruction, HasReverseInstruction, IsaInstruction},
                 ConstraintInstruction, Inputs,
+                thing::{HasInstruction, HasReverseInstruction, IsaInstruction},
             },
             planner::{
                 conjunction_executable::{ConjunctionExecutable, ExecutionStep, IntersectionStep},
@@ -27,28 +28,27 @@ use compiler::{
         },
         next_executable_id,
     },
-    ExecutorVariable, VariablePosition,
 };
 use concept::{
     thing::object::ObjectAPI,
-    type_::{annotation::AnnotationCardinality, owns::OwnsAnnotation, Ordering, OwnerAPI},
+    type_::{Ordering, OwnerAPI, annotation::AnnotationCardinality, owns::OwnsAnnotation},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    ExecutionInterrupt, error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow,
 };
 use ir::{
     pattern::constraint::IsaKind,
-    pipeline::{block::Block, ParameterRegistry},
+    pipeline::{ParameterRegistry, block::Block},
     translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
 use storage::{
+    MVCCStorage,
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot},
-    MVCCStorage,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;

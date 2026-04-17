@@ -6,7 +6,7 @@
 
 use std::{collections::HashMap, fmt::Write, iter, str::FromStr, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
+use answer::{Thing, variable_value::VariableValue};
 use compiler::VariablePosition;
 use concept::{
     error::ConceptReadError,
@@ -14,11 +14,11 @@ use concept::{
     type_::TypeAPI,
 };
 use cucumber::gherkin::Step;
-use encoding::value::{label::Label, value_type::ValueType, ValueEncodable};
+use encoding::value::{ValueEncodable, label::Label, value_type::ValueType};
 use executor::{
+    ExecutionInterrupt,
     batch::Batch,
     pipeline::stage::{ExecutionContext, StageIterator},
-    ExecutionInterrupt,
 };
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
@@ -36,14 +36,13 @@ use server::service::http::message::analyze::{
 use test_utils::assert_matches;
 
 use crate::{
-    generic_step,
-    query_answer_context::{with_rows_answer, QueryAnswer},
+    BehaviourTestExecutionError, Context, generic_step,
+    query_answer_context::{QueryAnswer, with_rows_answer},
     transaction_context::{
-        with_read_tx, with_schema_tx, with_write_tx_deconstructed,
         ActiveTransaction::{Read, Schema},
+        with_read_tx, with_schema_tx, with_write_tx_deconstructed,
     },
     util::{iter_table_map, list_contains_json, parse_json},
-    BehaviourTestExecutionError, Context,
 };
 
 fn row_batch_result_to_answer(
@@ -320,8 +319,12 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
     with_rows_answer!(context, |query_answer| {
         let num_answers = query_answer.len();
         if num_specs != num_answers {
-            panic!("expected the number of identifier entries to match the number of answers, found {} expected entries and {} real answers. Real answers: \n{}",
-            num_specs, num_answers, row_answers_to_string(query_answer))
+            panic!(
+                "expected the number of identifier entries to match the number of answers, found {} expected entries and {} real answers. Real answers: \n{}",
+                num_specs,
+                num_answers,
+                row_answers_to_string(query_answer)
+            )
         }
         for row in iter_table_map(step) {
             let mut num_matches = 0;
@@ -579,9 +582,11 @@ async fn verify_answer_set(context: &mut Context, step: &Step) {
     match (&context.query_answer.as_ref().unwrap(), verify_answers) {
         (QueryAnswer::ConceptRows(actual), QueryAnswer::ConceptRows(expected)) => {
             assert_eq!(
-                expected.len(), actual.len(),
+                expected.len(),
+                actual.len(),
                 "expected the number of identifier entries to match the number of answers, found {} entries and {} answers",
-                expected.len(), actual.len()
+                expected.len(),
+                actual.len()
             );
             assert!(expected.iter().all(|answer| actual.contains(answer)));
         }

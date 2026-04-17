@@ -13,8 +13,8 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::{executable::match_::instructions::thing::HasInstruction, ExecutorVariable};
+use answer::{Thing, Type, variable_value::VariableValue};
+use compiler::{ExecutorVariable, executable::match_::instructions::thing::HasInstruction};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -23,26 +23,26 @@ use concept::{
         object::{HasIterator, Object, ObjectAPI},
         thing_manager::ThingManager,
     },
-    type_::{attribute_type::AttributeType, object_type::ObjectType, TypeAPI},
+    type_::{TypeAPI, attribute_type::AttributeType, object_type::ObjectType},
 };
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
 use itertools::Itertools;
-use lending_iterator::{kmerge::KMergeBy, LendingIterator, Peekable};
+use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
         checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         min_max_types,
         tuple::{
+            HasToTupleFn, Tuple, TupleOrderingFn, TuplePositions, TupleResult, TupleToHasFn,
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, tuple_attribute_owner_to_has_canonical,
-            tuple_owner_attribute_to_has_canonical, unsafe_compare_result_tuple, HasToTupleFn, Tuple, TupleOrderingFn,
-            TuplePositions, TupleResult, TupleToHasFn,
+            tuple_owner_attribute_to_has_canonical, unsafe_compare_result_tuple,
         },
-        BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

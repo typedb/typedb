@@ -9,26 +9,27 @@ use std::collections::{HashMap, HashSet};
 use answer::variable::Variable;
 use ir::{
     pattern::{constraint::Constraint, nested_pattern::NestedPattern},
-    pipeline::{block::Block, VariableRegistry},
+    pipeline::{VariableRegistry, block::Block},
 };
 use typeql::common::Span;
 
 use crate::{
+    VariablePosition,
     annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
     executable::{
+        WriteCompilationError,
         insert::{
+            VariableSource,
             executable::{
                 add_inserted_concepts, concept_instructions_map_to_vec, get_thing_position, prepare_output_row_schema,
                 resolve_links_roles,
             },
             instructions::ConceptInstruction,
-            VariableSource,
         },
         next_executable_id,
         update::instructions::{ConnectionInstruction, Has, Links},
-        WriteCompilationError,
     },
-    filter_variants, VariablePosition,
+    filter_variants,
 };
 
 #[derive(Debug)]

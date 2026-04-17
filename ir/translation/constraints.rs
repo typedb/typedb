@@ -10,22 +10,23 @@ use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::label::Label};
 use error::UnimplementedFeature;
 use itertools::Itertools;
 use typeql::{
+    ScopedLabel, TypeRef, TypeRefAny,
     common::{Span, Spanned},
     expression::{FunctionCall, FunctionName},
     statement::{
-        comparison::ComparisonStatement, thing::isa::IsaInstanceConstraint, type_::ValueType as TypeQLValueType,
-        Assignment, AssignmentPattern, InIterable, Is,
+        Assignment, AssignmentPattern, InIterable, Is, comparison::ComparisonStatement,
+        thing::isa::IsaInstanceConstraint, type_::ValueType as TypeQLValueType,
     },
     token::Kind,
     type_::{BuiltinValueType, NamedType},
-    ScopedLabel, TypeRef, TypeRefAny,
 };
 
 use crate::{
+    RepresentationError,
     pattern::{
+        ValueType, Vertex,
         conjunction::ConjunctionBuilderWithContext,
         constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
-        ValueType, Vertex,
     },
     pipeline::function_signature::FunctionSignatureIndex,
     translation::{
@@ -33,7 +34,6 @@ use crate::{
         literal::translate_literal,
         tokens::{checked_identifier, translate_value_type},
     },
-    RepresentationError,
 };
 
 pub(super) fn add_statement(

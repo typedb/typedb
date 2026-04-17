@@ -22,6 +22,7 @@ This file should comprise a set of low-level tests relating to MVCC.
    After cleanup is run, if we iterate directly on the storage layer, we should be able to confirm the keys are actually not present anymore (Rocks may defer the disk delete till compaction, but to us they are "gone").
 
  */
+use TestKeyspaceSet::Keyspace;
 use bytes::byte_array::ByteArray;
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
@@ -30,7 +31,6 @@ use storage::{
 };
 use test_utils::{create_tmp_dir, init_logging};
 use test_utils_storage::{create_storage, test_keyspace_set};
-use TestKeyspaceSet::Keyspace;
 
 test_keyspace_set! {
     Keyspace => 0: "keyspace",

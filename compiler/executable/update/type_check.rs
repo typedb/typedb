@@ -9,18 +9,18 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
-use concept::type_::{constraint::Constraint as TypeConstraint, type_manager::TypeManager, OwnerAPI, TypeAPI};
+use answer::{Type, variable::Variable};
+use concept::type_::{OwnerAPI, TypeAPI, constraint::Constraint as TypeConstraint, type_manager::TypeManager};
 use ir::{
     pattern::constraint::{Constraint, Has, Links},
-    pipeline::{block::Block, VariableRegistry},
+    pipeline::{VariableRegistry, block::Block},
 };
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
+    TypeInferenceError,
     type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
     write_type_check::{validate_has_type_combinations_for_write, validate_links_type_combinations_for_write},
-    TypeInferenceError,
 };
 
 pub fn check_annotations(

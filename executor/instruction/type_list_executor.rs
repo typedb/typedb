@@ -6,8 +6,8 @@
 
 use std::{collections::HashMap, fmt, iter, vec};
 
-use answer::{variable_value::VariableValue, Type};
-use compiler::{executable::match_::instructions::type_::TypeListInstruction, ExecutorVariable};
+use answer::{Type, variable_value::VariableValue};
+use compiler::{ExecutorVariable, executable::match_::instructions::type_::TypeListInstruction};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
 use lending_iterator::AsLendingIterator;
@@ -16,10 +16,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        FilterMapUnchangedFn, VariableModes,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
-        tuple::{type_to_tuple, TuplePositions, TypeToTupleFn},
-        FilterMapUnchangedFn, VariableModes,
+        tuple::{TuplePositions, TypeToTupleFn, type_to_tuple},
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

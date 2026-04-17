@@ -6,14 +6,14 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::key_value::StorageKey;
 
 use crate::{
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::type_::vertex::{TypeVertex, TypeVertexEncoding},
     layout::prefix::{Prefix, PrefixID},
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]

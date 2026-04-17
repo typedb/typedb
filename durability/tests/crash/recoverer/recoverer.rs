@@ -10,7 +10,7 @@
 use std::str;
 
 use durability::{DurabilitySequenceNumber, DurabilityService, RawRecord};
-use durability_test_common::{load_wal, TestRecord};
+use durability_test_common::{TestRecord, load_wal};
 
 fn main() {
     let wal = load_wal(std::env::args().nth(1).unwrap());

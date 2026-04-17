@@ -10,10 +10,11 @@ use std::{
     fmt,
 };
 
-use bytes::{byte_array::ByteArray, Bytes};
-use resource::constants::encoding::{StructFieldIDUInt, AD_HOC_BYTES_INLINE};
+use bytes::{Bytes, byte_array::ByteArray};
+use resource::constants::encoding::{AD_HOC_BYTES_INLINE, StructFieldIDUInt};
 
 use crate::{
+    AsBytes,
     error::EncodingError,
     graph::{
         definition::{
@@ -23,12 +24,11 @@ use crate::{
         thing::vertex_attribute::InlineEncodableAttributeID,
     },
     value::{
-        boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
+        ValueEncodable, boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
         duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, value::Value,
-        value_struct::StructValue, value_type::ValueTypeCategory, ValueEncodable,
+        value_struct::StructValue, value_type::ValueTypeCategory,
     },
-    AsBytes,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -235,7 +235,7 @@ pub mod test {
             r#struct::StructDefinition,
         },
         value::{
-            struct_bytes::{append_length_as_vle, read_vle_increment_offset, StructBytes},
+            struct_bytes::{StructBytes, append_length_as_vle, read_vle_increment_offset},
             value::Value,
             value_struct::StructValue,
         },

@@ -10,7 +10,7 @@ use answer::variable::Variable;
 use encoding::value::value_type::ValueType;
 use ir::{pattern::IrID, pipeline::reduce::Reducer};
 
-use crate::{executable::next_executable_id, VariablePosition};
+use crate::{VariablePosition, executable::next_executable_id};
 
 #[derive(Debug, Clone)]
 pub struct ReduceExecutable {

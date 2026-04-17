@@ -9,22 +9,23 @@ use std::collections::{HashMap, HashSet};
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
 use ir::{
-    pattern::{constraint::Constraint, nested_pattern::NestedPattern, Vertex},
-    pipeline::{block::Block, VariableRegistry},
+    pattern::{Vertex, constraint::Constraint, nested_pattern::NestedPattern},
+    pipeline::{VariableRegistry, block::Block},
 };
 use typeql::common::Span;
 
 use crate::{
+    VariablePosition,
     annotation::type_annotations::BlockAnnotations,
     executable::{
+        WriteCompilationError,
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
-            executable::{get_thing_position, resolve_links_roles},
             ThingPosition,
+            executable::{get_thing_position, resolve_links_roles},
         },
-        next_executable_id, WriteCompilationError,
+        next_executable_id,
     },
-    VariablePosition,
 };
 
 #[derive(Debug)]
@@ -90,10 +91,12 @@ pub fn compile(
                 source_span,
             }));
         };
-        assert!(block_annotations
-            .type_annotations()
-            .values()
-            .any(|type_annotations| type_annotations.vertex_annotations_of(&Vertex::Variable(variable)).is_some()));
+        assert!(
+            block_annotations
+                .type_annotations()
+                .values()
+                .any(|type_annotations| type_annotations.vertex_annotations_of(&Vertex::Variable(variable)).is_some())
+        );
         if block_annotations.type_annotations().values().any(|type_annotations| {
             type_annotations
                 .vertex_annotations_of(&Vertex::Variable(variable))

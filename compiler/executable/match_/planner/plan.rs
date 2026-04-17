@@ -18,6 +18,7 @@ use concept::thing::statistics::Statistics;
 use error::{typedb_error, unimplemented_feature};
 use ir::{
     pattern::{
+        BranchID, Pattern, Scope, Vertex,
         conjunction::Conjunction,
         constraint::{
             Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation, Is,
@@ -25,14 +26,14 @@ use ir::{
         },
         nested_pattern::NestedPattern,
         variable_category::{VariableCategory, VariableOptionality},
-        BranchID, Pattern, Scope, Vertex,
     },
-    pipeline::{block::BlockContext, VariableRegistry},
+    pipeline::{VariableRegistry, block::BlockContext},
 };
-use itertools::{chain, Itertools};
-use tracing::{event, Level};
+use itertools::{Itertools, chain};
+use tracing::{Level, event};
 
 use crate::{
+    ExecutorVariable, VariablePosition,
     annotation::{
         expression::compiled_expression::ExecutableExpression,
         type_annotations::{BlockAnnotations, TypeAnnotations},
@@ -41,6 +42,7 @@ use crate::{
         function::FunctionCallCostProvider,
         match_::{
             instructions::{
+                CheckInstruction, CheckVertex, ConstraintInstruction, Inputs, IsInstruction,
                 thing::{
                     HasInstruction, HasReverseInstruction, IidInstruction, IndexedRelationInstruction, IsaInstruction,
                     IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
@@ -49,25 +51,23 @@ use crate::{
                     OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction,
                     RelatesInstruction, RelatesReverseInstruction, SubInstruction, SubReverseInstruction,
                 },
-                CheckInstruction, CheckVertex, ConstraintInstruction, Inputs, IsInstruction,
             },
             planner::{
+                ConjunctionExecutableBuilder, DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder,
+                IntersectionBuilder, NegationBuilder, OptionalBuilder, StepBuilder, StepInstructionsBuilder,
                 vertex::{
+                    ComparisonVertex, Cost, CostMetaData, Costed, Direction, DisjunctionVertex, ExpressionVertex,
+                    FunctionCallVertex, Input, IsVertex, LinksDeduplicationVertex, NegationVertex, OptionalVertex,
+                    PlannerVertex, UnsatisfiableVertex,
                     constraint::{
                         ConstraintVertex, HasPlanner, IidPlanner, IndexedRelationPlanner, IsaPlanner, LinksPlanner,
                         OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner,
                     },
                     variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
-                    ComparisonVertex, Cost, CostMetaData, Costed, Direction, DisjunctionVertex, ExpressionVertex,
-                    FunctionCallVertex, Input, IsVertex, LinksDeduplicationVertex, NegationVertex, OptionalVertex,
-                    PlannerVertex, UnsatisfiableVertex,
                 },
-                ConjunctionExecutableBuilder, DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder,
-                IntersectionBuilder, NegationBuilder, OptionalBuilder, StepBuilder, StepInstructionsBuilder,
             },
         },
     },
-    ExecutorVariable, VariablePosition,
 };
 
 pub const MAX_BEAM_WIDTH: usize = 96;

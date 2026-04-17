@@ -19,7 +19,7 @@ use concept::{
         },
         constraint::{ConstraintCategory as TypeDBConstraintCategory, ConstraintDescription as TypeDBConstraint},
         object_type::ObjectType,
-        type_manager::{validation::SchemaValidationError, TypeManager},
+        type_manager::{TypeManager, validation::SchemaValidationError},
     },
 };
 use cucumber::Parameter;

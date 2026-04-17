@@ -12,7 +12,7 @@ use concept::{
         attribute::Attribute,
         object::{Object, ObjectAPI},
     },
-    type_::{attribute_type::AttributeType, OwnerAPI},
+    type_::{OwnerAPI, attribute_type::AttributeType},
 };
 use itertools::Itertools;
 use macro_rules_attribute::apply;
@@ -20,9 +20,8 @@ use params::{self, check_boolean};
 use resource::profile::StorageCounters;
 
 use crate::{
-    generic_step,
+    Context, generic_step,
     transaction_context::{with_read_tx, with_write_tx},
-    Context,
 };
 
 pub(super) fn object_set_has_impl(

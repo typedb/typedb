@@ -13,11 +13,11 @@ use resource::constants::server::{
 use serde::{Deserialize, Serialize};
 
 use crate::service::{
+    AnswerType, QueryType,
     http::{
         message::{analyze::structure::AnalyzedPipelineResponse, body::JsonBody, transaction::TransactionOpenPayload},
         transaction_service::QueryAnswer,
     },
-    AnswerType, QueryType,
 };
 
 pub mod concept;

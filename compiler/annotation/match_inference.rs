@@ -11,28 +11,28 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation};
+use answer::{Type as TypeAnnotation, variable::Variable};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
-        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Pattern, Scope, ScopeId,
-        Vertex,
+        Pattern, Scope, ScopeId, Vertex, conjunction::Conjunction, constraint::Constraint,
+        nested_pattern::NestedPattern,
     },
     pipeline::{
-        block::{Block, BlockContext},
         VariableRegistry,
+        block::{Block, BlockContext},
     },
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
+    TypeInferenceError,
     function::AnnotatedFunctionSignatures,
     type_annotations::{
         BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
     },
     type_seeder::TypeGraphSeedingContext,
-    TypeInferenceError,
 };
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -479,12 +479,16 @@ impl<'this> TypeInferenceEdge<'this> {
         //   They must contain the same set of edges.
         // This is a pre-condition to the type-inference loop.
         // This is currently true by construction.
-        debug_assert!(initial_left_to_right
-            .iter()
-            .all(|(u, vs)| vs.iter().all(|v| initial_right_to_left.get(v).unwrap().contains(u))));
-        debug_assert!(initial_right_to_left
-            .iter()
-            .all(|(u, vs)| vs.iter().all(|v| initial_left_to_right.get(v).unwrap().contains(u))));
+        debug_assert!(
+            initial_left_to_right
+                .iter()
+                .all(|(u, vs)| vs.iter().all(|v| initial_right_to_left.get(v).unwrap().contains(u)))
+        );
+        debug_assert!(
+            initial_right_to_left
+                .iter()
+                .all(|(u, vs)| vs.iter().all(|v| initial_left_to_right.get(v).unwrap().contains(u)))
+        );
         TypeInferenceEdge {
             constraint,
             left,

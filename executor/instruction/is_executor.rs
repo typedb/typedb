@@ -8,8 +8,8 @@ use std::{collections::HashMap, fmt, iter};
 
 use answer::variable_value::VariableValue;
 use compiler::{
-    executable::match_::instructions::{Inputs, IsInstruction},
     ExecutorVariable, VariablePosition,
+    executable::match_::instructions::{Inputs, IsInstruction},
 };
 use concept::error::ConceptReadError;
 use ir::pattern::constraint::Is;
@@ -19,10 +19,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        FilterFn, FilterMapUnchangedFn, VariableModes,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
-        FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

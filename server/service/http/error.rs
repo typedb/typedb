@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use database::{database::DatabaseCreateError, DatabaseDeleteError};
-use error::{typedb_error, TypeDBError};
+use database::{DatabaseDeleteError, database::DatabaseCreateError};
+use error::{TypeDBError, typedb_error};
 
 use crate::{
     authentication::AuthenticationError, service::transaction_service::TransactionServiceError, state::ServerStateError,

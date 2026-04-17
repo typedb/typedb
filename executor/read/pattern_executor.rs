@@ -10,10 +10,12 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    ExecutionInterrupt, Provenance,
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     read::{
+        BranchIndex, ExecutorIndex,
         control_instruction::{
             CollectingStage, ControlInstruction, ExecuteDisjunctionBranch, ExecuteImmediate, ExecuteInlinedFunction,
             ExecuteNegation, ExecuteOptional, ExecuteStreamModifier, ExecuteTabledCall, MapBatchToRowsForNested,
@@ -24,10 +26,8 @@ use crate::{
         suspension::{NestedPatternSuspension, PatternSuspension, QueryPatternSuspensions, TabledCallSuspension},
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
-        BranchIndex, ExecutorIndex,
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt, Provenance,
 };
 
 #[derive(Debug)]

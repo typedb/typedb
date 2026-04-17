@@ -5,7 +5,7 @@
  */
 
 use std::{
-    sync::mpsc::{sync_channel, RecvTimeoutError, SyncSender},
+    sync::mpsc::{RecvTimeoutError, SyncSender, sync_channel},
     thread,
     time::Duration,
 };

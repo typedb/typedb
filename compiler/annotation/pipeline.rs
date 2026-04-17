@@ -10,24 +10,24 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::{
     pattern::{
+        Vertex,
         conjunction::Conjunction,
         constraint::{Constraint, ExpressionBinding},
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Vertex,
     },
     pipeline::{
+        ParameterRegistry, VariableRegistry,
         block::Block,
         fetch::FetchObject,
         function::Function,
         modifier::{Distinct, Limit, Offset, Require, Select, Sort},
         reduce::{AssignedReduction, Reduce, Reducer},
-        ParameterRegistry, VariableRegistry,
     },
     translation::pipeline::TranslatedStage,
 };
@@ -36,21 +36,21 @@ use typeql::common::Span;
 
 use crate::{
     annotation::{
+        AnnotationError,
         expression::{
+            ExpressionCompileError,
             block_compiler::compile_expressions,
             compiled_expression::{ExecutableExpression, ExpressionValueType},
-            ExpressionCompileError,
         },
-        fetch::{annotate_fetch, AnnotatedFetch},
+        fetch::{AnnotatedFetch, annotate_fetch},
         function::{
-            annotate_preamble_functions, AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl,
-            AnnotatedPreambleFunctions, AnnotatedSchemaFunctions, FunctionParameterAnnotation,
+            AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions,
+            AnnotatedSchemaFunctions, FunctionParameterAnnotation, annotate_preamble_functions,
         },
         match_inference::infer_types,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
         write_type_check::check_type_combinations_for_write,
-        AnnotationError,
     },
     executable::{reduce::ReduceInstruction, update},
 };

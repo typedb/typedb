@@ -17,21 +17,21 @@ use std::{
     time::Instant,
 };
 
-use cucumber::{gherkin::Feature, StatsWriter, World};
+use cucumber::{StatsWriter, World, gherkin::Feature};
 use error::typedb_error;
 use futures::{
     future::Either,
     stream::{self, StreamExt},
 };
-use hyper::{client::HttpConnector, http, Client, StatusCode};
+use hyper::{Client, StatusCode, client::HttpConnector, http};
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use itertools::Itertools;
 use serde_json::Value;
 use server::{
     error::ServerOpenError,
     service::{
-        http::message::{query::QueryAnswerResponse, transaction::TransactionResponse},
         AnswerType, QueryType,
+        http::message::{query::QueryAnswerResponse, transaction::TransactionResponse},
     },
 };
 use test_utils::TempDir;

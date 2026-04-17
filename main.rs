@@ -14,11 +14,11 @@ use logger::initialise_logging_global;
 use resource::constants::server::{DEFAULT_CONFIG_PATH, SENTRY_REPORTING_URI, SERVER_INFO};
 use sentry::ClientInitGuard as SentryGuard;
 use server::{
+    ServerBuilder,
     parameters::{
         cli::CLIArgs,
         config::{Config, ConfigBuilder},
     },
-    ServerBuilder,
 };
 use tokio::runtime::Runtime;
 
@@ -81,10 +81,10 @@ fn initialise_abort_on_panic() {
 
 fn may_initialise_error_reporting(config: &Config) -> Option<SentryGuard> {
     if config.diagnostics.reporting.report_errors && !config.development_mode.enabled {
-        let options = (
-            SENTRY_REPORTING_URI,
-            sentry::ClientOptions { release: Some(SERVER_INFO.version.into()), ..Default::default() },
-        );
+        let options = (SENTRY_REPORTING_URI, sentry::ClientOptions {
+            release: Some(SERVER_INFO.version.into()),
+            ..Default::default()
+        });
         Some(sentry::init(options))
     } else {
         None

@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use database::{database_manager::DatabaseManager, Database};
+use database::{Database, database_manager::DatabaseManager};
 use resource::internal_database_prefix;
 use storage::durability_client::WALClient;
 

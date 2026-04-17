@@ -8,9 +8,9 @@ use std::sync::Arc;
 use itertools::Itertools;
 pub(crate) use tokio_rustls::rustls::ServerConfig as HttpTlsConfig;
 use tokio_rustls::rustls::{
-    pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer},
-    server::WebPkiClientVerifier,
     RootCertStore,
+    pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
+    server::WebPkiClientVerifier,
 };
 
 use crate::{error::ServerOpenError, parameters::config::EncryptionConfig};

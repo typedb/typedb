@@ -14,8 +14,8 @@ use std::{
     fmt,
     io::Read,
     sync::{
-        atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
         Arc, OnceLock, RwLock,
+        atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
     },
 };
 
@@ -849,8 +849,8 @@ mod tests {
     use std::{
         array,
         sync::{
-            atomic::{AtomicU64, Ordering},
             Arc,
+            atomic::{AtomicU64, Ordering},
         },
         thread::{self, JoinHandle},
     };
@@ -858,7 +858,7 @@ mod tests {
     use assert as assert_true;
 
     use crate::{
-        isolation_manager::{CommitRecord, CommitStatus, CommitType, ReaderDropGuard, Timeline, TIMELINE_WINDOW_SIZE},
+        isolation_manager::{CommitRecord, CommitStatus, CommitType, ReaderDropGuard, TIMELINE_WINDOW_SIZE, Timeline},
         keyspace::{KeyspaceId, KeyspaceSet},
         sequence_number::SequenceNumber,
         snapshot::buffer::OperationsBuffer,

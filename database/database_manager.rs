@@ -14,9 +14,9 @@ use std::{
 use cache::CACHE_DB_NAME_PREFIX;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
-use tracing::{debug, event, warn, Level};
+use tracing::{Level, debug, event, warn};
 
-use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
+use crate::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError, database::DatabaseCreateError};
 
 type DatabasesMap = HashMap<String, Arc<Database<WALClient>>>;
 type Databases = RwLock<DatabasesMap>;
@@ -118,7 +118,10 @@ impl DatabaseManager {
                             "Cache '{name}' was not removed after an interrupted import operation. It will be deleted."
                         );
                     } else {
-                        event!(Level::WARN, "Database '{name}' is in an incomplete state after an interrupted import operation. It will be deleted.");
+                        event!(
+                            Level::WARN,
+                            "Database '{name}' is in an incomplete state after an interrupted import operation. It will be deleted."
+                        );
                     }
                     fs::remove_dir_all(&entry_path).map_err(|source| DatabaseOpenError::DirectoryDelete {
                         name: Self::file_name_lossy(&entry_path),

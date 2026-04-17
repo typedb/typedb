@@ -14,11 +14,11 @@ use ir::{
         variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::{
+        ParameterRegistry,
         block::Block,
         function_signature::{FunctionID, FunctionSignature, HashMapFunctionSignatureIndex},
-        ParameterRegistry,
     },
-    translation::{pipeline::translate_pipeline, PipelineTranslationContext},
+    translation::{PipelineTranslationContext, pipeline::translate_pipeline},
 };
 
 // TODO: if we re-instante modifiers/stream operators as part of blocks, then we can bring this test back

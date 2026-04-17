@@ -13,7 +13,7 @@ use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters}
 use storage::{
     key_range::KeyRange,
     key_value::StorageKey,
-    snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot},
+    snapshot::{ReadableSnapshot, iterator::SnapshotIteratorError},
 };
 
 use crate::EncodingKeyspace;

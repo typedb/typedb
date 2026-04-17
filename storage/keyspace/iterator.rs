@@ -6,13 +6,13 @@
 
 use std::cmp::Ordering;
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use lending_iterator::{LendingIterator, Seekable};
 use resource::profile::StorageCounters;
 
 use crate::{
     key_range::{KeyRange, RangeEnd, RangeStart},
-    keyspace::{raw_iterator, raw_iterator::DBIterator, IteratorPool, Keyspace, KeyspaceError},
+    keyspace::{IteratorPool, Keyspace, KeyspaceError, raw_iterator, raw_iterator::DBIterator},
 };
 
 pub struct KeyspaceRangeIterator {

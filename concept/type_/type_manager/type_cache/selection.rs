@@ -5,11 +5,11 @@
  */
 
 use crate::type_::{
-    type_manager::type_cache::{
-        kind_cache::{CommonTypeCache, ObjectCache},
-        TypeCache,
-    },
     KindAPI,
+    type_manager::type_cache::{
+        TypeCache,
+        kind_cache::{CommonTypeCache, ObjectCache},
+    },
 };
 
 pub(crate) trait HasCommonTypeCache<T: KindAPI> {
@@ -30,8 +30,7 @@ macro_rules! impl_cache_getter {
         impl CacheGetter for $inner_type {
             type CacheType = $cache_type;
             fn get_cache(type_cache: &TypeCache, type_: $inner_type) -> &Self::CacheType {
-                use ::encoding::graph::Typed;
-                use encoding::graph::type_::vertex::TypeVertexEncoding;
+                use encoding::graph::{Typed, type_::vertex::TypeVertexEncoding};
                 let as_u16 = type_.vertex().type_id_().as_u16();
                 type_cache.$member_name[as_u16 as usize].as_ref().unwrap()
             }

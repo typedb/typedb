@@ -15,21 +15,21 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
+        ThingAPI,
         attribute::Attribute,
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::{
-            validation::{
-                validation::{get_label_or_data_err, DataValidation},
-                DataValidationError,
-            },
             ThingManager,
+            validation::{
+                DataValidationError,
+                validation::{DataValidation, get_label_or_data_err},
+            },
         },
-        ThingAPI,
     },
     type_::{
-        attribute_type::AttributeType, constraint::Constraint, entity_type::EntityType, object_type::ObjectType,
-        relation_type::RelationType, role_type::RoleType, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
+        ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI, attribute_type::AttributeType, constraint::Constraint,
+        entity_type::EntityType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType,
     },
 };
 

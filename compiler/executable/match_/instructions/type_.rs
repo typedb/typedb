@@ -10,10 +10,10 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use ir::pattern::{
-    constraint::{Owns, Plays, Relates, Sub},
     IrID,
+    constraint::{Owns, Plays, Relates, Sub},
 };
 use itertools::Itertools;
 

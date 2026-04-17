@@ -55,7 +55,7 @@ impl UserManager {
                 return match user_get_err {
                     UserGetError::IllegalUsername { .. } => Err(UserCreateError::IllegalUsername {}),
                     UserGetError::Unexpected { .. } => Err(UserCreateError::Unexpected {}),
-                }
+                };
             }
         }
         let create_result = self
@@ -113,7 +113,7 @@ impl UserManager {
                 return match user_get_err {
                     UserGetError::IllegalUsername { .. } => Err(UserDeleteError::IllegalUsername {}),
                     UserGetError::Unexpected { .. } => Err(UserDeleteError::Unexpected {}),
-                }
+                };
             }
         }
         let delete_result = self

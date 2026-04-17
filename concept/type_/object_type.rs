@@ -7,11 +7,11 @@
 use std::{collections::HashSet, fmt, sync::Arc};
 
 use encoding::{
+    Prefixed,
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::type_::vertex::{TypeVertex, TypeVertexEncoding},
     layout::prefix::Prefix,
     value::label::Label,
-    Prefixed,
 };
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
@@ -20,14 +20,14 @@ use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager},
     type_::{
-        attribute_type::AttributeType, constraint::CapabilityConstraint, entity_type::EntityType, owns::Owns,
-        plays::Plays, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI,
-        Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
+        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI, attribute_type::AttributeType,
+        constraint::CapabilityConstraint, entity_type::EntityType, owns::Owns, plays::Plays,
+        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager,
     },
-    ConceptAPI,
 };
 
 macro_rules! with_object_type {

@@ -10,7 +10,7 @@ use diagnostics::metrics::ActionKind;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
-use tracing::{event, Level};
+use tracing::{Level, event};
 use typedb_protocol::{
     self,
     database::export::Server as DatabaseExportServerProto,
@@ -24,10 +24,11 @@ use crate::{
     authentication::{Accessor, AuthenticationError},
     service::{
         grpc::{
+            ConnectionID,
             diagnostics::{run_with_diagnostics, run_with_diagnostics_async},
             error::{GrpcServiceError, IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
             migration::{
-                export_service::{DatabaseExportService, DATABASE_EXPORT_REQUEST_BUFFER_SIZE},
+                export_service::{DATABASE_EXPORT_REQUEST_BUFFER_SIZE, DatabaseExportService},
                 import_service::{DatabaseImportService, IMPORT_RESPONSE_BUFFER_SIZE},
             },
             request_parser::{users_create_req, users_update_req},
@@ -43,7 +44,6 @@ use crate::{
                 },
             },
             transaction_service::TransactionService,
-            ConnectionID,
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
     },

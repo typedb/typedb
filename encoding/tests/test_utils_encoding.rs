@@ -8,8 +8,8 @@ use std::sync::Arc;
 
 use durability::wal::WAL;
 use encoding::EncodingKeyspace;
-use storage::{durability_client::WALClient, MVCCStorage};
-use test_utils::{create_tmp_dir, init_logging, TempDir};
+use storage::{MVCCStorage, durability_client::WALClient};
+use test_utils::{TempDir, create_tmp_dir, init_logging};
 
 pub fn create_core_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
     init_logging();

@@ -12,14 +12,14 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     error::ConceptReadError,
     type_::{
+        KindAPI, Ordering, OwnerAPI, TypeAPI,
         attribute_type::AttributeType,
-        constraint::{filter_by_source, Constraint},
+        constraint::{Constraint, filter_by_source},
         object_type::ObjectType,
         owns::Owns,
         relation_type::RelationType,
         role_type::RoleType,
-        type_manager::{type_reader::TypeReader, validation::SchemaValidationError, TypeManager},
-        KindAPI, Ordering, OwnerAPI, TypeAPI,
+        type_manager::{TypeManager, type_reader::TypeReader, validation::SchemaValidationError},
     },
 };
 

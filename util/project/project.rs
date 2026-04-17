@@ -76,7 +76,7 @@ macro_rules! read_guard_project {
 mod test {
     use std::sync::{RwLock, RwLockReadGuard};
 
-    use super::{read_guard_project, RwLockReadGuardProject};
+    use super::{RwLockReadGuardProject, read_guard_project};
 
     #[test]
     fn field_projection_test() {

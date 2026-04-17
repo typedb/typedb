@@ -6,22 +6,22 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use compiler::{
-    executable::{function::ExecutableFunctionRegistry, insert::VariableSource, put::PutExecutable},
     VariablePosition,
+    executable::{function::ExecutableFunctionRegistry, insert::VariableSource, put::PutExecutable},
 };
 use resource::constants::traversal::{BATCH_DEFAULT_CAPACITY, CHECK_INTERRUPT_FREQUENCY_ROWS};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ExecutionInterrupt,
     batch::Batch,
     error::ReadExecutionError,
     match_executor::MatchExecutor,
     pipeline::{
-        stage::{ExecutionContext, StageAPI, StageIterator},
         PipelineExecutionError, WrittenRowsIterator,
+        stage::{ExecutionContext, StageAPI, StageIterator},
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
 };
 
 pub struct PutStageExecutor<InputIterator> {

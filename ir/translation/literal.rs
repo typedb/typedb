@@ -11,7 +11,7 @@ use chrono_tz::Tz;
 use concept::type_::annotation::AnnotationRegex;
 use encoding::value::{
     decimal_value::Decimal,
-    duration_value::{Duration, DAYS_PER_WEEK, MONTHS_PER_YEAR, NANOS_PER_HOUR, NANOS_PER_MINUTE, NANOS_PER_SEC},
+    duration_value::{DAYS_PER_WEEK, Duration, MONTHS_PER_YEAR, NANOS_PER_HOUR, NANOS_PER_MINUTE, NANOS_PER_SEC},
     timezone::TimeZone,
     value::Value,
 };
@@ -34,7 +34,7 @@ pub(crate) fn translate_literal(literal: &Literal) -> Result<Value<'static>, Lit
 pub trait FromTypeQLLiteral: Sized {
     type TypeQLLiteral;
     fn from_typeql_literal(literal: &Self::TypeQLLiteral, source_span: Option<Span>)
-        -> Result<Self, LiteralParseError>;
+    -> Result<Self, LiteralParseError>;
 }
 
 fn parse_primitive<T: FromStr>(fragment: &str, source_span: Option<Span>) -> Result<T, LiteralParseError> {
@@ -380,10 +380,10 @@ pub mod tests {
     use typeql::query::stage::Stage;
 
     use crate::{
-        pattern::expression::Expression,
-        pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-        translation::{match_::translate_match, PipelineTranslationContext},
         RepresentationError,
+        pattern::expression::Expression,
+        pipeline::{ParameterRegistry, function_signature::HashMapFunctionSignatureIndex},
+        translation::{PipelineTranslationContext, match_::translate_match},
     };
 
     fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, Box<RepresentationError>> {

@@ -12,10 +12,10 @@ use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
+        BindingMode, BranchID, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext},
         impl_pattern_from_pattern_variables,
         nested_pattern::NestedPattern,
-        BindingMode, BranchID, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
     },
     pipeline::block::BlockBuilderContext,
 };

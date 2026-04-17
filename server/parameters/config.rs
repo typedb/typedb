@@ -13,9 +13,9 @@ use std::{
 
 use resource::constants::server::{DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT};
 use serde::Deserialize;
-use serde_with::{serde_as, DurationSeconds};
+use serde_with::{DurationSeconds, serde_as};
 
-use crate::parameters::{cli::CLIArgs, ConfigError};
+use crate::parameters::{ConfigError, cli::CLIArgs};
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -294,9 +294,9 @@ pub mod tests {
     use clap::Parser;
 
     use crate::parameters::{
+        ConfigError,
         cli::CLIArgs,
         config::{Config, ConfigBuilder},
-        ConfigError,
     };
 
     fn config_path() -> PathBuf {

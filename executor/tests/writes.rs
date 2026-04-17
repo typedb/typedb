@@ -12,37 +12,36 @@ use std::{
 
 use answer::variable_value::VariableValue;
 use compiler::{
-    self,
+    self, VariablePosition,
     annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
-    VariablePosition,
 };
 use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
-    type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
+    type_::{Ordering, OwnerAPI, PlayerAPI, object_type::ObjectType, type_manager::TypeManager},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
+    ExecutionInterrupt, Provenance,
     pipeline::{
+        PipelineExecutionError,
         delete::DeleteStageExecutor,
         insert::InsertStageExecutor,
         stage::{ExecutionContext, StageAPI, StageIterator},
-        PipelineExecutionError,
     },
     row::MaybeOwnedRow,
     write::WriteError,
-    ExecutionInterrupt, Provenance,
 };
 use ir::{
-    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+    pipeline::{ParameterRegistry, function_signature::HashMapFunctionSignatureIndex},
     translation::PipelineTranslationContext,
 };
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
 use storage::{
+    MVCCStorage,
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
-    MVCCStorage,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -207,15 +206,12 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     println!("Insert output row schema: {:?}", &insert_plan.output_row_schema);
 
     let snapshot = Arc::new(snapshot);
-    let initial = ShimStage::new(
-        input_rows,
-        ExecutionContext {
-            snapshot,
-            thing_manager,
-            parameters: Arc::new(value_parameters),
-            profile: Arc::new(QueryProfile::new(false)),
-        },
-    );
+    let initial = ShimStage::new(input_rows, ExecutionContext {
+        snapshot,
+        thing_manager,
+        parameters: Arc::new(value_parameters),
+        profile: Arc::new(QueryProfile::new(false)),
+    });
     let (input_iter, context) = initial.into_iterator();
     let insert_executor: InsertStageExecutor<ShimIterator> = InsertStageExecutor::new(Arc::new(insert_plan));
     let (output_iter, context) = insert_executor
@@ -300,15 +296,12 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     .unwrap();
 
     let snapshot = Arc::new(snapshot);
-    let initial = ShimStage::new(
-        input_rows,
-        ExecutionContext {
-            snapshot,
-            thing_manager,
-            parameters: Arc::new(value_parameters),
-            profile: Arc::new(QueryProfile::new(false)),
-        },
-    );
+    let initial = ShimStage::new(input_rows, ExecutionContext {
+        snapshot,
+        thing_manager,
+        parameters: Arc::new(value_parameters),
+        profile: Arc::new(QueryProfile::new(false)),
+    });
     let (input_iter, context) = initial.into_iterator();
     let delete_executor: DeleteStageExecutor<ShimIterator> = DeleteStageExecutor::new(Arc::new(delete_plan));
     let (output_iter, context) = delete_executor
@@ -415,12 +408,16 @@ fn relation() {
         .map(|item| item.map(|(roleplayer, _)| (roleplayer.player(), roleplayer.role_type())))
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
-    assert!(role_players
-        .iter()
-        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(person_type), member_role) }));
-    assert!(role_players
-        .iter()
-        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(group_type), group_role) }));
+    assert!(
+        role_players
+            .iter()
+            .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(person_type), member_role) })
+    );
+    assert!(
+        role_players
+            .iter()
+            .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(group_type), group_role) })
+    );
 }
 
 #[test]
@@ -464,12 +461,16 @@ fn relation_with_inferred_roles() {
         .map(|item| item.map(|(roleplayer, _)| (roleplayer.player(), roleplayer.role_type())))
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
-    assert!(role_players
-        .iter()
-        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(person_type), member_role) }));
-    assert!(role_players
-        .iter()
-        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(group_type), group_role) }));
+    assert!(
+        role_players
+            .iter()
+            .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(person_type), member_role) })
+    );
+    assert!(
+        role_players
+            .iter()
+            .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(group_type), group_role) })
+    );
 }
 
 #[test]
@@ -480,25 +481,17 @@ fn test_has_with_input_rows() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
     let snapshot = storage.clone().open_snapshot_write();
-    let (inserted_rows, snapshot) = execute_insert(
-        snapshot,
-        type_manager.clone(),
-        thing_manager.clone(),
-        "insert $p isa person;",
-        &[],
-        vec![vec![]],
-    )
-    .unwrap();
+    let (inserted_rows, snapshot) =
+        execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), "insert $p isa person;", &[], vec![
+            vec![],
+        ])
+        .unwrap();
     let p10 = inserted_rows[0][0].clone();
-    let (inserted_rows, snapshot) = execute_insert(
-        snapshot,
-        type_manager.clone(),
-        thing_manager.clone(),
-        "insert $p has age 10;",
-        &["p"],
-        vec![vec![p10.clone()]],
-    )
-    .unwrap();
+    let (inserted_rows, snapshot) =
+        execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), "insert $p has age 10;", &["p"], vec![
+            vec![p10.clone()],
+        ])
+        .unwrap();
     let a10 = inserted_rows[0][1].clone();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -529,25 +522,17 @@ fn delete_has() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
     let snapshot = storage.clone().open_snapshot_write();
-    let (inserted_rows, snapshot) = execute_insert(
-        snapshot,
-        type_manager.clone(),
-        thing_manager.clone(),
-        "insert $p isa person;",
-        &[],
-        vec![vec![]],
-    )
-    .unwrap();
+    let (inserted_rows, snapshot) =
+        execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), "insert $p isa person;", &[], vec![
+            vec![],
+        ])
+        .unwrap();
     let p10 = inserted_rows[0][0].clone();
-    let (inserted_rows, snapshot) = execute_insert(
-        snapshot,
-        type_manager.clone(),
-        thing_manager.clone(),
-        "insert $p has age 10;",
-        &["p"],
-        vec![vec![p10.clone()]],
-    )
-    .unwrap();
+    let (inserted_rows, snapshot) =
+        execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), "insert $p has age 10;", &["p"], vec![
+            vec![p10.clone()],
+        ])
+        .unwrap();
     let a10 = inserted_rows[0][1].clone().into_owned();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 

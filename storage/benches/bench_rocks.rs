@@ -7,8 +7,8 @@
 use std::{
     collections::HashMap,
     sync::{
-        atomic::{AtomicUsize, Ordering},
         RwLock,
+        atomic::{AtomicUsize, Ordering},
     },
     thread,
     time::{Duration, Instant},

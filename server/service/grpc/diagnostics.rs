@@ -7,7 +7,7 @@
 use std::{future::Future, hash::Hash, sync::Arc};
 
 use diagnostics::{
-    diagnostics_manager::{is_diagnostics_needed, DiagnosticsManager},
+    diagnostics_manager::{DiagnosticsManager, is_diagnostics_needed},
     metrics::{ActionKind, ClientEndpoint},
 };
 use tonic::Status;

@@ -12,7 +12,7 @@ use std::{
     vec,
 };
 
-use answer::{variable_value::VariableValue, Thing};
+use answer::{Thing, variable_value::VariableValue};
 use encoding::value::value::Value;
 use error::unimplemented_feature;
 use itertools::Itertools;
@@ -21,10 +21,10 @@ use resource::{constants::traversal::FIXED_BATCH_ROWS_MAX, profile::StorageCount
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    Provenance,
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     row::{MaybeOwnedRow, Row},
-    Provenance,
 };
 
 #[derive(Debug)]

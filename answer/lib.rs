@@ -9,25 +9,25 @@
 
 use std::{collections::BTreeSet, fmt};
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use concept::{
     error::ConceptReadError,
-    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
+    thing::{ThingAPI, attribute::Attribute, entity::Entity, object::Object, relation::Relation},
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
-        role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI,
+        ObjectTypeAPI, TypeAPI, attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType,
+        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager,
     },
 };
 use encoding::{
+    AsBytes,
     graph::{
         thing::vertex_object::{ObjectID, ObjectVertex},
         type_::{
-            vertex::{TypeID, TypeVertex, TypeVertexEncoding},
             Kind,
+            vertex::{TypeID, TypeVertex, TypeVertexEncoding},
         },
     },
     value::{label::Label, value::Value},
-    AsBytes,
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;

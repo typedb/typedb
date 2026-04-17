@@ -15,13 +15,13 @@ use resource::{constants::traversal::CHECK_INTERRUPT_FREQUENCY_ROWS, profile::St
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
+    ExecutionInterrupt,
     pipeline::{
-        stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
+        stage::{ExecutionContext, StageAPI},
     },
     row::Row,
-    write::{write_instruction::AsWriteInstruction, WriteError},
-    ExecutionInterrupt,
+    write::{WriteError, write_instruction::AsWriteInstruction},
 };
 
 pub struct DeleteStageExecutor<InputIterator> {

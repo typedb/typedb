@@ -8,9 +8,9 @@ use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use compiler::{
+    VariablePosition,
     executable::{fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage},
     query_structure::{ParametrisedPipelineStructure, PipelineStructure},
-    VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
@@ -19,8 +19,10 @@ use resource::profile::QueryProfile;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ExecutionInterrupt,
     document::ConceptDocument,
     pipeline::{
+        PipelineExecutionError,
         delete::DeleteStageExecutor,
         fetch::FetchStageExecutor,
         initial::{InitialIterator, InitialStage},
@@ -36,10 +38,8 @@ use crate::{
             ExecutionContext, ReadPipelineStage, ReadStageIterator, StageAPI, WritePipelineStage, WriteStageIterator,
         },
         update::UpdateStageExecutor,
-        PipelineExecutionError,
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
 };
 
 pub struct Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
@@ -119,16 +119,16 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
                     stages.push(ReadPipelineStage::Match(Box::new(match_stage)));
                 }
                 ExecutableStage::Insert(_) => {
-                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Insert".to_string() }))
+                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Insert".to_string() }));
                 }
                 ExecutableStage::Update(_) => {
-                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Update".to_string() }))
+                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Update".to_string() }));
                 }
                 ExecutableStage::Put(_) => {
-                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Put".to_string() }))
+                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Put".to_string() }));
                 }
                 ExecutableStage::Delete(_) => {
-                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Delete".to_string() }))
+                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Delete".to_string() }));
                 }
                 ExecutableStage::Select(select_executable) => {
                     let select_stage = SelectStageExecutor::new(select_executable.clone());

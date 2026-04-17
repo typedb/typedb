@@ -11,10 +11,10 @@ use compiler::VariablePosition;
 use encoding::value::value::Value;
 
 use crate::{
+    Provenance,
     batch::FixedBatch,
     read::{pattern_executor::PatternExecutor, step_executor::StepExecutors},
     row::MaybeOwnedRow,
-    Provenance,
 };
 
 #[derive(Debug)]

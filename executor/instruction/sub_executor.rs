@@ -11,8 +11,8 @@ use std::{
     vec,
 };
 
-use answer::{variable_value::VariableValue, Type};
-use compiler::{executable::match_::instructions::type_::SubInstruction, ExecutorVariable};
+use answer::{Type, variable_value::VariableValue};
+use compiler::{ExecutorVariable, executable::match_::instructions::type_::SubInstruction};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
 use lending_iterator::AsLendingIterator;
@@ -21,10 +21,11 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
-        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
+        tuple::{SubToTupleFn, TuplePositions, sub_to_tuple_sub_super, sub_to_tuple_super_sub},
+        type_from_row_or_annotations,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

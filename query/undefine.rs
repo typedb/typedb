@@ -9,10 +9,10 @@ use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
     type_::{
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{AnnotationCategory, AnnotationError},
         attribute_type::AttributeTypeAnnotation,
         type_manager::TypeManager,
-        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 use encoding::{
@@ -20,19 +20,19 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use function::{function_manager::FunctionManager, FunctionError};
-use ir::{translation::tokens::translate_annotation_category, LiteralParseError};
+use function::{FunctionError, function_manager::FunctionManager};
+use ir::{LiteralParseError, translation::tokens::translate_annotation_category};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    common::{error::TypeQLError, token::Keyword, Span, Spanned},
+    common::{Span, Spanned, error::TypeQLError, token::Keyword},
     query::schema::Undefine,
     schema::{
         definable::type_::{
+            CapabilityBase,
             capability::{
                 Alias as TypeQLAlias, Owns as TypeQLOwns, Plays as TypeQLPlays, Relates as TypeQLRelates,
                 Sub as TypeQLSub, ValueType as TypeQLValueType,
             },
-            CapabilityBase,
         },
         undefinable::{
             AnnotationCapability, AnnotationType, CapabilityType, Function, Specialise, Struct, Undefinable,
@@ -43,15 +43,15 @@ use typeql::{
 
 use crate::{
     definable_resolution::{
-        filter_variants, resolve_attribute_type, resolve_object_type, resolve_owns_declared, resolve_plays_declared,
-        resolve_relates, resolve_relates_declared, resolve_relation_type, resolve_role_type,
+        SymbolResolutionError, filter_variants, resolve_attribute_type, resolve_object_type, resolve_owns_declared,
+        resolve_plays_declared, resolve_relates, resolve_relates_declared, resolve_relation_type, resolve_role_type,
         resolve_struct_definition_key, resolve_typeql_type, resolve_value_type, type_ref_to_label_and_ordering,
-        type_to_object_type, SymbolResolutionError,
+        type_to_object_type,
     },
     definable_status::{
-        get_capability_annotation_category_status, get_owns_status, get_plays_status, get_relates_status,
-        get_sub_status, get_type_annotation_category_status, get_value_type_status, DefinableStatus,
-        DefinableStatusMode,
+        DefinableStatus, DefinableStatusMode, get_capability_annotation_category_status, get_owns_status,
+        get_plays_status, get_relates_status, get_sub_status, get_type_annotation_category_status,
+        get_value_type_status,
     },
 };
 
@@ -274,12 +274,12 @@ fn undefine_capability_annotation(
         CapabilityBase::Sub(_) => {
             return Err(UndefineError::IllegalAnnotation {
                 typedb_source: AnnotationError::UnsupportedAnnotationForSub { category: annotation_category },
-            })
+            });
         }
         CapabilityBase::Alias(_) => {
             return Err(UndefineError::IllegalAnnotation {
                 typedb_source: AnnotationError::UnsupportedAnnotationForAlias { category: annotation_category },
-            })
+            });
         }
         CapabilityBase::Owns(typeql_owns) => {
             let object_type = resolve_object_type(snapshot, type_manager, &label)
@@ -312,7 +312,7 @@ fn undefine_capability_annotation(
                         ordering,
                         existing_ordering,
                         source_span: annotation_undefinable.span(),
-                    })
+                    });
                 }
             }
 
@@ -384,7 +384,7 @@ fn undefine_capability_annotation(
                         ordering,
                         existing_ordering,
                         source_span: annotation_undefinable.span(),
-                    })
+                    });
                 }
             }
 
@@ -419,7 +419,7 @@ fn undefine_capability_annotation(
                     return Err(UndefineError::CapabilityAnnotationNotDefined {
                         annotation: annotation_category,
                         source_span: annotation_undefinable.span(),
-                    })
+                    });
                 }
             }
         }
@@ -570,7 +570,7 @@ fn undefine_type_capability_sub(
                 capability_undefinable,
                 type_.kind(),
                 supertype.kind(),
-            ))
+            ));
         }
     }
 

@@ -11,11 +11,11 @@ use std::{
     vec,
 };
 
-use answer::{variable_value::VariableValue, Type};
-use compiler::{executable::match_::instructions::type_::PlaysInstruction, ExecutorVariable};
+use answer::{Type, variable_value::VariableValue};
+use compiler::{ExecutorVariable, executable::match_::instructions::type_::PlaysInstruction};
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, PlayerAPI},
+    type_::{ObjectTypeAPI, PlayerAPI, object_type::ObjectType, role_type::RoleType, type_manager::TypeManager},
 };
 use itertools::Itertools;
 use lending_iterator::AsLendingIterator;
@@ -24,10 +24,11 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
-        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
+        tuple::{PlaysToTupleFn, TuplePositions, plays_to_tuple_player_role, plays_to_tuple_role_player},
+        type_from_row_or_annotations,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

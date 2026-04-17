@@ -7,11 +7,11 @@
 use std::{fs::File, io::Read, path::Path, sync::Arc, time::Instant};
 
 use database::{
+    Database,
     database_manager::DatabaseManager,
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
-    Database,
 };
-use executor::{batch::Batch, pipeline::stage::StageIterator, ExecutionInterrupt};
+use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
 use options::TransactionOptions;
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_dir;

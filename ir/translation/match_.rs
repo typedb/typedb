@@ -5,14 +5,14 @@
  */
 
 use crate::{
+    RepresentationError,
     pattern::conjunction::ConjunctionBuilderWithContext,
     pipeline::{
+        ParameterRegistry,
         block::{Block, BlockBuilder},
         function_signature::FunctionSignatureIndex,
-        ParameterRegistry,
     },
-    translation::{constraints::add_statement, PipelineTranslationContext},
-    RepresentationError,
+    translation::{PipelineTranslationContext, constraints::add_statement},
 };
 
 pub fn translate_match<'a>(

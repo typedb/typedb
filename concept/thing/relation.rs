@@ -8,18 +8,18 @@ use std::{collections::HashMap, fmt};
 
 use bytes::Bytes;
 use encoding::{
+    AsBytes, Keyable, Prefixed,
     graph::{
+        Typed,
         thing::{
+            ThingVertex,
             edge::{ThingEdgeIndexedRelation, ThingEdgeLinks},
             vertex_object::{ObjectID, ObjectVertex},
-            ThingVertex,
         },
         type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertexEncoding},
-        Typed,
     },
     layout::prefix::Prefix,
     value::decode_value_u64,
-    AsBytes, Keyable, Prefixed,
 };
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
@@ -33,15 +33,14 @@ use storage::{
 };
 
 use crate::{
-    edge_iterator,
+    ConceptAPI, ConceptStatus, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        object::{Object, ObjectAPI},
-        thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
         HKInstance, ThingAPI,
+        object::{Object, ObjectAPI},
+        thing_manager::{ThingManager, validation::operation_time_validation::OperationTimeValidation},
     },
-    type_::{relation_type::RelationType, role_type::RoleType, ObjectTypeAPI, Ordering, OwnerAPI},
-    ConceptAPI, ConceptStatus,
+    type_::{ObjectTypeAPI, Ordering, OwnerAPI, relation_type::RelationType, role_type::RoleType},
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -83,24 +82,24 @@ impl Relation {
         thing_manager.has_role_player(snapshot, self, player, role, storage_counters)
     }
 
-    pub fn get_players(
+    pub fn get_players<Snapshot: ReadableSnapshot>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &Snapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> {
+    ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> + use<Snapshot> {
         thing_manager.get_role_players(snapshot, self, storage_counters)
     }
 
     // TODO: It is basically the same as `get_players_role_type`, but with counts. Do we need to return counts?
     // `has`-related Object's methods return counts. Please refactor when working on lists.
-    pub fn get_players_by_role(
+    pub fn get_players_by_role<'s, 'tm, Snapshot: ReadableSnapshot>(
         self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &'s Snapshot,
         thing_manager: &ThingManager,
         role_type: RoleType,
         storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> {
+    ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> + use<Snapshot> {
         thing_manager.get_role_players_role(snapshot, self, role_type, storage_counters)
     }
 
@@ -114,13 +113,13 @@ impl Relation {
         thing_manager.get_role_players_ordered(snapshot, self, role_type, storage_counters)
     }
 
-    pub fn get_players_role_type(
+    pub fn get_players_role_type<Snapshot: ReadableSnapshot>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &Snapshot,
         thing_manager: &ThingManager,
         role_type: RoleType,
         storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<Object, Box<ConceptReadError>>> {
+    ) -> impl Iterator<Item = Result<Object, Box<ConceptReadError>>> + use<Snapshot> {
         self.get_players(snapshot, thing_manager, storage_counters).filter_map::<Result<Object, _>, _>(move |res| {
             match res {
                 Ok((roleplayer, _count)) => (roleplayer.role_type() == role_type).then_some(Ok(roleplayer.player)),
@@ -440,19 +439,21 @@ impl ThingAPI for Relation {
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
             thing_manager.unset_links(snapshot, self, player, role, storage_counters.clone())?;
 
-            debug_assert!(!player
-                .get_indexed_relations(snapshot, thing_manager, self.type_(), storage_counters.clone())
-                .is_ok_and(|mut iterator| iterator.any(|result| {
-                    match result {
-                        Ok(((start, _, relation_type, relation_id, start_role, _), _)) => {
-                            start == player
-                                && start_role == role
-                                && relation_type == self.type_().vertex().type_id_()
-                                && relation_id == self.vertex().object_id()
+            debug_assert!(
+                !player
+                    .get_indexed_relations(snapshot, thing_manager, self.type_(), storage_counters.clone())
+                    .is_ok_and(|mut iterator| iterator.any(|result| {
+                        match result {
+                            Ok(((start, _, relation_type, relation_id, start_role, _), _)) => {
+                                start == player
+                                    && start_role == role
+                                    && relation_type == self.type_().vertex().type_id_()
+                                    && relation_id == self.vertex().object_id()
+                            }
+                            Err(_) => false,
                         }
-                        Err(_) => false,
-                    }
-                })));
+                    }))
+            );
         }
 
         thing_manager.delete_relation(snapshot, self, storage_counters)?;

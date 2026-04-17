@@ -13,7 +13,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::{executable::match_::instructions::thing::LinksReverseInstruction, ExecutorVariable};
+use compiler::{ExecutorVariable, executable::match_::instructions::thing::LinksReverseInstruction};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -31,20 +31,20 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        LinksIterateMode, VariableModes,
         checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         links_executor::{
-            may_get_role, verify_role, FixedLinksBounds, LinksFilterFn, LinksFilterMapFn, LinksTupleIterator,
-            EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
+            EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE, FixedLinksBounds, LinksFilterFn, LinksFilterMapFn,
+            LinksTupleIterator, may_get_role, verify_role,
         },
         min_max_types,
         tuple::{
-            links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
+            TupleOrderingFn, TuplePositions, links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, tuple_player_relation_role_to_links_reverse,
             tuple_relation_player_role_to_links_reverse, tuple_role_relation_player_to_links_reverse,
-            unsafe_compare_result_tuple, TupleOrderingFn, TuplePositions,
+            unsafe_compare_result_tuple,
         },
-        LinksIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

@@ -7,10 +7,10 @@
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
+    Keyable,
     error::EncodingError,
     graph::{common::schema_id_allocator::TypeVertexAllocator, type_::vertex::TypeVertex},
     layout::prefix::Prefix,
-    Keyable,
 };
 
 #[derive(Debug)]

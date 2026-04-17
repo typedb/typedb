@@ -11,24 +11,26 @@ use encoding::value::label::Label;
 use error::typedb_error;
 use primitive::maybe_owns::MaybeOwns;
 use typeql::{
+    Expression, TypeRef, TypeRefAny, Variable as TypeQLVariable,
     common::{Span, Spanned},
     expression::{FunctionCall, FunctionName},
     query::stage::{
+        Fetch as TypeQLFetch,
         fetch::{
             FetchAttribute, FetchList as TypeQLFetchList, FetchObject as TypeQLFetchObject,
             FetchObjectBody as TypeQLFetchObjectBody, FetchSingle as TypeQLFetchSingle, FetchSingle,
             FetchSome as TypeQLFetchSome, FetchStream,
         },
-        Fetch as TypeQLFetch,
     },
     schema::definable::function::{FunctionBlock, SingleSelector},
     value::StringLiteral,
-    Expression, TypeRef, TypeRefAny, Variable as TypeQLVariable,
 };
 
 use crate::{
+    RepresentationError,
     pattern::ParameterID,
     pipeline::{
+        FunctionReadError, FunctionRepresentationError, ParameterRegistry,
         block::{Block, BlockBuilder, BlockBuilderContext},
         fetch::{
             FetchListAttributeAsList, FetchListAttributeFromList, FetchListSubFetch, FetchObject, FetchSingleAttribute,
@@ -36,9 +38,9 @@ use crate::{
         },
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::{FunctionSignature, FunctionSignatureIndex},
-        FunctionReadError, FunctionRepresentationError, ParameterRegistry,
     },
     translation::{
+        PipelineTranslationContext,
         expression::{add_user_defined_function_call, build_expression},
         fetch::FetchRepresentationError::{
             AnonymousVariableEncountered, InvalidAttributeLabelEncountered, NamedVariableEncountered,
@@ -46,11 +48,9 @@ use crate::{
         },
         function::translate_function_block,
         literal::FromTypeQLLiteral,
-        pipeline::{translate_pipeline_stages, TranslatedStage},
+        pipeline::{TranslatedStage, translate_pipeline_stages},
         tokens::checked_identifier,
-        PipelineTranslationContext,
     },
-    RepresentationError,
 };
 
 pub(super) fn translate_fetch(
@@ -504,7 +504,7 @@ fn try_get_variable(
 ) -> Result<Variable, Box<FetchRepresentationError>> {
     let name = match variable {
         TypeQLVariable::Anonymous { .. } => {
-            return Err(Box::new(AnonymousVariableEncountered { declaration: variable.clone() }))
+            return Err(Box::new(AnonymousVariableEncountered { declaration: variable.clone() }));
         }
         TypeQLVariable::Named { .. } => variable.name().unwrap(),
     };

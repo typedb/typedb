@@ -6,7 +6,7 @@
 
 use std::{
     borrow::Cow,
-    cmp::{max, min, Ordering},
+    cmp::{Ordering, max, min},
     collections::HashSet,
     fmt,
     hash::Hash,
@@ -14,11 +14,11 @@ use std::{
     ops::Add,
 };
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use encoding::{
     graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
     layout::infix::Infix,
-    value::{value::Value, value_type::ValueType, ValueEncodable},
+    value::{ValueEncodable, value::Value, value_type::ValueType},
 };
 use error::typedb_error;
 use regex::Regex;
@@ -26,8 +26,8 @@ use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
 
 use crate::type_::{
-    constraint::{CapabilityConstraint, ConstraintDescription, TypeConstraint},
     Capability, KindAPI,
+    constraint::{CapabilityConstraint, ConstraintDescription, TypeConstraint},
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -402,7 +402,9 @@ impl fmt::Display for AnnotationRange {
             (Some(start), Some(end)) => write!(f, "@range({start}..{end})"),
             (Some(start), None) => write!(f, "@range({start}..)"),
             (None, Some(end)) => write!(f, "@range(..{end})"),
-            (None, None) => unreachable!("Empty range @range(..) should never be written to the schema - start or end should always be specified."),
+            (None, None) => unreachable!(
+                "Empty range @range(..) should never be written to the schema - start or end should always be specified."
+            ),
         }
     }
 }
@@ -854,17 +856,16 @@ mod serialize_annotation {
 
     use bytes::Bytes;
     use encoding::value::{
-        boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
+        ValueEncodable, boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
         duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, value::Value,
-        value_type::ValueTypeCategory, ValueEncodable,
+        value_type::ValueTypeCategory,
     };
     use resource::constants::encoding::AD_HOC_BYTES_INLINE;
     use serde::{
-        de,
+        Deserialize, Deserializer, Serialize, Serializer, de,
         de::{MapAccess, SeqAccess, Visitor},
         ser::SerializeStruct,
-        Deserialize, Deserializer, Serialize, Serializer,
     };
 
     use crate::type_::annotation::{AnnotationRange, AnnotationValues};

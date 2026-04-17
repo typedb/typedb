@@ -11,14 +11,14 @@ use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
 use crate::{
+    RepresentationError,
     pattern::{
+        BindingMode, BranchID, ContextualisedBindingMode, ScopeId,
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::Constraint,
         variable_category::VariableCategory,
-        BindingMode, BranchID, ContextualisedBindingMode, ScopeId,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
-    RepresentationError,
 };
 
 #[derive(Debug, Clone)]

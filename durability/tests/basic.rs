@@ -8,12 +8,12 @@
 #![deny(rust_2018_idioms)]
 
 use std::{
-    fs::{self, read_dir, OpenOptions},
+    fs::{self, OpenOptions, read_dir},
     io::{Seek, Write},
 };
 
 use durability::DurabilityService;
-use durability_test_common::{create_wal, load_wal, TestRecord};
+use durability_test_common::{TestRecord, create_wal, load_wal};
 use itertools::Itertools;
 use rand::prelude::*;
 use tempdir::TempDir;
@@ -77,7 +77,7 @@ fn added_junk() {
     let wal_file = &read_dir(directory.path().join("wal")).unwrap().exactly_one().unwrap().unwrap().path();
     let len = fs::metadata(wal_file).unwrap().len();
     let mut file = OpenOptions::new().read(true).append(true).open(wal_file).unwrap();
-    file.write_all(&thread_rng().gen::<[u8; ADDED_LEN]>()).unwrap();
+    file.write_all(&thread_rng().r#gen::<[u8; ADDED_LEN]>()).unwrap();
     file.sync_all().unwrap();
     assert_eq!(fs::metadata(wal_file).unwrap().len(), len + ADDED_LEN as u64);
 

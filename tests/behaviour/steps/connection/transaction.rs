@@ -7,8 +7,8 @@ use std::sync::Arc;
 
 use cucumber::gherkin::Step;
 use database::{
-    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
     Database,
+    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use error::TypeDBError;
 use futures::future::join_all;
@@ -20,7 +20,7 @@ use server::Server;
 use storage::durability_client::WALClient;
 use test_utils::assert_matches;
 
-use crate::{connection::BehaviourConnectionTestExecutionError, generic_step, util, ActiveTransaction, Context};
+use crate::{ActiveTransaction, Context, connection::BehaviourConnectionTestExecutionError, generic_step, util};
 
 async fn server_open_transaction_for_database(
     server: &'_ Server,

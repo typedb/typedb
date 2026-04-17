@@ -8,20 +8,20 @@ use std::collections::{HashMap, HashSet};
 
 use bytes::Bytes;
 use encoding::{
+    Keyable,
     error::EncodingError,
     graph::{
-        definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
+        definition::{DefinitionValueEncoding, definition_key::DefinitionKey, r#struct::StructDefinition},
         type_::{
+            CapabilityKind,
             edge::{TypeEdge, TypeEdgeEncoding},
             index::{IdentifierIndex, LabelToTypeVertexIndex, NameToStructDefinitionIndex},
             property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
-            CapabilityKind,
         },
     },
     layout::infix::Infix,
     value::{label::Label, value_type::ValueType},
-    Keyable,
 };
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
@@ -35,14 +35,15 @@ use storage::{
 use crate::{
     error::ConceptReadError,
     type_::{
+        Capability, Independent, KindAPI, Ordering, TypeAPI,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
             AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::AttributeType,
         constraint::{
-            get_owns_default_constraints, get_plays_default_constraints, get_relates_default_constraints,
-            CapabilityConstraint, Constraint, ConstraintScope, TypeConstraint,
+            CapabilityConstraint, Constraint, ConstraintScope, TypeConstraint, get_owns_default_constraints,
+            get_plays_default_constraints, get_relates_default_constraints,
         },
         entity_type::EntityType,
         object_type::ObjectType,
@@ -51,7 +52,6 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         sub::Sub,
-        Capability, Independent, KindAPI, Ordering, TypeAPI,
     },
 };
 
@@ -693,9 +693,11 @@ impl TypeReader {
         for annotation in declared_annotations {
             for constraint in annotation.clone().into().into_capability_constraints(capability) {
                 debug_assert!(!constraints.contains(&constraint));
-                debug_assert!(!constraints
-                    .iter()
-                    .any(|existing_constraint| existing_constraint.category() == constraint.category()));
+                debug_assert!(
+                    !constraints
+                        .iter()
+                        .any(|existing_constraint| existing_constraint.category() == constraint.category())
+                );
                 constraints.insert(constraint);
             }
         }

@@ -7,17 +7,17 @@
 use std::{collections::HashSet, fmt, sync::Arc};
 
 use encoding::{
+    Prefixed,
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
-        type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
-            Kind,
-        },
         Typed,
+        type_::{
+            Kind,
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
+        },
     },
     layout::prefix::{Prefix, Prefix::VertexEntityType},
     value::label::Label,
-    Prefixed,
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
@@ -28,10 +28,11 @@ use storage::{
 };
 
 use crate::{
-    concept_iterator,
+    ConceptAPI, concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{entity::Entity, thing_manager::ThingManager},
     type_::{
+        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
         annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, TypeConstraint},
@@ -40,9 +41,7 @@ use crate::{
         plays::Plays,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
     },
-    ConceptAPI,
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]

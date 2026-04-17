@@ -9,11 +9,11 @@ use std::{
     fmt, iter,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
-    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, Unsatisfiable},
     Vertex,
+    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, Unsatisfiable},
 };
 use itertools::chain;
 

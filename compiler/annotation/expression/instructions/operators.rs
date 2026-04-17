@@ -14,10 +14,10 @@ use encoding::value::{
 };
 
 use crate::annotation::expression::instructions::{
-    binary::{binary_instruction, Binary, BinaryExpression},
+    ExpressionEvaluationError,
+    binary::{Binary, BinaryExpression, binary_instruction},
     check_operation,
     op_codes::ExpressionOpCode,
-    ExpressionEvaluationError,
 };
 
 binary_instruction! { 'a
@@ -96,9 +96,5 @@ binary_instruction! { 'a
 
 fn checked_div(a1: f64, a2: f64) -> Result<f64, ExpressionEvaluationError> {
     let res = a1 / a2;
-    if res.is_finite() {
-        Ok(res)
-    } else {
-        Err(ExpressionEvaluationError::DivisionFailed { dividend: a1, divisor: a2 })
-    }
+    if res.is_finite() { Ok(res) } else { Err(ExpressionEvaluationError::DivisionFailed { dividend: a1, divisor: a2 }) }
 }

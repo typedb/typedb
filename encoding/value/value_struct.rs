@@ -12,7 +12,7 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use itertools::Itertools;
 use primitive::either::Either;
 use resource::constants::{
@@ -21,12 +21,14 @@ use resource::constants::{
 };
 use storage::{
     key_value::StorageKey,
-    snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
+    snapshot::{ReadableSnapshot, WritableSnapshot, iterator::SnapshotIteratorError},
 };
 
 use crate::{
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
     error::EncodingError,
     graph::{
+        Typed,
         common::value_hasher::HashedID,
         definition::{
             definition_key::DefinitionKey,
@@ -37,16 +39,13 @@ use crate::{
             vertex_generator::ThingVertexGenerator,
         },
         type_::vertex::{TypeID, TypeVertex},
-        Typed,
     },
     layout::prefix::{Prefix, PrefixID},
     value::{
-        boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
+        ValueEncodable, boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
         duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, value::Value,
-        ValueEncodable,
     },
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 // TODO: Do we want to encode / decode the full struct all the time? or just wrap bytes and
@@ -90,11 +89,7 @@ impl<'a> StructValue<'a> {
             }
         }
 
-        if errors.is_empty() {
-            Ok(StructValue { definition_key, fields })
-        } else {
-            Err(errors)
-        }
+        if errors.is_empty() { Ok(StructValue { definition_key, fields }) } else { Err(errors) }
     }
 
     pub fn definition_key(&self) -> &DefinitionKey {

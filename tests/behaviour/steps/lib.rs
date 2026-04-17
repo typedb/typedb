@@ -17,14 +17,14 @@ use std::{
 
 use ::concept::thing::{attribute::Attribute, object::Object};
 use ::query::error::QueryError;
-use cucumber::{gherkin::Feature, StatsWriter, World};
+use cucumber::{StatsWriter, World, gherkin::Feature};
 use database::Database;
 use futures::{
     future::Either,
     stream::{self, StreamExt},
 };
 use itertools::Itertools;
-use server::{service::http::message::analyze::AnalysedQueryResponse, Server};
+use server::{Server, service::http::message::analyze::AnalysedQueryResponse};
 use storage::durability_client::WALClient;
 use thing_util::ObjectWithKey;
 use transaction_context::ActiveTransaction;

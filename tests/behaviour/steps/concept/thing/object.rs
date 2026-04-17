@@ -8,8 +8,8 @@ use std::sync::Arc;
 
 use concept::{
     error::ConceptWriteError,
-    thing::{object::Object, ThingAPI},
-    type_::{object_type::ObjectType, TypeAPI},
+    thing::{ThingAPI, object::Object},
+    type_::{TypeAPI, object_type::ObjectType},
 };
 use itertools::Itertools;
 use macro_rules_attribute::apply;
@@ -18,6 +18,7 @@ use resource::profile::StorageCounters;
 use test_utils::assert_matches;
 
 use crate::{
+    Context,
     concept::thing::{
         attribute::{attribute_put_instance_with_value_impl, get_attribute_by_value},
         has::object_set_has_impl,
@@ -25,7 +26,7 @@ use crate::{
     generic_step, given_when,
     thing_util::ObjectWithKey,
     transaction_context::{with_read_tx, with_write_tx},
-    when_then, Context,
+    when_then,
 };
 
 fn object_create_instance_impl(

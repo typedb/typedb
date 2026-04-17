@@ -11,11 +11,10 @@ use futures::future::join_all;
 use macro_rules_attribute::apply;
 
 use crate::{
-    generic_step,
+    Context, generic_step,
     message::{transactions_close, transactions_commit, transactions_open, transactions_rollback},
     params::TokenMode,
     util::iter_table,
-    Context,
 };
 
 #[apply(generic_step)]

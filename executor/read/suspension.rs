@@ -7,7 +7,7 @@
 use compiler::executable::function::StronglyConnectedComponentID;
 
 use crate::{
-    read::{tabled_call_executor::TabledCallExecutor, tabled_functions::TableIndex, BranchIndex, ExecutorIndex},
+    read::{BranchIndex, ExecutorIndex, tabled_call_executor::TabledCallExecutor, tabled_functions::TableIndex},
     row::MaybeOwnedRow,
 };
 
@@ -120,10 +120,6 @@ impl QueryPatternSuspensions {
 
     pub(super) fn next_restore_point_at_current_depth(&mut self) -> Option<PatternSuspension> {
         let has_next = self.restoring_patterns_tree.last().map_or(false, |point| point.depth() == self.current_depth);
-        if has_next {
-            self.restoring_patterns_tree.pop()
-        } else {
-            None
-        }
+        if has_next { self.restoring_patterns_tree.pop() } else { None }
     }
 }

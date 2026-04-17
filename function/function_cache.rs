@@ -6,16 +6,16 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use compiler::annotation::function::{annotate_stored_functions, AnnotatedFunction, AnnotatedSchemaFunctions};
+use compiler::annotation::function::{AnnotatedFunction, AnnotatedSchemaFunctions, annotate_stored_functions};
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::pipeline::function_signature::{FunctionSignatureIndex, HashMapFunctionSignatureIndex};
-use storage::{sequence_number::SequenceNumber, snapshot::ReadableSnapshot, MVCCStorage};
+use storage::{MVCCStorage, sequence_number::SequenceNumber, snapshot::ReadableSnapshot};
 
 use crate::{
+    FunctionError,
     function::SchemaFunction,
     function_manager::{FunctionManager, FunctionReader},
-    FunctionError,
 };
 
 #[derive(Debug)]

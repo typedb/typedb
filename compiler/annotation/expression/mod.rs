@@ -7,11 +7,11 @@
 use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 use ir::{
+    RepresentationError,
     pattern::{
         expression::{BuiltinValueFunctionID, Operator},
         variable_category::VariableCategory,
     },
-    RepresentationError,
 };
 use typeql::common::Span;
 

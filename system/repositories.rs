@@ -55,10 +55,9 @@ pub mod user_repository {
         if !rows.is_empty() {
             let row = rows.pop().expect(unexpected_error_msg);
             let hash = get_string(&tx, &row, "h");
-            Ok(Some((
-                User::new(username.to_string()),
-                Credential::PasswordType { password_hash: PasswordHash::new(hash) },
-            )))
+            Ok(Some((User::new(username.to_string()), Credential::PasswordType {
+                password_hash: PasswordHash::new(hash),
+            })))
         } else {
             Ok(None)
         }
@@ -120,8 +119,10 @@ pub mod user_repository {
         match credential {
             Some(Credential::PasswordType { password_hash: PasswordHash { value: hash } }) => {
                 let query_string = format!(
-                    "match (user: $u, credentials: $p) isa user-credentials; $u has name '{username}'; $p has hash $h; delete has $h of $p; insert $p has hash '{password_hash}';"
-                    , username = username, password_hash = hash);
+                    "match (user: $u, credentials: $p) isa user-credentials; $u has name '{username}'; $p has hash $h; delete has $h of $p; insert $p has hash '{password_hash}';",
+                    username = username,
+                    password_hash = hash
+                );
                 let query = parse_query(&query_string).expect(unexpected_error_msg);
                 let (_, snapshot) = execute_write_pipeline(
                     snapshot,

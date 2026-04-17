@@ -52,7 +52,7 @@ pub mod tests {
         sync::Arc,
     };
 
-    use answer::{variable::Variable, Type};
+    use answer::{Type, variable::Variable};
     use assert as assert_true;
     use encoding::{
         graph::definition::definition_key::{DefinitionID, DefinitionKey},
@@ -61,40 +61,40 @@ pub mod tests {
     };
     use ir::{
         pattern::{
+            Vertex,
             constraint::{Constraint, IsaKind, SubKind},
             variable_category::{VariableCategory, VariableOptionality},
-            Vertex,
         },
         pipeline::{
+            ParameterRegistry, VariableRegistry,
             block::Block,
             function::{Function, FunctionBody, ReturnOperation},
             function_signature::{FunctionID, FunctionSignature},
-            ParameterRegistry, VariableRegistry,
         },
-        translation::{pipeline::TranslatedStage, PipelineTranslationContext},
+        translation::{PipelineTranslationContext, pipeline::TranslatedStage},
     };
     use itertools::Itertools;
 
     use crate::annotation::{
+        TypeInferenceError,
         function::{
-            annotate_named_function, AnnotatedFunctionSignature, AnnotatedFunctionSignaturesImpl,
-            EmptyAnnotatedFunctionSignatures,
+            AnnotatedFunctionSignature, AnnotatedFunctionSignaturesImpl, EmptyAnnotatedFunctionSignatures,
+            annotate_named_function,
         },
         match_inference::{
-            compute_type_inference_graph, infer_types, prune_types, NestedTypeInferenceGraphDisjunction,
-            TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
+            NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
+            compute_type_inference_graph, infer_types, prune_types,
         },
         pipeline::AnnotatedStage,
         tests::{
             managers,
             schema_consts::{
-                setup_types, LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS,
-                LABEL_HAS_FEAR, LABEL_IS_FEARED, LABEL_NAME,
+                LABEL_ANIMAL, LABEL_CAT, LABEL_CATNAME, LABEL_DOG, LABEL_DOGNAME, LABEL_FEARS, LABEL_HAS_FEAR,
+                LABEL_IS_FEARED, LABEL_NAME, setup_types,
             },
             setup_storage,
         },
         type_seeder::TypeGraphSeedingContext,
-        TypeInferenceError,
     };
 
     #[test]
@@ -374,18 +374,13 @@ pub mod tests {
                     (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
                 ]),
                 edges: vec![
-                    expected_edge(
-                        &constraints[0],
-                        var_animal.into(),
-                        var_animal_type.into(),
-                        vec![(type_cat, type_cat)],
-                    ),
-                    expected_edge(
-                        &constraints[2],
-                        var_name.into(),
-                        var_name_type.into(),
-                        vec![(type_catname, type_name)],
-                    ),
+                    expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), vec![(
+                        type_cat, type_cat,
+                    )]),
+                    expected_edge(&constraints[2], var_name.into(), var_name_type.into(), vec![(
+                        type_catname,
+                        type_name,
+                    )]),
                     expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -440,18 +435,14 @@ pub mod tests {
                     (Vertex::Label(LABEL_CATNAME), BTreeSet::from([type_catname])),
                 ]),
                 edges: vec![
-                    expected_edge(
-                        &constraints[0],
-                        var_animal.into(),
-                        var_animal_type.into(),
-                        vec![(type_cat, type_animal)],
-                    ),
-                    expected_edge(
-                        &constraints[2],
-                        var_name.into(),
-                        var_name_type.into(),
-                        vec![(type_catname, type_catname)],
-                    ),
+                    expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), vec![(
+                        type_cat,
+                        type_animal,
+                    )]),
+                    expected_edge(&constraints[2], var_name.into(), var_name_type.into(), vec![(
+                        type_catname,
+                        type_catname,
+                    )]),
                     expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -543,24 +534,18 @@ pub mod tests {
                     (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
                 ]),
                 edges: vec![
-                    expected_edge(
-                        &constraints[0],
-                        var_animal.into(),
-                        var_animal_type.into(),
-                        vec![(type_cat, type_animal), (type_dog, type_animal)],
-                    ),
-                    expected_edge(
-                        &constraints[2],
-                        var_name.into(),
-                        var_name_type.into(),
-                        vec![(type_catname, type_name), (type_dogname, type_name)],
-                    ),
-                    expected_edge(
-                        &constraints[4],
-                        var_animal.into(),
-                        var_name.into(),
-                        vec![(type_cat, type_catname), (type_dog, type_dogname)],
-                    ),
+                    expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), vec![
+                        (type_cat, type_animal),
+                        (type_dog, type_animal),
+                    ]),
+                    expected_edge(&constraints[2], var_name.into(), var_name_type.into(), vec![
+                        (type_catname, type_name),
+                        (type_dogname, type_name),
+                    ]),
+                    expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![
+                        (type_cat, type_catname),
+                        (type_dog, type_dogname),
+                    ]),
                 ],
                 nested_disjunctions: Vec::new(),
             };
@@ -634,12 +619,9 @@ pub mod tests {
                     (b1_var_animal_type.into(), BTreeSet::from([type_cat])),
                     (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat])),
                 ]),
-                edges: vec![expected_edge(
-                    b1_isa,
-                    var_animal.into(),
-                    b1_var_animal_type.into(),
-                    vec![(type_cat, type_cat)],
-                )],
+                edges: vec![expected_edge(b1_isa, var_animal.into(), b1_var_animal_type.into(), vec![(
+                    type_cat, type_cat,
+                )])],
                 nested_disjunctions: Vec::new(),
             },
             TypeInferenceGraph {
@@ -649,12 +631,9 @@ pub mod tests {
                     (b2_var_animal_type.into(), BTreeSet::from([type_dog])),
                     (Vertex::Label(LABEL_DOG), BTreeSet::from([type_dog])),
                 ]),
-                edges: vec![expected_edge(
-                    b2_isa,
-                    var_animal.into(),
-                    b2_var_animal_type.into(),
-                    vec![(type_dog, type_dog)],
-                )],
+                edges: vec![expected_edge(b2_isa, var_animal.into(), b2_var_animal_type.into(), vec![(
+                    type_dog, type_dog,
+                )])],
                 nested_disjunctions: Vec::new(),
             },
         ];
@@ -668,18 +647,14 @@ pub mod tests {
                 (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
             ]),
             edges: vec![
-                expected_edge(
-                    &conjunction.constraints()[1],
-                    var_name.into(),
-                    var_name_type.into(),
-                    vec![(type_catname, type_name), (type_dogname, type_name)],
-                ),
-                expected_edge(
-                    &conjunction.constraints()[2],
-                    var_animal.into(),
-                    var_name.into(),
-                    vec![(type_cat, type_catname), (type_dog, type_dogname)],
-                ),
+                expected_edge(&conjunction.constraints()[1], var_name.into(), var_name_type.into(), vec![
+                    (type_catname, type_name),
+                    (type_dogname, type_name),
+                ]),
+                expected_edge(&conjunction.constraints()[2], var_animal.into(), var_name.into(), vec![
+                    (type_cat, type_catname),
+                    (type_dog, type_dogname),
+                ]),
             ],
             nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
                 disjunction: expected_nested_graphs,
@@ -733,12 +708,10 @@ pub mod tests {
                 (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
                 (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
             ]),
-            edges: vec![expected_edge(
-                &constraints[0],
-                var_animal.into(),
-                var_name.into(),
-                vec![(type_cat, type_catname), (type_dog, type_dogname)],
-            )],
+            edges: vec![expected_edge(&constraints[0], var_animal.into(), var_name.into(), vec![
+                (type_cat, type_catname),
+                (type_dog, type_dogname),
+            ])],
             nested_disjunctions: Vec::new(),
         };
 
@@ -831,38 +804,27 @@ pub mod tests {
             ]),
             edges: vec![
                 // isa
-                expected_edge(
-                    &conjunction.constraints()[0],
-                    var_fears.into(),
-                    var_fears_type.into(),
-                    vec![(type_fears, type_fears)],
-                ),
+                expected_edge(&conjunction.constraints()[0], var_fears.into(), var_fears_type.into(), vec![(
+                    type_fears, type_fears,
+                )]),
                 // has-fear edge
-                expected_edge(
-                    &conjunction.constraints()[2],
-                    var_fears.into(),
-                    var_role_has_fear.into(),
-                    vec![(type_fears, type_has_fear)],
-                ),
-                expected_edge(
-                    &conjunction.constraints()[2],
-                    var_has_fear.into(),
-                    var_role_has_fear.into(),
-                    vec![(type_cat, type_has_fear)],
-                ),
+                expected_edge(&conjunction.constraints()[2], var_fears.into(), var_role_has_fear.into(), vec![(
+                    type_fears,
+                    type_has_fear,
+                )]),
+                expected_edge(&conjunction.constraints()[2], var_has_fear.into(), var_role_has_fear.into(), vec![(
+                    type_cat,
+                    type_has_fear,
+                )]),
                 // is-feared edge
-                expected_edge(
-                    &conjunction.constraints()[3],
-                    var_fears.into(),
-                    var_role_is_feared.into(),
-                    vec![(type_fears, type_is_feared)],
-                ),
-                expected_edge(
-                    &conjunction.constraints()[3],
-                    var_is_feared.into(),
-                    var_role_is_feared.into(),
-                    vec![(type_dog, type_is_feared)],
-                ),
+                expected_edge(&conjunction.constraints()[3], var_fears.into(), var_role_is_feared.into(), vec![(
+                    type_fears,
+                    type_is_feared,
+                )]),
+                expected_edge(&conjunction.constraints()[3], var_is_feared.into(), var_role_is_feared.into(), vec![(
+                    type_dog,
+                    type_is_feared,
+                )]),
                 expected_edge(
                     &conjunction.constraints()[4],
                     var_role_has_fear.into(),
@@ -936,24 +898,17 @@ pub mod tests {
                     (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat])),
                 ]),
                 edges: vec![
-                    expected_edge(
-                        &constraints[0],
-                        var_animal.into(),
-                        var_animal_type.into(),
-                        vec![(type_cat, type_cat)],
-                    ),
-                    expected_edge(
-                        &constraints[2],
-                        var_name.into(),
-                        var_owned_type.into(),
-                        vec![(type_catname, type_catname)],
-                    ),
-                    expected_edge(
-                        &constraints[3],
-                        var_animal_type.into(),
-                        var_owned_type.into(),
-                        vec![(type_cat, type_catname)],
-                    ),
+                    expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), vec![(
+                        type_cat, type_cat,
+                    )]),
+                    expected_edge(&constraints[2], var_name.into(), var_owned_type.into(), vec![(
+                        type_catname,
+                        type_catname,
+                    )]),
+                    expected_edge(&constraints[3], var_animal_type.into(), var_owned_type.into(), vec![(
+                        type_cat,
+                        type_catname,
+                    )]),
                 ],
                 nested_disjunctions: Vec::new(),
             };
@@ -1004,24 +959,17 @@ pub mod tests {
                     (Vertex::Label(LABEL_CATNAME), BTreeSet::from([type_catname])),
                 ]),
                 edges: vec![
-                    expected_edge(
-                        &constraints[0],
-                        var_animal.into(),
-                        var_owner_type.into(),
-                        vec![(type_cat, type_cat)],
-                    ),
-                    expected_edge(
-                        &constraints[1],
-                        var_name.into(),
-                        var_name_type.into(),
-                        vec![(type_catname, type_catname)],
-                    ),
-                    expected_edge(
-                        &constraints[3],
-                        var_owner_type.into(),
-                        var_name_type.into(),
-                        vec![(type_cat, type_catname)],
-                    ),
+                    expected_edge(&constraints[0], var_animal.into(), var_owner_type.into(), vec![(
+                        type_cat, type_cat,
+                    )]),
+                    expected_edge(&constraints[1], var_name.into(), var_name_type.into(), vec![(
+                        type_catname,
+                        type_catname,
+                    )]),
+                    expected_edge(&constraints[3], var_owner_type.into(), var_name_type.into(), vec![(
+                        type_cat,
+                        type_catname,
+                    )]),
                 ],
                 nested_disjunctions: Vec::new(),
             };
@@ -1122,24 +1070,18 @@ pub mod tests {
                     (var_name_type.into(), types_n.clone()),
                 ]),
                 edges: vec![
-                    expected_edge(
-                        &constraints[0],
-                        var_animal.into(),
-                        var_animal_type.into(),
-                        vec![(type_cat, type_cat), (type_dog, type_dog)],
-                    ),
-                    expected_edge(
-                        &constraints[1],
-                        var_name.into(),
-                        var_name_type.into(),
-                        vec![(type_catname, type_catname), (type_dogname, type_dogname)],
-                    ),
-                    expected_edge(
-                        &constraints[2],
-                        var_animal_type.into(),
-                        var_name_type.into(),
-                        vec![(type_cat, type_catname), (type_dog, type_dogname)],
-                    ),
+                    expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), vec![
+                        (type_cat, type_cat),
+                        (type_dog, type_dog),
+                    ]),
+                    expected_edge(&constraints[1], var_name.into(), var_name_type.into(), vec![
+                        (type_catname, type_catname),
+                        (type_dogname, type_dogname),
+                    ]),
+                    expected_edge(&constraints[2], var_animal_type.into(), var_name_type.into(), vec![
+                        (type_cat, type_catname),
+                        (type_dog, type_dogname),
+                    ]),
                 ],
                 nested_disjunctions: Vec::new(),
             };
@@ -1199,18 +1141,13 @@ pub mod tests {
                     (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
                 ]),
                 edges: vec![
-                    expected_edge(
-                        &constraints[0],
-                        var_animal.into(),
-                        Vertex::Label(LABEL_CAT),
-                        vec![(type_cat, type_cat)],
-                    ),
-                    expected_edge(
-                        &constraints[1],
-                        var_name.into(),
-                        Vertex::Label(LABEL_NAME),
-                        vec![(type_catname, type_name)],
-                    ),
+                    expected_edge(&constraints[0], var_animal.into(), Vertex::Label(LABEL_CAT), vec![(
+                        type_cat, type_cat,
+                    )]),
+                    expected_edge(&constraints[1], var_name.into(), Vertex::Label(LABEL_NAME), vec![(
+                        type_catname,
+                        type_name,
+                    )]),
                     expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -1264,18 +1201,14 @@ pub mod tests {
                     (Vertex::Label(LABEL_CATNAME), BTreeSet::from([type_catname])),
                 ]),
                 edges: vec![
-                    expected_edge(
-                        &constraints[0],
-                        var_animal.into(),
-                        Vertex::Label(LABEL_ANIMAL),
-                        vec![(type_cat, type_animal)],
-                    ),
-                    expected_edge(
-                        &constraints[1],
-                        var_name.into(),
-                        Vertex::Label(LABEL_CATNAME),
-                        vec![(type_catname, type_catname)],
-                    ),
+                    expected_edge(&constraints[0], var_animal.into(), Vertex::Label(LABEL_ANIMAL), vec![(
+                        type_cat,
+                        type_animal,
+                    )]),
+                    expected_edge(&constraints[1], var_name.into(), Vertex::Label(LABEL_CATNAME), vec![(
+                        type_catname,
+                        type_catname,
+                    )]),
                     expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -1363,24 +1296,18 @@ pub mod tests {
                     (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
                 ]),
                 edges: vec![
-                    expected_edge(
-                        &constraints[0],
-                        var_animal.into(),
-                        Vertex::Label(LABEL_ANIMAL),
-                        vec![(type_cat, type_animal), (type_dog, type_animal)],
-                    ),
-                    expected_edge(
-                        &constraints[1],
-                        var_name.into(),
-                        Vertex::Label(LABEL_NAME),
-                        vec![(type_catname, type_name), (type_dogname, type_name)],
-                    ),
-                    expected_edge(
-                        &constraints[2],
-                        var_animal.into(),
-                        var_name.into(),
-                        vec![(type_cat, type_catname), (type_dog, type_dogname)],
-                    ),
+                    expected_edge(&constraints[0], var_animal.into(), Vertex::Label(LABEL_ANIMAL), vec![
+                        (type_cat, type_animal),
+                        (type_dog, type_animal),
+                    ]),
+                    expected_edge(&constraints[1], var_name.into(), Vertex::Label(LABEL_NAME), vec![
+                        (type_catname, type_name),
+                        (type_dogname, type_name),
+                    ]),
+                    expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![
+                        (type_cat, type_catname),
+                        (type_dog, type_dogname),
+                    ]),
                 ],
                 nested_disjunctions: Vec::new(),
             };
@@ -1420,12 +1347,10 @@ pub mod tests {
                 (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
                 (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
             ]),
-            edges: vec![expected_edge(
-                &constraints[0],
-                var_animal.into(),
-                var_name.into(),
-                vec![(type_cat, type_catname), (type_dog, type_dogname)],
-            )],
+            edges: vec![expected_edge(&constraints[0], var_animal.into(), var_name.into(), vec![
+                (type_cat, type_catname),
+                (type_dog, type_dogname),
+            ])],
             nested_disjunctions: vec![],
         };
 

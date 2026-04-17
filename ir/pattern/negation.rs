@@ -10,10 +10,10 @@ use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
 use crate::pattern::{
+    BindingMode, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
     conjunction::{Conjunction, ConjunctionBuilder},
     impl_pattern_from_pattern_variables,
     nested_pattern::NestedPattern,
-    BindingMode, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
 };
 
 #[derive(Debug, Clone)]

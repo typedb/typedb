@@ -10,18 +10,18 @@ use compiler::executable::{
     function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
 };
 use itertools::{Itertools, UniqueBy};
-use lending_iterator::{adaptors::Map, IntoIter, LendingIterator};
+use lending_iterator::{IntoIter, LendingIterator, adaptors::Map};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    ExecutionInterrupt,
     error::ReadExecutionError,
     match_executor::{MatchExecutor, PatternIterator},
     pipeline::{
-        stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,
+        stage::{ExecutionContext, StageAPI},
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
 };
 
 pub struct MatchStageExecutor<InputIterator> {

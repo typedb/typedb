@@ -5,9 +5,9 @@
  */
 
 use ir::{
-    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-    translation::{match_::translate_match, PipelineTranslationContext},
     RepresentationError,
+    pipeline::{ParameterRegistry, function_signature::HashMapFunctionSignatureIndex},
+    translation::{PipelineTranslationContext, match_::translate_match},
 };
 use typeql::query::stage::Stage;
 

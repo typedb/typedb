@@ -5,28 +5,30 @@
  */
 
 use std::{
-    collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet, hash_map},
     iter::zip,
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::thing::statistics::Statistics;
 use ir::{
-    pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, Pattern, Vertex},
-    pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
+    pattern::{Pattern, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern},
+    pipeline::{VariableRegistry, function_signature::FunctionID, reduce::AssignedReduction},
 };
 
 use crate::{
+    VariablePosition,
     annotation::{
         fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
         function::{AnnotatedPreambleFunctions, AnnotatedSchemaFunctions},
         pipeline::AnnotatedStage,
     },
     executable::{
+        ExecutableCompilationError,
         delete::executable::DeleteExecutable,
-        fetch::executable::{compile_fetch, ExecutableFetch},
-        function::{executable::compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider},
+        fetch::executable::{ExecutableFetch, compile_fetch},
+        function::{ExecutableFunctionRegistry, FunctionCallCostProvider, executable::compile_functions},
         insert::{self, executable::InsertExecutable},
         match_::planner::conjunction_executable::ConjunctionExecutable,
         modifiers::{
@@ -35,10 +37,8 @@ use crate::{
         put::PutExecutable,
         reduce::{ReduceExecutable, ReduceRowsExecutable},
         update::executable::UpdateExecutable,
-        ExecutableCompilationError,
     },
     query_structure::ParametrisedPipelineStructure,
-    VariablePosition,
 };
 
 #[derive(Debug, Default, Clone)]
@@ -476,11 +476,7 @@ fn find_referenced_functions_in_pipeline(
         .iter()
         .filter_map(
             |stage| {
-                if let AnnotatedStage::Match { block, .. } = stage {
-                    Some(block.conjunction())
-                } else {
-                    None
-                }
+                if let AnnotatedStage::Match { block, .. } = stage { Some(block.conjunction()) } else { None }
             },
         )
         .for_each(|conjunction| {

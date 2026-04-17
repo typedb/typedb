@@ -10,9 +10,9 @@ use answer::variable::Variable;
 use typeql::common::Span;
 
 use crate::{
-    pattern::variable_category::VariableCategory,
-    pipeline::{block::BlockBuilderContext, reduce::Reducer, ParameterRegistry, VariableRegistry},
     RepresentationError,
+    pattern::variable_category::VariableCategory,
+    pipeline::{ParameterRegistry, VariableRegistry, block::BlockBuilderContext, reduce::Reducer},
 };
 
 mod constraints;

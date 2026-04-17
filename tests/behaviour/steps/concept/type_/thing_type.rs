@@ -7,8 +7,8 @@
 use std::sync::Arc;
 
 use concept::type_::{
-    annotation, attribute_type::AttributeTypeAnnotation, constraint::Constraint, entity_type::EntityTypeAnnotation,
-    object_type::ObjectType, relation_type::RelationTypeAnnotation, KindAPI, TypeAPI,
+    KindAPI, TypeAPI, annotation, attribute_type::AttributeTypeAnnotation, constraint::Constraint,
+    entity_type::EntityTypeAnnotation, object_type::ObjectType, relation_type::RelationTypeAnnotation,
 };
 use cucumber::gherkin::Step;
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
@@ -18,9 +18,9 @@ use params;
 use resource::profile::StorageCounters;
 
 use crate::{
-    generic_step,
+    Context, generic_step,
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
-    unused_step, util, when_then, with_type, Context,
+    unused_step, util, when_then, with_type,
 };
 
 #[macro_export]

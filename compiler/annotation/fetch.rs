@@ -9,17 +9,17 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
-use concept::type_::{attribute_type::AttributeType, type_manager::TypeManager, OwnerAPI, TypeAPI};
+use answer::{Type, variable::Variable};
+use concept::type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType, type_manager::TypeManager};
 use encoding::graph::type_::Kind;
 use ir::{
     pattern::ParameterID,
     pipeline::{
+        ParameterRegistry, VariableRegistry,
         fetch::{
             FetchListAttributeAsList, FetchListAttributeFromList, FetchListSubFetch, FetchObject, FetchSingleAttribute,
             FetchSome,
         },
-        ParameterRegistry, VariableRegistry,
     },
     translation::PipelineTranslationContext,
 };
@@ -27,10 +27,10 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
 use crate::annotation::{
-    expression::compiled_expression::ExpressionValueType,
-    function::{annotate_anonymous_function, AnnotatedFunction, AnnotatedFunctionSignatures},
-    pipeline::{annotate_stages_and_fetch, AnnotatedStage},
     AnnotationError,
+    expression::compiled_expression::ExpressionValueType,
+    function::{AnnotatedFunction, AnnotatedFunctionSignatures, annotate_anonymous_function},
+    pipeline::{AnnotatedStage, annotate_stages_and_fetch},
 };
 
 #[derive(Debug, Clone)]

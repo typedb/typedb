@@ -11,10 +11,10 @@ use encoding::{
     graph::{
         definition::r#struct::StructDefinition,
         type_::{
+            CapabilityKind, Kind,
             edge::TypeEdgeEncoding,
             property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
             vertex::{TypeVertex, TypeVertexEncoding},
-            CapabilityKind, Kind,
         },
     },
     layout::infix::Infix,
@@ -30,8 +30,9 @@ use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{thing_manager::ThingManager, ThingAPI},
+    thing::{ThingAPI, thing_manager::ThingManager},
     type_::{
         annotation::{Annotation, AnnotationCardinality, AnnotationError},
         attribute_type::AttributeType,
@@ -42,7 +43,6 @@ use crate::{
         role_type::RoleType,
         type_manager::TypeManager,
     },
-    ConceptAPI,
 };
 
 pub mod annotation;

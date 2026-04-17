@@ -21,7 +21,7 @@ Since this will have been taken into account by type inference.
 
  */
 
-use ir::pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Scope};
+use ir::pattern::{Scope, conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern};
 
 use crate::annotation::type_annotations::{BlockAnnotations, ConstraintTypeAnnotations};
 

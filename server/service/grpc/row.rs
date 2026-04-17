@@ -13,8 +13,8 @@ use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::{
-    grpc::concept::{encode_thing_concept, encode_type_concept, encode_value},
     IncludeInvolvedBlocks,
+    grpc::concept::{encode_thing_concept, encode_type_concept, encode_value},
 };
 
 pub(crate) fn encode_row(

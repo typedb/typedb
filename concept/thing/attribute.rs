@@ -14,35 +14,35 @@ use std::{
 
 use bytes::Bytes;
 use encoding::{
+    AsBytes, Keyable,
     graph::{
+        Typed,
         thing::{
             edge::ThingEdgeHasReverse,
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_object::ObjectVertex,
         },
         type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertexEncoding},
-        Typed,
     },
     layout::prefix::Prefix,
     value::value::Value,
-    AsBytes, Keyable,
 };
 use iterator::State;
 use itertools::Itertools;
-use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable, Seekable};
+use lending_iterator::{LendingIterator, Peekable, Seekable, higher_order::Hkt};
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ConceptAPI, ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
+        HKInstance, ThingAPI,
         has::Has,
         object::{HasReverseIterator, Object},
         thing_manager::ThingManager,
-        HKInstance, ThingAPI,
     },
-    type_::{attribute_type::AttributeType, ObjectTypeAPI},
-    ConceptAPI, ConceptStatus,
+    type_::{ObjectTypeAPI, attribute_type::AttributeType},
 };
 
 #[derive(Debug, Clone)]
@@ -92,22 +92,22 @@ impl Attribute {
         }
     }
 
-    pub fn get_owners(
+    pub fn get_owners<Snapshot: ReadableSnapshot>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &Snapshot,
         thing_manager: &ThingManager,
         storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> {
+    ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> + use<Snapshot> {
         thing_manager.get_owners(snapshot, self, storage_counters)
     }
 
-    pub fn get_owners_by_type(
+    pub fn get_owners_by_type<Snapshot: ReadableSnapshot, Owner: ObjectTypeAPI>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &Snapshot,
         thing_manager: &ThingManager,
-        owner_type: impl ObjectTypeAPI,
+        owner_type: Owner,
         storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> {
+    ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> + use<Snapshot, Owner> {
         thing_manager.get_owners_by_type(snapshot, self, owner_type, storage_counters)
     }
 
@@ -311,15 +311,15 @@ where
         match has_reverse_iterator.peek() {
             None => Ok(false),
             Some(Err(err)) => Err(err),
-            Some(Ok((found_has, _))) => {
-                match found_has.attribute().vertex.cmp(&attribute_vertex) {
-                    Ordering::Less => {
-                        unreachable!("Unexpected attribute edge encountered for a previous attribute, which should not be possible.");
-                    }
-                    Ordering::Equal => Ok(true),
-                    Ordering::Greater => Ok(false),
+            Some(Ok((found_has, _))) => match found_has.attribute().vertex.cmp(&attribute_vertex) {
+                Ordering::Less => {
+                    unreachable!(
+                        "Unexpected attribute edge encountered for a previous attribute, which should not be possible."
+                    );
                 }
-            }
+                Ordering::Equal => Ok(true),
+                Ordering::Greater => Ok(false),
+            },
         }
     }
 }

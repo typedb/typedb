@@ -12,10 +12,10 @@ use bytes::util::Base64Formatter;
 use concept::{
     error::{ConceptDecodeError, ConceptReadError},
     thing::{
-        attribute::Attribute, entity::Entity, object::ObjectAPI, relation::Relation, thing_manager::ThingManager,
-        ThingAPI,
+        ThingAPI, attribute::Attribute, entity::Entity, object::ObjectAPI, relation::Relation,
+        thing_manager::ThingManager,
     },
-    type_::{role_type::RoleType, type_manager::TypeManager, TypeAPI},
+    type_::{TypeAPI, role_type::RoleType, type_manager::TypeManager},
 };
 use database::migration::Checksums;
 use encoding::value::value::Value;
@@ -25,7 +25,7 @@ use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use typedb_protocol::{
     migration,
-    migration::{item, Item, MigrationValue},
+    migration::{Item, MigrationValue, item},
 };
 
 use crate::service::grpc::concept::{

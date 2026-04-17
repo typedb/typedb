@@ -6,7 +6,7 @@
 
 use std::{borrow::Borrow, cmp::Ordering, fmt};
 
-use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
+use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
 use lending_iterator::higher_order::Hkt;
 use primitive::prefix::Prefix;
 use serde::{Deserialize, Serialize};

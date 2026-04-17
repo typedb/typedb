@@ -9,13 +9,13 @@ use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
     type_::{
+        KindAPI, Ordering, TypeAPI,
         annotation::{Annotation, AnnotationError},
         attribute_type::AttributeType,
         owns::Owns,
         plays::Plays,
         relates::Relates,
         type_manager::TypeManager,
-        KindAPI, Ordering, TypeAPI,
     },
 };
 use encoding::{
@@ -23,32 +23,31 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::{typedb_error, unimplemented_feature};
-use function::{function::SchemaFunction, function_manager::FunctionManager, FunctionError};
-use ir::{pipeline::VariableRegistry, translation::tokens::translate_annotation, LiteralParseError};
+use function::{FunctionError, function::SchemaFunction, function_manager::FunctionManager};
+use ir::{LiteralParseError, pipeline::VariableRegistry, translation::tokens::translate_annotation};
 use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    common::{error::TypeQLError, Span, Spanned},
+    Definable, TypeRef, TypeRefAny,
+    common::{Span, Spanned, error::TypeQLError},
     query::schema::Redefine,
     schema::definable::{
-        function::Function,
-        type_::{capability::Relates as TypeQLRelates, Capability, CapabilityBase},
         Struct, Type,
+        function::Function,
+        type_::{Capability, CapabilityBase, capability::Relates as TypeQLRelates},
     },
     token::Keyword,
-    Definable, TypeRef, TypeRefAny,
 };
 
 use crate::{
     definable_resolution::{
-        filter_variants, get_struct_field_value_type_optionality, resolve_attribute_type, resolve_relates,
-        resolve_role_type, resolve_struct_definition_key, resolve_typeql_type, resolve_value_type,
-        type_ref_to_label_and_ordering, type_to_object_type, SymbolResolutionError,
+        SymbolResolutionError, filter_variants, get_struct_field_value_type_optionality, resolve_attribute_type,
+        resolve_relates, resolve_role_type, resolve_struct_definition_key, resolve_typeql_type, resolve_value_type,
+        type_ref_to_label_and_ordering, type_to_object_type,
     },
     definable_status::{
-        get_capability_annotation_status, get_owns_status, get_plays_status, get_relates_status,
-        get_struct_field_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinableStatus,
-        DefinableStatusMode,
+        DefinableStatus, DefinableStatusMode, get_capability_annotation_status, get_owns_status, get_plays_status,
+        get_relates_status, get_struct_field_status, get_sub_status, get_type_annotation_status, get_value_type_status,
     },
 };
 
@@ -656,13 +655,13 @@ fn redefine_relates_specialise(
                     return Err(RedefineError::UnexpectedSpecialiseScopedLabel {
                         label: format!("{}", scoped),
                         source_span: scoped.span(),
-                    })
+                    });
                 }
                 TypeRef::Variable(variable) => {
                     return Err(RedefineError::UnexpectedSpecialiseVariable {
                         variable: variable.name().unwrap_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME).to_owned(),
                         source_span: variable.span(),
-                    })
+                    });
                 }
             },
             TypeRefAny::List(list) => {
@@ -694,7 +693,7 @@ fn redefine_relates_specialise(
                         .name()
                         .to_string(),
                     source_span: typeql_relates.span(),
-                })
+                });
             }
             DefinableStatus::ExistsSame(_) => {
                 return Err(RedefineError::RelatesSpecialiseRemainsSame {
@@ -714,7 +713,7 @@ fn redefine_relates_specialise(
                         .name()
                         .to_string(),
                     source_span: typeql_relates.span(),
-                })
+                });
             }
             DefinableStatus::ExistsDifferent(_) => {}
         };

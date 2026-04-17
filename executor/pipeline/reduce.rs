@@ -9,13 +9,13 @@ use compiler::executable::reduce::ReduceExecutable;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    ExecutionInterrupt,
     batch::Batch,
     pipeline::{
-        stage::{ExecutionContext, StageAPI, StageIterator},
         PipelineExecutionError, WrittenRowsIterator,
+        stage::{ExecutionContext, StageAPI, StageIterator},
     },
     reduce_executor::GroupedReducer,
-    ExecutionInterrupt,
 };
 
 pub struct ReduceStageExecutor<InputIterator> {

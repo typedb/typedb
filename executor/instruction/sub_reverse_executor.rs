@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::{executable::match_::instructions::type_::SubReverseInstruction, ExecutorVariable};
+use compiler::{ExecutorVariable, executable::match_::instructions::type_::SubReverseInstruction};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
 use lending_iterator::AsLendingIterator;
@@ -21,11 +21,12 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode, VariableModes,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
-        sub_executor::{SubFilterFn, SubFilterMapFn, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
-        tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, VariableModes,
+        sub_executor::{EXTRACT_SUB, EXTRACT_SUPER, SubFilterFn, SubFilterMapFn, SubTupleIterator},
+        tuple::{TuplePositions, sub_to_tuple_sub_super, sub_to_tuple_super_sub},
+        type_from_row_or_annotations,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

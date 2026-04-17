@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::thing::statistics::Statistics;
 use ir::pattern::constraint::{
     Has, Iid, IndexedRelation, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value,
@@ -20,12 +20,12 @@ use itertools::Itertools;
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::match_::{
-        instructions::{type_::TypeListInstruction, CheckInstruction, ConstraintInstruction},
+        instructions::{CheckInstruction, ConstraintInstruction, type_::TypeListInstruction},
         planner::{
             plan::{Graph, QueryPlanningError, VariableVertexId, VertexId},
             vertex::{
-                instance_count, variable::VariableVertex, Cost, CostMetaData, Costed, Direction, Input,
-                ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST,
+                ADVANCE_ITERATOR_RELATIVE_COST, Cost, CostMetaData, Costed, Direction, Input,
+                OPEN_ITERATOR_RELATIVE_COST, instance_count, variable::VariableVertex,
             },
         },
     },

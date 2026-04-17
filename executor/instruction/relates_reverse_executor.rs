@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::{executable::match_::instructions::type_::RelatesReverseInstruction, ExecutorVariable};
+use compiler::{ExecutorVariable, executable::match_::instructions::type_::RelatesReverseInstruction};
 use concept::{
     error::ConceptReadError,
     type_::{relation_type::RelationType, role_type::RoleType},
@@ -24,14 +24,15 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode, VariableModes,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         relates_executor::{
-            RelatesFilterFn, RelatesFilterMapFn, RelatesTupleIterator, RelatesVariableValueExtractor, EXTRACT_RELATION,
-            EXTRACT_ROLE,
+            EXTRACT_RELATION, EXTRACT_ROLE, RelatesFilterFn, RelatesFilterMapFn, RelatesTupleIterator,
+            RelatesVariableValueExtractor,
         },
-        tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, VariableModes,
+        tuple::{TuplePositions, relates_to_tuple_relation_role, relates_to_tuple_role_relation},
+        type_from_row_or_annotations,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

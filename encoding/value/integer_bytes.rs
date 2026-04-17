@@ -51,18 +51,18 @@ impl InlineEncodableAttributeID for IntegerBytes {
 
 #[cfg(test)]
 mod tests {
-    use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
+    use rand::{Rng, SeedableRng, rngs::SmallRng, thread_rng};
 
     use super::IntegerBytes;
 
     #[test]
     fn ordering_is_preserved() {
-        let seed = thread_rng().gen();
+        let seed = thread_rng().r#gen();
         let mut rng = SmallRng::seed_from_u64(seed);
         eprintln!("Running with seed: {seed}");
         for _ in 0..1_000_000 {
-            let lhs = rng.gen();
-            let rhs = rng.gen();
+            let lhs = rng.r#gen();
+            let rhs = rng.r#gen();
 
             let lhs_bytes = IntegerBytes::build(lhs);
             let rhs_bytes = IntegerBytes::build(rhs);

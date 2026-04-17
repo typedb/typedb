@@ -12,19 +12,20 @@ use std::{
     time::Duration,
 };
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use cache::{CacheError, SpilloverCache};
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
+        ThingAPI,
         attribute::Attribute,
         entity::Entity,
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::ThingManager,
-        ThingAPI,
     },
     type_::{
+        Capability, Ordering, OwnerAPI, PlayerAPI,
         annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationIndependent, AnnotationKey},
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::Constraint,
@@ -35,11 +36,10 @@ use concept::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use encoding::value::{label::Label, value::Value};
-use error::{typedb_error, TypeDBError};
+use error::{TypeDBError, typedb_error};
 use options::TransactionOptions;
 use query::error::QueryError;
 use resource::{
@@ -51,16 +51,17 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 use tokio::task::spawn_blocking;
-use tracing::{event, Level};
+use tracing::{Level, event};
 use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
+    Database, DatabaseDeleteError,
     database::DatabaseCreateError,
     database_manager::DatabaseManager,
     migration::Checksums,
     query::execute_schema_query,
     transaction::{DataCommitError, SchemaCommitError, TransactionError, TransactionSchema, TransactionWrite},
-    with_transaction_parts, Database, DatabaseDeleteError,
+    with_transaction_parts,
 };
 
 macro_rules! is_specializing_with_only_cardinality_specializations_fn {

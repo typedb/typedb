@@ -19,17 +19,17 @@ use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
 use crate::{
+    LiteralParseError, RepresentationError,
     pattern::{
+        BindingMode, IrID, ParameterID, ScopeId, ValueType, Vertex,
         conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        BindingMode, IrID, ParameterID, ScopeId, ValueType, Vertex,
     },
     pipeline::{
-        block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry, VariableRegistry,
+        ParameterRegistry, VariableRegistry, block::BlockBuilderContext, function_signature::FunctionSignature,
     },
-    LiteralParseError, RepresentationError,
 };
 
 #[derive(Debug, Clone)]
@@ -2051,11 +2051,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
     }
 
     pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
-        if self.expression().is_empty() {
-            Err(ExpressionRepresentationError::EmptyExpressionTree {})
-        } else {
-            Ok(())
-        }
+        if self.expression().is_empty() { Err(ExpressionRepresentationError::EmptyExpressionTree {}) } else { Ok(()) }
     }
 
     pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> ExpressionBinding<T> {

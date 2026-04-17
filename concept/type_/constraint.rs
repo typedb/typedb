@@ -12,6 +12,7 @@ use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::type_::{
+    Capability, KindAPI, Ordering,
     annotation::{
         Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
         AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
@@ -20,7 +21,6 @@ use crate::type_::{
     plays::Plays,
     relates::Relates,
     type_manager::TypeManager,
-    Capability, KindAPI, Ordering,
 };
 
 macro_rules! with_constraint_description {

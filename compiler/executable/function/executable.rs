@@ -9,25 +9,25 @@ use std::{collections::HashMap, sync::Arc};
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::{
-    function_signature::{FunctionID, FunctionIDAPI},
     ParameterRegistry,
+    function_signature::{FunctionID, FunctionIDAPI},
 };
 use typeql::schema::definable::function::SingleSelector;
 
 use crate::{
+    VariablePosition,
     annotation::function::{AnnotatedFunction, AnnotatedFunctionReturn},
     executable::{
+        ExecutableCompilationError,
         function::{
-            recursion_analyser::{all_calls_in_pipeline, determine_compilation_order_and_tabling_types},
             ExecutableFunctionRegistry, FunctionCallCostProvider, FunctionTablingType,
+            recursion_analyser::{all_calls_in_pipeline, determine_compilation_order_and_tabling_types},
         },
         match_::planner::vertex::Cost,
         next_executable_id,
-        pipeline::{compile_pipeline_stages, ExecutableStage},
+        pipeline::{ExecutableStage, compile_pipeline_stages},
         reduce::ReduceRowsExecutable,
-        ExecutableCompilationError,
     },
-    VariablePosition,
 };
 
 #[derive(Debug, Clone)]
@@ -105,11 +105,7 @@ fn compile_function(
         executable_stages
             .iter()
             .filter_map(|stage| {
-                if let ExecutableStage::Match(m) = stage {
-                    Some(m.planner_statistics().query_cost)
-                } else {
-                    None
-                }
+                if let ExecutableStage::Match(m) = stage { Some(m.planner_statistics().query_cost) } else { None }
             })
             .reduce(|x, y| x.chain(y))
             .unwrap();

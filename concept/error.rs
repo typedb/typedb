@@ -11,7 +11,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
+use storage::snapshot::{SnapshotGetError, iterator::SnapshotIteratorError};
 
 use crate::{
     thing::thing_manager::validation::DataValidationError,
