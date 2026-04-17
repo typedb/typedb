@@ -194,7 +194,7 @@ features = {}
 
 		[workspace.dependencies.uuid]
 			features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-			version = "1.18.0"
+			version = "1.21.0"
 			default-features = false
 
 		[workspace.dependencies.rand]
@@ -219,7 +219,7 @@ features = {}
 
 		[workspace.dependencies.tokio-rustls]
 			features = ["logging", "ring", "tls12"]
-			version = "0.26.2"
+			version = "0.26.4"
 			default-features = false
 
 		[workspace.dependencies.executor]
@@ -270,7 +270,7 @@ features = {}
 
 		[workspace.dependencies.serde_with]
 			features = ["alloc", "default", "macros", "std"]
-			version = "3.14.0"
+			version = "3.18.0"
 			default-features = false
 
 		[workspace.dependencies.hyper]
@@ -285,7 +285,7 @@ features = {}
 
 		[workspace.dependencies.tracing]
 			features = ["attributes", "default", "log", "std", "tracing-attributes"]
-			version = "0.1.41"
+			version = "0.1.44"
 			default-features = false
 
 		[workspace.dependencies.cache]
@@ -346,7 +346,7 @@ features = {}
 
 		[workspace.dependencies.regex]
 			features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
-			version = "1.11.1"
+			version = "1.12.3"
 			default-features = false
 
 		[workspace.dependencies.system]
@@ -366,7 +366,7 @@ features = {}
 
 		[workspace.dependencies.http]
 			features = ["default", "std"]
-			version = "1.3.1"
+			version = "1.4.0"
 			default-features = false
 
 		[workspace.dependencies.tonic]
@@ -416,12 +416,12 @@ features = {}
 
 		[workspace.dependencies.unicase]
 			features = []
-			version = "2.8.1"
+			version = "2.9.0"
 			default-features = false
 
 		[workspace.dependencies.yaml-rust2]
 			features = ["default", "encoding"]
-			version = "0.10.3"
+			version = "0.10.4"
 			default-features = false
 
 		[workspace.dependencies.concept]
@@ -430,8 +430,8 @@ features = {}
 			default-features = false
 
 		[workspace.dependencies.tracing-subscriber]
-			features = ["alloc", "ansi", "default", "env-filter", "fmt", "matchers", "nu-ansi-term", "once_cell", "regex", "registry", "sharded-slab", "smallvec", "std", "thread_local", "tracing", "tracing-log"]
-			version = "0.3.19"
+			features = ["alloc", "ansi", "default", "env-filter", "fmt", "matchers", "nu-ansi-term", "once_cell", "registry", "sharded-slab", "smallvec", "std", "thread_local", "tracing", "tracing-log"]
+			version = "0.3.23"
 			default-features = false
 
 		[workspace.dependencies.pwhash]
@@ -446,7 +446,7 @@ features = {}
 
 		[workspace.dependencies.moka]
 			features = ["default", "sync"]
-			version = "0.12.10"
+			version = "0.12.15"
 			default-features = false
 
 		[workspace.dependencies.paste]
@@ -486,7 +486,7 @@ features = {}
 
 		[workspace.dependencies.tracing-appender]
 			features = []
-			version = "0.2.3"
+			version = "0.2.4"
 			default-features = false
 
 		[workspace.dependencies.tempdir]
@@ -506,7 +506,7 @@ features = {}
 
 		[workspace.dependencies.tokio]
 			features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-			version = "1.47.1"
+			version = "1.52.0"
 			default-features = false
 
 		[workspace.dependencies.serde_yaml2]
@@ -521,12 +521,12 @@ features = {}
 
 		[workspace.dependencies.tower-http]
 			features = ["cors", "default"]
-			version = "0.6.6"
+			version = "0.6.8"
 			default-features = false
 
 		[workspace.dependencies.serde]
 			features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-			version = "1.0.219"
+			version = "1.0.228"
 			default-features = false
 
 		[workspace.dependencies.structural_equality]
@@ -541,7 +541,7 @@ features = {}
 
 		[workspace.dependencies.tokio-stream]
 			features = ["default", "net", "time"]
-			version = "0.1.17"
+			version = "0.1.18"
 			default-features = false
 
 		[workspace.dependencies.test_utils_concept]
@@ -551,12 +551,12 @@ features = {}
 
 		[workspace.dependencies.futures]
 			features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
-			version = "0.3.31"
+			version = "0.3.32"
 			default-features = false
 
 		[workspace.dependencies.url]
 			features = ["default", "serde", "std"]
-			version = "2.5.4"
+			version = "2.5.8"
 			default-features = false
 
 		[workspace.dependencies.concurrency]
@@ -591,7 +591,7 @@ features = {}
 
 		[workspace.dependencies.clap]
 			features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-			version = "4.5.45"
+			version = "4.6.1"
 			default-features = false
 
 		[workspace.dependencies.bytes]
@@ -606,7 +606,7 @@ features = {}
 
 		[workspace.dependencies.axum-server]
 			features = ["arc-swap", "default", "rustls", "rustls-pemfile", "rustls-pki-types", "tls-rustls-no-provider", "tokio-rustls"]
-			version = "0.7.2"
+			version = "0.7.3"
 			default-features = false
 
 		[workspace.dependencies.bincode]
@@ -615,7 +615,7 @@ features = {}
 			default-features = false
 
 		[workspace.dependencies.chrono]
-			features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
+			features = ["alloc", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
 			version = "0.4.41"
 			default-features = false
 
@@ -626,6 +626,6 @@ features = {}
 
 		[workspace.dependencies.serde_json]
 			features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-			version = "1.0.143"
+			version = "1.0.149"
 			default-features = false
 
