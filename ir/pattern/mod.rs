@@ -480,7 +480,7 @@ impl ContextualisedBindingMode {
 }
 
 #[derive(Debug, Clone)]
-pub struct VariableRequirements(HashMap<Variable, bool>);
+pub(crate) struct VariableRequirements(HashMap<Variable, bool>);
 impl VariableRequirements {
     fn from(modes: &ContextualisedBindingMode) -> Self {
         Self(
