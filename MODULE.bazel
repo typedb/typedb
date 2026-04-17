@@ -24,7 +24,7 @@ bazel_dep(name = "rules_rust", version = "0.56.0")
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
     edition = "2021",
-    versions = ["1.81.0"],
+    versions = ["1.93.0"],
 )
 use_repo(rust, "rust_toolchains")
 register_toolchains("@rust_toolchains//:all")
@@ -86,12 +86,8 @@ use_repo(oci, "typedb-ubuntu-x86_64", "typedb-ubuntu-x86_64_linux_amd64", "typed
 workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
 workspace_refs(
     name = "typedb_workspace_refs",
-    workspace_commit_dict = {
-        "typeql+": "508bdfa6687ae4c48d482318387204f1ae7bd4ac",
-         # "typedb_protocol+": "e4567406bdc993722554717563ffc1ac9ce0a678",
-    },
     workspace_tag_dict = {
-        # "typeql+": "3.8.3-rc0",
+        "typeql+": "3.8.4-rc0",
         "typedb_protocol+": "3.7.1-rc1",
     },
 )
@@ -102,7 +98,7 @@ native_artifact_files.artifact(
     name = "typedb_console_artifact",
     group_name = "typedb-console-{platform}",
     artifact_name = "typedb-console-{platform}-{version}.{ext}",
-    tag = "3.8.0",
+    tag = "3.8.4-rc1",
 )
 use_repo(
     native_artifact_files,
@@ -135,7 +131,7 @@ bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    commit = "508bdfa6687ae4c48d482318387204f1ae7bd4ac",
+    tag = "3.8.4-rc0",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
