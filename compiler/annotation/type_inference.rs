@@ -119,19 +119,17 @@ pub mod tests {
             let mut function_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(function_context.new_block_builder_context(&mut value_parameters));
-            let (f_context, f_conjunction) = builder.to_parts_mut();
-            let f_var_animal =
-                f_conjunction.constraints_mut(f_context).get_or_declare_variable("called_animal", None).unwrap();
+            let mut f_conjunction = builder.conjunction_mut();
+            let f_var_animal = f_conjunction.constraints_mut().get_or_declare_variable("called_animal", None).unwrap();
             let f_var_animal_type =
-                f_conjunction.constraints_mut(f_context).get_or_declare_variable("called_animal_type", None).unwrap();
-            let f_var_name =
-                f_conjunction.constraints_mut(f_context).get_or_declare_variable("called_name", None).unwrap();
-            f_conjunction.constraints_mut(f_context).add_label(f_var_animal_type, LABEL_CAT.clone()).unwrap();
+                f_conjunction.constraints_mut().get_or_declare_variable("called_animal_type", None).unwrap();
+            let f_var_name = f_conjunction.constraints_mut().get_or_declare_variable("called_name", None).unwrap();
+            f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT.clone()).unwrap();
             f_conjunction
-                .constraints_mut(f_context)
+                .constraints_mut()
                 .add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into(), None)
                 .unwrap();
-            f_conjunction.constraints_mut(f_context).add_has(f_var_animal, f_var_name, None).unwrap();
+            f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name, None).unwrap();
             let function_block = builder.finish().unwrap();
             let f_ir = Function::new(
                 "fn_test",
@@ -149,8 +147,8 @@ pub mod tests {
             let mut entry_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(entry_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
-            let var_animal = conjunction.constraints_mut(context).get_or_declare_variable("animal", None).unwrap();
+            let mut conjunction = builder.conjunction_mut();
+            let var_animal = conjunction.constraints_mut().get_or_declare_variable("animal", None).unwrap();
 
             let callee_signature = FunctionSignature::new(
                 function_id.clone(),
@@ -159,7 +157,7 @@ pub mod tests {
                 true,
             );
             conjunction
-                .constraints_mut(context)
+                .constraints_mut()
                 .add_function_binding(vec![var_animal], &callee_signature, vec![], "test_fn", None)
                 .unwrap();
             let entry = builder.finish().unwrap();
@@ -339,24 +337,18 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_name_type, LABEL_NAME.clone()).unwrap();
-            conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.clone()).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
@@ -410,24 +402,18 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_ANIMAL.clone()).unwrap();
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
-            conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL.clone()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
 
@@ -479,24 +465,18 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
-            conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
             let err = compute_type_inference_graph(
@@ -526,24 +506,18 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_ANIMAL.clone()).unwrap();
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_name_type, LABEL_NAME.clone()).unwrap();
-            conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_ANIMAL.clone()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.clone()).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
@@ -607,37 +581,29 @@ pub mod tests {
         let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-        let (context, conjunction) = builder.to_parts_mut();
+        let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name, var_name_type) = ["animal", "name", "name_type"]
             .into_iter()
-            .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap())
+            .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
             .collect_tuple()
             .unwrap();
 
         // Case 1: {$a isa cat;} or {$a isa dog;}; $a has name $n;
-        conjunction.constraints_mut(context).add_label(var_name_type, Label::build("name", None)).unwrap();
-        conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
-        conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
+        conjunction.constraints_mut().add_label(var_name_type, Label::build("name", None)).unwrap();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+        conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
-        let mut disj = conjunction.add_disjunction(context);
+        let mut disj = conjunction.add_disjunction();
 
-        let mut branch1 = disj.add_conjunction(context);
-        let b1_var_animal_type =
-            branch1.constraints_mut(context).get_or_declare_variable("b1_animal_type", None).unwrap();
-        branch1
-            .constraints_mut(context)
-            .add_isa(IsaKind::Subtype, var_animal, b1_var_animal_type.into(), None)
-            .unwrap();
-        branch1.constraints_mut(context).add_label(b1_var_animal_type, LABEL_CAT.clone()).unwrap();
+        let mut branch1 = disj.add_conjunction();
+        let b1_var_animal_type = branch1.constraints_mut().get_or_declare_variable("b1_animal_type", None).unwrap();
+        branch1.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b1_var_animal_type.into(), None).unwrap();
+        branch1.constraints_mut().add_label(b1_var_animal_type, LABEL_CAT.clone()).unwrap();
 
-        let mut branch2 = disj.add_conjunction(context);
-        let b2_var_animal_type =
-            branch2.constraints_mut(context).get_or_declare_variable("b2_animal_type", None).unwrap();
-        branch2
-            .constraints_mut(context)
-            .add_isa(IsaKind::Subtype, var_animal, b2_var_animal_type.into(), None)
-            .unwrap();
-        branch2.constraints_mut(context).add_label(b2_var_animal_type, LABEL_DOG.clone()).unwrap();
+        let mut branch2 = disj.add_conjunction();
+        let b2_var_animal_type = branch2.constraints_mut().get_or_declare_variable("b2_animal_type", None).unwrap();
+        branch2.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b2_var_animal_type.into(), None).unwrap();
+        branch2.constraints_mut().add_label(b2_var_animal_type, LABEL_DOG.clone()).unwrap();
 
         let (b1_var_animal_type, b2_var_animal_type) = (b1_var_animal_type, b2_var_animal_type);
 
@@ -738,14 +704,14 @@ pub mod tests {
         let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-        let (context, conjunction) = builder.to_parts_mut();
+        let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name) = ["animal", "name"]
             .into_iter()
-            .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap())
+            .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
             .collect_tuple()
             .unwrap();
 
-        conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
+        conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
         let block = builder.finish().unwrap();
         let conjunction = block.conjunction();
@@ -792,7 +758,7 @@ pub mod tests {
         let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-        let (context, conjunction) = builder.to_parts_mut();
+        let mut conjunction = builder.conjunction_mut();
         let (
             var_has_fear,
             var_is_feared,
@@ -813,25 +779,25 @@ pub mod tests {
             "role_is_feared_type",
         ]
         .into_iter()
-        .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap())
+        .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
         .collect_tuple()
         .unwrap();
 
-        conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_fears, var_fears_type.into(), None).unwrap();
-        conjunction.constraints_mut(context).add_label(var_fears_type, LABEL_FEARS.clone()).unwrap();
-        conjunction.constraints_mut(context).add_links(var_fears, var_has_fear, var_role_has_fear, None).unwrap();
-        conjunction.constraints_mut(context).add_links(var_fears, var_is_feared, var_role_is_feared, None).unwrap();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_fears, var_fears_type.into(), None).unwrap();
+        conjunction.constraints_mut().add_label(var_fears_type, LABEL_FEARS.clone()).unwrap();
+        conjunction.constraints_mut().add_links(var_fears, var_has_fear, var_role_has_fear, None).unwrap();
+        conjunction.constraints_mut().add_links(var_fears, var_is_feared, var_role_is_feared, None).unwrap();
 
         conjunction
-            .constraints_mut(context)
+            .constraints_mut()
             .add_sub(SubKind::Subtype, var_role_has_fear.into(), var_role_has_fear_type.into(), None)
             .unwrap();
-        conjunction.constraints_mut(context).add_label(var_role_has_fear_type, LABEL_HAS_FEAR.clone()).unwrap();
+        conjunction.constraints_mut().add_label(var_role_has_fear_type, LABEL_HAS_FEAR.clone()).unwrap();
         conjunction
-            .constraints_mut(context)
+            .constraints_mut()
             .add_sub(SubKind::Subtype, var_role_is_feared.into(), var_role_is_feared_type.into(), None)
             .unwrap();
-        conjunction.constraints_mut(context).add_label(var_role_is_feared_type, LABEL_IS_FEARED.clone()).unwrap();
+        conjunction.constraints_mut().add_label(var_role_is_feared_type, LABEL_IS_FEARED.clone()).unwrap();
 
         let block = builder.finish().unwrap();
 
@@ -934,24 +900,18 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_owned_type) =
                 ["animal", "name", "animal_type", "name_type"]
                     .into_iter()
-                    .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap())
+                    .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                     .collect_tuple()
                     .unwrap();
 
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Exact, var_name, var_owned_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_owns(var_animal_type.into(), var_owned_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_name, var_owned_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_owns(var_animal_type.into(), var_owned_type.into(), None).unwrap();
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
@@ -1008,23 +968,17 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_owner_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_animal, var_owner_type.into(), None)
-                .unwrap();
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
-            conjunction.constraints_mut(context).add_owns(var_owner_type.into(), var_name_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_owner_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_CATNAME.clone()).unwrap();
+            conjunction.constraints_mut().add_owns(var_owner_type.into(), var_name_type.into(), None).unwrap();
 
             let block = builder.finish().unwrap();
 
@@ -1080,24 +1034,18 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
-            conjunction.constraints_mut(context).add_owns(var_animal_type.into(), var_name_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_label(var_name_type, LABEL_DOGNAME.clone()).unwrap();
+            conjunction.constraints_mut().add_owns(var_animal_type.into(), var_name_type.into(), None).unwrap();
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
@@ -1141,19 +1089,16 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Exact, var_animal, var_animal_type.into(), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_isa(IsaKind::Exact, var_name, var_name_type.into(), None).unwrap();
-            conjunction.constraints_mut(context).add_owns(var_animal_type.into(), var_name_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_animal, var_animal_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_name, var_name_type.into(), None).unwrap();
+            conjunction.constraints_mut().add_owns(var_animal_type.into(), var_name_type.into(), None).unwrap();
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
@@ -1221,19 +1166,16 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] = ["animal", "name"]
-                .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap());
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
             conjunction
-                .constraints_mut(context)
+                .constraints_mut()
                 .add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_CAT), None)
                 .unwrap();
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME), None).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
@@ -1285,19 +1227,19 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] = ["animal", "name"]
-                .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap());
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
             conjunction
-                .constraints_mut(context)
+                .constraints_mut()
                 .add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_ANIMAL), None)
                 .unwrap();
             conjunction
-                .constraints_mut(context)
+                .constraints_mut()
                 .add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_CATNAME), None)
                 .unwrap();
-            conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
 
@@ -1347,19 +1289,19 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] = ["animal", "name"]
-                .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap());
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
             conjunction
-                .constraints_mut(context)
+                .constraints_mut()
                 .add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_CAT), None)
                 .unwrap();
             conjunction
-                .constraints_mut(context)
+                .constraints_mut()
                 .add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_DOGNAME), None)
                 .unwrap();
-            conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
             let err = compute_type_inference_graph(
@@ -1388,19 +1330,16 @@ pub mod tests {
             let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-            let (context, conjunction) = builder.to_parts_mut();
+            let mut conjunction = builder.conjunction_mut();
             let [var_animal, var_name] = ["animal", "name"]
-                .map(|name| conjunction.constraints_mut(context).get_or_declare_variable(name, None).unwrap());
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
             conjunction
-                .constraints_mut(context)
+                .constraints_mut()
                 .add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_ANIMAL), None)
                 .unwrap();
-            conjunction
-                .constraints_mut(context)
-                .add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME), None)
-                .unwrap();
-            conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME), None).unwrap();
+            conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
@@ -1464,12 +1403,12 @@ pub mod tests {
         let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-        let (context, conjunction) = builder.to_parts_mut();
-        let var_animal = conjunction.constraints_mut(context).get_or_declare_variable("animal", None).unwrap();
-        let var_name = conjunction.constraints_mut(context).get_or_declare_variable("name", None).unwrap();
+        let mut conjunction = builder.conjunction_mut();
+        let var_animal = conjunction.constraints_mut().get_or_declare_variable("animal", None).unwrap();
+        let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
 
         // Try seeding
-        conjunction.constraints_mut(context).add_has(var_animal, var_name, None).unwrap();
+        conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
         let block = builder.finish().unwrap();
         let conjunction = block.conjunction();

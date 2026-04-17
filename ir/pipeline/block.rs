@@ -12,7 +12,7 @@ use typeql::common::Span;
 
 use crate::{
     pattern::{
-        conjunction::{Conjunction, ConjunctionBuilder, NestedPatternBuilder},
+        conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext, NestedPatternBuilder},
         constraint::Constraint,
         variable_category::VariableCategory,
         BindingMode, BranchID, ContextualisedBindingMode, ScopeId,
@@ -66,11 +66,6 @@ impl<'reg> BlockBuilder<'reg> {
         Self { conjunction: ConjunctionBuilder::new(ScopeId::ROOT), context }
     }
 
-    pub fn to_parts_mut(&mut self) -> (&mut BlockBuilderContext<'reg>, &mut ConjunctionBuilder) {
-        let Self { context, conjunction } = self;
-        (context, conjunction)
-    }
-
     pub fn finish(mut self) -> Result<Block, Box<RepresentationError>> {
         let block_binding_modes = self.variable_binding_modes();
         validate_no_optionals_in_negations(&self.conjunction, false)?;
@@ -91,8 +86,8 @@ impl<'reg> BlockBuilder<'reg> {
         Ok(Block { conjunction, block_context })
     }
 
-    pub fn conjunction_mut(&mut self) -> &mut ConjunctionBuilder {
-        &mut self.conjunction
+    pub fn conjunction_mut<'ctx>(&'ctx mut self) -> ConjunctionBuilderWithContext<'ctx, 'reg> {
+        ConjunctionBuilderWithContext::new(&mut self.context, &mut self.conjunction)
     }
 
     pub fn context_mut(&mut self) -> &mut BlockBuilderContext<'reg> {

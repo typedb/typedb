@@ -199,18 +199,15 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-    let (context, conjunction) = builder.to_parts_mut();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("person_type", None).unwrap();
-    let var_attribute_type = conjunction.constraints_mut(context).create_anonymous_variable(None).unwrap();
-    let var_person = conjunction.constraints_mut(context).get_or_declare_variable("person", None).unwrap();
-    let var_attribute = conjunction.constraints_mut(context).create_anonymous_variable(None).unwrap();
-    let has_attribute = conjunction.constraints_mut(context).add_has(var_person, var_attribute, None).unwrap().clone();
-    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
-    conjunction
-        .constraints_mut(context)
-        .add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into(), None)
-        .unwrap();
-    conjunction.constraints_mut(context).add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    let mut conjunction = builder.conjunction_mut();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_attribute_type = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_attribute = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+    let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute, None).unwrap().clone();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
     let block_annotations = {
@@ -297,18 +294,15 @@ fn unselected_named_vars_counted() {
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-    let (context, conjunction) = builder.to_parts_mut();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("person_type", None).unwrap();
-    let var_attribute_type = conjunction.constraints_mut(context).get_or_declare_variable("attr_type", None).unwrap();
-    let var_person = conjunction.constraints_mut(context).get_or_declare_variable("person", None).unwrap();
-    let var_attribute = conjunction.constraints_mut(context).get_or_declare_variable("attr", None).unwrap();
-    let has_attribute = conjunction.constraints_mut(context).add_has(var_person, var_attribute, None).unwrap().clone();
-    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
-    conjunction
-        .constraints_mut(context)
-        .add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into(), None)
-        .unwrap();
-    conjunction.constraints_mut(context).add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    let mut conjunction = builder.conjunction_mut();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_attribute_type = conjunction.constraints_mut().get_or_declare_variable("attr_type", None).unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_attribute = conjunction.constraints_mut().get_or_declare_variable("attr", None).unwrap();
+    let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute, None).unwrap().clone();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
     let block_annotations = {
@@ -397,26 +391,26 @@ fn cartesian_named_counted_checked() {
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-    let (context, conjunction) = builder.to_parts_mut();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("person_type", None).unwrap();
-    let var_name_type = conjunction.constraints_mut(context).create_anonymous_variable(None).unwrap();
-    let var_age_type = conjunction.constraints_mut(context).create_anonymous_variable(None).unwrap();
-    let var_email_type = conjunction.constraints_mut(context).create_anonymous_variable(None).unwrap();
-    let var_person = conjunction.constraints_mut(context).get_or_declare_variable("person", None).unwrap();
-    let var_name = conjunction.constraints_mut(context).get_or_declare_variable("name", None).unwrap();
-    let var_age = conjunction.constraints_mut(context).get_or_declare_variable("age", None).unwrap();
-    let var_email = conjunction.constraints_mut(context).create_anonymous_variable(None).unwrap();
-    let has_name = conjunction.constraints_mut(context).add_has(var_person, var_name, None).unwrap().clone();
-    let has_age = conjunction.constraints_mut(context).add_has(var_person, var_age, None).unwrap().clone();
-    let has_email = conjunction.constraints_mut(context).add_has(var_person, var_email, None).unwrap().clone();
-    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
-    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
-    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_age, var_age_type.into(), None).unwrap();
-    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_email, var_email_type.into(), None).unwrap();
-    conjunction.constraints_mut(context).add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
-    conjunction.constraints_mut(context).add_label(var_name_type, NAME_LABEL.clone()).unwrap();
-    conjunction.constraints_mut(context).add_label(var_age_type, AGE_LABEL.clone()).unwrap();
-    conjunction.constraints_mut(context).add_label(var_email_type, EMAIL_LABEL.clone()).unwrap();
+    let mut conjunction = builder.conjunction_mut();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_name_type = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+    let var_age_type = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+    let var_email_type = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
+    let var_age = conjunction.constraints_mut().get_or_declare_variable("age", None).unwrap();
+    let var_email = conjunction.constraints_mut().create_anonymous_variable(None).unwrap();
+    let has_name = conjunction.constraints_mut().add_has(var_person, var_name, None).unwrap().clone();
+    let has_age = conjunction.constraints_mut().add_has(var_person, var_age, None).unwrap().clone();
+    let has_email = conjunction.constraints_mut().add_has(var_person, var_email, None).unwrap().clone();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_email, var_email_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_email_type, EMAIL_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
     let block_annotations = {

@@ -17,7 +17,7 @@ use typeql::{
 };
 
 use crate::{
-    pattern::conjunction::ConjunctionBuilder,
+    pattern::conjunction::{ConjunctionBuilder, ConjunctionBuilderWithContext},
     pipeline::{
         block::{Block, BlockBuilderContext},
         function_signature::HashMapFunctionSignatureIndex,
@@ -39,8 +39,8 @@ pub fn translate_insert(
     validate_insert_patterns(&insert.patterns)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
-    let (context, conjunction) = builder.to_parts_mut();
-    add_patterns(&function_index, context, conjunction, &insert.patterns)?;
+    let mut conjunction = builder.conjunction_mut();
+    add_patterns(&function_index, &mut conjunction, &insert.patterns)?;
     builder.finish()
 }
 
@@ -95,8 +95,8 @@ pub fn translate_update(
     validate_update_patterns(context, &update.patterns)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
-    let (context, conjunction) = builder.to_parts_mut();
-    add_patterns(&function_index, context, conjunction, &update.patterns)?;
+    let mut conjunction = builder.conjunction_mut();
+    add_patterns(&function_index, &mut conjunction, &update.patterns)?;
     builder.finish()
 }
 
@@ -108,8 +108,8 @@ pub fn translate_put(
     validate_insert_patterns(&put.patterns)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
-    let (context, conjunction) = builder.to_parts_mut();
-    add_patterns(&function_index, context, conjunction, &put.patterns)?;
+    let mut conjunction = builder.conjunction_mut();
+    add_patterns(&function_index, &mut conjunction, &put.patterns)?;
     let block = builder.finish()?;
     for constraint in block.conjunction().constraints() {
         match constraint {
@@ -140,8 +140,8 @@ pub fn translate_delete(
     validate_deleted_variables_availability(context, delete)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let mut deleted_concepts = Vec::new();
-    let (block_context, conjunction) = builder.to_parts_mut();
-    add_deletables(block_context, &delete.deletables, conjunction, &mut deleted_concepts)?;
+    let mut conjunction = builder.conjunction_mut();
+    add_deletables(&delete.deletables, &mut conjunction, &mut deleted_concepts)?;
     let block = builder.finish()?;
     context.last_stage_visible_variables.retain(|name, var| !deleted_concepts.contains(var));
     Ok((block, deleted_concepts))
@@ -161,34 +161,33 @@ fn validate_delete(delete: &typeql::query::stage::Delete) -> Result<(), Box<Repr
 }
 
 fn add_deletables(
-    context: &mut BlockBuilderContext<'_>,
     deletables: &[Deletable],
-    mut conjunction: &mut ConjunctionBuilder,
+    mut conjunction: &mut ConjunctionBuilderWithContext<'_, '_>,
     deleted_concepts: &mut Vec<Variable>,
 ) -> Result<(), Box<RepresentationError>> {
     for deletable in deletables {
         match &deletable.kind {
             DeletableKind::Has { attribute, owner } => {
-                let mut constraints = conjunction.constraints_mut(context);
+                let mut constraints = conjunction.constraints_mut();
                 let translated_owner = register_typeql_var(&mut constraints, owner)?;
                 let translated_attribute = register_typeql_var(&mut constraints, attribute)?;
                 constraints.add_has(translated_owner, translated_attribute, deletable.span())?;
             }
             DeletableKind::Links { players, relation } => {
-                let mut constraints = conjunction.constraints_mut(context);
+                let mut constraints = conjunction.constraints_mut();
                 let translated_relation = register_typeql_var(&mut constraints, relation)?;
                 add_typeql_relation(&mut constraints, translated_relation, players)?;
             }
             DeletableKind::Concept { variable } => {
-                let mut constraints = conjunction.constraints_mut(context);
+                let mut constraints = conjunction.constraints_mut();
                 let translated_variable =
                     constraints.get_or_declare_variable(variable.name().unwrap(), variable.span())?;
                 deleted_concepts.push(translated_variable);
             }
             DeletableKind::Optional { deletables } => {
                 debug_assert!(deletables.iter().all(|d| !matches!(d.kind, DeletableKind::Optional { .. })));
-                let optional_builder = conjunction.add_optional(deletable.span(), context)?;
-                add_deletables(context, deletables, optional_builder.conjunction_mut(), deleted_concepts)?;
+                let mut optional_builder = conjunction.add_optional(deletable.span())?;
+                add_deletables(deletables, &mut optional_builder, deleted_concepts)?;
             }
         }
     }

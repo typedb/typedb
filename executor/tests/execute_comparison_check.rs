@@ -108,24 +108,24 @@ fn attribute_equality() {
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-    let (context, conjunction) = builder.to_parts_mut();
-    let var_age_a = conjunction.constraints_mut(context).get_or_declare_variable("a", None).unwrap();
-    let var_age_b = conjunction.constraints_mut(context).get_or_declare_variable("b", None).unwrap();
-    let var_age_type_a = conjunction.constraints_mut(context).get_or_declare_variable("age-a", None).unwrap();
-    let var_age_type_b = conjunction.constraints_mut(context).get_or_declare_variable("age-b", None).unwrap();
+    let mut conjunction = builder.conjunction_mut();
+    let var_age_a = conjunction.constraints_mut().get_or_declare_variable("a", None).unwrap();
+    let var_age_b = conjunction.constraints_mut().get_or_declare_variable("b", None).unwrap();
+    let var_age_type_a = conjunction.constraints_mut().get_or_declare_variable("age-a", None).unwrap();
+    let var_age_type_b = conjunction.constraints_mut().get_or_declare_variable("age-b", None).unwrap();
 
     let isa_a = conjunction
-        .constraints_mut(context)
+        .constraints_mut()
         .add_isa(IsaKind::Subtype, var_age_a, var_age_type_a.into(), None)
         .unwrap()
         .clone();
     let isa_b = conjunction
-        .constraints_mut(context)
+        .constraints_mut()
         .add_isa(IsaKind::Subtype, var_age_b, var_age_type_b.into(), None)
         .unwrap()
         .clone();
-    conjunction.constraints_mut(context).add_label(var_age_type_a, AGE_LABEL.clone()).unwrap();
-    conjunction.constraints_mut(context).add_label(var_age_type_b, AGE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_age_type_a, AGE_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_age_type_b, AGE_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();

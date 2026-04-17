@@ -12,7 +12,7 @@ use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
-        conjunction::{Conjunction, ConjunctionBuilder},
+        conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext},
         nested_pattern::NestedPattern,
         BindingMode, BranchID, ContextualisedBindingMode, Pattern, Scope, ScopeId, VariableRequirements,
     },
@@ -108,13 +108,6 @@ impl DisjunctionBuilder {
         self.conjunctions.iter().map(|(_, c)| c)
     }
 
-    pub fn add_conjunction(&mut self, context: &mut BlockBuilderContext<'_>) -> &mut ConjunctionBuilder {
-        let conj_scope_id = context.next_scope_id();
-        let branch_id = context.next_branch_id();
-        self.conjunctions.push((branch_id, ConjunctionBuilder::new(conj_scope_id)));
-        &mut self.conjunctions.last_mut().unwrap().1
-    }
-
     pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
@@ -143,5 +136,24 @@ impl DisjunctionBuilder {
             }
         });
         binding_modes
+    }
+}
+
+#[derive(Debug)]
+pub struct DisjunctionBuilderWithContext<'ctx, 'reg> {
+    context: &'ctx mut BlockBuilderContext<'reg>,
+    disjunction: &'ctx mut DisjunctionBuilder,
+}
+
+impl<'ctx, 'reg> DisjunctionBuilderWithContext<'ctx, 'reg> {
+    pub(crate) fn new(context: &'ctx mut BlockBuilderContext<'reg>, disjunction: &'ctx mut DisjunctionBuilder) -> Self {
+        Self { context, disjunction }
+    }
+
+    pub fn add_conjunction(&mut self) -> ConjunctionBuilderWithContext<'_, 'reg> {
+        let conj_scope_id = self.context.next_scope_id();
+        let branch_id = self.context.next_branch_id();
+        self.disjunction.conjunctions.push((branch_id, ConjunctionBuilder::new(conj_scope_id)));
+        ConjunctionBuilderWithContext::new(&mut self.context, &mut self.disjunction.conjunctions.last_mut().unwrap().1)
     }
 }

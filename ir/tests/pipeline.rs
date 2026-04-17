@@ -33,11 +33,11 @@ use ir::{
 //     let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
 //     let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
 //
-//     conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
-//     conjunction.constraints_mut(context).add_has(var_person, var_name).unwrap();
-//     conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
-//     conjunction.constraints_mut(context).add_label(var_person_type, "person").unwrap();
-//     conjunction.constraints_mut(context).add_label(var_name_type, "name").unwrap();
+//     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+//     conjunction.constraints_mut().add_has(var_person, var_name).unwrap();
+//     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+//     conjunction.constraints_mut().add_label(var_person_type, "person").unwrap();
+//     conjunction.constraints_mut().add_label(var_name_type, "name").unwrap();
 //
 //     builder.add_limit(10);
 //     builder.add_sort(vec![(var_person.clone(), true), (var_name.clone(), false)]);
@@ -50,14 +50,14 @@ fn build_with_functions() {
     let mut context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(context.new_block_builder_context(&mut value_parameters));
-    let (context, conjunction) = builder.to_parts_mut();
-    let var_person = conjunction.constraints_mut(context).get_or_declare_variable("person", None).unwrap();
-    let var_person_type = conjunction.constraints_mut(context).get_or_declare_variable("person_type", None).unwrap();
+    let mut conjunction = builder.conjunction_mut();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
 
-    let var_count = conjunction.constraints_mut(context).get_or_declare_variable("count", None).unwrap();
-    let var_mean = conjunction.constraints_mut(context).get_or_declare_variable("sum", None).unwrap();
+    let var_count = conjunction.constraints_mut().get_or_declare_variable("count", None).unwrap();
+    let var_mean = conjunction.constraints_mut().get_or_declare_variable("sum", None).unwrap();
 
-    conjunction.constraints_mut(context).add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
 
     let function_argument_categories = vec![VariableCategory::Object];
     let function_return_categories = vec![
@@ -71,7 +71,7 @@ fn build_with_functions() {
         false,
     );
     conjunction
-        .constraints_mut(context)
+        .constraints_mut()
         .add_function_binding(vec![var_count, var_mean], &function_signature, vec![var_person], "test_fn", None)
         .unwrap();
     let block = builder.finish().unwrap();

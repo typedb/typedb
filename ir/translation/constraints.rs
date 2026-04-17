@@ -23,7 +23,7 @@ use typeql::{
 
 use crate::{
     pattern::{
-        conjunction::ConjunctionBuilder,
+        conjunction::{ConjunctionBuilder, ConjunctionBuilderWithContext},
         constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
         ValueType, Vertex,
     },
@@ -38,11 +38,10 @@ use crate::{
 
 pub(super) fn add_statement(
     function_index: &impl FunctionSignatureIndex,
-    context: &mut BlockBuilderContext<'_>,
-    conjunction: &mut ConjunctionBuilder,
+    conjunction: &mut ConjunctionBuilderWithContext<'_, '_>,
     stmt: &typeql::Statement,
 ) -> Result<(), Box<RepresentationError>> {
-    let constraints = &mut conjunction.constraints_mut(context);
+    let constraints = &mut conjunction.constraints_mut();
     match stmt {
         typeql::Statement::Is(Is { lhs, rhs, span }) => {
             let lhs = register_typeql_var(constraints, lhs)?;
