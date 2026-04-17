@@ -160,6 +160,7 @@ impl Default for DevelopmentModeConfig {
     }
 }
 
+#[macro_export]
 macro_rules! override_config {
     ($($target:expr => $field:expr;)*) => {
         $( if let Some(value) = $field {
@@ -169,6 +170,7 @@ macro_rules! override_config {
     }
 }
 
+#[macro_export]
 macro_rules! override_optional_config {
     ($($target:expr => $field:expr;)*) => {
         $( if let Some(value) = $field {
@@ -181,6 +183,7 @@ macro_rules! override_optional_config {
 #[derive(Debug)]
 pub struct ConfigBuilder {
     config: Config,
+    raw_yaml: String,
 }
 
 impl ConfigBuilder {
@@ -190,15 +193,56 @@ impl ConfigBuilder {
     pub const IS_DEVELOPMENT_MODE_FORCED: bool = true;
 
     pub fn from_file(path: PathBuf) -> Result<Self, ConfigError> {
-        let mut config = String::new();
+        let mut raw_yaml = String::new();
         let resolved_path = Self::resolve_path_from_executable(&path);
         File::open(resolved_path.clone())
             .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path: resolved_path.clone() })?
-            .read_to_string(&mut config)
+            .read_to_string(&mut raw_yaml)
             .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?;
-        serde_yaml2::from_str::<Config>(config.as_str())
+        serde_yaml2::from_str::<Config>(raw_yaml.as_str())
             .map_err(|source| ConfigError::ErrorParsingYaml { source })
-            .map(|config| Self { config })
+            .map(|config| Self { config, raw_yaml })
+    }
+
+    /// Parse an extension config from the same YAML file. The type `T` is deserialized from
+    /// the YAML root — unknown fields are silently ignored, so `T` only needs to declare the
+    /// fields it requires.
+    ///
+    /// # Adding a new top-level section
+    ///
+    /// To parse a new section (e.g., `clustering:`) alongside the standard config:
+    /// ```ignore
+    /// #[derive(Deserialize)]
+    /// #[serde(rename_all = "kebab-case")]
+    /// struct ClusteringExtension {
+    ///     clustering: ClusteringConfig,
+    /// }
+    ///
+    /// let ext = builder.parse_extension::<ClusteringExtension>()?;
+    /// let clustering = ext.clustering;
+    /// ```
+    ///
+    /// # Extending an existing section
+    ///
+    /// To parse additional fields under `server:` (e.g., `server.clustering:`):
+    /// ```ignore
+    /// #[derive(Deserialize)]
+    /// #[serde(rename_all = "kebab-case")]
+    /// struct ServerClusteringFields {
+    ///     clustering: ClusteringConfig,
+    /// }
+    ///
+    /// #[derive(Deserialize)]
+    /// #[serde(rename_all = "kebab-case")]
+    /// struct ServerConfigClusteringExtension {
+    ///     server: ServerClusteringFields,
+    /// }
+    ///
+    /// let ext = builder.parse_extension::<ServerConfigClusteringExtension>()?;
+    /// let clustering = ext.server.clustering;
+    /// ```
+    pub fn parse_extension<T: serde::de::DeserializeOwned>(&self) -> Result<T, ConfigError> {
+        serde_yaml2::from_str::<T>(self.raw_yaml.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
     }
 
     pub fn override_with_cliargs(&mut self, cliargs: CLIArgs) {
@@ -224,7 +268,7 @@ impl ConfigBuilder {
             diagnostics_monitoring_port,
             development_mode_enabled,
         } = cliargs;
-        let Self { config } = self;
+        let Self { config, raw_yaml: _ } = self;
         override_config! {
             config.server.address => server_address;
             config.server.http.enabled => server_http_enabled;
@@ -255,7 +299,7 @@ impl ConfigBuilder {
     }
 
     pub fn build(self) -> Result<Config, ConfigError> {
-        let Self { mut config } = self;
+        let Self { mut config, raw_yaml: _ } = self;
         let encryption = &config.server.encryption;
         if encryption.enabled && encryption.certificate.is_none() {
             return Err(ConfigError::ValidationError {
