@@ -475,8 +475,8 @@ fn test_unmarked_optional_return_errors() {
     );
     let translation_error = translate_pipeline(&preamble_signatures, &parsed).unwrap_err();
     assert!(match *translation_error {
-        RepresentationError::UnboundRequiredVariable { variable, .. } => {
-            variable == "y"
+        RepresentationError::UnmarkedOptionalAssignment { variable, .. } => {
+            variable == "x"
         }
         _ => false,
     });

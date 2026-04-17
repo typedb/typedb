@@ -303,7 +303,19 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         }
 
         let callee_signature = builtin_id.signature();
-
+        let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).find_map(
+            |(assigned_var, (_, declared_optionality))| {
+                (assigned_var.optionality != *declared_optionality).then_some(assigned_var.variable)
+            },
+        );
+        if let Some(variable) = mismatched_optionality_in_assignment {
+            let variable = self
+                .context
+                .get_variable_name(variable)
+                .cloned()
+                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            return Err(Box::new(RepresentationError::UnmarkedOptionalAssignment { variable, source_span }));
+        }
         let function_call =
             self.create_function_call(&assigned, &callee_signature, arguments, builtin_id.name(), source_span)?;
         let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream, source_span);
@@ -338,7 +350,19 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
         }
-
+        let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).find_map(
+            |(assigned_var, (_, declared_optionality))| {
+                (assigned_var.optionality != *declared_optionality).then_some(assigned_var.variable)
+            },
+        );
+        if let Some(variable) = mismatched_optionality_in_assignment {
+            let variable = self
+                .context
+                .get_variable_name(variable)
+                .cloned()
+                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            return Err(Box::new(RepresentationError::UnmarkedOptionalAssignment { variable, source_span }));
+        }
         let function_call =
             self.create_function_call(&assigned, callee_signature, arguments, function_name, source_span)?;
         let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream, source_span);
