@@ -5,9 +5,9 @@
  */
 
 use crate::{
-    pattern::conjunction::{ConjunctionBuilder, ConjunctionBuilderWithContext},
+    pattern::conjunction::ConjunctionBuilderWithContext,
     pipeline::{
-        block::{Block, BlockBuilder, BlockBuilderContext},
+        block::{Block, BlockBuilder},
         function_signature::FunctionSignatureIndex,
         ParameterRegistry,
     },

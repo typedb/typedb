@@ -446,7 +446,8 @@ impl BitOr for BindingMode {
             (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => Self::RequirePrebound,
             (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => Self::RequirePrebound,
             (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => {
-                // This preserves associativity, but doesn't escalate to errors via RequirePrebound.
+                // This preserves associativity, but doesn't correctly escalate to RequirePrebound.
+                // ((AlwaysBinding | AlwaysBinding) | Absent) should be required
                 // That's corrected in disjunction
                 Self::LocallyBindingInChild
             }
