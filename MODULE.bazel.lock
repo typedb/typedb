@@ -12576,7 +12576,7 @@
     },
     "@@typedb_dependencies+//distribution/artifact:rules.bzl%native_artifact_files": {
       "general": {
-        "bzlTransitiveDigest": "iyWh0P4i1l0a1BB+TRPpZybfQEQqfsj+Tgm2YNDFQ2s=",
+        "bzlTransitiveDigest": "yWzTgvDt8fBQR7Nqh9/tbk6sCtvxjbcgODtEIg/m+Nw=",
         "usagesDigest": "UE84GHh8gifFMlqRVsH/zxdvcfQygI5GBjEwDjrJwcE=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},

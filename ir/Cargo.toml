@@ -6,11 +6,12 @@ features = {}
 
 [package]
 	name = "ir"
-	edition = "2021"
+	edition = "2024"
 	version = "0.0.0"
 
 [lib]
 	path = "lib.rs"
+	crate-type = ["lib"]
 
 [dev-dependencies]
 

@@ -6,7 +6,7 @@ features = {}
 
 [package]
 	name = "database-tools"
-	edition = "2021"
+	edition = "2024"
 	version = "0.0.0"
 
 [dependencies]

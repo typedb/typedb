@@ -7,11 +7,12 @@ dev-dependencies = {}
 
 [package]
 	name = "logger"
-	edition = "2021"
+	edition = "2024"
 	version = "0.0.0"
 
 [lib]
 	path = "logger.rs"
+	crate-type = ["lib"]
 
 [dependencies]
 

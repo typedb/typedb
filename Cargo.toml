@@ -6,7 +6,7 @@ features = {}
 
 [package]
 	name = "typedb_server_bin"
-	edition = "2021"
+	edition = "2024"
 	version = "0.0.0"
 
 [dev-dependencies]

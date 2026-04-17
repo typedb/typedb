@@ -6,11 +6,12 @@ features = {}
 
 [package]
 	name = "primitive"
-	edition = "2021"
+	edition = "2024"
 	version = "0.0.0"
 
 [lib]
 	path = "primitives.rs"
+	crate-type = ["lib"]
 
 [dependencies]
 
