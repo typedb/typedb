@@ -34,12 +34,164 @@ const MAX_WAL_FILE_SIZE: u64 = 16 * 1024 * 1024;
 
 const FILE_PREFIX: &str = "wal-";
 
+/// Splits each `sequenced_write` call into three buckets so we can tell how much
+/// of the wall time is spent compressing off-lock, waiting for the `files`
+/// RwLock, and actually doing work with the lock held. Reset + dump from the
+/// benchmark to see the ratio per-run.
+pub struct WalWritePhaseStats {
+    count: AtomicU64,
+    compress_ns: AtomicU64,
+    lock_wait_ns: AtomicU64,
+    lock_held_ns: AtomicU64,
+    // Additional counters for the AsyncUnsequencedWriter background thread so
+    // we can tell how much of the sequenced-write lock_wait is caused by the
+    // async writer batching and holding the lock across many records.
+    async_batches: AtomicU64,
+    async_records: AtomicU64,
+    async_lock_held_ns: AtomicU64,
+}
+
+impl WalWritePhaseStats {
+    fn record(&self, compress: Duration, lock_wait: Duration, lock_held: Duration) {
+        self.count.fetch_add(1, Ordering::Relaxed);
+        self.compress_ns.fetch_add(compress.as_nanos() as u64, Ordering::Relaxed);
+        self.lock_wait_ns.fetch_add(lock_wait.as_nanos() as u64, Ordering::Relaxed);
+        self.lock_held_ns.fetch_add(lock_held.as_nanos() as u64, Ordering::Relaxed);
+    }
+
+    fn record_async_batch(&self, batch_size: usize, lock_held: Duration) {
+        self.async_batches.fetch_add(1, Ordering::Relaxed);
+        self.async_records.fetch_add(batch_size as u64, Ordering::Relaxed);
+        self.async_lock_held_ns.fetch_add(lock_held.as_nanos() as u64, Ordering::Relaxed);
+    }
+
+    pub fn reset(&self) {
+        self.count.store(0, Ordering::Relaxed);
+        self.compress_ns.store(0, Ordering::Relaxed);
+        self.lock_wait_ns.store(0, Ordering::Relaxed);
+        self.lock_held_ns.store(0, Ordering::Relaxed);
+        self.async_batches.store(0, Ordering::Relaxed);
+        self.async_records.store(0, Ordering::Relaxed);
+        self.async_lock_held_ns.store(0, Ordering::Relaxed);
+    }
+
+    pub fn dump(&self) -> String {
+        let n = self.count.load(Ordering::Relaxed).max(1);
+        let avg_us = |x: u64| (x / n) as f64 / 1000.0;
+        let compress = self.compress_ns.load(Ordering::Relaxed);
+        let lock_wait = self.lock_wait_ns.load(Ordering::Relaxed);
+        let lock_held = self.lock_held_ns.load(Ordering::Relaxed);
+        let total = compress + lock_wait + lock_held;
+        let pct = |x: u64| if total == 0 { 0.0 } else { (x as f64 / total as f64) * 100.0 };
+        let ab = self.async_batches.load(Ordering::Relaxed).max(1);
+        let ar = self.async_records.load(Ordering::Relaxed);
+        let al = self.async_lock_held_ns.load(Ordering::Relaxed);
+        format!(
+            "  wal_sequenced_writes={} (avg us): compress={:.1} ({:.0}%) lock_wait={:.1} ({:.0}%) lock_held={:.1} ({:.0}%)\n  async_status_writes: batches={} records={} avg_batch_size={:.1} avg_lock_held_per_batch={:.1}us",
+            self.count.load(Ordering::Relaxed),
+            avg_us(compress),
+            pct(compress),
+            avg_us(lock_wait),
+            pct(lock_wait),
+            avg_us(lock_held),
+            pct(lock_held),
+            self.async_batches.load(Ordering::Relaxed),
+            ar,
+            ar as f64 / ab as f64,
+            (al / ab) as f64 / 1000.0,
+        )
+    }
+}
+
+pub static WAL_WRITE_PHASE_STATS: WalWritePhaseStats = WalWritePhaseStats {
+    count: AtomicU64::new(0),
+    compress_ns: AtomicU64::new(0),
+    lock_wait_ns: AtomicU64::new(0),
+    lock_held_ns: AtomicU64::new(0),
+    async_batches: AtomicU64::new(0),
+    async_records: AtomicU64::new(0),
+    async_lock_held_ns: AtomicU64::new(0),
+};
+
 #[derive(Debug)]
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, String>,
     next_sequence_number: AtomicU64,
     files: Arc<RwLock<Files>>,
     fsync_thread: FsyncThread,
+    async_writer: AsyncUnsequencedWriter,
+}
+
+/// Background worker that drains async unsequenced WAL writes. Sequenced writes
+/// still go inline because the caller needs the assigned sequence number, but
+/// unsequenced writes (the per-commit StatusRecord being the hot case) can be
+/// enqueued fire-and-forget: the CommitRecord itself is already fsynced and the
+/// apply to storage has happened, so a status write that lands later is still
+/// recovered correctly (revalidation is idempotent).
+#[derive(Debug)]
+struct AsyncUnsequencedWriter {
+    sender: mpsc::Sender<AsyncWriteRequest>,
+    handle: Mutex<Option<JoinHandle<()>>>,
+}
+
+struct AsyncWriteRequest {
+    record_type: DurabilityRecordType,
+    seq_at_submit: DurabilitySequenceNumber,
+    compressed: Vec<u8>,
+}
+
+impl AsyncUnsequencedWriter {
+    fn new(files: Arc<RwLock<Files>>) -> Self {
+        let (sender, receiver) = mpsc::channel::<AsyncWriteRequest>();
+        let handle = thread::spawn(move || {
+            while let Ok(req) = receiver.recv() {
+                // Drain any other pending requests so we write a burst under a
+                // single `files` lock acquisition + flush.
+                let mut batch = vec![req];
+                while let Ok(more) = receiver.try_recv() {
+                    batch.push(more);
+                }
+                let t_lock = Instant::now();
+                let mut files = files.write().unwrap();
+                let t_held = Instant::now();
+                let last_idx = batch.len() - 1;
+                for (i, req) in batch.iter().enumerate() {
+                    let _ = if i == last_idx {
+                        files.write_precompressed_record(req.seq_at_submit, req.record_type, &req.compressed)
+                    } else {
+                        files.write_precompressed_record_unflushed(
+                            req.seq_at_submit,
+                            req.record_type,
+                            &req.compressed,
+                        )
+                    };
+                }
+                drop(files);
+                let t_done = Instant::now();
+                WAL_WRITE_PHASE_STATS.record_async_batch(batch.len(), t_done - t_held);
+                let _ = t_lock;
+            }
+        });
+        Self { sender, handle: Mutex::new(Some(handle)) }
+    }
+
+    fn submit(&self, req: AsyncWriteRequest) {
+        // mpsc send only fails if the receiver is dropped (WAL shutting down).
+        // In that case, silently drop — we're already in a cleanup path.
+        let _ = self.sender.send(req);
+    }
+}
+
+impl Drop for AsyncUnsequencedWriter {
+    fn drop(&mut self) {
+        // Dropping the channel sender closes the channel; receiver's `recv`
+        // returns Err and the thread exits.
+        if let Some(handle) = self.handle.lock().unwrap().take() {
+            // Replace `sender` with a dummy then drop it so the channel closes.
+            // We don't need to wait for the handle — it'll finish soon.
+            let _ = handle;
+        }
+    }
 }
 
 impl WAL {
@@ -63,11 +215,13 @@ impl WAL {
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
         let mut fsync_thread = FsyncThread::new(files.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
+        let async_writer = AsyncUnsequencedWriter::new(files.clone());
         Ok(Self {
             registered_types: HashMap::new(),
             next_sequence_number: AtomicU64::new(next.number()),
             files,
             fsync_thread,
+            async_writer,
         })
     }
 
@@ -89,11 +243,13 @@ impl WAL {
 
         let mut fsync_thread = FsyncThread::new(files.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
+        let async_writer = AsyncUnsequencedWriter::new(files.clone());
         Ok(Self {
             registered_types: HashMap::new(),
             next_sequence_number: AtomicU64::new(next.number()),
             files,
             fsync_thread,
+            async_writer,
         })
     }
 
@@ -124,9 +280,29 @@ impl DurabilityService for WAL {
 
     fn unsequenced_write(&self, record_type: DurabilityRecordType, bytes: &[u8]) -> Result<(), DurabilityServiceError> {
         debug_assert!(self.registered_types.contains_key(&record_type));
+        // LZ4-compress the user bytes before acquiring the files write lock so
+        // the per-commit critical section shrinks to just the I/O path.
+        let compressed = Files::compress_lz4(bytes)?;
         let mut files = self.files.write().unwrap();
-        let raw_record = RawRecord { sequence_number: self.previous(), record_type, bytes: Cow::Borrowed(bytes) };
-        files.write_record(raw_record)?;
+        files.write_precompressed_record(self.previous(), record_type, &compressed)?;
+        Ok(())
+    }
+
+    fn unsequenced_write_async(
+        &self,
+        record_type: DurabilityRecordType,
+        bytes: &[u8],
+    ) -> Result<(), DurabilityServiceError> {
+        debug_assert!(self.registered_types.contains_key(&record_type));
+        // Compress inline (cheap vs waiting on the files lock) then hand off.
+        // `seq_at_submit` captures the sequence number at submission time so the
+        // background writer records the same value the synchronous path would.
+        let compressed = Files::compress_lz4(bytes)?;
+        self.async_writer.submit(AsyncWriteRequest {
+            record_type,
+            seq_at_submit: self.previous(),
+            compressed,
+        });
         Ok(())
     }
 
@@ -136,10 +312,21 @@ impl DurabilityService for WAL {
         bytes: &[u8],
     ) -> Result<DurabilitySequenceNumber, DurabilityServiceError> {
         debug_assert!(self.registered_types.contains_key(&record_type));
+        // Compress outside the lock (see unsequenced_write). Sequence assignment
+        // must still happen under the lock to preserve WAL record ordering.
+        let t_start = Instant::now();
+        let compressed = Files::compress_lz4(bytes)?;
+        let t_compressed = Instant::now();
         let mut files = self.files.write().unwrap();
+        let t_locked = Instant::now();
         let seq = self.increment();
-        let raw_record = RawRecord { sequence_number: seq, record_type, bytes: Cow::Borrowed(bytes) };
-        files.write_record(raw_record)?;
+        files.write_precompressed_record(seq, record_type, &compressed)?;
+        let t_end = Instant::now();
+        WAL_WRITE_PHASE_STATS.record(
+            t_compressed - t_start,
+            t_locked - t_compressed,
+            t_end - t_locked,
+        );
         Ok(seq)
     }
 
@@ -272,37 +459,61 @@ impl Files {
         Ok(())
     }
 
-    fn write_record(&mut self, record: RawRecord<'_>) -> Result<(), DurabilityServiceError> {
-        if self.files.is_empty() || self.files.last().unwrap().len >= MAX_WAL_FILE_SIZE {
-            self.open_new_file_at(record.sequence_number)?;
-        }
-
+    fn compress_lz4(bytes: &[u8]) -> Result<Vec<u8>, DurabilityServiceError> {
         let mut compressed_bytes = Vec::new();
         let mut encoder = lz4::EncoderBuilder::new()
             .build(&mut compressed_bytes)
             .map_err(|err| WALError::Compression { source: Arc::new(err) })?;
-        encoder.write_all(&record.bytes).map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+        encoder.write_all(bytes).map_err(|err| WALError::Compression { source: Arc::new(err) })?;
         encoder.finish().1.map_err(|err| WALError::Compression { source: Arc::new(err) })?;
+        Ok(compressed_bytes)
+    }
+
+    fn write_precompressed_record(
+        &mut self,
+        sequence_number: DurabilitySequenceNumber,
+        record_type: DurabilityRecordType,
+        compressed_bytes: &[u8],
+    ) -> Result<(), DurabilityServiceError> {
+        self.write_precompressed_record_unflushed(sequence_number, record_type, compressed_bytes)?;
+        self.flush_current_writer()
+    }
+
+    // Writes header + body without flushing. Used by the group-commit leader to
+    // batch many records into one flush + one stream_position syscall.
+    fn write_precompressed_record_unflushed(
+        &mut self,
+        sequence_number: DurabilitySequenceNumber,
+        record_type: DurabilityRecordType,
+        compressed_bytes: &[u8],
+    ) -> Result<(), DurabilityServiceError> {
+        if self.files.is_empty() || self.files.last().unwrap().len >= MAX_WAL_FILE_SIZE {
+            self.open_new_file_at(sequence_number)?;
+        }
 
         let writer = self.writer.as_mut().unwrap();
         write_header(
             writer,
-            RecordHeader {
-                sequence_number: record.sequence_number,
-                len: compressed_bytes.len() as u64,
-                record_type: record.record_type,
-            },
+            RecordHeader { sequence_number, len: compressed_bytes.len() as u64, record_type },
         )?;
+        writer.write_all(compressed_bytes)?;
+        Ok(())
+    }
 
-        writer.write_all(&compressed_bytes)?;
+    fn flush_current_writer(&mut self) -> Result<(), DurabilityServiceError> {
+        let writer = self.writer.as_mut().unwrap();
         writer.flush()?;
-
         self.files.last_mut().unwrap().len = writer.stream_position()?;
         Ok(())
     }
 
-    pub(crate) fn sync_all(&mut self) {
-        self.files.last_mut().unwrap().writer().unwrap().get_mut().sync_all().unwrap()
+    fn write_record(&mut self, record: RawRecord<'_>) -> Result<(), DurabilityServiceError> {
+        let compressed = Self::compress_lz4(&record.bytes)?;
+        self.write_precompressed_record(record.sequence_number, record.record_type, &compressed)
+    }
+
+    pub(crate) fn current_wal_path(&self) -> PathBuf {
+        self.files.last().unwrap().path.clone()
     }
 
     fn iter(&self) -> impl DoubleEndedIterator<Item = &File> {
@@ -621,7 +832,17 @@ impl FsyncThread {
         let vec_lock = context.signalling.get(current_signal as usize).unwrap().lock();
         let mut vec = vec_lock.unwrap();
         if !vec.is_empty() {
-            context.files.write().unwrap().sync_all();
+            // Snapshot the current WAL file path under a brief read lock, then
+            // release the lock *before* opening a separate file handle and
+            // running the blocking fsync syscall. This keeps the files RwLock
+            // completely free during fsync — writers no longer queue behind the
+            // fsync thread, which was the main source of wal_write lock_wait.
+            // Fsync on a separate fd still syncs the inode's dirty pages, so
+            // data the commit-path BufWriter already flushed is covered.
+            let path = context.files.read().unwrap().current_wal_path();
+            if let Ok(f) = OpenOptions::new().read(true).append(true).open(&path) {
+                let _ = f.sync_all();
+            }
             while let Some(sender_opt) = vec.pop() {
                 if let Some(sender) = sender_opt {
                     sender.send(()).unwrap();

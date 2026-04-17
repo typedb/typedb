@@ -45,6 +45,15 @@ pub trait DurabilityClient {
     where
         Record: UnsequencedDurabilityRecord;
 
+    /// Fire-and-forget variant: see [`DurabilityService::unsequenced_write_async`].
+    /// Default implementation delegates to the synchronous write so non-WAL backends remain correct.
+    fn unsequenced_write_async<Record>(&self, record: &Record) -> Result<(), DurabilityClientError>
+    where
+        Record: UnsequencedDurabilityRecord,
+    {
+        self.unsequenced_write(record)
+    }
+
     fn request_sync(&self) -> mpsc::Receiver<()>;
 
     fn iter_from(
@@ -156,6 +165,16 @@ impl DurabilityClient for WALClient {
         let serialised = Self::serialise_record(record)?;
         self.wal
             .unsequenced_write(Record::RECORD_TYPE, &serialised)
+            .map_err(|err| DurabilityClientError::ServiceError { source: err })
+    }
+
+    fn unsequenced_write_async<Record>(&self, record: &Record) -> Result<(), DurabilityClientError>
+    where
+        Record: UnsequencedDurabilityRecord,
+    {
+        let serialised = Self::serialise_record(record)?;
+        self.wal
+            .unsequenced_write_async(Record::RECORD_TYPE, &serialised)
             .map_err(|err| DurabilityClientError::ServiceError { source: err })
     }
 

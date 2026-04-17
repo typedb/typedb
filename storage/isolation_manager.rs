@@ -15,14 +15,15 @@ use std::{
     io::Read,
     sync::{
         atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
-        Arc, OnceLock, RwLock,
+        Arc, Condvar, Mutex, OnceLock, RwLock,
     },
 };
 
+use bytes::byte_array::ByteArray;
 use durability::DurabilityRecordType;
 use logger::result::ResultExt;
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::storage::TIMELINE_WINDOW_SIZE;
+use resource::constants::{snapshot::BUFFER_KEY_INLINE, storage::TIMELINE_WINDOW_SIZE};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -34,6 +35,53 @@ use crate::{
     snapshot::{buffer::OperationsBuffer, lock::LockType, write::Write},
     write_batches::WriteBatches,
 };
+
+// Small bloom filter for compute_dependency hot path. 16384 bits (2 KiB) gives
+// roughly a 0.1% false-positive rate at ~70 keys and ~0.2% at ~400 keys, which
+// covers the realistic predecessor sizes we see in practice. Built once per
+// predecessor per call, transient only — never serialized.
+const BLOOM_BITS: usize = 16384;
+const BLOOM_MASK: usize = BLOOM_BITS - 1;
+const BLOOM_U64S: usize = BLOOM_BITS / 64;
+
+struct QuickBloom {
+    bits: [u64; BLOOM_U64S],
+}
+
+impl QuickBloom {
+    fn new() -> Self {
+        Self { bits: [0; BLOOM_U64S] }
+    }
+
+    fn insert(&mut self, key: &[u8]) {
+        let (h1, h2) = Self::positions(key);
+        self.bits[h1 / 64] |= 1u64 << (h1 % 64);
+        self.bits[h2 / 64] |= 1u64 << (h2 % 64);
+    }
+
+    fn may_contain(&self, key: &[u8]) -> bool {
+        let (h1, h2) = Self::positions(key);
+        (self.bits[h1 / 64] & (1u64 << (h1 % 64))) != 0
+            && (self.bits[h2 / 64] & (1u64 << (h2 % 64))) != 0
+    }
+
+    fn positions(key: &[u8]) -> (usize, usize) {
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &b in key {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        ((h as usize) & BLOOM_MASK, ((h >> 18) as usize) & BLOOM_MASK)
+    }
+
+    fn from_btree_keys<V>(map: &std::collections::BTreeMap<ByteArray<BUFFER_KEY_INLINE>, V>) -> Self {
+        let mut bloom = Self::new();
+        for key in map.keys() {
+            bloom.insert(key.as_ref());
+        }
+        bloom
+    }
+}
 
 #[derive(Debug)]
 pub(crate) struct IsolationManager {
@@ -242,6 +290,10 @@ impl IsolationManager {
         self.timeline.watermark()
     }
 
+    pub(crate) fn wait_for_watermark(&self, target: SequenceNumber) -> SequenceNumber {
+        self.timeline.wait_until_watermark_reaches(target)
+    }
+
     pub(crate) fn highest_validated_sequence_number(&self) -> SequenceNumber {
         SequenceNumber::new(self.highest_validated_sequence_number.load(Ordering::SeqCst))
     }
@@ -368,13 +420,36 @@ struct Timeline {
     // We can adjust the Window size to amortise the cost of the read-write locks to maintain the timeline
     windows: RwLock<VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>>,
     watermark: AtomicU64,
+    // Event channel for watermark advancement. Readers of `wait_until_watermark_reaches`
+    // park on the condvar and are notified (all) every time the watermark advances, replacing
+    // the prior 50us sleep-poll. The mutex content is unused — the actual state is the atomic.
+    watermark_advance_lock: Mutex<()>,
+    watermark_advance_cv: Condvar,
 }
 
 impl Timeline {
     // The whole of the timeline uses the underlying u64
     fn new(next_sequence_number: SequenceNumber) -> Timeline {
         let windows = VecDeque::from([Arc::new(TimelineWindow::new(next_sequence_number))]);
-        Timeline { windows: RwLock::new(windows), watermark: AtomicU64::new(next_sequence_number.number() - 1) }
+        Timeline {
+            windows: RwLock::new(windows),
+            watermark: AtomicU64::new(next_sequence_number.number() - 1),
+            watermark_advance_lock: Mutex::new(()),
+            watermark_advance_cv: Condvar::new(),
+        }
+    }
+
+    fn wait_until_watermark_reaches(&self, target: SequenceNumber) -> SequenceNumber {
+        let current = self.watermark();
+        if current >= target {
+            return current;
+        }
+        let guard = self.watermark_advance_lock.lock().unwrap();
+        let _guard = self
+            .watermark_advance_cv
+            .wait_while(guard, |_| self.watermark() < target)
+            .unwrap();
+        self.watermark()
     }
 
     fn may_free_windows(&self) {
@@ -394,6 +469,7 @@ impl Timeline {
             return;
         }
 
+        let start_watermark = self.watermark();
         let mut candidate_watermark = sequence_number;
         {
             let mut window = self.try_get_window(sequence_number);
@@ -424,6 +500,13 @@ impl Timeline {
         }
 
         let watermark = candidate_watermark - 1; // Invaraint
+        // Wake threads parked in wait_until_watermark_reaches when the watermark advances.
+        // Acquiring the mutex is required to avoid the classic lost-wakeup race with a
+        // waiter that has just observed the old watermark but not yet called wait_while.
+        if watermark > start_watermark {
+            let _guard = self.watermark_advance_lock.lock().unwrap();
+            self.watermark_advance_cv.notify_all();
+        }
         if let Some(watermark_window_end) = { self.try_get_window(sequence_number - 1).map(|w| w.end()) } {
             if watermark >= watermark_window_end {
                 self.may_free_windows();
@@ -724,35 +807,39 @@ impl CommitRecord {
     }
 
     fn compute_dependency(&self, predecessor: &CommitRecord) -> CommitDependency {
-        // TODO: this can be optimised by some kind of bit-wise AND of two bloom filter-like data
-        // structures first, since we assume few clashes this should mostly succeed
-        // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
-
         let mut puts_to_update = Vec::new();
-
-        // we check self operations against predecessor operations.
-        //   if our buffer contains a delete, we check the predecessor doesn't have an Existing lock on it
-        // We check
 
         let locks = self.operations().locks();
         let predecessor_locks = predecessor.operations().locks();
+
+        // Pre-build a bloom filter over the predecessor's locks once. It is reused
+        // across the per-keyspace writes loop and the final locks-vs-locks loop to
+        // short-circuit BTreeMap lookups for keys that are definitely absent.
+        // Build cost is O(predecessor_locks) hashes; lookup cost is O(1) hashes.
+        let pred_locks_bloom = QuickBloom::from_btree_keys(predecessor_locks);
+
         for (write_buffer, pred_write_buffer) in self.operations().write_buffers().zip(predecessor.operations()) {
             let writes = write_buffer.writes();
             let predecessor_writes = pred_write_buffer.writes();
+            let pred_writes_bloom = QuickBloom::from_btree_keys(predecessor_writes);
 
             for (key, write) in writes.iter() {
-                if let Some(predecessor_write) = predecessor_writes.get(key) {
-                    match (predecessor_write, write) {
-                        (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
+                if pred_writes_bloom.may_contain(key.as_ref()) {
+                    if let Some(predecessor_write) = predecessor_writes.get(key) {
+                        match (predecessor_write, write) {
+                            (Write::Insert { .. } | Write::Put { .. }, Write::Put { reinsert, .. }) => {
+                                puts_to_update.push(DependentPut::Inserted { reinsert: reinsert.clone() });
+                            }
+                            (Write::Delete, Write::Put { reinsert, .. }) => {
+                                puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
+                            }
+                            _ => (),
                         }
-                        (Write::Delete, Write::Put { reinsert, .. }) => {
-                            puts_to_update.push(DependentPut::Deleted { reinsert: reinsert.clone() });
-                        }
-                        _ => (),
                     }
                 }
-                if matches!(write, Write::Delete) && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable))
+                if matches!(write, Write::Delete)
+                    && pred_locks_bloom.may_contain(key.as_ref())
+                    && matches!(predecessor_locks.get(key), Some(LockType::Unmodifiable))
                 {
                     return CommitDependency::Conflict(IsolationConflict::DeletingRequiredKey);
                 }
@@ -763,6 +850,7 @@ impl CommitRecord {
             if locks.len() <= predecessor_writes.len() {
                 for (key, lock) in locks.iter() {
                     if matches!(lock, LockType::Unmodifiable)
+                        && pred_writes_bloom.may_contain(key.as_ref())
                         && matches!(predecessor_writes.get(key), Some(Write::Delete))
                     {
                         return CommitDependency::Conflict(IsolationConflict::RequireDeletedKey);
@@ -778,7 +866,10 @@ impl CommitRecord {
         }
 
         for (key, lock) in locks.iter() {
-            if matches!(lock, LockType::Exclusive) && matches!(predecessor_locks.get(key), Some(LockType::Exclusive)) {
+            if matches!(lock, LockType::Exclusive)
+                && pred_locks_bloom.may_contain(key.as_ref())
+                && matches!(predecessor_locks.get(key), Some(LockType::Exclusive))
+            {
                 return CommitDependency::Conflict(IsolationConflict::ExclusiveLock);
             }
         }

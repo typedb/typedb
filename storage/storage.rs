@@ -12,9 +12,11 @@ use std::{
     error::Error,
     fs, io,
     path::{Path, PathBuf},
-    sync::{atomic::Ordering, Arc},
-    thread::sleep,
-    time::Duration,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+    time::Instant,
 };
 
 use ::error::typedb_error;
@@ -25,7 +27,7 @@ use keyspace::KeyspaceDeleteError;
 use lending_iterator::LendingIterator;
 use logger::{error, result::ResultExt};
 use resource::{
-    constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
+    constants::snapshot::BUFFER_VALUE_INLINE,
     profile::{CommitProfile, StorageCounters},
 };
 use tracing::trace;
@@ -49,6 +51,8 @@ use crate::{
     snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
 };
 
+pub use durability::wal::WAL_WRITE_PHASE_STATS;
+
 pub mod durability_client;
 pub mod error;
 pub mod isolation_manager;
@@ -60,6 +64,90 @@ pub mod recovery;
 pub mod sequence_number;
 pub mod snapshot;
 mod write_batches;
+
+// --- Commit phase instrumentation ---
+// Each field accumulates total nanoseconds across all commits. Read via
+// `commit_phase_stats_dump()` to produce a per-phase breakdown that helps
+// direct optimization work. Lives outside MVCCStorage so a single database's
+// stats are global (keeps the benchmark summary simple) and the atomic hits
+// are contention-free in practice at the thread counts we test.
+pub struct CommitPhaseStats {
+    count: AtomicU64,
+    put_status_ns: AtomicU64,
+    record_create_ns: AtomicU64,
+    wal_write_ns: AtomicU64,
+    isolation_ns: AtomicU64,
+    sync_wait_ns: AtomicU64,
+    storage_write_ns: AtomicU64,
+    applied_ns: AtomicU64,
+    status_write_ns: AtomicU64,
+}
+
+impl CommitPhaseStats {
+    #[allow(clippy::too_many_arguments)]
+    fn record(
+        &self,
+        put_status: std::time::Duration,
+        record_create: std::time::Duration,
+        wal_write: std::time::Duration,
+        isolation: std::time::Duration,
+        sync_wait: std::time::Duration,
+        storage_write: std::time::Duration,
+        applied: std::time::Duration,
+        status_write: std::time::Duration,
+    ) {
+        self.count.fetch_add(1, Ordering::Relaxed);
+        self.put_status_ns.fetch_add(put_status.as_nanos() as u64, Ordering::Relaxed);
+        self.record_create_ns.fetch_add(record_create.as_nanos() as u64, Ordering::Relaxed);
+        self.wal_write_ns.fetch_add(wal_write.as_nanos() as u64, Ordering::Relaxed);
+        self.isolation_ns.fetch_add(isolation.as_nanos() as u64, Ordering::Relaxed);
+        self.sync_wait_ns.fetch_add(sync_wait.as_nanos() as u64, Ordering::Relaxed);
+        self.storage_write_ns.fetch_add(storage_write.as_nanos() as u64, Ordering::Relaxed);
+        self.applied_ns.fetch_add(applied.as_nanos() as u64, Ordering::Relaxed);
+        self.status_write_ns.fetch_add(status_write.as_nanos() as u64, Ordering::Relaxed);
+    }
+
+    pub fn reset(&self) {
+        self.count.store(0, Ordering::Relaxed);
+        self.put_status_ns.store(0, Ordering::Relaxed);
+        self.record_create_ns.store(0, Ordering::Relaxed);
+        self.wal_write_ns.store(0, Ordering::Relaxed);
+        self.isolation_ns.store(0, Ordering::Relaxed);
+        self.sync_wait_ns.store(0, Ordering::Relaxed);
+        self.storage_write_ns.store(0, Ordering::Relaxed);
+        self.applied_ns.store(0, Ordering::Relaxed);
+        self.status_write_ns.store(0, Ordering::Relaxed);
+    }
+
+    pub fn dump(&self) -> String {
+        let n = self.count.load(Ordering::Relaxed).max(1);
+        let avg_us = |x: u64| (x / n) as f64 / 1000.0;
+        format!(
+            "  commits={} (avg per-tx us): put_status={:.1} record_create={:.1} wal_write={:.1} isolation={:.1} sync_wait={:.1} storage_write={:.1} applied={:.1} status_write={:.1}",
+            self.count.load(Ordering::Relaxed),
+            avg_us(self.put_status_ns.load(Ordering::Relaxed)),
+            avg_us(self.record_create_ns.load(Ordering::Relaxed)),
+            avg_us(self.wal_write_ns.load(Ordering::Relaxed)),
+            avg_us(self.isolation_ns.load(Ordering::Relaxed)),
+            avg_us(self.sync_wait_ns.load(Ordering::Relaxed)),
+            avg_us(self.storage_write_ns.load(Ordering::Relaxed)),
+            avg_us(self.applied_ns.load(Ordering::Relaxed)),
+            avg_us(self.status_write_ns.load(Ordering::Relaxed)),
+        )
+    }
+}
+
+pub static COMMIT_PHASE_STATS: CommitPhaseStats = CommitPhaseStats {
+    count: AtomicU64::new(0),
+    put_status_ns: AtomicU64::new(0),
+    record_create_ns: AtomicU64::new(0),
+    wal_write_ns: AtomicU64::new(0),
+    isolation_ns: AtomicU64::new(0),
+    sync_wait_ns: AtomicU64::new(0),
+    storage_write_ns: AtomicU64::new(0),
+    applied_ns: AtomicU64::new(0),
+    status_write_ns: AtomicU64::new(0),
+};
 
 #[derive(Debug)]
 pub struct MVCCStorage<Durability> {
@@ -206,14 +294,11 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     fn wait_for_watermark(&self, target: SequenceNumber) -> SequenceNumber {
-        // We can alternatively also block commits from returning until the watermark rises
         // See detailed analysis at https://github.com/typedb/typedb/pull/7254/
-        let mut watermark = self.snapshot_watermark();
-        while watermark < target {
-            sleep(Duration::from_micros(WATERMARK_WAIT_INTERVAL_MICROSECONDS));
-            watermark = self.snapshot_watermark();
-        }
-        watermark
+        // Parks on a condvar inside the timeline (woken by may_increment_watermark) instead
+        // of sleep-polling at WATERMARK_WAIT_INTERVAL_MICROSECONDS, which eliminates the
+        // per-open 50us tail and lets tx-open scale past 10 threads.
+        self.isolation_manager.wait_for_watermark(target)
     }
 
     fn snapshot_commit(
@@ -226,12 +311,15 @@ impl<Durability> MVCCStorage<Durability> {
     {
         use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
 
+        let t_start = Instant::now();
         self.set_initial_put_status(&snapshot, commit_profile.storage_counters())
             .map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
         commit_profile.snapshot_put_statuses_checked();
+        let t_put_status = Instant::now();
 
         let (reader_guard, commit_record) = snapshot.into_commit_record();
         commit_profile.snapshot_commit_record_created();
+        let t_record_create = Instant::now();
 
         commit_profile.commit_size(commit_record.operations().len());
 
@@ -240,33 +328,50 @@ impl<Durability> MVCCStorage<Durability> {
             .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
         commit_profile.snapshot_durable_write_data_submitted();
+        let t_wal_write = Instant::now();
 
         let sync_notifier = self.durability_client.request_sync();
         let validate_result =
             self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
         drop(reader_guard);
         commit_profile.snapshot_isolation_validated();
+        let t_isolation = Instant::now();
 
         match validate_result {
             Ok(ValidatedCommit::Write(write_batches)) => {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
                                                // Write to the k-v store
                 commit_profile.snapshot_durable_write_data_confirmed();
+                let t_sync = Instant::now();
 
                 self.keyspaces
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_storage_written();
+                let t_storage = Instant::now();
 
                 // Inform the isolation manager and increment the watermark
                 self.isolation_manager
                     .applied(commit_sequence_number)
                     .map_err(|error| Internal { name: self.name.clone(), source: Arc::new(error) })?;
                 commit_profile.snapshot_isolation_manager_notified();
+                let t_applied = Instant::now();
 
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
                 commit_profile.snapshot_durable_write_commit_status_submitted();
+                let t_status = Instant::now();
+
+                COMMIT_PHASE_STATS.record(
+                    t_put_status - t_start,
+                    t_record_create - t_put_status,
+                    t_wal_write - t_record_create,
+                    t_isolation - t_wal_write,
+                    t_sync - t_isolation,
+                    t_storage - t_sync,
+                    t_applied - t_storage,
+                    t_status - t_applied,
+                );
 
                 Ok(commit_sequence_number)
             }
@@ -337,7 +442,10 @@ impl<Durability> MVCCStorage<Durability> {
     where
         Durability: DurabilityClient,
     {
-        durability_client.unsequenced_write(&StatusRecord::new(commit_sequence_number, did_apply))?;
+        // E5: fire-and-forget. The CommitRecord is already fsynced and the
+        // storage apply has completed, so re-validation on crash recovery is
+        // idempotent — safe for the caller to see "success" before this lands.
+        durability_client.unsequenced_write_async(&StatusRecord::new(commit_sequence_number, did_apply))?;
         Ok(())
     }
 

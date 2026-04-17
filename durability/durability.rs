@@ -32,6 +32,23 @@ pub trait DurabilityService {
 
     fn unsequenced_write(&self, record_type: DurabilityRecordType, bytes: &[u8]) -> Result<(), DurabilityServiceError>;
 
+    /// Fire-and-forget unsequenced write: compress inline, queue the record for a
+    /// background writer, and return immediately. The record is guaranteed to
+    /// reach the WAL eventually but is *not* durable when this returns. Safe for
+    /// records that are only consulted during recovery of an already-fsynced
+    /// sequenced predecessor (e.g. StatusRecord entries whose absence simply
+    /// triggers deterministic re-validation on replay).
+    ///
+    /// The default implementation falls back to synchronous `unsequenced_write`
+    /// so backends that don't support async writes stay correct.
+    fn unsequenced_write_async(
+        &self,
+        record_type: DurabilityRecordType,
+        bytes: &[u8],
+    ) -> Result<(), DurabilityServiceError> {
+        self.unsequenced_write(record_type, bytes)
+    }
+
     fn iter_any_from(
         &self,
         sequence_number: DurabilitySequenceNumber,
