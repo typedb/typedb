@@ -220,6 +220,7 @@ typedb_error! {
             33,
             "The variable '{variable}' is optionally returned by a function, but referenced elsewhere in the same stage.",
             variable: String,
+            source_span: Option<Span>,
         ),
         UpdateVariableUnavailable(
             39,
