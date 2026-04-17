@@ -509,13 +509,17 @@ impl PatternVariables {
 }
 
 #[derive(Clone, Debug, Copy)]
-pub(crate) struct AssignedVariable {
+pub struct AssignedVariable {
     pub(crate) variable: Variable,
     pub(crate) optionality: VariableOptionality,
 }
 
 impl AssignedVariable {
-    pub(crate) fn new_required(variable: Variable) -> Self {
+    pub fn new_optional(variable: Variable) -> Self {
+        Self { variable, optionality: VariableOptionality::Optional }
+    }
+
+    pub fn new_required(variable: Variable) -> Self {
         Self { variable, optionality: VariableOptionality::Required }
     }
 }

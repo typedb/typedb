@@ -210,6 +210,11 @@ typedb_error! {
             "Specifying a scoped label constraint on a label is not allowed.",
             source_span: Option<Span>,
         ),
+        OptionalFunctionReturnReferenced(
+            32,
+            "The variable '{variable}' is optionally returned by a function, but referenced elsewhere in the same stage.",
+            variable: String,
+        ),
         UpdateVariableUnavailable(
             39,
             "The variable '{variable}' referenced in the update stage is unavailable. It should be bound in the previous stage.",

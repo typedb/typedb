@@ -73,6 +73,7 @@ impl<'reg> BlockBuilder<'reg> {
         validate_all_required_variables_can_be_bound(&self, &block_binding_modes, &self.context.variable_registry)?;
         validate_no_unbound_variable_categories(&self.conjunction, &self.context)?;
         validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
+        validate_optional_returns(&self.context, &self.conjunction)?;
 
         // Update
         block_binding_modes
@@ -226,6 +227,52 @@ fn find_constraints_referencing_variable(conjunction: &ConjunctionBuilder, varia
             find_constraints_referencing_variable(optional.conjunction(), variable, spans)
         }
     })
+}
+
+fn validate_optional_returns(
+    context: &BlockBuilderContext<'_>,
+    conjunction: &ConjunctionBuilder,
+) -> Result<(), Box<RepresentationError>> {
+    let mut optional_assignments = HashSet::new();
+    let result = validate_optional_returns_recursive(conjunction, &mut optional_assignments);
+    result.map_err(|var| {
+        let variable = context
+            .get_variable_name(var)
+            .map_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME, String::as_str)
+            .to_owned();
+        Box::new(RepresentationError::OptionalFunctionReturnReferenced { variable })
+    })
+}
+
+fn validate_optional_returns_recursive(
+    conjunction: &ConjunctionBuilder,
+    acc: &mut HashSet<Variable>,
+) -> Result<(), Variable> {
+    let conjunction_binding_modes = conjunction.variable_binding_modes();
+    conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
+        NestedPatternBuilder::Disjunction(disjunction) => {
+            disjunction.conjunctions().try_for_each(|branch| validate_optional_returns_recursive(branch, acc))
+        }
+        NestedPatternBuilder::Negation(negation) => validate_optional_returns_recursive(negation.conjunction(), acc),
+        NestedPatternBuilder::Optional(optional) => validate_optional_returns_recursive(optional.conjunction(), acc),
+    })?;
+    acc.extend(
+        conjunction
+            .constraints()
+            .iter()
+            .filter_map(|c| c.as_function_call_binding())
+            .flat_map(|call| call.binding_modes())
+            .filter_map(|(var, mode)| (mode == BindingMode::OptionallyBinding).then_some(var)),
+    );
+    let reused_optional_return_opt = conjunction_binding_modes
+        .iter()
+        .find(|(var, mode)| **mode != BindingMode::OptionallyBinding && acc.contains(var))
+        .map(|(var, mode)| *var);
+    if let Some(var) = reused_optional_return_opt {
+        Err(var)
+    } else {
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
