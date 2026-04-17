@@ -73,7 +73,7 @@ pub trait Pattern {
     }
 
     // A referenced variable is "visible" if it's not local to some subpattern.
-    // includes all variables from constraints and subpatterns. Does not include inputs.
+    // includes all variables from constraints and subpatterns. Does not include stage inputs if unused.
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
