@@ -9,14 +9,15 @@
 
 use std::{
     cmp::max,
-    collections::{HashMap, VecDeque},
+    collections::{BTreeMap, HashMap, VecDeque},
     error::Error,
     fmt,
     io::Read,
     sync::{
         atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
-        Arc, Condvar, Mutex, OnceLock, RwLock,
+        Arc, Mutex, OnceLock, RwLock,
     },
+    thread::{self, Thread},
 };
 
 use bytes::byte_array::ByteArray;
@@ -415,16 +416,67 @@ impl Error for ExpectedWindowError {}
 ///     2) when validation has finished, record into the Slot for its commit sequence number whether
 ///         it is sucessfully 'validated' or must be 'aborted'.
 ///
+/// A single waiter registered in `Timeline::waiters`. `target` is the sequence
+/// number the waiter needs the watermark to reach before it can proceed;
+/// `woken` guards against spurious `thread::park` wake-ups; `thread` is the
+/// handle used to `unpark` the waiter when its target becomes satisfied.
+#[derive(Debug)]
+struct WatermarkWaiter {
+    woken: AtomicBool,
+    thread: Thread,
+}
+
+#[derive(Debug)]
+struct WatermarkWaiters {
+    /// Keyed by (target, unique_id) so waiters with the same target coexist.
+    /// Iteration is sorted by key, so `wake_through(new_watermark)` can drain
+    /// all entries whose target ≤ new_watermark in one forward pass.
+    inner: Mutex<WatermarkWaitersInner>,
+}
+
+#[derive(Debug)]
+struct WatermarkWaitersInner {
+    waiters: BTreeMap<(u64, u64), Arc<WatermarkWaiter>>,
+    next_id: u64,
+}
+
+impl WatermarkWaiters {
+    fn new() -> Self {
+        Self { inner: Mutex::new(WatermarkWaitersInner { waiters: BTreeMap::new(), next_id: 0 }) }
+    }
+
+    fn wake_through(&self, new_watermark: SequenceNumber) {
+        // Fast path: if there are no waiters, avoid the lock entirely. Racy
+        // but safe — any waiter arriving after this check re-verifies the
+        // watermark under the mutex inside `wait_until_watermark_reaches`.
+        let mut inner = self.inner.lock().unwrap();
+        if inner.waiters.is_empty() {
+            return;
+        }
+        let threshold = new_watermark.number();
+        // Collect satisfied keys then remove + wake. Can't drain-while-iter
+        // on BTreeMap directly. At ≤tens of waiters this is cheap.
+        let satisfied: Vec<(u64, u64)> =
+            inner.waiters.range(..=(threshold, u64::MAX)).map(|(k, _)| *k).collect();
+        for k in satisfied {
+            if let Some(entry) = inner.waiters.remove(&k) {
+                entry.woken.store(true, Ordering::Release);
+                entry.thread.unpark();
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 struct Timeline {
     // We can adjust the Window size to amortise the cost of the read-write locks to maintain the timeline
     windows: RwLock<VecDeque<Arc<TimelineWindow<TIMELINE_WINDOW_SIZE>>>>,
     watermark: AtomicU64,
-    // Event channel for watermark advancement. Readers of `wait_until_watermark_reaches`
-    // park on the condvar and are notified (all) every time the watermark advances, replacing
-    // the prior 50us sleep-poll. The mutex content is unused — the actual state is the atomic.
-    watermark_advance_lock: Mutex<()>,
-    watermark_advance_cv: Condvar,
+    /// Targeted-wake replacement for the old `Condvar::notify_all`. Each waiter
+    /// is registered with its target sequence number and gets unparked exactly
+    /// once, when the watermark first reaches that target — no thundering herd
+    /// of spurious wake-ups when the watermark advances past unrelated targets.
+    waiters: WatermarkWaiters,
 }
 
 impl Timeline {
@@ -434,21 +486,32 @@ impl Timeline {
         Timeline {
             windows: RwLock::new(windows),
             watermark: AtomicU64::new(next_sequence_number.number() - 1),
-            watermark_advance_lock: Mutex::new(()),
-            watermark_advance_cv: Condvar::new(),
+            waiters: WatermarkWaiters::new(),
         }
     }
 
     fn wait_until_watermark_reaches(&self, target: SequenceNumber) -> SequenceNumber {
-        let current = self.watermark();
-        if current >= target {
-            return current;
+        if self.watermark() >= target {
+            return self.watermark();
         }
-        let guard = self.watermark_advance_lock.lock().unwrap();
-        let _guard = self
-            .watermark_advance_cv
-            .wait_while(guard, |_| self.watermark() < target)
-            .unwrap();
+        let entry = Arc::new(WatermarkWaiter { woken: AtomicBool::new(false), thread: thread::current() });
+        {
+            let mut inner = self.waiters.inner.lock().unwrap();
+            // Re-check under the mutex: if the watermark advanced past our
+            // target between our first check and here, we skip registration.
+            // This closes the lost-wakeup race with `wake_through`, which
+            // takes the same mutex after advancing the atomic.
+            if self.watermark() >= target {
+                return self.watermark();
+            }
+            let id = inner.next_id;
+            inner.next_id += 1;
+            inner.waiters.insert((target.number(), id), entry.clone());
+        }
+        // thread::park can return spuriously; re-check `woken` in a loop.
+        while !entry.woken.load(Ordering::Acquire) {
+            thread::park();
+        }
         self.watermark()
     }
 
@@ -500,12 +563,12 @@ impl Timeline {
         }
 
         let watermark = candidate_watermark - 1; // Invaraint
-        // Wake threads parked in wait_until_watermark_reaches when the watermark advances.
-        // Acquiring the mutex is required to avoid the classic lost-wakeup race with a
-        // waiter that has just observed the old watermark but not yet called wait_while.
+        // Targeted wake: only unpark waiters whose target sequence number is
+        // now satisfied. The `waiters` mutex serialises against
+        // `wait_until_watermark_reaches`'s registration path, closing the
+        // lost-wakeup race without paying for `notify_all`'s thundering herd.
         if watermark > start_watermark {
-            let _guard = self.watermark_advance_lock.lock().unwrap();
-            self.watermark_advance_cv.notify_all();
+            self.waiters.wake_through(watermark);
         }
         if let Some(watermark_window_end) = { self.try_get_window(sequence_number - 1).map(|w| w.end()) } {
             if watermark >= watermark_window_end {
