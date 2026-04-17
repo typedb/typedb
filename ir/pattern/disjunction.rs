@@ -134,7 +134,7 @@ impl DisjunctionBuilder {
             })
             .collect::<HashMap<_, _>>();
 
-        // Escalate multiple branches locally-bound to Errors
+        // Escalate multiple branches locally-bound to RequireBound
         binding_modes.iter_mut().filter(|(_, mode)| mode.is_locally_binding_in_child()).for_each(|(var, mode)| {
             let binding_branches_count =
                 all_branch_modes.iter().filter(|branch_modes| branch_modes.get(var).is_some()).count();

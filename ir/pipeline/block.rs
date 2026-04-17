@@ -73,10 +73,10 @@ impl<'reg> BlockBuilder<'reg> {
 
     pub fn finish(mut self) -> Result<Block, Box<RepresentationError>> {
         let block_binding_modes = self.variable_binding_modes();
-        validate_variable_categories_are_sufficiently_narrow(&self.conjunction, &self.context)?;
+        validate_no_optionals_in_negations(&self.conjunction, false)?;
+        validate_no_unbound_variables(&self.conjunction, &self.context)?;
         validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
-        validate_all_variables_are_bound(&block_binding_modes, &self.context.variable_registry)?;
-        debug_assert!(!block_binding_modes.iter().any(|(_, b)| b.is_require_prebound()));
+        validate_all_required_variables_can_be_bound(&block_binding_modes, &self.context.variable_registry)?;
 
         // Update
         block_binding_modes
@@ -106,11 +106,10 @@ impl<'reg> BlockBuilder<'reg> {
     }
 }
 
-fn validate_variable_categories_are_sufficiently_narrow(
+fn validate_no_unbound_variables(
     conjunction: &ConjunctionBuilder,
     context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
-    validate_no_optionals_in_negations(conjunction, false)?;
     let unbound = context.block_context.registered_variables().find(|&variable| {
         matches!(
             context.variable_registry.get_variable_category(variable),
@@ -195,7 +194,7 @@ fn validate_is_variables_have_same_category(
     Ok(())
 }
 
-fn validate_all_variables_are_bound(
+fn validate_all_required_variables_can_be_bound(
     block_binding_modes: &HashMap<Variable, BindingMode>,
     variable_registry: &VariableRegistry,
 ) -> Result<(), Box<RepresentationError>> {
