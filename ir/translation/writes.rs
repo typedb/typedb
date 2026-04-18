@@ -17,12 +17,8 @@ use typeql::{
 };
 
 use crate::{
-    pattern::conjunction::{ConjunctionBuilder, ConjunctionBuilderWithContext},
-    pipeline::{
-        block::{Block, BlockBuilderContext},
-        function_signature::HashMapFunctionSignatureIndex,
-        ParameterRegistry,
-    },
+    pattern::conjunction::ConjunctionBuilderWithContext,
+    pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{
         constraints::{add_typeql_relation, register_typeql_var},
         match_::add_patterns,
@@ -162,7 +158,7 @@ fn validate_delete(delete: &typeql::query::stage::Delete) -> Result<(), Box<Repr
 
 fn add_deletables(
     deletables: &[Deletable],
-    mut conjunction: &mut ConjunctionBuilderWithContext<'_, '_>,
+    conjunction: &mut ConjunctionBuilderWithContext<'_, '_>,
     deleted_concepts: &mut Vec<Variable>,
 ) -> Result<(), Box<RepresentationError>> {
     for deletable in deletables {

@@ -14,7 +14,7 @@ use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext},
         nested_pattern::NestedPattern,
-        BindingMode, BranchID, ContextualisedBindingMode, Pattern, Scope, ScopeId, VariableRequirements,
+        BindingMode, BranchID, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
     },
     pipeline::block::BlockBuilderContext,
 };
@@ -24,7 +24,7 @@ pub struct Disjunction {
     conjunctions: Vec<Conjunction>,
     branch_ids: Vec<BranchID>,
     scope_id: ScopeId,
-    variable_requirements: VariableRequirements,
+    pattern_variables: PatternVariables,
 }
 
 impl Disjunction {
@@ -54,11 +54,11 @@ impl Disjunction {
 
 impl Pattern for Disjunction {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_requirements.visible_referenced_variables()
+        self.pattern_variables.visible_referenced_variables()
     }
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_requirements.required_inputs()
+        self.pattern_variables.required_inputs()
     }
 }
 
@@ -100,8 +100,13 @@ impl DisjunctionBuilder {
         let branch_ids = self.conjunctions.iter().map(|(bid, _)| *bid).collect();
         let conjunctions =
             self.conjunctions.into_iter().map(|(_, conjunction)| conjunction.finish(&binding_modes)).collect();
-        let variable_requirements = VariableRequirements::from(&binding_modes);
-        NestedPattern::Disjunction(Disjunction { scope_id, branch_ids, conjunctions, variable_requirements })
+        let variable_requirements = PatternVariables::from(&binding_modes);
+        NestedPattern::Disjunction(Disjunction {
+            scope_id,
+            branch_ids,
+            conjunctions,
+            pattern_variables: variable_requirements,
+        })
     }
 
     pub(crate) fn conjunctions(&self) -> impl Iterator<Item = &ConjunctionBuilder> {

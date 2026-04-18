@@ -23,11 +23,11 @@ use typeql::{
 
 use crate::{
     pattern::{
-        conjunction::{ConjunctionBuilder, ConjunctionBuilderWithContext},
+        conjunction::ConjunctionBuilderWithContext,
         constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
         ValueType, Vertex,
     },
-    pipeline::{block::BlockBuilderContext, function_signature::FunctionSignatureIndex},
+    pipeline::function_signature::FunctionSignatureIndex,
     translation::{
         expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
         literal::translate_literal,

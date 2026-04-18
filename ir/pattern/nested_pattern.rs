@@ -25,13 +25,6 @@ impl NestedPattern {
         }
     }
 
-    pub(crate) fn as_disjunction_mut(&mut self) -> Option<&mut Disjunction> {
-        match self {
-            NestedPattern::Disjunction(disjunction) => Some(disjunction),
-            _ => None,
-        }
-    }
-
     pub fn as_negation(&self) -> Option<&Negation> {
         match self {
             NestedPattern::Negation(negation) => Some(negation),
@@ -39,21 +32,7 @@ impl NestedPattern {
         }
     }
 
-    pub(crate) fn as_negation_mut(&mut self) -> Option<&mut Negation> {
-        match self {
-            NestedPattern::Negation(negation) => Some(negation),
-            _ => None,
-        }
-    }
-
     pub fn as_optional(&self) -> Option<&Optional> {
-        match self {
-            NestedPattern::Optional(optional) => Some(optional),
-            _ => None,
-        }
-    }
-
-    pub(crate) fn as_optional_mut(&mut self) -> Option<&mut Optional> {
         match self {
             NestedPattern::Optional(optional) => Some(optional),
             _ => None,

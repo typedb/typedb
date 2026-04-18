@@ -12,13 +12,13 @@ use structural_equality::StructuralEquality;
 use crate::pattern::{
     conjunction::{Conjunction, ConjunctionBuilder},
     nested_pattern::NestedPattern,
-    BindingMode, ContextualisedBindingMode, Pattern, Scope, ScopeId, VariableRequirements,
+    BindingMode, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
 };
 
 #[derive(Debug, Clone)]
 pub struct Negation {
     conjunction: Conjunction,
-    variable_requirements: VariableRequirements,
+    pattern_variables: PatternVariables,
 }
 
 impl Negation {
@@ -33,11 +33,11 @@ impl Negation {
 
 impl Pattern for Negation {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_requirements.visible_referenced_variables()
+        self.pattern_variables.visible_referenced_variables()
     }
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_requirements.required_inputs()
+        self.pattern_variables.required_inputs()
     }
 }
 
@@ -76,8 +76,8 @@ impl NegationBuilder {
     pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
         let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
         let conjunction = self.conjunction.finish(&binding_modes);
-        let variable_requirements = VariableRequirements::from(&binding_modes);
-        NestedPattern::Negation(Negation { conjunction, variable_requirements })
+        let variable_requirements = PatternVariables::from(&binding_modes);
+        NestedPattern::Negation(Negation { conjunction, pattern_variables: variable_requirements })
     }
 
     pub(crate) fn conjunction(&self) -> &ConjunctionBuilder {

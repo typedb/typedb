@@ -22,7 +22,7 @@ use crate::{
         negation::NegationBuilder,
         nested_pattern::NestedPattern,
         optional::OptionalBuilder,
-        BindingMode, ContextualisedBindingMode, Pattern, Scope, ScopeId, VariableRequirements,
+        BindingMode, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
     },
     pipeline::block::BlockBuilderContext,
     RepresentationError,
@@ -33,7 +33,7 @@ pub struct Conjunction {
     scope_id: ScopeId,
     constraints: Constraints,
     nested_patterns: Vec<NestedPattern>,
-    variable_requirements: VariableRequirements,
+    pattern_variables: PatternVariables,
 }
 
 impl Conjunction {
@@ -55,12 +55,12 @@ impl Conjunction {
 
     pub fn set_unsatisfiable(&mut self) {
         let scope_id = self.scope_id;
-        let binding_modes = self.variable_requirements.clone();
+        let binding_modes = self.pattern_variables.clone();
         let mut swapped_conjunction = Self {
             scope_id,
             constraints: Constraints::new(scope_id),
             nested_patterns: Vec::new(),
-            variable_requirements: binding_modes,
+            pattern_variables: binding_modes,
         };
         std::mem::swap(self, &mut swapped_conjunction);
         self.constraints.constraints_mut().push(Constraint::Unsatisfiable(Unsatisfiable::new(swapped_conjunction)));
@@ -76,11 +76,11 @@ impl Conjunction {
 
 impl Pattern for Conjunction {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_requirements.visible_referenced_variables()
+        self.pattern_variables.visible_referenced_variables()
     }
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_requirements.required_inputs()
+        self.pattern_variables.required_inputs()
     }
 }
 
@@ -160,8 +160,8 @@ impl ConjunctionBuilder {
         let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
         let Self { scope_id, constraints, nested_patterns } = self;
         let nested_patterns = nested_patterns.into_iter().map(|builder| builder.finish(&binding_modes)).collect();
-        let variable_requirements = VariableRequirements::from(&binding_modes);
-        Conjunction { scope_id, constraints, nested_patterns, variable_requirements }
+        let variable_requirements = PatternVariables::from(&binding_modes);
+        Conjunction { scope_id, constraints, nested_patterns, pattern_variables: variable_requirements }
     }
 
     pub fn scope_id(&self) -> ScopeId {

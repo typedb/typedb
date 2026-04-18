@@ -12,14 +12,14 @@ use structural_equality::StructuralEquality;
 use crate::pattern::{
     conjunction::{Conjunction, ConjunctionBuilder},
     nested_pattern::NestedPattern,
-    BindingMode, BranchID, ContextualisedBindingMode, Pattern, Scope, ScopeId, VariableRequirements,
+    BindingMode, BranchID, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
 };
 
 #[derive(Debug, Clone)]
 pub struct Optional {
     conjunction: Conjunction,
     branch_id: BranchID,
-    variable_requirements: VariableRequirements,
+    pattern_variables: PatternVariables,
 }
 
 impl Optional {
@@ -38,11 +38,11 @@ impl Optional {
 
 impl Pattern for Optional {
     fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_requirements.visible_referenced_variables()
+        self.pattern_variables.visible_referenced_variables()
     }
 
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_requirements.required_inputs()
+        self.pattern_variables.required_inputs()
     }
 }
 
@@ -84,8 +84,8 @@ impl OptionalBuilder {
         let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
         let branch_id = self.branch_id;
         let conjunction = self.conjunction.finish(&binding_modes);
-        let variable_requirements = VariableRequirements::from(&binding_modes);
-        NestedPattern::Optional(Optional { branch_id, conjunction, variable_requirements })
+        let variable_requirements = PatternVariables::from(&binding_modes);
+        NestedPattern::Optional(Optional { branch_id, conjunction, pattern_variables: variable_requirements })
     }
 
     pub(crate) fn conjunction(&self) -> &ConjunctionBuilder {

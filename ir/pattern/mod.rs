@@ -479,18 +479,25 @@ impl ContextualisedBindingMode {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum IsRequired {
+    Required,
+    NotRequired,
+}
+
 #[derive(Debug, Clone)]
-pub(crate) struct VariableRequirements(HashMap<Variable, bool>);
-impl VariableRequirements {
+pub(crate) struct PatternVariables(HashMap<Variable, IsRequired>);
+impl PatternVariables {
     fn from(modes: &ContextualisedBindingMode) -> Self {
         Self(
             modes
                 .0
                 .iter()
                 .filter_map(|(var, mode)| match mode {
-                    BindingMode::RequirePrebound => Some((*var, true)),
-                    BindingMode::AlwaysBinding | BindingMode::OptionallyBinding => Some((*var, false)),
-
+                    BindingMode::RequirePrebound => Some((*var, IsRequired::Required)),
+                    BindingMode::AlwaysBinding | BindingMode::OptionallyBinding => {
+                        Some((*var, IsRequired::NotRequired))
+                    }
                     BindingMode::LocallyBindingInChild | BindingMode::Absent => None,
                 })
                 .collect(),
@@ -502,6 +509,6 @@ impl VariableRequirements {
     }
 
     pub(crate) fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.0.iter().filter_map(|(v, required)| required.then_some(*v))
+        self.0.iter().filter_map(|(v, required)| (*required == IsRequired::Required).then_some(*v))
     }
 }
