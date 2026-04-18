@@ -4,22 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{hash_map, HashMap},
-    fmt,
-    ops::ControlFlow,
-};
+use std::{collections::HashMap, fmt};
 
 use answer::variable::Variable;
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
-use typeql::common::Span;
 
 use crate::{
     pattern::{
-        conjunction::{Conjunction, ConjunctionBuilder},
-        BranchID, Pattern, Scope, ScopeId, VariableBindingMode,
+        conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext},
+        impl_pattern_from_pattern_variables,
+        nested_pattern::NestedPattern,
+        BindingMode, BranchID, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
+    pipeline::block::BlockBuilderContext,
 };
 
 #[derive(Clone, Debug)]
@@ -27,13 +25,10 @@ pub struct Disjunction {
     conjunctions: Vec<Conjunction>,
     branch_ids: Vec<BranchID>,
     scope_id: ScopeId,
+    pattern_variables: PatternVariables,
 }
 
 impl Disjunction {
-    pub fn new(scope_id: ScopeId) -> Self {
-        Self { conjunctions: Vec::new(), branch_ids: Vec::new(), scope_id }
-    }
-
     pub fn conjunctions_by_branch_id(&self) -> impl Iterator<Item = (&BranchID, &Conjunction)> {
         self.branch_ids.iter().zip(self.conjunctions.iter())
     }
@@ -44,21 +39,6 @@ impl Disjunction {
 
     pub fn conjunctions_mut(&mut self) -> &mut [Conjunction] {
         &mut self.conjunctions
-    }
-
-    pub fn named_always_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.always_binding_variables(block_context).filter(Variable::is_named)
-    }
-
-    fn always_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_always_binding().then_some(v))
-    }
-
-    pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
-        for conjunction in &self.conjunctions {
-            conjunction.find_disjoint_variable(block_context)?;
-        }
-        ControlFlow::Continue(())
     }
 
     pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
@@ -73,47 +53,7 @@ impl Disjunction {
     }
 }
 
-impl Pattern for Disjunction {
-    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
-    }
-
-    /// Returns: non_binding for any variable in any branch that is required as an argument/input
-    ///          locally_binding for any binding variable that is not binding in all branches
-    ///          binding for any variable that is bound in all branches
-    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
-        if self.conjunctions.is_empty() {
-            return HashMap::new();
-        }
-        let mut binding_modes = self.conjunctions[0].variable_binding_modes();
-        for branch in &self.conjunctions[1..] {
-            let branch_binding_modes = branch.variable_binding_modes();
-            for (var, mode) in &mut binding_modes {
-                // Not present in this branch: local to only 1 branch in the disjunction
-                if !branch_binding_modes.contains_key(var) && mode.is_always_binding() {
-                    mode.set_locally_binding_in_child()
-                }
-            }
-            for (var, mut mode) in branch_binding_modes {
-                let entry = binding_modes.entry(var);
-                match entry {
-                    hash_map::Entry::Occupied(mut entry) => {
-                        // Eg. it's non-binding in one branch but binding in another, force it to non-binding (use weakest form)
-                        *entry.get_mut() |= mode;
-                    }
-                    hash_map::Entry::Vacant(entry) => {
-                        // Not present in first and maybe later branches ("merged" modes), so local to this branch
-                        if mode.is_always_binding() {
-                            mode.set_locally_binding_in_child();
-                        }
-                        entry.insert(mode);
-                    }
-                }
-            }
-        }
-        binding_modes
-    }
-}
+impl_pattern_from_pattern_variables!(Disjunction);
 
 impl StructuralEquality for Disjunction {
     fn hash(&self) -> u64 {
@@ -136,25 +76,82 @@ impl fmt::Display for Disjunction {
     }
 }
 
-pub struct DisjunctionBuilder<'cx, 'reg> {
-    context: &'cx mut BlockBuilderContext<'reg>,
-    disjunction: &'cx mut Disjunction,
+#[derive(Debug)]
+pub struct DisjunctionBuilder {
+    conjunctions: Vec<(BranchID, ConjunctionBuilder)>,
     scope_id: ScopeId,
 }
 
-impl<'cx, 'reg> DisjunctionBuilder<'cx, 'reg> {
-    pub fn new(
-        context: &'cx mut BlockBuilderContext<'reg>,
-        scope_id: ScopeId,
-        disjunction: &'cx mut Disjunction,
-    ) -> Self {
-        Self { context, disjunction, scope_id }
+impl DisjunctionBuilder {
+    pub fn new(scope_id: ScopeId) -> Self {
+        Self { scope_id, conjunctions: Vec::new() }
     }
 
-    pub fn add_conjunction(&mut self) -> ConjunctionBuilder<'_, 'reg> {
-        let conj_scope_id = self.context.create_child_scope(self.scope_id, ScopeType::Conjunction);
-        self.disjunction.conjunctions.push(Conjunction::new(conj_scope_id));
-        self.disjunction.branch_ids.push(self.context.next_branch_id());
-        ConjunctionBuilder::new(self.context, self.disjunction.conjunctions.last_mut().unwrap())
+    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
+        let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
+        let scope_id = self.scope_id;
+        let branch_ids = self.conjunctions.iter().map(|(bid, _)| *bid).collect();
+        let conjunctions =
+            self.conjunctions.into_iter().map(|(_, conjunction)| conjunction.finish(&binding_modes)).collect();
+        let variable_requirements = PatternVariables::from(&binding_modes);
+        NestedPattern::Disjunction(Disjunction {
+            scope_id,
+            branch_ids,
+            conjunctions,
+            pattern_variables: variable_requirements,
+        })
+    }
+
+    pub(crate) fn conjunctions(&self) -> impl Iterator<Item = &ConjunctionBuilder> {
+        self.conjunctions.iter().map(|(_, c)| c)
+    }
+
+    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
+        if self.conjunctions.is_empty() {
+            return HashMap::new();
+        }
+        let all_branch_modes: Vec<_> = self.conjunctions.iter().map(|(_, c)| c.variable_binding_modes()).collect();
+        let all_variables = all_branch_modes.iter().flat_map(|b| b.keys()).dedup().collect::<Vec<_>>();
+
+        let mut binding_modes = all_variables
+            .iter()
+            .map(|v| {
+                let mode = all_branch_modes
+                    .iter()
+                    .map(|b| b.get(v).copied().unwrap_or(BindingMode::Absent))
+                    .reduce(|a, b| a | b)
+                    .unwrap_or(BindingMode::Absent);
+                (**v, mode)
+            })
+            .collect::<HashMap<_, _>>();
+
+        // Escalate multiple branches locally-bound to RequireBound
+        binding_modes.iter_mut().filter(|(_, mode)| mode.is_locally_binding_in_child()).for_each(|(var, mode)| {
+            let binding_branches_count =
+                all_branch_modes.iter().filter(|branch_modes| branch_modes.get(var).is_some()).count();
+            if binding_branches_count > 1 {
+                *mode = BindingMode::RequirePrebound
+            }
+        });
+        binding_modes
+    }
+}
+
+#[derive(Debug)]
+pub struct DisjunctionBuilderWithContext<'ctx, 'reg> {
+    context: &'ctx mut BlockBuilderContext<'reg>,
+    disjunction: &'ctx mut DisjunctionBuilder,
+}
+
+impl<'ctx, 'reg> DisjunctionBuilderWithContext<'ctx, 'reg> {
+    pub(crate) fn new(context: &'ctx mut BlockBuilderContext<'reg>, disjunction: &'ctx mut DisjunctionBuilder) -> Self {
+        Self { context, disjunction }
+    }
+
+    pub fn add_conjunction(&mut self) -> ConjunctionBuilderWithContext<'_, 'reg> {
+        let conj_scope_id = self.context.next_scope_id();
+        let branch_id = self.context.next_branch_id();
+        self.disjunction.conjunctions.push((branch_id, ConjunctionBuilder::new(conj_scope_id)));
+        ConjunctionBuilderWithContext::new(&mut self.context, &mut self.disjunction.conjunctions.last_mut().unwrap().1)
     }
 }

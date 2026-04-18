@@ -10,16 +10,15 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
     mem,
-    ops::{BitAndAssign, BitOrAssign, BitXor},
+    ops::{BitAnd, BitAndAssign, BitOr, BitXor},
 };
 
 use answer::variable::Variable;
-use constraint::Constraint;
 use encoding::value::label::Label;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
-use crate::pipeline::{block::BlockContext, VariableRegistry};
+use crate::pipeline::VariableRegistry;
 
 pub mod conjunction;
 pub mod constraint;
@@ -69,24 +68,31 @@ pub trait IrID: Copy + fmt::Display + fmt::Debug + Hash + Eq + PartialEq + Ord +
 impl IrID for Variable {}
 
 pub trait Pattern {
-    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
-
-    fn required_inputs<'a>(&'a self, _block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_require_prebound().then_some(v))
+    fn named_visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.visible_referenced_variables().filter(Variable::is_named)
     }
 
-    fn named_visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.visible_binding_variables(block_context).filter(Variable::is_named)
-    }
+    // A referenced variable is "visible" if it's not local to some subpattern.
+    // includes all variables from constraints and subpatterns. Does not include stage inputs if unused.
+    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_;
 
-    fn visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes()
-            .into_iter()
-            .filter_map(|(v, mode)| (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v))
-    }
-
-    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>>;
+    fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
 }
+
+macro_rules! impl_pattern_from_pattern_variables {
+    ($pattern:ty) => {
+        impl Pattern for $pattern {
+            fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.visible_referenced_variables()
+            }
+
+            fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.required_inputs()
+            }
+        }
+    };
+}
+pub(self) use impl_pattern_from_pattern_variables;
 
 // TODO: rename to 'Identifier' in lieu of a better name
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -392,95 +398,132 @@ impl fmt::Display for ValueType {
     }
 }
 
-// TODO: consider if this makes Scopes entirely redundant
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum BindingMode {
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum BindingMode {
     RequirePrebound,
     AlwaysBinding,
     LocallyBindingInChild,
     OptionallyBinding,
+    #[default]
+    Absent,
+}
+
+impl BindingMode {
+    pub fn is_require_prebound(&self) -> bool {
+        *self == BindingMode::RequirePrebound
+    }
+
+    pub fn is_always_binding(&self) -> bool {
+        *self == BindingMode::AlwaysBinding
+    }
+
+    pub fn is_locally_binding_in_child(&self) -> bool {
+        *self == BindingMode::LocallyBindingInChild
+    }
+
+    pub fn is_optionally_binding(&self) -> bool {
+        *self == BindingMode::OptionallyBinding
+    }
+}
+
+impl BitAnd for BindingMode {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self {
+        // We upgrade (Optionally|LocallyBinding) & (Optionally|LocallyBinding) to RequirePrebound
+        match (self, rhs) {
+            (Self::Absent, x) | (x, Self::Absent) => x,
+            (Self::AlwaysBinding, _) | (_, Self::AlwaysBinding) => Self::AlwaysBinding,
+            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => Self::RequirePrebound,
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => Self::RequirePrebound,
+            (Self::OptionallyBinding, Self::OptionallyBinding) => Self::RequirePrebound,
+        }
+    }
 }
 
 impl BitAndAssign for BindingMode {
     fn bitand_assign(&mut self, rhs: Self) {
-        match (*self, rhs) {
-            (Self::AlwaysBinding, _) | (_, Self::AlwaysBinding) => *self = Self::AlwaysBinding,
-            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => *self = Self::RequirePrebound,
-            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::LocallyBindingInChild,
-            (Self::OptionallyBinding, Self::OptionallyBinding) => (),
+        *self = *self & rhs;
+    }
+}
+
+impl BitOr for BindingMode {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        match (self, rhs) {
+            (Self::OptionallyBinding, Self::OptionallyBinding) => Self::OptionallyBinding,
+            (Self::AlwaysBinding, Self::AlwaysBinding) => Self::AlwaysBinding,
+            (Self::Absent, Self::Absent) => Self::Absent,
+            (Self::Absent, Self::AlwaysBinding) | (Self::AlwaysBinding, Self::Absent) => Self::LocallyBindingInChild,
+            (Self::Absent, Self::LocallyBindingInChild) | (Self::LocallyBindingInChild, Self::Absent) => {
+                Self::LocallyBindingInChild
+            }
+            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => Self::RequirePrebound,
+            (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => Self::RequirePrebound,
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => {
+                // This preserves associativity, but doesn't correctly escalate to RequirePrebound.
+                // ((AlwaysBinding | AlwaysBinding) | Absent) should be required
+                // That's corrected in disjunction
+                Self::LocallyBindingInChild
+            }
         }
     }
 }
 
-impl BitOrAssign for BindingMode {
-    fn bitor_assign(&mut self, rhs: Self) {
-        match (*self, rhs) {
-            (Self::RequirePrebound, _) | (_, Self::RequirePrebound) => *self = Self::RequirePrebound,
-            (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => *self = Self::OptionallyBinding,
-            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::LocallyBindingInChild,
-            (Self::AlwaysBinding, Self::AlwaysBinding) => (),
-        }
+#[derive(Debug, Clone)]
+pub(crate) struct ContextualisedBindingMode(HashMap<Variable, BindingMode>);
+
+impl ContextualisedBindingMode {
+    pub(crate) fn for_block(block_binding_modes: HashMap<Variable, BindingMode>) -> ContextualisedBindingMode {
+        Self(block_binding_modes)
+    }
+
+    pub(crate) fn from(
+        mut pattern_modes: HashMap<Variable, BindingMode>,
+        parent_modes: &ContextualisedBindingMode,
+    ) -> ContextualisedBindingMode {
+        pattern_modes.iter_mut().for_each(|(var, mode)| {
+            *mode = match (*mode, parent_modes.0.get(var).copied().unwrap_or(BindingMode::Absent)) {
+                (_, BindingMode::RequirePrebound) => BindingMode::RequirePrebound,
+                (BindingMode::LocallyBindingInChild, BindingMode::AlwaysBinding)
+                | (BindingMode::OptionallyBinding, BindingMode::AlwaysBinding) => BindingMode::RequirePrebound,
+                (mode, _) => mode,
+            };
+        });
+        Self(pattern_modes)
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct VariableBindingMode<'a> {
-    mode: BindingMode,
-    referencing_constraints: Vec<&'a Constraint<Variable>>,
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum IsRequired {
+    Required,
+    NotRequired,
 }
 
-impl<'a> VariableBindingMode<'a> {
-    pub fn require_prebound(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: BindingMode::RequirePrebound, referencing_constraints: vec![constraint] }
+#[derive(Debug, Clone)]
+pub(crate) struct PatternVariables(HashMap<Variable, IsRequired>);
+impl PatternVariables {
+    fn from(modes: &ContextualisedBindingMode) -> Self {
+        Self(
+            modes
+                .0
+                .iter()
+                .filter_map(|(var, mode)| match mode {
+                    BindingMode::RequirePrebound => Some((*var, IsRequired::Required)),
+                    BindingMode::AlwaysBinding | BindingMode::OptionallyBinding => {
+                        Some((*var, IsRequired::NotRequired))
+                    }
+                    BindingMode::LocallyBindingInChild | BindingMode::Absent => None,
+                })
+                .collect(),
+        )
     }
 
-    pub fn always_binding(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: BindingMode::AlwaysBinding, referencing_constraints: vec![constraint] }
+    pub(crate) fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.0.keys().copied()
     }
 
-    pub fn set_require_prebound(&mut self) {
-        self.mode = BindingMode::RequirePrebound;
-    }
-
-    pub fn set_locally_binding_in_child(&mut self) {
-        self.mode = BindingMode::LocallyBindingInChild;
-    }
-
-    pub fn set_optionally_binding(&mut self) {
-        self.mode = BindingMode::OptionallyBinding;
-    }
-
-    pub fn is_require_prebound(&self) -> bool {
-        self.mode == BindingMode::RequirePrebound
-    }
-
-    pub fn is_always_binding(&self) -> bool {
-        self.mode == BindingMode::AlwaysBinding
-    }
-
-    pub fn is_locally_binding_in_child(&self) -> bool {
-        self.mode == BindingMode::LocallyBindingInChild
-    }
-
-    pub fn is_optionally_binding(&self) -> bool {
-        self.mode == BindingMode::OptionallyBinding
-    }
-
-    pub fn referencing_constraints(&self) -> &[&Constraint<Variable>] {
-        &self.referencing_constraints
-    }
-}
-
-impl BitAndAssign for VariableBindingMode<'_> {
-    fn bitand_assign(&mut self, rhs: Self) {
-        self.referencing_constraints.extend_from_slice(&rhs.referencing_constraints);
-        self.mode &= rhs.mode;
-    }
-}
-
-impl BitOrAssign for VariableBindingMode<'_> {
-    fn bitor_assign(&mut self, rhs: Self) {
-        self.referencing_constraints.extend_from_slice(&rhs.referencing_constraints);
-        self.mode |= rhs.mode;
+    pub(crate) fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.0.iter().filter_map(|(v, required)| (*required == IsRequired::Required).then_some(*v))
     }
 }

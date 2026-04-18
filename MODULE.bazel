@@ -148,6 +148,6 @@ git_override(
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
     module_name = "typedb_behaviour",
-    remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "be119ecf3365d98360115b11142f0349957b7dbe",
+    remote = "https://github.com/krishnangovindraj/typedb-behaviour",
+    commit = "05edab354de56d6f8e49013e48090b0acb17d037",
 )

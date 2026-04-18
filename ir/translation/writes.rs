@@ -17,7 +17,7 @@ use typeql::{
 };
 
 use crate::{
-    pattern::conjunction::ConjunctionBuilder,
+    pattern::conjunction::ConjunctionBuilderWithContext,
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{
         constraints::{add_typeql_relation, register_typeql_var},
@@ -35,7 +35,8 @@ pub fn translate_insert(
     validate_insert_patterns(&insert.patterns)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
-    add_patterns(&function_index, &mut builder.conjunction_mut(), &insert.patterns)?;
+    let mut conjunction = builder.conjunction_mut();
+    add_patterns(&function_index, &mut conjunction, &insert.patterns)?;
     builder.finish()
 }
 
@@ -90,7 +91,8 @@ pub fn translate_update(
     validate_update_patterns(context, &update.patterns)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
-    add_patterns(&function_index, &mut builder.conjunction_mut(), &update.patterns)?;
+    let mut conjunction = builder.conjunction_mut();
+    add_patterns(&function_index, &mut conjunction, &update.patterns)?;
     builder.finish()
 }
 
@@ -102,7 +104,8 @@ pub fn translate_put(
     validate_insert_patterns(&put.patterns)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
-    add_patterns(&function_index, &mut builder.conjunction_mut(), &put.patterns)?;
+    let mut conjunction = builder.conjunction_mut();
+    add_patterns(&function_index, &mut conjunction, &put.patterns)?;
     let block = builder.finish()?;
     for constraint in block.conjunction().constraints() {
         match constraint {
@@ -133,7 +136,8 @@ pub fn translate_delete(
     validate_deleted_variables_availability(context, delete)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let mut deleted_concepts = Vec::new();
-    add_deletables(&delete.deletables, builder.conjunction_mut(), &mut deleted_concepts)?;
+    let mut conjunction = builder.conjunction_mut();
+    add_deletables(&delete.deletables, &mut conjunction, &mut deleted_concepts)?;
     let block = builder.finish()?;
     context.last_stage_visible_variables.retain(|name, var| !deleted_concepts.contains(var));
     Ok((block, deleted_concepts))
@@ -154,7 +158,7 @@ fn validate_delete(delete: &typeql::query::stage::Delete) -> Result<(), Box<Repr
 
 fn add_deletables(
     deletables: &[Deletable],
-    mut conjunction: ConjunctionBuilder<'_, '_>,
+    conjunction: &mut ConjunctionBuilderWithContext<'_, '_>,
     deleted_concepts: &mut Vec<Variable>,
 ) -> Result<(), Box<RepresentationError>> {
     for deletable in deletables {
@@ -178,8 +182,8 @@ fn add_deletables(
             }
             DeletableKind::Optional { deletables } => {
                 debug_assert!(deletables.iter().all(|d| !matches!(d.kind, DeletableKind::Optional { .. })));
-                let optional_builder = conjunction.add_optional(deletable.span())?;
-                add_deletables(deletables, optional_builder, deleted_concepts)?;
+                let mut optional_builder = conjunction.add_optional(deletable.span())?;
+                add_deletables(deletables, &mut optional_builder, deleted_concepts)?;
             }
         }
     }

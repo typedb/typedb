@@ -51,7 +51,6 @@ fn build_with_functions() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-
     let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
     let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
 

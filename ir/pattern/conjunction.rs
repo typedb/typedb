@@ -5,10 +5,9 @@
  */
 
 use std::{
-    collections::{hash_map, HashMap},
+    collections::HashMap,
     fmt,
     hash::{DefaultHasher, Hasher},
-    ops::ControlFlow,
 };
 
 use answer::variable::Variable;
@@ -19,13 +18,14 @@ use typeql::common::Span;
 use crate::{
     pattern::{
         constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
-        disjunction::{Disjunction, DisjunctionBuilder},
-        negation::Negation,
+        disjunction::{DisjunctionBuilder, DisjunctionBuilderWithContext},
+        impl_pattern_from_pattern_variables,
+        negation::NegationBuilder,
         nested_pattern::NestedPattern,
-        optional::Optional,
-        Pattern, Scope, ScopeId, VariableBindingMode,
+        optional::OptionalBuilder,
+        BindingMode, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext, ScopeType},
+    pipeline::block::BlockBuilderContext,
     RepresentationError,
 };
 
@@ -34,13 +34,10 @@ pub struct Conjunction {
     scope_id: ScopeId,
     constraints: Constraints,
     nested_patterns: Vec<NestedPattern>,
+    pattern_variables: PatternVariables,
 }
 
 impl Conjunction {
-    pub fn new(scope_id: ScopeId) -> Self {
-        Self { scope_id, constraints: Constraints::new(scope_id), nested_patterns: Vec::new() }
-    }
-
     pub fn constraints(&self) -> &[Constraint<Variable>] {
         self.constraints.constraints()
     }
@@ -58,7 +55,14 @@ impl Conjunction {
     }
 
     pub fn set_unsatisfiable(&mut self) {
-        let mut swapped_conjunction = Self::new(self.scope_id);
+        let scope_id = self.scope_id;
+        let binding_modes = self.pattern_variables.clone();
+        let mut swapped_conjunction = Self {
+            scope_id,
+            constraints: Constraints::new(scope_id),
+            nested_patterns: Vec::new(),
+            pattern_variables: binding_modes,
+        };
         std::mem::swap(self, &mut swapped_conjunction);
         self.constraints.constraints_mut().push(Constraint::Unsatisfiable(Unsatisfiable::new(swapped_conjunction)));
     }
@@ -69,64 +73,9 @@ impl Conjunction {
             Ok(_) | Err(_) => false,
         }
     }
-
-    pub fn local_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        self.referenced_variables().filter(|var| block_context.is_variable_available_in(self.scope_id, *var))
-    }
-
-    pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
-        for (var, mode) in self.variable_binding_modes() {
-            let scope = block_context.get_declaring_scope(&var).unwrap();
-            // variables present in sibling scopes are "declared" in their common ancestor
-            // variables are only considered locally binding in child if the variable is locally bound in all children it is present in
-            //   because locally-binding loses to both non-binding and binding modes
-            // therefore: fail if the variable is only bound in >=1 child, but "declared" here
-            if scope == self.scope_id && (mode.is_locally_binding_in_child() || mode.is_optionally_binding()) {
-                return ControlFlow::Break((var, mode.referencing_constraints().first().and_then(|c| c.source_span())));
-            }
-        }
-        for nested in &self.nested_patterns {
-            nested.find_disjoint_variable(block_context)?;
-        }
-        ControlFlow::Continue(())
-    }
 }
 
-impl Pattern for Conjunction {
-    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.constraints()
-            .iter()
-            .flat_map(|constraint| constraint.ids())
-            .chain(self.nested_patterns.iter().flat_map(|nested| -> Box<dyn Iterator<Item = Variable>> {
-                match nested {
-                    NestedPattern::Disjunction(disjunction) => Box::new(disjunction.referenced_variables()),
-                    NestedPattern::Negation(negation) => Box::new(negation.referenced_variables()),
-                    NestedPattern::Optional(optional) => Box::new(optional.referenced_variables()),
-                }
-            }))
-            .unique()
-    }
-
-    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
-        let mut binding_modes = self.constraints.variable_binding_modes();
-        for nested in self.nested_patterns.iter() {
-            let nested_pattern_modes = nested.variable_binding_modes();
-            for (var, mode) in nested_pattern_modes {
-                match binding_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => {
-                        // Eg. if it's binding in one part of the conjunction, but non-binding in another, it's still binding
-                        //   in this whole conjunction.
-                        *entry.get_mut() &= mode
-                    }
-                    hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(mode);
-                    }
-                }
-            }
-        }
-        binding_modes
-    }
-}
+impl_pattern_from_pattern_variables!(Conjunction);
 
 impl Scope for Conjunction {
     fn scope_id(&self) -> ScopeId {
@@ -161,66 +110,124 @@ impl fmt::Display for Conjunction {
     }
 }
 
-pub struct ConjunctionBuilder<'cx, 'reg> {
-    pub(crate) context: &'cx mut BlockBuilderContext<'reg>,
-    pub(crate) conjunction: &'cx mut Conjunction,
+#[derive(Debug)]
+pub(crate) enum NestedPatternBuilder {
+    Disjunction(DisjunctionBuilder),
+    Negation(NegationBuilder),
+    Optional(OptionalBuilder),
 }
 
-impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
-    pub fn new(context: &'cx mut BlockBuilderContext<'reg>, conjunction: &'cx mut Conjunction) -> Self {
+impl NestedPatternBuilder {
+    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
+        match self {
+            NestedPatternBuilder::Disjunction(disjunction) => disjunction.finish(parent_modes),
+            NestedPatternBuilder::Negation(negation) => negation.finish(parent_modes),
+            NestedPatternBuilder::Optional(optional) => optional.finish(parent_modes),
+        }
+    }
+}
+
+impl NestedPatternBuilder {
+    fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
+        match self {
+            NestedPatternBuilder::Disjunction(inner) => inner.variable_binding_modes(),
+            NestedPatternBuilder::Negation(inner) => inner.variable_binding_modes(),
+            NestedPatternBuilder::Optional(inner) => inner.variable_binding_modes(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ConjunctionBuilder {
+    scope_id: ScopeId,
+    constraints: Constraints,
+    nested_patterns: Vec<NestedPatternBuilder>,
+}
+
+impl ConjunctionBuilder {
+    pub fn new(scope_id: ScopeId) -> Self {
+        Self { constraints: Constraints::new(scope_id), scope_id, nested_patterns: Vec::new() }
+    }
+
+    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> Conjunction {
+        let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
+        let Self { scope_id, constraints, nested_patterns } = self;
+        let nested_patterns = nested_patterns.into_iter().map(|builder| builder.finish(&binding_modes)).collect();
+        let variable_requirements = PatternVariables::from(&binding_modes);
+        Conjunction { scope_id, constraints, nested_patterns, pattern_variables: variable_requirements }
+    }
+
+    pub fn scope_id(&self) -> ScopeId {
+        self.scope_id
+    }
+
+    pub fn constraints(&self) -> &[Constraint<Variable>] {
+        self.constraints.constraints()
+    }
+
+    pub(crate) fn nested_patterns(&self) -> &[NestedPatternBuilder] {
+        &self.nested_patterns
+    }
+
+    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
+        let mut binding_modes = self.constraints.variable_binding_modes();
+        for nested in self.nested_patterns.iter() {
+            let nested_pattern_modes = nested.variable_binding_modes();
+            for (var, mode) in nested_pattern_modes {
+                *binding_modes.entry(var).or_default() &= mode;
+            }
+        }
+        binding_modes
+    }
+}
+
+#[derive(Debug)]
+pub struct ConjunctionBuilderWithContext<'ctx, 'reg> {
+    context: &'ctx mut BlockBuilderContext<'reg>,
+    conjunction: &'ctx mut ConjunctionBuilder,
+}
+
+impl<'ctx, 'reg> ConjunctionBuilderWithContext<'ctx, 'reg> {
+    pub(crate) fn new(context: &'ctx mut BlockBuilderContext<'reg>, conjunction: &'ctx mut ConjunctionBuilder) -> Self {
         Self { context, conjunction }
     }
 
     pub fn constraints_mut(&mut self) -> ConstraintsBuilder<'_, 'reg> {
-        ConstraintsBuilder::new(self.context, &mut self.conjunction.constraints)
+        ConstraintsBuilder::new(&mut self.context, &mut self.conjunction.constraints)
     }
 
-    pub fn add_disjunction(&mut self) -> DisjunctionBuilder<'_, 'reg> {
-        let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id, ScopeType::Disjunction);
-        self.conjunction.nested_patterns.push(NestedPattern::Disjunction(Disjunction::new(nested_scope_id)));
-        let disjunction =
-            self.conjunction.nested_patterns.last_mut().and_then(NestedPattern::as_disjunction_mut).unwrap();
-        DisjunctionBuilder::new(self.context, nested_scope_id, disjunction)
+    pub fn add_disjunction(&mut self) -> DisjunctionBuilderWithContext<'_, 'reg> {
+        let nested_scope_id = self.context.next_scope_id();
+        self.conjunction
+            .nested_patterns
+            .push(NestedPatternBuilder::Disjunction(DisjunctionBuilder::new(nested_scope_id)));
+        let NestedPatternBuilder::Disjunction(builder) = self.conjunction.nested_patterns.last_mut().unwrap() else {
+            unreachable!();
+        };
+        DisjunctionBuilderWithContext::new(&mut self.context, builder)
     }
 
-    pub fn add_negation(&mut self) -> ConjunctionBuilder<'_, 'reg> {
-        let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id, ScopeType::Negation);
-        let negation = Negation::new(nested_scope_id);
-        self.conjunction.nested_patterns.push(NestedPattern::Negation(negation));
-        let Some(NestedPattern::Negation(negation)) = self.conjunction.nested_patterns.last_mut() else {
+    pub fn add_negation(&mut self) -> ConjunctionBuilderWithContext<'_, 'reg> {
+        let nested_scope_id = self.context.next_scope_id();
+        let negation = NegationBuilder::new(nested_scope_id);
+        self.conjunction.nested_patterns.push(NestedPatternBuilder::Negation(negation));
+        let Some(NestedPatternBuilder::Negation(builder)) = self.conjunction.nested_patterns.last_mut() else {
             unreachable!()
         };
-        Negation::new_builder(self.context, negation)
+        ConjunctionBuilderWithContext::new(&mut self.context, builder.conjunction_mut())
     }
 
     pub fn add_optional(
         &mut self,
         source_span: Option<Span>,
-    ) -> Result<ConjunctionBuilder<'_, 'reg>, RepresentationError> {
-        let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id, ScopeType::Optional);
-        let optional = Optional::new(nested_scope_id, self.context.next_branch_id());
-        self.validate_optional_not_in_negation(&optional, source_span)?;
-        self.conjunction.nested_patterns.push(NestedPattern::Optional(optional));
-        let Some(NestedPattern::Optional(optional)) = self.conjunction.nested_patterns.last_mut() else {
+    ) -> Result<ConjunctionBuilderWithContext<'_, 'reg>, RepresentationError> {
+        let nested_scope_id = self.context.next_scope_id();
+        let conjunction = ConjunctionBuilder::new(nested_scope_id);
+        let optional = OptionalBuilder::new(nested_scope_id, self.context.next_branch_id());
+        self.conjunction.nested_patterns.push(NestedPatternBuilder::Optional(optional));
+        let Some(NestedPatternBuilder::Optional(optional)) = self.conjunction.nested_patterns.last_mut() else {
             unreachable!()
         };
-        Ok(Optional::new_builder(self.context, optional))
-    }
-
-    fn validate_optional_not_in_negation(
-        &self,
-        optional: &Optional,
-        source_span: Option<Span>,
-    ) -> Result<(), RepresentationError> {
-        let mut scope = optional.scope_id();
-        while let Some(parent_scope) = self.context.get_parent_scope(scope) {
-            let parent_scope_type = self.context.get_scope_type(parent_scope);
-            if parent_scope_type == ScopeType::Negation {
-                return Err(RepresentationError::OptionalInNegation { source_span });
-            } else {
-                scope = parent_scope;
-            }
-        }
-        Ok(())
+        Ok(ConjunctionBuilderWithContext::new(&mut self.context, optional.conjunction_mut()))
     }
 }

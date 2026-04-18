@@ -9,32 +9,21 @@ use std::{collections::HashMap, fmt};
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
-use crate::{
-    pattern::{
-        conjunction::{Conjunction, ConjunctionBuilder},
-        BranchID, Pattern, Scope, ScopeId, VariableBindingMode,
-    },
-    pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
+use crate::pattern::{
+    conjunction::{Conjunction, ConjunctionBuilder},
+    impl_pattern_from_pattern_variables,
+    nested_pattern::NestedPattern,
+    BindingMode, BranchID, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
 };
 
 #[derive(Debug, Clone)]
 pub struct Optional {
     conjunction: Conjunction,
     branch_id: BranchID,
+    pattern_variables: PatternVariables,
 }
 
 impl Optional {
-    pub fn new(scope_id: ScopeId, branch_id: BranchID) -> Self {
-        Self { conjunction: Conjunction::new(scope_id), branch_id }
-    }
-
-    pub(super) fn new_builder<'cx, 'reg>(
-        context: &'cx mut BlockBuilderContext<'reg>,
-        optional: &'cx mut Optional,
-    ) -> ConjunctionBuilder<'cx, 'reg> {
-        ConjunctionBuilder::new(context, &mut optional.conjunction)
-    }
-
     pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
     }
@@ -46,48 +35,9 @@ impl Optional {
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
         &mut self.conjunction
     }
-
-    pub fn named_visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.visible_binding_variables(block_context).filter(Variable::is_named)
-    }
-
-    fn visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes()
-            .into_iter()
-            .filter_map(|(v, mode)| (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v))
-    }
 }
 
-impl Pattern for Optional {
-    fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.conjunction().referenced_variables()
-    }
-
-    // Union of non-binding variables used here or below, and variables declared in parent scopes
-    fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
-            let locality = block_context.variable_locality_in_scope(v, self.scope_id());
-            if locality == VariableLocality::Parent || mode.is_require_prebound() {
-                Some(v)
-            } else {
-                None
-            }
-        })
-    }
-
-    fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
-        self.conjunction
-            .variable_binding_modes()
-            .into_iter()
-            .map(|(v, mut mode)| {
-                if mode.is_always_binding() {
-                    mode.set_optionally_binding()
-                }
-                (v, mode)
-            })
-            .collect()
-    }
-}
+impl_pattern_from_pattern_variables!(Optional);
 
 impl Scope for Optional {
     fn scope_id(&self) -> ScopeId {
@@ -108,5 +58,42 @@ impl StructuralEquality for Optional {
 impl fmt::Display for Optional {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         error::todo_display_for_error!(f, self)
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct OptionalBuilder {
+    conjunction: ConjunctionBuilder,
+    branch_id: BranchID,
+}
+
+impl OptionalBuilder {
+    pub(crate) fn new(scope_id: ScopeId, branch_id: BranchID) -> Self {
+        let conjunction = ConjunctionBuilder::new(scope_id);
+        Self { conjunction, branch_id }
+    }
+
+    pub(crate) fn finish(self, parent_modes: &ContextualisedBindingMode) -> NestedPattern {
+        let binding_modes = ContextualisedBindingMode::from(self.variable_binding_modes(), parent_modes);
+        let branch_id = self.branch_id;
+        let conjunction = self.conjunction.finish(&binding_modes);
+        let variable_requirements = PatternVariables::from(&binding_modes);
+        NestedPattern::Optional(Optional { branch_id, conjunction, pattern_variables: variable_requirements })
+    }
+
+    pub(crate) fn conjunction(&self) -> &ConjunctionBuilder {
+        &self.conjunction
+    }
+
+    pub fn conjunction_mut(&mut self) -> &mut ConjunctionBuilder {
+        &mut self.conjunction
+    }
+
+    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, BindingMode> {
+        self.conjunction
+            .variable_binding_modes()
+            .into_iter()
+            .map(|(v, mode)| if mode.is_always_binding() { (v, BindingMode::OptionallyBinding) } else { (v, mode) })
+            .collect()
     }
 }

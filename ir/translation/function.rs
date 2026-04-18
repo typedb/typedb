@@ -108,7 +108,8 @@ pub fn translate_function_from(
     for (index, &arg) in arguments.iter().enumerate() {
         if !body.stages.iter().any(|stage| {
             if let TranslatedStage::Match { block, .. } = stage {
-                block.conjunction().referenced_variables().contains(&arg)
+                // Something that's in the input can't be invisible.
+                block.conjunction().named_visible_referenced_variables().contains(&arg)
             } else {
                 false
             }

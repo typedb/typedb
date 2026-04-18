@@ -25,13 +25,6 @@ pub mod translation;
 
 typedb_error! {
     pub RepresentationError(component = "Representation", prefix = "REP") {
-        LocallyBoundVariableReuse(
-            0,
-            "Locally-scoped variable '{name}' cannot be re-used elsewhere as a locally-scoped variable. \
-            Variables are not local if bound in a conjunction constraint, a parent scope, or bound in every branch of a disjunction.",
-            name: String,
-            source_span: Option<Span>,
-        ),
         VariableCategoryMismatch(
             1,
             "The variable '{variable_name}' cannot be declared as both a '{category_1}' and as a '{category_2}'.",
@@ -250,7 +243,7 @@ typedb_error! {
             "The variable '{variable}' is required to be bound to a value before it's used.",
             variable: String,
             source_span: Option<Span>,
-            _rest: Vec<Option<Span>>,
+            // _rest: Vec<Option<Span>>,
         ),
         IllegalStatementForInsert(
             45,
@@ -295,7 +288,7 @@ typedb_error! {
         OptionalInNegation(
             53,
             "Optionals are not allowed in negations as this can never return a meaningful result.",
-            source_span: Option<Span>,
+            // source_span: Option<Span>,
         ),
         InternalNotAValueBuiltin(
             100,

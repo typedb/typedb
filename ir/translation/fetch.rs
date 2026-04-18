@@ -393,12 +393,11 @@ fn translate_inline_user_function_call<'a>(
         value_parameters,
     );
     let mut builder = Block::builder(builder_context);
-
+    let mut conjunction = builder.conjunction_mut();
     let mut assign_vars = Vec::new();
     for _ in &signature.returns {
         assign_vars.push(
-            builder
-                .conjunction_mut()
+            conjunction
                 .constraints_mut()
                 .create_anonymous_variable(None)
                 .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?,
@@ -407,7 +406,7 @@ fn translate_inline_user_function_call<'a>(
 
     add_user_defined_function_call(
         function_index,
-        &mut builder.conjunction_mut().constraints_mut(),
+        &mut conjunction.constraints_mut(),
         function_name,
         assign_vars.clone(),
         &call.args,
@@ -428,14 +427,14 @@ fn add_expression(
     builder: &mut BlockBuilder<'_>,
     typeql_expression: &Expression,
 ) -> Result<Variable, Box<FetchRepresentationError>> {
-    let mut conjunction_builder = builder.conjunction_mut();
-    let assign_var = conjunction_builder
+    let mut conjunction = builder.conjunction_mut();
+    let assign_var = conjunction
         .constraints_mut()
         .create_anonymous_variable(None)
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
-    let expression = build_expression(function_index, &mut conjunction_builder.constraints_mut(), typeql_expression)
+    let expression = build_expression(function_index, &mut conjunction.constraints_mut(), typeql_expression)
         .map_err(|err| FetchRepresentationError::ExpressionRepresentation { typedb_source: err })?;
-    let _ = conjunction_builder
+    let _ = conjunction
         .constraints_mut()
         .add_assignment(assign_var, expression, typeql_expression.span())
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;

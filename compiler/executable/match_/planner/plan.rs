@@ -121,16 +121,6 @@ fn make_builder<'a>(
     for pattern in conjunction.nested_patterns() {
         match pattern {
             NestedPattern::Disjunction(disjunction) => {
-                let disjunction_dependency_modes = disjunction.variable_binding_modes();
-                let required_inputs = disjunction_dependency_modes
-                    .iter()
-                    .filter(|(v, mode)| {
-                        (mode.is_locally_binding_in_child() || mode.is_require_prebound())
-                            && block_context.is_variable_available_in(conjunction.scope_id(), **v)
-                    })
-                    .map(|(v, _)| *v)
-                    .chain(disjunction.required_inputs(block_context))
-                    .collect::<Vec<_>>();
                 let planner = DisjunctionPlanBuilder::new(
                     disjunction.conjunctions_by_branch_id().map(|(id, _)| *id).collect(),
                     disjunction
@@ -149,39 +139,30 @@ fn make_builder<'a>(
                             )
                         })
                         .collect::<Result<Vec<_>, _>>()?,
-                    required_inputs,
+                    disjunction.required_inputs().collect(),
                 );
                 disjunction_planners.push(planner)
             }
-            NestedPattern::Negation(negation) => {
-                let parent_bound_variables = negation
-                    .conjunction()
-                    .referenced_variables()
-                    .filter(|var| block_context.is_variable_available_in(conjunction.scope_id(), *var));
-                negation_subplans.push(
-                    make_builder(
-                        negation.conjunction(),
-                        block_context,
-                        stage_inputs,
-                        block_annotations,
-                        variable_registry,
-                        expressions,
-                        statistics,
-                        call_cost_provider,
-                    )?
-                    .set_to_input(parent_bound_variables)
-                    .plan()?,
-                )
-            }
+            NestedPattern::Negation(negation) => negation_subplans.push(
+                make_builder(
+                    negation.conjunction(),
+                    block_context,
+                    stage_inputs,
+                    block_annotations,
+                    variable_registry,
+                    expressions,
+                    statistics,
+                    call_cost_provider,
+                )?
+                .set_to_input(negation.required_inputs())
+                .plan()?,
+            ),
             NestedPattern::Optional(optional) => {
-                let parent_bound_variables: HashSet<_> = optional
-                    .referenced_variables()
-                    .filter(|var| block_context.is_variable_available_in(conjunction.scope_id(), *var))
-                    .collect();
+                let required_vars = optional.required_inputs().collect::<HashSet<_>>();
                 let optional_vars = optional
-                    .named_visible_binding_variables(block_context)
-                    .filter(|var| !parent_bound_variables.contains(var))
-                    .collect();
+                    .named_visible_referenced_variables()
+                    .filter(|var| !required_vars.contains(var))
+                    .collect::<Vec<_>>();
                 optional_subplans.push(OptionalPlan::new(
                     optional.branch_id(),
                     optional_vars,
@@ -195,7 +176,7 @@ fn make_builder<'a>(
                         statistics,
                         call_cost_provider,
                     )?
-                    .set_to_input(parent_bound_variables.into_iter())
+                    .set_to_input(required_vars.into_iter())
                     .plan()?,
                 ))
             }
@@ -203,16 +184,13 @@ fn make_builder<'a>(
     }
 
     let conjunction_annotations = block_annotations.type_annotations_of(conjunction).unwrap();
-    let mut plan_builder = ConjunctionPlanBuilder::new(
-        conjunction.required_inputs(block_context).collect(),
-        conjunction_annotations,
-        statistics,
-    );
+    let mut plan_builder =
+        ConjunctionPlanBuilder::new(conjunction.required_inputs().collect(), conjunction_annotations, statistics);
 
     let optional_variables = optional_subplans.iter().flat_map(|optional| optional.optional_variables.iter()).copied();
     plan_builder.register_variables(
         stage_inputs.keys().copied(),
-        chain!(conjunction.local_variables(block_context), optional_variables),
+        chain!(conjunction.visible_referenced_variables(), optional_variables),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
@@ -2010,11 +1988,7 @@ impl ConjunctionPlan<'_> {
     ) {
         let mut optional_inputs_in_constraints = input_variables
             .into_iter()
-            .filter(|&var| {
-                variable_registry
-                    .get_variable_optionality(var)
-                    .is_some_and(|optionality| matches!(optionality, VariableOptionality::Optional))
-            })
+            .filter(|&var| variable_registry.is_variable_optional(var))
             .filter(|var| conjunction_builder.constraint_variables.contains(var))
             .peekable();
         if optional_inputs_in_constraints.peek().is_some() {

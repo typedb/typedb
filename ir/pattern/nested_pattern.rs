@@ -4,16 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, mem, ops::ControlFlow};
+use std::{fmt, mem};
 
-use answer::variable::Variable;
 use structural_equality::StructuralEquality;
-use typeql::common::Span;
 
-use crate::{
-    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, Pattern, VariableBindingMode},
-    pipeline::block::BlockContext,
-};
+use crate::pattern::{disjunction::Disjunction, negation::Negation, optional::Optional};
 
 #[derive(Debug, Clone)]
 pub enum NestedPattern {
@@ -30,13 +25,6 @@ impl NestedPattern {
         }
     }
 
-    pub(crate) fn as_disjunction_mut(&mut self) -> Option<&mut Disjunction> {
-        match self {
-            NestedPattern::Disjunction(disjunction) => Some(disjunction),
-            _ => None,
-        }
-    }
-
     pub fn as_negation(&self) -> Option<&Negation> {
         match self {
             NestedPattern::Negation(negation) => Some(negation),
@@ -44,40 +32,10 @@ impl NestedPattern {
         }
     }
 
-    pub(crate) fn as_negation_mut(&mut self) -> Option<&mut Negation> {
-        match self {
-            NestedPattern::Negation(negation) => Some(negation),
-            _ => None,
-        }
-    }
-
-    pub(crate) fn as_optional(&self) -> Option<&Optional> {
+    pub fn as_optional(&self) -> Option<&Optional> {
         match self {
             NestedPattern::Optional(optional) => Some(optional),
             _ => None,
-        }
-    }
-
-    pub(crate) fn as_optional_mut(&mut self) -> Option<&mut Optional> {
-        match self {
-            NestedPattern::Optional(optional) => Some(optional),
-            _ => None,
-        }
-    }
-
-    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
-        match self {
-            NestedPattern::Disjunction(disjunction) => disjunction.variable_binding_modes(),
-            NestedPattern::Negation(negation) => negation.variable_binding_modes(),
-            NestedPattern::Optional(optional) => optional.variable_binding_modes(),
-        }
-    }
-
-    pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
-        match self {
-            NestedPattern::Disjunction(disjunction) => disjunction.find_disjoint_variable(block_context),
-            NestedPattern::Negation(negation) => negation.conjunction().find_disjoint_variable(block_context),
-            NestedPattern::Optional(optional) => optional.conjunction().find_disjoint_variable(block_context),
         }
     }
 }

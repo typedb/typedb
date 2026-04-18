@@ -130,7 +130,8 @@ pub fn infer_types(
         &mut type_annotations_by_scope,
     )?;
     // Copy over any input variables that haven't been included (and refined)
-    let root_annotations = type_annotations_by_scope.get_mut(&ScopeId::ROOT).unwrap().vertex_annotations_mut();
+    let root_annotations =
+        type_annotations_by_scope.get_mut(&block.conjunction().scope_id()).unwrap().vertex_annotations_mut();
     let annotations_passing_through = previous_stage_variable_annotations
         .iter()
         .filter(|(k, _)| !root_annotations.contains_key(&Vertex::Variable(**k)))
@@ -161,7 +162,6 @@ fn infer_types_impl(
 ) -> Result<(), TypeInferenceError> {
     let mut graph = compute_type_inference_graph(
         snapshot,
-        block_context,
         conjunction,
         variable_registry,
         type_manager,
@@ -196,14 +196,6 @@ fn infer_types_in_negations_and_conjunctions(
     type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
 ) -> Result<(), TypeInferenceError> {
     let TypeInferenceGraph { conjunction, vertices, nested_disjunctions, .. } = parent_conjunction_graph;
-    let optionals_in_conjunction = conjunction
-        .variable_binding_modes()
-        .iter()
-        .filter(|(var, mode)| {
-            mode.is_optionally_binding() && block_context.get_declaring_scope(var) != Some(ScopeId::INPUT)
-        })
-        .map(|(v, _)| Vertex::Variable(*v))
-        .collect::<HashSet<_>>();
     nested_disjunctions.iter_mut().flat_map(|disjunction| disjunction.disjunction.iter_mut()).try_for_each(
         |nested| {
             infer_types_in_negations_and_conjunctions(
@@ -248,9 +240,10 @@ fn infer_types_in_negations_and_conjunctions(
                 )?;
                 let optional_root_annotations =
                     type_annotations_by_scope.get(&optional.conjunction().scope_id()).unwrap().vertex_annotations();
-                optionals_in_conjunction
+                let required_inputs = optional.required_inputs().collect::<HashSet<_>>();
+                optional_root_annotations
                     .iter()
-                    .filter_map(|var| optional_root_annotations.get(var).map(|annotations| (var, annotations)))
+                    .filter(|(vertex, _)| vertex.as_variable().map_or(false, |v| !required_inputs.contains(&v)))
                     .for_each(|(var, annotations)| {
                         debug_assert!(!vertices.annotations.contains_key(var));
                         vertices.annotations.insert(var.clone(), (**annotations).clone());
@@ -269,9 +262,7 @@ fn all_vertex_annotations_available(
 ) -> bool {
     let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap();
     (conjunction
-        .variable_binding_modes()
-        .iter()
-        .filter_map(|(v, mode)| (!mode.is_locally_binding_in_child()).then_some(*v))
+        .visible_referenced_variables()
         .filter(|var| {
             let category = variable_registry.get_variable_category(*var).unwrap();
             category.is_category_type() || category.is_category_thing()
@@ -293,7 +284,6 @@ fn all_vertex_annotations_available(
 
 pub(crate) fn compute_type_inference_graph<'graph>(
     snapshot: &impl ReadableSnapshot,
-    block_context: &BlockContext,
     conjunction: &'graph Conjunction,
     variable_registry: &VariableRegistry,
     type_manager: &TypeManager,
@@ -308,7 +298,7 @@ pub(crate) fn compute_type_inference_graph<'graph>(
         variable_registry,
         is_write_stage,
     )
-    .create_graph(block_context, input_annotations, conjunction)?;
+    .create_graph(input_annotations, conjunction)?;
     pre_check_edges_for_trivial_unsatisfiability(&graph).map_err(|(graph, edge)| {
         construct_error_message_for_unsatisfiable_edge(snapshot, type_manager, variable_registry, graph, edge)
     })?;

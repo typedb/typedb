@@ -131,26 +131,19 @@ pub fn extract_pipeline_structure_from(
         .iter()
         .rev()
         .filter_map(|stage| match stage {
-            AnnotatedStage::Match { block, .. } => Some(
-                block
-                    .conjunction()
-                    .variable_binding_modes()
-                    .iter()
-                    .filter_map(|(v, mode)| (!mode.is_locally_binding_in_child()).then_some(v.clone()))
-                    .collect::<Vec<_>>(),
-            ),
+            AnnotatedStage::Match { block, .. } => {
+                Some(block.conjunction().named_visible_referenced_variables().collect::<Vec<_>>())
+            }
             | AnnotatedStage::Insert { block, .. }
             | AnnotatedStage::Update { block, .. }
             | AnnotatedStage::Put { block, .. } => {
-                Some(block.conjunction().variable_binding_modes().keys().cloned().collect::<Vec<_>>())
+                Some(block.conjunction().named_visible_referenced_variables().collect::<Vec<_>>())
             }
             AnnotatedStage::Delete { block, deleted_variables, .. } => Some(
                 block
                     .conjunction()
-                    .variable_binding_modes()
-                    .keys()
+                    .named_visible_referenced_variables()
                     .filter(|v| !deleted_variables.contains(v))
-                    .cloned()
                     .collect::<Vec<_>>(),
             ),
             AnnotatedStage::Select(select) => Some(select.variables.iter().cloned().collect::<Vec<_>>()),
