@@ -13,6 +13,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder, ConjunctionBuilderWithContext},
+        impl_pattern_from_pattern_variables,
         nested_pattern::NestedPattern,
         BindingMode, BranchID, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
     },
@@ -52,15 +53,7 @@ impl Disjunction {
     }
 }
 
-impl Pattern for Disjunction {
-    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.pattern_variables.visible_referenced_variables()
-    }
-
-    fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.pattern_variables.required_inputs()
-    }
-}
+impl_pattern_from_pattern_variables!(Disjunction);
 
 impl StructuralEquality for Disjunction {
     fn hash(&self) -> u64 {

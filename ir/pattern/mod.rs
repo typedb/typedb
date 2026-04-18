@@ -79,6 +79,21 @@ pub trait Pattern {
     fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_;
 }
 
+macro_rules! impl_pattern_from_pattern_variables {
+    ($pattern:ty) => {
+        impl Pattern for $pattern {
+            fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.visible_referenced_variables()
+            }
+
+            fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
+                self.pattern_variables.required_inputs()
+            }
+        }
+    };
+}
+pub(self) use impl_pattern_from_pattern_variables;
+
 // TODO: rename to 'Identifier' in lieu of a better name
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Vertex<ID> {

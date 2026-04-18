@@ -11,6 +11,7 @@ use structural_equality::StructuralEquality;
 
 use crate::pattern::{
     conjunction::{Conjunction, ConjunctionBuilder},
+    impl_pattern_from_pattern_variables,
     nested_pattern::NestedPattern,
     BindingMode, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
 };
@@ -31,15 +32,7 @@ impl Negation {
     }
 }
 
-impl Pattern for Negation {
-    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.pattern_variables.visible_referenced_variables()
-    }
-
-    fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.pattern_variables.required_inputs()
-    }
-}
+impl_pattern_from_pattern_variables!(Negation);
 
 impl Scope for Negation {
     fn scope_id(&self) -> ScopeId {

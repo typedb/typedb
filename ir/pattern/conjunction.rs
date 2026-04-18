@@ -19,6 +19,7 @@ use crate::{
     pattern::{
         constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
         disjunction::{DisjunctionBuilder, DisjunctionBuilderWithContext},
+        impl_pattern_from_pattern_variables,
         negation::NegationBuilder,
         nested_pattern::NestedPattern,
         optional::OptionalBuilder,
@@ -74,15 +75,7 @@ impl Conjunction {
     }
 }
 
-impl Pattern for Conjunction {
-    fn visible_referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.pattern_variables.visible_referenced_variables()
-    }
-
-    fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.pattern_variables.required_inputs()
-    }
-}
+impl_pattern_from_pattern_variables!(Conjunction);
 
 impl Scope for Conjunction {
     fn scope_id(&self) -> ScopeId {
