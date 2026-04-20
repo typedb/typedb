@@ -390,6 +390,24 @@ pub struct DataCommitIntent<D> {
     write_snapshot: WriteSnapshot<D>,
 }
 
+impl<D: DurabilityClient> DataCommitIntent<D> {
+    pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>) -> Self {
+        Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot }
+    }
+
+    pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
+        let snapshot = WriteSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
+        Self::new(database, snapshot)
+    }
+
+    pub fn into_commit_record(
+        self,
+    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
+        let (reader_guard, commit_record) = self.write_snapshot.into_commit_record();
+        (self.database_drop_guard, reader_guard, commit_record)
+    }
+}
+
 impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
     type Error = DataCommitError;
 
@@ -412,6 +430,24 @@ impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
 pub struct SchemaCommitIntent<D> {
     database_drop_guard: DatabaseDropGuard<D>,
     schema_snapshot: SchemaSnapshot<D>,
+}
+
+impl<D: DurabilityClient> SchemaCommitIntent<D> {
+    pub fn new(database: Arc<Database<D>>, schema_snapshot: SchemaSnapshot<D>) -> Self {
+        Self { database_drop_guard: DatabaseDropGuard::new(database), schema_snapshot }
+    }
+
+    pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
+        let snapshot = SchemaSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
+        Self::new(database, snapshot)
+    }
+
+    pub fn into_commit_record(
+        self,
+    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
+        let (reader_guard, commit_record) = self.schema_snapshot.into_commit_record();
+        (self.database_drop_guard, reader_guard, commit_record)
+    }
 }
 
 impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
