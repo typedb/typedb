@@ -1,10 +1,10 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.10.0-rc0](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.10.0-rc0)
+[Distributions for 3.10.0-rc1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.10.0-rc1)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.10.0-rc0```
+```docker pull typedb/typedb:3.10.0-rc1```
 
 
 ## New Features
@@ -113,6 +113,10 @@
   
 
 ## Code Refactors
+- **Variable binding mode changes**
+  Variable binding modes fully replace the use of scopes to determine variable binding & visibility.
+  
+  
 - **Raise gRPC message size limits to 1 GB**
   
   The default tonic limit of 4 MB is too restrictive for database workloads. Query responses, fetch documents with many attributes, and export batches can legitimately exceed 4 MB. This caused client-side decode failures with: "decoded message length too large: found N bytes, the limit is: 4194304 bytes"
