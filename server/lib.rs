@@ -373,6 +373,7 @@ impl Server {
         let router_service = http::typedb_service::HTTPTypeDBService::create_protected_router(http_service.clone())
             .layer(authenticator)
             .merge(http::typedb_service::HTTPTypeDBService::create_unprotected_router(http_service))
+            .layer(axum::middleware::from_fn(http::redirect::append_request_path_to_redirect))
             .layer(http::typedb_service::HTTPTypeDBService::create_cors_layer())
             .into_make_service();
 
