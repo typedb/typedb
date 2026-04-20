@@ -7,6 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
@@ -69,9 +70,9 @@ impl<'reg> BlockBuilder<'reg> {
     pub fn finish(mut self) -> Result<Block, Box<RepresentationError>> {
         let block_binding_modes = self.variable_binding_modes();
         validate_no_optionals_in_negations(&self.conjunction, false)?;
-        validate_no_unbound_variables(&self.conjunction, &self.context)?;
+        validate_all_required_variables_can_be_bound(&self, &block_binding_modes, &self.context.variable_registry)?;
+        validate_no_unbound_variable_categories(&self.conjunction, &self.context)?;
         validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
-        validate_all_required_variables_can_be_bound(&block_binding_modes, &self.context.variable_registry)?;
 
         // Update
         block_binding_modes
@@ -101,7 +102,7 @@ impl<'reg> BlockBuilder<'reg> {
     }
 }
 
-fn validate_no_unbound_variables(
+fn validate_no_unbound_variable_categories(
     conjunction: &ConjunctionBuilder,
     context: &BlockBuilderContext<'_>,
 ) -> Result<(), Box<RepresentationError>> {
@@ -190,17 +191,41 @@ fn validate_is_variables_have_same_category(
 }
 
 fn validate_all_required_variables_can_be_bound(
+    block: &BlockBuilder<'_>,
     block_binding_modes: &HashMap<Variable, BindingMode>,
     variable_registry: &VariableRegistry,
 ) -> Result<(), Box<RepresentationError>> {
     for (var, mode) in block_binding_modes.iter() {
         if mode.is_require_prebound() {
+            let mut all_spans = Vec::new();
+            find_constraints_referencing_variable(&block.conjunction, *var, &mut all_spans);
             let variable = variable_registry.get_variable_name_or_unnamed(*var).to_owned();
             let source_span = variable_registry.source_span(*var);
-            return Err(Box::new(RepresentationError::UnboundRequiredVariable { variable, source_span }));
+            return Err(Box::new(RepresentationError::UnboundRequiredVariable {
+                variable,
+                source_span,
+                _all_spans: all_spans,
+            }));
         }
     }
     Ok(())
+}
+
+fn find_constraints_referencing_variable(conjunction: &ConjunctionBuilder, variable: Variable, spans: &mut Vec<Span>) {
+    spans.extend(
+        conjunction.constraints().iter().filter(|c| c.ids().contains(&variable)).filter_map(|c| c.source_span()),
+    );
+    conjunction.nested_patterns().iter().for_each(|nested| match nested {
+        NestedPatternBuilder::Disjunction(disjunction) => {
+            disjunction.conjunctions().for_each(|c| find_constraints_referencing_variable(c, variable, spans));
+        }
+        NestedPatternBuilder::Negation(negation) => {
+            find_constraints_referencing_variable(negation.conjunction(), variable, spans)
+        }
+        NestedPatternBuilder::Optional(optional) => {
+            find_constraints_referencing_variable(optional.conjunction(), variable, spans)
+        }
+    })
 }
 
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
