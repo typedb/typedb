@@ -1736,12 +1736,10 @@ pub mod tests {
             ]),
             edges: vec![
                 expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), vec![(type_cat, type_cat)]),
-                expected_edge(
-                    &constraints[2],
-                    var_name.into(),
-                    var_name_type.into(),
-                    vec![(type_catname, type_name), (type_dogname, type_name)],
-                ),
+                expected_edge(&constraints[2], var_name.into(), var_name_type.into(), vec![
+                    (type_catname, type_name),
+                    (type_dogname, type_name),
+                ]),
                 expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
             ],
             nested_disjunctions: vec![],
@@ -1847,36 +1845,26 @@ pub mod tests {
                     (var_b.into(), types_b),
                 ]),
                 edges: vec![
-                    expected_edge(
-                        &constraints[0],
-                        var_x.into(),
-                        Vertex::Label(label_owner),
-                        vec![(type_owner, type_owner)],
-                    ),
-                    expected_edge(
-                        &constraints[1],
-                        var_x.into(),
-                        var_a.into(),
-                        vec![(type_owner, type_age), (type_owner, type_catname), (type_owner, type_dogname)],
-                    ),
-                    expected_edge(
-                        &constraints[2],
-                        var_x.into(),
-                        var_b.into(),
-                        vec![(type_owner, type_age), (type_owner, type_catname), (type_owner, type_dogname)],
-                    ),
-                    expected_edge(
-                        &constraints[3],
-                        var_a.into(),
-                        var_b.into(),
-                        vec![
-                            (type_age, type_age),
-                            (type_catname, type_catname),
-                            (type_catname, type_dogname),
-                            (type_dogname, type_catname),
-                            (type_dogname, type_dogname),
-                        ],
-                    ),
+                    expected_edge(&constraints[0], var_x.into(), Vertex::Label(label_owner), vec![(
+                        type_owner, type_owner,
+                    )]),
+                    expected_edge(&constraints[1], var_x.into(), var_a.into(), vec![
+                        (type_owner, type_age),
+                        (type_owner, type_catname),
+                        (type_owner, type_dogname),
+                    ]),
+                    expected_edge(&constraints[2], var_x.into(), var_b.into(), vec![
+                        (type_owner, type_age),
+                        (type_owner, type_catname),
+                        (type_owner, type_dogname),
+                    ]),
+                    expected_edge(&constraints[3], var_a.into(), var_b.into(), vec![
+                        (type_age, type_age),
+                        (type_catname, type_catname),
+                        (type_catname, type_dogname),
+                        (type_dogname, type_catname),
+                        (type_dogname, type_dogname),
+                    ]),
                 ],
                 nested_disjunctions: vec![],
             };
@@ -1922,12 +1910,11 @@ pub mod tests {
             let expected_graph = TypeInferenceGraph {
                 conjunction,
                 vertices: VertexAnnotations::from([(var_x.into(), types_x), (var_t.into(), types_t)]),
-                edges: vec![expected_edge(
-                    &constraints[0],
-                    var_x.into(),
-                    var_t.into(),
-                    vec![(type_age, type_age), (type_catname, type_catname), (type_dogname, type_dogname)],
-                )],
+                edges: vec![expected_edge(&constraints[0], var_x.into(), var_t.into(), vec![
+                    (type_age, type_age),
+                    (type_catname, type_catname),
+                    (type_dogname, type_dogname),
+                ])],
                 nested_disjunctions: vec![],
             };
 
