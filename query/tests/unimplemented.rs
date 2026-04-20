@@ -135,9 +135,12 @@ fn illegal_stages_in_function() {
         let Either::Right(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
         match &err.as_ref() {
             PipelineExecutionError::InitialisingMatchIterator { typedb_source: source } => {
-                assert!(matches!(source.as_ref(), ConceptReadError::UnimplementedFunctionality {
-                    functionality: error::UnimplementedFeature::PipelineStageInFunction(_)
-                }))
+                assert!(matches!(
+                    source.as_ref(),
+                    ConceptReadError::UnimplementedFunctionality {
+                        functionality: error::UnimplementedFeature::PipelineStageInFunction(_)
+                    }
+                ))
             }
             _ => Err(err).unwrap(),
         }

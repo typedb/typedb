@@ -290,10 +290,13 @@ pub fn validate_no_cycles<ID: FunctionIDAPI>(
     for id in functions.keys() {
         debug_assert!(active.is_empty());
         if !complete.contains(id) {
-            validate_no_cycles_impl(id.clone(), functions, &mut active, &mut complete, StratumAndDepth {
-                stratum: 0,
-                depth: 0,
-            })?;
+            validate_no_cycles_impl(
+                id.clone(),
+                functions,
+                &mut active,
+                &mut complete,
+                StratumAndDepth { stratum: 0, depth: 0 },
+            )?;
             debug_assert!(complete.contains(id));
         }
     }

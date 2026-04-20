@@ -68,11 +68,14 @@ impl StructuralEquality for NamedType {
 
 impl StructuralEquality for NamedTypeAny {
     fn hash(&self) -> u64 {
-        ordered_hash_combine(mem::discriminant(self).hash(), match self {
-            Self::Simple(inner) => inner.hash(),
-            Self::Optional(inner) => inner.inner.hash(),
-            Self::List(inner) => inner.inner.hash(),
-        })
+        ordered_hash_combine(
+            mem::discriminant(self).hash(),
+            match self {
+                Self::Simple(inner) => inner.hash(),
+                Self::Optional(inner) => inner.inner.hash(),
+                Self::List(inner) => inner.inner.hash(),
+            },
+        )
     }
 
     fn equals(&self, other: &Self) -> bool {
@@ -89,16 +92,19 @@ impl StructuralEquality for NamedTypeAny {
 impl StructuralEquality for TypeRef {
     // note: unordered specialisations not required here as these never contain inner generic T: StructuralEquality
     fn hash(&self) -> u64 {
-        ordered_hash_combine(mem::discriminant(self).hash(), match self {
-            TypeRef::Label(label) => label.ident.as_str_unchecked().hash(),
-            TypeRef::Scoped(scoped_label) => {
-                let mut hasher = DefaultHasher::new();
-                scoped_label.name.ident.as_str_unchecked().hash_into(&mut hasher);
-                scoped_label.scope.ident.as_str_unchecked().hash_into(&mut hasher);
-                hasher.finish()
-            }
-            TypeRef::Variable(variable) => variable.hash(),
-        })
+        ordered_hash_combine(
+            mem::discriminant(self).hash(),
+            match self {
+                TypeRef::Label(label) => label.ident.as_str_unchecked().hash(),
+                TypeRef::Scoped(scoped_label) => {
+                    let mut hasher = DefaultHasher::new();
+                    scoped_label.name.ident.as_str_unchecked().hash_into(&mut hasher);
+                    scoped_label.scope.ident.as_str_unchecked().hash_into(&mut hasher);
+                    hasher.finish()
+                }
+                TypeRef::Variable(variable) => variable.hash(),
+            },
+        )
     }
 
     fn equals(&self, other: &Self) -> bool {
@@ -119,10 +125,13 @@ impl StructuralEquality for TypeRef {
 
 impl StructuralEquality for TypeRefAny {
     fn hash(&self) -> u64 {
-        ordered_hash_combine(mem::discriminant(self).hash(), match self {
-            TypeRefAny::Type(type_ref) => type_ref.hash(),
-            TypeRefAny::List(list) => list.inner.hash(),
-        })
+        ordered_hash_combine(
+            mem::discriminant(self).hash(),
+            match self {
+                TypeRefAny::Type(type_ref) => type_ref.hash(),
+                TypeRefAny::List(list) => list.inner.hash(),
+            },
+        )
     }
 
     fn equals(&self, other: &Self) -> bool {

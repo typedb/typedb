@@ -1000,11 +1000,10 @@ fn value_hashed_string_equality_has_bound_owner() {
     // IR to compute type annotations
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
-    let value_string_hashed =
-        value_parameters.register_value(Value::String(Cow::Borrowed(VALUE_STRING_LONG_UNINLINEABLE)), Span {
-            begin_offset: 0,
-            end_offset: 0,
-        });
+    let value_string_hashed = value_parameters.register_value(
+        Value::String(Cow::Borrowed(VALUE_STRING_LONG_UNINLINEABLE)),
+        Span { begin_offset: 0, end_offset: 0 },
+    );
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
 

@@ -431,14 +431,10 @@ fn cartesian_named_counted_checked() {
     };
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping) = position_mapping([var_person, var_age], [
-        var_person_type,
-        var_name_type,
-        var_age_type,
-        var_email_type,
-        var_name,
-        var_email,
-    ]);
+    let (row_vars, variable_positions, mapping) = position_mapping(
+        [var_person, var_age],
+        [var_person_type, var_name_type, var_age_type, var_email_type, var_name, var_email],
+    );
     let named_variables = HashSet::from([var_person, var_age, var_person_type, var_name].map(|var| mapping[&var]));
 
     // Plan

@@ -6,14 +6,14 @@
 use std::collections::HashSet;
 
 use ir::{
-    pattern::Pattern,
-    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry, VariableRegistry},
-    translation::{
-        match_::translate_match,
-        pipeline::{translate_pipeline, TranslatedStage},
-        PipelineTranslationContext,
-    },
     RepresentationError,
+    pattern::Pattern,
+    pipeline::{ParameterRegistry, VariableRegistry, function_signature::HashMapFunctionSignatureIndex},
+    translation::{
+        PipelineTranslationContext,
+        match_::translate_match,
+        pipeline::{TranslatedStage, translate_pipeline},
+    },
 };
 use itertools::Itertools;
 use typeql::query::stage::Stage;
