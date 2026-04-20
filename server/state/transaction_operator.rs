@@ -16,7 +16,7 @@ use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
 use database::{database_manager::DatabaseManager, transaction::TransactionId};
 use options::TransactionOptions;
 use resource::constants::common::SECONDS_IN_MINUTE;
-use tokio::sync::{mpsc::Sender, RwLock, RwLockWriteGuard};
+use tokio::sync::{mpsc::Sender, RwLock};
 
 use crate::{
     error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},

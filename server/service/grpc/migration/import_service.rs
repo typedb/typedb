@@ -38,7 +38,7 @@ use crate::{
     service::{
         grpc::{
             diagnostics::run_with_diagnostics_async,
-            error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
+            error::{IntoGrpcStatus, ProtocolError},
             migration::item::{decode_checksums, decode_migration_value},
             response_builders::database_manager::database_import_res_done,
         },

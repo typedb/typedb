@@ -32,7 +32,7 @@ use tracing::info;
 
 use crate::{
     error::ServerOpenError,
-    parameters::config::{AdminConfig, Config, EncryptionConfig, ServerConfig, StorageConfig},
+    parameters::config::{Config, EncryptionConfig, ServerConfig, StorageConfig},
     service::{admin::localhost_guard::LocalhostGuardLayer, grpc, http},
     state::{BoxServerStatus, ServerState},
 };

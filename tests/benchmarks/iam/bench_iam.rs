@@ -24,7 +24,7 @@ const DATA_FILENAME: &str = "data.tql";
 
 fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
     let mut contents = Vec::new();
-    File::open(schema_tql).unwrap().read_to_end(&mut contents);
+    File::open(schema_tql).unwrap().read_to_end(&mut contents).unwrap();
     let schema_str = String::from_utf8(contents).unwrap();
     let schema_query = typeql::parse_query(schema_str.as_str()).unwrap().into_structure().into_schema();
 
@@ -68,7 +68,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
 fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
     let mut contents = Vec::new();
 
-    File::open(data_tql).unwrap().read_to_end(&mut contents);
+    File::open(data_tql).unwrap().read_to_end(&mut contents).unwrap();
     let data_str = String::from_utf8(contents).unwrap();
     let data_query = typeql::parse_query(data_str.as_str()).unwrap().into_structure().into_pipeline();
     let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();

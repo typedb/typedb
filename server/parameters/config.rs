@@ -43,7 +43,6 @@ pub struct ServerConfig {
     pub encryption: EncryptionConfig,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct HttpEndpointConfig {

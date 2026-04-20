@@ -37,6 +37,11 @@ use crate::Database;
 
 pub trait CommitIntent: Sized {
     type Error;
+
+    fn database_name(&self) -> &str;
+
+    fn has_changes(&self) -> bool;
+
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), Self::Error>;
 }
 
@@ -385,34 +390,16 @@ pub struct DataCommitIntent<D> {
     write_snapshot: WriteSnapshot<D>,
 }
 
-impl<D: DurabilityClient> DataCommitIntent<D> {
-    pub fn new(database: Arc<Database<D>>, write_snapshot: WriteSnapshot<D>) -> Self {
-        Self { database_drop_guard: DatabaseDropGuard::new(database), write_snapshot }
-    }
+impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
+    type Error = DataCommitError;
 
-    pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
-        let snapshot = WriteSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
-        Self::new(database, snapshot)
-    }
-
-    pub fn has_changes(&self) -> bool {
-        self.write_snapshot.has_changes()
-    }
-
-    pub fn database_name(&self) -> &str {
+    fn database_name(&self) -> &str {
         self.database_drop_guard.name()
     }
 
-    pub fn into_commit_record(
-        self,
-    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
-        let (reader_guard, commit_record) = self.write_snapshot.into_commit_record();
-        (self.database_drop_guard, reader_guard, commit_record)
+    fn has_changes(&self) -> bool {
+        self.write_snapshot.has_changes()
     }
-}
-
-impl<D: DurabilityClient> CommitIntent for DataCommitIntent<D> {
-    type Error = DataCommitError;
 
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), DataCommitError> {
         self.write_snapshot
@@ -427,34 +414,16 @@ pub struct SchemaCommitIntent<D> {
     schema_snapshot: SchemaSnapshot<D>,
 }
 
-impl<D: DurabilityClient> SchemaCommitIntent<D> {
-    pub fn new(database: Arc<Database<D>>, schema_snapshot: SchemaSnapshot<D>) -> Self {
-        Self { database_drop_guard: DatabaseDropGuard::new(database), schema_snapshot }
-    }
+impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
+    type Error = SchemaCommitError;
 
-    pub fn from_commit_record(database: Arc<Database<D>>, commit_record: CommitRecord) -> Self {
-        let snapshot = SchemaSnapshot::new_with_commit_record(database.storage.clone(), commit_record);
-        Self::new(database, snapshot)
-    }
-
-    pub fn has_changes(&self) -> bool {
-        self.schema_snapshot.has_changes()
-    }
-
-    pub fn database_name(&self) -> &str {
+    fn database_name(&self) -> &str {
         self.database_drop_guard.name()
     }
 
-    pub fn into_commit_record(
-        self,
-    ) -> (DatabaseDropGuard<D>, storage::isolation_manager::ReaderDropGuard, CommitRecord) {
-        let (reader_guard, commit_record) = self.schema_snapshot.into_commit_record();
-        (self.database_drop_guard, reader_guard, commit_record)
+    fn has_changes(&self) -> bool {
+        self.schema_snapshot.has_changes()
     }
-}
-
-impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
-    type Error = SchemaCommitError;
 
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{StatisticsError, TypeCacheUpdateError};

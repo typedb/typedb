@@ -16,12 +16,9 @@ use std::{
 
 use compiler::query_structure::PipelineStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use database::{
-    query::{
-        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
-        WriteQueryAnswer, WriteQueryResult,
-    },
-    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
+use database::query::{
+    execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
+    WriteQueryAnswer, WriteQueryResult,
 };
 use diagnostics::metrics::{ActionKind, ClientEndpoint, LoadKind};
 use executor::{
@@ -81,7 +78,7 @@ use crate::{
             commit_schema_transaction, commit_write_transaction, init_transaction_timeout, is_write_pipeline,
             with_readable_transaction, Transaction, TransactionServiceError,
         },
-        IncludeInvolvedBlocks, TransactionType,
+        TransactionType,
     },
     state::ServerState,
 };
@@ -130,7 +127,6 @@ pub(crate) struct TransactionService {
     query_interrupt_receiver: ExecutionInterrupt,
 
     timeout_at: Instant,
-    schema_lock_acquire_timeout_millis: Option<u64>,
     network_latency_millis: Option<u64>,
 
     is_open: bool,
@@ -163,7 +159,6 @@ impl TransactionService {
             query_interrupt_receiver: ExecutionInterrupt::new(query_interrupt_receiver),
 
             timeout_at: init_transaction_timeout(None),
-            schema_lock_acquire_timeout_millis: None,
             network_latency_millis: None,
 
             is_open: false,

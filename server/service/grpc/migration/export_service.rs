@@ -23,7 +23,7 @@ use crate::{
     service::{
         export_service::{get_transaction_schema, DatabaseExportError},
         grpc::{
-            error::{IntoGrpcStatus, IntoProtocolErrorMessage},
+            error::IntoGrpcStatus,
             migration::item::{
                 encode_attribute_item, encode_checksums_item, encode_entity_item, encode_header_item,
                 encode_relation_item,

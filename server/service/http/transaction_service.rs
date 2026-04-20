@@ -16,12 +16,9 @@ use std::{
 
 use compiler::query_structure::PipelineStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use database::{
-    query::{
-        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
-        WriteQueryAnswer, WriteQueryResult,
-    },
-    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
+use database::query::{
+    execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
+    WriteQueryAnswer, WriteQueryResult,
 };
 use diagnostics::metrics::{ClientEndpoint, LoadKind};
 use executor::{
@@ -156,7 +153,6 @@ pub(crate) struct TransactionService {
     query_interrupt_receiver: ExecutionInterrupt,
 
     timeout_at: Instant,
-    schema_lock_acquire_timeout_millis: Option<u64>,
 
     transaction: Option<Transaction>,
     query_queue: VecDeque<(TransactionResponder, QueueOptions, typeql::query::Pipeline, String)>,
@@ -244,7 +240,6 @@ impl TransactionService {
             query_interrupt_receiver: ExecutionInterrupt::new(query_interrupt_receiver),
 
             timeout_at: init_transaction_timeout(None),
-            schema_lock_acquire_timeout_millis: None,
 
             transaction: None,
             query_queue: VecDeque::with_capacity(20),

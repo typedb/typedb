@@ -14,10 +14,7 @@ use tower::{Layer, Service};
 use crate::{
     authentication::authenticate,
     error::LocalServerStateError,
-    service::grpc::{
-        diagnostics::run_with_diagnostics_async,
-        error::{IntoGrpcStatus, IntoProtocolErrorMessage},
-    },
+    service::grpc::{diagnostics::run_with_diagnostics_async, error::IntoGrpcStatus},
     state::ServerState,
 };
 
