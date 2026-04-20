@@ -139,11 +139,14 @@ fn snapshot_read_through() {
         .iterate_range(&KeyRange::new_within(StorageKey::Array(key_prefix.clone()), false), StorageCounters::DISABLED)
         .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)))
         .unwrap();
-    assert_eq!(key_values, vec![
-        (key_2.clone(), ByteArray::empty()),
-        (key_3.clone(), ByteArray::empty()),
-        (key_5.clone(), ByteArray::empty()),
-    ]);
+    assert_eq!(
+        key_values,
+        vec![
+            (key_2.clone(), ByteArray::empty()),
+            (key_3.clone(), ByteArray::empty()),
+            (key_5.clone(), ByteArray::empty()),
+        ]
+    );
 
     // test delete-iterate read-through
     snapshot.delete(key_2.clone());

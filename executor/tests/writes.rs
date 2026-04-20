@@ -206,12 +206,15 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     println!("Insert output row schema: {:?}", &insert_plan.output_row_schema);
 
     let snapshot = Arc::new(snapshot);
-    let initial = ShimStage::new(input_rows, ExecutionContext {
-        snapshot,
-        thing_manager,
-        parameters: Arc::new(value_parameters),
-        profile: Arc::new(QueryProfile::new(false)),
-    });
+    let initial = ShimStage::new(
+        input_rows,
+        ExecutionContext {
+            snapshot,
+            thing_manager,
+            parameters: Arc::new(value_parameters),
+            profile: Arc::new(QueryProfile::new(false)),
+        },
+    );
     let (input_iter, context) = initial.into_iterator();
     let insert_executor: InsertStageExecutor<ShimIterator> = InsertStageExecutor::new(Arc::new(insert_plan));
     let (output_iter, context) = insert_executor
@@ -296,12 +299,15 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     .unwrap();
 
     let snapshot = Arc::new(snapshot);
-    let initial = ShimStage::new(input_rows, ExecutionContext {
-        snapshot,
-        thing_manager,
-        parameters: Arc::new(value_parameters),
-        profile: Arc::new(QueryProfile::new(false)),
-    });
+    let initial = ShimStage::new(
+        input_rows,
+        ExecutionContext {
+            snapshot,
+            thing_manager,
+            parameters: Arc::new(value_parameters),
+            profile: Arc::new(QueryProfile::new(false)),
+        },
+    );
     let (input_iter, context) = initial.into_iterator();
     let delete_executor: DeleteStageExecutor<ShimIterator> = DeleteStageExecutor::new(Arc::new(delete_plan));
     let (output_iter, context) = delete_executor
@@ -481,17 +487,25 @@ fn test_has_with_input_rows() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
     let snapshot = storage.clone().open_snapshot_write();
-    let (inserted_rows, snapshot) =
-        execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), "insert $p isa person;", &[], vec![
-            vec![],
-        ])
-        .unwrap();
+    let (inserted_rows, snapshot) = execute_insert(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
+        "insert $p isa person;",
+        &[],
+        vec![vec![]],
+    )
+    .unwrap();
     let p10 = inserted_rows[0][0].clone();
-    let (inserted_rows, snapshot) =
-        execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), "insert $p has age 10;", &["p"], vec![
-            vec![p10.clone()],
-        ])
-        .unwrap();
+    let (inserted_rows, snapshot) = execute_insert(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
+        "insert $p has age 10;",
+        &["p"],
+        vec![vec![p10.clone()]],
+    )
+    .unwrap();
     let a10 = inserted_rows[0][1].clone();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
@@ -522,17 +536,25 @@ fn delete_has() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     setup_schema(storage.clone());
     let snapshot = storage.clone().open_snapshot_write();
-    let (inserted_rows, snapshot) =
-        execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), "insert $p isa person;", &[], vec![
-            vec![],
-        ])
-        .unwrap();
+    let (inserted_rows, snapshot) = execute_insert(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
+        "insert $p isa person;",
+        &[],
+        vec![vec![]],
+    )
+    .unwrap();
     let p10 = inserted_rows[0][0].clone();
-    let (inserted_rows, snapshot) =
-        execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), "insert $p has age 10;", &["p"], vec![
-            vec![p10.clone()],
-        ])
-        .unwrap();
+    let (inserted_rows, snapshot) = execute_insert(
+        snapshot,
+        type_manager.clone(),
+        thing_manager.clone(),
+        "insert $p has age 10;",
+        &["p"],
+        vec![vec![p10.clone()]],
+    )
+    .unwrap();
     let a10 = inserted_rows[0][1].clone().into_owned();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 

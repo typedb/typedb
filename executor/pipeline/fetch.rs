@@ -251,23 +251,23 @@ fn execute_single_function(
 
     // TODO: We could create an iterator over rows in a single call here instead
     let mut row_iter = batch.into_iter();
-    let document =
-        match exactly_one_or_return_err!(row_iter.next(), FetchExecutionError::FetchSingleFunctionNotSingle {
-            func_name: "func".to_string()
-        }) {
-            Some(row) => {
-                let mut value_iter = row.row().iter();
-                let result =
-                    exactly_one_or_return_err!(value_iter.next(), FetchExecutionError::FetchSingleFunctionNotScalar {
-                        func_name: "func".to_string()
-                    });
-                match result {
-                    Some(value) => variable_value_to_document(value.clone())?,
-                    None => DocumentNode::Leaf(DocumentLeaf::Empty),
-                }
+    let document = match exactly_one_or_return_err!(
+        row_iter.next(),
+        FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() }
+    ) {
+        Some(row) => {
+            let mut value_iter = row.row().iter();
+            let result = exactly_one_or_return_err!(
+                value_iter.next(),
+                FetchExecutionError::FetchSingleFunctionNotScalar { func_name: "func".to_string() }
+            );
+            match result {
+                Some(value) => variable_value_to_document(value.clone())?,
+                None => DocumentNode::Leaf(DocumentLeaf::Empty),
             }
-            None => DocumentNode::Leaf(DocumentLeaf::Empty),
-        };
+        }
+        None => DocumentNode::Leaf(DocumentLeaf::Empty),
+    };
 
     Ok(document)
 }

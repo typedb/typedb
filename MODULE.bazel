@@ -33,6 +33,7 @@ rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
     edition = "2024",
     versions = ["1.93.0"],
+    rustfmt_version = "nightly/2026-04-15",
 )
 use_repo(rust, "rust_toolchains")
 register_toolchains("@rust_toolchains//:all")

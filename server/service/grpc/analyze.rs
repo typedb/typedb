@@ -634,10 +634,10 @@ fn encode_conjunction_annotations(
                 }
             };
             let is_optional = annotation.is_optional;
-            Ok((variable_id.as_u32(), conjunction_proto::VariableAnnotations {
-                is_optional,
-                annotations: Some(encoded),
-            }))
+            Ok((
+                variable_id.as_u32(),
+                conjunction_proto::VariableAnnotations { is_optional, annotations: Some(encoded) },
+            ))
         })
         .collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
     Ok(variable_annotations)

@@ -199,8 +199,11 @@ fn get_put_iterate() {
             (ByteArray::copy(key), ByteArray::copy(value))
         })
         .collect();
-    assert_eq!(items, vec![
-        (keyspace_1_key_2.into_byte_array(), ByteArray::<128>::empty()),
-        (keyspace_1_key_3.into_byte_array(), ByteArray::<128>::empty()),
-    ]);
+    assert_eq!(
+        items,
+        vec![
+            (keyspace_1_key_2.into_byte_array(), ByteArray::<128>::empty()),
+            (keyspace_1_key_3.into_byte_array(), ByteArray::<128>::empty()),
+        ]
+    );
 }

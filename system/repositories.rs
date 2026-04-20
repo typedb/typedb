@@ -55,9 +55,10 @@ pub mod user_repository {
         if !rows.is_empty() {
             let row = rows.pop().expect(unexpected_error_msg);
             let hash = get_string(&tx, &row, "h");
-            Ok(Some((User::new(username.to_string()), Credential::PasswordType {
-                password_hash: PasswordHash::new(hash),
-            })))
+            Ok(Some((
+                User::new(username.to_string()),
+                Credential::PasswordType { password_hash: PasswordHash::new(hash) },
+            )))
         } else {
             Ok(None)
         }

@@ -294,11 +294,14 @@ impl Files {
         encoder.finish().1.map_err(|err| WALError::Compression { source: Arc::new(err) })?;
 
         let writer = self.writer.as_mut().unwrap();
-        write_header(writer, RecordHeader {
-            sequence_number: record.sequence_number,
-            len: compressed_bytes.len() as u64,
-            record_type: record.record_type,
-        })?;
+        write_header(
+            writer,
+            RecordHeader {
+                sequence_number: record.sequence_number,
+                len: compressed_bytes.len() as u64,
+                record_type: record.record_type,
+            },
+        )?;
 
         fail_point!(WAL_RECORD_ONLY_HEADER);
 

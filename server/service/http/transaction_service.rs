@@ -876,9 +876,12 @@ impl TransactionService {
             match encoded_row {
                 Ok(encoded_row) => result.push(encoded_row),
                 Err(typedb_source) => {
-                    respond_error_and_return_break!(responder, TransactionServiceError::PipelineExecution {
-                        typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
-                    });
+                    respond_error_and_return_break!(
+                        responder,
+                        TransactionServiceError::PipelineExecution {
+                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                        }
+                    );
                 }
             }
         }
@@ -927,9 +930,12 @@ impl TransactionService {
             match encoded_document {
                 Ok(encoded_document) => result.push(encoded_document),
                 Err(typedb_source) => {
-                    respond_error_and_return_break!(responder, TransactionServiceError::PipelineExecution {
-                        typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
-                    });
+                    respond_error_and_return_break!(
+                        responder,
+                        TransactionServiceError::PipelineExecution {
+                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                        }
+                    );
                 }
             }
         }
@@ -1047,9 +1053,12 @@ impl TransactionService {
                 match encoded_document {
                     Ok(encoded_document) => result.push(encoded_document),
                     Err(typedb_source) => {
-                        respond_error_and_return_break!(responder, TransactionServiceError::PipelineExecution {
-                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
-                        });
+                        respond_error_and_return_break!(
+                            responder,
+                            TransactionServiceError::PipelineExecution {
+                                typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                            }
+                        );
                     }
                 }
             }
@@ -1114,9 +1123,12 @@ impl TransactionService {
                 match encoded_row {
                     Ok(encoded_row) => result.push(encoded_row),
                     Err(typedb_source) => {
-                        respond_error_and_return_break!(responder, TransactionServiceError::PipelineExecution {
-                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
-                        });
+                        respond_error_and_return_break!(
+                            responder,
+                            TransactionServiceError::PipelineExecution {
+                                typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                            }
+                        );
                     }
                 }
             }

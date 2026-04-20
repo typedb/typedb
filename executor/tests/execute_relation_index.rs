@@ -351,13 +351,10 @@ fn traverse_index_from_unbound() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) =
-        position_mapping([var_movie, var_character, var_casting], [
-            var_movie_type,
-            var_casting_type,
-            var_casting_movie_type,
-            var_casting_character_type,
-        ]);
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
+        [var_movie, var_character, var_casting],
+        [var_movie_type, var_casting_type, var_casting_movie_type, var_casting_character_type],
+    );
 
     // Plan with unbound movie as the start -- should produce:
 
@@ -609,13 +606,10 @@ fn traverse_index_from_bound() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) =
-        position_mapping([var_id, var_movie, var_person, var_casting], [
-            var_movie_type,
-            var_casting_type,
-            var_casting_movie_type,
-            var_casting_actor_type,
-        ]);
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
+        [var_id, var_movie, var_person, var_casting],
+        [var_movie_type, var_casting_type, var_casting_movie_type, var_casting_actor_type],
+    );
 
     // Plan with bound movie
     let steps = vec![
@@ -778,11 +772,10 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) =
-        position_mapping([var_casting_movie_type, var_casting_other_type, var_movie, var_person, var_casting], [
-            var_movie_type,
-            var_casting_type,
-        ]);
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
+        [var_casting_movie_type, var_casting_other_type, var_movie, var_person, var_casting],
+        [var_movie_type, var_casting_type],
+    );
 
     // Plan with a single bound role, should produce:
 
