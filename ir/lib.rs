@@ -218,7 +218,7 @@ typedb_error! {
         ),
         OptionalFunctionReturnReferenced(
             33,
-            "The variable '{variable}' is optionally returned by a function, but referenced elsewhere in the same stage.",
+            "The variable '{variable}' is optionally assigned by a function return, and may not be referenced elsewhere in the same stage.",
             variable: String,
             source_span: Option<Span>,
         ),

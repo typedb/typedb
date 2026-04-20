@@ -306,7 +306,7 @@ fn check_consistent_return<T>(
         .map(|t| named_type_any_to_category_and_optionality(t).1 == VariableOptionality::Optional)
         .zip(actual_return.iter().map(is_optional))
         .enumerate()
-        .find_map(|(index, (declared, actual))| (declared == actual).then_some(index));
+        .find_map(|(index, (declared, actual))| (declared != actual).then_some(index));
     if let Some(mismatch_index) = mismatching_index_opt {
         return Err(Box::new(FunctionRepresentationError::InconsistentReturnOptionality {
             signature: signature.clone(),
