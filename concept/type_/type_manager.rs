@@ -16,7 +16,7 @@ use encoding::{
         definition::{
             definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
         },
-        type_::{vertex::TypeVertexEncoding, vertex_generator::TypeVertexGenerator, Kind},
+        type_::{Kind, vertex::TypeVertexEncoding, vertex_generator::TypeVertexGenerator},
     },
     value::{label::Label, value_type::ValueType},
 };
@@ -35,6 +35,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
     type_::{
+        Capability, Independent, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, TypeQLSyntax,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
             AnnotationDistinct, AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex,
@@ -42,10 +43,10 @@ use crate::{
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{
-            get_abstract_constraint, get_cardinality_constraint, get_cardinality_constraints, get_distinct_constraints,
-            get_independent_constraints, get_owns_default_constraints, get_plays_default_constraints,
-            get_range_constraints, get_regex_constraints, get_relates_default_constraints, get_unique_constraint,
-            get_values_constraints, CapabilityConstraint, Constraint, TypeConstraint,
+            CapabilityConstraint, Constraint, TypeConstraint, get_abstract_constraint, get_cardinality_constraint,
+            get_cardinality_constraints, get_distinct_constraints, get_independent_constraints,
+            get_owns_default_constraints, get_plays_default_constraints, get_range_constraints, get_regex_constraints,
+            get_relates_default_constraints, get_unique_constraint, get_values_constraints,
         },
         entity_type::{EntityType, EntityTypeAnnotation},
         object_type::ObjectType,
@@ -55,7 +56,6 @@ use crate::{
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
         type_manager::type_reader::TypeReader,
-        Capability, Independent, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, TypeQLSyntax,
     },
 };
 
@@ -538,11 +538,7 @@ impl TypeManager {
             Ok(cache.get_roles_by_name(name).map(Cow::Borrowed))
         } else {
             let roles = TypeReader::get_roles_by_name(snapshot, name.to_owned())?;
-            if roles.is_empty() {
-                Ok(None)
-            } else {
-                Ok(Some(Cow::Owned(roles)))
-            }
+            if roles.is_empty() { Ok(None) } else { Ok(Some(Cow::Owned(roles))) }
         }
     }
 

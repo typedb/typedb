@@ -139,14 +139,11 @@ fn snapshot_read_through() {
         .iterate_range(&KeyRange::new_within(StorageKey::Array(key_prefix.clone()), false), StorageCounters::DISABLED)
         .collect_cloned_vec(|k, v| (StorageKeyArray::from(k), ByteArray::from(v)))
         .unwrap();
-    assert_eq!(
-        key_values,
-        vec![
-            (key_2.clone(), ByteArray::empty()),
-            (key_3.clone(), ByteArray::empty()),
-            (key_5.clone(), ByteArray::empty()),
-        ]
-    );
+    assert_eq!(key_values, vec![
+        (key_2.clone(), ByteArray::empty()),
+        (key_3.clone(), ByteArray::empty()),
+        (key_5.clone(), ByteArray::empty()),
+    ]);
 
     // test delete-iterate read-through
     snapshot.delete(key_2.clone());
@@ -174,14 +171,18 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
 
     {
         let mut snapshot = storage.clone().open_snapshot_write();
-        assert!(snapshot
-            .get::<48>(StorageKey::Array(key_1.clone()).as_reference(), StorageCounters::DISABLED)
-            .unwrap()
-            .is_some());
-        assert!(snapshot
-            .get::<48>(StorageKey::Array(key_2.clone()).as_reference(), StorageCounters::DISABLED)
-            .unwrap()
-            .is_some());
+        assert!(
+            snapshot
+                .get::<48>(StorageKey::Array(key_1.clone()).as_reference(), StorageCounters::DISABLED)
+                .unwrap()
+                .is_some()
+        );
+        assert!(
+            snapshot
+                .get::<48>(StorageKey::Array(key_2.clone()).as_reference(), StorageCounters::DISABLED)
+                .unwrap()
+                .is_some()
+        );
         assert_eq!(
             2,
             snapshot
@@ -195,10 +196,12 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
                 .count()
         );
         snapshot.delete(key_2.clone());
-        assert!(snapshot
-            .get::<48>(StorageKey::Array(key_2.clone()).as_reference(), StorageCounters::DISABLED)
-            .unwrap()
-            .is_none());
+        assert!(
+            snapshot
+                .get::<48>(StorageKey::Array(key_2.clone()).as_reference(), StorageCounters::DISABLED)
+                .unwrap()
+                .is_none()
+        );
         assert_eq!(
             1,
             snapshot

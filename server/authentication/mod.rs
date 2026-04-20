@@ -7,8 +7,8 @@ use std::sync::Arc;
 
 use axum::RequestPartsExt;
 use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
     TypedHeader,
+    headers::{Authorization, authorization::Bearer},
 };
 use error::typedb_error;
 use http::Extensions;

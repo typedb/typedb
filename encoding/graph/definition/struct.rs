@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{hash_map::Entry, HashMap},
+    collections::{HashMap, hash_map::Entry},
     fmt,
 };
 
@@ -80,11 +80,7 @@ impl StructDefinition {
     }
 
     pub fn get_field(&self, field_name: &str) -> Option<&StructDefinitionField> {
-        if let Some(id) = self.field_names.get(field_name) {
-            self.fields.get(id)
-        } else {
-            None
-        }
+        if let Some(id) = self.field_names.get(field_name) { self.fields.get(id) } else { None }
     }
 }
 

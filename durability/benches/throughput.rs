@@ -6,8 +6,8 @@
 
 use std::path::Path;
 
-use criterion::{criterion_group, criterion_main, Criterion, Throughput};
-use durability::{wal::WAL, DurabilityRecordType, DurabilityService};
+use criterion::{Criterion, Throughput, criterion_group, criterion_main};
+use durability::{DurabilityRecordType, DurabilityService, wal::WAL};
 use itertools::Itertools;
 use tempdir::TempDir;
 

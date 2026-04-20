@@ -6,11 +6,11 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
+use answer::{Thing, variable_value::VariableValue};
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 use compiler::{
-    executable::reduce::{ReduceInstruction, ReduceRowsExecutable},
     VariablePosition,
+    executable::reduce::{ReduceInstruction, ReduceRowsExecutable},
 };
 use encoding::value::{decimal_value::Decimal, timezone::TimeZone, value::Value};
 use paste::paste;
@@ -18,10 +18,10 @@ use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::Batch,
-    pipeline::{stage::ExecutionContext, PipelineExecutionError},
-    row::MaybeOwnedRow,
     Provenance,
+    batch::Batch,
+    pipeline::{PipelineExecutionError, stage::ExecutionContext},
+    row::MaybeOwnedRow,
 };
 
 #[derive(Debug)]
@@ -490,11 +490,7 @@ impl ReducerAPI for MeanDoubleExecutor {
     }
 
     fn finalise(self) -> Option<VariableValue<'static>> {
-        if self.count > 0 {
-            Some(VariableValue::Value(Value::Double(self.sum / self.count as f64)))
-        } else {
-            None
-        }
+        if self.count > 0 { Some(VariableValue::Value(Value::Double(self.sum / self.count as f64))) } else { None }
     }
 }
 
@@ -525,11 +521,7 @@ impl ReducerAPI for MeanDecimalExecutor {
     }
 
     fn finalise(self) -> Option<VariableValue<'static>> {
-        if self.count > 0 {
-            Some(VariableValue::Value(Value::Decimal(self.sum / self.count)))
-        } else {
-            None
-        }
+        if self.count > 0 { Some(VariableValue::Value(Value::Decimal(self.sum / self.count))) } else { None }
     }
 }
 

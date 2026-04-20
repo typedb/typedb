@@ -11,14 +11,14 @@ use std::{
 
 use answer::variable::Variable;
 use compiler::{
-    self,
+    self, ExecutorVariable, VariablePosition,
     annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     executable::{
         function::ExecutableFunctionRegistry,
         match_::{
             instructions::{
-                thing::{IsaInstruction, IsaReverseInstruction},
                 ConstraintInstruction, Inputs,
+                thing::{IsaInstruction, IsaReverseInstruction},
             },
             planner::{
                 conjunction_executable::{ConjunctionExecutable, ExecutionStep, IntersectionStep},
@@ -27,21 +27,20 @@ use compiler::{
         },
         next_executable_id,
     },
-    ExecutorVariable, VariablePosition,
 };
 use encoding::value::label::Label;
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    ExecutionInterrupt, error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow,
 };
 use ir::{
-    pattern::{constraint::IsaKind, Vertex},
-    pipeline::{block::Block, ParameterRegistry},
+    pattern::{Vertex, constraint::IsaKind},
+    pipeline::{ParameterRegistry, block::Block},
     translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 

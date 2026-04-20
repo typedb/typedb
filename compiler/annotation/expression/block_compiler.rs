@@ -10,14 +10,14 @@ use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
+        Vertex,
         conjunction::Conjunction,
         constraint::{Constraint, ExpressionBinding},
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Vertex,
     },
-    pipeline::{block::Block, ParameterRegistry, VariableRegistry},
+    pipeline::{ParameterRegistry, VariableRegistry, block::Block},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -25,9 +25,9 @@ use typeql::common::Span;
 
 use crate::annotation::{
     expression::{
+        ExpressionCompileError,
         compiled_expression::{ExecutableExpression, ExpressionValueType},
         expression_compiler::ExpressionCompilationContext,
-        ExpressionCompileError,
     },
     type_annotations::BlockAnnotations,
     type_inference::resolve_value_types,

@@ -7,30 +7,32 @@
 use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
-    iter::{once, Map},
+    iter::{Map, once},
     ops::RangeBounds,
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, util::increment, Bytes};
+use bytes::{Bytes, byte_array::ByteArray, util::increment};
 use encoding::{
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
+        Typed,
         thing::{
+            ThingVertex,
             edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeIndexedRelation, ThingEdgeLinks},
             property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_generator::ThingVertexGenerator,
             vertex_object::ObjectVertex,
-            ThingVertex,
         },
         type_::{
             property::{TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
         },
-        Typed,
     },
     layout::{infix::Infix, prefix::Prefix},
     value::{
+        ValueEncodable,
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
         date_time_bytes::DateTimeBytes,
@@ -45,12 +47,10 @@ use encoding::{
         value::Value,
         value_struct::{StructIndexEntry, StructValue},
         value_type::{ValueType, ValueTypeCategory},
-        ValueEncodable,
     },
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 use itertools::Itertools;
-use lending_iterator::{LendingIterator, Peekable};
+use lending_iterator::Peekable;
 use primitive::either::Either;
 use resource::{
     constants::{
@@ -62,40 +62,40 @@ use resource::{
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::{lock::create_custom_lock_key, write::Write, ReadableSnapshot, WritableSnapshot},
+    snapshot::{ReadableSnapshot, WritableSnapshot, lock::create_custom_lock_key, write::Write},
 };
 
 use crate::{
+    ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     iterator::InstanceIterator,
     thing::{
+        ThingAPI,
         attribute::{Attribute, AttributeIterator},
         decode_attribute_ids, decode_role_players, encode_attribute_ids, encode_role_players,
         entity::Entity,
         has::Has,
         object::{HasIterator, HasReverseIterator, Object, ObjectAPI},
-        r#struct::StructIndexForAttributeTypeIterator,
         relation::{IndexedRelationsIterator, LinksIterator, LinksReverseIterator, Relation, RolePlayer},
         statistics::Statistics,
+        r#struct::StructIndexForAttributeTypeIterator,
         thing_manager::validation::{
-            cardinality_validation::{collect_errors, CardinalityChangeTracker, CardinalityValidation},
-            operation_time_validation::OperationTimeValidation,
             DataValidationError,
+            cardinality_validation::{CardinalityChangeTracker, CardinalityValidation, collect_errors},
+            operation_time_validation::OperationTimeValidation,
         },
-        ThingAPI,
     },
     type_::{
+        Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{AnnotationCascade, AnnotationIndependent},
         attribute_type::AttributeType,
-        constraint::{get_checked_constraints, Constraint},
+        constraint::{Constraint, get_checked_constraints},
         entity_type::EntityType,
         object_type::ObjectType,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
-    ConceptStatus,
 };
 
 pub mod validation;
@@ -1184,12 +1184,12 @@ impl ThingManager {
         Ok(attributes)
     }
 
-    pub(crate) fn get_owners(
+    pub(crate) fn get_owners<Snapshot: ReadableSnapshot>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &Snapshot,
         attribute: &Attribute,
         storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> {
+    ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> + use<Snapshot> {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.vertex());
         Iterator::map(
             HasReverseIterator::new(snapshot.iterate_range(
@@ -1200,13 +1200,13 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_owners_by_type(
+    pub(crate) fn get_owners_by_type<Snapshot: ReadableSnapshot, Owner: ObjectTypeAPI>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &Snapshot,
         attribute: &Attribute,
-        owner_type: impl ObjectTypeAPI,
+        owner_type: Owner,
         storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> {
+    ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> + use<Snapshot, Owner> {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute_to_type(attribute.vertex(), owner_type.vertex());
         Iterator::map(
             HasReverseIterator::new(snapshot.iterate_range(
@@ -1414,12 +1414,12 @@ impl ThingManager {
         Ok(links_exists)
     }
 
-    pub(crate) fn get_role_players(
+    pub(crate) fn get_role_players<Snapshot: ReadableSnapshot>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &Snapshot,
         relation: Relation,
         storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> {
+    ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> + use<Snapshot> {
         let prefix = ThingEdgeLinks::prefix_from_relation(relation.vertex());
         Iterator::map(
             LinksIterator::new(
@@ -1451,13 +1451,13 @@ impl ThingManager {
         Ok(players)
     }
 
-    pub(crate) fn get_role_players_role(
+    pub(crate) fn get_role_players_role<Snapshot: ReadableSnapshot>(
         &self,
-        snapshot: &impl ReadableSnapshot,
+        snapshot: &Snapshot,
         relation: Relation,
         role_type: RoleType,
         storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> {
+    ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> + use<Snapshot> {
         self.get_role_players(snapshot, relation, storage_counters).filter_map::<Result<(RolePlayer, u64), _>, _>(
             move |item| match item {
                 Ok((role_player, count)) => (role_player.role_type() == role_type).then_some(Ok((role_player, count))),

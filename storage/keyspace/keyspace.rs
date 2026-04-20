@@ -12,13 +12,13 @@ use std::{
 };
 
 use bytes::Bytes;
-use fail_point::{fail_point, KEYSPACE_CHECKPOINT_FAIL, KEYSPACE_DELETE_FAIL, KEYSPACE_OPEN_FAIL};
+use fail_point::{KEYSPACE_CHECKPOINT_FAIL, KEYSPACE_DELETE_FAIL, KEYSPACE_OPEN_FAIL, fail_point};
 use itertools::Itertools;
 use resource::{constants::storage::ROCKSDB_CACHE_SIZE, profile::StorageCounters};
-use rocksdb::{checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
+use rocksdb::{DB, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, checkpoint::Checkpoint};
 use serde::{Deserialize, Serialize};
 
-use super::{constants, iterator, IteratorPool};
+use super::{IteratorPool, constants, iterator};
 use crate::{key_range::KeyRange, write_batches::WriteBatches};
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -179,9 +179,12 @@ impl fmt::Display for KeyspaceValidationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::NameExists { name, .. } => write!(f, "keyspace '{name}' is defined multiple times."),
-            Self::IdReserved { name, id, .. } => write!(f, "reserved keyspace id '{id}' cannot be used for new keyspace '{name}'."),
+            Self::IdReserved { name, id, .. } => {
+                write!(f, "reserved keyspace id '{id}' cannot be used for new keyspace '{name}'.")
+            }
             Self::IdTooLarge { name, id, max_id, .. } => write!(
-                f, "keyspace id '{id}' cannot be used for new keyspace '{name}' since it is larger than maximum keyspace id '{max_id}'.",
+                f,
+                "keyspace id '{id}' cannot be used for new keyspace '{name}' since it is larger than maximum keyspace id '{max_id}'.",
             ),
             Self::IdExists { new_name, id, existing_name, .. } => write!(
                 f,

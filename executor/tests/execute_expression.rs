@@ -8,20 +8,20 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use compiler::annotation::expression::{
+    ExpressionCompileError,
     compiled_expression::{ExecutableExpression, ExpressionValueType},
     expression_compiler::ExpressionCompilationContext,
-    ExpressionCompileError,
 };
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
-use executor::read::expression_executor::{evaluate_expression, ExpressionValue};
+use executor::read::expression_executor::{ExpressionValue, evaluate_expression};
 use ir::{
+    RepresentationError,
     pattern::{
         constraint::Constraint,
         variable_category::{VariableCategory, VariableOptionality},
     },
-    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-    translation::{match_::translate_match, PipelineTranslationContext},
-    RepresentationError,
+    pipeline::{ParameterRegistry, function_signature::HashMapFunctionSignatureIndex},
+    translation::{PipelineTranslationContext, match_::translate_match},
 };
 use itertools::Itertools;
 use typeql::query::stage::Stage;

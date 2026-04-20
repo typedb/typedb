@@ -114,27 +114,15 @@ impl<ID: Hash + Eq> Vertex<ID> {
 
 impl<ID: IrID> Vertex<ID> {
     pub fn as_variable(&self) -> Option<ID> {
-        if let &Self::Variable(v) = self {
-            Some(v)
-        } else {
-            None
-        }
+        if let &Self::Variable(v) = self { Some(v) } else { None }
     }
 
     pub fn as_label(&self) -> Option<&Label> {
-        if let Self::Label(v) = self {
-            Some(v)
-        } else {
-            None
-        }
+        if let Self::Label(v) = self { Some(v) } else { None }
     }
 
     pub fn as_parameter(&self) -> Option<&ParameterID> {
-        if let Self::Parameter(v) = self {
-            Some(v)
-        } else {
-            None
-        }
+        if let Self::Parameter(v) = self { Some(v) } else { None }
     }
 
     /// Returns `true` if the vertex is [`Variable`].
@@ -322,19 +310,11 @@ pub enum ValueType {
 
 impl ValueType {
     pub fn as_builtin(&self) -> Option<encoding::value::value_type::ValueType> {
-        if let Self::Builtin(v) = self {
-            Some(v.clone())
-        } else {
-            None
-        }
+        if let Self::Builtin(v) = self { Some(v.clone()) } else { None }
     }
 
     pub fn as_struct(&self) -> Option<&str> {
-        if let Self::Struct(v) = self {
-            Some(v)
-        } else {
-            None
-        }
+        if let Self::Struct(v) = self { Some(v) } else { None }
     }
 
     /// Returns `true` if the value type is [`Builtin`].

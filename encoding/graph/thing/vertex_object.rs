@@ -6,18 +6,18 @@
 
 use std::{fmt, mem, ops::Range};
 
-use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
+use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{key_value::StorageKeyReference, keyspace::KeyspaceSet};
 
 use crate::{
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
+        Typed,
         thing::ThingVertex,
         type_::vertex::{TypeID, TypeVertex},
-        Typed,
     },
     layout::prefix::{Prefix, PrefixID},
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, Ord, PartialOrd)]

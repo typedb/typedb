@@ -11,11 +11,10 @@ use itertools::Itertools;
 use macro_rules_attribute::apply;
 
 use crate::{
-    generic_step,
+    Context, HttpContext, generic_step,
     message::{users, users_create, users_delete, users_get, users_update},
     params::TokenMode,
     util::iter_table,
-    Context, HttpContext,
 };
 
 async fn get_all_usernames(context: &HttpContext) -> impl IntoIterator<Item = String> {

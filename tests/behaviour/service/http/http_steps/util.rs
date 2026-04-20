@@ -15,7 +15,7 @@ use macro_rules_attribute::apply;
 use serde_json::Value as JSON;
 use uuid::Uuid;
 
-use crate::{generic_step, Context, TEST_TOKEN_EXPIRATION};
+use crate::{Context, TEST_TOKEN_EXPIRATION, generic_step};
 
 pub(crate) fn random_uuid() -> String {
     Uuid::new_v4().to_string()
@@ -43,7 +43,7 @@ pub(crate) fn parse_json(json: &str) -> JSON {
 
 fn jsons_equal_up_to_reorder(lhs: &JSON, rhs: &JSON) -> bool {
     match (lhs, rhs) {
-        (JSON::Object(ref lhs), JSON::Object(ref rhs)) => {
+        (JSON::Object(lhs), JSON::Object(rhs)) => {
             if lhs.len() != rhs.len() {
                 return false;
             }

@@ -11,17 +11,17 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use error::UnimplementedFeature;
 use executor::{
-    pipeline::{stage::ExecutionContext, PipelineExecutionError},
-    row::MaybeOwnedRow,
     ExecutionInterrupt,
+    pipeline::{PipelineExecutionError, stage::ExecutionContext},
+    row::MaybeOwnedRow,
 };
 use function::function_manager::FunctionManager;
-use ir::{pipeline::FunctionRepresentationError, RepresentationError};
+use ir::{RepresentationError, pipeline::FunctionRepresentationError};
 use itertools::Either;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::CommitProfile;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::TempDir;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -135,12 +135,9 @@ fn illegal_stages_in_function() {
         let Either::Right(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
         match &err.as_ref() {
             PipelineExecutionError::InitialisingMatchIterator { typedb_source: source } => {
-                assert!(matches!(
-                    source.as_ref(),
-                    ConceptReadError::UnimplementedFunctionality {
-                        functionality: error::UnimplementedFeature::PipelineStageInFunction(_)
-                    }
-                ))
+                assert!(matches!(source.as_ref(), ConceptReadError::UnimplementedFunctionality {
+                    functionality: error::UnimplementedFeature::PipelineStageInFunction(_)
+                }))
             }
             _ => Err(err).unwrap(),
         }

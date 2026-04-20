@@ -19,17 +19,17 @@ use itertools::Itertools;
 use tokio::sync::{mpsc::Sender, watch};
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
-use tracing::{event, Level};
+use tracing::{Level, event};
 use typedb_protocol::{
     database_manager::import::{Client as ProtocolClient, Server as ProtocolServer},
     migration::{
+        Item as MigrationItemProto,
         item::{
-            relation::{role::Player as MigrationRolePlayerProto, Role as MigrationRoleProto},
             Attribute as MigrationAttributeProto, Checksums as MigrationChecksumsProto, Entity as MigrationEntityProto,
             Header as MigrationHeaderProto, OwnedAttribute as MigrationOwnedAttributeProto,
             Relation as MigrationRelationProto,
+            relation::{Role as MigrationRoleProto, role::Player as MigrationRolePlayerProto},
         },
-        Item as MigrationItemProto,
     },
 };
 

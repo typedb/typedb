@@ -6,16 +6,16 @@
 
 use std::sync::Arc;
 
-use concept::type_::{object_type::ObjectType, TypeAPI};
+use concept::type_::{TypeAPI, object_type::ObjectType};
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use params;
 
 use crate::{
-    generic_step,
+    Context, generic_step,
     transaction_context::{with_read_tx, with_schema_tx},
-    util, when_then, Context,
+    util, when_then,
 };
 
 #[apply(generic_step)]

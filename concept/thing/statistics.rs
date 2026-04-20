@@ -16,14 +16,14 @@ use std::{
 use bytes::Bytes;
 use durability::DurabilityRecordType;
 use encoding::graph::{
+    Typed,
     thing::{
+        ThingVertex,
         edge::{ThingEdgeHas, ThingEdgeIndexedRelation, ThingEdgeLinks},
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
-        ThingVertex,
     },
     type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
-    Typed,
 };
 use error::typedb_error;
 use resource::{
@@ -35,23 +35,23 @@ use resource::{
 };
 use serde::{Deserialize, Serialize};
 use storage::{
+    MVCCStorage,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,
     iterator::MVCCReadError,
     key_value::{StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
-    recovery::commit_recovery::{load_commit_data_from_with_context, RecoveryCommitStatus, StorageRecoveryError},
+    recovery::commit_recovery::{RecoveryCommitStatus, StorageRecoveryError, load_commit_data_from_with_context},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
-    MVCCStorage,
 };
-use tracing::{event, Level};
+use tracing::{Level, event};
 
 use crate::{
-    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
+    thing::{ThingAPI, attribute::Attribute, entity::Entity, object::Object, relation::Relation},
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
-        role_type::RoleType, TypeAPI,
+        TypeAPI, attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType,
+        relation_type::RelationType, role_type::RoleType,
     },
 };
 
@@ -575,11 +575,7 @@ fn write_to_delta<D>(
                 }
             } else {
                 // no concurrent commit could have occurred - fall back to the flag
-                if reinsert.load(std::sync::atomic::Ordering::Relaxed) {
-                    Ok(1)
-                } else {
-                    Ok(0)
-                }
+                if reinsert.load(std::sync::atomic::Ordering::Relaxed) { Ok(1) } else { Ok(0) }
             }
         }
     }
@@ -771,10 +767,9 @@ mod serialise {
     use std::{collections::HashMap, fmt};
 
     use serde::{
-        de,
+        Deserialize, Deserializer, Serialize, Serializer, de,
         de::{MapAccess, SeqAccess, Visitor},
         ser::SerializeStruct,
-        Deserialize, Deserializer, Serialize, Serializer,
     };
 
     use crate::{

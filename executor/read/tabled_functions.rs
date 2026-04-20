@@ -11,13 +11,14 @@ use std::{
 };
 
 use compiler::executable::function::{
-    executable::ExecutableReturn, ExecutableFunctionRegistry, FunctionTablingType, StronglyConnectedComponentID,
+    ExecutableFunctionRegistry, FunctionTablingType, StronglyConnectedComponentID, executable::ExecutableReturn,
 };
-use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
+use ir::pipeline::{ParameterRegistry, function_signature::FunctionID};
 use smallvec::SmallVec;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    Provenance,
     batch::FixedBatch,
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
@@ -26,7 +27,6 @@ use crate::{
         suspension::QueryPatternSuspensions,
     },
     row::MaybeOwnedRow,
-    Provenance,
 };
 
 pub struct TabledFunctions {

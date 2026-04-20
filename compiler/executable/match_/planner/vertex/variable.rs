@@ -195,7 +195,7 @@ impl TypePlanner {
             .any(|restriction| is_input_available(&Input::Variable(*restriction), inputs))
         {
             let bias: f64 = 1.0; // TODO: revisit and tune
-                                 // exactly 1 of the full set is selected
+            // exactly 1 of the full set is selected
             1.0 / (self.unrestricted_expected_size * bias)
         } else {
             // TODO: if we incorporate, say, annotations, we could add some selectivity here

@@ -10,24 +10,24 @@ use answer::variable::Variable;
 use bytes::byte_array::ByteArray;
 use encoding::{
     graph::thing::THING_VERTEX_MAX_LENGTH,
-    value::{value::Value, ValueEncodable},
+    value::{ValueEncodable, value::Value},
 };
 use error::typedb_error;
 use itertools::Itertools;
-use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
+use storage::snapshot::{SnapshotGetError, iterator::SnapshotIteratorError};
 use typeql::{
     common::Span,
     schema::definable::function::{ReturnStatement, Signature},
 };
 
 use crate::{
+    RepresentationError,
     pattern::{
+        BranchID, ParameterID, ValueType,
         constraint::Constraint,
         variable_category::{VariableCategory, VariableOptionality},
-        BranchID, ParameterID, ValueType,
     },
     pipeline::{function_signature::FunctionID, reduce::Reducer},
-    RepresentationError,
 };
 
 pub mod block;

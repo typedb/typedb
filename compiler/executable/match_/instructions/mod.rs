@@ -13,14 +13,14 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use ir::pattern::{
-    constraint::{Comparator, Is, IsaKind, SubKind},
     IrID, ParameterID, Vertex,
+    constraint::{Comparator, Is, IsaKind, SubKind},
 };
 use itertools::Itertools;
 
-use crate::{annotation::type_annotations::TypeAnnotations, ExecutorVariable, VariablePosition};
+use crate::{ExecutorVariable, VariablePosition, annotation::type_annotations::TypeAnnotations};
 
 pub mod thing;
 pub mod type_;
@@ -497,11 +497,7 @@ impl<ID: IrID> CheckVertex<ID> {
     }
 
     pub fn as_variable(&self) -> Option<ID> {
-        if let &Self::Variable(v) = self {
-            Some(v)
-        } else {
-            None
-        }
+        if let &Self::Variable(v) = self { Some(v) } else { None }
     }
 
     /// Returns `true` if the check vertex is [`Type`].
@@ -513,11 +509,7 @@ impl<ID: IrID> CheckVertex<ID> {
     }
 
     pub fn as_type(&self) -> Option<&Type> {
-        if let Self::Type(v) = self {
-            Some(v)
-        } else {
-            None
-        }
+        if let Self::Type(v) = self { Some(v) } else { None }
     }
 
     /// Returns `true` if the check vertex is [`Parameter`].
@@ -529,11 +521,7 @@ impl<ID: IrID> CheckVertex<ID> {
     }
 
     pub fn as_parameter(&self) -> Option<&ParameterID> {
-        if let Self::Parameter(v) = self {
-            Some(v)
-        } else {
-            None
-        }
+        if let Self::Parameter(v) = self { Some(v) } else { None }
     }
 
     fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> CheckVertex<T> {

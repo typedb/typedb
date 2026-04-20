@@ -7,12 +7,12 @@
 use std::{collections::HashMap, fmt, iter, sync::Arc};
 
 use answer::variable_value::VariableValue;
-use compiler::{executable::match_::instructions::thing::IidInstruction, ExecutorVariable};
+use compiler::{ExecutorVariable, executable::match_::instructions::thing::IidInstruction};
 use concept::{
     error::ConceptReadError,
-    thing::{attribute::Attribute, object::Object, ThingAPI},
+    thing::{ThingAPI, attribute::Attribute, object::Object},
 };
-use encoding::graph::thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex, ThingVertex};
+use encoding::graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use ir::pattern::constraint::Iid;
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
@@ -20,10 +20,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        FilterFn, FilterMapUnchangedFn, VariableModes,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
-        FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

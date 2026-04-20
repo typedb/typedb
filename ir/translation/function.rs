@@ -5,7 +5,7 @@
  */
 
 use answer::variable::Variable;
-use error::{needs_update_when_feature_is_implemented, UnimplementedFeature};
+use error::{UnimplementedFeature, needs_update_when_feature_is_implemented};
 use itertools::Itertools;
 use typeql::{
     common::Spanned,
@@ -17,18 +17,18 @@ use typeql::{
 
 use crate::{
     pattern::{
-        variable_category::{VariableCategory, VariableOptionality},
         Pattern,
+        variable_category::{VariableCategory, VariableOptionality},
     },
     pipeline::{
+        FunctionRepresentationError, ParameterRegistry,
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
-        FunctionRepresentationError, ParameterRegistry,
     },
     translation::{
-        pipeline::{translate_pipeline_stages, TranslatedStage},
-        reduce::build_reducer,
         PipelineTranslationContext,
+        pipeline::{TranslatedStage, translate_pipeline_stages},
+        reduce::build_reducer,
     },
 };
 
@@ -225,11 +225,7 @@ fn named_type_any_to_category_and_optionality(
                 Structs,
                 "This could be a struct label. Implement a ThingOrStructValue category"
             );
-            if is_list {
-                VariableCategory::ThingList
-            } else {
-                VariableCategory::Thing
-            }
+            if is_list { VariableCategory::ThingList } else { VariableCategory::Thing }
         }
         NamedType::BuiltinValueType(_) => {
             if is_list {

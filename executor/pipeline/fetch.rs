@@ -6,21 +6,21 @@
 
 use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
-use answer::{variable::Variable, variable_value::VariableValue, Concept, Thing};
+use answer::{Concept, Thing, variable::Variable, variable_value::VariableValue};
 use compiler::{
+    VariablePosition,
     executable::{
         fetch::executable::{
             ExecutableFetch, ExecutableFetchListSubFetch, FetchObjectInstruction, FetchSomeInstruction,
         },
-        function::{executable::ExecutableFunction, ExecutableFunctionRegistry},
+        function::{ExecutableFunctionRegistry, executable::ExecutableFunction},
         next_executable_id,
     },
-    VariablePosition,
 };
 use concept::{
     error::ConceptReadError,
     thing::{has::Has, object::ObjectAPI, thing_manager::ThingManager},
-    type_::{attribute_type::AttributeType, OwnerAPI, TypeAPI},
+    type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType},
 };
 use encoding::value::label::Label;
 use error::{typedb_error, unimplemented_feature};
@@ -30,20 +30,20 @@ use resource::profile::{QueryProfile, StageProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    ExecutionInterrupt, Provenance,
     batch::FixedBatch,
     document::{ConceptDocument, DocumentLeaf, DocumentList, DocumentMap, DocumentNode},
     error::ReadExecutionError,
     pipeline::{
+        PipelineExecutionError,
         pipeline::{Pipeline, PipelineError},
         stage::{ExecutionContext, StageAPI},
-        PipelineExecutionError,
     },
     read::{
         pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
         tabled_functions::TabledFunctions,
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt, Provenance,
 };
 
 macro_rules! exactly_one_or_return_err {
@@ -251,23 +251,23 @@ fn execute_single_function(
 
     // TODO: We could create an iterator over rows in a single call here instead
     let mut row_iter = batch.into_iter();
-    let document = match exactly_one_or_return_err!(
-        row_iter.next(),
-        FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() }
-    ) {
-        Some(row) => {
-            let mut value_iter = row.row().iter();
-            let result = exactly_one_or_return_err!(
-                value_iter.next(),
-                FetchExecutionError::FetchSingleFunctionNotScalar { func_name: "func".to_string() }
-            );
-            match result {
-                Some(value) => variable_value_to_document(value.clone())?,
-                None => DocumentNode::Leaf(DocumentLeaf::Empty),
+    let document =
+        match exactly_one_or_return_err!(row_iter.next(), FetchExecutionError::FetchSingleFunctionNotSingle {
+            func_name: "func".to_string()
+        }) {
+            Some(row) => {
+                let mut value_iter = row.row().iter();
+                let result =
+                    exactly_one_or_return_err!(value_iter.next(), FetchExecutionError::FetchSingleFunctionNotScalar {
+                        func_name: "func".to_string()
+                    });
+                match result {
+                    Some(value) => variable_value_to_document(value.clone())?,
+                    None => DocumentNode::Leaf(DocumentLeaf::Empty),
+                }
             }
-        }
-        None => DocumentNode::Leaf(DocumentLeaf::Empty),
-    };
+            None => DocumentNode::Leaf(DocumentLeaf::Empty),
+        };
 
     Ok(document)
 }

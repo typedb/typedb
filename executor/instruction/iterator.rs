@@ -12,12 +12,12 @@ use std::{
 
 use answer::variable_value::VariableValue;
 use compiler::{
-    executable::match_::instructions::{VariableMode, VariableModes},
     ExecutorVariable, VariablePosition,
+    executable::match_::instructions::{VariableMode, VariableModes},
 };
 use concept::error::ConceptReadError;
 use itertools::zip_eq;
-use lending_iterator::{adaptors::Inspect, kmerge::KMergeBy, LendingIterator, Peekable};
+use lending_iterator::{LendingIterator, Peekable, adaptors::Inspect, kmerge::KMergeBy};
 
 use crate::{
     instruction::{

@@ -9,8 +9,8 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
-use ir::pattern::{conjunction::Conjunction, constraint::Constraint, Scope, ScopeId, Vertex};
+use answer::{Type, variable::Variable};
+use ir::pattern::{Scope, ScopeId, Vertex, conjunction::Conjunction, constraint::Constraint};
 
 use crate::annotation::expression::compiled_expression::ExpressionValueType;
 

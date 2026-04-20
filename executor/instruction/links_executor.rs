@@ -12,8 +12,8 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::{executable::match_::instructions::thing::LinksInstruction, ExecutorVariable};
+use answer::{Thing, Type, variable_value::VariableValue};
+use compiler::{ExecutorVariable, executable::match_::instructions::thing::LinksInstruction};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -24,24 +24,24 @@ use concept::{
     type_::{object_type::ObjectType, relation_type::RelationType, role_type::RoleType},
 };
 use itertools::Itertools;
-use lending_iterator::{kmerge::KMergeBy, LendingIterator, Peekable};
+use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        FilterFn, FilterMapUnchangedFn, LinksIterateMode, VariableModes,
         checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         min_max_types,
         tuple::{
+            LinksToTupleFn, Tuple, TupleOrderingFn, TuplePositions, TupleResult, TupleToLinksFn,
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, tuple_player_relation_role_to_links_canonical,
             tuple_relation_player_role_to_links_canonical, tuple_role_relation_player_to_links_canonical,
-            unsafe_compare_result_tuple, LinksToTupleFn, Tuple, TupleOrderingFn, TuplePositions, TupleResult,
-            TupleToLinksFn,
+            unsafe_compare_result_tuple,
         },
-        FilterFn, FilterMapUnchangedFn, LinksIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -425,11 +425,7 @@ pub(crate) fn may_get_role(role_var: ExecutorVariable, row: MaybeOwnedRow<'_>) -
     match role_var {
         ExecutorVariable::RowPosition(position) => {
             if position.as_usize() < row.len() {
-                if let VariableValue::Type(type_) = row.get(position) {
-                    Some(type_.as_role_type())
-                } else {
-                    None
-                }
+                if let VariableValue::Type(type_) = row.get(position) { Some(type_.as_role_type()) } else { None }
             } else {
                 None
             }

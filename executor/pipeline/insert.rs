@@ -6,12 +6,12 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use compiler::{
+    VariablePosition,
     executable::insert::{
+        VariableSource,
         executable::{InsertExecutable, OptionalInsert},
         instructions::{ConceptInstruction, ConnectionInstruction},
-        VariableSource,
     },
-    VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
@@ -23,14 +23,14 @@ use resource::{
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
+    ExecutionInterrupt,
     batch::Batch,
     pipeline::{
-        stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
+        stage::{ExecutionContext, StageAPI},
     },
     row::{MaybeOwnedRow, Row},
-    write::{write_instruction::AsWriteInstruction, WriteError},
-    ExecutionInterrupt,
+    write::{WriteError, write_instruction::AsWriteInstruction},
 };
 
 pub struct InsertStageExecutor<InputIterator> {

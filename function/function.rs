@@ -5,7 +5,7 @@
  */
 
 use encoding::graph::definition::{definition_key::DefinitionKey, function::FunctionDefinition};
-use ir::pipeline::{function_signature::FunctionIDAPI, FunctionRepresentationError};
+use ir::pipeline::{FunctionRepresentationError, function_signature::FunctionIDAPI};
 use typeql::common::Spanned;
 
 use crate::FunctionError;

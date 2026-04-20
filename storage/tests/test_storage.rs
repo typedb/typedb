@@ -6,16 +6,16 @@
 
 use std::sync::Arc;
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use durability::wal::WAL;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
 use storage::{
+    StorageOpenError,
     key_range::{KeyRange, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{IteratorPool, KeyspaceOpenError, KeyspaceValidationError},
-    StorageOpenError,
 };
 use test_utils::{create_tmp_dir, init_logging};
 use test_utils_storage::{checkpoint_storage, create_storage, load_storage, test_keyspace_set};
@@ -199,11 +199,8 @@ fn get_put_iterate() {
             (ByteArray::copy(key), ByteArray::copy(value))
         })
         .collect();
-    assert_eq!(
-        items,
-        vec![
-            (keyspace_1_key_2.into_byte_array(), ByteArray::<128>::empty()),
-            (keyspace_1_key_3.into_byte_array(), ByteArray::<128>::empty()),
-        ]
-    );
+    assert_eq!(items, vec![
+        (keyspace_1_key_2.into_byte_array(), ByteArray::<128>::empty()),
+        (keyspace_1_key_3.into_byte_array(), ByteArray::<128>::empty()),
+    ]);
 }

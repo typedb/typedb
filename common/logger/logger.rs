@@ -8,12 +8,12 @@
 
 use std::{fs, io::stderr, path::PathBuf};
 
-use tracing::{self, dispatcher::DefaultGuard, metadata::LevelFilter, Level};
+use tracing::{self, Level, dispatcher::DefaultGuard, metadata::LevelFilter};
 pub use tracing::{debug, error, info, trace};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{
-    fmt::{writer::Tee, SubscriberBuilder},
     EnvFilter,
+    fmt::{SubscriberBuilder, writer::Tee},
 };
 
 use crate::log_panic::log_panic;

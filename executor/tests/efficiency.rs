@@ -13,6 +13,7 @@ use std::{
 
 use answer::variable::Variable;
 use compiler::{
+    ExecutorVariable, VariablePosition,
     annotation::{
         function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types, type_annotations::TypeAnnotations,
     },
@@ -20,9 +21,9 @@ use compiler::{
         function::ExecutableFunctionRegistry,
         match_::{
             instructions::{
+                CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
                 thing::{HasInstruction, HasReverseInstruction, IsaReverseInstruction},
                 type_::TypeListInstruction,
-                CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
             },
             planner::{
                 conjunction_executable::{ConjunctionExecutable, ExecutionStep, IntersectionStep},
@@ -31,34 +32,33 @@ use compiler::{
         },
         next_executable_id,
     },
-    ExecutorVariable, VariablePosition,
 };
 use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{
-        annotation::AnnotationCardinality, object_type::ObjectType, owns::OwnsAnnotation, relates::RelatesAnnotation,
-        type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
+        Ordering, OwnerAPI, PlayerAPI, annotation::AnnotationCardinality, object_type::ObjectType,
+        owns::OwnsAnnotation, relates::RelatesAnnotation, type_manager::TypeManager,
     },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    ExecutionInterrupt, error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow,
 };
 use ir::{
     pattern::{
-        constraint::{Comparator, IsaKind},
         Vertex,
+        constraint::{Comparator, IsaKind},
     },
-    pipeline::{block::Block, ParameterRegistry},
+    pipeline::{ParameterRegistry, block::Block},
     translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
 use storage::{
+    MVCCStorage,
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
-    MVCCStorage,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -1000,10 +1000,11 @@ fn value_hashed_string_equality_has_bound_owner() {
     // IR to compute type annotations
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
-    let value_string_hashed = value_parameters.register_value(
-        Value::String(Cow::Borrowed(VALUE_STRING_LONG_UNINLINEABLE)),
-        Span { begin_offset: 0, end_offset: 0 },
-    );
+    let value_string_hashed =
+        value_parameters.register_value(Value::String(Cow::Borrowed(VALUE_STRING_LONG_UNINLINEABLE)), Span {
+            begin_offset: 0,
+            end_offset: 0,
+        });
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
 

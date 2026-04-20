@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::{executable::match_::instructions::thing::HasReverseInstruction, ExecutorVariable};
+use compiler::{ExecutorVariable, executable::match_::instructions::thing::HasReverseInstruction};
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
@@ -28,15 +28,15 @@ use storage::snapshot::ReadableSnapshot;
 use super::has_executor::{FixedHasBounds, HasFilterMapFn};
 use crate::{
     instruction::{
+        BinaryIterateMode, VariableModes,
         checker::Checker,
-        has_executor::{HasFilterFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
+        has_executor::{EXTRACT_ATTRIBUTE, EXTRACT_OWNER, HasFilterFn, HasTupleIterator},
         iterator::{SortedTupleIterator, TupleIterator},
         min_max_types,
         tuple::{
-            has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, tuple_attribute_owner_to_has_reverse,
-            tuple_owner_attribute_to_has_reverse, unsafe_compare_result_tuple, TupleOrderingFn, TuplePositions,
+            TupleOrderingFn, TuplePositions, has_to_tuple_attribute_owner, has_to_tuple_owner_attribute,
+            tuple_attribute_owner_to_has_reverse, tuple_owner_attribute_to_has_reverse, unsafe_compare_result_tuple,
         },
-        BinaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

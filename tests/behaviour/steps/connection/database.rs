@@ -10,7 +10,7 @@ use macro_rules_attribute::apply;
 use params;
 use server::Server;
 
-use crate::{generic_step, util, Context};
+use crate::{Context, generic_step, util};
 
 async fn server_create_database(server: &'_ Server, name: String, may_error: params::MayError) {
     may_error.check(server.database_manager().put_database(&name));

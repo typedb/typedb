@@ -10,10 +10,11 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     thing::{
-        attribute::Attribute, object::Object, relation::Relation, thing_manager::validation::DataValidationError,
-        ThingAPI,
+        ThingAPI, attribute::Attribute, object::Object, relation::Relation,
+        thing_manager::validation::DataValidationError,
     },
     type_::{
+        Capability, TypeAPI,
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, Constraint, ConstraintError, TypeConstraint},
         entity_type::EntityType,
@@ -23,7 +24,6 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
-        Capability, TypeAPI,
     },
 };
 

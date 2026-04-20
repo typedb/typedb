@@ -6,11 +6,12 @@ features = {}
 
 [package]
 	name = "query"
-	edition = "2021"
+	edition = "2024"
 	version = "0.0.0"
 
 [lib]
 	path = "lib.rs"
+	crate-type = ["lib"]
 
 [dev-dependencies]
 
@@ -103,12 +104,12 @@ features = {}
 	harness = false
 
 [[test]]
-	path = "tests/unimplemented.rs"
-	name = "test_unimplemented"
-
-[[test]]
 	path = "tests/fetch.rs"
 	name = "test_fetch"
+
+[[test]]
+	path = "tests/unimplemented.rs"
+	name = "test_unimplemented"
 
 [[test]]
 	path = "tests/define.rs"

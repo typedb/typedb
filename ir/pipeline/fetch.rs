@@ -12,13 +12,13 @@ use std::{
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
-use structural_equality::{ordered_hash_combine, StructuralEquality};
+use structural_equality::{StructuralEquality, ordered_hash_combine};
 use typeql::common::Span;
 
 use crate::{
     pattern::ParameterID,
     pipeline::function::Function,
-    translation::{pipeline::TranslatedStage, PipelineTranslationContext},
+    translation::{PipelineTranslationContext, pipeline::TranslatedStage},
 };
 
 #[derive(Debug, Clone)]
@@ -67,19 +67,16 @@ impl FetchSome {
 
 impl StructuralEquality for FetchSome {
     fn hash(&self) -> u64 {
-        ordered_hash_combine(
-            mem::discriminant(self).hash(),
-            match self {
-                FetchSome::SingleVar(var) => var.hash(),
-                FetchSome::SingleAttribute(fetch) => fetch.hash(),
-                FetchSome::SingleFunction(function) => function.hash(),
-                FetchSome::Object(object) => object.hash(),
-                FetchSome::ListFunction(function) => function.hash(),
-                FetchSome::ListSubFetch(fetch) => fetch.hash(),
-                FetchSome::ListAttributesAsList(fetch) => fetch.hash(),
-                FetchSome::ListAttributesFromList(fetch) => fetch.hash(),
-            },
-        )
+        ordered_hash_combine(mem::discriminant(self).hash(), match self {
+            FetchSome::SingleVar(var) => var.hash(),
+            FetchSome::SingleAttribute(fetch) => fetch.hash(),
+            FetchSome::SingleFunction(function) => function.hash(),
+            FetchSome::Object(object) => object.hash(),
+            FetchSome::ListFunction(function) => function.hash(),
+            FetchSome::ListSubFetch(fetch) => fetch.hash(),
+            FetchSome::ListAttributesAsList(fetch) => fetch.hash(),
+            FetchSome::ListAttributesFromList(fetch) => fetch.hash(),
+        })
     }
 
     fn equals(&self, other: &Self) -> bool {
@@ -147,13 +144,10 @@ impl FetchObject {
 
 impl StructuralEquality for FetchObject {
     fn hash(&self) -> u64 {
-        ordered_hash_combine(
-            mem::discriminant(self).hash(),
-            match self {
-                FetchObject::Entries(entries, _) => StructuralEquality::hash(entries),
-                FetchObject::Attributes(variable, _) => variable.hash(),
-            },
-        )
+        ordered_hash_combine(mem::discriminant(self).hash(), match self {
+            FetchObject::Entries(entries, _) => StructuralEquality::hash(entries),
+            FetchObject::Attributes(variable, _) => variable.hash(),
+        })
     }
 
     fn equals(&self, other: &Self) -> bool {

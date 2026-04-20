@@ -10,21 +10,21 @@ use std::{
     collections::{BTreeMap, Bound},
     fmt,
     iter::{IntoIterator, Peekable},
-    sync::{atomic::AtomicBool, Arc},
+    sync::{Arc, atomic::AtomicBool},
 };
 
-use bytes::{byte_array::ByteArray, util::increment, Bytes};
+use bytes::{Bytes, byte_array::ByteArray, util::increment};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use serde::{
+    Deserialize, Deserializer, Serialize, Serializer,
     de::{self, MapAccess, SeqAccess, Visitor},
     ser::SerializeStruct,
-    Deserialize, Deserializer, Serialize, Serializer,
 };
 
 use crate::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::StorageKeyArray,
-    keyspace::{KeyspaceId, KEYSPACE_MAXIMUM_COUNT},
+    keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
     snapshot::{lock::LockType, write::Write},
 };
 
@@ -152,8 +152,11 @@ impl WriteBuffer {
     }
 
     pub(crate) fn put(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {
-        self.writes
-            .insert(key, Write::Put { value, reinsert: Arc::new(AtomicBool::new(false)), known_to_exist: false });
+        self.writes.insert(key, Write::Put {
+            value,
+            reinsert: Arc::new(AtomicBool::new(false)),
+            known_to_exist: false,
+        });
     }
 
     pub(crate) fn put_existing(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, value: ByteArray<BUFFER_VALUE_INLINE>) {

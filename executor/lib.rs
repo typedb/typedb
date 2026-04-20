@@ -93,7 +93,9 @@ impl ExecutionInterrupt {
                 Ok(type_) => Some(type_),
                 Err(TryRecvError::Empty) => None,
                 Err(TryRecvError::Closed) | Err(TryRecvError::Lagged(_)) => {
-                    unreachable!("Unexpected interrupt signal state. They should never be lagged or closed before cleaning up the receivers.")
+                    unreachable!(
+                        "Unexpected interrupt signal state. They should never be lagged or closed before cleaning up the receivers."
+                    )
                 }
             },
         }
@@ -119,7 +121,7 @@ impl Provenance {
         }
     }
 
-    pub fn branch_ids(&self) -> impl Iterator<Item = BranchID> {
+    pub fn branch_ids(&self) -> impl Iterator<Item = BranchID> + use<> {
         let provenance = self.0;
         (0..64).filter(move |id| 0 != provenance & (1 << id)).map(|id| BranchID(id))
     }

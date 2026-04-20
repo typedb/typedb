@@ -11,13 +11,13 @@ use typeql::{
 };
 
 use crate::{
+    RepresentationError,
     pattern::variable_category::VariableCategory,
     pipeline::{
-        reduce::{AssignedReduction, Reduce, Reducer},
         VariableRegistry,
+        reduce::{AssignedReduction, Reduce, Reducer},
     },
-    translation::{verify_variable_available, PipelineTranslationContext},
-    RepresentationError,
+    translation::{PipelineTranslationContext, verify_variable_available},
 };
 
 pub fn translate_reduce(

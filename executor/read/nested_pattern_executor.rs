@@ -7,12 +7,12 @@
 use std::sync::Arc;
 
 use answer::variable_value::VariableValue;
-use compiler::{executable::match_::planner::conjunction_executable::FunctionCallStep, VariablePosition};
+use compiler::{VariablePosition, executable::match_::planner::conjunction_executable::FunctionCallStep};
 use ir::{pattern::BranchID, pipeline::ParameterRegistry};
 
 use crate::{
     batch::FixedBatch,
-    read::{pattern_executor::PatternExecutor, step_executor::StepExecutors, BranchIndex},
+    read::{BranchIndex, pattern_executor::PatternExecutor, step_executor::StepExecutors},
     row::MaybeOwnedRow,
 };
 

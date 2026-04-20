@@ -6,7 +6,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use compiler::{
     annotation::{function::FunctionParameterAnnotation, type_inference::get_type_annotation_from_label},
     query_structure::{
@@ -19,8 +19,8 @@ use compiler::{
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
 use ir::pattern::{
-    constraint::{Comparator, Constraint, IsaKind, SubKind},
     ParameterID, Vertex,
+    constraint::{Comparator, Constraint, IsaKind, SubKind},
 };
 use query::analyse::{
     AnalysedQuery, FetchStructureAnnotations, FetchStructureAnnotationsFields, FunctionStructureAnnotations,
@@ -634,10 +634,10 @@ fn encode_conjunction_annotations(
                 }
             };
             let is_optional = annotation.is_optional;
-            Ok((
-                variable_id.as_u32(),
-                conjunction_proto::VariableAnnotations { is_optional, annotations: Some(encoded) },
-            ))
+            Ok((variable_id.as_u32(), conjunction_proto::VariableAnnotations {
+                is_optional,
+                annotations: Some(encoded),
+            }))
         })
         .collect::<Result<HashMap<_, _>, Box<ConceptReadError>>>()?;
     Ok(variable_annotations)

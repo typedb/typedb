@@ -9,7 +9,7 @@ use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 
 use crate::annotation::expression::{
-    expression_compiler::ExpressionCompilationContext, instructions::op_codes::ExpressionOpCode, ExpressionCompileError,
+    ExpressionCompileError, expression_compiler::ExpressionCompilationContext, instructions::op_codes::ExpressionOpCode,
 };
 
 pub mod binary;

@@ -6,7 +6,7 @@
 
 use std::path::Path;
 
-use durability::{wal::WAL, DurabilityRecordType, DurabilityService};
+use durability::{DurabilityRecordType, DurabilityService, wal::WAL};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TestRecord {

@@ -9,21 +9,21 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use concept::{
-    thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager, ThingAPI},
+    thing::{ThingAPI, object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
     type_::{
+        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI,
         annotation::{AnnotationCardinality, AnnotationIndependent},
         attribute_type::AttributeTypeAnnotation,
         relates::RelatesAnnotation,
-        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
+    MVCCStorage,
     durability_client::WALClient,
     sequence_number::SequenceNumber,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
-    MVCCStorage,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;

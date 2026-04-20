@@ -5,13 +5,13 @@
  */
 use std::{sync::Arc, time::Instant};
 
-use compiler::{query_structure::PipelineStructure, VariablePosition};
+use compiler::{VariablePosition, query_structure::PipelineStructure};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::{
+    ExecutionInterrupt,
     batch::Batch,
     document::ConceptDocument,
     pipeline::stage::{ExecutionContext, StageIterator},
-    ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::pipeline::ParameterRegistry;
@@ -19,7 +19,7 @@ use itertools::{Either, Itertools};
 use options::QueryOptions;
 use query::{error::QueryError, query_manager::QueryManager};
 use storage::{durability_client::WALClient, snapshot::WritableSnapshot};
-use tracing::{event, Level};
+use tracing::{Level, event};
 use typeql::query::SchemaQuery;
 
 use crate::{
@@ -209,7 +209,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
                             source_query: source_query.to_string(),
                             typedb_source,
                         })),
-                    )
+                    );
                 }
             }
         }

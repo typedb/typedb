@@ -11,8 +11,8 @@ use std::{
     vec,
 };
 
-use answer::{variable_value::VariableValue, Type};
-use compiler::{executable::match_::instructions::type_::RelatesInstruction, ExecutorVariable};
+use answer::{Type, variable_value::VariableValue};
+use compiler::{ExecutorVariable, executable::match_::instructions::type_::RelatesInstruction};
 use concept::{
     error::ConceptReadError,
     type_::{relation_type::RelationType, role_type::RoleType, type_manager::TypeManager},
@@ -24,10 +24,11 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
-        tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, RelatesToTupleFn, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
+        tuple::{RelatesToTupleFn, TuplePositions, relates_to_tuple_relation_role, relates_to_tuple_role_relation},
+        type_from_row_or_annotations,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

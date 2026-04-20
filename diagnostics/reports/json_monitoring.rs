@@ -7,15 +7,15 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::{
-    metrics::{ActionKind, ALL_CLIENT_ENDPOINTS},
-    reports::{
-        serialize_timestamp, ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport,
-        SchemaLoadReport, ServerPropertiesReport, ServerReport, ServerReportSensitivePart,
-    },
     Diagnostics,
+    metrics::{ALL_CLIENT_ENDPOINTS, ActionKind},
+    reports::{
+        ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport, SchemaLoadReport,
+        ServerPropertiesReport, ServerReport, ServerReportSensitivePart, serialize_timestamp,
+    },
 };
 
 const MONITORING_API_VERSION: usize = 1;

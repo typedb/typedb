@@ -16,10 +16,11 @@ use params::{self, check_boolean};
 use resource::profile::StorageCounters;
 
 use crate::{
+    Context,
     concept::type_::BehaviourConceptTestExecutionError,
     generic_step,
     transaction_context::{with_read_tx, with_write_tx},
-    unused_step, when_then, Context,
+    unused_step, when_then,
 };
 
 #[apply(generic_step)]

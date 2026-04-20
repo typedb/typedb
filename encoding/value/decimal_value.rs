@@ -76,11 +76,7 @@ impl Decimal {
     }
 
     pub fn ceil(self) -> i64 {
-        if self.fractional == 0 {
-            self.integer
-        } else {
-            self.integer + 1
-        }
+        if self.fractional == 0 { self.integer } else { self.integer + 1 }
     }
 
     pub fn round(self) -> i64 {
@@ -324,11 +320,7 @@ impl FromStr for Decimal {
         let fractional =
             fractional_part.parse::<u64>()? * 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10 - num_fractional_digits);
 
-        if is_negative {
-            Ok(-Self::new(integer, fractional))
-        } else {
-            Ok(Self::new(integer, fractional))
-        }
+        if is_negative { Ok(-Self::new(integer, fractional)) } else { Ok(Self::new(integer, fractional)) }
     }
 }
 
@@ -362,12 +354,12 @@ impl fmt::Display for Decimal {
 
 #[cfg(test)]
 mod tests {
-    use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
+    use rand::{Rng, SeedableRng, rngs::SmallRng, thread_rng};
 
     use super::{Decimal, FRACTIONAL_PART_DENOMINATOR};
 
     fn random_decimal(rng: &mut impl Rng) -> Decimal {
-        Decimal { integer: rng.gen(), fractional: rng.gen_range(0..FRACTIONAL_PART_DENOMINATOR) }
+        Decimal { integer: rng.r#gen(), fractional: rng.gen_range(0..FRACTIONAL_PART_DENOMINATOR) }
     }
 
     fn random_small_decimal(rng: &mut impl Rng) -> Decimal {
@@ -410,7 +402,7 @@ mod tests {
             lhs.integer as i128 * FRACTIONAL_PART_DENOMINATOR as i128 + lhs.fractional as i128
         }
 
-        let seed = thread_rng().gen();
+        let seed = thread_rng().r#gen();
         let mut rng = SmallRng::seed_from_u64(seed);
         eprintln!("Running with seed: {seed}");
 

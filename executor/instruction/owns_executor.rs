@@ -11,12 +11,12 @@ use std::{
     vec,
 };
 
-use answer::{variable_value::VariableValue, Type};
-use compiler::{executable::match_::instructions::type_::OwnsInstruction, ExecutorVariable};
+use answer::{Type, variable_value::VariableValue};
+use compiler::{ExecutorVariable, executable::match_::instructions::type_::OwnsInstruction};
 use concept::{
     error::ConceptReadError,
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, ObjectTypeAPI, OwnerAPI,
+        ObjectTypeAPI, OwnerAPI, attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager,
     },
 };
 use itertools::Itertools;
@@ -26,10 +26,11 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
-        tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
+        tuple::{OwnsToTupleFn, TuplePositions, owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute},
+        type_from_row_or_annotations,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

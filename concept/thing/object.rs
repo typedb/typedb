@@ -13,13 +13,13 @@ use std::{
 
 use bytes::Bytes;
 use encoding::{
+    Keyable, Prefixed,
     graph::thing::{
         edge::{ThingEdgeHas, ThingEdgeHasReverse},
         vertex_object::ObjectVertex,
     },
     layout::prefix::Prefix,
     value::{decode_value_u64, value::Value, value_type::ValueTypeCategory},
-    Keyable, Prefixed,
 };
 use lending_iterator::higher_order::Hkt;
 use resource::{
@@ -32,21 +32,20 @@ use storage::{
 };
 
 use crate::{
-    edge_iterator,
+    ConceptStatus, edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
+        HKInstance, ThingAPI,
         attribute::Attribute,
         entity::Entity,
         has::Has,
         relation::{IndexedRelationsIterator, Relation},
-        thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
-        HKInstance, ThingAPI,
+        thing_manager::{ThingManager, validation::operation_time_validation::OperationTimeValidation},
     },
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType,
-        ObjectTypeAPI, Ordering, OwnerAPI,
+        ObjectTypeAPI, Ordering, OwnerAPI, attribute_type::AttributeType, object_type::ObjectType,
+        relation_type::RelationType, role_type::RoleType,
     },
-    ConceptStatus,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]

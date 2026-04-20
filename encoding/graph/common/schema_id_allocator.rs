@@ -22,17 +22,17 @@ use storage::{
 };
 
 use crate::{
+    Keyable,
     error::EncodingError,
     graph::{
+        Typed,
         definition::definition_key::{DefinitionID, DefinitionKey},
         type_::{
-            vertex::{TypeID, TypeIDUInt, TypeVertex},
             Kind,
+            vertex::{TypeID, TypeIDUInt, TypeVertex},
         },
-        Typed,
     },
     layout::prefix::Prefix,
-    Keyable,
 };
 
 pub type TypeVertexAllocator = SchemaIDAllocator<TypeVertex>;

@@ -8,16 +8,16 @@ use std::{borrow::Cow, cmp::Ordering, collections::HashMap, fmt, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{
+    ExecutorVariable, VariablePosition,
     annotation::expression::compiled_expression::ExecutableExpression,
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
         planner::conjunction_executable::{AssignmentStep, CheckStep, IntersectionStep, UnsortedJoinStep},
     },
-    ExecutorVariable, VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use encoding::value::value::Value;
-use error::{unimplemented_feature, UnimplementedFeature};
+use error::{UnimplementedFeature, unimplemented_feature};
 use ir::pattern::expression::BuiltinConceptFunctionID;
 use itertools::Itertools;
 use lending_iterator::{LendingIterator, Peekable};
@@ -25,16 +25,16 @@ use resource::profile::StepProfile;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    ExecutionInterrupt, Provenance, SelectedPositions,
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
-    instruction::{checker::Checker, iterator::TupleIterator, InstructionExecutor},
+    instruction::{InstructionExecutor, checker::Checker, iterator::TupleIterator},
     pipeline::stage::ExecutionContext,
     read::{
-        expression_executor::{evaluate_expression, ExpressionValue},
+        expression_executor::{ExpressionValue, evaluate_expression},
         step_executor::StepExecutors,
     },
     row::{MaybeOwnedRow, Row},
-    ExecutionInterrupt, Provenance, SelectedPositions,
 };
 
 #[derive(Debug)]
@@ -856,11 +856,7 @@ impl AssignExecutor {
         }
         measurement.end(&self.profile, 1, output.len() as u64);
 
-        if output.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(output))
-        }
+        if output.is_empty() { Ok(None) } else { Ok(Some(output)) }
     }
 }
 
@@ -929,11 +925,7 @@ impl CheckExecutor {
             }
         }
         measurement.end(&self.profile, 1, output.len() as u64);
-        if output.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(output))
-        }
+        if output.is_empty() { Ok(None) } else { Ok(Some(output)) }
     }
 }
 
@@ -998,11 +990,7 @@ impl BuiltinCallExecutor {
             output.append(|mut row| row.copy_from_row(output_row));
         }
         measurement.end(&self.profile, 1, output.len() as u64);
-        if output.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(output))
-        }
+        if output.is_empty() { Ok(None) } else { Ok(Some(output)) }
     }
 
     fn call_builtin<'a>(

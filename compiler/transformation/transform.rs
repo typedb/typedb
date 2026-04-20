@@ -9,11 +9,11 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     annotation::pipeline::{AnnotatedPipeline, AnnotatedStage},
     transformation::{
+        StaticOptimiserError,
         redundant_constraints::{
             optimize_away_statically_unsatisfiable_conjunctions, prune_redundant_roleplayer_deduplication,
         },
         relation_index::relation_index_transformation,
-        StaticOptimiserError,
     },
 };
 

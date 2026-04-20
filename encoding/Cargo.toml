@@ -6,11 +6,12 @@ features = {}
 
 [package]
 	name = "encoding"
-	edition = "2021"
+	edition = "2024"
 	version = "0.0.0"
 
 [lib]
 	path = "encoding.rs"
+	crate-type = ["lib"]
 
 [dev-dependencies]
 
@@ -91,10 +92,10 @@ features = {}
 	name = "test_attribute_vertex"
 
 [[test]]
-	path = "tests/test_definitions.rs"
-	name = "test_definitions"
-
-[[test]]
 	path = "tests/test_type_vertex.rs"
 	name = "test_type_vertex"
+
+[[test]]
+	path = "tests/test_definitions.rs"
+	name = "test_definitions"
 

@@ -6,9 +6,9 @@
 use std::sync::Arc;
 
 use hyper::{
+    Body, Client, Method, Request, Uri,
     client::HttpConnector,
     header::{AUTHORIZATION, CONTENT_TYPE},
-    Body, Client, Method, Request, Uri,
 };
 use serde_json::json;
 use server::service::http::message::{
@@ -16,11 +16,11 @@ use server::service::http::message::{
     authentication::TokenResponse,
     database::{DatabaseResponse, DatabasesResponse},
     query::{
+        QueryAnswerResponse, QueryOptionsPayload,
         concept::{
             AttributeResponse, AttributeTypeResponse, EntityResponse, EntityTypeResponse, RelationResponse,
             RelationTypeResponse, RoleTypeResponse, ValueResponse,
         },
-        QueryAnswerResponse, QueryOptionsPayload,
     },
     transaction::{TransactionOptionsPayload, TransactionResponse},
     user::{UserResponse, UsersResponse},

@@ -9,9 +9,9 @@ use compiler::VariablePosition;
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     read::{
+        BranchIndex, ExecutorIndex,
         collecting_stage_executor::{CollectedStageIterator, CollectorEnum},
         stream_modifier::StreamModifierResultMapper,
-        BranchIndex, ExecutorIndex,
     },
     row::MaybeOwnedRow,
 };

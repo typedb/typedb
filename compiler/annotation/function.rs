@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::definition::definition_key::DefinitionKey,
@@ -19,11 +19,11 @@ use encoding::{
 };
 use error::needs_update_when_feature_is_implemented;
 use ir::{
-    pattern::{expression::BuiltinConceptFunctionID, Vertex},
+    pattern::{Vertex, expression::BuiltinConceptFunctionID},
     pipeline::{
+        ParameterRegistry, VariableRegistry,
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::FunctionID,
-        ParameterRegistry, VariableRegistry,
     },
     translation::tokens::translate_value_type,
 };
@@ -36,9 +36,10 @@ use typeql::{
 
 use crate::{
     annotation::{
+        FunctionAnnotationError, TypeInferenceError,
         expression::compiled_expression::ExpressionValueType,
-        pipeline::{annotate_pipeline_stages, resolve_reducer_by_value_type, AnnotatedStage},
-        type_seeder, FunctionAnnotationError, TypeInferenceError,
+        pipeline::{AnnotatedStage, annotate_pipeline_stages, resolve_reducer_by_value_type},
+        type_seeder,
     },
     executable::reduce::ReduceInstruction,
 };

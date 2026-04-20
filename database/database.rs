@@ -10,8 +10,8 @@ use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
     sync::{
-        mpsc::{sync_channel, SyncSender},
         Arc, Mutex, MutexGuard, RwLock, TryLockError,
+        mpsc::{SyncSender, sync_channel},
     },
     time::{Duration, Instant},
 };
@@ -19,44 +19,44 @@ use std::{
 use concept::{
     thing::statistics::{Statistics, StatisticsError},
     type_::type_manager::{
-        type_cache::{TypeCache, TypeCacheCreateError},
         TypeManager,
+        type_cache::{TypeCache, TypeCacheCreateError},
     },
 };
 use concurrency::IntervalRunner;
 use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
 use durability::{
-    wal::{WALError, WAL},
     DurabilityServiceError,
+    wal::{WAL, WALError},
 };
 use encoding::{
+    EncodingKeyspace,
     error::EncodingError,
     graph::{
         definition::definition_key_generator::DefinitionKeyGenerator, thing::vertex_generator::ThingVertexGenerator,
         type_::vertex_generator::TypeVertexGenerator,
     },
-    EncodingKeyspace,
 };
 use error::typedb_error;
-use fail_point::{fail_point, UNFINISHED_CHECKPOINT};
-use function::{function_cache::FunctionCache, FunctionError};
+use fail_point::{UNFINISHED_CHECKPOINT, fail_point};
+use function::{FunctionError, function_cache::FunctionCache};
 use query::query_cache::QueryCache;
 use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
+    MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
     recovery::checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
     sequence_number::SequenceNumber,
-    MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
 };
-use tracing::{debug, event, trace, Level};
+use tracing::{Level, debug, event, trace};
 
 use crate::{
-    transaction::TransactionError,
     DatabaseOpenError::FunctionCacheInitialise,
     DatabaseResetError::{
         CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,
         CorruptionPartialResetTypeVertexGeneratorInUse,
     },
+    transaction::TransactionError,
 };
 
 #[derive(Debug, Clone)]
@@ -233,11 +233,7 @@ impl Database<WALClient> {
         let file_name = path.file_name().unwrap();
         let name = file_name.to_str().ok_or_else(|| InvalidUnicodeName { name: file_name.to_owned() })?;
 
-        if path.exists() {
-            Self::load(path, name)
-        } else {
-            Self::create(path, name)
-        }
+        if path.exists() { Self::load(path, name) } else { Self::create(path, name) }
     }
 
     fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
@@ -323,7 +319,7 @@ impl Database<WALClient> {
         let wal = match WAL::load(path) {
             Ok(wal) => wal,
             Err(DurabilityServiceError::WAL { source: WALError::LoadErrorDirectoryMissing { .. } }) => {
-                return Err(NotADatabase { name: name.to_owned() })
+                return Err(NotADatabase { name: name.to_owned() });
             }
             Err(err) => return Err(WALOpen { source: err }),
         };

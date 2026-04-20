@@ -9,8 +9,8 @@ pub mod transaction_util {
 
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::{
-        transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
         Database,
+        transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
     };
     use function::function_manager::FunctionManager;
     use options::TransactionOptions;
@@ -122,11 +122,11 @@ pub mod query_util {
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::transaction::TransactionRead;
     use executor::{
-        pipeline::{
-            stage::{ExecutionContext, StageIterator},
-            PipelineExecutionError,
-        },
         ExecutionInterrupt,
+        pipeline::{
+            PipelineExecutionError,
+            stage::{ExecutionContext, StageIterator},
+        },
     };
     use function::function_manager::FunctionManager;
     use query::query_manager::QueryManager;

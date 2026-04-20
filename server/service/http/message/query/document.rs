@@ -16,8 +16,8 @@ use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
-    encode_attribute, encode_attribute_type, encode_entity_type, encode_relation_type, encode_role_type, encode_value,
-    AttributeTypeDocument, TypeDocument,
+    AttributeTypeDocument, TypeDocument, encode_attribute, encode_attribute_type, encode_entity_type,
+    encode_relation_type, encode_role_type, encode_value,
 };
 
 pub fn encode_document(

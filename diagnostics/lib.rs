@@ -19,8 +19,8 @@ use xxhash_rust::xxh3::Xxh3;
 
 use crate::{
     metrics::{
-        client_endpoints_map, ActionKind, ActionMetrics, ClientEndpoint, DatabaseMetrics, ErrorMetrics, LoadKind,
-        LoadMetrics, ServerMetrics, ServerProperties, ALL_CLIENT_ENDPOINTS,
+        ALL_CLIENT_ENDPOINTS, ActionKind, ActionMetrics, ClientEndpoint, DatabaseMetrics, ErrorMetrics, LoadKind,
+        LoadMetrics, ServerMetrics, ServerProperties, client_endpoints_map,
     },
     reports::{
         json_monitoring::to_monitoring_json,

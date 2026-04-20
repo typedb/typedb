@@ -17,8 +17,8 @@ use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::{
-    http::message::query::concept::{encode_thing_concept, encode_type_concept, encode_value},
     IncludeInvolvedBlocks,
+    http::message::query::concept::{encode_thing_concept, encode_type_concept, encode_value},
 };
 
 #[derive(Debug, Serialize)]

@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use concept::thing::statistics::Statistics;
-use durability::{wal::WAL, DurabilitySequenceNumber, RawRecord};
+use durability::{DurabilitySequenceNumber, RawRecord, wal::WAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityRecord, WALClient},
     isolation_manager::{CommitRecord, StatusRecord},

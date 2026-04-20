@@ -16,18 +16,18 @@ use crate::{
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::{
-            validation::{validation::DataValidation, DataValidationError},
             ThingManager,
+            validation::{DataValidationError, validation::DataValidation},
         },
     },
     type_::{
+        Capability, OwnerAPI, PlayerAPI, TypeAPI,
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, Constraint},
         owns::Owns,
         plays::Plays,
         relates::Relates,
         role_type::RoleType,
-        Capability, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 
@@ -47,16 +47,16 @@ macro_rules! collect_errors {
 
 pub(crate) use collect_errors;
 use encoding::{
+    Prefixed,
     graph::{
         thing::{
+            ThingVertex,
             edge::{ThingEdgeHas, ThingEdgeLinks},
             vertex_object::ObjectVertex,
-            ThingVertex,
         },
         type_::{edge::TypeEdge, property::TypeEdgeProperty, vertex::PrefixedTypeVertexEncoding},
     },
     layout::{infix::Infix, prefix::Prefix},
-    Prefixed,
 };
 use iterator::minmax_or;
 use storage::{
@@ -66,7 +66,7 @@ use storage::{
 };
 
 use crate::{
-    thing::{attribute::Attribute, ThingAPI},
+    thing::{ThingAPI, attribute::Attribute},
     type_::{object_type::ObjectType, relation_type::RelationType, type_manager::TypeManager},
 };
 

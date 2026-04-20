@@ -9,7 +9,7 @@ use std::fmt;
 use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
 use lending_iterator::higher_order::Hkt;
 
-use crate::thing::{attribute::Attribute, object::Object, ThingAPI};
+use crate::thing::{ThingAPI, attribute::Attribute, object::Object};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Has {

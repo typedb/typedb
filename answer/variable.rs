@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use structural_equality::{ordered_hash_combine, StructuralEquality};
+use structural_equality::{StructuralEquality, ordered_hash_combine};
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Variable {
@@ -38,21 +38,13 @@ impl Variable {
 
 impl fmt::Display for Variable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.anonymous {
-            write!(f, "$_{}", self.id)
-        } else {
-            write!(f, "${}", self.id)
-        }
+        if self.anonymous { write!(f, "$_{}", self.id) } else { write!(f, "${}", self.id) }
     }
 }
 
 impl fmt::Debug for Variable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.anonymous {
-            write!(f, "$_{}", self.id)
-        } else {
-            write!(f, "${}", self.id)
-        }
+        if self.anonymous { write!(f, "$_{}", self.id) } else { write!(f, "${}", self.id) }
     }
 }
 

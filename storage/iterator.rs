@@ -10,11 +10,11 @@ use bytes::byte_array::ByteArray;
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 use resource::profile::StorageCounters;
 
-use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
+use super::{MVCC_KEY_INLINE_SIZE, MVCCKey, MVCCStorage, StorageOperation};
 use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
-    keyspace::{iterator::KeyspaceRangeIterator, IteratorPool, KeyspaceError, KeyspaceId},
+    keyspace::{IteratorPool, KeyspaceError, KeyspaceId, iterator::KeyspaceRangeIterator},
     sequence_number::SequenceNumber,
 };
 
@@ -104,7 +104,7 @@ impl LendingIterator for MVCCRangeIterator {
                     return Some(Err(MVCCReadError::Keyspace {
                         storage_name: self.storage_name.clone(),
                         source: Arc::new(error.clone()),
-                    }))
+                    }));
                 }
             };
             Some(Ok((
@@ -128,11 +128,7 @@ impl Seekable<[u8]> for MVCCRangeIterator {
     }
 
     fn compare_key(&self, item: &Self::Item<'_>, key: &[u8]) -> Ordering {
-        if let Ok((peek, _)) = item {
-            peek.bytes().cmp(key)
-        } else {
-            Ordering::Equal
-        }
+        if let Ok((peek, _)) = item { peek.bytes().cmp(key) } else { Ordering::Equal }
     }
 }
 

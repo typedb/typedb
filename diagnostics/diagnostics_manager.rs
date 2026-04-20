@@ -9,10 +9,10 @@ use std::{collections::HashSet, hash::Hash, sync::Arc};
 use resource::constants::database::INTERNAL_DATABASE_PREFIX;
 
 use crate::{
+    Diagnostics,
     metrics::{ActionKind, ClientEndpoint, DatabaseMetrics, LoadKind},
     monitoring_server::MonitoringServer,
     reporter::Reporter,
-    Diagnostics,
 };
 
 macro_rules! diagnostics_method {

@@ -8,7 +8,7 @@ use std::{fs::create_dir_all, io, path::PathBuf};
 
 use clap::{Parser, ValueEnum};
 use concept::thing::statistics::Statistics;
-use durability::{wal::WAL, DurabilitySequenceNumber};
+use durability::{DurabilitySequenceNumber, wal::WAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityRecord, WALClient},
     isolation_manager::{CommitRecord, StatusRecord},

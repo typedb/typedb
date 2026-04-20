@@ -6,7 +6,7 @@
 
 use std::{borrow::Borrow, cmp::Ordering, collections::BinaryHeap, mem};
 
-use crate::{higher_order::FnHktHelper, LendingIterator, Peekable, Seekable};
+use crate::{LendingIterator, Peekable, Seekable, higher_order::FnHktHelper};
 
 pub struct KMergeBy<I: LendingIterator, F> {
     pub iterators: BinaryHeap<PeekWrapper<I, F>>,

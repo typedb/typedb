@@ -13,12 +13,12 @@ use answer::variable::Variable;
 use ir::{pattern::BranchID, pipeline::function_signature::FunctionID};
 
 use crate::{
+    ExecutorVariable, VariablePosition,
     annotation::expression::compiled_expression::ExecutableExpression,
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
         planner::plan::PlannerStatistics,
     },
-    ExecutorVariable, VariablePosition,
 };
 
 #[derive(Clone, Debug)]

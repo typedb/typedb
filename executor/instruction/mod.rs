@@ -7,10 +7,10 @@
 use std::fmt;
 
 use ::iterator::minmax_or;
-use answer::{variable_value::VariableValue, Type};
+use answer::{Type, variable_value::VariableValue};
 use compiler::{
-    executable::match_::instructions::{ConstraintInstruction, VariableMode, VariableModes},
     ExecutorVariable,
+    executable::match_::instructions::{ConstraintInstruction, VariableMode, VariableModes},
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::pattern::Vertex;

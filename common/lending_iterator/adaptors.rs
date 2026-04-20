@@ -7,8 +7,8 @@
 use std::{borrow::Borrow, cmp::Ordering, marker::PhantomData, mem::transmute};
 
 use crate::{
-    higher_order::{FnHktHelper, FnMutHktHelper, Hkt},
     LendingIterator, Peekable, Seekable,
+    higher_order::{FnHktHelper, FnMutHktHelper, Hkt},
 };
 
 pub struct Chain<I1, I2> {

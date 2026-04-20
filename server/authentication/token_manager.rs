@@ -11,7 +11,7 @@ use std::{
 
 use concurrency::TokioIntervalRunner;
 use error::typedb_error;
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use rand::{self, Rng};
 use resource::constants::server::{MAX_AUTHENTICATION_TOKEN_EXPIRATION, MIN_AUTHENTICATION_TOKEN_EXPIRATION};
 use serde::{Deserialize, Serialize};

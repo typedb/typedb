@@ -5,13 +5,13 @@
  */
 
 use compiler::{
-    annotation::{expression::ExpressionCompileError, AnnotationError},
+    annotation::{AnnotationError, expression::ExpressionCompileError},
     executable::{ExecutableCompilationError, WriteCompilationError},
     transformation::StaticOptimiserError,
 };
 use concept::error::ConceptReadError;
 use error::typedb_error;
-use executor::pipeline::{pipeline::PipelineError, PipelineExecutionError};
+use executor::pipeline::{PipelineExecutionError, pipeline::PipelineError};
 use function::FunctionError;
 use ir::RepresentationError;
 

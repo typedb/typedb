@@ -19,19 +19,19 @@ use compiler::{
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
 use ir::pattern::{
-    constraint::{Constraint, IsaKind, SubKind},
     ParameterID, Vertex,
+    constraint::{Constraint, IsaKind, SubKind},
 };
 use serde::{Deserialize, Serialize};
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
 use super::annotations::{
-    encode_variable_type_annotations_and_modifiers, ConjunctionAnnotationsResponse, FunctionReturnAnnotationsResponse,
-    VariableAnnotationsResponse,
+    ConjunctionAnnotationsResponse, FunctionReturnAnnotationsResponse, VariableAnnotationsResponse,
+    encode_variable_type_annotations_and_modifiers,
 };
 use crate::service::http::message::query::concept::{
-    encode_type_concept, encode_value, EntityTypeResponse, ValueResponse,
+    EntityTypeResponse, ValueResponse, encode_type_concept, encode_value,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -508,9 +508,8 @@ pub mod bdd {
 
     use crate::service::http::message::analyze::{
         bdd::{
-            functor_macros,
+            FunctorContext, FunctorEncoded, functor_macros,
             functor_macros::{encode_functor_impl, impl_functor_for, impl_functor_for_impl, impl_functor_for_multi},
-            FunctorContext, FunctorEncoded,
         },
         structure::{
             AnalyzedFunctionResponse, AnalyzedPipelineResponse, StructureConstraint, StructureConstraintWithSpan,

@@ -6,7 +6,7 @@
 
 use std::{cmp::Ordering, collections::HashMap};
 
-use error::{typedb_error, TypeDBError};
+use error::{TypeDBError, typedb_error};
 use tonic::{Code, Status};
 use tonic_types::{ErrorDetails, StatusExt};
 

@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, hash_map},
     fmt,
     hash::{DefaultHasher, Hasher},
 };
@@ -16,17 +16,17 @@ use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
 use crate::{
+    RepresentationError,
     pattern::{
+        BindingMode, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
         constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
         disjunction::{DisjunctionBuilder, DisjunctionBuilderWithContext},
         impl_pattern_from_pattern_variables,
         negation::NegationBuilder,
         nested_pattern::NestedPattern,
         optional::OptionalBuilder,
-        BindingMode, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
     },
     pipeline::block::BlockBuilderContext,
-    RepresentationError,
 };
 
 #[derive(Debug, Clone)]

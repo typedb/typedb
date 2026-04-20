@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::{attribute::Attribute, ThingAPI},
+    thing::{ThingAPI, attribute::Attribute},
     type_::TypeAPI,
 };
 use macro_rules_attribute::apply;
@@ -16,9 +16,9 @@ use params::{self, check_boolean};
 use resource::profile::StorageCounters;
 
 use crate::{
-    generic_step,
+    Context, generic_step,
     transaction_context::{with_read_tx, with_write_tx},
-    when_then, Context,
+    when_then,
 };
 
 pub fn attribute_put_instance_with_value_impl(

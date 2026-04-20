@@ -18,10 +18,10 @@ use query::analyse::{FetchStructureAnnotations, FetchStructureAnnotationsFields,
 use serde::{Deserialize, Serialize};
 use storage::snapshot::ReadableSnapshot;
 
-use super::structure::{encode_analyzed_pipeline, AnalyzedFunctionResponse};
+use super::structure::{AnalyzedFunctionResponse, encode_analyzed_pipeline};
 use crate::service::http::message::query::concept::{
-    encode_attribute_type, encode_entity_type, encode_relation_type, encode_role_type, encode_value_type,
-    AttributeTypeResponse, EntityTypeResponse, RelationTypeResponse, RoleTypeResponse,
+    AttributeTypeResponse, EntityTypeResponse, RelationTypeResponse, RoleTypeResponse, encode_attribute_type,
+    encode_entity_type, encode_relation_type, encode_role_type, encode_value_type,
 };
 
 #[derive(Debug, Serialize, Deserialize)]

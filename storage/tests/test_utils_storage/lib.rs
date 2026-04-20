@@ -8,10 +8,10 @@ use std::{path::Path, sync::Arc};
 
 use durability::wal::WAL;
 use storage::{
+    MVCCStorage, StorageOpenError,
     durability_client::WALClient,
     keyspace::KeyspaceSet,
     recovery::checkpoint::{CheckpointReader, CheckpointWriter},
-    MVCCStorage, StorageOpenError,
 };
 
 pub mod mock_snapshot;

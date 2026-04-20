@@ -19,15 +19,26 @@ bazel_dep(name = "bazel_skylib", version = "1.7.1")
 # Languages & toolchains
 # ===========================================================
 
-# Rust
+# Rust rules need typedb_dependencies for patching
 bazel_dep(name = "rules_rust", version = "0.56.0")
+# Backport a bug fix from rules_rust 0.58 (bazelbuild/rules_rust#3251)
+git_override(
+    module_name = "rules_rust",
+    remote = "https://github.com/bazelbuild/rules_rust",
+    tag = "0.56.0",
+    patches = ["@@typedb_dependencies+//patches:rules_rust.patch"],
+)
+
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
-    edition = "2021",
-    versions = ["1.81.0"],
+    edition = "2024",
+    versions = ["1.93.0"],
 )
 use_repo(rust, "rust_toolchains")
 register_toolchains("@rust_toolchains//:all")
+
+rust_host_tools = use_extension("@rules_rust//rust:extensions.bzl", "rust_host_tools")
+rust_host_tools.host_tools(version = "1.93.0")
 
 # Kotlin
 bazel_dep(name = "rules_kotlin", version = "2.0.0")
@@ -86,12 +97,8 @@ use_repo(oci, "typedb-ubuntu-x86_64", "typedb-ubuntu-x86_64_linux_amd64", "typed
 workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_refs:rules.bzl", "_workspace_refs")
 workspace_refs(
     name = "typedb_workspace_refs",
-    workspace_commit_dict = {
-        "typeql+": "508bdfa6687ae4c48d482318387204f1ae7bd4ac",
-         # "typedb_protocol+": "e4567406bdc993722554717563ffc1ac9ce0a678",
-    },
     workspace_tag_dict = {
-        # "typeql+": "3.8.3-rc0",
+        "typeql+": "3.8.4-rc0",
         "typedb_protocol+": "3.7.1-rc1",
     },
 )
@@ -102,7 +109,7 @@ native_artifact_files.artifact(
     name = "typedb_console_artifact",
     group_name = "typedb-console-{platform}",
     artifact_name = "typedb-console-{platform}-{version}.{ext}",
-    tag = "3.8.0",
+    tag = "3.8.4-rc1",
 )
 use_repo(
     native_artifact_files,
@@ -121,7 +128,7 @@ bazel_dep(name = "typedb_dependencies", version = "0.0.0")
 git_override(
     module_name = "typedb_dependencies",
     remote = "https://github.com/typedb/dependencies",
-    commit = "5b0fa39ccdac93ad486c83cffbbafdbc0bfd83f6",
+    commit = "00d895243d72e2b19b0e5dc121eec4f0ed8eb532",
 )
 
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
@@ -135,7 +142,7 @@ bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    commit = "508bdfa6687ae4c48d482318387204f1ae7bd4ac",
+    tag = "3.8.4-rc0",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
@@ -148,6 +155,6 @@ git_override(
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
     module_name = "typedb_behaviour",
-    remote = "https://github.com/krishnangovindraj/typedb-behaviour",
-    commit = "05edab354de56d6f8e49013e48090b0acb17d037",
+    remote = "https://github.com/typedb/typedb-behaviour",
+    commit = "29a68e7c49a458a36f7090222644ffdf9f04fc29",
 )

@@ -24,11 +24,11 @@ use compiler::{
 };
 use concept::{
     error::ConceptReadError,
-    type_::{attribute_type::AttributeType, type_manager::TypeManager, OwnerAPI, TypeAPI},
+    type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType, type_manager::TypeManager},
 };
 use encoding::value::value_type::ValueType;
 use ir::{
-    pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, ParameterID, Scope, Vertex},
+    pattern::{ParameterID, Scope, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern},
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::chain;

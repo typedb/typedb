@@ -285,8 +285,6 @@
     "https://bcr.bazel.build/modules/rules_python/0.40.0/MODULE.bazel": "9d1a3cd88ed7d8e39583d9ffe56ae8a244f67783ae89b60caafc9f5cf318ada7",
     "https://bcr.bazel.build/modules/rules_python/1.0.0/MODULE.bazel": "898a3d999c22caa585eb062b600f88654bf92efb204fa346fb55f6f8edffca43",
     "https://bcr.bazel.build/modules/rules_python/1.0.0/source.json": "b0162a65c6312e45e7912e39abd1a7f8856c2c7e41ecc9b6dc688a6f6400a917",
-    "https://bcr.bazel.build/modules/rules_rust/0.56.0/MODULE.bazel": "3295b00757db397122092322fe1e920be7f5c9fbfb8619138977e820f2cbbbae",
-    "https://bcr.bazel.build/modules/rules_rust/0.56.0/source.json": "7dc294c3decd40af8f7b83897a5936e764d3ae8584b4056862978fb3870ab8d7",
     "https://bcr.bazel.build/modules/rules_shell/0.2.0/MODULE.bazel": "fda8a652ab3c7d8fee214de05e7a9916d8b28082234e8d2c0094505c5268ed3c",
     "https://bcr.bazel.build/modules/rules_shell/0.3.0/MODULE.bazel": "de4402cd12f4cc8fda2354fce179fdb068c0b9ca1ec2d2b17b3e21b24c1a937b",
     "https://bcr.bazel.build/modules/rules_shell/0.3.0/source.json": "c55ed591aa5009401ddf80ded9762ac32c358d2517ee7820be981e2de9756cf3",
@@ -8380,8 +8378,8 @@
     },
     "@@rules_rust+//crate_universe/private:internal_extensions.bzl%cu": {
       "general": {
-        "bzlTransitiveDigest": "LNT/ONvkrSK80T9hTozgBiEyxFle82W31A/vVZmu7XU=",
-        "usagesDigest": "n9K7ly55ogh0e0ZhNzZBlusPSFC/o5aliHkw+zHwGfc=",
+        "bzlTransitiveDigest": "9u+3gr4uSmy8IFtL2bj6KKNypS9eTXk2Kcm4YNDq+JM=",
+        "usagesDigest": "cZ+ECJwGd7BJK/WUN0WIFhTQlfl/eawnUc90nVO6Ghc=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -11481,6 +11479,11 @@
           ],
           [
             "rules_rust+",
+            "cargo_bazel_bootstrap",
+            "rules_rust++cu+cargo_bazel_bootstrap"
+          ],
+          [
+            "rules_rust+",
             "cui__anyhow-1.0.89",
             "rules_rust++cu+cui__anyhow-1.0.89"
           ],
@@ -11650,7 +11653,7 @@
     "@@rules_rust+//rust/private:internal_extensions.bzl%i": {
       "general": {
         "bzlTransitiveDigest": "Rw3LKz3UzJ4/Pc2TJQxQnW9sv8N3mTLpknIkJr2Q5cw=",
-        "usagesDigest": "8daAc/SRar7Mu8+uVH3y5t7CY0RsiqVBIznBuEjXJ4w=",
+        "usagesDigest": "kJVy8EznFW/5SwQOfq//BRUjQR1mZoBubYLHuDNIXZM=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -12576,8 +12579,8 @@
     },
     "@@typedb_dependencies+//distribution/artifact:rules.bzl%native_artifact_files": {
       "general": {
-        "bzlTransitiveDigest": "iyWh0P4i1l0a1BB+TRPpZybfQEQqfsj+Tgm2YNDFQ2s=",
-        "usagesDigest": "ElNPm4efCDNJoxQso8ccriCE6QiC+wiGPQi4L/koDqc=",
+        "bzlTransitiveDigest": "yWzTgvDt8fBQR7Nqh9/tbk6sCtvxjbcgODtEIg/m+Nw=",
+        "usagesDigest": "UE84GHh8gifFMlqRVsH/zxdvcfQygI5GBjEwDjrJwcE=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -12586,45 +12589,45 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-arm64/versions/3.8.0/typedb-console-linux-arm64-3.8.0.tar.gz"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-arm64/versions/3.8.4-rc1/typedb-console-linux-arm64-3.8.4-rc1.tar.gz"
               ],
-              "downloaded_file_path": "typedb-console-linux-arm64-3.8.0.tar.gz"
+              "downloaded_file_path": "typedb-console-linux-arm64-3.8.4-rc1.tar.gz"
             }
           },
           "typedb_console_artifact_linux-x86_64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-x86_64/versions/3.8.0/typedb-console-linux-x86_64-3.8.0.tar.gz"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-x86_64/versions/3.8.4-rc1/typedb-console-linux-x86_64-3.8.4-rc1.tar.gz"
               ],
-              "downloaded_file_path": "typedb-console-linux-x86_64-3.8.0.tar.gz"
+              "downloaded_file_path": "typedb-console-linux-x86_64-3.8.4-rc1.tar.gz"
             }
           },
           "typedb_console_artifact_mac-arm64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-arm64/versions/3.8.0/typedb-console-mac-arm64-3.8.0.zip"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-arm64/versions/3.8.4-rc1/typedb-console-mac-arm64-3.8.4-rc1.zip"
               ],
-              "downloaded_file_path": "typedb-console-mac-arm64-3.8.0.zip"
+              "downloaded_file_path": "typedb-console-mac-arm64-3.8.4-rc1.zip"
             }
           },
           "typedb_console_artifact_mac-x86_64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-x86_64/versions/3.8.0/typedb-console-mac-x86_64-3.8.0.zip"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-x86_64/versions/3.8.4-rc1/typedb-console-mac-x86_64-3.8.4-rc1.zip"
               ],
-              "downloaded_file_path": "typedb-console-mac-x86_64-3.8.0.zip"
+              "downloaded_file_path": "typedb-console-mac-x86_64-3.8.4-rc1.zip"
             }
           },
           "typedb_console_artifact_windows-x86_64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-windows-x86_64/versions/3.8.0/typedb-console-windows-x86_64-3.8.0.zip"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-windows-x86_64/versions/3.8.4-rc1/typedb-console-windows-x86_64-3.8.4-rc1.zip"
               ],
-              "downloaded_file_path": "typedb-console-windows-x86_64-3.8.0.zip"
+              "downloaded_file_path": "typedb-console-windows-x86_64-3.8.4-rc1.zip"
             }
           }
         },

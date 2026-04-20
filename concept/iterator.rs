@@ -9,7 +9,7 @@
 
 use std::{cmp::Ordering, marker::PhantomData};
 
-use encoding::{graph::thing::ThingVertex, Keyable};
+use encoding::{Keyable, graph::thing::ThingVertex};
 use lending_iterator::{LendingIterator, Seekable};
 
 use crate::{
@@ -176,7 +176,7 @@ macro_rules! edge_iterator {
         impl Iterator for $name {
             type Item = Result<$mapped_type, Box<$crate::error::ConceptReadError>>;
             fn next(&mut self) -> Option<Self::Item> {
-                use ::lending_iterator::LendingIterator;
+                use lending_iterator::LendingIterator;
                 use $crate::error::ConceptReadError::SnapshotIterate;
                 self.snapshot_iterator.as_mut()?.next().map(|result| {
                     result

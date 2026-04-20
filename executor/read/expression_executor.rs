@@ -6,10 +6,11 @@
 
 use std::{collections::HashMap, hash::Hash, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
+use answer::{Thing, variable_value::VariableValue};
 use compiler::annotation::expression::{
     compiled_expression::ExecutableExpression,
     instructions::{
+        ExpressionEvaluationError,
         binary::{
             Binary, BinaryExpression, MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger,
             MathMinDecimalDecimal, MathMinDoubleDouble, MathMinIntegerInteger, MathRemainderInteger,
@@ -27,7 +28,6 @@ use compiler::annotation::expression::{
             LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
             MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble, Unary, UnaryExpression,
         },
-        ExpressionEvaluationError,
     },
 };
 use encoding::value::value::{NativeValueConvertible, Value};

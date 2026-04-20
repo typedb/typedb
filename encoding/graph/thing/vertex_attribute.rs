@@ -6,25 +6,27 @@
 
 use std::{fmt, marker::PhantomData, ops::Range, sync::Arc};
 
-use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
+use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
 use error::unimplemented_feature;
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{KeyspaceId, KeyspaceSet},
-    snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot},
+    snapshot::{ReadableSnapshot, iterator::SnapshotIteratorError},
 };
 
 use crate::{
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
-        common::value_hasher::HashedID,
-        thing::{ThingVertex, THING_VERTEX_LENGTH_PREFIX_TYPE},
-        type_::vertex::TypeID,
         Typed,
+        common::value_hasher::HashedID,
+        thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex},
+        type_::vertex::TypeID,
     },
     layout::prefix::{Prefix, PrefixID},
     value::{
+        ValueEncodable,
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
         date_time_bytes::DateTimeBytes,
@@ -37,9 +39,7 @@ use crate::{
         struct_bytes::StructBytes,
         value::Value,
         value_type::{ValueType, ValueTypeBytes, ValueTypeCategory},
-        ValueEncodable,
     },
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, Ord, PartialOrd)]
@@ -132,11 +132,7 @@ impl AttributeVertex {
     }
 
     pub fn keyspace_for_is_short(is_short_encoding: bool) -> EncodingKeyspace {
-        if is_short_encoding {
-            EncodingKeyspace::DefaultOptimisedPrefix11
-        } else {
-            EncodingKeyspace::OptimisedPrefix17
-        }
+        if is_short_encoding { EncodingKeyspace::DefaultOptimisedPrefix11 } else { EncodingKeyspace::OptimisedPrefix17 }
     }
 
     pub fn keyspace_for_category(value_type_category: ValueTypeCategory) -> EncodingKeyspace {
@@ -733,7 +729,7 @@ impl StringAttributeID {
     fn set_tail_inline_length(bytes: &mut [u8; Self::LENGTH], length: u8) {
         debug_assert!(bytes.len() == Self::LENGTH);
         assert_eq!(0, length & Self::TAIL_IS_HASH_MASK); // ie < 128, high bit not set
-                                                         // because the high bit is not set, we already conform to the required mask of high bit = 0
+        // because the high bit is not set, we already conform to the required mask of high bit = 0
         bytes[Self::TAIL_INDEX] = length;
     }
 

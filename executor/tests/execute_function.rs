@@ -11,16 +11,16 @@ use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::{graph::definition::definition_key_generator::DefinitionKeyGenerator, value::value::Value};
 use executor::{
-    pipeline::{stage::ExecutionContext, PipelineExecutionError},
-    row::MaybeOwnedRow,
     ExecutionInterrupt,
+    pipeline::{PipelineExecutionError, stage::ExecutionContext},
+    row::MaybeOwnedRow,
 };
 use function::function_manager::FunctionManager;
 use itertools::Either;
 use lending_iterator::LendingIterator;
 use query::{query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::CommitProfile;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::TempDir;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;

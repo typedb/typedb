@@ -7,24 +7,25 @@
 use answer::variable::Variable;
 use error::UnimplementedFeature;
 use typeql::{
+    Expression, Statement,
     common::Spanned,
     query::stage::{
-        delete::{Deletable, DeletableKind},
         Put,
+        delete::{Deletable, DeletableKind},
     },
     statement::thing::{Constraint, HasValue, Head, RolePlayer},
-    Expression, Statement,
 };
 
 use crate::{
+    RepresentationError,
     pattern::conjunction::ConjunctionBuilderWithContext,
-    pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+    pipeline::{ParameterRegistry, block::Block, function_signature::HashMapFunctionSignatureIndex},
     translation::{
+        PipelineTranslationContext,
         constraints::{add_typeql_relation, register_typeql_var},
         match_::add_patterns,
-        verify_variable_available, PipelineTranslationContext,
+        verify_variable_available,
     },
-    RepresentationError,
 };
 
 pub fn translate_insert(
@@ -62,7 +63,7 @@ fn validate_insert_pattern(pattern: &typeql::Pattern) -> Result<(), Box<Represen
         typeql::Pattern::Conjunction(typeql::pattern::Conjunction { span, .. })
         | typeql::Pattern::Disjunction(typeql::pattern::Disjunction { span, .. })
         | typeql::Pattern::Negation(typeql::pattern::Negation { span, .. }) => {
-            return Err(Box::new(RepresentationError::IllegalNestedPatternForInsert { source_span: *span }))
+            return Err(Box::new(RepresentationError::IllegalNestedPatternForInsert { source_span: *span }));
         }
         typeql::Pattern::Statement(Statement::Thing(thing_stmt)) => {
             for constraint in &thing_stmt.constraints {
@@ -70,14 +71,14 @@ fn validate_insert_pattern(pattern: &typeql::Pattern) -> Result<(), Box<Represen
                     Constraint::Iid(_) => {
                         return Err(Box::new(RepresentationError::IllegalStatementForInsert {
                             source_span: thing_stmt.span(),
-                        }))
+                        }));
                     }
                     Constraint::Isa(_) | Constraint::Has(_) | Constraint::Links(_) => (),
                 }
             }
         }
         typeql::Pattern::Statement(stmt) => {
-            return Err(Box::new(RepresentationError::IllegalStatementForInsert { source_span: stmt.span() }))
+            return Err(Box::new(RepresentationError::IllegalStatementForInsert { source_span: stmt.span() }));
         }
     }
     Ok(())
@@ -120,7 +121,7 @@ pub fn translate_put(
                 return Err(Box::new(RepresentationError::IllegalStatementForPut {
                     constraint_type: constraint.name().to_owned(),
                     source_span: constraint.source_span(),
-                }))
+                }));
             }
         }
     }
@@ -218,7 +219,7 @@ fn validate_update_pattern(
         typeql::Pattern::Conjunction(typeql::pattern::Conjunction { span, .. })
         | typeql::Pattern::Disjunction(typeql::pattern::Disjunction { span, .. })
         | typeql::Pattern::Negation(typeql::pattern::Negation { span, .. }) => {
-            return Err(Box::new(RepresentationError::IllegalNestedPatternForUpdate { source_span: *span }))
+            return Err(Box::new(RepresentationError::IllegalNestedPatternForUpdate { source_span: *span }));
         }
         typeql::Pattern::Statement(statement) => {
             if let Statement::Thing(thing_statement) = statement {
@@ -229,7 +230,7 @@ fn validate_update_pattern(
                     Head::Relation(_, relation) => {
                         return Err(Box::new(RepresentationError::IllegalStatementForUpdate {
                             source_span: relation.span,
-                        }))
+                        }));
                     }
                 }
 
@@ -255,12 +256,12 @@ fn validate_update_pattern(
                         Constraint::Isa(isa) => {
                             return Err(Box::new(RepresentationError::IllegalStatementForUpdate {
                                 source_span: isa.span,
-                            }))
+                            }));
                         }
                         Constraint::Iid(iid) => {
                             return Err(Box::new(RepresentationError::IllegalStatementForUpdate {
                                 source_span: iid.span,
-                            }))
+                            }));
                         }
                     }
                 }

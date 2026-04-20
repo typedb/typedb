@@ -7,10 +7,10 @@ use std::{collections::HashSet, marker::PhantomData, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{
+    VariablePosition,
     executable::modifiers::{
         DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
     },
-    VariablePosition,
 };
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::{LendingIterator, Peekable};
@@ -18,13 +18,13 @@ use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
+    ExecutionInterrupt,
     batch::Batch,
     pipeline::{
-        stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator,
+        stage::{ExecutionContext, StageAPI},
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
 };
 
 // Sort

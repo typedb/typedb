@@ -9,8 +9,8 @@
 use std::{
     env,
     sync::{
-        atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex, RwLock,
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     thread,
     thread::JoinHandle,
@@ -18,16 +18,16 @@ use std::{
 };
 
 use database::{
+    Database,
     database_manager::DatabaseManager,
     query::{execute_schema_query, execute_write_query_in_write},
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
-    Database,
 };
-use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
+use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use options::{QueryOptions, TransactionOptions};
 use rand_core::RngCore;
 use storage::durability_client::WALClient;
-use test_utils::{create_tmp_dir, TempDir};
+use test_utils::{TempDir, create_tmp_dir};
 use xoshiro::Xoshiro256Plus;
 
 const TOTAL_OPS: usize = 300_000;

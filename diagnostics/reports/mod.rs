@@ -7,12 +7,12 @@
 use std::{collections::HashMap, fmt};
 
 use chrono::{DateTime, Utc};
-use serde::{ser::SerializeStruct, Serialize, Serializer};
-use serde_json::{to_value, Map, Value};
+use serde::{Serialize, Serializer, ser::SerializeStruct};
+use serde_json::{Map, Value, to_value};
 
 use crate::{
-    metrics::{ActionKind, ClientEndpoint, LoadKind},
     DatabaseHash,
+    metrics::{ActionKind, ClientEndpoint, LoadKind},
 };
 
 pub(crate) mod json_monitoring;

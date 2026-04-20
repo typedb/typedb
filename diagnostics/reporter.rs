@@ -9,19 +9,20 @@ use std::{
     hash::Hash,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
     },
     time::Duration,
 };
 
 use chrono::{Timelike, Utc};
 use concurrency::TokioIntervalRunner;
-use error::{typedb_error, TypeDBError};
+use error::{TypeDBError, typedb_error};
 use hyper::{
+    Body, Client, Request,
     client::HttpConnector,
     header::{CONNECTION, CONTENT_TYPE},
-    http, Body, Client, Request,
+    http,
 };
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use logger::{debug, trace};
@@ -34,7 +35,7 @@ use resource::constants::{
     },
 };
 
-use crate::{hash_string_consistently, Diagnostics};
+use crate::{Diagnostics, hash_string_consistently};
 
 #[derive(Debug)]
 pub struct Reporter {

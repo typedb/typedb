@@ -15,6 +15,7 @@ use resource::{
 };
 
 use crate::{
+    MVCCStorage, StorageCommitError,
     durability_client::DurabilityClient,
     isolation_manager::{CommitRecord, CommitType, ReaderDropGuard},
     iterator::MVCCReadError,
@@ -28,7 +29,6 @@ use crate::{
         lock::LockType,
         write::Write,
     },
-    MVCCStorage, StorageCommitError,
 };
 
 macro_rules! get_mapped_method {
@@ -405,11 +405,13 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     }
 
     fn iterate_writes_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>) -> BufferRangeIterator {
-        debug_assert!(range
-            .end()
-            .get_value()
-            .map(|end| end.keyspace_id() == range.start().get_value().keyspace_id())
-            .unwrap_or(true));
+        debug_assert!(
+            range
+                .end()
+                .get_value()
+                .map(|end| end.keyspace_id() == range.start().get_value().keyspace_id())
+                .unwrap_or(true)
+        );
         self.operations()
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.map(|k| k.as_bytes(), |fixed| fixed))
@@ -564,11 +566,13 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     }
 
     fn iterate_writes_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>) -> BufferRangeIterator {
-        debug_assert!(range
-            .end()
-            .get_value()
-            .map(|end| end.keyspace_id() == range.start().get_value().keyspace_id())
-            .unwrap_or(true));
+        debug_assert!(
+            range
+                .end()
+                .get_value()
+                .map(|end| end.keyspace_id() == range.start().get_value().keyspace_id())
+                .unwrap_or(true)
+        );
         self.operations()
             .writes_in(range.start().get_value().keyspace_id())
             .iterate_range(range.map(|k| k.as_bytes(), |fixed| fixed))

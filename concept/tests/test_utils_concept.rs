@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
-    type_::type_manager::{type_cache::TypeCache, TypeManager},
+    type_::type_manager::{TypeManager, type_cache::TypeCache},
 };
 use durability::DurabilitySequenceNumber;
 use encoding::graph::{
@@ -16,9 +16,9 @@ use encoding::graph::{
     type_::vertex_generator::TypeVertexGenerator,
 };
 use storage::{
+    MVCCStorage,
     durability_client::{DurabilityClient, WALClient},
     sequence_number::SequenceNumber,
-    MVCCStorage,
 };
 
 pub fn setup_concept_storage(storage: &mut Arc<MVCCStorage<WALClient>>) {

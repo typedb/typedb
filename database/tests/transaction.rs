@@ -9,16 +9,16 @@ use std::{
 };
 
 use database::{
+    Database,
     database_manager::DatabaseManager,
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
-    Database,
 };
 use options::TransactionOptions;
 use storage::durability_client::WALClient;
-use test_utils::{create_tmp_dir, init_logging, TempDir};
+use test_utils::{TempDir, create_tmp_dir, init_logging};
 use tokio::{
     runtime::Runtime,
-    sync::{broadcast, Notify},
+    sync::{Notify, broadcast},
     time::sleep,
 };
 

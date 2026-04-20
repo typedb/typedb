@@ -6,11 +6,12 @@ features = {}
 
 [package]
 	name = "durability_test_common"
-	edition = "2021"
+	edition = "2024"
 	version = "0.0.0"
 
 [lib]
 	path = "test_common.rs"
+	crate-type = ["lib"]
 
 [dependencies]
 

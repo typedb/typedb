@@ -7,7 +7,7 @@
 use std::{collections::HashMap, fmt};
 
 use encoding::value::value_type::ValueType;
-use ir::pattern::{variable_category::VariableCategory, IrID, ParameterID};
+use ir::pattern::{IrID, ParameterID, variable_category::VariableCategory};
 
 use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
 

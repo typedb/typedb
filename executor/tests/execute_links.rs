@@ -12,13 +12,14 @@ use std::{
 
 use answer::variable::Variable;
 use compiler::{
+    ExecutorVariable, VariablePosition,
     annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     executable::{
         function::ExecutableFunctionRegistry,
         match_::{
             instructions::{
-                thing::{IsaInstruction, LinksInstruction, LinksReverseInstruction},
                 ConstraintInstruction, Inputs,
+                thing::{IsaInstruction, LinksInstruction, LinksReverseInstruction},
             },
             planner::{
                 conjunction_executable::{ConjunctionExecutable, ExecutionStep, IntersectionStep},
@@ -27,28 +28,27 @@ use compiler::{
         },
         next_executable_id,
     },
-    ExecutorVariable, VariablePosition,
 };
 use concept::{
     thing::object::ObjectAPI,
     type_::{
-        annotation::AnnotationCardinality, owns::OwnsAnnotation, relates::RelatesAnnotation, Ordering, OwnerAPI,
-        PlayerAPI,
+        Ordering, OwnerAPI, PlayerAPI, annotation::AnnotationCardinality, owns::OwnsAnnotation,
+        relates::RelatesAnnotation,
     },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    ExecutionInterrupt, error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow,
 };
 use ir::{
     pattern::constraint::IsaKind,
-    pipeline::{block::Block, ParameterRegistry},
+    pipeline::{ParameterRegistry, block::Block},
     translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -306,10 +306,14 @@ fn traverse_links_unbounded_sorted_from() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        [var_membership, var_group, var_person],
-        [var_membership_type, var_group_type, var_person_type, var_membership_group_type, var_membership_member_type],
-    );
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_membership, var_group, var_person], [
+            var_membership_type,
+            var_group_type,
+            var_person_type,
+            var_membership_group_type,
+            var_membership_member_type,
+        ]);
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
@@ -409,10 +413,11 @@ fn traverse_links_unbounded_sorted_to() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        [var_membership, var_person],
-        [var_person_type, var_membership_type, var_membership_member_type],
-    );
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_membership, var_person], [
+        var_person_type,
+        var_membership_type,
+        var_membership_member_type,
+    ]);
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
@@ -512,10 +517,11 @@ fn traverse_links_bounded_relation() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        [var_membership, var_person],
-        [var_membership_type, var_person_type, var_membership_member_type],
-    );
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_membership, var_person], [
+        var_membership_type,
+        var_person_type,
+        var_membership_member_type,
+    ]);
 
     // Plan
     let steps = vec![
@@ -631,10 +637,12 @@ fn traverse_links_bounded_relation_player() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        [var_membership, var_person, var_membership_member_type],
-        [var_membership_type, var_person_type, var_membership_member_type],
-    );
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_membership, var_person, var_membership_member_type], [
+            var_membership_type,
+            var_person_type,
+            var_membership_member_type,
+        ]);
 
     // Plan
     let steps = vec![
@@ -755,10 +763,11 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        [var_membership, var_person],
-        [var_person_type, var_membership_type, var_membership_member_type],
-    );
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_membership, var_person], [
+        var_person_type,
+        var_membership_type,
+        var_membership_member_type,
+    ]);
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
@@ -855,10 +864,11 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        [var_membership, var_person],
-        [var_person_type, var_membership_type, var_membership_member_type],
-    );
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_membership, var_person], [
+        var_person_type,
+        var_membership_type,
+        var_membership_member_type,
+    ]);
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
@@ -958,10 +968,11 @@ fn traverse_links_reverse_bounded_player() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        [var_person, var_membership],
-        [var_person_type, var_membership_type, var_membership_member_type],
-    );
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_person, var_membership], [
+        var_person_type,
+        var_membership_type,
+        var_membership_member_type,
+    ]);
 
     // Plan
     let steps = vec![
@@ -1077,10 +1088,11 @@ fn traverse_links_reverse_bounded_player_relation() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        [var_person, var_membership],
-        [var_person_type, var_membership_type, var_membership_member_type],
-    );
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_person, var_membership], [
+        var_person_type,
+        var_membership_type,
+        var_membership_member_type,
+    ]);
 
     // Plan
     let steps = vec![

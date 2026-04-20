@@ -16,13 +16,13 @@ use answer::variable::Variable;
 use encoding::value::{label::Label, value_type::ValueType};
 use ir::{
     pattern::{
-        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, IrID, Pattern,
-        Scope, ScopeId,
+        BranchID, IrID, Pattern, Scope, ScopeId, conjunction::Conjunction, constraint::Constraint,
+        nested_pattern::NestedPattern,
     },
     pipeline::{
+        ParameterRegistry, VariableRegistry,
         modifier::SortVariable,
         reduce::{AssignedReduction, Reducer},
-        ParameterRegistry, VariableRegistry,
     },
 };
 use itertools::Itertools;

@@ -11,17 +11,17 @@ use std::{
 };
 
 use encoding::{
+    Prefixed,
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
-        type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
-            Kind,
-        },
         Typed,
+        type_::{
+            Kind,
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
+        },
     },
     layout::prefix::{Prefix, Prefix::VertexAttributeType},
     value::{label::Label, value_type::ValueType},
-    Prefixed,
 };
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
@@ -30,9 +30,11 @@ use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ConceptAPI,
     error::{ConceptReadError, ConceptWriteError},
     thing::{attribute::Attribute, thing_manager::ThingManager},
     type_::{
+        KindAPI, ThingTypeAPI, TypeAPI, TypeQLSyntax,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, AnnotationIndependent,
             AnnotationRange, AnnotationRegex, AnnotationValues, DefaultFrom,
@@ -41,9 +43,7 @@ use crate::{
         object_type::ObjectType,
         owns::Owns,
         type_manager::TypeManager,
-        KindAPI, ThingTypeAPI, TypeAPI, TypeQLSyntax,
     },
-    ConceptAPI,
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]

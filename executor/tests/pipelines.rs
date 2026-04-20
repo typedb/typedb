@@ -12,15 +12,15 @@ use encoding::{
     value::{label::Label, value::Value},
 };
 use executor::{
-    pipeline::stage::{ExecutionContext, StageIterator},
     ExecutionInterrupt,
+    pipeline::stage::{ExecutionContext, StageIterator},
 };
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::{query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
-use test_utils::{assert_matches, TempDir};
+use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
+use test_utils::{TempDir, assert_matches};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 

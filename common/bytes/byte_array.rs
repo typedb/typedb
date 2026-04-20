@@ -15,7 +15,7 @@ use std::{
 use primitive::prefix::Prefix;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::util::{increment, BytesError, HexBytesFormatter};
+use crate::util::{BytesError, HexBytesFormatter, increment};
 
 #[derive(Clone)]
 pub enum ByteArray<const INLINE_BYTES: usize> {

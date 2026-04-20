@@ -51,19 +51,11 @@ impl FunctionSignature {
 
 impl FunctionID {
     pub fn as_definition_key(&self) -> Option<DefinitionKey> {
-        if let FunctionID::Schema(definition_key) = self {
-            Some(definition_key.clone())
-        } else {
-            None
-        }
+        if let FunctionID::Schema(definition_key) = self { Some(definition_key.clone()) } else { None }
     }
 
     pub fn as_preamble(&self) -> Option<usize> {
-        if let FunctionID::Preamble(index) = self {
-            Some(*index)
-        } else {
-            None
-        }
+        if let FunctionID::Preamble(index) = self { Some(*index) } else { None }
     }
 }
 
@@ -145,7 +137,7 @@ impl TryFrom<FunctionID> for DefinitionKey {
 
 pub trait FunctionSignatureIndex {
     fn get_function_signature(&self, name: &str)
-        -> Result<Option<MaybeOwns<'_, FunctionSignature>>, FunctionReadError>;
+    -> Result<Option<MaybeOwns<'_, FunctionSignature>>, FunctionReadError>;
 }
 
 #[derive(Debug)]
@@ -177,10 +169,6 @@ impl FunctionSignatureIndex for HashMapFunctionSignatureIndex {
         &self,
         name: &str,
     ) -> Result<Option<MaybeOwns<'_, FunctionSignature>>, FunctionReadError> {
-        if let Some(signature) = self.index.get(name) {
-            Ok(Some(MaybeOwns::Borrowed(signature)))
-        } else {
-            Ok(None)
-        }
+        if let Some(signature) = self.index.get(name) { Ok(Some(MaybeOwns::Borrowed(signature))) } else { Ok(None) }
     }
 }

@@ -11,13 +11,13 @@ use concept::type_::annotation::{
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use typeql::{
     annotation::CardinalityRange,
-    common::{error::TypeQLError, Spanned},
+    common::{Spanned, error::TypeQLError},
     token,
 };
 
 use crate::{
-    translation::literal::{translate_literal, FromTypeQLLiteral},
     LiteralParseError, RepresentationError,
+    translation::literal::{FromTypeQLLiteral, translate_literal},
 };
 
 pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotation, LiteralParseError> {
@@ -73,7 +73,7 @@ pub fn translate_annotation_category(
         token::Annotation::Subkey => {
             return Err(LiteralParseError::UnimplementedLanguageFeature {
                 feature: error::UnimplementedFeature::Subkey,
-            })
+            });
         }
         token::Annotation::Unique => AnnotationCategory::Unique,
         token::Annotation::Values => AnnotationCategory::Values,

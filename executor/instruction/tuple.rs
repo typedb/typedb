@@ -6,30 +6,30 @@
 
 use std::{borrow::Cow, cmp::Ordering, collections::Bound};
 
-use answer::{variable_value::VariableValue, Thing, Type};
+use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::ExecutorVariable;
 use concept::{
     error::ConceptReadError,
     thing::{
+        ThingAPI,
         attribute::Attribute,
         has::Has,
         object::Object,
         relation::{IndexedRelationPlayers, Links, Relation},
-        ThingAPI,
     },
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType,
-        TypeAPI,
+        TypeAPI, attribute_type::AttributeType, object_type::ObjectType, relation_type::RelationType,
+        role_type::RoleType,
     },
 };
 use encoding::graph::{
+    Typed,
     thing::{
         edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks},
         vertex_attribute::{AttributeID, AttributeVertex},
         vertex_object::ObjectVertex,
     },
     type_::vertex::TypeVertexEncoding,
-    Typed,
 };
 use lending_iterator::higher_order::Hkt;
 

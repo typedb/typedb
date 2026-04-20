@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet, hash_map},
     sync::Arc,
 };
 
@@ -13,13 +13,14 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use error::typedb_error;
 use ir::{
-    pattern::{constraint::ExpressionBinding, BranchID, Vertex},
-    pipeline::{block::Block, function_signature::FunctionID, VariableRegistry},
+    pattern::{BranchID, Vertex, constraint::ExpressionBinding},
+    pipeline::{VariableRegistry, block::Block, function_signature::FunctionID},
 };
 use itertools::Itertools;
 use tracing::{debug, trace};
 
 use crate::{
+    ExecutorVariable, VariablePosition,
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::BlockAnnotations},
     executable::{
         function::FunctionCallCostProvider,
@@ -30,12 +31,11 @@ use crate::{
                     AssignmentStep, CheckStep, ConjunctionExecutable, DisjunctionStep, ExecutionStep, FunctionCallStep,
                     IntersectionStep, NegationStep, OptionalStep,
                 },
-                plan::{plan_conjunction, PlannerStatistics, QueryPlanningError},
+                plan::{PlannerStatistics, QueryPlanningError, plan_conjunction},
             },
         },
         next_executable_id,
     },
-    ExecutorVariable, VariablePosition,
 };
 
 pub mod conjunction_executable;

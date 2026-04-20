@@ -3,12 +3,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use answer::{variable_value::VariableValue, Thing, Type};
+use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::executable::insert::{
-    instructions::{PutAttribute, PutObject},
     ThingPosition, TypeSource, ValueSource,
+    instructions::{PutAttribute, PutObject},
 };
-use concept::thing::{object::ObjectAPI, thing_manager::ThingManager, ThingAPI};
+use concept::thing::{ThingAPI, object::ObjectAPI, thing_manager::ThingManager};
 use encoding::value::value::Value;
 use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
@@ -19,11 +19,7 @@ use crate::{row::Row, write::WriteError};
 
 macro_rules! try_unwrap_as {
     ($variant:path : $item:expr) => {
-        if let $variant(inner) = $item {
-            Some(inner)
-        } else {
-            None
-        }
+        if let $variant(inner) = $item { Some(inner) } else { None }
     };
 }
 

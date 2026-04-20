@@ -8,7 +8,7 @@ use std::sync::Arc;
 use diagnostics::metrics::ActionKind;
 use futures::future::BoxFuture;
 use http::Request;
-use tonic::{body::BoxBody, Status};
+use tonic::{Status, body::BoxBody};
 use tower::{Layer, Service};
 
 use crate::{

@@ -8,17 +8,17 @@
 
 use std::sync::Arc;
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use durability::wal::WAL;
 use encoding::{
+    EncodingKeyspace, Keyable,
     graph::{
         thing::{vertex_generator::ThingVertexGenerator, vertex_object::ObjectVertex},
         type_::vertex::TypeID,
     },
-    EncodingKeyspace, Keyable,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{durability_client::WALClient, key_value::StorageKey, snapshot::WriteSnapshot, MVCCStorage};
+use storage::{MVCCStorage, durability_client::WALClient, key_value::StorageKey, snapshot::WriteSnapshot};
 use test_utils::{create_tmp_dir, init_logging};
 
 fn vertex_generation<D>(

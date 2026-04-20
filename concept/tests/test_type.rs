@@ -16,13 +16,13 @@ use chrono_tz::Tz;
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
     type_::{
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{AnnotationAbstract, AnnotationRange, AnnotationValues},
         attribute_type::AttributeTypeAnnotation,
         entity_type::EntityTypeAnnotation,
         object_type::ObjectType,
         owns::{Owns, OwnsAnnotation},
-        type_manager::{type_cache::TypeCache, TypeManager},
-        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        type_manager::{TypeManager, type_cache::TypeCache},
     },
 };
 use durability::DurabilitySequenceNumber;
@@ -38,9 +38,9 @@ use encoding::{
 };
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
+    MVCCStorage,
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
-    MVCCStorage,
 };
 use test_utils_concept::setup_concept_storage;
 use test_utils_encoding::create_core_storage;
@@ -108,10 +108,12 @@ fn entity_usage() {
             )
             .unwrap();
 
-        assert!(person_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract)));
+        assert!(
+            person_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract))
+        );
         assert_eq!(*person_type.get_label(&snapshot, &type_manager).unwrap(), person_label);
 
         let supertype = person_type.get_supertype(&snapshot, &type_manager).unwrap();
@@ -195,10 +197,12 @@ fn entity_usage() {
         // --- person sub entity ---
         let person_label = Label::build("person", None);
         let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
-        assert!(person_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract)));
+        assert!(
+            person_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract))
+        );
         assert_eq!(*person_type.get_label(&snapshot, &type_manager).unwrap(), person_label);
 
         let supertype = person_type.get_supertype(&snapshot, &type_manager).unwrap();
@@ -630,10 +634,12 @@ fn annotations_with_range_arguments() {
         assert!(age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::Integer(0)), Some(Value::Integer(18))))
         ));
-        assert!(!age_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::Integer(18))))));
+        assert!(
+            !age_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::Integer(18)))))
+        );
         assert!(age_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
 
         assert!(name_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
@@ -657,27 +663,35 @@ fn annotations_with_range_arguments() {
         ));
 
         assert!(empty_name_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(empty_name_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::String(Cow::Borrowed(" ")))))));
-        assert!(!empty_name_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::String(Cow::Borrowed(" "))), None))));
-        assert!(!empty_name_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, None))));
+        assert!(
+            empty_name_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::String(Cow::Borrowed(" "))))))
+        );
+        assert!(
+            !empty_name_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::String(Cow::Borrowed(" "))), None)))
+        );
+        assert!(
+            !empty_name_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, None)))
+        );
 
-        assert!(balance_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::Decimal(Decimal::MAX))))));
-        assert!(!balance_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::Decimal(Decimal::MAX)), None))));
+        assert!(
+            balance_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
+                &AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::Decimal(Decimal::MAX))))
+            )
+        );
+        assert!(
+            !balance_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
+                &AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::Decimal(Decimal::MAX)), None))
+            )
+        );
         assert!(balance_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
 
         assert!(measurement_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
@@ -692,34 +706,46 @@ fn annotations_with_range_arguments() {
         ));
 
         assert!(empty_measurement_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(empty_measurement_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Double(0.0))))));
-        assert!(!empty_measurement_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.0)), None))));
+        assert!(
+            empty_measurement_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Double(0.0)))))
+        );
+        assert!(
+            !empty_measurement_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.0)), None)))
+        );
         assert!(!empty_measurement_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Double(0.0)), Some(Value::Double(0.0)),))
         ));
-        assert!(!empty_measurement_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Double(0.00000000001))))));
+        assert!(
+            !empty_measurement_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Double(0.00000000001)))))
+        );
 
-        assert!(schedule_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None))));
-        assert!(!schedule_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, None))));
-        assert!(!schedule_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::DateTimeTZ(now))))));
+        assert!(
+            schedule_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None)))
+        );
+        assert!(
+            !schedule_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, None)))
+        );
+        assert!(
+            !schedule_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::DateTimeTZ(now)))))
+        );
         assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(
                 Some(Value::DateTimeTZ(chrono::offset::Local::now().with_timezone(&tz))),
@@ -732,27 +758,35 @@ fn annotations_with_range_arguments() {
         assert!(valid_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Boolean(false)), Some(Value::Boolean(true))))
         ));
-        assert!(!valid_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Boolean(false)), None))));
-        assert!(!valid_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Boolean(true))))));
+        assert!(
+            !valid_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Boolean(false)), None)))
+        );
+        assert!(
+            !valid_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Boolean(true)))))
+        );
 
         assert!(empty_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(empty_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Boolean(false)), None))));
+        assert!(
+            empty_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Boolean(false)), None)))
+        );
         assert!(!empty_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Boolean(false)), Some(Value::Boolean(false)),))
         ));
-        assert!(!empty_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Boolean(true))))));
+        assert!(
+            !empty_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Boolean(true)))))
+        );
     }
 }
 
@@ -1073,10 +1107,12 @@ fn annotations_with_value_arguments() {
         assert!(age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(0), Value::Integer(18)]))
         ));
-        assert!(!age_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![]))));
+        assert!(
+            !age_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![])))
+        );
         assert!(!age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(1), Value::Integer(18)]))
         ));
@@ -1100,23 +1136,31 @@ fn annotations_with_value_arguments() {
         ));
 
         assert!(empty_name_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(empty_name_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::String(Cow::Borrowed(" "))]))));
-        assert!(!empty_name_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![]))));
+        assert!(
+            empty_name_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::String(Cow::Borrowed(" "))])))
+        );
+        assert!(
+            !empty_name_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![])))
+        );
 
-        assert!(balance_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Decimal(Decimal::MAX)]))));
-        assert!(!balance_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![]))));
+        assert!(
+            balance_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Decimal(Decimal::MAX)])))
+        );
+        assert!(
+            !balance_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![])))
+        );
         assert!(balance_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
 
         assert!(measurement_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
@@ -1134,19 +1178,25 @@ fn annotations_with_value_arguments() {
         ));
 
         assert!(empty_measurement_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(empty_measurement_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.0)]))));
-        assert!(!empty_measurement_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.0000000001)]))));
+        assert!(
+            empty_measurement_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.0)])))
+        );
+        assert!(
+            !empty_measurement_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Double(0.0000000001)])))
+        );
 
-        assert!(schedule_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)]))));
+        assert!(
+            schedule_type
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)])))
+        );
         assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
                 Value::DateTimeTZ(now),
@@ -1167,31 +1217,41 @@ fn annotations_with_value_arguments() {
         assert!(!valid_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(false), Value::Boolean(false)]))
         ));
-        assert!(!valid_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(false)]))));
-        assert!(!valid_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(true)]))));
+        assert!(
+            !valid_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(false)])))
+        );
+        assert!(
+            !valid_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(true)])))
+        );
         assert!(!valid_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(true), Value::Boolean(false)]))
         ));
 
         assert!(empty_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
-        assert!(empty_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(false)]))));
-        assert!(!empty_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(true)]))));
-        assert!(!empty_owns
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![]))));
+        assert!(
+            empty_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(false)])))
+        );
+        assert!(
+            !empty_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(true)])))
+        );
+        assert!(
+            !empty_owns
+                .get_annotations_declared(&snapshot, &type_manager)
+                .unwrap()
+                .contains(&OwnsAnnotation::Values(AnnotationValues::new(vec![])))
+        );
         assert!(!empty_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &OwnsAnnotation::Values(AnnotationValues::new(vec![Value::Boolean(false), Value::Boolean(false)]))
         ));

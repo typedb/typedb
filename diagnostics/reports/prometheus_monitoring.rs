@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use crate::{
-    reports::json_monitoring::{to_monitoring_report, JsonMonitoringReport},
     Diagnostics,
+    reports::json_monitoring::{JsonMonitoringReport, to_monitoring_report},
 };
 
 pub fn to_monitoring_prometheus(diagnostics: &Diagnostics) -> String {

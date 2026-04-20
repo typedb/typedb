@@ -6,8 +6,8 @@
 
 use std::{cmp::Ordering, collections::BTreeMap, fmt, iter, ops::Bound, sync::Arc, vec};
 
-use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::{executable::match_::instructions::thing::IsaReverseInstruction, ExecutorVariable};
+use answer::{Thing, Type, variable_value::VariableValue};
+use compiler::{ExecutorVariable, executable::match_::instructions::thing::IsaReverseInstruction};
 use concept::{
     error::ConceptReadError,
     iterator::InstanceIterator,
@@ -26,11 +26,12 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode, VariableModes,
         checker::Checker,
-        isa_executor::{IsaFilterMapFn, EXTRACT_THING, EXTRACT_TYPE},
+        isa_executor::{EXTRACT_THING, EXTRACT_TYPE, IsaFilterMapFn},
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, Tuple, TuplePositions, TupleResult},
-        type_from_row_or_annotations, BinaryIterateMode, VariableModes,
+        tuple::{Tuple, TuplePositions, TupleResult, isa_to_tuple_thing_type, isa_to_tuple_type_thing},
+        type_from_row_or_annotations,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

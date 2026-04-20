@@ -10,8 +10,9 @@ use cucumber::gherkin::Step;
 use futures::future::join_all;
 use itertools::{Either, Itertools};
 use macro_rules_attribute::apply;
-use params::{self, check_boolean, ContainsOrDoesnt};
+use params::{self, ContainsOrDoesnt, check_boolean};
 use server::service::{
+    AnswerType,
     http::message::{
         analyze::{
             annotations::bdd::{
@@ -22,15 +23,13 @@ use server::service::{
         },
         query::{QueryAnswerResponse, QueryOptionsPayload},
     },
-    AnswerType,
 };
 
 use crate::{
-    generic_step,
-    message::{query, transactions_analyze, transactions_query, ConceptResponse},
+    Context, HttpBehaviourTestError, generic_step,
+    message::{ConceptResponse, query, transactions_analyze, transactions_query},
     params::{ConceptKind, IsByVarIndex, IsOrNot, QueryAnswerType, TokenMode, Var, WithCommit},
     util::{iter_table, list_contains_json, parse_json},
-    Context, HttpBehaviourTestError,
 };
 
 fn get_answers_column_names(answer: &serde_json::Value) -> Vec<String> {

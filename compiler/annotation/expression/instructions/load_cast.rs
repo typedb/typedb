@@ -8,11 +8,11 @@ use std::marker::PhantomData;
 use encoding::value::{decimal_value::Decimal, value::NativeValueConvertible, value_type::ValueTypeCategory};
 
 use crate::annotation::expression::{
+    ExpressionCompileError,
     expression_compiler::ExpressionCompilationContext,
     instructions::{
-        op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
+        CompilableExpression, ExpressionEvaluationError, ExpressionInstruction, op_codes::ExpressionOpCode,
     },
-    ExpressionCompileError,
 };
 
 // Declarations

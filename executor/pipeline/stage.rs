@@ -12,8 +12,10 @@ use resource::{constants::traversal::BATCH_DEFAULT_CAPACITY, profile::QueryProfi
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ExecutionInterrupt,
     batch::Batch,
     pipeline::{
+        PipelineExecutionError, WrittenRowsIterator,
         delete::DeleteStageExecutor,
         initial::InitialIterator,
         insert::InsertStageExecutor,
@@ -26,10 +28,8 @@ use crate::{
         put::PutStageExecutor,
         reduce::ReduceStageExecutor,
         update::UpdateStageExecutor,
-        PipelineExecutionError, WrittenRowsIterator,
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
 };
 
 #[derive(Debug)]

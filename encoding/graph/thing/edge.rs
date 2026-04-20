@@ -10,7 +10,7 @@ use std::{
     ops::Range,
 };
 
-use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
+use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -19,18 +19,18 @@ use storage::{
 };
 
 use crate::{
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
+        Typed,
         thing::{
+            THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex,
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_object::{ObjectID, ObjectVertex},
-            ThingVertex, THING_VERTEX_LENGTH_PREFIX_TYPE,
         },
         type_::vertex::{TypeID, TypeVertex},
-        Typed,
     },
     layout::prefix::{Prefix, PrefixID},
     value::value_type::ValueTypeCategory,
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 ///
@@ -356,11 +356,7 @@ impl ThingEdgeHasReverse {
     }
 
     pub fn keyspace_for_is_short(is_short_attribute: bool) -> EncodingKeyspace {
-        if is_short_attribute {
-            EncodingKeyspace::OptimisedPrefix16
-        } else {
-            EncodingKeyspace::OptimisedPrefix25
-        }
+        if is_short_attribute { EncodingKeyspace::OptimisedPrefix16 } else { EncodingKeyspace::OptimisedPrefix25 }
     }
 
     pub fn keyspace(&self) -> EncodingKeyspace {
@@ -644,19 +640,11 @@ impl ThingEdgeLinks {
     }
 
     pub fn from(self) -> ObjectVertex {
-        if self.is_reverse {
-            self.player
-        } else {
-            self.relation
-        }
+        if self.is_reverse { self.player } else { self.relation }
     }
 
     pub fn to(self) -> ObjectVertex {
-        if self.is_reverse {
-            self.relation
-        } else {
-            self.player
-        }
+        if self.is_reverse { self.relation } else { self.player }
     }
 
     pub fn relation(self) -> ObjectVertex {

@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use crate::annotation::expression::instructions::{op_codes::ExpressionOpCode, ExpressionInstruction};
+use crate::annotation::expression::instructions::{ExpressionInstruction, op_codes::ExpressionOpCode};
 
 pub struct ListConstructor {}
 pub struct ListIndex {}

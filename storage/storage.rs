@@ -13,19 +13,18 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicU64, Ordering},
     },
     thread::sleep,
     time::Duration,
 };
 
 use ::error::typedb_error;
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use fail_point::{
-    fail_point, COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS, COMMIT_DATA_UNSYNC_IN_WAL,
-    COMMIT_REJECTED_WITHOUT_PERSISTING_STATUS, STORAGE_DELETED_KEYSPACES_BUT_NOT_WAL, STORAGE_EMPTY_STORAGE_DIR,
-    STORAGE_MISSING_STORAGE_DIR,
+    COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS, COMMIT_DATA_UNSYNC_IN_WAL, COMMIT_REJECTED_WITHOUT_PERSISTING_STATUS,
+    STORAGE_DELETED_KEYSPACES_BUT_NOT_WAL, STORAGE_EMPTY_STORAGE_DIR, STORAGE_MISSING_STORAGE_DIR, fail_point,
 };
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
@@ -46,15 +45,15 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError,
-        KeyspaceSet, Keyspaces,
+        IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
+        iterator::KeyspaceRangeIterator,
     },
     recovery::{
         checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
-        commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
+        commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
     },
     sequence_number::SequenceNumber,
-    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot, write::Write},
 };
 
 pub mod durability_client;
@@ -276,7 +275,7 @@ impl<Durability> MVCCStorage<Durability> {
         let result = match validate_result {
             Ok(ValidatedCommit::Write(write_batches)) => {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
-                                               // Write to the k-v store
+                // Write to the k-v store
                 commit_profile.snapshot_durable_write_data_confirmed();
 
                 self.keyspaces
@@ -336,14 +335,15 @@ impl<Durability> MVCCStorage<Durability> {
             for (key, value, reinsert, known_to_exist) in puts {
                 let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key);
                 if known_to_exist {
-                    debug_assert!(self
-                        .get::<0>(
+                    debug_assert!(
+                        self.get::<0>(
                             snapshot.iterator_pool(),
                             wrapped,
                             snapshot.open_sequence_number(),
                             storage_counters.clone()
                         )
-                        .is_ok_and(|opt| opt.is_some()));
+                        .is_ok_and(|opt| opt.is_some())
+                    );
                     reinsert.store(false, Ordering::Release);
                 } else {
                     let existing_stored = self
@@ -704,13 +704,13 @@ mod tests {
     use test_utils::{create_tmp_dir, init_logging};
 
     use crate::{
+        MVCCStorage,
         durability_client::{DurabilityClient, WALClient},
         isolation_manager::{CommitRecord, CommitType},
         key_value::StorageKeyArray,
         keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
         snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
-        MVCCStorage,
     };
 
     macro_rules! test_keyspace_set {

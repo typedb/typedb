@@ -11,14 +11,15 @@ use std::{
 
 use answer::variable::Variable;
 use compiler::{
+    ExecutorVariable, VariablePosition,
     annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     executable::{
         function::ExecutableFunctionRegistry,
         match_::{
             instructions::{
+                CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
                 thing::{HasReverseInstruction, IndexedRelationInstruction},
                 type_::TypeListInstruction,
-                CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
             },
             planner::{
                 conjunction_executable::{CheckStep, ConjunctionExecutable, ExecutionStep, IntersectionStep},
@@ -27,28 +28,27 @@ use compiler::{
         },
         next_executable_id,
     },
-    ExecutorVariable, VariablePosition,
 };
 use concept::{
     thing::object::ObjectAPI,
-    type_::{annotation::AnnotationCardinality, relates::RelatesAnnotation, Ordering, OwnerAPI, PlayerAPI},
+    type_::{Ordering, OwnerAPI, PlayerAPI, annotation::AnnotationCardinality, relates::RelatesAnnotation},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    ExecutionInterrupt, error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow,
 };
 use ir::{
     pattern::{
-        constraint::{Comparator, IsaKind},
         Vertex,
+        constraint::{Comparator, IsaKind},
     },
-    pipeline::{block::Block, ParameterRegistry},
+    pipeline::{ParameterRegistry, block::Block},
     translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 use typeql::common::Span;
@@ -351,10 +351,13 @@ fn traverse_index_from_unbound() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        [var_movie, var_character, var_casting],
-        [var_movie_type, var_casting_type, var_casting_movie_type, var_casting_character_type],
-    );
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_movie, var_character, var_casting], [
+            var_movie_type,
+            var_casting_type,
+            var_casting_movie_type,
+            var_casting_character_type,
+        ]);
 
     // Plan with unbound movie as the start -- should produce:
 
@@ -606,10 +609,13 @@ fn traverse_index_from_bound() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        [var_id, var_movie, var_person, var_casting],
-        [var_movie_type, var_casting_type, var_casting_movie_type, var_casting_actor_type],
-    );
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_id, var_movie, var_person, var_casting], [
+            var_movie_type,
+            var_casting_type,
+            var_casting_movie_type,
+            var_casting_actor_type,
+        ]);
 
     // Plan with bound movie
     let steps = vec![
@@ -772,10 +778,11 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        [var_casting_movie_type, var_casting_other_type, var_movie, var_person, var_casting],
-        [var_movie_type, var_casting_type],
-    );
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_casting_movie_type, var_casting_other_type, var_movie, var_person, var_casting], [
+            var_movie_type,
+            var_casting_type,
+        ]);
 
     // Plan with a single bound role, should produce:
 
@@ -789,11 +796,13 @@ fn traverse_index_bound_role_type_filtered_correctly() {
         // $0 type casting:movie
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_casting_movie_type],
-            vec![ConstraintInstruction::TypeList(TypeListInstruction::new(
-                var_casting_movie_type,
-                entry_annotations.vertex_annotations_of(&Vertex::Variable(var_casting_movie_type)).unwrap().clone(),
-            ))
-            .map(&mapping)],
+            vec![
+                ConstraintInstruction::TypeList(TypeListInstruction::new(
+                    var_casting_movie_type,
+                    entry_annotations.vertex_annotations_of(&Vertex::Variable(var_casting_movie_type)).unwrap().clone(),
+                ))
+                .map(&mapping),
+            ],
             vec![variable_positions[&var_casting_movie_type]],
             &named_variables,
             1,

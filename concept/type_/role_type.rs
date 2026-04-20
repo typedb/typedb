@@ -12,17 +12,17 @@ use std::{
 };
 
 use encoding::{
+    Prefixed,
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
-        type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
-            Kind,
-        },
         Typed,
+        type_::{
+            Kind,
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
+        },
     },
     layout::prefix::Prefix,
     value::label::Label,
-    Prefixed,
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
@@ -34,10 +34,11 @@ use storage::{
 
 use super::{Capability, Ordering};
 use crate::{
-    concept_iterator,
+    ConceptAPI, concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
     type_::{
+        KindAPI, TypeAPI,
         annotation::{Annotation, AnnotationError},
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
@@ -45,9 +46,7 @@ use crate::{
         relates::Relates,
         relation_type::RelationType,
         type_manager::TypeManager,
-        KindAPI, TypeAPI,
     },
-    ConceptAPI,
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]

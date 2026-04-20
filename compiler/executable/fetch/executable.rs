@@ -12,17 +12,17 @@ use error::typedb_error;
 use ir::{pattern::ParameterID, pipeline::VariableRegistry};
 
 use crate::{
+    VariablePosition,
     annotation::fetch::{AnnotatedFetch, AnnotatedFetchListSubFetch, AnnotatedFetchObject, AnnotatedFetchSome},
     executable::{
+        ExecutableCompilationError,
         function::{
-            executable::{compile_single_untabled_function, ExecutableFunction},
             ExecutableFunctionRegistry,
+            executable::{ExecutableFunction, compile_single_untabled_function},
         },
         next_executable_id,
-        pipeline::{compile_stages_and_fetch, ExecutableStage, TypePopulations},
-        ExecutableCompilationError,
+        pipeline::{ExecutableStage, TypePopulations, compile_stages_and_fetch},
     },
-    VariablePosition,
 };
 
 #[derive(Debug)]

@@ -11,14 +11,15 @@ use std::{
     iter::zip,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation, Type};
+use answer::{Type as TypeAnnotation, Type, variable::Variable};
 use concept::{
     error::ConceptReadError,
-    type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
+    type_::{OwnerAPI, PlayerAPI, TypeAPI, object_type::ObjectType, type_manager::TypeManager},
 };
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::{
     pattern::{
+        Pattern, Scope, Vertex,
         conjunction::Conjunction,
         constraint::{
             Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
@@ -27,18 +28,17 @@ use ir::{
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Pattern, Scope, Vertex,
     },
-    pipeline::VariableRegistry,
+    pipeline::{VariableRegistry, block::BlockContext},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
+    TypeInferenceError,
     function::{AnnotatedFunctionSignatures, FunctionParameterAnnotation},
     match_inference::{NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations},
     type_inference::get_type_annotation_from_label,
-    TypeInferenceError,
 };
 
 pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
@@ -75,17 +75,19 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         // Advanced TODO: Copying upstream binary constraints as schema constraints.
         self.seed_types(&mut graph, &VertexAnnotations::default())?;
 
-        debug_assert!(conjunction
-            .constraints()
-            .iter()
-            .flat_map(|constraint| constraint.vertices())
-            .filter(|vertex| !vertex.is_parameter())
-            .unique()
-            .all(|vertex| {
-                graph.vertices.contains_key(vertex)
-                    || self.variable_registry.get_variable_category(vertex.as_variable().unwrap()).unwrap()
-                        == VariableCategory::Value
-            }));
+        debug_assert!(
+            conjunction
+                .constraints()
+                .iter()
+                .flat_map(|constraint| constraint.vertices())
+                .filter(|vertex| !vertex.is_parameter())
+                .unique()
+                .all(|vertex| {
+                    graph.vertices.contains_key(vertex)
+                        || self.variable_registry.get_variable_category(vertex.as_variable().unwrap()).unwrap()
+                            == VariableCategory::Value
+                })
+        );
 
         Ok(graph)
     }
@@ -477,13 +479,19 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
     // Phase 3: seed edges
     fn seed_edges(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), Box<ConceptReadError>> {
-        debug_assert!(graph
-            .vertices
-            .iter()
-            .filter(|(v, _)| v.is_variable()
-                && self.variable_registry.get_variable_category(v.as_variable().unwrap()).unwrap().is_category_thing())
-            .flat_map(|(_, types)| types)
-            .all(|t| self.is_not_abstract(t).unwrap()));
+        debug_assert!(
+            graph
+                .vertices
+                .iter()
+                .filter(|(v, _)| v.is_variable()
+                    && self
+                        .variable_registry
+                        .get_variable_category(v.as_variable().unwrap())
+                        .unwrap()
+                        .is_category_thing())
+                .flat_map(|(_, types)| types)
+                .all(|t| self.is_not_abstract(t).unwrap())
+        );
         let TypeInferenceGraph { conjunction, edges, vertices, .. } = graph;
         for constraint in conjunction.constraints() {
             match constraint {
@@ -1662,10 +1670,10 @@ pub mod tests {
     use encoding::value::{label::Label, value_type::ValueType};
     use ir::{
         pattern::{
-            constraint::{Comparator, IsaKind},
             ParameterID, Vertex,
+            constraint::{Comparator, IsaKind},
         },
-        pipeline::{block::Block, ParameterRegistry},
+        pipeline::{ParameterRegistry, block::Block},
         translation::PipelineTranslationContext,
     };
     use resource::profile::{CommitProfile, StorageCounters};
@@ -1676,7 +1684,7 @@ pub mod tests {
         match_inference::{TypeInferenceGraph, VertexAnnotations},
         tests::{
             managers,
-            schema_consts::{setup_types, LABEL_CAT, LABEL_NAME},
+            schema_consts::{LABEL_CAT, LABEL_NAME, setup_types},
             setup_storage,
         },
         type_inference::tests::expected_edge,
@@ -1728,12 +1736,10 @@ pub mod tests {
             ]),
             edges: vec![
                 expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), vec![(type_cat, type_cat)]),
-                expected_edge(
-                    &constraints[2],
-                    var_name.into(),
-                    var_name_type.into(),
-                    vec![(type_catname, type_name), (type_dogname, type_name)],
-                ),
+                expected_edge(&constraints[2], var_name.into(), var_name_type.into(), vec![
+                    (type_catname, type_name),
+                    (type_dogname, type_name),
+                ]),
                 expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
             ],
             nested_disjunctions: vec![],
@@ -1839,36 +1845,26 @@ pub mod tests {
                     (var_b.into(), types_b),
                 ]),
                 edges: vec![
-                    expected_edge(
-                        &constraints[0],
-                        var_x.into(),
-                        Vertex::Label(label_owner),
-                        vec![(type_owner, type_owner)],
-                    ),
-                    expected_edge(
-                        &constraints[1],
-                        var_x.into(),
-                        var_a.into(),
-                        vec![(type_owner, type_age), (type_owner, type_catname), (type_owner, type_dogname)],
-                    ),
-                    expected_edge(
-                        &constraints[2],
-                        var_x.into(),
-                        var_b.into(),
-                        vec![(type_owner, type_age), (type_owner, type_catname), (type_owner, type_dogname)],
-                    ),
-                    expected_edge(
-                        &constraints[3],
-                        var_a.into(),
-                        var_b.into(),
-                        vec![
-                            (type_age, type_age),
-                            (type_catname, type_catname),
-                            (type_catname, type_dogname),
-                            (type_dogname, type_catname),
-                            (type_dogname, type_dogname),
-                        ],
-                    ),
+                    expected_edge(&constraints[0], var_x.into(), Vertex::Label(label_owner), vec![(
+                        type_owner, type_owner,
+                    )]),
+                    expected_edge(&constraints[1], var_x.into(), var_a.into(), vec![
+                        (type_owner, type_age),
+                        (type_owner, type_catname),
+                        (type_owner, type_dogname),
+                    ]),
+                    expected_edge(&constraints[2], var_x.into(), var_b.into(), vec![
+                        (type_owner, type_age),
+                        (type_owner, type_catname),
+                        (type_owner, type_dogname),
+                    ]),
+                    expected_edge(&constraints[3], var_a.into(), var_b.into(), vec![
+                        (type_age, type_age),
+                        (type_catname, type_catname),
+                        (type_catname, type_dogname),
+                        (type_dogname, type_catname),
+                        (type_dogname, type_dogname),
+                    ]),
                 ],
                 nested_disjunctions: vec![],
             };
@@ -1914,12 +1910,11 @@ pub mod tests {
             let expected_graph = TypeInferenceGraph {
                 conjunction,
                 vertices: VertexAnnotations::from([(var_x.into(), types_x), (var_t.into(), types_t)]),
-                edges: vec![expected_edge(
-                    &constraints[0],
-                    var_x.into(),
-                    var_t.into(),
-                    vec![(type_age, type_age), (type_catname, type_catname), (type_dogname, type_dogname)],
-                )],
+                edges: vec![expected_edge(&constraints[0], var_x.into(), var_t.into(), vec![
+                    (type_age, type_age),
+                    (type_catname, type_catname),
+                    (type_dogname, type_dogname),
+                ])],
                 nested_disjunctions: vec![],
             };
 

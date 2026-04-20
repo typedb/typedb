@@ -15,19 +15,19 @@ use compiler::{
         relation_index::relation_index_transformation,
     },
 };
-use concept::type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI};
+use concept::type_::{Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager};
 use encoding::value::label::Label;
 use ir::{
-    pattern::{conjunction::Conjunction, constraint::Constraint, Vertex},
-    pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-    translation::{match_::translate_match, PipelineTranslationContext},
+    pattern::{Vertex, conjunction::Conjunction, constraint::Constraint},
+    pipeline::{ParameterRegistry, block::Block, function_signature::HashMapFunctionSignatureIndex},
+    translation::{PipelineTranslationContext, match_::translate_match},
 };
 use itertools::Itertools;
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
+    MVCCStorage,
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
-    MVCCStorage,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;

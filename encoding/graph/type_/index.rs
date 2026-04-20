@@ -6,17 +6,17 @@
 
 use std::{marker::PhantomData, ops::Range};
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 
 use crate::{
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
         definition::{function::FunctionDefinition, r#struct::StructDefinition},
         type_::vertex::TypeVertex,
     },
     layout::prefix::{Prefix, PrefixID},
     value::{label::Label, string_bytes::StringBytes},
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 pub trait Indexable: Clone {

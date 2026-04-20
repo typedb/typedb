@@ -10,9 +10,9 @@ use answer::Type;
 use concept::{
     error::ConceptReadError,
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, owns::Owns, plays::Plays,
-        relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI,
-        Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, attribute_type::AttributeType, entity_type::EntityType,
+        object_type::ObjectType, owns::Owns, plays::Plays, relates::Relates, relation_type::RelationType,
+        role_type::RoleType, type_manager::TypeManager,
     },
 };
 use encoding::{
@@ -22,10 +22,10 @@ use encoding::{
 use error::typedb_error;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    common::{error::TypeQLError, Span, Spanned},
+    TypeRef, TypeRefAny,
+    common::{Span, Spanned, error::TypeQLError},
     schema::definable::struct_::Field,
     type_::{BuiltinValueType, NamedType, NamedTypeAny, NamedTypeOptional},
-    TypeRef, TypeRefAny,
 };
 
 macro_rules! filter_variants {

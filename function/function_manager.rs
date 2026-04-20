@@ -11,10 +11,11 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, Bytes};
-use compiler::annotation::function::{annotate_stored_functions, AnnotatedSchemaFunctions};
+use bytes::{Bytes, byte_array::ByteArray};
+use compiler::annotation::function::{AnnotatedSchemaFunctions, annotate_stored_functions};
 use concept::type_::type_manager::TypeManager;
 use encoding::{
+    Keyable,
     graph::{
         definition::{
             definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator,
@@ -22,16 +23,15 @@ use encoding::{
         },
         type_::index::NameToFunctionDefinitionIndex,
     },
-    Keyable,
 };
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{
+        FunctionReadError,
         function::ReturnOperation,
         function_signature::{
             FunctionID, FunctionIDAPI, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
-        FunctionReadError,
     },
     translation::{
         function::{build_signature, translate_typeql_function},
@@ -47,7 +47,7 @@ use storage::{
 };
 use typeql::common::Spanned;
 
-use crate::{function::SchemaFunction, function_cache::FunctionCache, FunctionError};
+use crate::{FunctionError, function::SchemaFunction, function_cache::FunctionCache};
 
 /// Analogy to TypeManager, but specialised just for Functions
 #[derive(Debug)]
@@ -290,13 +290,10 @@ pub fn validate_no_cycles<ID: FunctionIDAPI>(
     for id in functions.keys() {
         debug_assert!(active.is_empty());
         if !complete.contains(id) {
-            validate_no_cycles_impl(
-                id.clone(),
-                functions,
-                &mut active,
-                &mut complete,
-                StratumAndDepth { stratum: 0, depth: 0 },
-            )?;
+            validate_no_cycles_impl(id.clone(), functions, &mut active, &mut complete, StratumAndDepth {
+                stratum: 0,
+                depth: 0,
+            })?;
             debug_assert!(complete.contains(id));
         }
     }
@@ -478,8 +475,9 @@ pub mod tests {
         thing::{statistics::Statistics, thing_manager::ThingManager},
         type_::type_manager::TypeManager,
     };
-    use durability::{wal::WAL, DurabilitySequenceNumber};
+    use durability::{DurabilitySequenceNumber, wal::WAL};
     use encoding::{
+        EncodingKeyspace,
         graph::{
             definition::{
                 definition_key::{DefinitionID, DefinitionKey},
@@ -489,24 +487,23 @@ pub mod tests {
             type_::vertex_generator::TypeVertexGenerator,
         },
         layout::prefix::Prefix,
-        EncodingKeyspace,
     };
     use ir::{
         pattern::{
-            variable_category::{VariableCategory, VariableOptionality},
             Vertex,
+            variable_category::{VariableCategory, VariableOptionality},
         },
         pipeline::function_signature::{
             FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
     };
     use resource::profile::CommitProfile;
-    use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
-    use test_utils::{create_tmp_dir, init_logging, TempDir};
+    use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
+    use test_utils::{TempDir, create_tmp_dir, init_logging};
 
     use crate::{
         function_cache::FunctionCache,
-        function_manager::{tests::test_schema::setup_types, FunctionManager, ReadThroughFunctionSignatureIndex},
+        function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, tests::test_schema::setup_types},
     };
 
     fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
@@ -634,8 +631,8 @@ pub mod tests {
         use concept::{
             thing::thing_manager::ThingManager,
             type_::{
-                annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation,
-                entity_type::EntityTypeAnnotation, type_manager::TypeManager, Ordering, OwnerAPI,
+                Ordering, OwnerAPI, annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation,
+                entity_type::EntityTypeAnnotation, type_manager::TypeManager,
             },
         };
         use encoding::value::{label::Label, value_type::ValueType};

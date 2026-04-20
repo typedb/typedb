@@ -12,38 +12,38 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable_value::VariableValue, Thing, Type};
+use answer::{Thing, Type, variable_value::VariableValue};
 use compiler::{
-    executable::match_::instructions::{thing::IndexedRelationInstruction, VariableMode, VariableModes},
     ExecutorVariable,
+    executable::match_::instructions::{VariableMode, VariableModes, thing::IndexedRelationInstruction},
 };
 use concept::{
     error::ConceptReadError,
     thing::{
+        ThingAPI,
         object::{Object, ObjectAPI},
         relation::{IndexedRelationPlayers, IndexedRelationsIterator, Relation},
         thing_manager::ThingManager,
-        ThingAPI,
     },
-    type_::{object_type::ObjectType, role_type::RoleType, TypeAPI},
+    type_::{TypeAPI, object_type::ObjectType, role_type::RoleType},
 };
 use encoding::graph::{
+    Typed,
     thing::vertex_object::{ObjectID, ObjectVertex},
     type_::vertex::{TypeID, TypeVertexEncoding},
-    Typed,
 };
 use itertools::Itertools;
-use lending_iterator::{kmerge::KMergeBy, LendingIterator, Peekable};
+use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        FilterFn, FilterMapUnchangedFn,
         checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
-        tuple::{unsafe_compare_result_tuple, Tuple, TupleOrderingFn, TuplePositions, TupleResult},
-        FilterFn, FilterMapUnchangedFn,
+        tuple::{Tuple, TupleOrderingFn, TuplePositions, TupleResult, unsafe_compare_result_tuple},
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -129,9 +129,11 @@ impl IndexedRelationExecutor {
             role_start_types,
             role_end_types,
         } = indexed_relation;
-        debug_assert!([role_start, role_end, player_start, player_end, relation]
-            .iter()
-            .all(|v| { variable_modes.get(*v).is_some() }));
+        debug_assert!(
+            [role_start, role_end, player_start, player_end, relation]
+                .iter()
+                .all(|v| { variable_modes.get(*v).is_some() })
+        );
         let iterate_mode =
             IndexedRelationIterateMode::new(player_start, player_end, relation, &variable_modes, sort_by);
         let filter_fn = create_indexed_players_filter(
@@ -551,11 +553,7 @@ impl IndexedRelationExecutor {
         let relation = match self.relation {
             ExecutorVariable::RowPosition(position) => {
                 if position.as_usize() < row.len() {
-                    if let VariableValue::Thing(thing) = row.get(position) {
-                        Some(thing.as_relation())
-                    } else {
-                        None
-                    }
+                    if let VariableValue::Thing(thing) = row.get(position) { Some(thing.as_relation()) } else { None }
                 } else {
                     None
                 }
@@ -565,11 +563,7 @@ impl IndexedRelationExecutor {
         let start_role = match self.role_start {
             ExecutorVariable::RowPosition(position) => {
                 if position.as_usize() < row.len() {
-                    if let VariableValue::Type(type_) = row.get(position) {
-                        Some(type_.as_role_type())
-                    } else {
-                        None
-                    }
+                    if let VariableValue::Type(type_) = row.get(position) { Some(type_.as_role_type()) } else { None }
                 } else {
                     None
                 }
@@ -579,11 +573,7 @@ impl IndexedRelationExecutor {
         let end_role = match self.role_end {
             ExecutorVariable::RowPosition(position) => {
                 if position.as_usize() < row.len() {
-                    if let VariableValue::Type(type_) = row.get(position) {
-                        Some(type_.as_role_type())
-                    } else {
-                        None
-                    }
+                    if let VariableValue::Type(type_) = row.get(position) { Some(type_.as_role_type()) } else { None }
                 } else {
                     None
                 }

@@ -23,21 +23,22 @@ use crate::{
     thing::{
         object::ObjectAPI,
         thing_manager::{
-            validation::{validation::DataValidation, DataValidationError},
             ThingManager,
+            validation::{DataValidationError, validation::DataValidation},
         },
     },
     type_::{
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationKey, AnnotationRange,
             AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{
+            CapabilityConstraint, Constraint, ConstraintDescription, ConstraintScope, TypeConstraint,
             filter_by_constraint_category, filter_by_scope, filter_out_operation_time_unchecked_constraints,
             get_abstract_constraints, get_distinct_constraints, get_operation_time_checked_constraints,
             get_range_constraints, get_regex_constraints, get_values_constraints, type_get_constraints_closest_source,
-            CapabilityConstraint, Constraint, ConstraintDescription, ConstraintScope, TypeConstraint,
         },
         entity_type::EntityType,
         object_type::ObjectType,
@@ -47,19 +48,18 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::{
+            TypeManager,
             type_reader::TypeReader,
             validation::{
+                SchemaValidationError,
                 validation::{
                     get_label_or_schema_err, get_opt_label_or_schema_err, validate_role_name_uniqueness_non_transitive,
                     validate_role_type_supertype_ordering_match, validate_sibling_owns_ordering_match_for_type,
                     validate_type_declared_constraints_narrowing_of_supertype_constraints,
                     validate_type_supertype_abstractness,
                 },
-                SchemaValidationError,
             },
-            TypeManager,
         },
-        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 
@@ -1819,11 +1819,7 @@ impl OperationTimeValidation {
     }
 
     fn is_ordering_compatible_with_distinct_constraint(ordering: Ordering, distinct_set: bool) -> bool {
-        if distinct_set {
-            ordering == Ordering::Ordered
-        } else {
-            true
-        }
+        if distinct_set { ordering == Ordering::Ordered } else { true }
     }
 
     pub(crate) fn validate_relates_distinct_constraint_ordering(

@@ -9,9 +9,9 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use resource::constants::{
-    encoding::{LABEL_NAME_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE},
+    encoding::{LABEL_NAME_STRING_INLINE, LABEL_SCOPE_STRING_INLINE, LABEL_SCOPED_NAME_STRING_INLINE},
     snapshot::BUFFER_VALUE_INLINE,
 };
 use structural_equality::StructuralEquality;

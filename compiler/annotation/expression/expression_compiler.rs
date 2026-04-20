@@ -8,24 +8,26 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::value::{
-    value_type::{ValueType, ValueTypeCategory},
     ValueEncodable,
+    value_type::{ValueType, ValueTypeCategory},
 };
 use ir::{
     pattern::{
+        ParameterID,
         expression::{
             BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree, ListConstructor, ListIndex,
             ListIndexRange, Operation, Operator,
         },
-        ParameterID,
     },
     pipeline::ParameterRegistry,
 };
 use typeql::common::Span;
 
 use crate::annotation::expression::{
+    ExpressionCompileError,
     compiled_expression::{ExecutableExpression, ExpressionValueType},
     instructions::{
+        CompilableExpression, ExpressionInstruction,
         binary::{
             MathMaxDecimalDecimal, MathMaxDoubleDouble, MathMaxIntegerInteger, MathMinDecimalDecimal,
             MathMinDoubleDouble, MathMinIntegerInteger,
@@ -41,9 +43,7 @@ use crate::annotation::expression::{
             LenString, MathAbsDecimal, MathAbsDouble, MathAbsInteger, MathCeilDecimal, MathCeilDouble,
             MathFloorDecimal, MathFloorDouble, MathRoundDecimal, MathRoundDouble,
         },
-        CompilableExpression, ExpressionInstruction,
     },
-    ExpressionCompileError,
 };
 
 pub struct ExpressionCompilationContext<'this> {

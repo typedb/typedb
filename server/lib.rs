@@ -10,7 +10,7 @@ extern crate core;
 
 use std::{net::SocketAddr, sync::Arc};
 
-use axum_server::{tls_rustls::RustlsConfig, Handle};
+use axum_server::{Handle, tls_rustls::RustlsConfig};
 use database::database_manager::DatabaseManager;
 use resource::{
     constants::server::{GRPC_CONNECTION_KEEPALIVE, GRPC_MAX_MESSAGE_SIZE, SERVER_INFO},
@@ -18,7 +18,7 @@ use resource::{
 };
 use tokio::{
     net::lookup_host,
-    sync::watch::{channel, Receiver, Sender},
+    sync::watch::{Receiver, Sender, channel},
 };
 use tracing::info;
 
@@ -250,7 +250,9 @@ impl Server {
                 print!(" and HTTP on {http_address}");
             }
             println!(" without TLS.");
-            println!("WARNING: TLS NOT ENABLED. This means connections are insecure and transmit username/password credentials unencrypted over the network.");
+            println!(
+                "WARNING: TLS NOT ENABLED. This means connections are insecure and transmit username/password credentials unencrypted over the network."
+            );
             println!("**To allow driver connections, drivers must also be configured to *not* use TLS**")
         }
         println!();

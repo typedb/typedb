@@ -15,10 +15,10 @@ use ir::pipeline::function_signature::FunctionID;
 use crate::{
     batch::FixedBatch,
     read::{
+        ExecutorIndex,
         suspension::{PatternSuspension, TabledCallSuspension},
         tabled_call_executor::TabledCallResult::Suspend,
         tabled_functions::{CallKey, TableIndex, TabledFunctionPatternExecutorState, TabledFunctionState},
-        ExecutorIndex,
     },
     row::MaybeOwnedRow,
 };

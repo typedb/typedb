@@ -8,7 +8,7 @@
 #![deny(rust_2018_idioms)]
 
 use durability::DurabilityService;
-use durability_test_common::{create_wal, TestRecord};
+use durability_test_common::{TestRecord, create_wal};
 use itertools::Itertools;
 
 fn main() {

@@ -11,10 +11,9 @@ use std::{
 };
 
 use axum::{
-    async_trait,
+    RequestPartsExt, async_trait,
     extract::{FromRequestParts, Path},
     response::{IntoResponse, Response},
-    RequestPartsExt,
 };
 use http::request::Parts;
 use serde::{Deserialize, Serialize};

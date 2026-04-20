@@ -9,11 +9,11 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 
 use crate::{
+    VariablePosition,
     executable::{
         insert::executable::InsertExecutable, match_::planner::conjunction_executable::ConjunctionExecutable,
         next_executable_id,
     },
-    VariablePosition,
 };
 
 #[derive(Debug)]

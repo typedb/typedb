@@ -10,16 +10,15 @@ use macro_rules_attribute::apply;
 use params::check_boolean;
 use resource::server_info::ServerInfo;
 use server::{
+    ServerBuilder,
     error::ServerOpenError,
     parameters::config::{AuthenticationConfig, ConfigBuilder},
-    ServerBuilder,
 };
 use test_utils::create_tmp_dir;
 
 use crate::{
-    generic_step,
+    Context, HttpBehaviourTestError, TEST_TOKEN_EXPIRATION, generic_step,
     message::{authenticate, authenticate_default, check_health, databases, send_get_request, users},
-    Context, HttpBehaviourTestError, TEST_TOKEN_EXPIRATION,
 };
 
 mod database;
@@ -34,8 +33,8 @@ fn config_path() -> PathBuf {
     return std::env::current_dir().unwrap().join("server/config.yml");
 }
 
-pub(crate) async fn start_typedb(
-) -> (tokio::sync::watch::Sender<()>, std::thread::JoinHandle<Result<(), ServerOpenError>>) {
+pub(crate) async fn start_typedb()
+-> (tokio::sync::watch::Sender<()>, std::thread::JoinHandle<Result<(), ServerOpenError>>) {
     let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
     let shutdown_sender_clone = shutdown_sender.clone();
     let handle = std::thread::spawn(move || {

@@ -6,7 +6,7 @@ features = {}
 
 [package]
 	name = "database-tools"
-	edition = "2021"
+	edition = "2024"
 	version = "0.0.0"
 
 [dependencies]
@@ -24,10 +24,10 @@ features = {}
 		workspace = true
 
 [[bin]]
-	path = "read_wal.rs"
-	name = "read_wal"
-
-[[bin]]
 	path = "replay_wal.rs"
 	name = "replay_wal"
+
+[[bin]]
+	path = "read_wal.rs"
+	name = "read_wal"
 

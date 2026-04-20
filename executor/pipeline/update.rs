@@ -6,14 +6,14 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use compiler::{
+    VariablePosition,
     executable::{
-        insert::{instructions::ConceptInstruction, VariableSource},
+        insert::{VariableSource, instructions::ConceptInstruction},
         update::{
             executable::{OptionalUpdate, UpdateExecutable},
             instructions::ConnectionInstruction,
         },
     },
-    VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
@@ -22,14 +22,14 @@ use resource::{constants::traversal::CHECK_INTERRUPT_FREQUENCY_ROWS, profile::St
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
+    ExecutionInterrupt,
     pipeline::{
+        PipelineExecutionError, WrittenRowsIterator,
         insert::prepare_output_rows,
         stage::{ExecutionContext, StageAPI, StageIterator},
-        PipelineExecutionError, WrittenRowsIterator,
     },
     row::Row,
-    write::{write_instruction::AsWriteInstruction, WriteError},
-    ExecutionInterrupt,
+    write::{WriteError, write_instruction::AsWriteInstruction},
 };
 
 pub struct UpdateStageExecutor<InputIterator> {

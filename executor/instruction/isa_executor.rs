@@ -6,23 +6,22 @@
 
 use std::{cmp::Ordering, collections::BTreeMap, fmt, iter, ops::Bound, sync::Arc, vec};
 
-use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::{executable::match_::instructions::thing::IsaInstruction, ExecutorVariable};
+use answer::{Thing, Type, variable_value::VariableValue};
+use compiler::{ExecutorVariable, executable::match_::instructions::thing::IsaInstruction};
 use concept::{
     error::ConceptReadError,
     iterator::InstanceIterator,
     thing::{
-        attribute,
+        ThingAPI, attribute,
         attribute::{Attribute, AttributeIterator},
         object::Object,
         thing_manager::ThingManager,
-        ThingAPI,
     },
 };
 use encoding::value::value::Value;
 use ir::pattern::{
-    constraint::{Isa, IsaKind},
     Vertex,
+    constraint::{Isa, IsaKind},
 };
 use itertools::Itertools;
 use lending_iterator::{AsLendingIterator, LendingIterator};
@@ -31,10 +30,10 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode, FilterMapUnchangedFn, TYPES_EMPTY, VariableModes,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator, TupleSeekable},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, Tuple, TuplePositions, TupleResult},
-        BinaryIterateMode, FilterMapUnchangedFn, VariableModes, TYPES_EMPTY,
+        tuple::{IsaToTupleFn, Tuple, TuplePositions, TupleResult, isa_to_tuple_thing_type, isa_to_tuple_type_thing},
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

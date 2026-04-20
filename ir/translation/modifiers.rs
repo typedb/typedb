@@ -9,9 +9,9 @@ use std::collections::HashSet;
 use typeql::{common::Spanned, token::Order};
 
 use crate::{
-    pipeline::modifier::{Distinct, Limit, Offset, Require, Select, Sort},
-    translation::{literal::FromTypeQLLiteral, verify_variable_available, PipelineTranslationContext},
     RepresentationError,
+    pipeline::modifier::{Distinct, Limit, Offset, Require, Select, Sort},
+    translation::{PipelineTranslationContext, literal::FromTypeQLLiteral, verify_variable_available},
 };
 
 pub fn translate_select(

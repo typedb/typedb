@@ -19,8 +19,8 @@ use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManag
 use database::{
     database_manager::DatabaseManager,
     query::{
-        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
-        WriteQueryAnswer, WriteQueryResult,
+        StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
+        execute_write_query_in_schema, execute_write_query_in_write,
     },
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
@@ -29,10 +29,10 @@ use diagnostics::{
     metrics::{ActionKind, ClientEndpoint, LoadKind},
 };
 use executor::{
+    ExecutionInterrupt, InterruptType,
     batch::Batch,
     document::ConceptDocument,
-    pipeline::{pipeline::Pipeline, stage::ReadPipelineStage, PipelineExecutionError},
-    ExecutionInterrupt, InterruptType,
+    pipeline::{PipelineExecutionError, pipeline::Pipeline, stage::ReadPipelineStage},
 };
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
@@ -44,23 +44,24 @@ use storage::snapshot::ReadableSnapshot;
 use tokio::{
     sync::{
         broadcast,
-        mpsc::{channel, Receiver, Sender},
+        mpsc::{Receiver, Sender, channel},
         watch,
     },
-    task::{spawn_blocking, JoinHandle},
-    time::{timeout, Instant},
+    task::{JoinHandle, spawn_blocking},
+    time::{Instant, timeout},
 };
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
-use tracing::{event, Level};
+use tracing::{Level, event};
 use typedb_protocol::{
     query::Type::{Read, Write},
-    transaction::{stream_signal::Req, Server as ProtocolServer},
+    transaction::{Server as ProtocolServer, stream_signal::Req},
 };
 use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
 use crate::service::{
+    IncludeInvolvedBlocks,
     grpc::{
         analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
         diagnostics::run_with_diagnostics_async,
@@ -81,9 +82,8 @@ use crate::service::{
     },
     may_encode_pipeline_structure,
     transaction_service::{
-        init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
+        Transaction, TransactionServiceError, init_transaction_timeout, is_write_pipeline, with_readable_transaction,
     },
-    IncludeInvolvedBlocks,
 };
 
 macro_rules! unwrap_or_execute_and_return {
@@ -1483,7 +1483,9 @@ impl TransactionService {
             if stream_transmitter.check_finished_else_queue_continue().await {
                 const ALLOWED_CLEANUP_TIME: Duration = Duration::from_secs(60);
                 if timeout(ALLOWED_CLEANUP_TIME, worker_handle).await.is_err() {
-                    panic!("Query stream {request_id:?} ended but has not responded in over {ALLOWED_CLEANUP_TIME:?}, aborting. (This is a bug!)");
+                    panic!(
+                        "Query stream {request_id:?} ended but has not responded in over {ALLOWED_CLEANUP_TIME:?}, aborting. (This is a bug!)"
+                    );
                 }
                 self.query_responders.remove(&request_id);
             }

@@ -6,11 +6,12 @@ features = {}
 
 [package]
 	name = "ir"
-	edition = "2021"
+	edition = "2024"
 	version = "0.0.0"
 
 [lib]
 	path = "lib.rs"
+	crate-type = ["lib"]
 
 [dev-dependencies]
 
@@ -68,14 +69,14 @@ features = {}
 		workspace = true
 
 [[test]]
-	path = "tests/structural_equality.rs"
-	name = "test_structural_equality"
-
-[[test]]
 	path = "tests/pattern.rs"
 	name = "pattern"
 
 [[test]]
 	path = "tests/pipeline.rs"
 	name = "pipeline"
+
+[[test]]
+	path = "tests/structural_equality.rs"
+	name = "test_structural_equality"
 

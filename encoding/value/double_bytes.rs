@@ -64,7 +64,7 @@ impl InlineEncodableAttributeID for DoubleBytes {
 
 #[cfg(test)]
 mod tests {
-    use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
+    use rand::{Rng, SeedableRng, rngs::SmallRng, thread_rng};
 
     use super::DoubleBytes;
 
@@ -79,7 +79,7 @@ mod tests {
 
     #[test]
     fn ordering_is_preserved() {
-        let seed = thread_rng().gen();
+        let seed = thread_rng().r#gen();
         let mut rng = SmallRng::seed_from_u64(seed);
         eprintln!("Running with seed: {seed}");
         for _ in 0..1_000_000 {

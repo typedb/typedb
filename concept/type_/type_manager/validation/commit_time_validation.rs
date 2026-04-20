@@ -13,8 +13,9 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     error::ConceptReadError,
     type_::{
+        Capability, KindAPI, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
         attribute_type::AttributeType,
-        constraint::{filter_by_source, Constraint, ConstraintDescription},
+        constraint::{Constraint, ConstraintDescription, filter_by_source},
         entity_type::EntityType,
         object_type::ObjectType,
         owns::Owns,
@@ -23,19 +24,18 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::{
+            TypeManager,
             type_reader::TypeReader,
             validation::{
+                SchemaValidationError,
                 validation::{
                     get_label_or_concept_read_err, validate_role_name_uniqueness_non_transitive,
                     validate_role_type_supertype_ordering_match, validate_sibling_owns_ordering_match_for_type,
                     validate_type_declared_constraints_narrowing_of_supertype_constraints,
                     validate_type_supertype_abstractness,
                 },
-                SchemaValidationError,
             },
-            TypeManager,
         },
-        Capability, KindAPI, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 

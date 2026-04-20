@@ -17,23 +17,23 @@ use std::{
 use answer::variable_value::VariableValue;
 use concept::{
     thing::thing_manager::ThingManager,
-    type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
+    type_::{Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
 };
-use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion, SamplingMode};
+use criterion::{Criterion, SamplingMode, criterion_group, criterion_main, profiler::Profiler};
 use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
     value::{label::Label, value_type::ValueType},
 };
-use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
+use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use pprof::ProfilerGuard;
 use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
+    MVCCStorage,
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
-    MVCCStorage,
 };
 use test_utils::init_logging;
 use test_utils_concept::{load_managers, setup_concept_storage};

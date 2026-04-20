@@ -19,17 +19,19 @@ use typeql::{
 };
 
 use crate::{
+    RepresentationError,
     pattern::Pattern,
     pipeline::{
-        block::Block,
+        ParameterRegistry, VariableRegistry,
+        block::{Block, BlockBuilder},
         fetch::FetchObject,
         function::Function,
         function_signature::FunctionSignatureIndex,
         modifier::{Distinct, Limit, Offset, Require, Select, Sort},
         reduce::Reduce,
-        ParameterRegistry, VariableRegistry,
     },
     translation::{
+        PipelineTranslationContext,
         fetch::translate_fetch,
         function::translate_typeql_function,
         match_::translate_match,
@@ -38,9 +40,7 @@ use crate::{
         },
         reduce::translate_reduce,
         writes::{translate_delete, translate_insert, translate_put, translate_update},
-        PipelineTranslationContext,
     },
-    RepresentationError,
 };
 
 #[derive(Debug, Clone)]

@@ -6,19 +6,19 @@
 use std::{
     fmt::Formatter,
     ops::Deref,
-    sync::{mpsc::RecvTimeoutError, Arc},
+    sync::{Arc, mpsc::RecvTimeoutError},
 };
 
 use concept::{
     error::ConceptWriteError,
     thing::{statistics::StatisticsError, thing_manager::ThingManager},
     type_::type_manager::{
-        type_cache::{TypeCache, TypeCacheCreateError},
         TypeManager,
+        type_cache::{TypeCache, TypeCacheCreateError},
     },
 };
 use error::typedb_error;
-use function::{function_cache::FunctionCache, function_manager::FunctionManager, FunctionError};
+use function::{FunctionError, function_cache::FunctionCache, function_manager::FunctionManager};
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
 use resource::profile::TransactionProfile;
@@ -26,7 +26,7 @@ use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
 };
-use tracing::{trace, Level};
+use tracing::{Level, trace};
 
 use crate::Database;
 

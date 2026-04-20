@@ -12,7 +12,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::{executable::match_::instructions::type_::PlaysReverseInstruction, ExecutorVariable};
+use compiler::{ExecutorVariable, executable::match_::instructions::type_::PlaysReverseInstruction};
 use concept::{
     error::ConceptReadError,
     type_::{object_type::ObjectType, role_type::RoleType},
@@ -24,14 +24,15 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        BinaryIterateMode, VariableModes,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         plays_executor::{
-            PlaysFilterFn, PlaysFilterMapFn, PlaysTupleIterator, PlaysVariableValueExtractor, EXTRACT_PLAYER,
-            EXTRACT_ROLE,
+            EXTRACT_PLAYER, EXTRACT_ROLE, PlaysFilterFn, PlaysFilterMapFn, PlaysTupleIterator,
+            PlaysVariableValueExtractor,
         },
-        tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, VariableModes,
+        tuple::{TuplePositions, plays_to_tuple_player_role, plays_to_tuple_role_player},
+        type_from_row_or_annotations,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

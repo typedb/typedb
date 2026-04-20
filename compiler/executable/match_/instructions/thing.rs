@@ -10,11 +10,11 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::type_::role_type::RoleType;
 use ir::pattern::{
-    constraint::{Has, Iid, Isa, Links},
     IrID,
+    constraint::{Has, Iid, Isa, Links},
 };
 
 use crate::{

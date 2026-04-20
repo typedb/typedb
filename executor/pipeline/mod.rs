@@ -9,12 +9,12 @@ use error::typedb_error;
 use lending_iterator::LendingIterator;
 
 use crate::{
+    InterruptType,
     batch::Batch,
     error::ReadExecutionError,
     pipeline::{fetch::FetchExecutionError, stage::StageIterator},
     row::MaybeOwnedRow,
     write::WriteError,
-    InterruptType,
 };
 
 pub mod delete;
