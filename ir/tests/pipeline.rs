@@ -10,9 +10,9 @@ use encoding::{
 };
 use ir::{
     pattern::{
+        AssignedVariable,
         constraint::IsaKind,
         variable_category::{VariableCategory, VariableOptionality},
-        AssignedVariable,
     },
     pipeline::{
         ParameterRegistry,

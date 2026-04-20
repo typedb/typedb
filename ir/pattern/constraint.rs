@@ -21,12 +21,11 @@ use typeql::common::Span;
 use crate::{
     LiteralParseError, RepresentationError,
     pattern::{
-        BindingMode, IrID, ParameterID, ScopeId, ValueType, Vertex,
+        AssignedVariable, BindingMode, IrID, ParameterID, ScopeId, ValueType, Vertex,
         conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::{VariableCategory, VariableOptionality},
-        AssignedVariable, BindingMode, IrID, ParameterID, ScopeId, ValueType, Vertex,
     },
     pipeline::{
         ParameterRegistry, VariableRegistry, block::BlockBuilderContext, function_signature::FunctionSignature,
