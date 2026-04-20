@@ -175,7 +175,7 @@ typedb_error! {
         ),
         UnboundVariable(
             25,
-            "Invalid query containing unbound concept variable {variable}.",
+            "Invalid query containing unbound concept variable '{variable}'.",
             variable: String,
             source_span: Option<Span>,
         ),
