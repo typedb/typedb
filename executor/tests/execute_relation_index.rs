@@ -895,25 +895,58 @@ fn traverse_index_bound_role_type_filtered_correctly() {
 
 #[test]
 fn traverse_index_same_player_both_roles() {
+    // query: match $casting links (actor: $person, character: $person);
+    // player_start == player_end == $person.
+    // Tests both that the executor doesn't panic and that it returns only castings
+    // where the same person plays both roles (not false positives).
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
 
-    // Extend the schema so person can play the character role too.
+    // Extend schema: person can play the character role too.
+    // Insert:
+    //   - casting_mixed: person_a as actor, person_b as character (should NOT match — different persons)
+    //   - casting_same:  person_c as both actor AND character       (should match)
+    // Both castings pass the type filter (all players are persons), so only the equality
+    // check distinguishes them. A buggy executor returns both; a correct one returns only casting_same.
     {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let mut snapshot = storage.clone().open_snapshot_write();
+
         let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
-        let character_role =
-            type_manager.get_role_type(&snapshot, &CASTING_CHARACTER_LABEL).unwrap().unwrap();
+        let casting_type = type_manager.get_relation_type(&snapshot, &CASTING_LABEL).unwrap().unwrap();
+        let casting_actor_type = type_manager.get_role_type(&snapshot, &CASTING_ACTOR_LABEL).unwrap().unwrap();
+        let casting_character_type = type_manager.get_role_type(&snapshot, &CASTING_CHARACTER_LABEL).unwrap().unwrap();
+
         person_type
-            .set_plays(&mut snapshot, &type_manager, &thing_manager, character_role, StorageCounters::DISABLED)
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, casting_character_type, StorageCounters::DISABLED)
             .unwrap();
+
+        let person_a = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let person_b = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let person_c = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+
+        // casting_mixed: person_a as actor, person_b as character — should NOT match (person_a != person_b)
+        let casting_mixed = thing_manager.create_relation(&mut snapshot, casting_type).unwrap();
+        casting_mixed
+            .add_player(&mut snapshot, &thing_manager, casting_actor_type, person_a.into_object(), StorageCounters::DISABLED)
+            .unwrap();
+        casting_mixed
+            .add_player(&mut snapshot, &thing_manager, casting_character_type, person_b.into_object(), StorageCounters::DISABLED)
+            .unwrap();
+
+        // casting_same: person_c plays both actor and character — should match
+        let casting_same = thing_manager.create_relation(&mut snapshot, casting_type).unwrap();
+        casting_same
+            .add_player(&mut snapshot, &thing_manager, casting_actor_type, person_c.clone().into_object(), StorageCounters::DISABLED)
+            .unwrap();
+        casting_same
+            .add_player(&mut snapshot, &thing_manager, casting_character_type, person_c.into_object(), StorageCounters::DISABLED)
+            .unwrap();
+
+        let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
+        assert!(finalise_result.is_ok(), "{:?}", finalise_result.unwrap_err());
         snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
     }
-
-    // query: match $casting links (actor: $person, character: $person);
-    // player_start == player_end == $person: the quintuple-position-building loop only has 4
-    // distinct variables to fill 5 slots, leaving one slot None and triggering the panic.
 
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
@@ -1034,7 +1067,7 @@ fn traverse_index_same_player_both_roles() {
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
         iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone()))).collect();
 
-    // No castings in the data have the same person playing both actor and character,
-    // so the result is empty — but the executor must not panic.
-    assert_eq!(rows.len(), 0);
+    // Only casting_same should match. A buggy executor would also return casting_mixed
+    // (where actor != character), producing 2 rows instead of 1.
+    assert_eq!(rows.len(), 1);
 }
