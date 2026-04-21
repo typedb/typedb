@@ -148,37 +148,41 @@ impl IndexedRelationExecutor {
 
         static MODE_PRIORITY: [VariableMode; 4] =
             [VariableMode::Input, VariableMode::Output, VariableMode::Count, VariableMode::Check];
-        // Ensures the macro-derived order hasn't changed
-        debug_assert!((1..(MODE_PRIORITY.len())).all(|i| MODE_PRIORITY[i-1] < MODE_PRIORITY[i]));
 
-        let sort_variable = match iterate_mode {
-            IndexedRelationIterateMode::Unbound => player_start,
-            IndexedRelationIterateMode::UnboundInvertedToPlayer | IndexedRelationIterateMode::BoundStart => player_end,
-            IndexedRelationIterateMode::BoundStartBoundEnd => relation,
-            IndexedRelationIterateMode::BoundStartBoundEndBoundRelation => role_start,
-        };
         let mut output_tuple_positions: [Option<ExecutorVariable>; 5] = [None; 5];
-        for i in 0..5 {
-            output_tuple_positions[i] = Some(variable_component_ordering[i]);
+        // index 0 is always the sort variable
+        match iterate_mode {
+            IndexedRelationIterateMode::Unbound => output_tuple_positions[0] = Some(player_start),
+            IndexedRelationIterateMode::UnboundInvertedToPlayer | IndexedRelationIterateMode::BoundStart => {
+                output_tuple_positions[0] = Some(player_end);
+            }
+            IndexedRelationIterateMode::BoundStartBoundEnd => output_tuple_positions[0] = Some(relation),
+            IndexedRelationIterateMode::BoundStartBoundEndBoundRelation => output_tuple_positions[0] = Some(role_start),
+        };
+        for output_index in 1..5 {
+            let preceding_variable = output_tuple_positions[output_index - 1].unwrap();
+            let preceding_variable_mode = if Some(preceding_variable) == output_tuple_positions[0] {
+                // special case: we need to allow inputs to follow, so ignore actual mode of sort variable and treat it as input
+                VariableMode::Input
+            } else {
+                variable_modes.get(preceding_variable).unwrap()
+            };
+            'mode: for &mode in MODE_PRIORITY.iter().skip_while(|&&mode| mode != preceding_variable_mode) {
+                // find first unused variable with this mode (else, try the next mode)
+                for variable in variable_component_ordering {
+                    let variable_mode = variable_modes.get(variable).unwrap();
+                    if !output_tuple_positions.contains(&Some(variable)) && mode == variable_mode {
+                        output_tuple_positions[output_index] = Some(variable);
+                        break 'mode;
+                    }
+                }
+            }
+            debug_assert!(output_tuple_positions[output_index].is_some());
         }
-        // Swap so index 0 is always the sort variable. Sort the rest by mode.
-        let sort_variable_position = output_tuple_positions.iter().position(|x| *x == Some(sort_variable)).unwrap();
-        output_tuple_positions.swap(0, sort_variable_position);
-        output_tuple_positions[1..5].sort_by_key(|x| variable_modes.get(x.unwrap()).unwrap());
         debug_assert!(output_tuple_positions.iter().all(|option| option.is_some()));
 
         let output_tuple_positions = TuplePositions::Quintuple(output_tuple_positions);
-        compile_error!(r#"This won't work when variables are duplicated. See Claude's comment:
-It depends on the iterate mode. When both players are the same variable and that variable is already bound (Input
-mode), the iterate mode becomes BoundStartBoundEnd, with fixed_bounds.from = V and fixed_bounds.to = V. The index scan
-then only returns entries where both players equal V — correctness falls out naturally.
-But if the variable is unbound (Output mode), the iterate mode is Unbound, fixed_bounds are None, and the iterator
-returns all pairs. Both tuple positions write components.0 to $x, so you'd return rows for every marriage where the
-query person is the husband, regardless of whether they're also the wife.
 
-So it matters when $x is unbound — i.e., in the basic case match $m (husband: $x, wife: $x) with no prior binding of
-$x.
-        "#);
         let checker = Checker::<(IndexedRelationPlayers, u64)>::new(
             checks,
             HashMap::from([
