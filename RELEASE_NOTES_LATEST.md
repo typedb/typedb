@@ -1,10 +1,10 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.10.0-rc2](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.10.0-rc2)
+[Distributions for 3.10.0-rc3](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.10.0-rc3)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.10.0-rc2```
+```docker pull typedb/typedb:3.10.0-rc3```
 
 
 ## New Features
