@@ -1146,3 +1146,140 @@ fn traverse_links_reverse_bounded_player_relation() {
         println!("{}", r);
     }
 }
+
+// Schema for the self-referential test: a `loop` relation that can play a role in itself.
+//
+//   relation loop, relates member;
+//   loop plays loop:member;
+//
+// Data:
+//   $loop_self isa loop, links (member: $loop_self);   -- self-referential, should match
+//   $loop_other isa loop, links (member: $loop_self);  -- not self-referential, should NOT match
+const LOOP_LABEL: Label = Label::new_static("loop");
+const LOOP_MEMBER_LABEL: Label = Label::new_static_scoped("member", "loop", "loop:member");
+
+fn setup_self_referential_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+    setup_concept_storage(storage);
+
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let mut snapshot = storage.clone().open_snapshot_write();
+
+    let loop_type = type_manager.create_relation_type(&mut snapshot, &LOOP_LABEL).unwrap();
+    let relates_member = loop_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            LOOP_MEMBER_LABEL.name.as_str(),
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    relates_member.set_annotation(&mut snapshot, &type_manager, &thing_manager, RELATES_CARDINALITY_ANY).unwrap();
+    let loop_member_type = relates_member.role();
+
+    // loop plays loop:member — the relation can be its own player
+    loop_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, loop_member_type, StorageCounters::DISABLED)
+        .unwrap();
+
+    let loop_self = thing_manager.create_relation(&mut snapshot, loop_type).unwrap();
+    let loop_other = thing_manager.create_relation(&mut snapshot, loop_type).unwrap();
+
+    // loop_self links (member: loop_self) — should match $r links (member: $r)
+    loop_self
+        .add_player(&mut snapshot, &thing_manager, loop_member_type, loop_self.clone().into_object(), StorageCounters::DISABLED)
+        .unwrap();
+    // loop_other links (member: loop_self) — should NOT match $r links (member: $r)
+    loop_other
+        .add_player(&mut snapshot, &thing_manager, loop_member_type, loop_self.into_object(), StorageCounters::DISABLED)
+        .unwrap();
+
+    let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
+    assert!(finalise_result.is_ok(), "{:?}", finalise_result.unwrap_err());
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+}
+
+#[test]
+fn traverse_links_relation_is_own_player() {
+    // query: match $r links (member: $r);
+    // The relation variable and player variable are the same.
+    // Only loop_self (which links itself) should match; loop_other should not.
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_self_referential_database(&mut storage);
+
+    let mut translation_context = PipelineTranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+    let var_loop_type = conjunction.constraints_mut().get_or_declare_variable("loop_type", None).unwrap();
+    let var_loop_member_type = conjunction.constraints_mut().get_or_declare_variable("loop_member_type", None).unwrap();
+
+    let var_r = conjunction.constraints_mut().get_or_declare_variable("r", None).unwrap();
+
+    // Both relation and player are $r
+    let links_r_self = conjunction
+        .constraints_mut()
+        .add_links(var_r, var_r, var_loop_member_type, None)
+        .unwrap()
+        .clone();
+
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_r, var_loop_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_label(var_loop_type, LOOP_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_loop_member_type, LOOP_MEMBER_LABEL.clone()).unwrap();
+
+    let entry = builder.finish().unwrap();
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let block_annotations = infer_types(
+        &snapshot,
+        &entry,
+        variable_registry,
+        &type_manager,
+        previous_stage_variable_annotations,
+        &EmptyAnnotatedFunctionSignatures,
+        false,
+    )
+    .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
+
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_r], [var_loop_type, var_loop_member_type]);
+
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
+        mapping[&var_r],
+        vec![ConstraintInstruction::Links(
+            LinksInstruction::new(links_r_self, Inputs::None([]), &entry_annotations).map(&mapping),
+        )],
+        vec![variable_positions[&var_r]],
+        &named_variables,
+        1,
+    ))];
+
+    let executable =
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
+    )
+    .unwrap();
+
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
+
+    // Only loop_self matches. A buggy executor would also return loop_other
+    // (which links loop_self as member, not itself).
+    assert_eq!(rows.len(), 1);
+}
