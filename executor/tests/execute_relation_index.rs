@@ -63,6 +63,7 @@ const CASTING_MOVIE_LABEL: Label = Label::new_static_scoped("movie", "casting", 
 const CASTING_ACTOR_LABEL: Label = Label::new_static_scoped("actor", "casting", "casting:actor");
 const CASTING_CHARACTER_LABEL: Label = Label::new_static_scoped("character", "casting", "casting:character");
 
+
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
@@ -890,4 +891,150 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     }
 
     assert_eq!(rows.len(), 6);
+}
+
+#[test]
+fn traverse_index_same_player_both_roles() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // Extend the schema so person can play the character role too.
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
+        let character_role =
+            type_manager.get_role_type(&snapshot, &CASTING_CHARACTER_LABEL).unwrap().unwrap();
+        person_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, character_role, StorageCounters::DISABLED)
+            .unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+    }
+
+    // query: match $casting links (actor: $person, character: $person);
+    // player_start == player_end == $person: the quintuple-position-building loop only has 4
+    // distinct variables to fill 5 slots, leaving one slot None and triggering the panic.
+
+    let mut translation_context = PipelineTranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+    let var_casting_type = conjunction.constraints_mut().get_or_declare_variable("casting_type", None).unwrap();
+    let var_casting_actor_type =
+        conjunction.constraints_mut().get_or_declare_variable("casting_actor_type", None).unwrap();
+    let var_casting_character_type =
+        conjunction.constraints_mut().get_or_declare_variable("casting_character_type", None).unwrap();
+
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_casting = conjunction.constraints_mut().get_or_declare_variable("casting", None).unwrap();
+
+    // Both links use the same player variable $person — this is what triggers the bug
+    let links_actor =
+        conjunction.constraints_mut().add_links(var_casting, var_person, var_casting_actor_type, None).unwrap().clone();
+    let links_character =
+        conjunction.constraints_mut().add_links(var_casting, var_person, var_casting_character_type, None).unwrap().clone();
+
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_casting, var_casting_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_label(var_casting_type, CASTING_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_casting_actor_type, CASTING_ACTOR_LABEL.clone()).unwrap();
+    conjunction.constraints_mut().add_label(var_casting_character_type, CASTING_CHARACTER_LABEL.clone()).unwrap();
+
+    let entry = builder.finish().unwrap();
+    let value_parameters = Arc::new(value_parameters);
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let block_annotations = infer_types(
+        &snapshot,
+        &entry,
+        variable_registry,
+        &type_manager,
+        previous_stage_variable_annotations,
+        &EmptyAnnotatedFunctionSignatures,
+        false,
+    )
+    .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
+
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_person, var_casting], [var_casting_type, var_casting_actor_type, var_casting_character_type]);
+
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
+        mapping[&var_person],
+        vec![ConstraintInstruction::IndexedRelation(
+            IndexedRelationInstruction::new(
+                var_person,
+                var_person, // player_start == player_end
+                var_casting,
+                var_casting_actor_type,
+                var_casting_character_type,
+                Inputs::None([]),
+                entry_annotations
+                    .constraint_annotations_of(links_actor.clone().into())
+                    .unwrap()
+                    .as_links()
+                    .relation_to_player(),
+                &entry_annotations
+                    .constraint_annotations_of(links_actor.clone().into())
+                    .unwrap()
+                    .as_links()
+                    .player_to_relation(),
+                &entry_annotations
+                    .constraint_annotations_of(links_character.clone().into())
+                    .unwrap()
+                    .as_links()
+                    .relation_to_player(),
+                Arc::new(
+                    entry_annotations
+                        .constraint_annotations_of(links_actor.clone().into())
+                        .unwrap()
+                        .as_links()
+                        .player_to_role()
+                        .values()
+                        .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                        .collect(),
+                ),
+                Arc::new(
+                    entry_annotations
+                        .constraint_annotations_of(links_character.clone().into())
+                        .unwrap()
+                        .as_links()
+                        .player_to_role()
+                        .values()
+                        .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                        .collect(),
+                ),
+            )
+            .map(&mapping),
+        )],
+        vec![variable_positions[&var_person], variable_positions[&var_casting]],
+        &named_variables,
+        2,
+    ))];
+
+    let executable =
+        ConjunctionExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
+
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
+    )
+    .unwrap();
+
+    let context = ExecutionContext::new(snapshot, thing_manager, value_parameters);
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
+        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone()))).collect();
+
+    // No castings in the data have the same person playing both actor and character,
+    // so the result is empty — but the executor must not panic.
+    assert_eq!(rows.len(), 0);
 }
