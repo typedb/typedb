@@ -42,7 +42,7 @@ pub trait TransactionOperator: Debug + Send + Sync {
         close_sender: Sender<()>,
     ) -> Result<Transaction, ArcServerStateError>;
 
-    async fn close_by_types(&self, types: HashSet<TransactionType>);
+    async fn close_by_types(&self, types: &HashSet<TransactionType>);
 
     async fn close_by_owner(&self, username: &str);
 }
@@ -72,7 +72,7 @@ impl LocalTransactionOperator {
         Self { database_manager, transactions }
     }
 
-    pub async fn add(
+    pub async fn record(
         &self,
         transaction_id: TransactionId,
         transaction_type: TransactionType,
@@ -101,11 +101,11 @@ impl TransactionOperator for LocalTransactionOperator {
             open_transaction_blocking(database, transaction_type, options).await.map_err(|typedb_source| {
                 arc_server_state_err(LocalServerStateError::TransactionOpenFailed { typedb_source })
             })?;
-        self.add(transaction.id(), transaction_type, owner, close_sender).await;
+        self.record(transaction.id(), transaction_type, owner, close_sender).await;
         Ok(transaction)
     }
 
-    async fn close_by_types(&self, types: HashSet<TransactionType>) {
+    async fn close_by_types(&self, types: &HashSet<TransactionType>) {
         let mut transactions = self.transactions.write().await;
         let to_close: Vec<_> =
             transactions.iter().filter(|(_, info)| types.contains(&info.transaction_type)).map(|(id, _)| *id).collect();
