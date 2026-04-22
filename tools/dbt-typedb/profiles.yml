@@ -5,11 +5,11 @@ typedb:
   target: dev
   outputs:
     dev:
-      type: postgres
+      type: typedb
       host: localhost
       port: 5432
-      user: typedb
-      pass: ""
+      user: admin
+      pass: password
       dbname: typedb
       schema: public
       threads: 4

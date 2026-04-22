@@ -1,0 +1,3 @@
+name: dbt_typedb
+version: '1.0'
+config-version: 2
