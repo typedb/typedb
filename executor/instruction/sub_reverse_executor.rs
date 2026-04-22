@@ -31,6 +31,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::check_producing_same_variable;
 
 pub(crate) struct SubReverseExecutor {
     sub: ir::pattern::constraint::Sub<ExecutorVariable>,
@@ -64,7 +65,7 @@ impl SubReverseExecutor {
         let super_to_subtypes = sub.super_to_subtypes().clone();
         debug_assert!(subtypes.len() > 0);
 
-        let SubReverseInstruction { sub, checks, .. } = sub;
+        let SubReverseInstruction { sub, mut checks, .. } = sub;
 
         let iterate_mode = BinaryIterateMode::new(sub.supertype(), sub.subtype(), &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
@@ -81,14 +82,19 @@ impl SubReverseExecutor {
             BinaryIterateMode::Unbound => TuplePositions::Pair([supertype, subtype]),
             _ => TuplePositions::Pair([subtype, supertype]),
         };
+        let mut extractors = [(subtype, EXTRACT_SUB), (supertype, EXTRACT_SUPER)]
+            .into_iter()
+            .filter_map(|(var, ex)| Some((var?, ex)))
+            .collect();
+        if let (Some(subtype), Some(supertype)) = (subtype, supertype) {
+            check_producing_same_variable(
+                &[(subtype, EXTRACT_SUB), (supertype, EXTRACT_SUPER)],
+                &mut checks,
+                &mut extractors,
+            );
+        }
 
-        let checker = Checker::<(Type, Type)>::new(
-            checks,
-            [(subtype, EXTRACT_SUB), (supertype, EXTRACT_SUPER)]
-                .into_iter()
-                .filter_map(|(var, ex)| Some((var?, ex)))
-                .collect(),
-        );
+        let checker = Checker::<(Type, Type)>::new(checks, extractors);
 
         Self {
             sub,

@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
     vec,
 };
-
+use std::collections::HashMap;
 use answer::{Type, variable_value::VariableValue};
 use compiler::{ExecutorVariable, executable::match_::instructions::type_::SubInstruction};
 use concept::error::ConceptReadError;
@@ -30,6 +30,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::check_producing_same_variable;
 
 pub(crate) struct SubExecutor {
     sub: ir::pattern::constraint::Sub<ExecutorVariable>,
@@ -71,7 +72,7 @@ impl SubExecutor {
         let sub_to_supertypes = sub.sub_to_supertypes().clone();
         debug_assert!(supertypes.len() > 0);
 
-        let SubInstruction { sub, checks, .. } = sub;
+        let SubInstruction { sub, mut checks, .. } = sub;
 
         let iterate_mode = BinaryIterateMode::new(sub.subtype(), sub.supertype(), &variable_modes, sort_by);
         let filter_fn = match iterate_mode {
@@ -88,14 +89,19 @@ impl SubExecutor {
             BinaryIterateMode::Unbound => TuplePositions::Pair([subtype, supertype]),
             _ => TuplePositions::Pair([supertype, subtype]),
         };
+        let mut extractors = [(subtype, EXTRACT_SUB), (supertype, EXTRACT_SUPER)]
+            .into_iter()
+            .filter_map(|(var, ex)| Some((var?, ex)))
+            .collect();
+        if let (Some(subtype), Some(supertype)) = (subtype, supertype) {
+            check_producing_same_variable(
+                &[(subtype, EXTRACT_SUB), (supertype, EXTRACT_SUPER)],
+                &mut checks,
+                &mut extractors,
+            );
+        }
 
-        let checker = Checker::<(Type, Type)>::new(
-            checks,
-            [(subtype, EXTRACT_SUB), (supertype, EXTRACT_SUPER)]
-                .into_iter()
-                .filter_map(|(var, ex)| Some((var?, ex)))
-                .collect(),
-        );
+        let checker = Checker::<(Type, Type)>::new(checks, extractors);
 
         Self {
             sub,

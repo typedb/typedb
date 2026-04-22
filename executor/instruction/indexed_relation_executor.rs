@@ -33,6 +33,8 @@ use encoding::graph::{
     type_::vertex::{TypeID, TypeVertexEncoding},
 };
 use itertools::Itertools;
+use answer::variable::Variable;
+use compiler::executable::match_::instructions::CheckInstruction;
 use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
@@ -48,6 +50,8 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::{check_producing_same_variable, next_free_internal_variable};
+use crate::instruction::links_executor::EXTRACT_PLAYER;
 
 pub(crate) type IndexedRelationTupleIteratorSingle = IndexedRelationTupleIterator<IndexedRelationsIterator>;
 pub(crate) type IndexedRelationTupleIteratorMerged =
@@ -117,7 +121,7 @@ impl IndexedRelationExecutor {
         debug_assert!(!variable_modes.all_inputs());
 
         let IndexedRelationInstruction {
-            checks,
+            mut checks,
             player_start,
             player_end,
             relation,
@@ -148,51 +152,42 @@ impl IndexedRelationExecutor {
 
         static MODE_PRIORITY: [VariableMode; 4] =
             [VariableMode::Input, VariableMode::Output, VariableMode::Count, VariableMode::Check];
+        // Ensures the macro-derived order hasn't changed
+        debug_assert!((1..MODE_PRIORITY.len()).all(|i| MODE_PRIORITY[i-1] < MODE_PRIORITY[i]));
 
-        let mut output_tuple_positions: [Option<ExecutorVariable>; 5] = [None; 5];
-        // index 0 is always the sort variable
-        match iterate_mode {
-            IndexedRelationIterateMode::Unbound => output_tuple_positions[0] = Some(player_start),
-            IndexedRelationIterateMode::UnboundInvertedToPlayer | IndexedRelationIterateMode::BoundStart => {
-                output_tuple_positions[0] = Some(player_end);
-            }
-            IndexedRelationIterateMode::BoundStartBoundEnd => output_tuple_positions[0] = Some(relation),
-            IndexedRelationIterateMode::BoundStartBoundEndBoundRelation => output_tuple_positions[0] = Some(role_start),
+        let sort_variable = match iterate_mode {
+            IndexedRelationIterateMode::Unbound => player_start,
+            IndexedRelationIterateMode::UnboundInvertedToPlayer | IndexedRelationIterateMode::BoundStart => player_end,
+            IndexedRelationIterateMode::BoundStartBoundEnd => relation,
+            IndexedRelationIterateMode::BoundStartBoundEndBoundRelation => role_start,
         };
-        for output_index in 1..5 {
-            let preceding_variable = output_tuple_positions[output_index - 1].unwrap();
-            let preceding_variable_mode = if Some(preceding_variable) == output_tuple_positions[0] {
-                // special case: we need to allow inputs to follow, so ignore actual mode of sort variable and treat it as input
-                VariableMode::Input
-            } else {
-                variable_modes.get(preceding_variable).unwrap()
-            };
-            'mode: for &mode in MODE_PRIORITY.iter().skip_while(|&&mode| mode != preceding_variable_mode) {
-                // find first unused variable with this mode (else, try the next mode)
-                for variable in variable_component_ordering {
-                    let variable_mode = variable_modes.get(variable).unwrap();
-                    if !output_tuple_positions.contains(&Some(variable)) && mode == variable_mode {
-                        output_tuple_positions[output_index] = Some(variable);
-                        break 'mode;
-                    }
-                }
-            }
-            debug_assert!(output_tuple_positions[output_index].is_some());
+        let mut output_tuple_positions: [Option<ExecutorVariable>; 5] = [None; 5];
+        for i in 0..5 {
+            output_tuple_positions[i] = Some(variable_component_ordering[i]);
         }
+        // Swap so index 0 is always the sort variable. Sort the rest by mode.
+        let sort_variable_position = output_tuple_positions.iter().position(|x| *x == Some(sort_variable)).unwrap();
+        output_tuple_positions.swap(0, sort_variable_position);
+        output_tuple_positions[1..5].sort_by_key(|x| variable_modes.get(x.unwrap()).unwrap());
         debug_assert!(output_tuple_positions.iter().all(|option| option.is_some()));
 
         let output_tuple_positions = TuplePositions::Quintuple(output_tuple_positions);
+        let mut extractors = HashMap::from([
+            (player_start, EXTRACT_PLAYER_START),
+            (player_end, EXTRACT_PLAYER_END),
+            (relation, EXTRACT_RELATION),
+            (role_start, EXTRACT_ROLE_START),
+            (role_end, EXTRACT_ROLE_END),
+        ]);
 
-        let checker = Checker::<(IndexedRelationPlayers, u64)>::new(
-            checks,
-            HashMap::from([
-                (player_start, EXTRACT_PLAYER_START),
-                (player_end, EXTRACT_PLAYER_END),
-                (relation, EXTRACT_RELATION),
-                (role_start, EXTRACT_ROLE_START),
-                (role_end, EXTRACT_ROLE_END),
-            ]),
+        let extractors_ordered = [EXTRACT_PLAYER_START, EXTRACT_PLAYER_END, EXTRACT_RELATION, EXTRACT_ROLE_START, EXTRACT_ROLE_END];
+        check_producing_same_variable(
+            &variable_component_ordering.iter().copied().zip(extractors_ordered.iter().copied()).collect::<Vec<_>>(),
+            &mut checks,
+            &mut extractors,
         );
+
+        let checker = Checker::<(IndexedRelationPlayers, u64)>::new(checks, extractors);
 
         let start_player_cache = if iterate_mode == IndexedRelationIterateMode::UnboundInvertedToPlayer {
             let mut cache = Vec::new();

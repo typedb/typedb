@@ -49,6 +49,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::check_producing_same_variable;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -90,7 +91,7 @@ impl LinksReverseExecutor {
         debug_assert!(!player_relation_types.is_empty());
         let relation_types = links_reverse.relation_types().clone();
         let relation_role_types = links_reverse.relation_to_role_types().clone();
-        let LinksReverseInstruction { links, checks, .. } = links_reverse;
+        let LinksReverseInstruction { links, mut checks, .. } = links_reverse;
         let iterate_mode = LinksIterateMode::new(links.player(), links.relation(), &variable_modes, sort_by);
         let filter_fn = create_links_filter_relations_players_roles(player_relation_types.clone(), relation_role_types);
 
@@ -108,11 +109,13 @@ impl LinksReverseExecutor {
                 TuplePositions::Triple([Some(role_type), Some(relation), Some(player)])
             }
         };
-
-        let checker = Checker::<(Links, _)>::new(
-            checks,
-            HashMap::from([(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]),
+        let mut extractors = HashMap::from([(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]);
+        check_producing_same_variable(
+            &[(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER)],
+            &mut checks,
+            &mut extractors,
         );
+        let checker = Checker::<(Links, _)>::new(checks, extractors);
 
         let player_type_range = (
             Bound::Included(player_relation_types.first_key_value().unwrap().0.as_object_type()),

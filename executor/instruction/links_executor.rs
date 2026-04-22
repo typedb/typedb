@@ -24,6 +24,7 @@ use concept::{
     type_::{object_type::ObjectType, relation_type::RelationType, role_type::RoleType},
 };
 use itertools::Itertools;
+use compiler::executable::match_::instructions::CheckInstruction;
 use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
@@ -46,6 +47,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::check_producing_same_variable;
 
 pub(crate) struct LinksExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -102,7 +104,7 @@ impl LinksExecutor {
         debug_assert!(!relation_player_types.is_empty());
         let player_types = links.player_types().clone();
         let player_role_types = links.relation_to_role_types().clone();
-        let LinksInstruction { links, checks, .. } = links;
+        let LinksInstruction { links, mut checks, .. } = links;
         let iterate_mode = LinksIterateMode::new(links.relation(), links.player(), &variable_modes, sort_by);
         let filter_fn = create_links_filter_relations_players_roles(relation_player_types.clone(), player_role_types);
 
@@ -121,10 +123,13 @@ impl LinksExecutor {
             }
         };
 
-        let checker = Checker::<(Links, _)>::new(
-            checks,
-            HashMap::from([(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]),
+        let mut extractors = HashMap::from([(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]);
+        check_producing_same_variable(
+            &[(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER)],
+            &mut checks,
+            &mut extractors,
         );
+        let checker = Checker::<(Links, _)>::new(checks, extractors);
 
         let relation_type_range = (
             Bound::Included(relation_player_types.first_key_value().unwrap().0.as_relation_type()),
