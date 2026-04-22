@@ -1,0 +1,27 @@
+fixed:
+  type: typedb
+prompts:
+  host:
+    hint: Hostname for the TypeDB pgwire endpoint
+    default: localhost
+  port:
+    hint: Port for the TypeDB pgwire endpoint
+    type: int
+    default: 5432
+  user:
+    hint: Username
+    default: admin
+  pass:
+    hint: Password
+    default: password
+    hide_input: true
+  dbname:
+    hint: Default database that dbt will use
+    default: typedb
+  schema:
+    hint: Default schema
+    default: public
+  threads:
+    hint: 1 or more
+    type: int
+    default: 4
