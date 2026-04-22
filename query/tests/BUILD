@@ -51,6 +51,13 @@ rust_test(
     deps = deps,
 )
 
+rust_test(
+    name = "test_repeated_constraint_variables",
+    crate_root = "test_repeated_constraint_variables.rs",
+    srcs = ["test_repeated_constraint_variables.rs"],
+    deps = deps,
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [
