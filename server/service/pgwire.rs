@@ -16,8 +16,8 @@ use projection::{
     catalog::MaterializedCatalog,
     pgwire::{
         authenticator::PgAuthenticator,
-        connection::{QueryHandler, QueryOutcome},
-        query_executor::{execute_query, ProjectionCatalog},
+        connection::{QueryHandler, QueryOutcome, SessionContext},
+        query_executor::{execute_query, execute_query_with_session},
         sql_parser::parse_sql,
     },
 };
@@ -66,6 +66,17 @@ impl QueryHandler for CatalogQueryHandler {
             Err(err) => QueryOutcome::Error {
                 severity: "ERROR".to_string(),
                 code: "42601".to_string(), // syntax_error
+                message: err.to_string(),
+            },
+        }
+    }
+
+    fn handle_query_with_session(&self, sql: &str, session: &SessionContext) -> QueryOutcome {
+        match parse_sql(sql) {
+            Ok(parsed) => execute_query_with_session(&self.catalog, &parsed, session),
+            Err(err) => QueryOutcome::Error {
+                severity: "ERROR".to_string(),
+                code: "42601".to_string(),
                 message: err.to_string(),
             },
         }

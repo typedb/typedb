@@ -14,7 +14,7 @@ use std::sync::Arc;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::pgwire::{
-    authenticator::{decode_password_message, extract_username, AuthMode},
+    authenticator::{decode_password_message, extract_database, extract_username, AuthMode},
     messages::{
         encode_auth_cleartext_password, encode_auth_ok, encode_backend_key_data, encode_bind_complete,
         encode_close_complete, encode_command_complete, encode_data_row, encode_error_response, encode_no_data,
@@ -44,10 +44,37 @@ pub enum QueryOutcome {
     Error { severity: String, code: String, message: String },
 }
 
+/// Session state captured during startup and reused for session-scoped queries.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SessionContext {
+    pub current_user: String,
+    pub current_database: String,
+    pub current_schema: String,
+    pub server_port: u16,
+    pub backend_pid: i32,
+}
+
+impl Default for SessionContext {
+    fn default() -> Self {
+        Self {
+            current_user: "typedb".into(),
+            current_database: "typedb".into(),
+            current_schema: "public".into(),
+            server_port: 5432,
+            backend_pid: 1,
+        }
+    }
+}
+
 /// Trait for dispatching SQL queries. Implementations can look up projection
 /// catalogs, parse SQL, filter/sort materialized rows, etc.
 pub trait QueryHandler: Send + Sync {
     fn handle_query(&self, sql: &str) -> QueryOutcome;
+
+    fn handle_query_with_session(&self, sql: &str, session: &SessionContext) -> QueryOutcome {
+        let _ = session;
+        self.handle_query(sql)
+    }
 }
 
 // ── Connection parameters sent during handshake ────────────────────
@@ -92,6 +119,7 @@ where
     secret_key: i32,
     /// SQL stored from a Parse message, consumed by Execute.
     pending_sql: Option<String>,
+    session: SessionContext,
 }
 
 impl<S, H> PgConnection<S, H>
@@ -103,7 +131,16 @@ where
     ///
     /// Defaults to `AuthMode::Trust` (no authentication).
     pub fn new(stream: S, handler: Arc<H>, params: ServerParams) -> Self {
-        Self { stream, handler, params, auth_mode: AuthMode::Trust, process_id: 1, secret_key: 0, pending_sql: None }
+        Self {
+            stream,
+            handler,
+            params,
+            auth_mode: AuthMode::Trust,
+            process_id: 1,
+            secret_key: 0,
+            pending_sql: None,
+            session: SessionContext::default(),
+        }
     }
 
     /// Set the authentication mode for this connection.
@@ -116,6 +153,13 @@ where
     pub fn with_backend_key(mut self, process_id: i32, secret_key: i32) -> Self {
         self.process_id = process_id;
         self.secret_key = secret_key;
+        self.session.backend_pid = process_id;
+        self
+    }
+
+    /// Set the server port exposed to session functions.
+    pub fn with_server_port(mut self, server_port: u16) -> Self {
+        self.session.server_port = server_port;
         self
     }
 
@@ -139,6 +183,15 @@ where
             return Err(ConnectionError::Protocol(format!("unsupported protocol version: {version}")));
         }
 
+        let startup_params = crate::pgwire::messages::decode_startup_message(&payload)
+            .map_err(|e| ConnectionError::Protocol(format!("bad startup message: {e}")))?;
+        if let Some(username) = extract_username(&startup_params.parameters) {
+            self.session.current_user = username.to_string();
+        }
+        if let Some(database) = extract_database(&startup_params.parameters) {
+            self.session.current_database = database.to_string();
+        }
+
         // Authenticate based on the configured auth mode.
         // Clone auth_mode to release the immutable borrow on self, allowing
         // mutable stream access for write_all / read_message.
@@ -149,9 +202,6 @@ where
                 self.write_all(&encode_auth_ok()).await?;
             }
             AuthMode::CleartextPassword(authenticator) => {
-                // Parse startup parameters to extract username.
-                let startup_params = crate::pgwire::messages::decode_startup_message(&payload)
-                    .map_err(|e| ConnectionError::Protocol(format!("bad startup message: {e}")))?;
                 let username = extract_username(&startup_params.parameters)
                     .ok_or_else(|| ConnectionError::Protocol("missing 'user' in startup parameters".into()))?
                     .to_string();
@@ -232,7 +282,7 @@ where
                     // Describe: send ParameterDescription (0 params) + RowDescription or NoData.
                     self.write_all(&encode_parameter_description_empty()).await?;
                     if let Some(sql) = &self.pending_sql {
-                        let outcome = self.handler.handle_query(sql);
+                        let outcome = self.handler.handle_query_with_session(sql, &self.session);
                         if let QueryOutcome::Result(ref result) = outcome {
                             if result.columns.is_empty() {
                                 self.write_all(&encode_no_data()).await?;
@@ -281,7 +331,7 @@ where
 
     /// Handle a single Query message: call the handler and send results/error.
     async fn handle_query(&mut self, sql: &str) -> Result<(), ConnectionError> {
-        let outcome = self.handler.handle_query(sql);
+        let outcome = self.handler.handle_query_with_session(sql, &self.session);
         match outcome {
             QueryOutcome::Result(result) => {
                 // Only send RowDescription + DataRows if there are columns.
@@ -313,7 +363,7 @@ where
     /// Like `handle_query` but does NOT send RowDescription (already sent by Describe)
     /// and does NOT send ReadyForQuery (that comes with Sync).
     async fn handle_execute(&mut self, sql: &str) -> Result<(), ConnectionError> {
-        let outcome = self.handler.handle_query(sql);
+        let outcome = self.handler.handle_query_with_session(sql, &self.session);
         match outcome {
             QueryOutcome::Result(result) => {
                 for row in &result.rows {
@@ -464,6 +514,29 @@ mod tests {
                 severity: "ERROR".into(),
                 code: "42P01".into(),
                 message: format!("unknown query: {}", sql),
+            })
+        }
+    }
+
+    struct SessionAwareHandler;
+
+    impl QueryHandler for SessionAwareHandler {
+        fn handle_query(&self, _sql: &str) -> QueryOutcome {
+            QueryOutcome::Error {
+                severity: "ERROR".into(),
+                code: "0A000".into(),
+                message: "session-aware path not used".into(),
+            }
+        }
+
+        fn handle_query_with_session(&self, _sql: &str, session: &SessionContext) -> QueryOutcome {
+            QueryOutcome::Result(QueryResult {
+                columns: vec![],
+                rows: vec![],
+                command_tag: Some(format!(
+                    "USER {} DB {} PID {} PORT {}",
+                    session.current_user, session.current_database, session.backend_pid, session.server_port
+                )),
             })
         }
     }
@@ -1204,6 +1277,52 @@ mod tests {
         let auth_count = types.iter().filter(|&&t| t == MSG_AUTHENTICATION).count();
         assert_eq!(auth_count, 1, "Trust mode should send only AuthOk (1 R message)");
         assert!(types.contains(&MSG_READY_FOR_QUERY));
+    }
+
+    #[tokio::test]
+    async fn query_handler_receives_session_context_from_startup() {
+        let (client_stream, server_stream) = tokio::io::duplex(4096);
+        let handler = Arc::new(SessionAwareHandler);
+        let mut conn = PgConnection::new(server_stream, handler, ServerParams::default())
+            .with_backend_key(42, 99)
+            .with_server_port(15432);
+
+        let (command_tag, _) = tokio::join!(
+            async move {
+                let mut client = client_stream;
+                client.write_all(&build_startup("admin", "analytics")).await.unwrap();
+                client.flush().await.unwrap();
+
+                loop {
+                    let (msg_type, _) = client_read_message(&mut client).await.unwrap();
+                    if msg_type == MSG_READY_FOR_QUERY {
+                        break;
+                    }
+                }
+
+                client.write_all(&build_query("SELECT 1")).await.unwrap();
+                client.flush().await.unwrap();
+
+                let mut tag = String::new();
+                loop {
+                    let (msg_type, payload) = client_read_message(&mut client).await.unwrap();
+                    if msg_type == MSG_COMMAND_COMPLETE {
+                        let end = payload.iter().position(|&b| b == 0).unwrap();
+                        tag = String::from_utf8(payload[..end].to_vec()).unwrap();
+                    }
+                    if msg_type == MSG_READY_FOR_QUERY {
+                        break;
+                    }
+                }
+
+                client.write_all(&build_terminate()).await.unwrap();
+                client.flush().await.unwrap();
+                tag
+            },
+            async move { conn.run().await }
+        );
+
+        assert_eq!(command_tag, "USER admin DB analytics PID 42 PORT 15432");
     }
 
     // ── Extended Query Protocol ─────────────────────────────────

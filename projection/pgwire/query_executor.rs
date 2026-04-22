@@ -12,7 +12,7 @@
 
 use crate::{
     pgwire::{
-        connection::{QueryOutcome, QueryResult},
+        connection::{QueryOutcome, QueryResult, SessionContext},
         messages::ColumnDescription,
         sql_parser::{
             ComparisonOp, LiteralValue, OrderByExpr, ParsedQuery, SelectColumn, SortDirection, WhereCondition,
@@ -55,6 +55,15 @@ pub trait ProjectionCatalog: Send + Sync {
 
 /// Execute a parsed query against the catalog, returning a wire-ready outcome.
 pub fn execute_query(catalog: &dyn ProjectionCatalog, query: &ParsedQuery) -> QueryOutcome {
+    execute_query_with_session(catalog, query, &SessionContext::default())
+}
+
+/// Execute a parsed query against the catalog using a connection session context.
+pub fn execute_query_with_session(
+    catalog: &dyn ProjectionCatalog,
+    query: &ParsedQuery,
+    session: &SessionContext,
+) -> QueryOutcome {
     match query {
         ParsedQuery::ShowTables => execute_show_tables(catalog),
         ParsedQuery::Select { table, schema, columns, where_clause, order_by, limit, offset } => {
@@ -85,7 +94,9 @@ pub fn execute_query(catalog: &dyn ProjectionCatalog, query: &ParsedQuery) -> Qu
         ParsedQuery::Rollback => command_complete("ROLLBACK"),
         ParsedQuery::Deallocate { .. } => command_complete("DEALLOCATE"),
         ParsedQuery::DiscardAll => command_complete("DISCARD ALL"),
-        ParsedQuery::SelectExpression { expressions, aliases } => execute_select_expression(expressions, aliases),
+        ParsedQuery::SelectExpression { expressions, aliases } => {
+            execute_select_expression(expressions, aliases, session)
+        }
     }
 }
 
@@ -100,13 +111,17 @@ fn command_complete(tag: &str) -> QueryOutcome {
 ///
 /// Evaluates well-known functions (current_database, current_schema, version,
 /// current_user, pg_backend_pid, etc.) and literal values.
-fn execute_select_expression(expressions: &[String], aliases: &[Option<String>]) -> QueryOutcome {
+fn execute_select_expression(
+    expressions: &[String],
+    aliases: &[Option<String>],
+    session: &SessionContext,
+) -> QueryOutcome {
     let mut columns = Vec::new();
     let mut values = Vec::new();
 
     for (i, expr) in expressions.iter().enumerate() {
         let lower = expr.to_ascii_lowercase();
-        let (col_name, value) = evaluate_expression(&lower, expr);
+        let (col_name, value) = evaluate_expression(&lower, expr, session);
 
         let name = aliases.get(i).and_then(|a| a.clone()).unwrap_or_else(|| col_name.unwrap_or_else(|| expr.clone()));
 
@@ -126,18 +141,22 @@ fn execute_select_expression(expressions: &[String], aliases: &[Option<String>])
 }
 
 /// Evaluate a single expression. Returns (optional default column name, value).
-fn evaluate_expression(lower: &str, _original: &str) -> (Option<String>, Option<String>) {
+fn evaluate_expression(lower: &str, _original: &str, session: &SessionContext) -> (Option<String>, Option<String>) {
     // Well-known functions.
     match lower {
-        "current_database()" => (Some("current_database".into()), Some("typedb".into())),
-        "current_schema()" | "current_schema" => (Some("current_schema".into()), Some("public".into())),
-        "current_user" | "session_user" | "user" => (Some("current_user".into()), Some("typedb".into())),
+        "current_database()" => (Some("current_database".into()), Some(session.current_database.clone())),
+        "current_schema()" | "current_schema" => {
+            (Some("current_schema".into()), Some(session.current_schema.clone()))
+        }
+        "current_user" | "session_user" | "user" => {
+            (Some("current_user".into()), Some(session.current_user.clone()))
+        }
         "version()" => {
             (Some("version".into()), Some("TypeDB (PostgreSQL-compatible) via pgwire projection facade".into()))
         }
-        "pg_backend_pid()" => (Some("pg_backend_pid".into()), Some("1".into())),
+        "pg_backend_pid()" => (Some("pg_backend_pid".into()), Some(session.backend_pid.to_string())),
         "inet_server_addr()" => (Some("inet_server_addr".into()), None),
-        "inet_server_port()" => (Some("inet_server_port".into()), Some("5432".into())),
+        "inet_server_port()" => (Some("inet_server_port".into()), Some(session.server_port.to_string())),
         "pg_is_in_recovery()" => (Some("pg_is_in_recovery".into()), Some("f".into())),
         "txid_current()" => (Some("txid_current".into()), Some("1".into())),
         _ => {
@@ -978,6 +997,7 @@ fn apply_offset_limit(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::pgwire::connection::SessionContext;
 
     // ── Test catalog stub ──────────────────────────────────────────
 
@@ -1997,6 +2017,35 @@ mod tests {
         assert_eq!(result.columns[1].name, "me");
         assert_eq!(result.rows[0][0], Some("typedb".to_string()));
         assert_eq!(result.rows[0][1], Some("typedb".to_string()));
+    }
+
+    #[test]
+    fn test_select_expressions_use_session_context() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::SelectExpression {
+            expressions: vec![
+                "current_database()".into(),
+                "current_schema()".into(),
+                "current_user".into(),
+                "pg_backend_pid()".into(),
+                "inet_server_port()".into(),
+            ],
+            aliases: vec![None, None, None, None, None],
+        };
+        let session = SessionContext {
+            current_user: "admin".into(),
+            current_database: "analytics".into(),
+            current_schema: "reporting".into(),
+            server_port: 15432,
+            backend_pid: 77,
+        };
+
+        let result = unwrap_result(execute_query_with_session(&catalog, &query, &session));
+        assert_eq!(result.rows[0][0], Some("analytics".to_string()));
+        assert_eq!(result.rows[0][1], Some("reporting".to_string()));
+        assert_eq!(result.rows[0][2], Some("admin".to_string()));
+        assert_eq!(result.rows[0][3], Some("77".to_string()));
+        assert_eq!(result.rows[0][4], Some("15432".to_string()));
     }
 
     // ── pg_catalog ORM compat (empty virtual tables) ───────────────

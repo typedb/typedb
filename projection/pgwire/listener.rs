@@ -104,10 +104,13 @@ impl<H: QueryHandler + 'static> PgWireListener<H> {
         let params = self.params.clone();
         let auth_mode = self.auth_mode.clone();
         let pid = self.next_pid();
+        let server_port = stream.local_addr().ok().map(|addr| addr.port()).unwrap_or(5432);
 
         tokio::spawn(async move {
-            let mut conn =
-                PgConnection::new(stream, handler, params).with_backend_key(pid, 0).with_auth_mode(auth_mode);
+            let mut conn = PgConnection::new(stream, handler, params)
+                .with_backend_key(pid, 0)
+                .with_server_port(server_port)
+                .with_auth_mode(auth_mode);
             // Connection errors are expected (e.g. client disconnect).
             let _ = conn.run().await;
         })
