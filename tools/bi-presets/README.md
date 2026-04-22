@@ -1,7 +1,11 @@
 # TypeDB BI Tool Connection Presets
 
 Connection configuration for popular BI tools. TypeDB's pgwire endpoint
-is compatible with any tool that speaks the PostgreSQL wire protocol.
+is compatible with tools that speak the PostgreSQL wire protocol for
+read-only schema discovery and `SELECT` workloads.
+
+Enable `server.pgwire.enabled` first. These presets assume the default
+development credentials `admin` / `password`.
 
 ## Common settings
 
@@ -11,8 +15,8 @@ is compatible with any tool that speaks the PostgreSQL wire protocol.
 | Host       | `localhost`   |
 | Port       | `5432`        |
 | Database   | `typedb`      |
-| Username   | `typedb`      |
-| Password   | *(empty)*     |
+| Username   | `admin`       |
+| Password   | `password`    |
 | SSL        | Off (default) |
 
 ---
@@ -28,8 +32,8 @@ is compatible with any tool that speaks the PostgreSQL wire protocol.
 | Host               | `localhost`           |
 | Port               | `5432`               |
 | Database           | `typedb`             |
-| Username           | `typedb`             |
-| Password           | *(empty)*            |
+| Username           | `admin`              |
+| Password           | `password`           |
 | Schema             | `public`             |
 | Additional JDBC    | *(leave blank)*      |
 | Max connections    | `5`                  |
@@ -56,7 +60,7 @@ explore: my_projection {
 | Database  | `typedb`              |
 | Data mode | Import (recommended)  |
 
-Then enter `typedb` / *(empty)* for credentials.
+Then enter `admin` / `password` for credentials.
 
 ### Notes
 
@@ -78,8 +82,8 @@ Then enter `typedb` / *(empty)* for credentials.
 | Host                | `localhost`   |
 | Port                | `5432`        |
 | Database name       | `typedb`      |
-| Username            | `typedb`      |
-| Password            | *(empty)*     |
+| Username            | `admin`       |
+| Password            | `password`    |
 
 ### Sync
 
@@ -97,14 +101,14 @@ Any standard PostgreSQL client works out of the box:
 Host:     localhost
 Port:     5432
 Database: typedb
-User:     typedb
-Password: (empty)
+User:     admin
+Password: password
 ```
 
 Or via connection string:
 
 ```
-postgresql://typedb@localhost:5432/typedb
+postgresql://admin:password@localhost:5432/typedb
 ```
 
 ---
@@ -112,13 +116,13 @@ postgresql://typedb@localhost:5432/typedb
 ## psql (built-in)
 
 ```bash
-typedb psql
+PGPASSWORD=password typedb psql
 # or with custom host/port:
-typedb psql --host myserver --port 5432
+PGPASSWORD=password typedb psql --host myserver --port 5432
 ```
 
 Or directly:
 
 ```bash
-psql -h localhost -p 5432 -U typedb -d typedb
+PGPASSWORD=password psql -h localhost -p 5432 -U admin -d typedb
 ```

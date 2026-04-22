@@ -6,8 +6,8 @@
     "server": "localhost",
     "port": 5432,
     "database": "typedb",
-    "username": "typedb",
-    "password": "",
+    "username": "admin",
+    "password": "password",
     "dataConnectivityMode": "Import",
     "advancedOptions": {
       "commandTimeout": 120,
@@ -17,6 +17,7 @@
   "notes": [
     "Use Import mode — DirectQuery requires full SQL push-down.",
     "Power BI navigator discovers tables via information_schema.",
-    "SSL is off by default; enable if your deployment requires it."
+    "SSL is off by default; enable if your deployment requires it.",
+    "This preset assumes the default development credentials admin/password."
   ]
 }

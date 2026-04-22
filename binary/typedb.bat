@@ -36,7 +36,7 @@ goto exit
 REM Launch psql connected to the TypeDB pgwire endpoint.
 SET PSQL_HOST=localhost
 SET PSQL_PORT=5432
-SET PSQL_USER=typedb
+SET PSQL_USER=admin
 SET PSQL_DB=typedb
 shift
 :psqlargs
@@ -49,6 +49,15 @@ if "%1"=="--help" (
   echo Usage: typedb psql [--host HOST] [--port PORT] [--user USER] [--database DB]
   echo.
   echo Launches psql connected to the TypeDB pgwire endpoint.
+  echo.
+  echo Defaults:
+  echo   --host      localhost
+  echo   --port      5432
+  echo   --user      admin
+  echo   --database  typedb
+  echo.
+  echo Password handling:
+  echo   psql reads PGPASSWORD or prompts interactively.
   goto exit
 )
 echo Unknown option: %1
