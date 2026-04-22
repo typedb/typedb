@@ -50,7 +50,7 @@ case "$1" in
         # Launch psql connected to the TypeDB pgwire endpoint.
         PSQL_HOST="localhost"
         PSQL_PORT="5432"
-        PSQL_USER="typedb"
+        PSQL_USER="admin"
         PSQL_DB="typedb"
         shift # consume 'psql'
         while [[ $# -gt 0 ]]; do
@@ -67,8 +67,11 @@ case "$1" in
                     echo "Defaults:"
                     echo "  --host      localhost"
                     echo "  --port      5432"
-                    echo "  --user      typedb"
+                    echo "  --user      admin"
                     echo "  --database  typedb"
+                    echo ""
+                    echo "Password handling:"
+                    echo "  psql reads PGPASSWORD or prompts interactively."
                     exit 0
                     ;;
                 *) echo "Unknown option: $1"; exit 1 ;;

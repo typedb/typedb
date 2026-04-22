@@ -400,7 +400,7 @@ pub mod tests {
     #[test]
     fn pgwire_config_parsed_from_yaml() {
         let config = load_and_parse(config_path(), vec![]).unwrap();
-        assert_true!(config.server.pgwire.enabled);
+        assert_true!(!config.server.pgwire.enabled);
         assert_eq!(config.server.pgwire.address.as_str(), "0.0.0.0:5432");
     }
 

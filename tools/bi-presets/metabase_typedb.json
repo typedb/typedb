@@ -3,8 +3,8 @@
     "host": "localhost",
     "port": 5432,
     "dbname": "typedb",
-    "user": "typedb",
-    "password": "",
+    "user": "admin",
+    "password": "password",
     "ssl": false,
     "tunnel-enabled": false,
     "additional-options": ""
@@ -13,6 +13,7 @@
   "name": "TypeDB via pgwire",
   "notes": [
     "Metabase syncs schema metadata automatically on connection.",
-    "information_schema and pg_catalog virtual tables provide discovery."
+    "information_schema and pg_catalog virtual tables provide discovery.",
+    "This preset assumes the default development credentials admin/password."
   ]
 }

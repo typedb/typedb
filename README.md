@@ -162,19 +162,21 @@ Install prerequisites:
 
 ## PostgreSQL Wire Protocol (pgwire) Endpoint
 
-TypeDB includes a Postgres-compatible wire protocol endpoint that lets you connect with any standard PostgreSQL client (`psql`, JDBC, Python `psycopg2`, etc.) and BI tools (Looker, Power BI, Metabase).
+TypeDB includes an experimental, read-only PostgreSQL wire compatibility endpoint for projection catalogs. It lets standard PostgreSQL clients (`psql`, JDBC, Python `psycopg2`, etc.) and metadata-oriented BI tools connect without needing a TypeQL-specific client, but it is not a full PostgreSQL server.
 
 ### Connecting
 
-The pgwire endpoint is enabled by default on port **5432**. Connect with `psql`:
+The pgwire endpoint is disabled by default. Enable it on port **5432** and connect with `psql`:
 
 ```sh
 psql "host=localhost port=5432 user=admin dbname=typedb sslmode=disable"
 ```
 
-Default credentials: `admin` / `password`.
+Default development credentials: `admin` / `password`. Change them before exposing the endpoint outside local development.
 
 ### Supported Queries
+
+The compatibility surface is focused on read-only catalog discovery and `SELECT`-driven tooling.
 
 **Session & metadata:**
 
@@ -186,7 +188,7 @@ SELECT current_database();
 -- typedb
 
 SELECT current_user;
--- typedb
+-- admin (with the default server user)
 ```
 
 **Catalog introspection (`pg_catalog`):**
@@ -247,7 +249,7 @@ SHOW TABLES;
 
 ### Configuration
 
-In `server/config.yml`:
+Enable it in `server/config.yml`:
 
 ```yaml
 server:
@@ -256,12 +258,16 @@ server:
         address: 0.0.0.0:5432
 ```
 
+Write-oriented PostgreSQL features such as DDL, DML, extensions, triggers, and stored procedures are intentionally out of scope for this compatibility layer.
+
 ### BI Tool Presets
 
 Pre-built connection configs are available in `tools/bi-presets/` for:
 - **Looker** — LookML connection settings
 - **Power BI** — ODBC/native connector config
 - **Metabase** — Database connection template
+
+These presets assume the stock development credentials `admin` / `password` and should be updated for non-default deployments.
 
 ### dbt Adapter
 

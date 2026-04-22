@@ -2,6 +2,7 @@
 # Import this into your Looker project or use as reference.
 #
 # File: looker_typedb_connection.lkml
+# Default local credentials for the connection are admin/password unless changed.
 
 connection: "typedb"
 
