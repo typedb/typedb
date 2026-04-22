@@ -252,7 +252,7 @@ impl BlockContext {
         self.input_variables.contains(var)
     }
 
-    fn registered_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub fn registered_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.variable_declaration.iter().copied()
     }
 }

@@ -7,7 +7,7 @@
 use concept::error::ConceptReadError;
 use error::typedb_error;
 use ir::pattern::conjunction::Conjunction;
-
+use ir::RepresentationError;
 use crate::annotation::pipeline::AnnotatedPipeline;
 
 pub mod redundant_constraints;
@@ -25,5 +25,6 @@ pub(crate) trait PipelineTransformation {
 typedb_error!(
     pub StaticOptimiserError(component = "Static optimiser", prefix = "SOP") {
         ConceptRead(1, "Error reading concept", typedb_source: Box<ConceptReadError>),
+        Representation(2, "Error in rewriting representation", typedb_source: Box<RepresentationError>),
     }
 );

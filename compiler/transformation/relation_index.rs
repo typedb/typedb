@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
@@ -14,6 +14,7 @@ use ir::pattern::{
     constraint::{Comparator, Constraint, IndexedRelation, Links},
     nested_pattern::NestedPattern,
 };
+use ir::pipeline::VariableRegistry;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -22,6 +23,7 @@ use crate::{
     },
     transformation::StaticOptimiserError,
 };
+use crate::annotation::type_annotations::LeftRightAnnotations;
 
 /// Precondition:
 ///   1) $r links $x (role: $role1)
@@ -38,6 +40,7 @@ use crate::{
 ///   3) $x indexed_relation $y via $r ($role1, $role2)
 pub fn relation_index_transformation(
     conjunction: &mut Conjunction,
+    variable_registry: &mut VariableRegistry,
     block_annotations: &mut BlockAnnotations,
     type_manager: &TypeManager,
     snapshot: &impl ReadableSnapshot,
@@ -63,7 +66,7 @@ pub fn relation_index_transformation(
             && !with_iid_or_constant_attribute(&relation, conjunction)
         {
             let other_links_index = other_links_indices[0];
-            replace_links(conjunction, links_index, other_links_index, type_annotations);
+            replace_links(conjunction, links_index, other_links_index, type_annotations, variable_registry);
 
             // update the other indexes so they remain accurate
             for (_, (index, other_indices)) in candidates.iter_mut() {
@@ -79,14 +82,14 @@ pub fn relation_index_transformation(
         match nested {
             NestedPattern::Disjunction(disjunction) => {
                 for branch_conjunction in disjunction.conjunctions_mut() {
-                    relation_index_transformation(branch_conjunction, block_annotations, type_manager, snapshot)?;
+                    relation_index_transformation(branch_conjunction, variable_registry, block_annotations, type_manager, snapshot)?;
                 }
             }
             NestedPattern::Negation(negation) => {
-                relation_index_transformation(negation.conjunction_mut(), block_annotations, type_manager, snapshot)?;
+                relation_index_transformation(negation.conjunction_mut(), variable_registry, block_annotations, type_manager, snapshot)?;
             }
             NestedPattern::Optional(optional) => {
-                relation_index_transformation(optional.conjunction_mut(), block_annotations, type_manager, snapshot)?;
+                relation_index_transformation(optional.conjunction_mut(), variable_registry, block_annotations, type_manager, snapshot)?;
             }
         }
     }
@@ -139,7 +142,8 @@ fn replace_links(
     index_rp_1: usize,
     index_rp_2: usize,
     annotations: &mut TypeAnnotations,
-) {
+    variable_registry: &mut VariableRegistry
+)  -> Result<(), StaticOptimiserError> {
     debug_assert!(index_rp_1 != index_rp_2);
     let (remove_first, remove_second) =
         if index_rp_1 > index_rp_2 { (index_rp_1, index_rp_2) } else { (index_rp_2, index_rp_1) };
@@ -155,20 +159,35 @@ fn replace_links(
     };
     debug_assert_eq!(links_1.relation(), links_2.relation());
 
-    let indexed_relation = IndexedRelation::new(
+    let (player1, mut player2, mut relation, role1, mut role2) = (
         links_1.player().clone().as_variable().unwrap(),
         links_2.player().clone().as_variable().unwrap(),
         links_1.relation().clone().as_variable().unwrap(),
         links_1.role_type().clone().as_variable().unwrap(),
         links_2.role_type().clone().as_variable().unwrap(),
+    );
+
+    may_replace_reused_variables(conjunction, &player1, &mut relation, annotations,  variable_registry)?;
+    may_replace_reused_variables(conjunction, &player2, &mut relation, annotations,  variable_registry)?;
+    may_replace_reused_variables(conjunction, &player1, &mut player2, annotations,  variable_registry)?;
+    may_replace_reused_variables(conjunction, &role1, &mut role2, annotations,  variable_registry)?;
+
+    let indexed_relation = IndexedRelation::new(
+        player1,
+        player2,
+        relation,
+        role1,
+        role2,
         links_1.source_span(),
         links_2.source_span(),
     );
-    add_type_annotations(&links_1, &links_2, &indexed_relation, annotations);
+    println!("{player1}, {player2}, {relation}, {role1}, {role2}");
+    add_constraint_annotations(&links_1, &links_2, &indexed_relation, annotations);
     conjunction.constraints_mut().constraints_mut().push(Constraint::IndexedRelation(indexed_relation));
+    Ok(())
 }
 
-fn add_type_annotations(
+fn add_constraint_annotations(
     links_1: &Links<Variable>,
     links_2: &Links<Variable>,
     indexed_relation: &IndexedRelation<Variable>,
@@ -201,4 +220,20 @@ fn index_decrement_if_removing(index: usize, removed_1: usize, removed_2: usize)
         decrement_by += 1;
     }
     decrement_by
+}
+
+fn may_replace_reused_variables(conjunction: &mut Conjunction, first: &Variable, second: &mut Variable, annotations: &mut TypeAnnotations, variable_registry: &mut VariableRegistry) -> Result<(), StaticOptimiserError> {
+    if first == second {
+        *second = variable_registry.create_into_anonymous_variable_from(*second)
+            .map_err(|typedb_source| StaticOptimiserError::Representation { typedb_source })?;
+        let is = Constraint::Is(ir::pattern::constraint::Is::new(*first, *second, None));
+        conjunction.constraints_mut().constraints_mut().push(is.clone());
+        let vertex_annotations = annotations.vertex_annotations_of(&Vertex::Variable(*first)).unwrap().clone();
+        annotations.vertex_annotations_mut().insert(Vertex::Variable(*second), vertex_annotations.clone());
+
+        let vv_annotations: BTreeMap<_, _> = vertex_annotations.iter().copied().map(|type_| (type_, vec![type_])).collect();
+        let lr_annotations = LeftRightAnnotations::new(vv_annotations.clone(), vv_annotations);
+        annotations.constraint_annotations_mut().insert(is, ConstraintTypeAnnotations::LeftRight(lr_annotations));
+    }
+    Ok(())
 }

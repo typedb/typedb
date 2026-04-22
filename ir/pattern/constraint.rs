@@ -153,9 +153,13 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         kind: SubKind,
         subtype: Vertex<Variable>,
-        supertype: Vertex<Variable>,
+        mut supertype: Vertex<Variable>,
         source_span: Option<Span>,
     ) -> Result<&Sub<Variable>, Box<RepresentationError>> {
+        if let (Vertex::Variable(subtype), Vertex::Variable(supertype)) = (&subtype, &mut supertype) {
+            self.may_rewrite_second_if_reused(subtype, supertype, source_span.clone())?;
+        }
+
         let subtype_var = subtype.as_variable();
         let supertype_var = supertype.as_variable();
         let sub = Sub::new(kind, subtype, supertype, source_span);
@@ -231,11 +235,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_links(
         &mut self,
-        relation: Variable,
+        mut relation: Variable,
         player: Variable,
         role_type: Variable,
         source_span: Option<Span>,
     ) -> Result<&Links<Variable>, Box<RepresentationError>> {
+        self.may_rewrite_second_if_reused(&player, &mut relation, source_span.clone())?;
         let links = Constraint::from(Links::new(relation, player, role_type, source_span));
 
         self.context.set_variable_category(relation, VariableCategory::Object, links.clone())?;
@@ -287,11 +292,18 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub(crate) fn add_builtin_function_binding(
         &mut self,
-        assigned: Vec<Variable>,
+        mut assigned: Vec<Variable>,
         builtin_id: super::expression::BuiltinConceptFunctionID,
         arguments: Vec<Variable>,
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
+        for i in 0..assigned.len() {
+            for j in (i+1)..assigned.len() {
+                let (first, second) = assigned.split_at_mut(j);
+                self.may_rewrite_second_if_reused(&first[i], &mut second[0], source_span.clone())?;
+            }
+        }
+
         if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(**var)) {
             let variable = self
                 .context
@@ -513,6 +525,14 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub(crate) fn parameters(&mut self) -> &mut ParameterRegistry {
         self.context.parameters()
+    }
+
+    pub fn may_rewrite_second_if_reused(&mut self, first: &Variable, second: &mut Variable, source_span: Option<Span>) -> Result<(), Box<RepresentationError>> {
+        if *first == *second {
+            *second = self.context.create_anonymous_variable(source_span)?;
+            self.add_is(*first, *second, None)?;
+        }
+        Ok(())
     }
 }
 
@@ -1337,7 +1357,7 @@ pub struct Is<ID> {
 }
 
 impl<ID> Is<ID> {
-    fn new(lhs: ID, rhs: ID, source_span: Option<Span>) -> Self {
+    pub fn new(lhs: ID, rhs: ID, source_span: Option<Span>) -> Self {
         Self { lhs: Vertex::Variable(lhs), rhs: Vertex::Variable(rhs), source_span }
     }
 
