@@ -436,14 +436,15 @@ where
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        match self.input.next() {
-            None => None,
-            Some(Err(err)) => return Some(Err(err)),
-            Some(Ok(row)) => {
-                if self.seen.insert(row.clone().into_owned()) {
-                    Some(Ok(row.clone().into_owned()))
-                } else {
-                    self.next()
+        loop {
+            match self.input.next() {
+                None => return None,
+                Some(Err(err)) => return Some(Err(err)),
+                Some(Ok(row)) => {
+                    if self.seen.insert(row.clone().into_owned()) {
+                        return Some(Ok(row.clone().into_owned()));
+                    }
+                    // duplicate → continue loop instead of recursing
                 }
             }
         }
