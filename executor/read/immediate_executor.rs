@@ -287,45 +287,47 @@ impl IntersectionExecutor {
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<bool, ReadExecutionError> {
-        if self.cartesian_iterator.is_active() {
-            let found = self.cartesian_iterator.find_next(context, &self.instruction_executors)?;
-            if found {
-                Ok(true)
-            } else {
-                // advance the first iterator past the intersection point to move to the next intersection
-                let iter = &mut self.iterators[0];
-                while iter
-                    .peek_first_unbound_value()
-                    .transpose()
-                    .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
-                    .is_some_and(|value| value == &self.intersection_value)
-                {
-                    iter.advance_single().map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
-                }
-                self.compute_next_row(context)
-            }
-        } else {
-            while self.input.as_mut().unwrap().peek().is_some() {
-                let found = self.find_intersection()?;
+        loop {
+            if self.cartesian_iterator.is_active() {
+                let found = self.cartesian_iterator.find_next(context, &self.instruction_executors)?;
                 if found {
-                    self.record_intersection()?;
-                    self.advance_intersection_iterators_with_multiplicity()?;
-                    self.may_activate_cartesian(context)?;
                     return Ok(true);
                 } else {
-                    self.iterators.clear();
-                    self.cartesian_iterator.clear();
-                    while self.iterators.is_empty() {
-                        let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone());
-                        if self.input.as_mut().unwrap().peek().is_some() {
-                            self.may_create_intersection_iterators(context)?;
-                        } else {
-                            break;
+                    // advance the first iterator past the intersection point to move to the next intersection
+                    let iter = &mut self.iterators[0];
+                    while iter
+                        .peek_first_unbound_value()
+                        .transpose()
+                        .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
+                        .is_some_and(|value| value == &self.intersection_value)
+                    {
+                        iter.advance_single().map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
+                    }
+                    continue; // don't use recursion: could stack overflow
+                }
+            } else {
+                while self.input.as_mut().unwrap().peek().is_some() {
+                    let found = self.find_intersection()?;
+                    if found {
+                        self.record_intersection()?;
+                        self.advance_intersection_iterators_with_multiplicity()?;
+                        self.may_activate_cartesian(context)?;
+                        return Ok(true);
+                    } else {
+                        self.iterators.clear();
+                        self.cartesian_iterator.clear();
+                        while self.iterators.is_empty() {
+                            let _ = self.input.as_mut().unwrap().next().unwrap().map_err(|err| err.clone());
+                            if self.input.as_mut().unwrap().peek().is_some() {
+                                self.may_create_intersection_iterators(context)?;
+                            } else {
+                                break;
+                            }
                         }
                     }
                 }
+                return Ok(false);
             }
-            Ok(false)
         }
     }
 
