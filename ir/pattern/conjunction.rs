@@ -28,6 +28,9 @@ use crate::{
     },
     pipeline::block::BlockBuilderContext,
 };
+use crate::pattern::constraint::Is;
+use crate::pattern::IsRequired;
+use crate::pipeline::VariableRegistry;
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {
@@ -72,6 +75,14 @@ impl Conjunction {
             Ok(Constraint::Unsatisfiable(_)) => true,
             Ok(_) | Err(_) => false,
         }
+    }
+
+    pub fn create_anonymous_variable_copying(&mut self, source: Variable, variable_registry: &mut VariableRegistry) -> Result<(Variable, Constraint<Variable>), Box<RepresentationError>> {
+        let new_var = variable_registry.create_anonymous_variable_copying(source)?;
+        self.pattern_variables.0.insert(new_var, IsRequired::NotRequired);
+        let constraint_is = Constraint::Is(Is::new(source, new_var, None));
+        self.constraints.constraints_mut().push(constraint_is.clone());
+        Ok((new_var, constraint_is))
     }
 }
 

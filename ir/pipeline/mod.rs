@@ -169,7 +169,7 @@ impl VariableRegistry {
         Ok(variable)
     }
 
-    pub fn create_into_anonymous_variable_from(&mut self, source: Variable) -> Result<Variable, Box<RepresentationError>> {
+    pub(crate) fn create_anonymous_variable_copying(&mut self, source: Variable) -> Result<Variable, Box<RepresentationError>> {
         let variable = self.allocate_variable(true, None)?;
         if let Some(category) = self.get_variable_category(source) {
             self.set_variable_category(variable, category, VariableCategorySource::Variable(source))?;
