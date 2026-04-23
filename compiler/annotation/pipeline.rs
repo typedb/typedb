@@ -599,6 +599,14 @@ fn annotate_write_constraint(
                 annotations.vertex_annotations_of(isa.thing()).unwrap().clone(),
             );
         }
+        Constraint::Is(is) => {
+            running_variable_annotations
+                .entry(is.lhs().as_variable().unwrap())
+                .or_insert_with(|| annotations.vertex_annotations_of(is.lhs()).unwrap().clone());
+            running_variable_annotations
+                .entry(is.rhs().as_variable().unwrap())
+                .or_insert_with(|| annotations.vertex_annotations_of(is.rhs()).unwrap().clone());
+        }
         Constraint::RoleName(role_name) => {
             running_variable_annotations.insert(
                 role_name.type_().as_variable().unwrap(),

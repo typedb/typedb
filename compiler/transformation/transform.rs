@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use concept::type_::type_manager::TypeManager;
+use ir::pipeline::VariableRegistry;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -20,13 +21,20 @@ use crate::{
 pub fn apply_transformations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
+    variable_registry: &mut VariableRegistry,
     pipeline: &mut AnnotatedPipeline,
 ) -> Result<(), StaticOptimiserError> {
     for stage in &mut pipeline.annotated_stages {
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
             optimize_away_statically_unsatisfiable_conjunctions(block.conjunction_mut(), block_annotations);
             prune_redundant_roleplayer_deduplication(block.conjunction_mut(), block_annotations);
-            relation_index_transformation(block.conjunction_mut(), block_annotations, type_manager, snapshot)?;
+            relation_index_transformation(
+                block.conjunction_mut(),
+                variable_registry,
+                block_annotations,
+                type_manager,
+                snapshot,
+            )?;
         }
     }
     Ok(())

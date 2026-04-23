@@ -153,9 +153,13 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         kind: SubKind,
         subtype: Vertex<Variable>,
-        supertype: Vertex<Variable>,
+        mut supertype: Vertex<Variable>,
         source_span: Option<Span>,
     ) -> Result<&Sub<Variable>, Box<RepresentationError>> {
+        if let (Vertex::Variable(subtype), Vertex::Variable(supertype)) = (&subtype, &mut supertype) {
+            self.may_rewrite_second_if_reused(subtype, supertype, false, source_span.clone())?;
+        }
+
         let subtype_var = subtype.as_variable();
         let supertype_var = supertype.as_variable();
         let sub = Sub::new(kind, subtype, supertype, source_span);
@@ -231,11 +235,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_links(
         &mut self,
-        relation: Variable,
+        mut relation: Variable,
         player: Variable,
         role_type: Variable,
         source_span: Option<Span>,
     ) -> Result<&Links<Variable>, Box<RepresentationError>> {
+        self.may_rewrite_second_if_reused(&player, &mut relation, false, source_span.clone())?;
         let links = Constraint::from(Links::new(relation, player, role_type, source_span));
 
         self.context.set_variable_category(relation, VariableCategory::Object, links.clone())?;
@@ -287,11 +292,20 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub(crate) fn add_builtin_function_binding(
         &mut self,
-        assigned: Vec<Variable>,
+        mut assigned: Vec<Variable>,
         builtin_id: super::expression::BuiltinConceptFunctionID,
         arguments: Vec<Variable>,
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
+        let callee_signature = builtin_id.signature();
+        for i in 0..assigned.len() {
+            for j in (i + 1)..assigned.len() {
+                let is_value_category = callee_signature.returns[i].0 == VariableCategory::Value;
+                let (first, second) = assigned.split_at_mut(j);
+                self.may_rewrite_second_if_reused(&first[i], &mut second[0], is_value_category, source_span.clone())?;
+            }
+        }
+
         if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(**var)) {
             let variable = self
                 .context
@@ -300,8 +314,6 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
         }
-
-        let callee_signature = builtin_id.signature();
 
         let function_call =
             self.create_function_call(&assigned, &callee_signature, arguments, builtin_id.name(), source_span)?;
@@ -322,12 +334,19 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_function_binding(
         &mut self,
-        assigned: Vec<Variable>,
+        mut assigned: Vec<Variable>,
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
         function_name: &str,
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
+        for i in 0..assigned.len() {
+            for j in (i + 1)..assigned.len() {
+                let is_value_category = callee_signature.returns[i].0 == VariableCategory::Value;
+                let (first, second) = assigned.split_at_mut(j);
+                self.may_rewrite_second_if_reused(&first[i], &mut second[0], is_value_category, source_span.clone())?;
+            }
+        }
         if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(**var)) {
             let variable = self
                 .context
@@ -513,6 +532,24 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub(crate) fn parameters(&mut self) -> &mut ParameterRegistry {
         self.context.parameters()
+    }
+
+    pub fn may_rewrite_second_if_reused(
+        &mut self,
+        first: &Variable,
+        second: &mut Variable,
+        is_value_category: bool,
+        source_span: Option<Span>,
+    ) -> Result<(), Box<RepresentationError>> {
+        if *first == *second {
+            *second = self.context.create_anonymous_variable(source_span)?;
+            if is_value_category {
+                self.add_comparison(Vertex::Variable(*first), Vertex::Variable(*second), Comparator::Equal, None)?;
+            } else {
+                self.add_is(*first, *second, None)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -1337,7 +1374,7 @@ pub struct Is<ID> {
 }
 
 impl<ID> Is<ID> {
-    fn new(lhs: ID, rhs: ID, source_span: Option<Span>) -> Self {
+    pub fn new(lhs: ID, rhs: ID, source_span: Option<Span>) -> Self {
         Self { lhs: Vertex::Variable(lhs), rhs: Vertex::Variable(rhs), source_span }
     }
 

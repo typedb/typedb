@@ -210,6 +210,12 @@ typedb_error! {
             "Specifying a scoped label constraint on a label is not allowed.",
             source_span: Option<Span>,
         ),
+        FunctionCallReusedAssignmentVariable(
+            32,
+            "The variable '{variable}' may not be assigned to multiple times by the same function.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
         UpdateVariableUnavailable(
             39,
             "The variable '{variable}' referenced in the update stage is unavailable. It should be bound in the previous stage.",

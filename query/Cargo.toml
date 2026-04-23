@@ -114,4 +114,3 @@ features = {}
 [[test]]
 	path = "tests/define.rs"
 	name = "test_define"
-

@@ -18,15 +18,15 @@ use typeql::common::Span;
 use crate::{
     RepresentationError,
     pattern::{
-        BindingMode, ContextualisedBindingMode, Pattern, PatternVariables, Scope, ScopeId,
-        constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
+        BindingMode, ContextualisedBindingMode, IsRequired, Pattern, PatternVariables, Scope, ScopeId,
+        constraint::{Constraint, Constraints, ConstraintsBuilder, Is, Unsatisfiable},
         disjunction::{DisjunctionBuilder, DisjunctionBuilderWithContext},
         impl_pattern_from_pattern_variables,
         negation::NegationBuilder,
         nested_pattern::NestedPattern,
         optional::OptionalBuilder,
     },
-    pipeline::block::BlockBuilderContext,
+    pipeline::{VariableRegistry, block::BlockBuilderContext},
 };
 
 #[derive(Debug, Clone)]
@@ -72,6 +72,18 @@ impl Conjunction {
             Ok(Constraint::Unsatisfiable(_)) => true,
             Ok(_) | Err(_) => false,
         }
+    }
+
+    pub fn create_anonymous_variable_copying(
+        &mut self,
+        source: Variable,
+        variable_registry: &mut VariableRegistry,
+    ) -> Result<(Variable, Constraint<Variable>), Box<RepresentationError>> {
+        let new_var = variable_registry.create_anonymous_variable_copying(source)?;
+        self.pattern_variables.0.insert(new_var, IsRequired::NotRequired);
+        let constraint_is = Constraint::Is(Is::new(source, new_var, None));
+        self.constraints.constraints_mut().push(constraint_is.clone());
+        Ok((new_var, constraint_is))
     }
 }
 
