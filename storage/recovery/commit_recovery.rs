@@ -6,20 +6,20 @@
 
 use crate::recovery::commit_recovery::StorageRecoveryError::DurabilityRecordDeserialize;
 use crate::{
-    MVCCStorage,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
     sequence_number::SequenceNumber,
     write_batches::WriteBatches,
+    MVCCStorage,
 };
 use bytes::Bytes;
 use durability::RawRecord;
 use error::typedb_error;
-use fail_point::{RECOVERY_PARTIAL_WRITE, fail_point};
+use fail_point::{fail_point, RECOVERY_PARTIAL_WRITE};
 use std::borrow::Cow;
 use std::{collections::BTreeMap, error::Error, sync::Arc};
-use tracing::{Level, event, trace};
+use tracing::{event, trace, Level};
 
 /// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.
 pub fn load_commit_data_from(
