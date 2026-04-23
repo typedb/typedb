@@ -5,12 +5,12 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashMap},
     fmt, iter,
     sync::Arc,
     vec,
 };
-use std::collections::HashMap;
+
 use answer::{Type, variable_value::VariableValue};
 use compiler::{ExecutorVariable, executable::match_::instructions::type_::SubInstruction};
 use concept::error::ConceptReadError;
@@ -21,7 +21,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
+        BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes, check_producing_same_variable,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{SubToTupleFn, TuplePositions, sub_to_tuple_sub_super, sub_to_tuple_super_sub},
@@ -30,7 +30,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::check_producing_same_variable;
 
 pub(crate) struct SubExecutor {
     sub: ir::pattern::constraint::Sub<ExecutorVariable>,

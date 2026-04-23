@@ -31,7 +31,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        LinksIterateMode, VariableModes,
+        LinksIterateMode, VariableModes, check_producing_same_variable,
         checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator},
         links_executor::{
@@ -49,7 +49,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::check_producing_same_variable;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -109,7 +108,8 @@ impl LinksReverseExecutor {
                 TuplePositions::Triple([Some(role_type), Some(relation), Some(player)])
             }
         };
-        let mut extractors = HashMap::from([(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]);
+        let mut extractors =
+            HashMap::from([(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]);
         check_producing_same_variable(
             &[(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER)],
             &mut checks,

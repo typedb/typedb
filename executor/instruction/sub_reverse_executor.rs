@@ -21,7 +21,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        BinaryIterateMode, VariableModes,
+        BinaryIterateMode, VariableModes, check_producing_same_variable,
         checker::Checker,
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         sub_executor::{EXTRACT_SUB, EXTRACT_SUPER, SubFilterFn, SubFilterMapFn, SubTupleIterator},
@@ -31,7 +31,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::check_producing_same_variable;
 
 pub(crate) struct SubReverseExecutor {
     sub: ir::pattern::constraint::Sub<ExecutorVariable>,

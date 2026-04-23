@@ -1188,7 +1188,13 @@ fn setup_self_referential_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     // loop_self links (member: loop_self) — should match $r links (member: $r)
     loop_self
-        .add_player(&mut snapshot, &thing_manager, loop_member_type, loop_self.clone().into_object(), StorageCounters::DISABLED)
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            loop_member_type,
+            loop_self.clone().into_object(),
+            StorageCounters::DISABLED,
+        )
         .unwrap();
     // loop_other links (member: loop_self) — should NOT match $r links (member: $r)
     loop_other
@@ -1218,11 +1224,8 @@ fn traverse_links_relation_is_own_player() {
     let var_r = conjunction.constraints_mut().get_or_declare_variable("r", None).unwrap();
 
     // Both relation and player are $r
-    let links_r_self = conjunction
-        .constraints_mut()
-        .add_links(var_r, var_r, var_loop_member_type, None)
-        .unwrap()
-        .clone();
+    let links_r_self =
+        conjunction.constraints_mut().add_links(var_r, var_r, var_loop_member_type, None).unwrap().clone();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_r, var_loop_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_loop_type, LOOP_LABEL.clone()).unwrap();

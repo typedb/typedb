@@ -63,7 +63,6 @@ const CASTING_MOVIE_LABEL: Label = Label::new_static_scoped("movie", "casting", 
 const CASTING_ACTOR_LABEL: Label = Label::new_static_scoped("actor", "casting", "casting:actor");
 const CASTING_CHARACTER_LABEL: Label = Label::new_static_scoped("character", "casting", "casting:character");
 
-
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
@@ -928,19 +927,43 @@ fn traverse_index_same_player_both_roles() {
         // casting_mixed: person_a as actor, person_b as character — should NOT match (person_a != person_b)
         let casting_mixed = thing_manager.create_relation(&mut snapshot, casting_type).unwrap();
         casting_mixed
-            .add_player(&mut snapshot, &thing_manager, casting_actor_type, person_a.into_object(), StorageCounters::DISABLED)
+            .add_player(
+                &mut snapshot,
+                &thing_manager,
+                casting_actor_type,
+                person_a.into_object(),
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         casting_mixed
-            .add_player(&mut snapshot, &thing_manager, casting_character_type, person_b.into_object(), StorageCounters::DISABLED)
+            .add_player(
+                &mut snapshot,
+                &thing_manager,
+                casting_character_type,
+                person_b.into_object(),
+                StorageCounters::DISABLED,
+            )
             .unwrap();
 
         // casting_same: person_c plays both actor and character — should match
         let casting_same = thing_manager.create_relation(&mut snapshot, casting_type).unwrap();
         casting_same
-            .add_player(&mut snapshot, &thing_manager, casting_actor_type, person_c.clone().into_object(), StorageCounters::DISABLED)
+            .add_player(
+                &mut snapshot,
+                &thing_manager,
+                casting_actor_type,
+                person_c.clone().into_object(),
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         casting_same
-            .add_player(&mut snapshot, &thing_manager, casting_character_type, person_c.into_object(), StorageCounters::DISABLED)
+            .add_player(
+                &mut snapshot,
+                &thing_manager,
+                casting_character_type,
+                person_c.into_object(),
+                StorageCounters::DISABLED,
+            )
             .unwrap();
 
         let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
@@ -964,8 +987,11 @@ fn traverse_index_same_player_both_roles() {
     // Both links use the same player variable $person — this is what triggers the bug
     let links_actor =
         conjunction.constraints_mut().add_links(var_casting, var_person, var_casting_actor_type, None).unwrap().clone();
-    let links_character =
-        conjunction.constraints_mut().add_links(var_casting, var_person, var_casting_character_type, None).unwrap().clone();
+    let links_character = conjunction
+        .constraints_mut()
+        .add_links(var_casting, var_person, var_casting_character_type, None)
+        .unwrap()
+        .clone();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_casting, var_casting_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_casting_type, CASTING_LABEL.clone()).unwrap();
@@ -991,8 +1017,10 @@ fn traverse_index_same_player_both_roles() {
     .unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) =
-        position_mapping([var_person, var_casting], [var_casting_type, var_casting_actor_type, var_casting_character_type]);
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
+        [var_person, var_casting],
+        [var_casting_type, var_casting_actor_type, var_casting_character_type],
+    );
 
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
         mapping[&var_person],
@@ -1064,8 +1092,9 @@ fn traverse_index_same_player_both_roles() {
     let context = ExecutionContext::new(snapshot, thing_manager, value_parameters);
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
-    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> =
-        iterator.map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone()))).collect();
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
 
     // Only casting_same should match. A buggy executor would also return casting_mixed
     // (where actor != character), producing 2 rows instead of 1.

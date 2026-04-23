@@ -3,20 +3,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashMap;
-use std::fmt;
+use std::{collections::HashMap, fmt};
 
 use ::iterator::minmax_or;
-use answer::{Type, variable_value::VariableValue};
+use answer::{Type, variable::Variable, variable_value::VariableValue};
 use compiler::{
     ExecutorVariable,
-    executable::match_::instructions::{ConstraintInstruction, VariableMode, VariableModes},
+    executable::match_::instructions::{CheckInstruction, ConstraintInstruction, VariableMode, VariableModes},
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use ir::pattern::Vertex;
 use itertools::Itertools;
-use answer::variable::Variable;
-use compiler::executable::match_::instructions::CheckInstruction;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
@@ -367,13 +364,17 @@ fn next_free_internal_variable<T>(start_at: u16, in_map: &HashMap<ExecutorVariab
     unreachable!("in_map is never so big.")
 }
 
-pub(super) fn check_producing_same_variable<F: Copy>(candidates: &[(ExecutorVariable, F)],  checks: &mut Vec<CheckInstruction<ExecutorVariable>>, extractors: &mut HashMap<ExecutorVariable, F>) {
+pub(super) fn check_producing_same_variable<F: Copy>(
+    candidates: &[(ExecutorVariable, F)],
+    checks: &mut Vec<CheckInstruction<ExecutorVariable>>,
+    extractors: &mut HashMap<ExecutorVariable, F>,
+) {
     for i in 0..candidates.len() {
-        for j in  i..candidates.len() {
+        for j in i..candidates.len() {
             if candidates[i].0 == candidates[j].0 {
-                let vi =next_free_internal_variable(i as u16, &extractors);
+                let vi = next_free_internal_variable(i as u16, &extractors);
                 extractors.insert(vi, candidates[i].1);
-                let vj =next_free_internal_variable(j as u16, &extractors);
+                let vj = next_free_internal_variable(j as u16, &extractors);
                 extractors.insert(vj, candidates[j].1);
                 checks.push(CheckInstruction::Is { lhs: vi, rhs: vj });
             }

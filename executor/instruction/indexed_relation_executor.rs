@@ -12,10 +12,12 @@ use std::{
     sync::Arc,
 };
 
-use answer::{Thing, Type, variable_value::VariableValue};
+use answer::{Thing, Type, variable::Variable, variable_value::VariableValue};
 use compiler::{
     ExecutorVariable,
-    executable::match_::instructions::{VariableMode, VariableModes, thing::IndexedRelationInstruction},
+    executable::match_::instructions::{
+        CheckInstruction, VariableMode, VariableModes, thing::IndexedRelationInstruction,
+    },
 };
 use concept::{
     error::ConceptReadError,
@@ -33,8 +35,6 @@ use encoding::graph::{
     type_::vertex::{TypeID, TypeVertexEncoding},
 };
 use itertools::Itertools;
-use answer::variable::Variable;
-use compiler::executable::match_::instructions::CheckInstruction;
 use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
@@ -42,16 +42,16 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        FilterFn, FilterMapUnchangedFn,
+        FilterFn, FilterMapUnchangedFn, check_producing_same_variable,
         checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
+        links_executor::EXTRACT_PLAYER,
+        next_free_internal_variable,
         tuple::{Tuple, TupleOrderingFn, TuplePositions, TupleResult, unsafe_compare_result_tuple},
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::{check_producing_same_variable, next_free_internal_variable};
-use crate::instruction::links_executor::EXTRACT_PLAYER;
 
 pub(crate) type IndexedRelationTupleIteratorSingle = IndexedRelationTupleIterator<IndexedRelationsIterator>;
 pub(crate) type IndexedRelationTupleIteratorMerged =
@@ -153,7 +153,7 @@ impl IndexedRelationExecutor {
         static MODE_PRIORITY: [VariableMode; 4] =
             [VariableMode::Input, VariableMode::Output, VariableMode::Count, VariableMode::Check];
         // Ensures the macro-derived order hasn't changed
-        debug_assert!((1..MODE_PRIORITY.len()).all(|i| MODE_PRIORITY[i-1] < MODE_PRIORITY[i]));
+        debug_assert!((1..MODE_PRIORITY.len()).all(|i| MODE_PRIORITY[i - 1] < MODE_PRIORITY[i]));
 
         let sort_variable = match iterate_mode {
             IndexedRelationIterateMode::Unbound => player_start,
@@ -180,7 +180,8 @@ impl IndexedRelationExecutor {
             (role_end, EXTRACT_ROLE_END),
         ]);
 
-        let extractors_ordered = [EXTRACT_PLAYER_START, EXTRACT_PLAYER_END, EXTRACT_RELATION, EXTRACT_ROLE_START, EXTRACT_ROLE_END];
+        let extractors_ordered =
+            [EXTRACT_PLAYER_START, EXTRACT_PLAYER_END, EXTRACT_RELATION, EXTRACT_ROLE_START, EXTRACT_ROLE_END];
         check_producing_same_variable(
             &variable_component_ordering.iter().copied().zip(extractors_ordered.iter().copied()).collect::<Vec<_>>(),
             &mut checks,

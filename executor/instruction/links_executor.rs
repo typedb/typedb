@@ -13,7 +13,10 @@ use std::{
 };
 
 use answer::{Thing, Type, variable_value::VariableValue};
-use compiler::{ExecutorVariable, executable::match_::instructions::thing::LinksInstruction};
+use compiler::{
+    ExecutorVariable,
+    executable::match_::instructions::{CheckInstruction, thing::LinksInstruction},
+};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -24,7 +27,6 @@ use concept::{
     type_::{object_type::ObjectType, relation_type::RelationType, role_type::RoleType},
 };
 use itertools::Itertools;
-use compiler::executable::match_::instructions::CheckInstruction;
 use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
@@ -32,7 +34,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        FilterFn, FilterMapUnchangedFn, LinksIterateMode, VariableModes,
+        FilterFn, FilterMapUnchangedFn, LinksIterateMode, VariableModes, check_producing_same_variable,
         checker::Checker,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         min_max_types,
@@ -47,7 +49,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::check_producing_same_variable;
 
 pub(crate) struct LinksExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -123,7 +124,8 @@ impl LinksExecutor {
             }
         };
 
-        let mut extractors = HashMap::from([(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]);
+        let mut extractors =
+            HashMap::from([(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER), (role_type, EXTRACT_ROLE)]);
         check_producing_same_variable(
             &[(relation, EXTRACT_RELATION), (player, EXTRACT_PLAYER)],
             &mut checks,
