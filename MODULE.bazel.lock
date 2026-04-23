@@ -12580,7 +12580,7 @@
     "@@typedb_dependencies+//distribution/artifact:rules.bzl%native_artifact_files": {
       "general": {
         "bzlTransitiveDigest": "yWzTgvDt8fBQR7Nqh9/tbk6sCtvxjbcgODtEIg/m+Nw=",
-        "usagesDigest": "UE84GHh8gifFMlqRVsH/zxdvcfQygI5GBjEwDjrJwcE=",
+        "usagesDigest": "bSGsYEwP42O7nRHFYAYhpzzGU5JfXwhda2QnX0H+eHA=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
         "envVariables": {},
@@ -12589,45 +12589,45 @@
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-arm64/versions/3.8.4-rc1/typedb-console-linux-arm64-3.8.4-rc1.tar.gz"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-arm64/versions/3.10.1/typedb-console-linux-arm64-3.10.1.tar.gz"
               ],
-              "downloaded_file_path": "typedb-console-linux-arm64-3.8.4-rc1.tar.gz"
+              "downloaded_file_path": "typedb-console-linux-arm64-3.10.1.tar.gz"
             }
           },
           "typedb_console_artifact_linux-x86_64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-x86_64/versions/3.8.4-rc1/typedb-console-linux-x86_64-3.8.4-rc1.tar.gz"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-x86_64/versions/3.10.1/typedb-console-linux-x86_64-3.10.1.tar.gz"
               ],
-              "downloaded_file_path": "typedb-console-linux-x86_64-3.8.4-rc1.tar.gz"
+              "downloaded_file_path": "typedb-console-linux-x86_64-3.10.1.tar.gz"
             }
           },
           "typedb_console_artifact_mac-arm64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-arm64/versions/3.8.4-rc1/typedb-console-mac-arm64-3.8.4-rc1.zip"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-arm64/versions/3.10.1/typedb-console-mac-arm64-3.10.1.zip"
               ],
-              "downloaded_file_path": "typedb-console-mac-arm64-3.8.4-rc1.zip"
+              "downloaded_file_path": "typedb-console-mac-arm64-3.10.1.zip"
             }
           },
           "typedb_console_artifact_mac-x86_64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-x86_64/versions/3.8.4-rc1/typedb-console-mac-x86_64-3.8.4-rc1.zip"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-x86_64/versions/3.10.1/typedb-console-mac-x86_64-3.10.1.zip"
               ],
-              "downloaded_file_path": "typedb-console-mac-x86_64-3.8.4-rc1.zip"
+              "downloaded_file_path": "typedb-console-mac-x86_64-3.10.1.zip"
             }
           },
           "typedb_console_artifact_windows-x86_64": {
             "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
             "attributes": {
               "urls": [
-                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-windows-x86_64/versions/3.8.4-rc1/typedb-console-windows-x86_64-3.8.4-rc1.zip"
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-windows-x86_64/versions/3.10.1/typedb-console-windows-x86_64-3.10.1.zip"
               ],
-              "downloaded_file_path": "typedb-console-windows-x86_64-3.8.4-rc1.zip"
+              "downloaded_file_path": "typedb-console-windows-x86_64-3.10.1.zip"
             }
           }
         },

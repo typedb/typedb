@@ -4,13 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, error::Error, sync::Arc};
-
-use durability::RawRecord;
-use error::typedb_error;
-use fail_point::{RECOVERY_PARTIAL_WRITE, fail_point};
-use tracing::{Level, event, trace};
-
+use crate::recovery::commit_recovery::StorageRecoveryError::DurabilityRecordDeserialize;
 use crate::{
     MVCCStorage,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
@@ -19,6 +13,13 @@ use crate::{
     sequence_number::SequenceNumber,
     write_batches::WriteBatches,
 };
+use bytes::Bytes;
+use durability::RawRecord;
+use error::typedb_error;
+use fail_point::{RECOVERY_PARTIAL_WRITE, fail_point};
+use std::borrow::Cow;
+use std::{collections::BTreeMap, error::Error, sync::Arc};
+use tracing::{Level, event, trace};
 
 /// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.
 pub fn load_commit_data_from(
@@ -77,9 +78,11 @@ pub fn load_commit_data_from_with_context(
                 let StatusRecord { commit_record_sequence_number, was_committed } =
                     StatusRecord::deserialise_from(&mut &*bytes)
                         .map_err(|error| DurabilityRecordDeserialize { source: Arc::new(error) })?;
-                if commit_record_sequence_number < start {
+
+                if !recovered_commits.contains_key(&commit_record_sequence_number) {
                     continue;
                 }
+
                 if was_committed {
                     let record = recovered_commits.remove(&commit_record_sequence_number).unwrap();
                     let RecoveryCommitStatus::Pending(record) = record else {
