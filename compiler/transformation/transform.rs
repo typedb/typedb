@@ -28,7 +28,13 @@ pub fn apply_transformations(
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
             optimize_away_statically_unsatisfiable_conjunctions(block.conjunction_mut(), block_annotations);
             prune_redundant_roleplayer_deduplication(block.conjunction_mut(), block_annotations);
-            relation_index_transformation(block.conjunction_mut(), variable_registry, block_annotations, type_manager, snapshot)?;
+            relation_index_transformation(
+                block.conjunction_mut(),
+                variable_registry,
+                block_annotations,
+                type_manager,
+                snapshot,
+            )?;
         }
     }
     Ok(())

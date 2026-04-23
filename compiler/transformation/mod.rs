@@ -6,8 +6,8 @@
 
 use concept::error::ConceptReadError;
 use error::typedb_error;
-use ir::pattern::conjunction::Conjunction;
-use ir::RepresentationError;
+use ir::{RepresentationError, pattern::conjunction::Conjunction};
+
 use crate::annotation::pipeline::AnnotatedPipeline;
 
 pub mod redundant_constraints;

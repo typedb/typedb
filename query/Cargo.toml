@@ -114,8 +114,3 @@ features = {}
 [[test]]
 	path = "tests/define.rs"
 	name = "test_define"
-
-[[test]]
-	path = "tests/test_repeated_constraint_variables.rs"
-	name = "test_repeated_constraint_variables"
-

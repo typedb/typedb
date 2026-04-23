@@ -190,7 +190,7 @@ fn run_test_relation_index_transformation_single(
         &mut context.variable_registry,
         &mut type_annotations,
         type_manager,
-        &snapshot
+        &snapshot,
     )
     .unwrap();
 
@@ -282,7 +282,14 @@ fn run_test_relation_index_transformation_dual(
 
     let conjunction = block.conjunction_mut();
 
-    relation_index_transformation(conjunction, &mut context.variable_registry,   &mut type_annotations, type_manager, &snapshot).unwrap();
+    relation_index_transformation(
+        conjunction,
+        &mut context.variable_registry,
+        &mut type_annotations,
+        type_manager,
+        &snapshot,
+    )
+    .unwrap();
 
     let var_r = Vertex::Variable(context.get_variable("r").unwrap());
     let var_x = Vertex::Variable(context.get_variable("x").unwrap());
@@ -390,7 +397,7 @@ fn run_test_relation_index_transformation_not_applied_ternary(
         &mut context.variable_registry,
         &mut type_annotations,
         type_manager,
-        &snapshot
+        &snapshot,
     )
     .unwrap();
 

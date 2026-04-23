@@ -8,22 +8,23 @@ use std::collections::{BTreeMap, HashMap};
 
 use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
-use ir::pattern::{
-    Vertex,
-    conjunction::Conjunction,
-    constraint::{Comparator, Constraint, IndexedRelation, Links},
-    nested_pattern::NestedPattern,
+use ir::{
+    pattern::{
+        Vertex,
+        conjunction::Conjunction,
+        constraint::{Comparator, Constraint, IndexedRelation, Links},
+        nested_pattern::NestedPattern,
+    },
+    pipeline::VariableRegistry,
 };
-use ir::pipeline::VariableRegistry;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     annotation::type_annotations::{
-        BlockAnnotations, ConstraintTypeAnnotations, IndexedRelationAnnotations, TypeAnnotations,
+        BlockAnnotations, ConstraintTypeAnnotations, IndexedRelationAnnotations, LeftRightAnnotations, TypeAnnotations,
     },
     transformation::StaticOptimiserError,
 };
-use crate::annotation::type_annotations::LeftRightAnnotations;
 
 /// Precondition:
 ///   1) $r links $x (role: $role1)
@@ -82,14 +83,32 @@ pub fn relation_index_transformation(
         match nested {
             NestedPattern::Disjunction(disjunction) => {
                 for branch_conjunction in disjunction.conjunctions_mut() {
-                    relation_index_transformation(branch_conjunction, variable_registry, block_annotations, type_manager, snapshot)?;
+                    relation_index_transformation(
+                        branch_conjunction,
+                        variable_registry,
+                        block_annotations,
+                        type_manager,
+                        snapshot,
+                    )?;
                 }
             }
             NestedPattern::Negation(negation) => {
-                relation_index_transformation(negation.conjunction_mut(), variable_registry, block_annotations, type_manager, snapshot)?;
+                relation_index_transformation(
+                    negation.conjunction_mut(),
+                    variable_registry,
+                    block_annotations,
+                    type_manager,
+                    snapshot,
+                )?;
             }
             NestedPattern::Optional(optional) => {
-                relation_index_transformation(optional.conjunction_mut(), variable_registry, block_annotations, type_manager, snapshot)?;
+                relation_index_transformation(
+                    optional.conjunction_mut(),
+                    variable_registry,
+                    block_annotations,
+                    type_manager,
+                    snapshot,
+                )?;
             }
         }
     }
@@ -142,8 +161,8 @@ fn replace_links(
     index_rp_1: usize,
     index_rp_2: usize,
     annotations: &mut TypeAnnotations,
-    variable_registry: &mut VariableRegistry
-)  -> Result<(), StaticOptimiserError> {
+    variable_registry: &mut VariableRegistry,
+) -> Result<(), StaticOptimiserError> {
     debug_assert!(index_rp_1 != index_rp_2);
     let (remove_first, remove_second) =
         if index_rp_1 > index_rp_2 { (index_rp_1, index_rp_2) } else { (index_rp_2, index_rp_1) };
@@ -172,15 +191,8 @@ fn replace_links(
     may_replace_reused_variable_with_new(conjunction, &player1, &mut player2, annotations, variable_registry)?;
     may_replace_reused_variable_with_new(conjunction, &role1, &mut role2, annotations, variable_registry)?;
 
-    let indexed_relation = IndexedRelation::new(
-        player1,
-        player2,
-        relation,
-        role1,
-        role2,
-        links_1.source_span(),
-        links_2.source_span(),
-    );
+    let indexed_relation =
+        IndexedRelation::new(player1, player2, relation, role1, role2, links_1.source_span(), links_2.source_span());
     println!("{player1}, {player2}, {relation}, {role1}, {role2}");
     add_constraint_annotations(&links_1, &links_2, &indexed_relation, annotations);
     conjunction.constraints_mut().constraints_mut().push(Constraint::IndexedRelation(indexed_relation));
@@ -222,18 +234,28 @@ fn index_decrement_if_removing(index: usize, removed_1: usize, removed_2: usize)
     decrement_by
 }
 
-fn may_replace_reused_variable_with_new(conjunction: &mut Conjunction, first: &Variable, second: &mut Variable, annotations: &mut TypeAnnotations, variable_registry: &mut VariableRegistry) -> Result<(), StaticOptimiserError> {
+fn may_replace_reused_variable_with_new(
+    conjunction: &mut Conjunction,
+    first: &Variable,
+    second: &mut Variable,
+    annotations: &mut TypeAnnotations,
+    variable_registry: &mut VariableRegistry,
+) -> Result<(), StaticOptimiserError> {
     if first == second {
-        let (new_var, constraint_is) = conjunction.create_anonymous_variable_copying(*second, variable_registry)
+        let (new_var, constraint_is) = conjunction
+            .create_anonymous_variable_copying(*second, variable_registry)
             .map_err(|typedb_source| StaticOptimiserError::Representation { typedb_source })?;
         *second = new_var;
 
         let vertex_annotations = annotations.vertex_annotations_of(&Vertex::Variable(*first)).unwrap().clone();
         annotations.vertex_annotations_mut().insert(Vertex::Variable(*second), vertex_annotations.clone());
 
-        let vv_annotations: BTreeMap<_, _> = vertex_annotations.iter().copied().map(|type_| (type_, vec![type_])).collect();
+        let vv_annotations: BTreeMap<_, _> =
+            vertex_annotations.iter().copied().map(|type_| (type_, vec![type_])).collect();
         let lr_annotations = LeftRightAnnotations::new(vv_annotations.clone(), vv_annotations);
-        annotations.constraint_annotations_mut().insert(constraint_is, ConstraintTypeAnnotations::LeftRight(lr_annotations));
+        annotations
+            .constraint_annotations_mut()
+            .insert(constraint_is, ConstraintTypeAnnotations::LeftRight(lr_annotations));
     }
     Ok(())
 }

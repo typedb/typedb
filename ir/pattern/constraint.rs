@@ -298,7 +298,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
         for i in 0..assigned.len() {
-            for j in (i+1)..assigned.len() {
+            for j in (i + 1)..assigned.len() {
                 let (first, second) = assigned.split_at_mut(j);
                 self.may_rewrite_second_if_reused(&first[i], &mut second[0], source_span.clone())?;
             }
@@ -527,7 +527,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         self.context.parameters()
     }
 
-    pub fn may_rewrite_second_if_reused(&mut self, first: &Variable, second: &mut Variable, source_span: Option<Span>) -> Result<(), Box<RepresentationError>> {
+    pub fn may_rewrite_second_if_reused(
+        &mut self,
+        first: &Variable,
+        second: &mut Variable,
+        source_span: Option<Span>,
+    ) -> Result<(), Box<RepresentationError>> {
         if *first == *second {
             *second = self.context.create_anonymous_variable(source_span)?;
             self.add_is(*first, *second, None)?;

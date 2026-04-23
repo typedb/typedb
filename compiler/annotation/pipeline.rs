@@ -600,12 +600,12 @@ fn annotate_write_constraint(
             );
         }
         Constraint::Is(is) => {
-            running_variable_annotations.entry(is.lhs().as_variable().unwrap()).or_insert_with(||{
-                annotations.vertex_annotations_of(is.lhs()).unwrap().clone()
-            });
-            running_variable_annotations.entry(is.rhs().as_variable().unwrap()).or_insert_with(||{
-                annotations.vertex_annotations_of(is.rhs()).unwrap().clone()
-            });
+            running_variable_annotations
+                .entry(is.lhs().as_variable().unwrap())
+                .or_insert_with(|| annotations.vertex_annotations_of(is.lhs()).unwrap().clone());
+            running_variable_annotations
+                .entry(is.rhs().as_variable().unwrap())
+                .or_insert_with(|| annotations.vertex_annotations_of(is.rhs()).unwrap().clone());
         }
         Constraint::RoleName(role_name) => {
             running_variable_annotations.insert(
