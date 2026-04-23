@@ -265,7 +265,7 @@ features = {}
 		[workspace.dependencies.typeql]
 			features = []
 			git = "https://github.com/typedb/typeql"
-			tag = "3.8.4-rc0"
+			tag = "3.10.1"
 			default-features = false
 
 		[workspace.dependencies.serde_with]
@@ -301,7 +301,7 @@ features = {}
 		[workspace.dependencies.typedb-protocol]
 			features = []
 			git = "https://github.com/typedb/typedb-protocol"
-			tag = "3.7.1-rc1"
+			tag = "3.10.0"
 			default-features = false
 
 		[workspace.dependencies.resource]
@@ -616,7 +616,7 @@ features = {}
 
 		[workspace.dependencies.chrono]
 			features = ["alloc", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-			version = "0.4.41"
+			version = "0.4.44"
 			default-features = false
 
 		[workspace.dependencies.user]
