@@ -13,14 +13,20 @@ use std::sync::Arc;
 
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
+use crate::type_mapping::{
+    PG_OID_BOOL, PG_OID_FLOAT8, PG_OID_INT4, PG_OID_INT8, PG_OID_OID, PG_OID_TEXT, PG_OID_VARCHAR,
+};
+
 use crate::pgwire::{
     authenticator::{decode_password_message, extract_database, extract_username, AuthMode},
     messages::{
         encode_auth_cleartext_password, encode_auth_ok, encode_backend_key_data, encode_bind_complete,
-        encode_close_complete, encode_command_complete, encode_data_row, encode_error_response, encode_no_data,
-        encode_parameter_description_empty, encode_parameter_status, encode_parse_complete, encode_ready_for_query,
-        encode_row_description, ColumnDescription, MSG_BIND, MSG_CLOSE, MSG_DESCRIBE, MSG_EXECUTE, MSG_PARSE,
-        MSG_PASSWORD, MSG_QUERY, MSG_SYNC, MSG_TERMINATE, PROTOCOL_VERSION_30, TX_IDLE,
+        encode_close_complete, encode_command_complete, encode_copy_data, encode_copy_done, encode_copy_out_response,
+        encode_data_row, encode_error_response, encode_no_data, encode_parameter_description_empty,
+        encode_parameter_status, encode_parse_complete, encode_ready_for_query, encode_row_description,
+        ColumnDescription, ENCRYPTION_NOT_SUPPORTED, GSSENC_REQUEST_CODE, MSG_BIND, MSG_CLOSE, MSG_DESCRIBE,
+        MSG_EXECUTE, MSG_PARSE, MSG_PASSWORD, MSG_QUERY, MSG_SYNC, MSG_TERMINATE, PROTOCOL_VERSION_30,
+        SSL_REQUEST_CODE, TX_IDLE,
     },
 };
 
@@ -35,11 +41,20 @@ pub struct QueryResult {
     pub command_tag: Option<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct BinaryCopyOutResult {
+    pub columns: Vec<ColumnDescription>,
+    pub rows: Vec<Vec<Option<String>>>,
+    pub command_tag: Option<String>,
+}
+
 /// Outcome of a query — either a result set or an error.
 #[derive(Debug, Clone)]
 pub enum QueryOutcome {
     /// Successful result with columns and rows.
     Result(QueryResult),
+    /// Successful COPY TO STDOUT result using PostgreSQL binary format.
+    CopyOut(BinaryCopyOutResult),
     /// Error with severity, SQLSTATE code, and message.
     Error { severity: String, code: String, message: String },
 }
@@ -74,6 +89,10 @@ pub trait QueryHandler: Send + Sync {
     fn handle_query_with_session(&self, sql: &str, session: &SessionContext) -> QueryOutcome {
         let _ = session;
         self.handle_query(sql)
+    }
+
+    fn handle_query_batch_with_session(&self, sql: &str, session: &SessionContext) -> Vec<QueryOutcome> {
+        vec![self.handle_query_with_session(sql, session)]
     }
 }
 
@@ -171,20 +190,29 @@ where
 
     /// Perform the startup handshake: read StartupMessage, send auth + params + ReadyForQuery.
     async fn handle_startup(&mut self) -> Result<(), ConnectionError> {
-        // Read the startup message (no type byte — just length + payload).
-        let payload = self.read_startup_message().await?;
+        let startup_params = loop {
+            // Read the startup message (no type byte — just length + payload).
+            let payload = self.read_startup_message().await?;
 
-        // Validate protocol version (first 4 bytes of payload).
-        if payload.len() < 4 {
-            return Err(ConnectionError::Protocol("startup message too short".into()));
-        }
-        let version = i32::from_be_bytes([payload[0], payload[1], payload[2], payload[3]]);
-        if version != PROTOCOL_VERSION_30 {
-            return Err(ConnectionError::Protocol(format!("unsupported protocol version: {version}")));
-        }
-
-        let startup_params = crate::pgwire::messages::decode_startup_message(&payload)
-            .map_err(|e| ConnectionError::Protocol(format!("bad startup message: {e}")))?;
+            // Validate protocol version (first 4 bytes of payload).
+            if payload.len() < 4 {
+                return Err(ConnectionError::Protocol("startup message too short".into()));
+            }
+            let version = i32::from_be_bytes([payload[0], payload[1], payload[2], payload[3]]);
+            match version {
+                PROTOCOL_VERSION_30 => {
+                    break crate::pgwire::messages::decode_startup_message(&payload)
+                        .map_err(|e| ConnectionError::Protocol(format!("bad startup message: {e}")))?;
+                }
+                SSL_REQUEST_CODE | GSSENC_REQUEST_CODE => {
+                    self.write_all(&[ENCRYPTION_NOT_SUPPORTED]).await?;
+                    self.stream.flush().await?;
+                }
+                _ => {
+                    return Err(ConnectionError::Protocol(format!("unsupported protocol version: {version}")));
+                }
+            }
+        };
         if let Some(username) = extract_username(&startup_params.parameters) {
             self.session.current_user = username.to_string();
         }
@@ -263,7 +291,7 @@ where
                 MSG_QUERY => {
                     // Extract the SQL string (null-terminated C string in payload).
                     let sql = read_cstring_from_payload(&payload)?;
-                    self.handle_query(&sql).await?;
+                    self.handle_simple_query(&sql).await?;
                 }
                 // Extended Query sub-protocol —————————————————————
                 MSG_PARSE => {
@@ -329,32 +357,60 @@ where
         }
     }
 
-    /// Handle a single Query message: call the handler and send results/error.
-    async fn handle_query(&mut self, sql: &str) -> Result<(), ConnectionError> {
-        let outcome = self.handler.handle_query_with_session(sql, &self.session);
+    /// Handle a simple Query message, including multi-statement batches.
+    async fn handle_simple_query(&mut self, sql: &str) -> Result<(), ConnectionError> {
+        let outcomes = self.handler.handle_query_batch_with_session(sql, &self.session);
+        for outcome in outcomes {
+            let should_stop = matches!(outcome, QueryOutcome::Error { .. });
+            self.write_query_outcome(outcome, true).await?;
+            if should_stop {
+                break;
+            }
+        }
+
+        self.write_all(&encode_ready_for_query(TX_IDLE)).await?;
+        self.stream.flush().await?;
+        Ok(())
+    }
+
+    async fn write_query_outcome(
+        &mut self,
+        outcome: QueryOutcome,
+        include_row_description: bool,
+    ) -> Result<(), ConnectionError> {
         match outcome {
             QueryOutcome::Result(result) => {
                 // Only send RowDescription + DataRows if there are columns.
-                if !result.columns.is_empty() {
+                if include_row_description && !result.columns.is_empty() {
                     self.write_all(&encode_row_description(&result.columns)).await?;
-                    for row in &result.rows {
-                        let refs: Vec<Option<&str>> = row.iter().map(|v| v.as_deref()).collect();
-                        self.write_all(&encode_data_row(&refs)).await?;
-                    }
+                }
+                for row in &result.rows {
+                    let refs: Vec<Option<&str>> = row.iter().map(|v| v.as_deref()).collect();
+                    self.write_all(&encode_data_row(&refs)).await?;
                 }
 
                 // CommandComplete with custom tag or default SELECT tag.
                 let tag = result.command_tag.unwrap_or_else(|| format!("SELECT {}", result.rows.len()));
                 self.write_all(&encode_command_complete(&tag)).await?;
             }
+            QueryOutcome::CopyOut(result) => {
+                let column_formats = vec![1i16; result.columns.len()];
+                self.write_all(&encode_copy_out_response(&column_formats)).await?;
+
+                let payload_chunks =
+                    encode_copy_binary_chunks(&result.columns, &result.rows).map_err(ConnectionError::Protocol)?;
+                for chunk in payload_chunks {
+                    self.write_all(&encode_copy_data(&chunk)).await?;
+                }
+                self.write_all(&encode_copy_done()).await?;
+
+                let tag = result.command_tag.unwrap_or_else(|| format!("COPY {}", result.rows.len()));
+                self.write_all(&encode_command_complete(&tag)).await?;
+            }
             QueryOutcome::Error { severity, code, message } => {
                 self.write_all(&encode_error_response(&severity, &code, &message)).await?;
             }
         }
-
-        // ReadyForQuery after every query response
-        self.write_all(&encode_ready_for_query(TX_IDLE)).await?;
-        self.stream.flush().await?;
         Ok(())
     }
 
@@ -364,20 +420,7 @@ where
     /// and does NOT send ReadyForQuery (that comes with Sync).
     async fn handle_execute(&mut self, sql: &str) -> Result<(), ConnectionError> {
         let outcome = self.handler.handle_query_with_session(sql, &self.session);
-        match outcome {
-            QueryOutcome::Result(result) => {
-                for row in &result.rows {
-                    let refs: Vec<Option<&str>> = row.iter().map(|v| v.as_deref()).collect();
-                    self.write_all(&encode_data_row(&refs)).await?;
-                }
-                let tag = result.command_tag.unwrap_or_else(|| format!("SELECT {}", result.rows.len()));
-                self.write_all(&encode_command_complete(&tag)).await?;
-            }
-            QueryOutcome::Error { severity, code, message } => {
-                self.write_all(&encode_error_response(&severity, &code, &message)).await?;
-            }
-        }
-        Ok(())
+        self.write_query_outcome(outcome, false).await
     }
 
     /// Read a raw message from the stream: returns (type_byte, payload).
@@ -481,6 +524,83 @@ fn read_cstring_pair_at(payload: &[u8], pos: usize) -> Result<(String, usize), C
     let s = String::from_utf8(payload[pos..pos + end].to_vec())
         .map_err(|e| ConnectionError::Protocol(format!("invalid UTF-8: {e}")))?;
     Ok((s, pos + end + 1))
+}
+
+const COPY_BINARY_SIGNATURE: &[u8] = b"PGCOPY\n\xFF\r\n\0";
+
+fn encode_copy_binary_chunks(
+    columns: &[ColumnDescription],
+    rows: &[Vec<Option<String>>],
+) -> Result<Vec<Vec<u8>>, String> {
+    let mut chunks = Vec::with_capacity(rows.len().saturating_add(1));
+    let mut header_sent = false;
+
+    for row in rows {
+        if row.len() != columns.len() {
+            return Err("copy row length does not match column length".into());
+        }
+
+        let mut payload = Vec::new();
+        if !header_sent {
+            payload.extend_from_slice(COPY_BINARY_SIGNATURE);
+            payload.extend_from_slice(&0i32.to_be_bytes());
+            payload.extend_from_slice(&0i32.to_be_bytes());
+            header_sent = true;
+        }
+
+        payload.extend_from_slice(&(columns.len() as i16).to_be_bytes());
+        for (column, value) in columns.iter().zip(row.iter()) {
+            match value {
+                Some(value) => {
+                    let encoded = encode_copy_binary_value(column.type_oid, value)?;
+                    payload.extend_from_slice(&(encoded.len() as i32).to_be_bytes());
+                    payload.extend_from_slice(&encoded);
+                }
+                None => payload.extend_from_slice(&(-1i32).to_be_bytes()),
+            }
+        }
+
+        chunks.push(payload);
+    }
+
+    let mut trailer = Vec::new();
+    if !header_sent {
+        trailer.extend_from_slice(COPY_BINARY_SIGNATURE);
+        trailer.extend_from_slice(&0i32.to_be_bytes());
+        trailer.extend_from_slice(&0i32.to_be_bytes());
+    }
+    trailer.extend_from_slice(&(-1i16).to_be_bytes());
+    chunks.push(trailer);
+
+    Ok(chunks)
+}
+
+fn encode_copy_binary_value(type_oid: crate::type_mapping::PgOid, value: &str) -> Result<Vec<u8>, String> {
+    match type_oid {
+        PG_OID_TEXT | PG_OID_VARCHAR => Ok(value.as_bytes().to_vec()),
+        PG_OID_BOOL => match value {
+            "t" | "true" | "1" => Ok(vec![1]),
+            "f" | "false" | "0" => Ok(vec![0]),
+            _ => Err(format!("cannot encode '{value}' as bool")),
+        },
+        PG_OID_INT8 => value
+            .parse::<i64>()
+            .map(|parsed| parsed.to_be_bytes().to_vec())
+            .map_err(|err| format!("cannot encode '{value}' as int8: {err}")),
+        PG_OID_INT4 => value
+            .parse::<i32>()
+            .map(|parsed| parsed.to_be_bytes().to_vec())
+            .map_err(|err| format!("cannot encode '{value}' as int4: {err}")),
+        PG_OID_OID => value
+            .parse::<u32>()
+            .map(|parsed| parsed.to_be_bytes().to_vec())
+            .map_err(|err| format!("cannot encode '{value}' as oid: {err}")),
+        PG_OID_FLOAT8 => value
+            .parse::<f64>()
+            .map(|parsed| parsed.to_be_bytes().to_vec())
+            .map_err(|err| format!("cannot encode '{value}' as float8: {err}")),
+        _ => Err(format!("unsupported binary COPY type oid: {type_oid}")),
+    }
 }
 
 // ── Tests ──────────────────────────────────────────────────────────

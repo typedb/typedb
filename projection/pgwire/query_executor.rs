@@ -12,10 +12,11 @@
 
 use crate::{
     pgwire::{
-        connection::{QueryOutcome, QueryResult, SessionContext},
+        connection::{BinaryCopyOutResult, QueryOutcome, QueryResult, SessionContext},
         messages::ColumnDescription,
         sql_parser::{
-            ComparisonOp, LiteralValue, OrderByExpr, ParsedQuery, SelectColumn, SortDirection, WhereCondition,
+            parse_sql, split_sql_statements, ComparisonOp, LiteralValue, OrderByExpr, ParsedQuery, SelectColumn,
+            SortDirection, WhereCondition,
         },
     },
     type_mapping::PgOid,
@@ -58,6 +59,137 @@ pub fn execute_query(catalog: &dyn ProjectionCatalog, query: &ParsedQuery) -> Qu
     execute_query_with_session(catalog, query, &SessionContext::default())
 }
 
+pub fn execute_raw_query_with_session(
+    catalog: &dyn ProjectionCatalog,
+    sql: &str,
+    session: &SessionContext,
+) -> QueryOutcome {
+    if let Some(outcome) = execute_copy_stdout_binary_query(catalog, sql, session) {
+        return outcome;
+    }
+
+    if let Some(outcome) = execute_special_duckdb_query(catalog, sql) {
+        return outcome;
+    }
+
+    if let Some(outcome) = execute_special_dbt_query(sql) {
+        return outcome;
+    }
+
+    match parse_sql(sql) {
+        Ok(parsed) => execute_query_with_session(catalog, &parsed, session),
+        Err(err) => {
+            QueryOutcome::Error { severity: "ERROR".to_string(), code: "42601".to_string(), message: err.to_string() }
+        }
+    }
+}
+
+fn execute_copy_stdout_binary_query(
+    catalog: &dyn ProjectionCatalog,
+    sql: &str,
+    session: &SessionContext,
+) -> Option<QueryOutcome> {
+    let inner_select = extract_copy_stdout_binary_select(sql)?;
+
+    Some(match parse_sql(&inner_select) {
+        Ok(parsed) => match execute_query_with_session(catalog, &parsed, session) {
+            QueryOutcome::Result(result) => {
+                let row_count = result.rows.len();
+                QueryOutcome::CopyOut(BinaryCopyOutResult {
+                    columns: result.columns,
+                    rows: result.rows,
+                    command_tag: Some(format!("COPY {row_count}")),
+                })
+            }
+            QueryOutcome::Error { severity, code, message } => QueryOutcome::Error { severity, code, message },
+            QueryOutcome::CopyOut(result) => QueryOutcome::CopyOut(result),
+        },
+        Err(err) => {
+            QueryOutcome::Error { severity: "ERROR".to_string(), code: "42601".to_string(), message: err.to_string() }
+        }
+    })
+}
+
+fn extract_copy_stdout_binary_select(sql: &str) -> Option<String> {
+    let trimmed = sql.trim();
+    if !trimmed.to_ascii_lowercase().starts_with("copy (") {
+        return None;
+    }
+
+    let start = trimmed.find('(')? + 1;
+    let mut depth = 1i32;
+    let mut in_single_quote = false;
+    let mut in_double_quote = false;
+    let mut inner_end = None;
+    let mut chars = trimmed[start..].char_indices().peekable();
+
+    while let Some((offset, ch)) = chars.next() {
+        let index = start + offset;
+        match ch {
+            '\'' if !in_double_quote => {
+                if in_single_quote {
+                    if matches!(chars.peek(), Some((_, '\''))) {
+                        let _ = chars.next();
+                    } else {
+                        in_single_quote = false;
+                    }
+                } else {
+                    in_single_quote = true;
+                }
+            }
+            '"' if !in_single_quote => {
+                in_double_quote = !in_double_quote;
+            }
+            '(' if !in_single_quote && !in_double_quote => {
+                depth += 1;
+            }
+            ')' if !in_single_quote && !in_double_quote => {
+                depth -= 1;
+                if depth == 0 {
+                    inner_end = Some(index);
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let inner_end = inner_end?;
+    let tail = trimmed[inner_end + 1..].trim().trim_end_matches(';').trim();
+    let normalized_tail = normalize_sql(tail);
+    if normalized_tail == "to stdout (format \"binary\")" || normalized_tail == "to stdout (format binary)" {
+        Some(trimmed[start..inner_end].trim().to_string())
+    } else {
+        None
+    }
+}
+
+pub fn execute_raw_query_batch_with_session(
+    catalog: &dyn ProjectionCatalog,
+    sql: &str,
+    session: &SessionContext,
+) -> Vec<QueryOutcome> {
+    match split_sql_statements(sql) {
+        Ok(statements) => {
+            let mut outcomes = Vec::new();
+            for statement in statements {
+                let outcome = execute_raw_query_with_session(catalog, &statement, session);
+                let should_stop = matches!(outcome, QueryOutcome::Error { .. });
+                outcomes.push(outcome);
+                if should_stop {
+                    break;
+                }
+            }
+            outcomes
+        }
+        Err(err) => vec![QueryOutcome::Error {
+            severity: "ERROR".to_string(),
+            code: "42601".to_string(),
+            message: err.to_string(),
+        }],
+    }
+}
+
 /// Execute a parsed query against the catalog using a connection session context.
 pub fn execute_query_with_session(
     catalog: &dyn ProjectionCatalog,
@@ -81,9 +213,29 @@ pub fn execute_query_with_session(
                     );
                 }
                 if s.eq_ignore_ascii_case("pg_catalog") {
-                    return execute_pg_catalog(catalog, table, columns, where_clause, order_by, *limit, *offset);
+                    return execute_pg_catalog(
+                        catalog,
+                        table,
+                        columns,
+                        where_clause,
+                        order_by,
+                        *limit,
+                        *offset,
+                        session,
+                    );
                 }
                 // Unknown schema → treat as regular table lookup (will fail if not found).
+            } else if is_pg_catalog_table(table) {
+                return execute_pg_catalog(
+                    catalog,
+                    table,
+                    columns,
+                    where_clause,
+                    order_by,
+                    *limit,
+                    *offset,
+                    session,
+                );
             }
             execute_select(catalog, table, columns, where_clause, order_by, *limit, *offset)
         }
@@ -145,12 +297,8 @@ fn evaluate_expression(lower: &str, _original: &str, session: &SessionContext) -
     // Well-known functions.
     match lower {
         "current_database()" => (Some("current_database".into()), Some(session.current_database.clone())),
-        "current_schema()" | "current_schema" => {
-            (Some("current_schema".into()), Some(session.current_schema.clone()))
-        }
-        "current_user" | "session_user" | "user" => {
-            (Some("current_user".into()), Some(session.current_user.clone()))
-        }
+        "current_schema()" | "current_schema" => (Some("current_schema".into()), Some(session.current_schema.clone())),
+        "current_user" | "session_user" | "user" => (Some("current_user".into()), Some(session.current_user.clone())),
         "version()" => {
             (Some("version".into()), Some("TypeDB (PostgreSQL-compatible) via pgwire projection facade".into()))
         }
@@ -189,6 +337,292 @@ fn execute_show_tables(catalog: &dyn ProjectionCatalog) -> QueryOutcome {
     }];
     let rows: Vec<Vec<Option<String>>> = names.into_iter().map(|n| vec![Some(n)]).collect();
     QueryOutcome::Result(QueryResult { columns, rows, command_tag: None })
+}
+
+fn is_pg_catalog_table(table: &str) -> bool {
+    matches!(
+        table.to_ascii_lowercase().as_str(),
+        "pg_namespace"
+            | "pg_class"
+            | "pg_attribute"
+            | "pg_type"
+            | "pg_database"
+            | "pg_constraint"
+            | "pg_index"
+            | "pg_description"
+            | "pg_am"
+            | "pg_settings"
+            | "pg_stat_activity"
+    )
+}
+
+fn execute_special_duckdb_query(catalog: &dyn ProjectionCatalog, sql: &str) -> Option<QueryOutcome> {
+    let normalized = normalize_sql(sql);
+
+    if normalized == "select oid, nspname from pg_namespace order by oid" {
+        let columns = vec![pg_catalog_oid_col("oid"), pg_catalog_text_col("nspname")];
+        let rows = vec![
+            vec![Some("11".into()), Some("pg_catalog".into())],
+            vec![Some("2200".into()), Some("public".into())],
+            vec![Some("13000".into()), Some("information_schema".into())],
+        ];
+        return Some(QueryOutcome::Result(QueryResult { columns, rows, command_tag: None }));
+    }
+
+    if normalized.contains("from pg_class")
+        && normalized.contains("join pg_namespace")
+        && normalized.contains("join pg_attribute")
+        && normalized.contains("join pg_type")
+        && normalized.contains("join pg_constraint")
+        && normalized.contains("union all")
+        && normalized.contains("constraint_key")
+    {
+        return Some(execute_duckdb_table_introspection(catalog, &normalized));
+    }
+
+    if normalized == "select 0 as oid, 0 as enumtypid, '' as typname, '' as enumlabel limit 0" {
+        let columns = vec![
+            pg_catalog_oid_col("oid"),
+            pg_catalog_oid_col("enumtypid"),
+            pg_catalog_text_col("typname"),
+            pg_catalog_text_col("enumlabel"),
+        ];
+        return Some(QueryOutcome::Result(QueryResult { columns, rows: vec![], command_tag: None }));
+    }
+
+    if normalized.contains("from pg_type t")
+        && normalized.contains("join pg_catalog.pg_namespace n")
+        && normalized.contains("join pg_class")
+        && normalized.contains("join pg_attribute")
+        && normalized.contains("join pg_type sub_type")
+        && normalized.contains("pg_class.relkind = 'c'")
+        && normalized.contains("t.typtype = 'c'")
+    {
+        let columns = vec![
+            pg_catalog_oid_col("oid"),
+            pg_catalog_oid_col("id"),
+            pg_catalog_text_col("type"),
+            pg_catalog_text_col("attname"),
+            pg_catalog_text_col("typname"),
+        ];
+        return Some(QueryOutcome::Result(QueryResult { columns, rows: vec![], command_tag: None }));
+    }
+
+    if normalized.contains("from pg_indexes")
+        && normalized.contains("join pg_namespace")
+        && normalized.contains("tablename")
+        && normalized.contains("indexname")
+    {
+        let columns =
+            vec![pg_catalog_oid_col("oid"), pg_catalog_text_col("tablename"), pg_catalog_text_col("indexname")];
+        return Some(QueryOutcome::Result(QueryResult { columns, rows: vec![], command_tag: None }));
+    }
+
+    None
+}
+
+fn execute_special_dbt_query(sql: &str) -> Option<QueryOutcome> {
+    let normalized = normalize_sql(sql);
+
+    if normalized.contains("select distinct dependent_namespace.nspname as dependent_schema")
+        && normalized.contains("dependent_class.relname as dependent_name")
+        && normalized.contains("referenced_namespace.nspname as referenced_schema")
+        && normalized.contains("referenced_class.relname as referenced_name")
+        && normalized.contains("from pg_class as dependent_class")
+        && normalized.contains("join pg_namespace as dependent_namespace")
+        && normalized.contains("join pg_depend as dependent_depend")
+        && normalized.contains("join pg_depend as joining_depend")
+        && normalized.contains("join pg_class as referenced_class")
+        && normalized.contains("join pg_namespace as referenced_namespace")
+    {
+        let columns = vec![
+            pg_catalog_text_col("dependent_schema"),
+            pg_catalog_text_col("dependent_name"),
+            pg_catalog_text_col("referenced_schema"),
+            pg_catalog_text_col("referenced_name"),
+        ];
+        return Some(QueryOutcome::Result(QueryResult { columns, rows: vec![], command_tag: None }));
+    }
+
+    None
+}
+
+fn execute_duckdb_table_introspection(catalog: &dyn ProjectionCatalog, normalized_sql: &str) -> QueryOutcome {
+    let columns = vec![
+        pg_catalog_oid_col("namespace_id"),
+        pg_catalog_text_col("relname"),
+        pg_catalog_int4_col("relpages"),
+        pg_catalog_text_col("attname"),
+        pg_catalog_text_col("type_name"),
+        pg_catalog_int4_col("type_modifier"),
+        pg_catalog_int4_col("ndim"),
+        pg_catalog_int4_col("attnum"),
+        pg_catalog_bool_col("notnull"),
+        pg_catalog_oid_col("constraint_id"),
+        pg_catalog_text_col("constraint_type"),
+        pg_catalog_text_col("constraint_key"),
+    ];
+
+    let schema_filter = extract_duckdb_introspection_filter(normalized_sql, "pg_namespace.nspname='");
+    let relation_filter = extract_duckdb_introspection_filter(normalized_sql, "relname='");
+    let mut rows = Vec::new();
+    for projection_name in catalog.list_projections() {
+        if let Some(projection) = catalog.get_projection(&projection_name) {
+            if !matches_duckdb_introspection_relation(
+                "public",
+                &projection.name,
+                schema_filter.as_deref(),
+                relation_filter.as_deref(),
+            ) {
+                continue;
+            }
+
+            for (index, column) in projection.columns.iter().enumerate() {
+                rows.push(vec![
+                    Some("2200".into()),
+                    Some(projection.name.clone()),
+                    None,
+                    Some(column.name.clone()),
+                    Some(pg_type_name(column.type_oid).to_string()),
+                    Some("-1".into()),
+                    Some("0".into()),
+                    Some((index + 1).to_string()),
+                    Some("f".into()),
+                    None,
+                    None,
+                    None,
+                ]);
+            }
+        }
+    }
+
+    for relation in duckdb_virtual_relations() {
+        if !matches_duckdb_introspection_relation(
+            relation.schema,
+            relation.name,
+            schema_filter.as_deref(),
+            relation_filter.as_deref(),
+        ) {
+            continue;
+        }
+
+        for (index, (column_name, type_oid)) in relation.columns.iter().enumerate() {
+            rows.push(vec![
+                Some(relation.namespace_id.to_string()),
+                Some(relation.name.to_string()),
+                None,
+                Some((*column_name).to_string()),
+                Some(pg_type_name(*type_oid).to_string()),
+                Some("-1".into()),
+                Some("0".into()),
+                Some((index + 1).to_string()),
+                Some("f".into()),
+                None,
+                None,
+                None,
+            ]);
+        }
+    }
+
+    QueryOutcome::Result(QueryResult { columns, rows, command_tag: None })
+}
+
+struct DuckdbVirtualRelation {
+    namespace_id: u32,
+    schema: &'static str,
+    name: &'static str,
+    columns: &'static [(&'static str, PgOid)],
+}
+
+const DUCKDB_PG_DATABASE_COLUMNS: &[(&str, PgOid)] = &[
+    ("oid", crate::type_mapping::PG_OID_OID),
+    ("datname", crate::type_mapping::PG_OID_TEXT),
+    ("datdba", crate::type_mapping::PG_OID_OID),
+    ("encoding", crate::type_mapping::PG_OID_INT4),
+    ("datcollate", crate::type_mapping::PG_OID_TEXT),
+    ("datctype", crate::type_mapping::PG_OID_TEXT),
+];
+
+const DUCKDB_PG_SETTINGS_COLUMNS: &[(&str, PgOid)] = &[
+    ("name", crate::type_mapping::PG_OID_TEXT),
+    ("setting", crate::type_mapping::PG_OID_TEXT),
+    ("unit", crate::type_mapping::PG_OID_TEXT),
+    ("category", crate::type_mapping::PG_OID_TEXT),
+    ("short_desc", crate::type_mapping::PG_OID_TEXT),
+];
+
+const DUCKDB_PG_STAT_ACTIVITY_COLUMNS: &[(&str, PgOid)] = &[
+    ("datid", crate::type_mapping::PG_OID_OID),
+    ("datname", crate::type_mapping::PG_OID_TEXT),
+    ("pid", crate::type_mapping::PG_OID_INT4),
+    ("usename", crate::type_mapping::PG_OID_TEXT),
+    ("application_name", crate::type_mapping::PG_OID_TEXT),
+    ("state", crate::type_mapping::PG_OID_TEXT),
+];
+
+fn duckdb_virtual_relations() -> &'static [DuckdbVirtualRelation] {
+    &[
+        DuckdbVirtualRelation {
+            namespace_id: 11,
+            schema: "pg_catalog",
+            name: "pg_database",
+            columns: DUCKDB_PG_DATABASE_COLUMNS,
+        },
+        DuckdbVirtualRelation {
+            namespace_id: 11,
+            schema: "pg_catalog",
+            name: "pg_settings",
+            columns: DUCKDB_PG_SETTINGS_COLUMNS,
+        },
+        DuckdbVirtualRelation {
+            namespace_id: 11,
+            schema: "pg_catalog",
+            name: "pg_stat_activity",
+            columns: DUCKDB_PG_STAT_ACTIVITY_COLUMNS,
+        },
+    ]
+}
+
+fn extract_duckdb_introspection_filter(normalized_sql: &str, prefix: &str) -> Option<String> {
+    let start = normalized_sql.find(prefix)? + prefix.len();
+    let end = normalized_sql[start..].find('\'')?;
+    Some(normalized_sql[start..start + end].to_string())
+}
+
+fn matches_duckdb_introspection_relation(
+    schema: &str,
+    relation: &str,
+    schema_filter: Option<&str>,
+    relation_filter: Option<&str>,
+) -> bool {
+    schema_filter.is_none_or(|filter| filter.eq_ignore_ascii_case(schema))
+        && relation_filter.is_none_or(|filter| filter.eq_ignore_ascii_case(relation))
+}
+
+fn pg_type_name(type_oid: PgOid) -> &'static str {
+    match type_oid {
+        crate::type_mapping::PG_OID_BOOL => "bool",
+        crate::type_mapping::PG_OID_OID => "oid",
+        crate::type_mapping::PG_OID_INT8 => "int8",
+        crate::type_mapping::PG_OID_INT4 => "int4",
+        crate::type_mapping::PG_OID_FLOAT8 => "float8",
+        crate::type_mapping::PG_OID_NUMERIC => "numeric",
+        crate::type_mapping::PG_OID_DATE => "date",
+        crate::type_mapping::PG_OID_TIMESTAMP => "timestamp",
+        crate::type_mapping::PG_OID_TIMESTAMPTZ => "timestamptz",
+        crate::type_mapping::PG_OID_INTERVAL => "interval",
+        crate::type_mapping::PG_OID_JSONB => "jsonb",
+        _ => "text",
+    }
+}
+
+fn normalize_sql(sql: &str) -> String {
+    sql.split_whitespace().collect::<Vec<_>>().join(" ").to_ascii_lowercase()
+}
+
+enum OutputColumn {
+    Source(usize),
+    Null,
 }
 
 // ── SELECT from projection ─────────────────────────────────────────
@@ -238,7 +672,7 @@ fn execute_select(
     }
 
     // Resolve output columns.
-    let (out_columns, col_indices) = match resolve_columns(&projection.columns, columns) {
+    let (out_columns, output_columns) = match resolve_columns(&projection.columns, columns) {
         Ok(v) => v,
         Err(e) => return e,
     };
@@ -270,8 +704,18 @@ fn execute_select(
     };
 
     // Project columns.
-    let projected_rows: Vec<Vec<Option<String>>> =
-        rows.iter().map(|row| col_indices.iter().map(|&idx| row[idx].clone()).collect()).collect();
+    let projected_rows: Vec<Vec<Option<String>>> = rows
+        .iter()
+        .map(|row| {
+            output_columns
+                .iter()
+                .map(|column| match column {
+                    OutputColumn::Source(index) => row[*index].clone(),
+                    OutputColumn::Null => None,
+                })
+                .collect()
+        })
+        .collect();
 
     QueryOutcome::Result(QueryResult { columns: out_columns, rows: projected_rows, command_tag: None })
 }
@@ -281,13 +725,13 @@ fn execute_select(
 fn execute_information_schema(
     catalog: &dyn ProjectionCatalog,
     table: &str,
-    _columns: &[SelectColumn],
+    columns: &[SelectColumn],
     where_clause: &[WhereCondition],
     _order_by: &[OrderByExpr],
     limit: Option<u64>,
     offset: Option<u64>,
 ) -> QueryOutcome {
-    if table.eq_ignore_ascii_case("tables") {
+    let outcome = if table.eq_ignore_ascii_case("tables") {
         execute_info_schema_tables(catalog, where_clause, limit, offset)
     } else if table.eq_ignore_ascii_case("columns") {
         execute_info_schema_columns(catalog, where_clause, limit, offset)
@@ -302,7 +746,9 @@ fn execute_information_schema(
             code: "42P01".into(),
             message: format!("relation \"information_schema.{table}\" does not exist"),
         }
-    }
+    };
+
+    project_virtual_query_outcome(outcome, columns)
 }
 
 fn info_schema_text_col(name: &str) -> ColumnDescription {
@@ -410,13 +856,14 @@ fn execute_info_schema_schemata(
 fn execute_pg_catalog(
     catalog: &dyn ProjectionCatalog,
     table: &str,
-    _columns: &[SelectColumn],
+    columns: &[SelectColumn],
     where_clause: &[WhereCondition],
     _order_by: &[OrderByExpr],
     limit: Option<u64>,
     offset: Option<u64>,
+    session: &SessionContext,
 ) -> QueryOutcome {
-    if table.eq_ignore_ascii_case("pg_namespace") {
+    let outcome = if table.eq_ignore_ascii_case("pg_namespace") {
         execute_pg_namespace(where_clause, limit, offset)
     } else if table.eq_ignore_ascii_case("pg_class") {
         execute_pg_class(catalog, where_clause, limit, offset)
@@ -425,7 +872,7 @@ fn execute_pg_catalog(
     } else if table.eq_ignore_ascii_case("pg_type") {
         execute_pg_type(where_clause, limit, offset)
     } else if table.eq_ignore_ascii_case("pg_database") {
-        execute_pg_database(where_clause, limit, offset)
+        execute_pg_database(session, where_clause, limit, offset)
     } else if table.eq_ignore_ascii_case("pg_constraint") {
         execute_pg_empty_virtual(
             "pg_constraint",
@@ -445,21 +892,18 @@ fn execute_pg_catalog(
     } else if table.eq_ignore_ascii_case("pg_am") {
         execute_pg_am(where_clause, limit, offset)
     } else if table.eq_ignore_ascii_case("pg_settings") {
-        execute_pg_settings(where_clause, limit, offset)
+        execute_pg_settings(session, where_clause, limit, offset)
     } else if table.eq_ignore_ascii_case("pg_stat_activity") {
-        execute_pg_empty_virtual(
-            "pg_stat_activity",
-            &["datid", "datname", "pid", "usename", "application_name", "state"],
-            limit,
-            offset,
-        )
+        execute_pg_stat_activity(session, where_clause, limit, offset)
     } else {
         QueryOutcome::Error {
             severity: "ERROR".into(),
             code: "42P01".into(),
             message: format!("relation \"pg_catalog.{table}\" does not exist"),
         }
-    }
+    };
+
+    project_virtual_query_outcome(outcome, columns)
 }
 
 fn pg_catalog_int4_col(name: &str) -> ColumnDescription {
@@ -646,7 +1090,12 @@ fn s(v: &str) -> Option<String> {
 }
 
 /// pg_database: oid, datname, datdba, encoding, datcollate, datctype
-fn execute_pg_database(where_clause: &[WhereCondition], limit: Option<u64>, offset: Option<u64>) -> QueryOutcome {
+fn execute_pg_database(
+    session: &SessionContext,
+    where_clause: &[WhereCondition],
+    limit: Option<u64>,
+    offset: Option<u64>,
+) -> QueryOutcome {
     let columns = vec![
         pg_catalog_oid_col("oid"),
         pg_catalog_text_col("datname"),
@@ -658,7 +1107,7 @@ fn execute_pg_database(where_clause: &[WhereCondition], limit: Option<u64>, offs
 
     let all_rows: Vec<Vec<Option<String>>> = vec![vec![
         s("16384"),
-        s("typedb"),
+        Some(session.current_database.clone()),
         s("10"),
         s("6"), // UTF-8
         s("en_US.UTF-8"),
@@ -671,7 +1120,7 @@ fn execute_pg_database(where_clause: &[WhereCondition], limit: Option<u64>, offs
 }
 
 /// Generic empty virtual table — returns the named columns with zero rows.
-/// Used for pg_constraint, pg_index, pg_description, pg_stat_activity where we have no data
+/// Used for pg_constraint, pg_index, and pg_description where we have no data
 /// but ORMs need the table to exist.
 fn execute_pg_empty_virtual(
     _table: &str,
@@ -704,7 +1153,12 @@ fn execute_pg_am(where_clause: &[WhereCondition], limit: Option<u64>, offset: Op
 }
 
 /// pg_settings: server variables exposed as a virtual table (for `SHOW` and BI tool introspection).
-fn execute_pg_settings(where_clause: &[WhereCondition], limit: Option<u64>, offset: Option<u64>) -> QueryOutcome {
+fn execute_pg_settings(
+    session: &SessionContext,
+    where_clause: &[WhereCondition],
+    limit: Option<u64>,
+    offset: Option<u64>,
+) -> QueryOutcome {
     let columns = vec![
         pg_catalog_text_col("name"),
         pg_catalog_text_col("setting"),
@@ -727,6 +1181,13 @@ fn execute_pg_settings(where_clause: &[WhereCondition], limit: Option<u64>, offs
         vec![s("DateStyle"), s("ISO, MDY"), None, s("Client Connection Defaults"), s("Sets the display format.")],
         vec![s("TimeZone"), s("UTC"), None, s("Client Connection Defaults"), s("Sets the time zone.")],
         vec![
+            s("port"),
+            Some(session.server_port.to_string()),
+            None,
+            s("Connections and Authentication"),
+            s("Shows the server port."),
+        ],
+        vec![
             s("max_connections"),
             s("100"),
             None,
@@ -735,7 +1196,7 @@ fn execute_pg_settings(where_clause: &[WhereCondition], limit: Option<u64>, offs
         ],
         vec![
             s("search_path"),
-            s("\"$user\", public"),
+            Some(format!("\"$user\", {}", session.current_schema)),
             None,
             s("Client Connection Defaults"),
             s("Sets the schema search path."),
@@ -745,6 +1206,113 @@ fn execute_pg_settings(where_clause: &[WhereCondition], limit: Option<u64>, offs
     let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
     let paged = apply_offset_limit(filtered, offset, limit);
     QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
+}
+
+fn execute_pg_stat_activity(
+    session: &SessionContext,
+    where_clause: &[WhereCondition],
+    limit: Option<u64>,
+    offset: Option<u64>,
+) -> QueryOutcome {
+    let columns = vec![
+        pg_catalog_oid_col("datid"),
+        pg_catalog_text_col("datname"),
+        pg_catalog_int4_col("pid"),
+        pg_catalog_text_col("usename"),
+        pg_catalog_text_col("application_name"),
+        pg_catalog_text_col("state"),
+    ];
+
+    let all_rows = vec![vec![
+        s("16384"),
+        Some(session.current_database.clone()),
+        Some(session.backend_pid.to_string()),
+        Some(session.current_user.clone()),
+        None,
+        s("active"),
+    ]];
+
+    let filtered = apply_where_to_virtual_rows(&columns, &all_rows, where_clause);
+    let paged = apply_offset_limit(filtered, offset, limit);
+    QueryOutcome::Result(QueryResult { columns, rows: paged, command_tag: None })
+}
+
+fn project_virtual_query_outcome(outcome: QueryOutcome, select_cols: &[SelectColumn]) -> QueryOutcome {
+    match outcome {
+        QueryOutcome::Result(result) => match project_virtual_query_result(result, select_cols) {
+            Ok(projected) => QueryOutcome::Result(projected),
+            Err(err) => err,
+        },
+        other => other,
+    }
+}
+
+fn project_virtual_query_result(result: QueryResult, select_cols: &[SelectColumn]) -> Result<QueryResult, QueryOutcome> {
+    let QueryResult { columns, rows, command_tag } = result;
+    let (projected_columns, output_columns) = resolve_virtual_columns(&columns, select_cols)?;
+    let projected_rows = rows
+        .into_iter()
+        .map(|row| {
+            output_columns
+                .iter()
+                .map(|column| match column {
+                    OutputColumn::Source(index) => row[*index].clone(),
+                    OutputColumn::Null => None,
+                })
+                .collect()
+        })
+        .collect();
+
+    Ok(QueryResult { columns: projected_columns, rows: projected_rows, command_tag })
+}
+
+fn resolve_virtual_columns(
+    available_columns: &[ColumnDescription],
+    select_cols: &[SelectColumn],
+) -> Result<(Vec<ColumnDescription>, Vec<OutputColumn>), QueryOutcome> {
+    let mut descriptions = Vec::new();
+    let mut output_columns = Vec::new();
+
+    for select_col in select_cols {
+        match select_col {
+            SelectColumn::Star => {
+                for (index, column) in available_columns.iter().enumerate() {
+                    descriptions.push(column.clone());
+                    output_columns.push(OutputColumn::Source(index));
+                }
+            }
+            SelectColumn::Named { name, alias } => {
+                let Some(index) = available_columns.iter().position(|column| column.name.eq_ignore_ascii_case(name)) else {
+                    return Err(QueryOutcome::Error {
+                        severity: "ERROR".into(),
+                        code: "42703".into(),
+                        message: format!("column \"{name}\" does not exist"),
+                    });
+                };
+
+                let mut description = available_columns[index].clone();
+                if let Some(alias) = alias {
+                    description.name = alias.clone();
+                }
+                descriptions.push(description);
+                output_columns.push(OutputColumn::Source(index));
+            }
+            SelectColumn::Null { alias } => {
+                descriptions.push(ColumnDescription {
+                    name: alias.clone().unwrap_or_else(|| "?column?".to_string()),
+                    table_oid: 0,
+                    column_index: 0,
+                    type_oid: crate::type_mapping::PG_OID_TEXT,
+                    type_size: -1,
+                    type_modifier: -1,
+                    format_code: 0,
+                });
+                output_columns.push(OutputColumn::Null);
+            }
+        }
+    }
+
+    Ok((descriptions, output_columns))
 }
 
 /// Empty information_schema virtual tables (key_column_usage, table_constraints).
@@ -784,20 +1352,20 @@ fn find_column_index(catalog_cols: &[CatalogColumn], name: &str) -> Option<usize
 }
 
 /// Resolve output columns from the catalog + SELECT list.
-/// Returns (ColumnDescriptions for wire, indices into the original row).
+/// Returns (ColumnDescriptions for wire, output projection mapping).
 fn resolve_columns(
     catalog_cols: &[CatalogColumn],
     select_cols: &[SelectColumn],
-) -> Result<(Vec<ColumnDescription>, Vec<usize>), QueryOutcome> {
+) -> Result<(Vec<ColumnDescription>, Vec<OutputColumn>), QueryOutcome> {
     let mut descriptions = Vec::new();
-    let mut indices = Vec::new();
+    let mut output_columns = Vec::new();
 
     for sc in select_cols {
         match sc {
             SelectColumn::Star => {
                 for (i, cc) in catalog_cols.iter().enumerate() {
                     descriptions.push(catalog_col_to_desc(cc));
-                    indices.push(i);
+                    output_columns.push(OutputColumn::Source(i));
                 }
             }
             SelectColumn::Named { name, alias } => {
@@ -816,12 +1384,24 @@ fn resolve_columns(
                     desc.name = a.clone();
                 }
                 descriptions.push(desc);
-                indices.push(idx);
+                output_columns.push(OutputColumn::Source(idx));
+            }
+            SelectColumn::Null { alias } => {
+                descriptions.push(ColumnDescription {
+                    name: alias.clone().unwrap_or_else(|| "?column?".to_string()),
+                    table_oid: 0,
+                    column_index: 0,
+                    type_oid: crate::type_mapping::PG_OID_TEXT,
+                    type_size: -1,
+                    type_modifier: -1,
+                    format_code: 0,
+                });
+                output_columns.push(OutputColumn::Null);
             }
         }
     }
 
-    Ok((descriptions, indices))
+    Ok((descriptions, output_columns))
 }
 
 fn catalog_col_to_desc(cc: &CatalogColumn) -> ColumnDescription {
@@ -1057,6 +1637,7 @@ mod tests {
     fn unwrap_result(outcome: QueryOutcome) -> QueryResult {
         match outcome {
             QueryOutcome::Result(r) => r,
+            QueryOutcome::CopyOut(_) => panic!("expected Result, got CopyOut"),
             QueryOutcome::Error { message, .. } => panic!("expected Result, got Error: {message}"),
         }
     }
@@ -1066,6 +1647,7 @@ mod tests {
         match outcome {
             QueryOutcome::Error { severity, code, message } => (severity, code, message),
             QueryOutcome::Result(_) => panic!("expected Error, got Result"),
+            QueryOutcome::CopyOut(_) => panic!("expected Error, got CopyOut"),
         }
     }
 
@@ -1927,6 +2509,32 @@ mod tests {
         assert_eq!(result.rows[0][1], Some("typedb".to_string())); // datname
     }
 
+    #[test]
+    fn test_pg_database_uses_session_database() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_database".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Named { name: "datname".into(), alias: None }],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let session = SessionContext {
+            current_user: "admin".into(),
+            current_database: "analytics".into(),
+            current_schema: "reporting".into(),
+            server_port: 15432,
+            backend_pid: 77,
+        };
+
+        let result = unwrap_result(execute_query_with_session(&catalog, &query, &session));
+        assert_eq!(result.columns.len(), 1);
+        assert_eq!(result.columns[0].name, "datname");
+        assert_eq!(result.rows, vec![vec![Some("analytics".to_string())]]);
+    }
+
     // ── pg_catalog unknown table ───────────────────────────────────
 
     #[test]
@@ -2119,6 +2727,71 @@ mod tests {
         let names: Vec<_> = result.rows.iter().map(|r| r[0].as_deref().unwrap()).collect();
         assert!(names.contains(&"server_version"));
         assert!(names.contains(&"search_path"));
+    }
+
+    #[test]
+    fn test_pg_settings_exposes_session_port_with_named_projection() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_settings".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![SelectColumn::Named { name: "setting".into(), alias: None }],
+            where_clause: vec![WhereCondition {
+                column: "name".into(),
+                op: ComparisonOp::Eq,
+                value: LiteralValue::String("port".into()),
+            }],
+            order_by: vec![],
+            limit: None,
+            offset: None,
+        };
+        let session = SessionContext {
+            current_user: "admin".into(),
+            current_database: "analytics".into(),
+            current_schema: "reporting".into(),
+            server_port: 15432,
+            backend_pid: 77,
+        };
+
+        let result = unwrap_result(execute_query_with_session(&catalog, &query, &session));
+        assert_eq!(result.columns.len(), 1);
+        assert_eq!(result.columns[0].name, "setting");
+        assert_eq!(result.rows, vec![vec![Some("15432".to_string())]]);
+    }
+
+    #[test]
+    fn test_pg_stat_activity_exposes_active_session_with_named_projection() {
+        let catalog = StubCatalog::with_people();
+        let query = ParsedQuery::Select {
+            table: "pg_stat_activity".into(),
+            schema: Some("pg_catalog".into()),
+            columns: vec![
+                SelectColumn::Named { name: "datname".into(), alias: None },
+                SelectColumn::Named { name: "usename".into(), alias: None },
+                SelectColumn::Named { name: "pid".into(), alias: None },
+            ],
+            where_clause: vec![],
+            order_by: vec![],
+            limit: Some(1),
+            offset: None,
+        };
+        let session = SessionContext {
+            current_user: "admin".into(),
+            current_database: "analytics".into(),
+            current_schema: "reporting".into(),
+            server_port: 15432,
+            backend_pid: 77,
+        };
+
+        let result = unwrap_result(execute_query_with_session(&catalog, &query, &session));
+        assert_eq!(result.columns.len(), 3);
+        assert_eq!(result.columns[0].name, "datname");
+        assert_eq!(result.columns[1].name, "usename");
+        assert_eq!(result.columns[2].name, "pid");
+        assert_eq!(
+            result.rows,
+            vec![vec![Some("analytics".to_string()), Some("admin".to_string()), Some("77".to_string())]]
+        );
     }
 
     // ── information_schema ORM compat (empty virtual tables) ───────

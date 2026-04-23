@@ -174,6 +174,30 @@ psql "host=localhost port=5432 user=admin dbname=typedb sslmode=disable"
 
 Default development credentials: `admin` / `password`. Change them before exposing the endpoint outside local development.
 
+### DuckDB
+
+DuckDB can attach to the pgwire endpoint through its `postgres` extension. The live interoperability coverage in this repository is currently validated against DuckDB CLI `v1.4.4 (Andium)`.
+
+From the DuckDB CLI:
+
+```sql
+INSTALL postgres;
+LOAD postgres;
+ATTACH 'host=127.0.0.1 port=5432 dbname=typedb user=admin password=password' AS typedb (TYPE postgres);
+
+SHOW ALL TABLES;
+SELECT name FROM typedb.public.people ORDER BY id;
+SELECT setting FROM typedb.pg_catalog.pg_settings WHERE name = 'port';
+SELECT datname, usename, pid FROM typedb.pg_catalog.pg_stat_activity LIMIT 1;
+DETACH typedb;
+```
+
+Current DuckDB support is intentionally read-only and experimental:
+
+- Requires DuckDB's `postgres` extension (`INSTALL postgres; LOAD postgres;`)
+- Validated scope includes attach and relation discovery, projection scans, filters, ordering, limits, `COUNT(*)`, quoted identifiers, alias ordering, `LIMIT 0`, and active-session metadata lookups through `pg_settings` and `pg_stat_activity`
+- Writes, DDL, and full PostgreSQL feature parity are not supported through the pgwire endpoint
+
 ### Supported Queries
 
 The compatibility surface is focused on read-only catalog discovery and `SELECT`-driven tooling.

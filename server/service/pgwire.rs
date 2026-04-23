@@ -17,8 +17,7 @@ use projection::{
     pgwire::{
         authenticator::PgAuthenticator,
         connection::{QueryHandler, QueryOutcome, SessionContext},
-        query_executor::{execute_query, execute_query_with_session},
-        sql_parser::parse_sql,
+        query_executor::{execute_raw_query_batch_with_session, execute_raw_query_with_session},
     },
 };
 
@@ -61,24 +60,14 @@ impl CatalogQueryHandler {
 
 impl QueryHandler for CatalogQueryHandler {
     fn handle_query(&self, sql: &str) -> QueryOutcome {
-        match parse_sql(sql) {
-            Ok(parsed) => execute_query(&self.catalog, &parsed),
-            Err(err) => QueryOutcome::Error {
-                severity: "ERROR".to_string(),
-                code: "42601".to_string(), // syntax_error
-                message: err.to_string(),
-            },
-        }
+        execute_raw_query_with_session(&self.catalog, sql, &SessionContext::default())
     }
 
     fn handle_query_with_session(&self, sql: &str, session: &SessionContext) -> QueryOutcome {
-        match parse_sql(sql) {
-            Ok(parsed) => execute_query_with_session(&self.catalog, &parsed, session),
-            Err(err) => QueryOutcome::Error {
-                severity: "ERROR".to_string(),
-                code: "42601".to_string(),
-                message: err.to_string(),
-            },
-        }
+        execute_raw_query_with_session(&self.catalog, sql, session)
+    }
+
+    fn handle_query_batch_with_session(&self, sql: &str, session: &SessionContext) -> Vec<QueryOutcome> {
+        execute_raw_query_batch_with_session(&self.catalog, sql, session)
     }
 }

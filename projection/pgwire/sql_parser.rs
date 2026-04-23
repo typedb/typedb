@@ -22,6 +22,8 @@ pub enum SelectColumn {
     Star,
     /// A named column, optionally with an alias.
     Named { name: String, alias: Option<String> },
+    /// A `NULL` projection, optionally with an alias.
+    Null { alias: Option<String> },
 }
 
 /// Comparison operators supported in WHERE clauses.
@@ -152,7 +154,37 @@ pub fn parse_sql(sql: &str) -> Result<ParsedQuery, SqlParseError> {
         return Err(SqlParseError::Unsupported("multiple statements".to_string()));
     }
 
-    match statements.into_iter().next().unwrap() {
+    convert_statement(statements.into_iter().next().unwrap())
+}
+
+/// Parse a SQL string into a batch of [`ParsedQuery`] values.
+pub fn parse_sql_batch(sql: &str) -> Result<Vec<ParsedQuery>, SqlParseError> {
+    split_sql_statements(sql)?.into_iter().map(|statement| parse_sql(&statement)).collect()
+}
+
+pub fn split_sql_statements(sql: &str) -> Result<Vec<String>, SqlParseError> {
+    let trimmed = sql.trim();
+    if trimmed.is_empty() {
+        return Err(SqlParseError::EmptyQuery);
+    }
+
+    // Fast-path: SHOW TABLES (not standard PG SQL, handle before parser).
+    if trimmed.eq_ignore_ascii_case("SHOW TABLES") || trimmed.eq_ignore_ascii_case("SHOW TABLES;") {
+        return Ok(vec!["SHOW TABLES".to_string()]);
+    }
+
+    let dialect = PostgreSqlDialect {};
+    let statements = Parser::parse_sql(&dialect, trimmed).map_err(|e| SqlParseError::SyntaxError(e.to_string()))?;
+
+    if statements.is_empty() {
+        return Err(SqlParseError::EmptyQuery);
+    }
+
+    Ok(statements.into_iter().map(|statement| statement.to_string()).collect())
+}
+
+fn convert_statement(statement: Statement) -> Result<ParsedQuery, SqlParseError> {
+    match statement {
         Statement::Query(query) => convert_query(*query),
         Statement::ShowTables { .. } => Ok(ParsedQuery::ShowTables),
         Statement::Set(set_stmt) => {
@@ -320,6 +352,10 @@ fn ident_to_lower(ident: &Ident) -> String {
     }
 }
 
+fn is_null_value_expr(expr: &Expr) -> bool {
+    matches!(expr, Expr::Value(val_with_span) if matches!(&val_with_span.value, Value::Null))
+}
+
 /// Convert the SELECT projection items.
 fn convert_projection(items: &[SelectItem]) -> Result<Vec<SelectColumn>, SqlParseError> {
     let mut result = Vec::with_capacity(items.len());
@@ -329,8 +365,14 @@ fn convert_projection(items: &[SelectItem]) -> Result<Vec<SelectColumn>, SqlPars
             SelectItem::UnnamedExpr(Expr::Identifier(ident)) => {
                 result.push(SelectColumn::Named { name: ident_to_lower(ident), alias: None });
             }
+            SelectItem::UnnamedExpr(expr) if is_null_value_expr(expr) => {
+                result.push(SelectColumn::Null { alias: None });
+            }
             SelectItem::ExprWithAlias { expr: Expr::Identifier(ident), alias } => {
                 result.push(SelectColumn::Named { name: ident_to_lower(ident), alias: Some(ident_to_lower(alias)) });
+            }
+            SelectItem::ExprWithAlias { expr, alias } if is_null_value_expr(expr) => {
+                result.push(SelectColumn::Null { alias: Some(ident_to_lower(alias)) });
             }
             other => {
                 return Err(SqlParseError::Unsupported(format!("projection item: {other}")));

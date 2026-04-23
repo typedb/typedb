@@ -52,6 +52,12 @@ pub const MSG_BACKEND_KEY_DATA: u8 = b'K';
 pub const MSG_READY_FOR_QUERY: u8 = b'Z';
 /// Row description (column metadata).
 pub const MSG_ROW_DESCRIPTION: u8 = b'T';
+/// CopyOutResponse.
+pub const MSG_COPY_OUT_RESPONSE: u8 = b'H';
+/// CopyData.
+pub const MSG_COPY_DATA: u8 = b'd';
+/// CopyDone.
+pub const MSG_COPY_DONE: u8 = b'c';
 /// Data row.
 pub const MSG_DATA_ROW: u8 = b'D';
 /// Command complete.
@@ -76,6 +82,12 @@ pub const MSG_PARAMETER_DESCRIPTION: u8 = b't';
 
 /// Postgres protocol version 3.0 = 196608 (0x00030000).
 pub const PROTOCOL_VERSION_30: i32 = 196608;
+/// Frontend SSL negotiation request code.
+pub const SSL_REQUEST_CODE: i32 = 80877103;
+/// Frontend GSS encryption negotiation request code.
+pub const GSSENC_REQUEST_CODE: i32 = 80877104;
+/// Single-byte response indicating encryption is not supported.
+pub const ENCRYPTION_NOT_SUPPORTED: u8 = b'N';
 
 /// Transaction status indicators for ReadyForQuery.
 pub const TX_IDLE: u8 = b'I';
@@ -213,6 +225,33 @@ pub fn encode_row_description(columns: &[ColumnDescription]) -> Vec<u8> {
         buf.extend_from_slice(&col.type_modifier.to_be_bytes());
         buf.extend_from_slice(&col.format_code.to_be_bytes());
     }
+    finish_message(&mut buf);
+    buf
+}
+
+/// Encode a CopyOutResponse message.
+pub fn encode_copy_out_response(column_formats: &[i16]) -> Vec<u8> {
+    let mut buf = begin_message(MSG_COPY_OUT_RESPONSE);
+    buf.push(1); // binary overall format
+    buf.extend_from_slice(&(column_formats.len() as i16).to_be_bytes());
+    for format in column_formats {
+        buf.extend_from_slice(&format.to_be_bytes());
+    }
+    finish_message(&mut buf);
+    buf
+}
+
+/// Encode a CopyData message.
+pub fn encode_copy_data(payload: &[u8]) -> Vec<u8> {
+    let mut buf = begin_message(MSG_COPY_DATA);
+    buf.extend_from_slice(payload);
+    finish_message(&mut buf);
+    buf
+}
+
+/// Encode a CopyDone message.
+pub fn encode_copy_done() -> Vec<u8> {
+    let mut buf = begin_message(MSG_COPY_DONE);
     finish_message(&mut buf);
     buf
 }
