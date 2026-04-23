@@ -20,7 +20,7 @@ use server::service::{
             },
             structure::bdd::{encode_function_structure_as_functor, encode_pipeline_structure_as_functor},
         },
-        query::{QueryAnswerResponse, QueryOptionsPayload},
+        query::QueryAnswerResponse,
     },
     AnswerType,
 };

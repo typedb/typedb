@@ -23,6 +23,16 @@ pub struct ErrorResponse {
     pub message: String,
 }
 
+/// Response for authenticated endpoints that cannot be served by this server.
+/// Unlike a redirect, the client must re-authenticate against the primary.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MisdirectedResponse {
+    #[serde(flatten)]
+    pub error: ErrorResponse,
+    pub primary_address: String,
+}
+
 impl IntoResponse for HttpServiceError {
     fn into_response(self) -> Response {
         let code = match &self {
@@ -45,6 +55,16 @@ impl IntoResponse for HttpServiceError {
                             StatusCode::TEMPORARY_REDIRECT,
                             [(http::header::LOCATION, location)],
                             JsonBody(encode_error(self)),
+                        )
+                            .into_response();
+                    }
+                    None => StatusCode::SERVICE_UNAVAILABLE,
+                },
+                ErrorResponseCategory::AuthenticatedRedirect { http_address, .. } => match http_address {
+                    Some(primary_address) => {
+                        return (
+                            StatusCode::MISDIRECTED_REQUEST,
+                            JsonBody(MisdirectedResponse { error: encode_error(self), primary_address }),
                         )
                             .into_response();
                     }
