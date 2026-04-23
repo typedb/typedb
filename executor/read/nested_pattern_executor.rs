@@ -156,6 +156,13 @@ impl InlinedCallExecutor {
 
     pub(crate) fn map_output(&self, input: MaybeOwnedRow<'_>, batch: FixedBatch) -> FixedBatch {
         let mut output_batch = FixedBatch::new(self.output_width);
+        debug_assert!(
+            {
+                use std::collections::HashSet;
+                self.assignment_positions.iter().collect::<HashSet<_>>().len() == self.assignment_positions.len()
+            },
+            "A check must be added below for repeated assigned variables"
+        );
         let check_indices: Vec<_> = self
             .assignment_positions
             .iter()
