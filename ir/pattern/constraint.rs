@@ -157,7 +157,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         source_span: Option<Span>,
     ) -> Result<&Sub<Variable>, Box<RepresentationError>> {
         if let (Vertex::Variable(subtype), Vertex::Variable(supertype)) = (&subtype, &mut supertype) {
-            self.may_rewrite_second_if_reused(subtype, supertype, source_span.clone())?;
+            self.may_rewrite_second_if_reused(subtype, supertype, false, source_span.clone())?;
         }
 
         let subtype_var = subtype.as_variable();
@@ -240,7 +240,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         role_type: Variable,
         source_span: Option<Span>,
     ) -> Result<&Links<Variable>, Box<RepresentationError>> {
-        self.may_rewrite_second_if_reused(&player, &mut relation, source_span.clone())?;
+        self.may_rewrite_second_if_reused(&player, &mut relation, false, source_span.clone())?;
         let links = Constraint::from(Links::new(relation, player, role_type, source_span));
 
         self.context.set_variable_category(relation, VariableCategory::Object, links.clone())?;
@@ -297,10 +297,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         arguments: Vec<Variable>,
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
+        let callee_signature = builtin_id.signature();
         for i in 0..assigned.len() {
             for j in (i + 1)..assigned.len() {
+                let is_value_category = callee_signature.returns[i].0 == VariableCategory::Value;
                 let (first, second) = assigned.split_at_mut(j);
-                self.may_rewrite_second_if_reused(&first[i], &mut second[0], source_span.clone())?;
+                self.may_rewrite_second_if_reused(&first[i], &mut second[0], is_value_category, source_span.clone())?;
             }
         }
 
@@ -312,8 +314,6 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
         }
-
-        let callee_signature = builtin_id.signature();
 
         let function_call =
             self.create_function_call(&assigned, &callee_signature, arguments, builtin_id.name(), source_span)?;
@@ -334,12 +334,19 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub fn add_function_binding(
         &mut self,
-        assigned: Vec<Variable>,
+        mut assigned: Vec<Variable>,
         callee_signature: &FunctionSignature,
         arguments: Vec<Variable>,
         function_name: &str,
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
+        for i in 0..assigned.len() {
+            for j in (i + 1)..assigned.len() {
+                let is_value_category = callee_signature.returns[i].0 == VariableCategory::Value;
+                let (first, second) = assigned.split_at_mut(j);
+                self.may_rewrite_second_if_reused(&first[i], &mut second[0], is_value_category, source_span.clone())?;
+            }
+        }
         if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(**var)) {
             let variable = self
                 .context
@@ -531,11 +538,16 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         first: &Variable,
         second: &mut Variable,
+        is_value_category: bool,
         source_span: Option<Span>,
     ) -> Result<(), Box<RepresentationError>> {
         if *first == *second {
             *second = self.context.create_anonymous_variable(source_span)?;
-            self.add_is(*first, *second, None)?;
+            if is_value_category {
+                self.add_comparison(Vertex::Variable(*first), Vertex::Variable(*second), Comparator::Equal, None)?;
+            } else {
+                self.add_is(*first, *second, None)?;
+            }
         }
         Ok(())
     }
