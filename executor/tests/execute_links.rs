@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use itertools::Itertools;
+
 use std::{
     borrow::Cow,
     collections::{BTreeMap, HashMap, HashSet},
@@ -220,9 +220,9 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
-fn position_mapping(
-    row_vars: &[Variable],
-    internal_vars: &[Variable],
+fn position_mapping<const N: usize, const M: usize>(
+    row_vars: [Variable; N],
+    internal_vars: [Variable; M],
 ) -> (
     HashMap<ExecutorVariable, Variable>,
     HashMap<Variable, VariablePosition>,
@@ -230,13 +230,13 @@ fn position_mapping(
     HashSet<ExecutorVariable>,
 ) {
     let position_to_var: HashMap<_, _> =
-        row_vars.into_iter().enumerate().map(|(i, v)| (ExecutorVariable::new_position(i as _), *v)).collect();
+        row_vars.into_iter().enumerate().map(|(i, v)| (ExecutorVariable::new_position(i as _), v)).collect();
     let variable_positions =
         HashMap::from_iter(position_to_var.iter().map(|(i, var)| (*var, i.as_position().unwrap())));
     let mapping: HashMap<_, _> = row_vars
         .into_iter()
-        .map(|var| (*var, ExecutorVariable::RowPosition(variable_positions[var])))
-        .chain(internal_vars.into_iter().map(|var| (*var, ExecutorVariable::Internal(*var))))
+        .map(|var| (var, ExecutorVariable::RowPosition(variable_positions[&var])))
+        .chain(internal_vars.into_iter().map(|var| (var, ExecutorVariable::Internal(var))))
         .collect();
     let named_variables = mapping.values().copied().collect();
     (position_to_var, variable_positions, mapping, named_variables)
@@ -307,8 +307,8 @@ fn traverse_links_unbounded_sorted_from() {
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        &[var_membership, var_group, var_person],
-        &[var_membership_type, var_group_type, var_person_type, var_membership_group_type, var_membership_member_type],
+        [var_membership, var_group, var_person],
+        [var_membership_type, var_group_type, var_person_type, var_membership_group_type, var_membership_member_type],
     );
 
     // Plan
@@ -410,8 +410,8 @@ fn traverse_links_unbounded_sorted_to() {
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        &[var_membership, var_person],
-        &[var_person_type, var_membership_type, var_membership_member_type],
+        [var_membership, var_person],
+        [var_person_type, var_membership_type, var_membership_member_type],
     );
 
     // Plan
@@ -513,8 +513,8 @@ fn traverse_links_bounded_relation() {
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        &[var_membership, var_person],
-        &[var_membership_type, var_person_type, var_membership_member_type],
+        [var_membership, var_person],
+        [var_membership_type, var_person_type, var_membership_member_type],
     );
 
     // Plan
@@ -632,8 +632,8 @@ fn traverse_links_bounded_relation_player() {
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        &[var_membership, var_person, var_membership_member_type],
-        &[var_membership_type, var_person_type, var_membership_member_type],
+        [var_membership, var_person, var_membership_member_type],
+        [var_membership_type, var_person_type, var_membership_member_type],
     );
 
     // Plan
@@ -756,8 +756,8 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        &[var_membership, var_person],
-        &[var_person_type, var_membership_type, var_membership_member_type],
+        [var_membership, var_person],
+        [var_person_type, var_membership_type, var_membership_member_type],
     );
 
     // Plan
@@ -856,8 +856,8 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        &[var_membership, var_person],
-        &[var_person_type, var_membership_type, var_membership_member_type],
+        [var_membership, var_person],
+        [var_person_type, var_membership_type, var_membership_member_type],
     );
 
     // Plan
@@ -959,8 +959,8 @@ fn traverse_links_reverse_bounded_player() {
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        &[var_person, var_membership],
-        &[var_person_type, var_membership_type, var_membership_member_type],
+        [var_person, var_membership],
+        [var_person_type, var_membership_type, var_membership_member_type],
     );
 
     // Plan
@@ -1078,8 +1078,8 @@ fn traverse_links_reverse_bounded_player_relation() {
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        &[var_person, var_membership],
-        &[var_person_type, var_membership_type, var_membership_member_type],
+        [var_person, var_membership],
+        [var_person_type, var_membership_type, var_membership_member_type],
     );
 
     // Plan

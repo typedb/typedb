@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use itertools::Itertools;
+
 use std::{
     collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
@@ -52,7 +52,6 @@ use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSn
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 use typeql::common::Span;
-use compiler::transformation::relation_index::relation_index_transformation;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const MOVIE_LABEL: Label = Label::new_static("group");
@@ -271,9 +270,9 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
-fn position_mapping(
-    row_vars: &[Variable],
-    internal_vars: &[Variable],
+fn position_mapping<const N: usize, const M: usize>(
+    row_vars: [Variable; N],
+    internal_vars: [Variable; M],
 ) -> (
     HashMap<ExecutorVariable, Variable>,
     HashMap<Variable, VariablePosition>,
@@ -281,13 +280,13 @@ fn position_mapping(
     HashSet<ExecutorVariable>,
 ) {
     let position_to_var: HashMap<_, _> =
-        row_vars.into_iter().enumerate().map(|(i, v)| (ExecutorVariable::new_position(i as _), *v)).collect();
+        row_vars.into_iter().enumerate().map(|(i, v)| (ExecutorVariable::new_position(i as _), v)).collect();
     let variable_positions =
         HashMap::from_iter(position_to_var.iter().map(|(i, var)| (*var, i.as_position().unwrap())));
     let mapping: HashMap<_, _> = row_vars
         .into_iter()
-        .map(|var| (*var, ExecutorVariable::RowPosition(variable_positions[var])))
-        .chain(internal_vars.into_iter().map(|var| (*var, ExecutorVariable::Internal(*var))))
+        .map(|var| (var, ExecutorVariable::RowPosition(variable_positions[&var])))
+        .chain(internal_vars.into_iter().map(|var| (var, ExecutorVariable::Internal(var))))
         .collect();
     let named_variables = mapping.values().copied().collect();
     (position_to_var, variable_positions, mapping, named_variables)
@@ -353,8 +352,8 @@ fn traverse_index_from_unbound() {
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        &[var_movie, var_character, var_casting],
-        &[var_movie_type, var_casting_type, var_casting_movie_type, var_casting_character_type],
+        [var_movie, var_character, var_casting],
+        [var_movie_type, var_casting_type, var_casting_movie_type, var_casting_character_type],
     );
 
     // Plan with unbound movie as the start -- should produce:
@@ -608,8 +607,8 @@ fn traverse_index_from_bound() {
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        &[var_id, var_movie, var_person, var_casting],
-        &[var_movie_type, var_casting_type, var_casting_movie_type, var_casting_actor_type],
+        [var_id, var_movie, var_person, var_casting],
+        [var_movie_type, var_casting_type, var_casting_movie_type, var_casting_actor_type],
     );
 
     // Plan with bound movie
@@ -774,8 +773,8 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
-        &[var_casting_movie_type, var_casting_other_type, var_movie, var_person, var_casting],
-        &[var_movie_type, var_casting_type],
+        [var_casting_movie_type, var_casting_other_type, var_movie, var_person, var_casting],
+        [var_movie_type, var_casting_type],
     );
 
     // Plan with a single bound role, should produce:
