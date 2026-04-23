@@ -1,10 +1,10 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.10.0-rc3](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.10.0-rc3)
+[Distributions for 3.10.1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.10.1)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.10.0-rc3```
+```docker pull typedb/typedb:3.10.1```
 
 
 ## New Features
@@ -113,6 +113,10 @@
   
 
 ## Code Refactors
+- **Re-order block variable validation**
+  Checks boundedness check for via input requirements before the check for boundedness via variable-categories.
+  
+  
 - **Variable binding mode changes**
   Variable binding modes fully replace the use of scopes to determine variable binding & visibility.
   
@@ -126,6 +130,11 @@
   
 
 ## Other Improvements
+  
+- **Update Bazel rustfmt to latest nightly**
+  
+  We update the rules_rust rustfmt version to latest nightly available for better compatibility with local tools.
+  
 - **Bump typeql for parser performance improvements**
   Bump typeql for parser performance improvements
   
@@ -161,5 +170,10 @@
   
 - **Fetch TypeDB console using native_artifact_files module extension**
   Fetches the TypeDB console artifact using native_artifacts_files, close to how we used to with bazel 6.
+  
+- **Bazel 8 upgrade**
+  
+  Migrate TypeDB server build from Bazel 6.2 (WORKSPACE) to Bazel 8.5.1 (Bzlmod).
+  
   
     
