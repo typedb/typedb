@@ -110,7 +110,7 @@ native_artifact_files.artifact(
     name = "typedb_console_artifact",
     group_name = "typedb-console-{platform}",
     artifact_name = "typedb-console-{platform}-{version}.{ext}",
-    tag = "3.8.4-rc1",
+    tag = "3.10.1",
 )
 use_repo(
     native_artifact_files,
