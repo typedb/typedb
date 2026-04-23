@@ -26,6 +26,9 @@ features = {}
 	[dependencies.test_utils]
 		workspace = true
 
+	[dependencies.tracing]
+		workspace = true
+
 	[dependencies.primitive]
 		workspace = true
 
@@ -79,4 +82,8 @@ features = {}
 [[test]]
 	path = "tests/structural_equality.rs"
 	name = "test_structural_equality"
+
+[[test]]
+	path = "tests/binding_modes.rs"
+	name = "binding_modes"
 

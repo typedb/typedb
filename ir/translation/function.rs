@@ -308,11 +308,16 @@ fn check_consistent_return<T>(
         .enumerate()
         .find_map(|(index, (declared, actual))| (declared != actual).then_some(index));
     if let Some(mismatch_index) = mismatching_index_opt {
-        return Err(Box::new(FunctionRepresentationError::InconsistentReturnOptionality {
-            signature: signature.clone(),
-            return_: block.return_stmt.clone(),
-            mismatch_index,
-        }));
+        use error::TypeDBError;
+        tracing::warn!(
+            "Function has inconsistent return optionality. This will fail in the next version:\n{}",
+            FunctionRepresentationError::InconsistentReturnOptionality {
+                signature: signature.clone(),
+                return_: block.return_stmt.clone(),
+                mismatch_index,
+            }
+            .format_description()
+        );
     }
 
     Ok(())

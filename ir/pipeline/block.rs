@@ -272,7 +272,13 @@ fn validate_optional_returns_recursive(
             .map_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME, String::as_str)
             .to_owned();
         let source_span = source_span.clone();
-        Err(Box::new(RepresentationError::OptionalFunctionReturnReferenced { variable, source_span }))
+        // Err(Box::new(RepresentationError::OptionalFunctionReturnReferenced { variable, source_span }))
+        use error::TypeDBError;
+        tracing::warn!(
+            "Function call reuses optionally assigned variable. This will fail in the next version:\n{}",
+            RepresentationError::OptionalFunctionReturnReferenced { variable, source_span }.format_description()
+        );
+        Ok(())
     } else {
         Ok(())
     }
