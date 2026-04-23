@@ -11,6 +11,7 @@ use encoding::graph::type_::Kind;
 use ir::{
     pattern::{
         ParameterID, Vertex,
+        conjunction::Conjunction,
         constraint::{Comparator, Constraint},
         expression::Expression,
         nested_pattern::NestedPattern,
@@ -304,7 +305,26 @@ pub(crate) fn add_inserted_concepts(
             }
         };
     }
+    add_is(conjunction, output_variables);
     Ok(concept_instructions)
+}
+
+fn add_is(conjunction: &Conjunction, variable_positions: &mut HashMap<Variable, VariablePosition>) {
+    for is in filter_variants!(Constraint::Is: conjunction.constraints()) {
+        let lhs_var = is.lhs().as_variable().unwrap();
+        let rhs_var = is.rhs().as_variable().unwrap();
+        match (variable_positions.get(&lhs_var).copied(), variable_positions.get(&rhs_var).copied()) {
+            (Some(lhs_pos), None) => {
+                variable_positions.insert(rhs_var, lhs_pos);
+            }
+            (None, Some(rhs_pos)) => {
+                variable_positions.insert(lhs_var, rhs_pos);
+            }
+            _ => {
+                unreachable!("These are automatically added is constraints which always have one new variable");
+            }
+        }
+    }
 }
 
 fn add_connections(
