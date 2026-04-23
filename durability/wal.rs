@@ -189,9 +189,11 @@ impl DurabilityService for WAL {
 
     fn truncate_from(&self, sequence_number: DurabilitySequenceNumber) -> Result<(), DurabilityServiceError> {
         let mut files = self.files.write().unwrap();
-        files.truncate_from(sequence_number)?;
-        files.sync_all()?;
-        self.next_sequence_number.store(sequence_number.number(), Ordering::SeqCst);
+        let truncated = files.truncate_from(sequence_number)?;
+        if truncated {
+            files.sync_all()?;
+            self.next_sequence_number.store(sequence_number.number(), Ordering::SeqCst);
+        }
         Ok(())
     }
 
@@ -352,15 +354,17 @@ impl Files {
         self.files.iter().rposition(|f| f.start.number() <= sequence_number.number())
     }
 
-    fn truncate_from(&mut self, sequence_number: DurabilitySequenceNumber) -> Result<(), DurabilityServiceError> {
+    /// Truncates all records with sequence number >= the given value.
+    /// Returns true if truncation was performed, false if the sequence number was not found.
+    fn truncate_from(&mut self, sequence_number: DurabilitySequenceNumber) -> Result<bool, DurabilityServiceError> {
         let Some(file_index) = self.file_index_containing(sequence_number) else {
-            return Ok(());
+            return Ok(false);
         };
 
         // Call this before file deletion so we don't delete files in case of an error.
         let Some(truncate_position) = self.files[file_index].offset_of(sequence_number)? else {
             // Already does not have anything from this sequence number. Can be changed to an error.
-            return Ok(());
+            return Ok(false);
         };
 
         while self.files.len() > file_index + 1 {
@@ -370,7 +374,7 @@ impl Files {
         let last = &mut self.files[file_index];
         last.truncate_from_position(truncate_position)?;
         self.writer = Some(last.writer()?);
-        Ok(())
+        Ok(true)
     }
 
     fn delete(self) -> Result<(), DurabilityServiceError> {
@@ -1109,5 +1113,30 @@ mod test {
 
         let found_last_unseq = wal.find_last_type(UnsequencedTestRecord::RECORD_TYPE).unwrap().unwrap();
         assert_eq!(found_last_unseq.bytes.into_owned(), b"UYYY");
+    }
+
+    #[test]
+    fn truncate_from_beyond_end_does_not_skip_sequence_numbers() {
+        let directory = TempDir::new("wal-test").unwrap();
+        let wal = create_wal(&directory);
+
+        let _s1 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"one!").unwrap();
+        let s2 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"two!").unwrap();
+        let next_before = wal.current();
+
+        // Truncate at a sequence number far beyond the WAL's end
+        let beyond = DurabilitySequenceNumber::new(next_before.number() + 100);
+        wal.truncate_from(beyond).unwrap();
+
+        // The next sequence number must NOT have jumped forward
+        assert_eq!(wal.current(), next_before, "truncate_from beyond end must not advance the sequence counter");
+
+        // All existing records must still be present
+        let records: Vec<_> = read_all_records(&wal).map(|r| r.bytes.into_owned()).collect();
+        assert_eq!(records, vec![b"one!".to_vec(), b"two!".to_vec()]);
+
+        // Writing after the no-op truncate must continue from the correct sequence
+        let s3 = wal.sequenced_write(TestRecord::RECORD_TYPE, b"tre!").unwrap();
+        assert_eq!(s3, s2.next(), "next write must follow the last existing sequence number");
     }
 }

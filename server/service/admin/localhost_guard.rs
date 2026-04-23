@@ -4,6 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+// Defense-in-depth layer: verifies the remote address is loopback before processing requests.
+// **IMPORTANT**: The primary protection must be to bind the server to 127.0.0.1 (loopback), which
+// causes the OS kernel to reject external connections at the network layer (Layer 3 / IP). Loopback
+// traffic never leaves the machine.
+// This middleware adds application-layer (Layer 7) verification as a safeguard against
+// misconfiguration. It also provides the guarantee of the request to have a valid info.
+
 use std::{
     net::SocketAddr,
     task::{Context, Poll},
