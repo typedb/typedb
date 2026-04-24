@@ -9,6 +9,7 @@ use std::sync::Arc;
 use answer::variable_value::VariableValue;
 use compiler::{VariablePosition, executable::match_::planner::conjunction_executable::FunctionCallStep};
 use ir::{pattern::BranchID, pipeline::ParameterRegistry};
+use itertools::Itertools;
 
 use crate::{
     batch::FixedBatch,
@@ -157,10 +158,7 @@ impl InlinedCallExecutor {
     pub(crate) fn map_output(&self, input: MaybeOwnedRow<'_>, batch: FixedBatch) -> FixedBatch {
         let mut output_batch = FixedBatch::new(self.output_width);
         debug_assert!(
-            {
-                use std::collections::HashSet;
-                self.assignment_positions.iter().collect::<HashSet<_>>().len() == self.assignment_positions.len()
-            },
+            self.assignment_positions.iter().unique().count() == self.assignment_positions.len(),
             "A check must be added below for repeated assigned variables"
         );
         let check_indices: Vec<_> = self

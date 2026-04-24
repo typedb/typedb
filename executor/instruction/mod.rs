@@ -369,13 +369,13 @@ pub(super) fn check_producing_same_variable<F: Copy>(
     checks: &mut Vec<CheckInstruction<ExecutorVariable>>,
     extractors: &mut HashMap<ExecutorVariable, F>,
 ) {
-    for i in 0..candidates.len() {
-        for j in i..candidates.len() {
-            if candidates[i].0 == candidates[j].0 {
+    for (i, (var_i, extractor_i)) in candidates.iter().enumerate() {
+        for (j, (var_j, extractor_j)) in candidates[i + 1..].iter().enumerate() {
+            if var_i == var_j {
                 let vi = next_free_internal_variable(i as u16, &extractors);
-                extractors.insert(vi, candidates[i].1);
+                extractors.insert(vi, *extractor_i);
                 let vj = next_free_internal_variable(j as u16, &extractors);
-                extractors.insert(vj, candidates[j].1);
+                extractors.insert(vj, *extractor_j);
                 checks.push(CheckInstruction::Is { lhs: vi, rhs: vj });
             }
         }
