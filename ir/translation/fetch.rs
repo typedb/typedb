@@ -28,7 +28,7 @@ use typeql::{
 
 use crate::{
     RepresentationError,
-    pattern::ParameterID,
+    pattern::{AssignedVariable, ParameterID},
     pipeline::{
         FunctionReadError, FunctionRepresentationError, ParameterRegistry,
         block::{Block, BlockBuilder, BlockBuilderContext},
@@ -408,7 +408,7 @@ fn translate_inline_user_function_call<'a>(
         function_index,
         &mut conjunction.constraints_mut(),
         function_name,
-        assign_vars.clone(),
+        assign_vars.iter().map(|var| AssignedVariable::new_required(*var)).collect(),
         &call.args,
         call.span(),
     )

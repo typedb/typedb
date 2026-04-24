@@ -10,6 +10,7 @@ use encoding::{
 };
 use ir::{
     pattern::{
+        AssignedVariable,
         constraint::IsaKind,
         variable_category::{VariableCategory, VariableOptionality},
     },
@@ -20,7 +21,6 @@ use ir::{
     },
     translation::{PipelineTranslationContext, pipeline::translate_pipeline},
 };
-
 // TODO: if we re-instante modifiers/stream operators as part of blocks, then we can bring this test back
 // #[test]
 // fn build_modifiers() {
@@ -55,7 +55,7 @@ fn build_with_functions() {
     let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
 
     let var_count = conjunction.constraints_mut().get_or_declare_variable("count", None).unwrap();
-    let var_mean = conjunction.constraints_mut().get_or_declare_variable("sum", None).unwrap();
+    let var_mean = conjunction.constraints_mut().get_or_declare_variable("mean", None).unwrap();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
 
@@ -70,9 +70,10 @@ fn build_with_functions() {
         function_return_categories,
         false,
     );
+    let assigned = vec![AssignedVariable::new_required(var_count), AssignedVariable::new_optional(var_mean)];
     conjunction
         .constraints_mut()
-        .add_function_binding(vec![var_count, var_mean], &function_signature, vec![var_person], "test_fn", None)
+        .add_function_binding(assigned, &function_signature, vec![var_person], "test_fn", None)
         .unwrap();
     let block = builder.finish().unwrap();
     println!("{}", block.conjunction());

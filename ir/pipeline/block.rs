@@ -73,6 +73,7 @@ impl<'reg> BlockBuilder<'reg> {
         validate_all_required_variables_can_be_bound(&self, &block_binding_modes, &self.context.variable_registry)?;
         validate_no_unbound_variable_categories(&self.conjunction, &self.context)?;
         validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
+        validate_optional_returns(&self.context, &self.conjunction)?;
 
         // Update
         block_binding_modes
@@ -226,6 +227,55 @@ fn find_constraints_referencing_variable(conjunction: &ConjunctionBuilder, varia
             find_constraints_referencing_variable(optional.conjunction(), variable, spans)
         }
     })
+}
+
+fn validate_optional_returns(
+    context: &BlockBuilderContext<'_>,
+    conjunction: &ConjunctionBuilder,
+) -> Result<(), Box<RepresentationError>> {
+    let mut optional_assignments = HashMap::new();
+    validate_optional_returns_recursive(context, conjunction, &mut optional_assignments)
+}
+
+fn validate_optional_returns_recursive(
+    context: &BlockBuilderContext<'_>,
+    conjunction: &ConjunctionBuilder,
+    acc: &mut HashMap<Variable, Option<Span>>,
+) -> Result<(), Box<RepresentationError>> {
+    let conjunction_binding_modes = conjunction.variable_binding_modes();
+    conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
+        NestedPatternBuilder::Disjunction(disjunction) => {
+            disjunction.conjunctions().try_for_each(|branch| validate_optional_returns_recursive(context, branch, acc))
+        }
+        NestedPatternBuilder::Negation(negation) => {
+            validate_optional_returns_recursive(context, negation.conjunction(), acc)
+        }
+        NestedPatternBuilder::Optional(optional) => {
+            validate_optional_returns_recursive(context, optional.conjunction(), acc)
+        }
+    })?;
+    conjunction.constraints().iter().filter_map(|c| c.as_function_call_binding()).for_each(|call| {
+        for (var, mode) in call.binding_modes() {
+            if mode == BindingMode::OptionallyBinding {
+                acc.insert(var, call.source_span());
+            }
+        }
+    });
+    // Check at each level
+    let reused_optional_return_opt = acc.iter().find(|(var, _)| match conjunction_binding_modes.get(var) {
+        None => false,
+        Some(mode) => *mode != BindingMode::OptionallyBinding,
+    });
+    if let Some((var, source_span)) = reused_optional_return_opt {
+        let variable = context
+            .get_variable_name(*var)
+            .map_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME, String::as_str)
+            .to_owned();
+        let source_span = source_span.clone();
+        Err(Box::new(RepresentationError::OptionalFunctionReturnReferenced { variable, source_span }))
+    } else {
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Default, Eq, PartialEq)]

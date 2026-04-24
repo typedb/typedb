@@ -15,7 +15,7 @@ use typeql::{
 use crate::{
     RepresentationError,
     pattern::{
-        ParameterID, Vertex,
+        AssignedVariable, ParameterID, Vertex,
         constraint::ConstraintsBuilder,
         expression::{
             BuiltinConceptFunctionID, BuiltinValueFunctionCall, BuiltinValueFunctionID, Expression, ExpressionTree,
@@ -132,7 +132,7 @@ fn add_builtin_function_call(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     builtin_id: BuiltinConceptFunctionID,
-    assigned: Vec<Variable>,
+    assigned: Vec<AssignedVariable>,
     args: &[typeql::Expression],
     source_span: Option<Span>,
 ) -> Result<(), Box<RepresentationError>> {
@@ -145,7 +145,7 @@ pub fn add_user_defined_function_call(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     function_name: &str,
-    assigned: Vec<Variable>,
+    assigned: Vec<AssignedVariable>,
     args: &[typeql::Expression],
     source_span: Option<Span>,
 ) -> Result<(), Box<RepresentationError>> {
@@ -188,7 +188,7 @@ fn build_function(
                 function_index,
                 constraints,
                 to_builtin_concept_function_id(builtin, &function_call.args)?,
-                vec![assign],
+                vec![AssignedVariable::new_required(assign)],
                 &function_call.args,
                 function_call.span(),
             )?;
@@ -200,7 +200,7 @@ fn build_function(
                 function_index,
                 constraints,
                 checked_identifier(identifier)?,
-                vec![assign],
+                vec![AssignedVariable::new_required(assign)],
                 &function_call.args,
                 function_call.span(),
             )?;
