@@ -77,9 +77,11 @@ pub fn load_commit_data_from_with_context(
                 let StatusRecord { commit_record_sequence_number, was_committed } =
                     StatusRecord::deserialise_from(&mut &*bytes)
                         .map_err(|error| DurabilityRecordDeserialize { source: Arc::new(error) })?;
-                if commit_record_sequence_number < start {
+
+                if !recovered_commits.contains_key(&commit_record_sequence_number) {
                     continue;
                 }
+
                 if was_committed {
                     let record = recovered_commits.remove(&commit_record_sequence_number).unwrap();
                     let RecoveryCommitStatus::Pending(record) = record else {
