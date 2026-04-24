@@ -444,13 +444,15 @@ pub mod tests {
         let config = load_and_parse(config_path(), vec![]).unwrap();
         assert!(!config.server.listen_address.is_empty());
 
-        // Verify the old names (address) would also parse
+        // Verify the old name "address" still works via alias
         let yaml_with_old_names = r#"
 server:
     address: 0.0.0.0:1729
+    advertise-address: 127.0.0.1:1729
     http:
         enabled: false
         address: 0.0.0.0:8000
+        advertise-address: http://127.0.0.1:8000
     authentication:
         token-expiration-seconds: 5000
     encryption:
@@ -467,6 +469,7 @@ logging:
         assert_eq!(old_config.server.listen_address, "0.0.0.0:1729");
         assert_eq!(old_config.server.advertise_address.unwrap(), "127.0.0.1:1729");
         assert_eq!(old_config.server.http.listen_address, "0.0.0.0:8000");
+        assert_eq!(old_config.server.http.advertise_address.unwrap(), "http://127.0.0.1:8000");
     }
 
     #[test]
