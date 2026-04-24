@@ -19,6 +19,7 @@ pub struct CLIArgs {
     pub config_file_override: Option<String>,
 
     /// Server listen address for gRPC connections (e.g., 0.0.0.0:1729)
+    /// Aliases: 'server.address'
     #[arg(long = "server.listen-address", alias = "server.address")]
     pub server_listen_address: Option<String>,
 
@@ -33,6 +34,7 @@ pub struct CLIArgs {
     pub server_http_enabled: Option<bool>,
 
     /// Server listen address for HTTP connections (e.g., 0.0.0.0:8000)
+    /// Aliases: 'server.http.address'
     #[arg(long = "server.http.listen-address", alias = "server.http.address")]
     pub server_http_listen_address: Option<String>,
 

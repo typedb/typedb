@@ -334,8 +334,8 @@ impl ConfigBuilder {
         self
     }
 
-    pub fn server_advertise_address(mut self, advertise_address: impl Into<String>) -> Self {
-        self.config.server.advertise_address = Some(advertise_address.into());
+    pub fn server_advertise_address(mut self, address: impl Into<String>) -> Self {
+        self.config.server.advertise_address = Some(address.into());
         self
     }
 
@@ -346,6 +346,11 @@ impl ConfigBuilder {
 
     pub fn server_http_listen_address(mut self, address: impl Into<String>) -> Self {
         self.config.server.http.listen_address = address.into();
+        self
+    }
+
+    pub fn server_http_advertise_address(mut self, address: impl Into<String>) -> Self {
+        self.config.server.http.advertise_address = Some(address.into());
         self
     }
 
@@ -435,8 +440,7 @@ pub mod tests {
 
     #[test]
     fn config_file_accepts_old_and_new_address_names() {
-        // The current config.yml uses the new names (listen-address, advertise-address)
-        // Verify it parses correctly
+        // The current config.yml uses the new names (listen-address). Verify it parses correctly
         let config = load_and_parse(config_path(), vec![]).unwrap();
         assert!(!config.server.listen_address.is_empty());
 
