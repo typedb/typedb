@@ -94,7 +94,7 @@ typedb_error! {
         ),
         InconsistentReturnLengths(
             8,
-            "The size of the tuple returned by the body of the function did not match that declared in the signature. \nSignature: {signature}\nDefinition: {return_}",
+            "The function declares it returns {declared_length} items, but the definition returns {actual_length}. \nSignature: {signature}\nDefinition: {return_}",
             signature: Signature,
             return_: ReturnStatement,
             declared_length: usize,
