@@ -2577,6 +2577,7 @@ dependencies = [
  "structural_equality",
  "test_utils",
  "test_utils_storage",
+ "tracing",
  "typeql",
 ]
 
