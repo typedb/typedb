@@ -8,7 +8,10 @@ use std::collections::HashSet;
 use ir::{
     RepresentationError,
     pattern::Pattern,
-    pipeline::{ParameterRegistry, VariableRegistry, function_signature::HashMapFunctionSignatureIndex},
+    pipeline::{
+        FunctionRepresentationError, ParameterRegistry, VariableRegistry,
+        function_signature::{FunctionID, HashMapFunctionSignatureIndex},
+    },
     translation::{
         PipelineTranslationContext,
         match_::translate_match,
@@ -464,7 +467,7 @@ fn test_nested_optional() {
 fn test_unmarked_optional_return_errors() {
     let query = r#"
     with fun first_is_opt() -> {integer?, integer}:
-    match let $x = 5; try { let $y = 6; };
+    match try { let $x = 6; }; let $y = 5;
     return { $x, $y };
 
     match let $x, $y in first_is_opt();
@@ -486,7 +489,7 @@ fn test_unmarked_optional_return_errors() {
 fn test_optional_return() {
     let query = r#"
     with fun first_is_opt() -> {integer?, integer}:
-    match let $x = 5; try { let $y = 6; };
+    match let $y = 5; try { let $x = 6; };
     return { $x, $y };
 
     match let $x?, $y in first_is_opt();
@@ -508,7 +511,7 @@ fn test_optional_return() {
 fn test_optional_return_must_be_declared() {
     let query = r#"
     with fun first_is_opt() -> {integer, integer}:
-    match let $x = 5; try { let $y = 6; };
+    match try { let $x = 6; }; let $y = 5;
     return { $x, $y };
 
     match let $x, $y in first_is_opt();
@@ -532,7 +535,7 @@ fn test_optional_return_must_be_declared() {
 fn test_optional_return_reuse_errors() {
     let query = r#"
     with fun age_opt() -> age?:
-    match $age isa age;
+    match try { $age isa age; };
     return first $age;
 
     match
@@ -557,7 +560,7 @@ fn test_optional_return_reuse_errors_with_disjunctions() {
     // Just a convoluted case.
     let query = r#"
     with fun age_opt() -> age?:
-    match $age isa age;
+    match try { $age isa age; };
     return first $age;
 
     match

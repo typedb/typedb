@@ -70,10 +70,10 @@ impl<'reg> BlockBuilder<'reg> {
     pub fn finish(mut self) -> Result<Block, Box<RepresentationError>> {
         let block_binding_modes = self.variable_binding_modes();
         validate_no_optionals_in_negations(&self.conjunction, false)?;
+        validate_optional_returns(&self.context, &self.conjunction)?;
         validate_all_required_variables_can_be_bound(&self, &block_binding_modes, &self.context.variable_registry)?;
         validate_no_unbound_variable_categories(&self.conjunction, &self.context)?;
         validate_is_variables_have_same_category(&self.conjunction, &self.context.variable_registry)?;
-        validate_optional_returns(&self.context, &self.conjunction)?;
 
         // Update
         block_binding_modes
