@@ -125,7 +125,7 @@ typedb_error! {
         ),
         InconsistentReturnOptionality(
             13,
-            "The optionality of the value returned by the function at index '{mismatch_index}' did not match that declared in the signature. \nSignature: {signature}\nDefinition: {return_}",
+            "The optionality of the value returned by the function at index '{mismatch_index}' does not match that declared in the signature. \nSignature: {signature}\nDefinition: {return_}",
             signature: Signature,
             return_: ReturnStatement,
             mismatch_index: usize,
