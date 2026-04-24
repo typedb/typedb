@@ -173,37 +173,6 @@ fn structs_lists_optionals() {
         let Either::Left(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
         check_unimplemented_language_feature(&err, &error::UnimplementedFeature::Lists);
     }
-
-    {
-        let query = r#"
-        with
-        fun return_optional() -> { integer? }:
-        match
-            try {
-                let $x = 5;
-            };
-        return { $x };
-
-        match
-            let $y in return_optional();
-
-        "#;
-        let mut matches = false;
-        let outer_err = run_read_query(&context, query).unwrap_err();
-        if let Either::Left(err) = &outer_err {
-            if let QueryError::Representation { typedb_source: err, .. } = err.as_ref() {
-                if let RepresentationError::FunctionRepresentation {
-                    typedb_source: FunctionRepresentationError::UnimplementedFunctionOptionals { feature, .. },
-                } = err.as_ref()
-                {
-                    matches = feature == &error::UnimplementedFeature::OptionalFunctions
-                }
-            }
-        }
-        if !matches {
-            Err::<(), _>(outer_err).unwrap();
-        }
-    }
 }
 
 fn check_unimplemented_language_feature(err: &QueryError, expected: &UnimplementedFeature) {

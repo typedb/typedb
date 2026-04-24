@@ -17,7 +17,7 @@ use encoding::{
     graph::definition::definition_key::DefinitionKey,
     value::{label::Label, value_type::ValueType},
 };
-use error::needs_update_when_feature_is_implemented;
+use error::{needs_update_when_feature_is_implemented, todo_must_implement};
 use ir::{
     pattern::{Vertex, expression::BuiltinConceptFunctionID},
     pipeline::{
@@ -578,10 +578,7 @@ fn get_annotations_from_labels(
 ) -> Result<FunctionParameterAnnotation, TypeInferenceError> {
     let named_type = match typeql_label {
         NamedTypeAny::Simple(inner) => inner,
-        NamedTypeAny::Optional(typeql::type_::NamedTypeOptional { .. }) => {
-            needs_update_when_feature_is_implemented!(Optionals);
-            return Err(TypeInferenceError::OptionalTypesUnsupported {});
-        }
+        NamedTypeAny::Optional(typeql::type_::NamedTypeOptional { inner, .. }) => inner,
         NamedTypeAny::List(typeql::type_::NamedTypeList { .. }) => {
             needs_update_when_feature_is_implemented!(Lists);
             return Err(TypeInferenceError::ListTypesUnsupported {});

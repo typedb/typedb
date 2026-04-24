@@ -5,7 +5,7 @@
  */
 
 use answer::variable::Variable;
-use error::{UnimplementedFeature, needs_update_when_feature_is_implemented};
+use error::needs_update_when_feature_is_implemented;
 use itertools::Itertools;
 use typeql::{
     common::Spanned,
@@ -28,7 +28,7 @@ use crate::{
     translation::{
         PipelineTranslationContext,
         pipeline::{TranslatedStage, translate_pipeline_stages},
-        reduce::build_reducer,
+        reduce::{build_reducer, resolve_category_optionality},
     },
 };
 
@@ -69,17 +69,6 @@ pub fn translate_function_from(
         Output::Stream(stream) => &stream.types,
         Output::Single(single) => &single.types,
     };
-
-    if let Some((source, _)) = output_types
-        .iter()
-        .map(|output_type| (output_type.span(), named_type_any_to_category_and_optionality(output_type)))
-        .find(|(source, (_, optionality))| *optionality == VariableOptionality::Optional)
-    {
-        Err(FunctionRepresentationError::UnimplementedFunctionOptionals {
-            source_span: source,
-            feature: UnimplementedFeature::OptionalFunctions,
-        })?;
-    }
 
     let argument_labels = signature.args.iter().map(|arg| arg.type_.clone()).collect();
     let args_sources_categories = signature
@@ -125,23 +114,39 @@ pub fn translate_function_from(
     // Check return declaration aligns with definition
     let returns_consistent = match (&signature.output, &body.return_operation) {
         (Output::Stream(declared_vars), ReturnOperation::Stream(defined_vars, _)) => {
-            defined_vars.len() == declared_vars.types.len()
+            check_consistent_return(signature, block, &declared_vars.types, &defined_vars, |v| {
+                context.variable_registry.is_variable_optional(*v)
+            })
         }
         (Output::Single(declared_vars), ReturnOperation::Single(_, defined_vars, _)) => {
-            defined_vars.len() == declared_vars.types.len()
+            check_consistent_return(signature, block, &declared_vars.types, &defined_vars, |v| {
+                context.variable_registry.is_variable_optional(*v)
+            })
         }
         (Output::Single(declared_vars), ReturnOperation::ReduceReducer(reducers, _)) => {
-            reducers.len() == declared_vars.types.len()
+            check_consistent_return(signature, block, &declared_vars.types, &reducers, |reducer| {
+                resolve_category_optionality(reducer).1
+            })
         }
-        (Output::Single(declared_vars), ReturnOperation::ReduceCheck(_)) => declared_vars.types.len() == 1,
-        _ => false,
-    };
-    if !returns_consistent {
-        return Err(Box::new(FunctionRepresentationError::InconsistentReturn {
-            signature: signature.clone(),
-            return_: block.return_stmt.clone(),
-        }));
-    }
+        (Output::Single(declared_vars), ReturnOperation::ReduceCheck(_)) => {
+            check_consistent_return(signature, block, &declared_vars.types, &[false], |x| *x)
+        }
+        (Output::Single(declared_vars), ReturnOperation::Stream(..)) => {
+            Err(Box::new(FunctionRepresentationError::DeclaresSingleReturnsStream {
+                signature: signature.clone(),
+                return_: block.return_stmt.clone(),
+            }))
+        }
+        (Output::Stream(_), ReturnOperation::Single(..))
+        | (Output::Stream(_), ReturnOperation::ReduceCheck(..))
+        | (Output::Stream(_), ReturnOperation::ReduceReducer(..)) => {
+            Err(Box::new(FunctionRepresentationError::DeclaresStreamReturnsSingle {
+                signature: signature.clone(),
+                return_: block.return_stmt.clone(),
+            }))
+        }
+    }?;
+
     Ok(Function::new(
         checked_name,
         context,
@@ -279,4 +284,41 @@ fn build_return_reduce(
             Ok(ReturnOperation::ReduceReducer(reducers, reduction.span()))
         }
     }
+}
+
+fn check_consistent_return<T>(
+    signature: &typeql::schema::definable::function::Signature,
+    block: &FunctionBlock,
+    declared_types: &[NamedTypeAny],
+    actual_return: &[T],
+    is_optional: impl Fn(&T) -> bool,
+) -> Result<(), Box<FunctionRepresentationError>> {
+    if declared_types.len() != actual_return.len() {
+        return Err(Box::new(FunctionRepresentationError::InconsistentReturnLengths {
+            signature: signature.clone(),
+            return_: block.return_stmt.clone(),
+            declared_length: declared_types.len(),
+            actual_length: actual_return.len(),
+        }));
+    }
+    let mismatching_index_opt = declared_types
+        .iter()
+        .map(|t| named_type_any_to_category_and_optionality(t).1 == VariableOptionality::Optional)
+        .zip(actual_return.iter().map(is_optional))
+        .enumerate()
+        .find_map(|(index, (declared, actual))| (declared != actual).then_some(index));
+    if let Some(mismatch_index) = mismatching_index_opt {
+        use error::TypeDBError;
+        tracing::warn!(
+            "Function has inconsistent return optionality. This will fail in the next version:\n{}",
+            FunctionRepresentationError::InconsistentReturnOptionality {
+                signature: signature.clone(),
+                return_: block.return_stmt.clone(),
+                mismatch_index,
+            }
+            .format_description()
+        );
+    }
+
+    Ok(())
 }

@@ -210,6 +210,18 @@ typedb_error! {
             "Specifying a scoped label constraint on a label is not allowed.",
             source_span: Option<Span>,
         ),
+        UnmarkedOptionalAssignment(
+            32,
+            "The variable '{variable}' is assigned an optional value but not marked with a '?'",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        OptionalFunctionReturnReferenced(
+            33,
+            "The variable '{variable}' is optionally assigned by a function return, and may not be referenced elsewhere in the same stage.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
         UpdateVariableUnavailable(
             39,
             "The variable '{variable}' referenced in the update stage is unavailable. It should be bound in the previous stage.",
@@ -318,12 +330,6 @@ typedb_error! {
             254,
             "The language feature is not yet implemented: {feature}.",
             feature: error::UnimplementedFeature,
-        ),
-        UnimplementedOptionalType(
-            255,
-            "Optional types are not yet implemented.",
-            source_span: Option<Span>,
-            feature: error::UnimplementedFeature
         ),
         UnimplementedListType(
             256,

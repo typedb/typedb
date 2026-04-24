@@ -35,7 +35,7 @@ pub fn translate_reduce(
     let mut reductions = Vec::with_capacity(typeql_reduce.reduce_assignments.len());
     for reduce_assign in &typeql_reduce.reduce_assignments {
         let reducer = build_reducer(context, &reduce_assign.reducer)?;
-        let (category, is_optional) = resolve_category_optionality(&reducer, &context.variable_registry);
+        let (category, is_optional) = resolve_category_optionality(&reducer);
         let var_name =
             reduce_assign.variable.name().ok_or(Box::new(RepresentationError::NonAnonymousVariableExpected {
                 source_span: reduce_assign.variable.span(),
@@ -56,7 +56,7 @@ pub fn translate_reduce(
     Ok(Reduce::new(reductions, group, typeql_reduce.span()))
 }
 
-fn resolve_category_optionality(reduce: &Reducer, variable_registry: &VariableRegistry) -> (VariableCategory, bool) {
+pub(super) fn resolve_category_optionality(reduce: &Reducer) -> (VariableCategory, bool) {
     match reduce {
         Reducer::Count => (VariableCategory::Value, false),
         Reducer::CountVar(_) => (VariableCategory::Value, false),

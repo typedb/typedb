@@ -8,7 +8,10 @@ use std::collections::HashSet;
 use ir::{
     RepresentationError,
     pattern::Pattern,
-    pipeline::{ParameterRegistry, VariableRegistry, function_signature::HashMapFunctionSignatureIndex},
+    pipeline::{
+        FunctionRepresentationError, ParameterRegistry, VariableRegistry,
+        function_signature::{FunctionID, HashMapFunctionSignatureIndex},
+    },
     translation::{
         PipelineTranslationContext,
         match_::translate_match,
@@ -458,4 +461,26 @@ fn test_nested_optional() {
     assert_vars!(&translated_pipeline.variable_registry, outer_optional.conjunction(), Required[], Bound["x", "y"]);
     assert_vars!(&translated_pipeline.variable_registry, inner_optional.conjunction(), Required["x"], Bound["y"]);
     assert_optionals!(&translated_pipeline.variable_registry, ["x", "y"]);
+}
+
+#[test]
+fn test_optional_return() {
+    let query = r#"
+    with fun first_is_opt() -> {integer?, integer}:
+    match let $y = 5; try { let $x = 6; };
+    return { $x, $y };
+
+    match let $x?, $y in first_is_opt();
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let preamble_signatures = HashMapFunctionSignatureIndex::build(
+        parsed.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
+    );
+    let translated_pipeline = translate_pipeline(&preamble_signatures, &parsed).unwrap();
+    let TranslatedStage::Match { block, .. } = &translated_pipeline.translated_stages[0] else {
+        unreachable!();
+    };
+    let conjunction = block.conjunction();
+    assert_vars!(&translated_pipeline.variable_registry, conjunction, Required[], Bound["x", "y"]);
+    assert_optionals!(&translated_pipeline.variable_registry, ["x"]);
 }

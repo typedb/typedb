@@ -24,9 +24,10 @@ use typeql::{
 use crate::{
     RepresentationError,
     pattern::{
-        ValueType, Vertex,
+        AssignedVariable, ValueType, Vertex,
         conjunction::ConjunctionBuilderWithContext,
         constraint::{Comparator, ConstraintsBuilder, IsaKind, SubKind},
+        variable_category::VariableOptionality,
     },
     pipeline::function_signature::FunctionSignatureIndex,
     translation::{
@@ -83,7 +84,8 @@ pub(super) fn add_statement(
                     }));
                 };
                 let expression = build_expression(function_index, constraints, rhs)?;
-                constraints.add_assignment(assigned, expression, *span)?;
+                debug_assert!(assigned.optionality == VariableOptionality::Required);
+                constraints.add_assignment(assigned.variable, expression, *span)?;
             }
         }
         typeql::Statement::Thing(thing) => add_thing_statement(function_index, constraints, thing)?,
@@ -555,7 +557,7 @@ pub(super) fn add_typeql_relation(
 fn add_typeql_iterable_binding(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    assigned: Vec<Variable>,
+    assigned: Vec<AssignedVariable>,
     rhs: &typeql::Expression,
 ) -> Result<(), Box<RepresentationError>> {
     match rhs {
@@ -618,7 +620,7 @@ fn add_typeql_iterable_binding(
 fn assignment_pattern_to_variables(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     assignment: &AssignmentPattern,
-) -> Result<Vec<Variable>, Box<RepresentationError>> {
+) -> Result<Vec<AssignedVariable>, Box<RepresentationError>> {
     match assignment {
         AssignmentPattern::Variables(vars) => assignment_typeql_vars_to_variables(constraints, vars),
         AssignmentPattern::Deconstruct(struct_deconstruct) => {
@@ -630,8 +632,18 @@ fn assignment_pattern_to_variables(
 fn assignment_typeql_vars_to_variables(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     vars: &[typeql::Variable],
-) -> Result<Vec<Variable>, Box<RepresentationError>> {
-    vars.iter().map(|variable| register_typeql_var(constraints, variable)).collect()
+) -> Result<Vec<AssignedVariable>, Box<RepresentationError>> {
+    vars.iter()
+        .map(|var| {
+            let variable = register_typeql_var(constraints, var)?;
+            let optionality = match var {
+                typeql::Variable::Anonymous { optional, .. } | typeql::Variable::Named { optional, .. } => {
+                    optional.as_ref().map_or(VariableOptionality::Required, |_o| VariableOptionality::Optional)
+                }
+            };
+            Ok(AssignedVariable { variable, optionality })
+        })
+        .collect()
 }
 
 pub(super) fn split_out_inline_expressions(

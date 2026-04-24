@@ -26,6 +26,9 @@ features = {}
 	[dependencies.test_utils]
 		workspace = true
 
+	[dependencies.tracing]
+		workspace = true
+
 	[dependencies.primitive]
 		workspace = true
 

@@ -32,6 +32,7 @@ rust_library(
         "@typeql//rust:typeql",
 
         "@crates//:itertools",
+        "@crates//:tracing",
 
         # For the parsing of literals
         "@crates//:chrono",
