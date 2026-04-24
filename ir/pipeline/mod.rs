@@ -94,7 +94,7 @@ typedb_error! {
         ),
         InconsistentReturnLengths(
             8,
-            "The function declares it returns {declared_length} items, but the definition returns {actual_length}. \nSignature: {signature}\nDefinition: {return_}",
+            "The function declares it returns {declared_length} item(s), but the definition returns {actual_length}. \nSignature: {signature}\nDefinition: {return_}",
             signature: Signature,
             return_: ReturnStatement,
             declared_length: usize,
