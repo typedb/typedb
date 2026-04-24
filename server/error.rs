@@ -30,16 +30,10 @@ pub enum ErrorResponseCategory {
     Forbidden,
     NotImplemented,
     Unavailable,
-    /// Redirect for unauthenticated endpoints. The client is expected to follow the redirect.
-    /// Produces HTTP 307 with a Location header.
-    Redirect {
-        grpc_address: Option<String>,
-        http_address: Option<String>,
-    },
     /// Redirect for authenticated endpoints. The client cannot follow automatically because
     /// authentication tokens are per-server. Produces HTTP 421 Misdirected Request with the
-    /// primary address in the response body.
-    AuthenticatedRedirect {
+    /// address in the response body. For gRPC, produces Unavailable with REDIRECT metadata.
+    Redirect {
         grpc_address: Option<String>,
         http_address: Option<String>,
     },

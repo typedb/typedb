@@ -28,6 +28,6 @@ message ServerStatus {
 }
 
 message EndpointStatus {
-    string serving_address = 1;
-    string connection_address = 2;
+    string listen_address = 1;
+    string advertise_address = 2;
 }

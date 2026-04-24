@@ -33,7 +33,7 @@ async fn ensure_server_started() {
             let server_dir = create_tmp_storage_dir();
             let config = ConfigBuilder::from_file(config_path())
                 .expect("Failed to load config file")
-                .server_address(GRPC_ADDRESS)
+                .server_listen_address(GRPC_ADDRESS)
                 .server_http_enabled(false)
                 .admin_port(ADMIN_PORT)
                 .admin_enabled(true)
@@ -90,8 +90,8 @@ async fn admin_server_status() {
     let res = response.into_inner();
 
     let grpc = res.grpc.expect("gRPC endpoint status should be present");
-    assert!(!grpc.serving_address.is_empty(), "gRPC serving address should not be empty");
-    assert!(!grpc.connection_address.is_empty(), "gRPC connection address should not be empty");
+    assert!(!grpc.listen_address.is_empty(), "gRPC listen address should not be empty");
+    assert!(!grpc.advertise_address.is_empty(), "gRPC advertise address should not be empty");
 
     assert!(res.http.is_none(), "HTTP should be disabled in test config");
 

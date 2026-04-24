@@ -41,7 +41,7 @@ pub async fn typedb_starts(context: &mut Context) {
             let server_dir = create_tmp_storage_dir();
             let config = ConfigBuilder::from_file(config_path())
                 .expect("Failed to load config file")
-                .server_address(ADDRESS)
+                .server_listen_address(ADDRESS)
                 .admin_enabled(false)
                 .data_directory(server_dir.as_ref())
                 .development_mode(true)

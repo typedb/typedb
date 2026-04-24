@@ -50,17 +50,17 @@ async fn server_status(client: &mut AdminClient) -> CommandResult {
     println!("Serving:");
 
     if let Some(grpc) = &res.grpc {
-        print!("  gRPC:  {}", grpc.serving_address);
-        if grpc.connection_address != grpc.serving_address {
-            print!(" (connect via {})", grpc.connection_address);
+        print!("  gRPC:  {}", grpc.listen_address);
+        if grpc.advertise_address != grpc.listen_address {
+            print!(" (connect via {})", grpc.advertise_address);
         }
         println!();
     }
 
     if let Some(http) = &res.http {
-        print!("  HTTP:  {}", http.serving_address);
-        if http.connection_address != http.serving_address {
-            print!(" (connect via {})", http.connection_address);
+        print!("  HTTP:  {}", http.listen_address);
+        if http.advertise_address != http.listen_address {
+            print!(" (connect via {})", http.advertise_address);
         }
         println!();
     }

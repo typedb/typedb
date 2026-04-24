@@ -50,17 +50,6 @@ impl IntoResponse for HttpServiceError {
                 ErrorResponseCategory::NotImplemented => StatusCode::NOT_IMPLEMENTED,
                 ErrorResponseCategory::Unavailable => StatusCode::SERVICE_UNAVAILABLE,
                 ErrorResponseCategory::Redirect { http_address, .. } => match http_address {
-                    Some(location) => {
-                        return (
-                            StatusCode::TEMPORARY_REDIRECT,
-                            [(http::header::LOCATION, location)],
-                            JsonBody(encode_error(self)),
-                        )
-                            .into_response();
-                    }
-                    None => StatusCode::SERVICE_UNAVAILABLE,
-                },
-                ErrorResponseCategory::AuthenticatedRedirect { http_address, .. } => match http_address {
                     Some(primary_address) => {
                         return (
                             StatusCode::MISDIRECTED_REQUEST,

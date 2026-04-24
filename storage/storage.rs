@@ -185,6 +185,14 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability> {
+        let current_watermark = self.snapshot_watermark();
+        if sequence_number < current_watermark {
+            // Opening a committable snapshot at a historical position is not supported.
+            // The commit idempotency check (commit_record_exists) relies
+            // on SnapshotIds to be unique for an open seqnum. With the current nature of
+            // SnapshotIds, opening a write snapshot in the past can lead to SnapshotId collisions.
+            todo!("Opening committable snapshots at historical positions is not supported");
+        }
         // guarantee external consistency: await this sequence number to be behind the watermark
         self.wait_for_watermark(sequence_number);
         WriteSnapshot::new_with_open_sequence_number(self, sequence_number)

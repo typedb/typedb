@@ -130,8 +130,7 @@ fn server_state_error_to_status(
 ) -> Status {
     use crate::error::ErrorResponseCategory;
     let (code, message, extra_metadata) = match category {
-        ErrorResponseCategory::Redirect { grpc_address, .. }
-        | ErrorResponseCategory::AuthenticatedRedirect { grpc_address, .. } => match grpc_address {
+        ErrorResponseCategory::Redirect { grpc_address, .. } => match grpc_address {
             Some(address) => {
                 let mut metadata = HashMap::new();
                 metadata.insert("address".to_string(), address);

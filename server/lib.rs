@@ -293,16 +293,16 @@ impl Server {
         let mut servers: Vec<Pin<Box<dyn Future<Output = Result<(), ServerOpenError>> + Send>>> = Vec::new();
 
         let grpc_server = Self::serve_grpc(
-            server_state.grpc_serving_address(),
+            server_state.grpc_listen_address(),
             &server_config.encryption,
             server_state.clone(),
             shutdown_receiver.clone(),
         );
         servers.push(Box::pin(grpc_server));
 
-        if let Some(http_serving_address) = server_state.http_serving_address() {
+        if let Some(http_listen_address) = server_state.http_listen_address() {
             let http_server = Self::serve_http(
-                http_serving_address,
+                http_listen_address,
                 &server_config.encryption,
                 server_state.clone(),
                 shutdown_receiver.clone(),
@@ -373,7 +373,6 @@ impl Server {
         let router_service = http::typedb_service::HTTPTypeDBService::create_protected_router(http_service.clone())
             .layer(authenticator)
             .merge(http::typedb_service::HTTPTypeDBService::create_unprotected_router(http_service))
-            .layer(axum::middleware::from_fn(http::redirect::append_request_path_to_redirect))
             .layer(http::typedb_service::HTTPTypeDBService::create_cors_layer())
             .into_make_service();
 
@@ -429,20 +428,20 @@ impl Server {
         const UNKNOWN: &str = "<UNKNOWN ADDRESS>";
         println!("Serving:");
 
-        let grpc_serving_address = server_status.grpc_serving_address().unwrap_or(UNKNOWN);
-        let grpc_connection_address = server_status.grpc_connection_address().unwrap_or(UNKNOWN);
-        if grpc_connection_address != grpc_serving_address {
-            println!("  gRPC:  {grpc_serving_address} (connect via {grpc_connection_address})");
+        let grpc_listen_address = server_status.grpc_listen_address().unwrap_or(UNKNOWN);
+        let grpc_advertise_address = server_status.grpc_advertise_address().unwrap_or(UNKNOWN);
+        if grpc_advertise_address != grpc_listen_address {
+            println!("  gRPC:  {grpc_listen_address} (connect via {grpc_advertise_address})");
         } else {
-            println!("  gRPC:  {grpc_serving_address}");
+            println!("  gRPC:  {grpc_listen_address}");
         }
 
-        if let Some(http_serving_address) = server_status.http_serving_address() {
-            match server_status.http_connection_address() {
-                Some(http_connection_address) if http_connection_address != http_serving_address => {
-                    println!("  HTTP:  {http_serving_address} (connect via {http_connection_address})");
+        if let Some(http_listen_address) = server_status.http_listen_address() {
+            match server_status.http_advertise_address() {
+                Some(http_advertise_address) if http_advertise_address != http_listen_address => {
+                    println!("  HTTP:  {http_listen_address} (connect via {http_advertise_address})");
                 }
-                _ => println!("  HTTP:  {http_serving_address}"),
+                _ => println!("  HTTP:  {http_listen_address}"),
             }
         }
 

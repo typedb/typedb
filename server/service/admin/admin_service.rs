@@ -45,18 +45,18 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
         let status = self.server_state.servers().status().await.map_err(|err| Status::internal(format!("{err:?}")))?;
 
         let grpc = admin_proto::EndpointStatus {
-            serving_address: status.grpc_serving_address().unwrap_or_default().to_string(),
-            connection_address: status.grpc_connection_address().unwrap_or_default().to_string(),
+            listen_address: status.grpc_listen_address().unwrap_or_default().to_string(),
+            advertise_address: status.grpc_advertise_address().unwrap_or_default().to_string(),
         };
 
-        let http = match (status.http_serving_address(), status.http_connection_address()) {
-            (Some(serving), Some(connection)) => Some(admin_proto::EndpointStatus {
-                serving_address: serving.to_string(),
-                connection_address: connection.to_string(),
+        let http = match (status.http_listen_address(), status.http_advertise_address()) {
+            (Some(listen), Some(advertise)) => Some(admin_proto::EndpointStatus {
+                listen_address: listen.to_string(),
+                advertise_address: advertise.to_string(),
             }),
-            (Some(serving), None) => Some(admin_proto::EndpointStatus {
-                serving_address: serving.to_string(),
-                connection_address: serving.to_string(),
+            (Some(listen), None) => Some(admin_proto::EndpointStatus {
+                listen_address: listen.to_string(),
+                advertise_address: listen.to_string(),
             }),
             _ => None,
         };

@@ -18,33 +18,29 @@ pub struct CLIArgs {
     #[arg(long = "config")]
     pub config_file_override: Option<String>,
 
-    /// Server serving host and port for gRPC connections (e.g., 0.0.0.0:1729)
-    #[arg(long = "server.address")]
-    pub server_address: Option<String>,
+    /// Server listen address for gRPC connections (e.g., 0.0.0.0:1729)
+    #[arg(long = "server.listen-address", alias = "server.address")]
+    pub server_listen_address: Option<String>,
 
-    /// Server connection host and port for gRPC connections (e.g., 127.0.0.1:1729)
-    /// This address overrides the serving address in the server info shared publicly, which is required
-    /// when these addresses differ (e.g., when using proxies)
-    /// It is a reference address, which means that its resolved IP address is checked for correctness,
-    /// but its value is exposed _as is_, without any of the resolving modifications
-    #[arg(long = "server.connection-address")]
-    pub server_connection_address: Option<String>,
+    /// Server advertise address for gRPC connections (e.g., 127.0.0.1:1729)
+    /// This is the address shared with clients and other servers. Required when the listen
+    /// and advertise addresses differ (e.g., behind proxies or NAT)
+    #[arg(long = "server.advertise-address")]
+    pub server_advertise_address: Option<String>,
 
     /// Enable/disable HTTP endpoint
     #[arg(long = "server.http.enabled")]
     pub server_http_enabled: Option<bool>,
 
-    /// Server serving host and port for HTTP connections (e.g., 0.0.0.0:8000)
-    #[arg(long = "server.http.address")]
-    pub server_http_address: Option<String>,
+    /// Server listen address for HTTP connections (e.g., 0.0.0.0:8000)
+    #[arg(long = "server.http.listen-address", alias = "server.http.address")]
+    pub server_http_listen_address: Option<String>,
 
-    /// Server connection host and port for HTTP connections (e.g., 127.0.0.1:8000)
-    /// This address overrides the serving address in the server info shared publicly, which is required
-    /// when these addresses differ (e.g., when using proxies)
-    /// It is a reference address, which means that its resolved IP address is checked for correctness,
-    /// but its value is exposed _as is_, without any of the resolving modifications
-    #[arg(long = "server.http.connection-address")]
-    pub server_http_connection_address: Option<String>,
+    /// Server advertise address for HTTP connections (e.g., http://127.0.0.1:8000)
+    /// This is the address shared with clients. Required when the listen and advertise
+    /// addresses differ (e.g., behind proxies or NAT)
+    #[arg(long = "server.http.advertise-address")]
+    pub server_http_advertise_address: Option<String>,
 
     /// Enable/disable local Admin endpoint
     #[arg(long = "server.admin.enabled")]

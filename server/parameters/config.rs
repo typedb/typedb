@@ -34,8 +34,9 @@ pub struct Config {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ServerConfig {
-    pub address: String,
-    pub connection_address: Option<String>,
+    #[serde(alias = "address")]
+    pub listen_address: String,
+    pub advertise_address: Option<String>,
     pub http: HttpEndpointConfig,
     #[serde(default)]
     pub admin: AdminConfig,
@@ -47,8 +48,9 @@ pub struct ServerConfig {
 #[serde(rename_all = "kebab-case")]
 pub struct HttpEndpointConfig {
     pub enabled: bool,
-    pub address: String,
-    pub connection_address: Option<String>,
+    #[serde(alias = "address")]
+    pub listen_address: String,
+    pub advertise_address: Option<String>,
 }
 
 #[serde_as]
@@ -247,11 +249,11 @@ impl ConfigBuilder {
     pub fn override_with_cliargs(&mut self, cliargs: CLIArgs) {
         let CLIArgs {
             config_file_override: _,
-            server_address,
-            server_connection_address,
+            server_listen_address,
+            server_advertise_address,
             server_http_enabled,
-            server_http_address,
-            server_http_connection_address,
+            server_http_listen_address,
+            server_http_advertise_address,
             server_admin_enabled,
             server_admin_port,
             server_authentication_token_expiration_seconds,
@@ -269,9 +271,9 @@ impl ConfigBuilder {
         } = cliargs;
         let Self { config, raw_yaml: _ } = self;
         override_config! {
-            config.server.address => server_address;
+            config.server.listen_address => server_listen_address;
             config.server.http.enabled => server_http_enabled;
-            config.server.http.address => server_http_address;
+            config.server.http.listen_address => server_http_listen_address;
             config.server.admin.enabled => server_admin_enabled;
             config.server.admin.port => server_admin_port;
             config.server.authentication.token_expiration => server_authentication_token_expiration_seconds.map(|secs| Duration::new(secs, 0));
@@ -292,8 +294,8 @@ impl ConfigBuilder {
             config.development_mode.enabled => development_mode_enabled;
         }
         override_optional_config! {
-            config.server.connection_address => server_connection_address;
-            config.server.http.connection_address => server_http_connection_address;
+            config.server.advertise_address => server_advertise_address;
+            config.server.http.advertise_address => server_http_advertise_address;
         }
     }
 
@@ -327,13 +329,13 @@ impl ConfigBuilder {
 
     // Overrides
 
-    pub fn server_address(mut self, address: impl Into<String>) -> Self {
-        self.config.server.address = address.into();
+    pub fn server_listen_address(mut self, address: impl Into<String>) -> Self {
+        self.config.server.listen_address = address.into();
         self
     }
 
-    pub fn server_connection_address(mut self, connection_address: impl Into<String>) -> Self {
-        self.config.server.connection_address = Some(connection_address.into());
+    pub fn server_advertise_address(mut self, advertise_address: impl Into<String>) -> Self {
+        self.config.server.advertise_address = Some(advertise_address.into());
         self
     }
 
@@ -342,8 +344,8 @@ impl ConfigBuilder {
         self
     }
 
-    pub fn server_http_address(mut self, address: impl Into<String>) -> Self {
-        self.config.server.http.address = address.into();
+    pub fn server_http_listen_address(mut self, address: impl Into<String>) -> Self {
+        self.config.server.http.listen_address = address.into();
         self
     }
 
@@ -421,10 +423,46 @@ pub mod tests {
     #[test]
     fn fields_can_be_overridden() {
         let set_to = "10.9.8.7:1234";
+        let result = load_and_parse(config_path(), vec!["--server.listen-address", set_to]).unwrap();
+        assert_eq!(result.server.listen_address.as_str(), set_to);
+        let result = load_and_parse(config_path(), vec!["--server.advertise-address", set_to]).unwrap();
+        assert_eq!(result.server.advertise_address.unwrap().as_str(), set_to);
+
+        // Outdated aliases
         let result = load_and_parse(config_path(), vec!["--server.address", set_to]).unwrap();
-        assert_eq!(result.server.address.as_str(), set_to);
-        let result = load_and_parse(config_path(), vec!["--server.connection-address", set_to]).unwrap();
-        assert_eq!(result.server.connection_address.unwrap().as_str(), set_to);
+        assert_eq!(result.server.listen_address.as_str(), set_to);
+    }
+
+    #[test]
+    fn config_file_accepts_old_and_new_address_names() {
+        // The current config.yml uses the new names (listen-address, advertise-address)
+        // Verify it parses correctly
+        let config = load_and_parse(config_path(), vec![]).unwrap();
+        assert!(!config.server.listen_address.is_empty());
+
+        // Verify the old names (address) would also parse
+        let yaml_with_old_names = r#"
+server:
+    address: 0.0.0.0:1729
+    http:
+        enabled: false
+        address: 0.0.0.0:8000
+    authentication:
+        token-expiration-seconds: 5000
+    encryption:
+        enabled: false
+        certificate:
+        certificate-key:
+        ca-certificate:
+storage:
+    data-directory: "data"
+logging:
+    directory: "logs"
+"#;
+        let old_config: Config = serde_yaml2::from_str(yaml_with_old_names).unwrap();
+        assert_eq!(old_config.server.listen_address, "0.0.0.0:1729");
+        assert_eq!(old_config.server.advertise_address.unwrap(), "127.0.0.1:1729");
+        assert_eq!(old_config.server.http.listen_address, "0.0.0.0:8000");
     }
 
     #[test]
