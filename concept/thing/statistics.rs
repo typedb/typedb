@@ -147,7 +147,7 @@ impl Statistics {
         )
         .map_err(|err| ReloadCommitData { typedb_source: err })?;
 
-        let last_seq = wal_commit_records.last_key_value().map(|(&seq, _)| seq);
+        let mut last_included = None;
 
         for (seq, status) in wal_commit_records {
             match status {
@@ -177,9 +177,12 @@ impl Statistics {
                             }
                             data_commits.clear();
                         }
-                    }
+                    };
+                    last_included = Some(seq);
                 }
-                RecoveryCommitStatus::Rejected => (),
+                RecoveryCommitStatus::Rejected => {
+                    last_included = Some(seq);
+                },
             }
         }
 
@@ -196,7 +199,7 @@ impl Statistics {
             self.durably_write(storage.durability())?;
         }
 
-        if let Some(last_seq) = last_seq {
+        if let Some(last_seq) = last_included {
             self.sequence_number = last_seq;
         }
 
