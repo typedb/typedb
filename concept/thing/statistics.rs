@@ -182,7 +182,7 @@ impl Statistics {
                 }
                 RecoveryCommitStatus::Rejected => {
                     last_included = Some(seq);
-                },
+                }
             }
         }
 
@@ -199,8 +199,8 @@ impl Statistics {
             self.durably_write(storage.durability())?;
         }
 
-        if let Some(last_seq) = last_included {
-            self.sequence_number = last_seq;
+        if let Some(last_included) = last_included {
+            self.sequence_number = last_included;
         }
 
         let millis = Instant::now().duration_since(start).as_millis();
