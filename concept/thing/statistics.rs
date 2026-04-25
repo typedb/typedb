@@ -182,7 +182,7 @@ impl Statistics {
                 }
                 RecoveryCommitStatus::Rejected => {
                     last_included = Some(seq);
-                }
+                },
             }
         }
 
