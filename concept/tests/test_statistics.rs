@@ -6,7 +6,11 @@
 
 #![deny(unused_must_use)]
 
-use std::{collections::BTreeMap, sync::Arc};
+use std::{
+    collections::{BTreeMap, HashMap},
+    hash::Hash,
+    sync::Arc,
+};
 
 use concept::{
     thing::{ThingAPI, object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager},
@@ -28,6 +32,22 @@ use storage::{
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
+fn retain_nonzero_2d<K1: Eq + Hash, K2: Eq + Hash>(map: &mut HashMap<K1, HashMap<K2, u64>>) {
+    for inner in map.values_mut() {
+        inner.retain(|_, v| *v > 0);
+    }
+    map.retain(|_, inner| !inner.is_empty());
+}
+
+fn retain_nonzero_3d<K1: Eq + Hash, K2: Eq + Hash, K3: Eq + Hash>(
+    map: &mut HashMap<K1, HashMap<K2, HashMap<K3, u64>>>,
+) {
+    for middle in map.values_mut() {
+        retain_nonzero_2d(middle);
+    }
+    map.retain(|_, middle| !middle.is_empty());
+}
+
 macro_rules! assert_statistics_eq {
     ($lhs:expr, $rhs:expr) => {
         let Statistics {
@@ -41,19 +61,27 @@ macro_rules! assert_statistics_eq {
             entity_counts: mut lhs_entity_counts,
             relation_counts: mut lhs_relation_counts,
             attribute_counts: mut lhs_attribute_counts,
-            role_counts: lhs_role_counts,
-            has_attribute_counts: lhs_has_attribute_counts,
-            attribute_owner_counts: lhs_attribute_owner_counts,
-            role_player_counts: lhs_role_player_counts,
-            relation_role_counts: lhs_relation_role_counts,
-            relation_role_player_counts: lhs_relation_role_player_counts,
-            player_role_relation_counts: lhs_player_role_relation_counts,
-            links_index_counts: lhs_player_index_counts,
+            role_counts: mut lhs_role_counts,
+            has_attribute_counts: mut lhs_has_attribute_counts,
+            attribute_owner_counts: mut lhs_attribute_owner_counts,
+            role_player_counts: mut lhs_role_player_counts,
+            relation_role_counts: mut lhs_relation_role_counts,
+            relation_role_player_counts: mut lhs_relation_role_player_counts,
+            player_role_relation_counts: mut lhs_player_role_relation_counts,
+            links_index_counts: mut lhs_player_index_counts,
             ..
         } = $lhs;
         lhs_entity_counts.retain(|_, v| *v > 0);
         lhs_relation_counts.retain(|_, v| *v > 0);
         lhs_attribute_counts.retain(|_, v| *v > 0);
+        lhs_role_counts.retain(|_, v| *v > 0);
+        retain_nonzero_2d(&mut lhs_has_attribute_counts);
+        retain_nonzero_2d(&mut lhs_attribute_owner_counts);
+        retain_nonzero_2d(&mut lhs_role_player_counts);
+        retain_nonzero_2d(&mut lhs_relation_role_counts);
+        retain_nonzero_2d(&mut lhs_player_index_counts);
+        retain_nonzero_3d(&mut lhs_relation_role_player_counts);
+        retain_nonzero_3d(&mut lhs_player_role_relation_counts);
 
         let Statistics {
             sequence_number: rhs_sequence_number,
@@ -66,19 +94,27 @@ macro_rules! assert_statistics_eq {
             entity_counts: mut rhs_entity_counts,
             relation_counts: mut rhs_relation_counts,
             attribute_counts: mut rhs_attribute_counts,
-            role_counts: rhs_role_counts,
-            has_attribute_counts: rhs_has_attribute_counts,
-            attribute_owner_counts: rhs_attribute_owner_counts,
-            role_player_counts: rhs_role_player_counts,
-            relation_role_counts: rhs_relation_role_counts,
-            relation_role_player_counts: rhs_relation_role_player_counts,
-            player_role_relation_counts: rhs_player_role_relation_counts,
-            links_index_counts: rhs_player_index_counts,
+            role_counts: mut rhs_role_counts,
+            has_attribute_counts: mut rhs_has_attribute_counts,
+            attribute_owner_counts: mut rhs_attribute_owner_counts,
+            role_player_counts: mut rhs_role_player_counts,
+            relation_role_counts: mut rhs_relation_role_counts,
+            relation_role_player_counts: mut rhs_relation_role_player_counts,
+            player_role_relation_counts: mut rhs_player_role_relation_counts,
+            links_index_counts: mut rhs_player_index_counts,
             ..
         } = $rhs;
         rhs_entity_counts.retain(|_, v| *v > 0);
         rhs_relation_counts.retain(|_, v| *v > 0);
         rhs_attribute_counts.retain(|_, v| *v > 0);
+        rhs_role_counts.retain(|_, v| *v > 0);
+        retain_nonzero_2d(&mut rhs_has_attribute_counts);
+        retain_nonzero_2d(&mut rhs_attribute_owner_counts);
+        retain_nonzero_2d(&mut rhs_role_player_counts);
+        retain_nonzero_2d(&mut rhs_relation_role_counts);
+        retain_nonzero_2d(&mut rhs_player_index_counts);
+        retain_nonzero_3d(&mut rhs_relation_role_player_counts);
+        retain_nonzero_3d(&mut rhs_player_role_relation_counts);
 
         assert_eq!(
             (
@@ -361,4 +397,254 @@ fn put_plays() {
     synchronised.may_synchronise(&storage).unwrap();
 
     assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+}
+
+#[test]
+fn unset_has() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let person_label = Label::build("person", None);
+    let name_label = Label::build("name", None);
+
+    let mut snapshot = storage.clone().open_snapshot_schema();
+    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+    name_type
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            name_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    let name = thing_manager.create_attribute(&mut snapshot, name_type, Value::String("alice".into())).unwrap();
+    person.set_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    let create_commit_seq = snapshot.commit(&mut CommitProfile::DISABLED).unwrap().unwrap();
+
+    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    person.unset_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap().unwrap();
+
+    let mut synchronised = Statistics::new(SequenceNumber::MIN);
+    synchronised.may_synchronise(&storage).unwrap();
+
+    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+}
+
+#[test]
+fn delete_attribute() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let name_label = Label::build("name", None);
+
+    let mut snapshot = storage.clone().open_snapshot_schema();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+    name_type
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    let name = thing_manager.create_attribute(&mut snapshot, name_type, Value::String("alice".into())).unwrap();
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    let create_commit_seq = snapshot.commit(&mut CommitProfile::DISABLED).unwrap().unwrap();
+
+    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    name.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap().unwrap();
+
+    let mut synchronised = Statistics::new(SequenceNumber::MIN);
+    synchronised.may_synchronise(&storage).unwrap();
+
+    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+}
+
+#[test]
+fn delete_relation() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let person_label = Label::build("person", None);
+    let friendship_label = Label::build("friendship", None);
+    let friend_role_name = "friend";
+
+    let mut snapshot = storage.clone().open_snapshot_schema();
+    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+    let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
+    let friend_relates = friendship_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            friend_role_name,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    let friend_role = friend_relates.role();
+    person_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, friend_role, StorageCounters::DISABLED)
+        .unwrap();
+    let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    let friendship = thing_manager.create_relation(&mut snapshot, friendship_type).unwrap();
+    friendship
+        .add_player(&mut snapshot, &thing_manager, friend_role, person.into_object(), StorageCounters::DISABLED)
+        .unwrap();
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    let create_commit_seq = snapshot.commit(&mut CommitProfile::DISABLED).unwrap().unwrap();
+
+    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    friendship.delete(&mut snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap().unwrap();
+
+    let mut synchronised = Statistics::new(SequenceNumber::MIN);
+    synchronised.may_synchronise(&storage).unwrap();
+
+    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+}
+
+#[test]
+fn remove_player() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let person_label = Label::build("person", None);
+    let friendship_label = Label::build("friendship", None);
+    let friend_role_name = "friend";
+
+    let mut snapshot = storage.clone().open_snapshot_schema();
+    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+    let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
+    let friend_relates = friendship_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            friend_role_name,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    let friend_role = friend_relates.role();
+    person_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, friend_role, StorageCounters::DISABLED)
+        .unwrap();
+    let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    let friendship = thing_manager.create_relation(&mut snapshot, friendship_type).unwrap();
+    friendship
+        .add_player(&mut snapshot, &thing_manager, friend_role, person.into_object(), StorageCounters::DISABLED)
+        .unwrap();
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    let create_commit_seq = snapshot.commit(&mut CommitProfile::DISABLED).unwrap().unwrap();
+
+    let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
+    friendship
+        .remove_player_single(
+            &mut snapshot,
+            &thing_manager,
+            friend_role,
+            person.into_object(),
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap().unwrap();
+
+    let mut synchronised = Statistics::new(SequenceNumber::MIN);
+    synchronised.may_synchronise(&storage).unwrap();
+
+    assert_statistics_eq!(synchronised, read_statistics(storage, &thing_manager));
+}
+
+#[test]
+fn relation_index_counts() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let person_label = Label::build("person", None);
+    let mentorship_label = Label::build("mentorship", None);
+    let mentor_role_name = "mentor";
+    let trainee_role_name = "trainee";
+
+    let mut snapshot = storage.clone().open_snapshot_schema();
+    let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+    let mentorship_type = type_manager.create_relation_type(&mut snapshot, &mentorship_label).unwrap();
+    let mentor_relates = mentorship_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            mentor_role_name,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    let trainee_relates = mentorship_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            trainee_role_name,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    let mentor_role = mentor_relates.role();
+    let trainee_role = trainee_relates.role();
+    person_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, mentor_role, StorageCounters::DISABLED)
+        .unwrap();
+    person_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, trainee_role, StorageCounters::DISABLED)
+        .unwrap();
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    let schema_commit_seq = snapshot.commit(&mut CommitProfile::DISABLED).unwrap().unwrap();
+
+    let mut snapshot = storage.clone().open_snapshot_write_at(schema_commit_seq);
+    let alice = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    let bob = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    let mentorship = thing_manager.create_relation(&mut snapshot, mentorship_type).unwrap();
+    mentorship
+        .add_player(&mut snapshot, &thing_manager, mentor_role, alice.into_object(), StorageCounters::DISABLED)
+        .unwrap();
+    mentorship
+        .add_player(&mut snapshot, &thing_manager, trainee_role, bob.into_object(), StorageCounters::DISABLED)
+        .unwrap();
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap().unwrap();
+
+    let mut synchronised = Statistics::new(SequenceNumber::MIN);
+    synchronised.may_synchronise(&storage).unwrap();
+
+    let read = read_statistics(storage, &thing_manager);
+    assert!(!read.links_index_counts.is_empty(), "expected links_index_counts to be populated by data-snapshot writes");
+    assert_statistics_eq!(synchronised, read);
 }
