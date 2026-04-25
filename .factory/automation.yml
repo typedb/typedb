@@ -18,7 +18,8 @@ build:
         sudo apt update
         sudo apt install -y libclang-dev
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel build --config=ci //... 
+# note: build job doesn't need to download all packages locally since we aren't testing (speeds up build job)
+        bazel build --config=ci --remote_download_minimal //... 
         bazel run --config=ci @typedb_dependencies//tool/checkstyle:test-coverage
         bazel test --config=ci $(bazel query 'kind(checkstyle_test, //...)') 
         bazel test --config=ci $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config
