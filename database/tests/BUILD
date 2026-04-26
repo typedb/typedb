@@ -42,11 +42,28 @@ rust_test(
     ]
 )
 
+rust_test(
+    name = "test_statistics_recovery",
+    srcs = glob([
+        "statistics_recovery.rs",
+    ]),
+    deps = [
+        "//common/options",
+        "//database",
+        "//executor",
+        "//storage",
+        "//util/test:test_utils",
+
+        "@typeql//rust:typeql",
+    ]
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [
         ":test_database",
         ":test_transaction",
+        ":test_statistics_recovery",
     ],
     size = "small",
 )
