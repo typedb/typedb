@@ -10,7 +10,6 @@ use std::{
         atomic::{AtomicUsize, Ordering},
     },
     thread,
-    time::Duration,
 };
 
 use database::{
@@ -41,8 +40,12 @@ fn statistics_synchronization_under_concurrent_load() {
     let tmp_dir = create_tmp_dir();
     let total_batches = NUM_THREADS * BATCHES_PER_THREAD;
     let total_persons = total_batches * OPS_PER_BATCH;
+    // Each person is given a unique name and a unique age, so attributes never
+    // dedupe across writers and ground-truth counts come straight from the configs.
+    let total_attributes = 2 * total_persons;
+    let total_has = 2 * total_persons;
 
-    let metrics_before_reboot = {
+    {
         let dbm = DatabaseManager::new(&tmp_dir).unwrap();
         dbm.put_database(DB_NAME).unwrap();
         let database = dbm.database(DB_NAME).unwrap();
@@ -72,51 +75,25 @@ fn statistics_synchronization_under_concurrent_load() {
         for h in handles {
             h.join().unwrap();
         }
-
-        // Let the in-process statistics updater catch up before sampling pre-reboot stats.
-        thread::sleep(Duration::from_millis(500));
-        database.get_metrics()
-    };
+    }
 
     // dbm and database dropped here; IntervalRunner threads shut down synchronously on drop.
 
     let dbm = DatabaseManager::new(&tmp_dir).unwrap();
     let database = dbm.database(DB_NAME).unwrap();
-    let metrics_after_reboot = database.get_metrics();
+    let metrics = database.get_metrics();
 
-    assert_eq!(
-        metrics_after_reboot.data.entity_count, total_persons as u64,
-        "post-reboot entity_count does not match the bulk-loaded persons"
-    );
-    assert_eq!(
-        metrics_after_reboot.data.relation_count, 0,
-        "post-reboot relation_count is non-zero but the schema has no relations"
-    );
-
-    assert_eq!(
-        metrics_after_reboot.data.entity_count, metrics_before_reboot.data.entity_count,
-        "entity_count changed across reboot"
-    );
-    assert_eq!(
-        metrics_after_reboot.data.attribute_count, metrics_before_reboot.data.attribute_count,
-        "attribute_count changed across reboot"
-    );
-    assert_eq!(
-        metrics_after_reboot.data.has_count, metrics_before_reboot.data.has_count,
-        "has_count changed across reboot"
-    );
-    assert_eq!(
-        metrics_after_reboot.data.relation_count, metrics_before_reboot.data.relation_count,
-        "relation_count changed across reboot"
-    );
+    assert_eq!(metrics.data.entity_count, total_persons as u64, "entity_count after reboot");
+    assert_eq!(metrics.data.attribute_count, total_attributes as u64, "attribute_count after reboot");
+    assert_eq!(metrics.data.has_count, total_has as u64, "has_count after reboot");
+    assert_eq!(metrics.data.relation_count, 0, "relation_count after reboot");
 }
 
 fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
     let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
     for i in 0..OPS_PER_BATCH {
         let id = batch_id * OPS_PER_BATCH + i;
-        let age = (id % 100) as u32;
-        let query_str = format!(r#"insert $p isa person, has name "person_{id}", has age {age};"#);
+        let query_str = format!(r#"insert $p isa person, has name "person_{id}", has age {id};"#);
         let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
         let (returned_tx, result) = execute_write_query_in_write(
             tx,
