@@ -98,6 +98,6 @@ features = {}
 	name = "test_transaction"
 
 [[test]]
-	path = "tests/statistics_recovery.rs"
-	name = "test_statistics_recovery"
+	path = "tests/statistics_synchronization.rs"
+	name = "test_statistics_synchronization"
 

@@ -63,7 +63,7 @@ rustfmt_test(
     targets = [
         ":test_database",
         ":test_transaction",
-        ":test_statistics_recovery",
+        ":test_statistics_synchronization",
     ],
     size = "small",
 )
