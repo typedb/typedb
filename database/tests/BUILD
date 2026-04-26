@@ -43,9 +43,9 @@ rust_test(
 )
 
 rust_test(
-    name = "test_statistics_recovery",
+    name = "test_statistics_synchronization",
     srcs = glob([
-        "statistics_recovery.rs",
+        "statistics_synchronization.rs",
     ]),
     deps = [
         "//common/options",

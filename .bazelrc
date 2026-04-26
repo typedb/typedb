@@ -26,6 +26,9 @@ test --incompatible_strict_action_env --test_env=PATH
 # CI configuration: disables disk cache to prevent cache size issues in CI environments
 build:ci --disk_cache=
 
+# Stress test configuration in opt mode
+test:stress -c opt --runs_per_test=50 --cache_test_results=no --jobs=1
+
 # Windows: enable proper symlink support
 startup --windows_enable_symlinks
 startup --host_jvm_args=-Xmx2g

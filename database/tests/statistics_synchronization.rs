@@ -30,9 +30,9 @@ const SCHEMA: &str = r#"define
     entity person owns name @key, owns age;
 "#;
 
-const NUM_THREADS: usize = 8;
+const NUM_THREADS: usize = 20;
 const BATCHES_PER_THREAD: usize = 20;
-const OPS_PER_BATCH: usize = 100;
+const OPS_PER_BATCH: usize = 10;
 
 #[test]
 fn statistics_synchronization_under_concurrent_load() {
