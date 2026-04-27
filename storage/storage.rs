@@ -42,7 +42,7 @@ use crate::{
         iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError,
         KeyspaceSet, Keyspaces,
     },
-    record::{CommitRecord, StatusRecord},
+    record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
     recovery::{
         checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
@@ -157,6 +157,7 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     fn register_durability_record_types(durability_client: &mut impl DurabilityClient) {
+        durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         durability_client.register_record_type::<StatusRecord>();
     }
@@ -354,10 +355,8 @@ impl<Durability> MVCCStorage<Durability> {
         let mut iter = self.durability_client.iter_sequenced_type_from::<CommitRecord>(open_sequence_number)?;
         while let Some(entry) = iter.next() {
             let (_, iter_record) = entry?;
-            if let Some(iter_record_id) = iter_record.snapshot_id() {
-                if iter_record_id == snapshot_id && iter_record.open_sequence_number() == open_sequence_number {
-                    return Ok(true);
-                }
+            if iter_record.snapshot_id() == snapshot_id && iter_record.open_sequence_number() == open_sequence_number {
+                return Ok(true);
             }
         }
         Ok(false)
@@ -696,7 +695,7 @@ mod tests {
         durability_client::{DurabilityClient, WALClient},
         key_value::StorageKeyArray,
         keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
-        record::{CommitRecord, CommitType},
+        record::{CommitRecord, CommitType, LegacyCommitRecordV1},
         snapshot::{buffer::OperationsBuffer, WriteSnapshot},
         write_batches::WriteBatches,
         Arc, MVCCStorage, SnapshotId,
@@ -744,6 +743,7 @@ mod tests {
                 .insert(key_1.byte_array().clone(), ByteArray::empty());
 
             let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+            durability_client.register_record_type::<LegacyCommitRecordV1>();
             durability_client.register_record_type::<CommitRecord>();
             let seq = durability_client
                 .sequenced_write(&CommitRecord::new(
@@ -766,6 +766,7 @@ mod tests {
         };
 
         let mut durability_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         let storage =
             MVCCStorage::<WALClient>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
@@ -788,6 +789,7 @@ mod tests {
 
         let storage_path = create_tmp_storage_dir();
         let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<TestKeyspaceSet>("storage", &storage_path, durability_client).unwrap(),
@@ -804,7 +806,7 @@ mod tests {
             CommitType::Data,
             SnapshotId::new(),
         );
-        let snapshot_id1 = commit_record1.snapshot_id().unwrap();
+        let snapshot_id1 = commit_record1.snapshot_id();
         let seqnum1 = commit_record1.open_sequence_number();
 
         let key_2 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"world"));
@@ -816,7 +818,7 @@ mod tests {
             CommitType::Data,
             SnapshotId::new(),
         );
-        let snapshot_id2 = commit_record2.snapshot_id().unwrap();
+        let snapshot_id2 = commit_record2.snapshot_id();
         let seqnum2 = commit_record2.open_sequence_number();
 
         assert!(!storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
@@ -845,7 +847,7 @@ mod tests {
             CommitType::Schema,
             SnapshotId::new(),
         );
-        let snapshot_id3 = commit_record3.snapshot_id().unwrap();
+        let snapshot_id3 = commit_record3.snapshot_id();
         let seqnum3 = commit_record3.open_sequence_number();
 
         assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
@@ -870,7 +872,7 @@ mod tests {
             CommitType::Schema,
             snapshot_id2,
         );
-        let snapshot_id4 = commit_record4.snapshot_id().unwrap();
+        let snapshot_id4 = commit_record4.snapshot_id();
         let seqnum4 = commit_record4.open_sequence_number();
 
         assert_eq!(snapshot_id2, snapshot_id4);

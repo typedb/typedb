@@ -17,22 +17,9 @@ use crate::{
     snapshot::{buffer::OperationsBuffer, lock::LockType, snapshot_id::SnapshotId, write::Write},
 };
 
+/// Legacy records are kept for reading old WAL entries written before TypeDB version upgrade.
 #[derive(Serialize, Deserialize)]
-pub struct CommitRecord {
-    // TODO: this could read-through to the WAL if we have to save memory?
-    operations: OperationsBuffer,
-    open_sequence_number: SequenceNumber,
-    commit_type: CommitType,
-
-    /// Transaction identifier used for efficient referencing to commit records in the WAL,
-    /// avoiding excessive lookups through the whole filesystem.
-    /// Should be set for all new commit records, but is set to None for old loaded records.
-    #[serde(default)]
-    snapshot_id: Option<SnapshotId>,
-}
-
-#[derive(Serialize, Deserialize)]
-struct LegacyCommitRecordV1 {
+pub struct LegacyCommitRecordV1 {
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
     commit_type: CommitType,
@@ -44,9 +31,34 @@ impl From<LegacyCommitRecordV1> for CommitRecord {
             operations: legacy.operations,
             open_sequence_number: legacy.open_sequence_number,
             commit_type: legacy.commit_type,
-            snapshot_id: None,
+            snapshot_id: SnapshotId::UNSET,
         }
     }
+}
+
+impl DurabilityRecord for LegacyCommitRecordV1 {
+    const RECORD_TYPE: DurabilityRecordType = 0;
+    const RECORD_NAME: &'static str = "legacy_commit_record_v1";
+
+    fn serialise_into(&self, _writer: &mut impl std::io::Write) -> bincode::Result<()> {
+        unreachable!("LegacyCommitRecordV1 is read-only — new records use CommitRecord")
+    }
+
+    fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
+        bincode::deserialize(&buf)
+    }
+}
+
+impl SequencedDurabilityRecord for LegacyCommitRecordV1 {}
+
+#[derive(Serialize, Deserialize)]
+pub struct CommitRecord {
+    operations: OperationsBuffer,
+    open_sequence_number: SequenceNumber,
+    commit_type: CommitType,
+    snapshot_id: SnapshotId,
 }
 
 impl fmt::Debug for CommitRecord {
@@ -79,7 +91,7 @@ impl CommitRecord {
         commit_type: CommitType,
         snapshot_id: SnapshotId,
     ) -> CommitRecord {
-        CommitRecord { operations, open_sequence_number, commit_type, snapshot_id: Some(snapshot_id) }
+        CommitRecord { operations, open_sequence_number, commit_type, snapshot_id }
     }
 
     pub fn operations(&self) -> &OperationsBuffer {
@@ -98,7 +110,7 @@ impl CommitRecord {
         self.open_sequence_number
     }
 
-    pub fn snapshot_id(&self) -> Option<SnapshotId> {
+    pub fn snapshot_id(&self) -> SnapshotId {
         self.snapshot_id
     }
 
@@ -117,10 +129,6 @@ impl CommitRecord {
         // TODO: can be optimised with an intersection of two sorted iterators instead of iterate + gets
 
         let mut puts_to_update = Vec::new();
-
-        // we check self operations against predecessor operations.
-        //   if our buffer contains a delete, we check the predecessor doesn't have an Existing lock on it
-        // We check
 
         let locks = self.operations().locks();
         let predecessor_locks = predecessor.operations().locks();
@@ -180,7 +188,7 @@ impl CommitRecord {
 }
 
 impl DurabilityRecord for CommitRecord {
-    const RECORD_TYPE: DurabilityRecordType = 0;
+    const RECORD_TYPE: DurabilityRecordType = 2;
 
     const RECORD_NAME: &'static str = "commit_record";
 
@@ -199,13 +207,7 @@ impl DurabilityRecord for CommitRecord {
         // https://github.com/bincode-org/bincode/issues/633
         let mut buf = Vec::new();
         reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
-        match bincode::deserialize::<CommitRecord>(&buf) {
-            Ok(record) => Ok(record),
-            Err(_error) => {
-                // fallback to legacy
-                bincode::deserialize::<LegacyCommitRecordV1>(&buf).map(|legacy| CommitRecord::from(legacy))
-            }
-        }
+        bincode::deserialize(&buf)
     }
 }
 
@@ -243,7 +245,7 @@ impl DurabilityRecord for StatusRecord {
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
         // https://github.com/bincode-org/bincode/issues/633
         let mut buf = Vec::new();
-        reader.read_to_end(&mut buf).unwrap();
+        reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
         bincode::deserialize(&buf)
     }
 }

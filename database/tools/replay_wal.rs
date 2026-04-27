@@ -11,7 +11,7 @@ use concept::thing::statistics::Statistics;
 use durability::{wal::WAL, DurabilitySequenceNumber};
 use storage::{
     durability_client::{DurabilityClient, DurabilityRecord, WALClient},
-    record::{CommitRecord, StatusRecord},
+    record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
 };
 
 #[derive(Parser)]
@@ -52,6 +52,7 @@ fn main() {
 
     let mut source_wal = WALClient::new(source_wal);
     source_wal.register_record_type::<Statistics>();
+    source_wal.register_record_type::<LegacyCommitRecordV1>();
     source_wal.register_record_type::<CommitRecord>();
     source_wal.register_record_type::<StatusRecord>();
 
@@ -63,6 +64,7 @@ fn main() {
 
     let mut target_wal = WALClient::new(WAL::load(cli.target_directory).unwrap());
     target_wal.register_record_type::<Statistics>();
+    target_wal.register_record_type::<LegacyCommitRecordV1>();
     target_wal.register_record_type::<CommitRecord>();
     target_wal.register_record_type::<StatusRecord>();
 

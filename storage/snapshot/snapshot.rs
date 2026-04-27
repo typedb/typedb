@@ -338,7 +338,7 @@ impl<D> WriteSnapshot<D> {
 
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
-        let id = commit_record.snapshot_id();
+        let id = Some(commit_record.snapshot_id());
         Self::new(storage, commit_record.into_operations(), open_sequence_number, id)
     }
 
@@ -515,7 +515,7 @@ impl<D> SchemaSnapshot<D> {
 
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
-        let id = commit_record.snapshot_id();
+        let id = Some(commit_record.snapshot_id());
         Self::new(storage, commit_record.into_operations(), open_sequence_number, id)
     }
 

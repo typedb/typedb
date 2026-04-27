@@ -23,6 +23,8 @@ pub struct SnapshotId {
 }
 
 impl SnapshotId {
+    pub const UNSET: Self = Self { number: 0 };
+
     pub fn new() -> Self {
         Self { number: UNIQUE_ID_GEN.fetch_add(1, Ordering::Relaxed) }
     }
