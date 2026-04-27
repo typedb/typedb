@@ -122,16 +122,20 @@ impl Constraints {
                 Constraint::IndexedRelation(indexed) => {
                     let mut old_indexed: Option<IndexedRelation<Variable>> = None;
                     if indexed.player_1 == indexed.player_2 {
-                        old_indexed.get_or_insert_with(|| indexed.clone().into());
+                        old_indexed.get_or_insert_with(|| indexed.clone());
                         replace_with_anonymous_var(&mut indexed.player_2)?;
                     }
                     if indexed.player_1 == indexed.relation {
-                        old_indexed.get_or_insert_with(|| indexed.clone().into());
+                        old_indexed.get_or_insert_with(|| indexed.clone());
                         replace_with_anonymous_var(&mut indexed.relation)?;
                     }
                     if indexed.player_2 == indexed.relation {
-                        old_indexed.get_or_insert_with(|| indexed.clone().into());
+                        old_indexed.get_or_insert_with(|| indexed.clone());
                         replace_with_anonymous_var(&mut indexed.relation)?;
+                    }
+                    if indexed.role_type_1 == indexed.role_type_2 {
+                        old_indexed.get_or_insert_with(|| indexed.clone());
+                        replace_with_anonymous_var(&mut indexed.role_type_2)?;
                     }
                     if let Some(old_indexed) = old_indexed {
                         constraint_mapping.insert(old_indexed.into(), indexed.clone().into());
