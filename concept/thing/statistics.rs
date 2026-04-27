@@ -351,34 +351,44 @@ impl Statistics {
         self.links_index_counts.retain(|_, map| !map.is_empty());
     }
 
+    fn saturating_add(count: &mut u64, delta: i64, label: &str) {
+        match count.checked_add_signed(delta) {
+            Some(value) => *count = value,
+            None => {
+                event!(Level::ERROR, "Unexpected underflow in statistics {} count: {} + {}", label, *count, delta);
+                *count = 0;
+            }
+        }
+    }
+
     fn update_entities(&mut self, entity_type: EntityType, delta: i64) {
         let count = self.entity_counts.entry(entity_type).or_default();
-        *count = count.checked_add_signed(delta).unwrap();
-        self.total_entity_count = self.total_entity_count.checked_add_signed(delta).unwrap();
-        self.total_thing_count = self.total_thing_count.checked_add_signed(delta).unwrap();
+        Self::saturating_add(count, delta, "entity");
+        Self::saturating_add(&mut self.total_entity_count, delta, "total_entity");
+        Self::saturating_add(&mut self.total_thing_count, delta, "total_thing");
     }
 
     fn update_relations(&mut self, relation_type: RelationType, delta: i64) {
         let count = self.relation_counts.entry(relation_type).or_default();
-        *count = count.checked_add_signed(delta).unwrap();
-        self.total_relation_count = self.total_relation_count.checked_add_signed(delta).unwrap();
-        self.total_thing_count = self.total_thing_count.checked_add_signed(delta).unwrap();
+        Self::saturating_add(count, delta, "relation");
+        Self::saturating_add(&mut self.total_relation_count, delta, "total_relation");
+        Self::saturating_add(&mut self.total_thing_count, delta, "total_thing");
     }
 
     fn update_attributes(&mut self, attribute_type: AttributeType, delta: i64) {
         let count = self.attribute_counts.entry(attribute_type).or_default();
-        *count = count.checked_add_signed(delta).unwrap();
-        self.total_attribute_count = self.total_attribute_count.checked_add_signed(delta).unwrap();
-        self.total_thing_count = self.total_thing_count.checked_add_signed(delta).unwrap();
+        Self::saturating_add(count, delta, "attribute");
+        Self::saturating_add(&mut self.total_attribute_count, delta, "total_attribute");
+        Self::saturating_add(&mut self.total_thing_count, delta, "total_thing");
     }
 
     fn update_has(&mut self, owner_type: ObjectType, attribute_type: AttributeType, delta: i64) {
         let attribute_count =
             self.has_attribute_counts.entry(owner_type).or_default().entry(attribute_type).or_default();
-        *attribute_count = attribute_count.checked_add_signed(delta).unwrap();
+        Self::saturating_add(attribute_count, delta, "has_attribute");
         let owner_count = self.attribute_owner_counts.entry(attribute_type).or_default().entry(owner_type).or_default();
-        *owner_count = owner_count.checked_add_signed(delta).unwrap();
-        self.total_has_count = self.total_has_count.checked_add_signed(delta).unwrap();
+        Self::saturating_add(owner_count, delta, "attribute_owner");
+        Self::saturating_add(&mut self.total_has_count, delta, "total_has");
     }
 
     fn update_role_player(
@@ -389,13 +399,13 @@ impl Statistics {
         delta: i64,
     ) {
         let role_count = self.role_counts.entry(role_type).or_default();
-        *role_count = role_count.checked_add_signed(delta).unwrap();
-        self.total_role_count = self.total_role_count.checked_add_signed(delta).unwrap();
+        Self::saturating_add(role_count, delta, "role");
+        Self::saturating_add(&mut self.total_role_count, delta, "total_role");
         let role_player_count = self.role_player_counts.entry(player_type).or_default().entry(role_type).or_default();
-        *role_player_count = role_player_count.checked_add_signed(delta).unwrap();
+        Self::saturating_add(role_player_count, delta, "role_player");
         let relation_role_count =
             self.relation_role_counts.entry(relation_type).or_default().entry(role_type).or_default();
-        *relation_role_count = relation_role_count.checked_add_signed(delta).unwrap();
+        Self::saturating_add(relation_role_count, delta, "relation_role");
         let relation_role_player_count = self
             .relation_role_player_counts
             .entry(relation_type)
@@ -404,7 +414,7 @@ impl Statistics {
             .or_default()
             .entry(player_type)
             .or_default();
-        *relation_role_player_count = relation_role_player_count.checked_add_signed(delta).unwrap();
+        Self::saturating_add(relation_role_player_count, delta, "relation_role_player");
         let player_role_relation_count = self
             .player_role_relation_counts
             .entry(player_type)
@@ -413,29 +423,17 @@ impl Statistics {
             .or_default()
             .entry(relation_type)
             .or_default();
-        *player_role_relation_count = player_role_relation_count.checked_add_signed(delta).unwrap();
+        Self::saturating_add(player_role_relation_count, delta, "player_role_relation");
     }
 
     fn update_indexed_player(&mut self, player_1_type: ObjectType, player_2_type: ObjectType, delta: i64) {
         let player_1_to_2_index_count =
             self.links_index_counts.entry(player_1_type).or_default().entry(player_2_type).or_default();
-        *player_1_to_2_index_count = match player_1_to_2_index_count.checked_add_signed(delta) {
-            None => panic!(
-                "Error with unsigned add player_1_to_2_index_count + delta: {} + {}",
-                player_1_to_2_index_count, delta
-            ),
-            Some(value) => value,
-        };
+        Self::saturating_add(player_1_to_2_index_count, delta, "player_1_to_2_index");
         if player_1_type != player_2_type {
             let player_2_to_1_index_count =
                 self.links_index_counts.entry(player_2_type).or_default().entry(player_1_type).or_default();
-            *player_2_to_1_index_count = match player_2_to_1_index_count.checked_add_signed(delta) {
-                None => panic!(
-                    "Error with unsigned add player_2_to_1_index_count: {} + {}",
-                    player_2_to_1_index_count, delta
-                ),
-                Some(value) => value,
-            };
+            Self::saturating_add(player_2_to_1_index_count, delta, "player_2_to_1_index");
         }
     }
 
