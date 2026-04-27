@@ -25,6 +25,16 @@ pub struct LegacyCommitRecordV1 {
     commit_type: CommitType,
 }
 
+impl LegacyCommitRecordV1 {
+    pub(crate) fn new(
+        operations: OperationsBuffer,
+        open_sequence_number: SequenceNumber,
+        commit_type: CommitType,
+    ) -> Self {
+        Self { operations, open_sequence_number, commit_type }
+    }
+}
+
 impl From<LegacyCommitRecordV1> for CommitRecord {
     fn from(legacy: LegacyCommitRecordV1) -> Self {
         CommitRecord {
@@ -40,8 +50,8 @@ impl DurabilityRecord for LegacyCommitRecordV1 {
     const RECORD_TYPE: DurabilityRecordType = 0;
     const RECORD_NAME: &'static str = "legacy_commit_record_v1";
 
-    fn serialise_into(&self, _writer: &mut impl std::io::Write) -> bincode::Result<()> {
-        unreachable!("LegacyCommitRecordV1 is read-only — new records use CommitRecord")
+    fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
+        bincode::serialize_into(writer, &self)
     }
 
     fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {

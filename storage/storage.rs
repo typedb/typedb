@@ -695,7 +695,8 @@ mod tests {
         durability_client::{DurabilityClient, WALClient},
         key_value::StorageKeyArray,
         keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
-        record::{CommitRecord, CommitType, LegacyCommitRecordV1},
+        record::{CommitRecord, CommitType, LegacyCommitRecordV1, StatusRecord},
+        sequence_number::SequenceNumber,
         snapshot::{buffer::OperationsBuffer, WriteSnapshot},
         write_batches::WriteBatches,
         Arc, MVCCStorage, SnapshotId,
@@ -888,5 +889,66 @@ mod tests {
         assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
         assert!(storage.commit_record_exists(seqnum3, snapshot_id3).unwrap());
         assert!(storage.commit_record_exists(seqnum4, snapshot_id4).unwrap());
+    }
+
+    #[test]
+    fn test_mixed_legacy_and_current_commit_records() {
+        test_keyspace_set! {
+            TestKeyspace => 0: "test",
+        }
+
+        init_logging();
+        let storage_path = create_tmp_storage_dir();
+
+        let mut wal_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        wal_client.register_record_type::<LegacyCommitRecordV1>();
+        wal_client.register_record_type::<CommitRecord>();
+        wal_client.register_record_type::<StatusRecord>();
+
+        // Write legacy records (RECORD_TYPE=0) directly to WAL
+        let key_legacy = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"legacy"));
+        let mut legacy_ops = OperationsBuffer::new();
+        legacy_ops.writes_in_mut(key_legacy.keyspace_id()).insert(key_legacy.byte_array().clone(), ByteArray::empty());
+        let legacy_record = LegacyCommitRecordV1::new(legacy_ops, wal_client.previous(), CommitType::Data);
+        let legacy_seqnum = wal_client.sequenced_write(&legacy_record).unwrap();
+
+        // Load WAL back
+        drop(wal_client);
+        let mut wal_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        wal_client.register_record_type::<LegacyCommitRecordV1>();
+        wal_client.register_record_type::<CommitRecord>();
+        wal_client.register_record_type::<StatusRecord>();
+
+        // Write a new-format record
+        let key_new = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"new"));
+        let mut new_ops = OperationsBuffer::new();
+        new_ops.writes_in_mut(key_new.keyspace_id()).insert(key_new.byte_array().clone(), ByteArray::empty());
+        let new_snapshot_id = SnapshotId::new();
+        let new_record = CommitRecord::new(new_ops, wal_client.previous(), CommitType::Data, new_snapshot_id);
+        let new_seqnum = wal_client.sequenced_write(&new_record).unwrap();
+
+        assert_ne!(legacy_seqnum, new_seqnum);
+
+        // Read both record types back from WAL
+        // Legacy records are read as LegacyCommitRecordV1 and can be converted
+        let legacy_records: Vec<_> = wal_client
+            .iter_sequenced_type_from::<LegacyCommitRecordV1>(SequenceNumber::MIN)
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert_eq!(legacy_records.len(), 1, "Expected exactly one legacy record");
+
+        // New records are read as CommitRecord
+        let new_records: Vec<_> = wal_client
+            .iter_sequenced_type_from::<CommitRecord>(SequenceNumber::MIN)
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert_eq!(new_records.len(), 1, "Expected exactly one new-format record");
+        assert_eq!(new_records[0].1.snapshot_id(), new_snapshot_id);
+
+        // Legacy records convert to CommitRecord with UNSET snapshot_id
+        let converted = CommitRecord::from(legacy_records.into_iter().next().unwrap().1);
+        assert_eq!(converted.snapshot_id(), SnapshotId::UNSET);
     }
 }

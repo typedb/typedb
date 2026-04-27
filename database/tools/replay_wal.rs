@@ -76,6 +76,11 @@ fn main() {
             break;
         }
         match record.record_type {
+            LegacyCommitRecordV1::RECORD_TYPE
+                if cli.kind.is_empty() || cli.kind.contains(&RecordKind::CommitRecord) =>
+            {
+                _ = target_wal.sequenced_write::<LegacyCommitRecordV1>(&deserialise_record(&record.bytes)).unwrap()
+            }
             CommitRecord::RECORD_TYPE if cli.kind.is_empty() || cli.kind.contains(&RecordKind::CommitRecord) => {
                 _ = target_wal.sequenced_write::<CommitRecord>(&deserialise_record(&record.bytes)).unwrap()
             }
@@ -85,7 +90,10 @@ fn main() {
             Statistics::RECORD_TYPE if cli.kind.is_empty() || cli.kind.contains(&RecordKind::Statistics) => {
                 target_wal.unsequenced_write::<Statistics>(&deserialise_record(&record.bytes)).unwrap()
             }
-            CommitRecord::RECORD_TYPE | StatusRecord::RECORD_TYPE | Statistics::RECORD_TYPE => (), // filtered out
+            LegacyCommitRecordV1::RECORD_TYPE
+            | CommitRecord::RECORD_TYPE
+            | StatusRecord::RECORD_TYPE
+            | Statistics::RECORD_TYPE => (), // filtered out
             unrecognized => panic!("Unrecognized record type: {unrecognized}"),
         }
     }
