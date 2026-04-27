@@ -25,9 +25,9 @@ pub fn make_constraint_variables_unique(
         .constraints_mut()
         .make_variables_unique(variable_registry)
         .map_err(|typedb_source| StaticOptimiserError::Representation { typedb_source })?;
-    let annotations = block_annotations.type_annotations_mut_of(conjunction).unwrap();
+    let annotations = block_annotations.type_annotations_mut_of(conjunction).expect("Expected annotated conjunction");
 
-    conjunction.register_copies_of_variables(&var_mapping);
+    conjunction.register_copies_of_variables(var_mapping.iter().copied());
     for (old_var, new_var) in var_mapping {
         if let Some(old_annotations) = annotations.vertex_annotations_of(&Vertex::Variable(old_var)).cloned() {
             annotations.vertex_annotations_mut().insert(Vertex::Variable(new_var), old_annotations);
@@ -56,7 +56,8 @@ pub fn make_constraint_variables_unique(
     }
 
     for (old_constraint, new_constraint) in constraint_mapping {
-        let old_annos = annotations.constraint_annotations_of(old_constraint).cloned().unwrap();
+        let old_annos =
+            annotations.constraint_annotations_of(old_constraint).cloned().expect("Expected old constraint");
         annotations.constraint_annotations_mut().insert(new_constraint, old_annos);
     }
 

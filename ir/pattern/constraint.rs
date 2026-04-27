@@ -76,6 +76,100 @@ impl Constraints {
             acc
         })
     }
+
+    pub fn make_variables_unique(
+        &mut self,
+        variable_registry: &mut VariableRegistry,
+    ) -> Result<
+        (Vec<Is<Variable>>, Vec<(Variable, Variable)>, HashMap<Constraint<Variable>, Constraint<Variable>>),
+        Box<RepresentationError>,
+    > {
+        let mut is_collector = Vec::new();
+        let mut variable_mapping = Vec::new(); // Vec to allow multiple new_var for same old_var
+        let mut constraint_mapping = HashMap::new();
+        let mut replace_with_anonymous_var = |vertex: &mut Vertex<Variable>| {
+            if let Vertex::Variable(var) = vertex {
+                let old_var = *var;
+                *var = variable_registry.create_anonymous_variable_copying(old_var)?;
+                is_collector.push(Is::new(old_var, *var, None));
+                variable_mapping.push((old_var, *var));
+            } else {
+                debug_assert!(false, "");
+            }
+            Ok::<(), Box<RepresentationError>>(())
+        };
+
+        for constraint in &mut self.constraints {
+            match constraint {
+                Constraint::Sub(sub) => {
+                    if sub.subtype == sub.supertype && sub.supertype.is_variable() {
+                        let old_sub = sub.clone();
+                        replace_with_anonymous_var(&mut sub.supertype)?;
+                        constraint_mapping.insert(old_sub.into(), sub.clone().into());
+                    }
+                }
+                Constraint::Links(links) => {
+                    if links.player == links.relation {
+                        let old_links = links.clone();
+                        replace_with_anonymous_var(&mut links.relation)?;
+                        constraint_mapping.insert(old_links.into(), links.clone().into());
+                    }
+                }
+                Constraint::IndexedRelation(indexed) => {
+                    let mut old_indexed: Option<IndexedRelation<Variable>> = None;
+                    if indexed.player_1 == indexed.player_2 {
+                        old_indexed.get_or_insert_with(|| indexed.clone().into());
+                        replace_with_anonymous_var(&mut indexed.player_2)?;
+                    }
+                    if indexed.player_1 == indexed.relation {
+                        old_indexed.get_or_insert_with(|| indexed.clone().into());
+                        replace_with_anonymous_var(&mut indexed.relation)?;
+                    }
+                    if indexed.player_2 == indexed.relation {
+                        old_indexed.get_or_insert_with(|| indexed.clone().into());
+                        replace_with_anonymous_var(&mut indexed.relation)?;
+                    }
+                    if let Some(old_indexed) = old_indexed {
+                        constraint_mapping.insert(old_indexed.into(), indexed.clone().into());
+                    }
+                }
+                Constraint::FunctionCallBinding(func_call) => {
+                    let mut old_call: Option<FunctionCallBinding<Variable>> = None;
+                    for i in 0..func_call.assigned.len() {
+                        for j in i + 1..func_call.assigned.len() {
+                            if func_call.assigned[i] == func_call.assigned[j] {
+                                old_call.get_or_insert_with(|| func_call.clone().into());
+                                replace_with_anonymous_var(&mut func_call.assigned[j])?;
+                            }
+                        }
+                    }
+                    if let Some(old_call) = old_call {
+                        constraint_mapping.insert(old_call.into(), func_call.clone().into());
+                    }
+                }
+                Constraint::ExpressionBinding(binding) => {
+                    debug_assert!(binding.ids_assigned().count() == 1);
+                }
+                Constraint::Is(_)
+                | Constraint::Has(_)
+                | Constraint::Kind(_)
+                | Constraint::Label(_)
+                | Constraint::RoleName(_)
+                | Constraint::Isa(_)
+                | Constraint::Iid(_)
+                | Constraint::Owns(_)
+                | Constraint::Relates(_)
+                | Constraint::Plays(_)
+                | Constraint::Value(_)
+                | Constraint::Comparison(_)
+                | Constraint::LinksDeduplication(_)
+                | Constraint::Unsatisfiable(_) => {}
+            }
+        }
+        self.constraints.extend(is_collector.iter().map(|is| Constraint::Is(is.clone())));
+
+        Ok((is_collector, variable_mapping, constraint_mapping))
+    }
 }
 
 impl StructuralEquality for Constraints {
@@ -553,137 +647,6 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub(crate) fn parameters(&mut self) -> &mut ParameterRegistry {
         self.context.parameters()
-    }
-}
-
-macro_rules! may_replace_reused_variable {
-    ($constraint:expr, $kept:expr, $changed:expr, $reg:expr, $is_collector:ident, $var_mapping:ident , $constraint_mapping:ident) => {
-        if $kept == $changed {
-            let old_constraint = $constraint.clone().into();
-            if let (Vertex::Variable(kept), Vertex::Variable(changed)) = ($kept, $changed) {
-                let kept = *kept;
-                let new_var = $reg.create_anonymous_variable_copying(kept)?;
-                *changed = new_var.clone();
-
-                // Keep old on LHS
-                $is_collector.push(Is::new(kept, new_var, None));
-                $var_mapping.insert(kept, new_var);
-                $constraint_mapping.insert(old_constraint, $constraint.clone().into());
-            }
-        }
-    };
-}
-
-impl Constraints {
-    pub fn make_variables_unique(
-        &mut self,
-        variable_registry: &mut VariableRegistry,
-    ) -> Result<
-        (Vec<Is<Variable>>, HashMap<Variable, Variable>, HashMap<Constraint<Variable>, Constraint<Variable>>),
-        Box<RepresentationError>,
-    > {
-        let mut is_collector = Vec::new();
-        let mut variable_mapping = HashMap::new();
-        let mut constraint_mapping = HashMap::new();
-        for constraint in &mut self.constraints {
-            match constraint {
-                Constraint::Sub(sub) => {
-                    may_replace_reused_variable!(
-                        sub,
-                        &sub.subtype,
-                        &mut sub.supertype,
-                        variable_registry,
-                        is_collector,
-                        variable_mapping,
-                        constraint_mapping
-                    );
-                }
-                Constraint::Links(links) => {
-                    may_replace_reused_variable!(
-                        links,
-                        &links.player,
-                        &mut links.relation,
-                        variable_registry,
-                        is_collector,
-                        variable_mapping,
-                        constraint_mapping
-                    );
-                }
-                Constraint::IndexedRelation(indexed) => {
-                    may_replace_reused_variable!(
-                        indexed,
-                        &indexed.player_1,
-                        &mut indexed.player_2,
-                        variable_registry,
-                        is_collector,
-                        variable_mapping,
-                        constraint_mapping
-                    );
-                    may_replace_reused_variable!(
-                        indexed,
-                        &indexed.player_1,
-                        &mut indexed.relation,
-                        variable_registry,
-                        is_collector,
-                        variable_mapping,
-                        constraint_mapping
-                    );
-                    may_replace_reused_variable!(
-                        indexed,
-                        &indexed.player_2,
-                        &mut indexed.relation,
-                        variable_registry,
-                        is_collector,
-                        variable_mapping,
-                        constraint_mapping
-                    );
-                    may_replace_reused_variable!(
-                        indexed,
-                        &indexed.role_type_1,
-                        &mut indexed.role_type_2,
-                        variable_registry,
-                        is_collector,
-                        variable_mapping,
-                        constraint_mapping
-                    );
-                }
-                Constraint::FunctionCallBinding(func_call) => {
-                    for i in 0..func_call.assigned.len() {
-                        for j in i + 1..func_call.assigned.len() {
-                            let lhs: Vertex<Variable> = func_call.assigned[i].clone();
-                            may_replace_reused_variable!(
-                                func_call,
-                                &lhs,
-                                &mut func_call.assigned[j],
-                                variable_registry,
-                                is_collector,
-                                variable_mapping,
-                                constraint_mapping
-                            );
-                        }
-                    }
-                }
-                Constraint::ExpressionBinding(binding) => {
-                    debug_assert!(binding.ids_assigned().count() == 1);
-                }
-                Constraint::Is(_)
-                | Constraint::Has(_)
-                | Constraint::Kind(_)
-                | Constraint::Label(_)
-                | Constraint::RoleName(_)
-                | Constraint::Isa(_)
-                | Constraint::Iid(_)
-                | Constraint::Owns(_)
-                | Constraint::Relates(_)
-                | Constraint::Plays(_)
-                | Constraint::Value(_)
-                | Constraint::Comparison(_)
-                | Constraint::LinksDeduplication(_)
-                | Constraint::Unsatisfiable(_) => {}
-            }
-        }
-        self.constraints.extend(is_collector.iter().map(|is| Constraint::Is(is.clone())));
-        Ok((is_collector, variable_mapping, constraint_mapping))
     }
 }
 
