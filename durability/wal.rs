@@ -363,7 +363,6 @@ impl Files {
 
         // Call this before file deletion so we don't delete files in case of an error.
         let Some(truncate_position) = self.files[file_index].offset_of(sequence_number)? else {
-            // Already does not have anything from this sequence number. Can be changed to an error.
             return Ok(false);
         };
 
