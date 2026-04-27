@@ -354,6 +354,11 @@ impl Database<WALClient> {
             thing_statistics.sequence_number
         );
         thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { typedb_source: err })?;
+        if thing_statistics.sequence_number > thing_statistics.last_durable_write_sequence_number {
+            thing_statistics
+                .durably_write(storage.durability())
+                .map_err(|err| StatisticsInitialise { typedb_source: err })?;
+        }
         event!(Level::TRACE, "Thing statistics: {:?}", thing_statistics);
         let thing_statistics = Arc::new(thing_statistics);
 
