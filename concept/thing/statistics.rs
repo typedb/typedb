@@ -243,6 +243,8 @@ impl Statistics {
         storage: &MVCCStorage<D>,
     ) -> Result<i64, MVCCReadError> {
         let mut total_delta = 0;
+        let mut deferred_type_cleanups: Vec<Box<dyn FnOnce(&mut Self)>> = Vec::new();
+
         for (key, write) in writes.operations.iterate_writes() {
             let delta =
                 write_to_delta(&key, &write, writes.open_sequence_number, commit_sequence_number, commits, storage)?;
@@ -276,48 +278,60 @@ impl Statistics {
                 self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta);
                 // note: don't update total count based on index
             } else if EntityType::is_decodable_from_key(&key) {
-                let type_ = EntityType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
-                    self.entity_counts.remove(&type_);
-                    self.clear_object_type(ObjectType::Entity(type_));
+                    let type_ = EntityType::read_from(Bytes::Reference(key.bytes()).into_owned());
+                    deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
+                        this.entity_counts.remove(&type_);
+                        this.clear_object_type(ObjectType::Entity(type_));
+                    }));
                 }
                 // note: don't update total count based on type updates
             } else if RelationType::is_decodable_from_key(&key) {
-                let type_ = RelationType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
-                    self.relation_counts.remove(&type_);
-                    self.relation_role_counts.remove(&type_);
-                    let as_object_type = ObjectType::Relation(type_);
-                    self.clear_object_type(as_object_type);
+                    let type_ = RelationType::read_from(Bytes::Reference(key.bytes()).into_owned());
+                    deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
+                        this.relation_counts.remove(&type_);
+                        this.relation_role_counts.remove(&type_);
+                        this.clear_object_type(ObjectType::Relation(type_));
+                    }));
                 }
                 // note: don't update total count based on type updates
             } else if AttributeType::is_decodable_from_key(&key) {
-                let type_ = AttributeType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
-                    self.attribute_counts.remove(&type_);
-                    self.attribute_owner_counts.remove(&type_);
-                    for map in self.has_attribute_counts.values_mut() {
-                        map.remove(&type_);
-                    }
-                    self.has_attribute_counts.retain(|_, map| !map.is_empty());
+                    let type_ = AttributeType::read_from(Bytes::Reference(key.bytes()).into_owned());
+                    deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
+                        this.attribute_counts.remove(&type_);
+                        this.attribute_owner_counts.remove(&type_);
+                        for map in this.has_attribute_counts.values_mut() {
+                            map.remove(&type_);
+                        }
+                        this.has_attribute_counts.retain(|_, map| !map.is_empty());
+                    }));
                 }
                 // note: don't update total count based on type updates
             } else if RoleType::is_decodable_from_key(&key) {
-                let type_ = RoleType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
-                    self.role_counts.remove(&type_);
-                    for map in self.role_player_counts.values_mut() {
-                        map.remove(&type_);
-                    }
-                    self.role_player_counts.retain(|_, map| !map.is_empty());
-                    for map in self.relation_role_counts.values_mut() {
-                        map.remove(&type_);
-                    }
-                    self.relation_role_counts.retain(|_, map| !map.is_empty());
+                    let type_ = RoleType::read_from(Bytes::Reference(key.bytes()).into_owned());
+                    deferred_type_cleanups.push(Box::new(move |this: &mut Self| {
+                        this.role_counts.remove(&type_);
+                        for map in this.role_player_counts.values_mut() {
+                            map.remove(&type_);
+                        }
+                        this.role_player_counts.retain(|_, map| !map.is_empty());
+                        for map in this.relation_role_counts.values_mut() {
+                            map.remove(&type_);
+                        }
+                        this.relation_role_counts.retain(|_, map| !map.is_empty());
+                    }));
                 }
                 // note: don't update total count based on type updates
             }
         }
+
+        for cleanup in deferred_type_cleanups {
+            cleanup(self);
+        }
+
         Ok(total_delta)
     }
 
