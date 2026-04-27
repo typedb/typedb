@@ -74,11 +74,9 @@ impl Conjunction {
         }
     }
 
-    pub fn register_copies_of_variables(&mut self, copies: impl Iterator<Item = (Variable, Variable)>) {
-        for (old_var, new_var) in copies {
-            if let Some(value) = self.pattern_variables.0.get(&old_var).cloned() {
-                self.pattern_variables.0.insert(new_var, value);
-            }
+    pub fn register_variable_copy(&mut self, source: Variable, copy: Variable) {
+        if let Some(value) = self.pattern_variables.0.get(&source).cloned() {
+            self.pattern_variables.0.insert(copy, value);
         }
     }
 }

@@ -81,20 +81,24 @@ impl Constraints {
         &mut self,
         variable_registry: &mut VariableRegistry,
     ) -> Result<
-        (Vec<Is<Variable>>, Vec<(Variable, Variable)>, HashMap<Constraint<Variable>, Constraint<Variable>>),
+        (Vec<Constraint<Variable>>, HashMap<Constraint<Variable>, Constraint<Variable>>),
         Box<RepresentationError>,
     > {
-        let mut is_collector = Vec::new();
-        let mut variable_mapping = Vec::new(); // Vec to allow multiple new_var for same old_var
+        let mut check_collector: Vec<Constraint<Variable>> = Vec::new();
         let mut constraint_mapping = HashMap::new();
         let mut replace_with_anonymous_var = |vertex: &mut Vertex<Variable>| {
+            debug_assert!(vertex.is_variable());
             if let Vertex::Variable(var) = vertex {
                 let old_var = *var;
                 *var = variable_registry.create_anonymous_variable_copying(old_var)?;
-                is_collector.push(Is::new(old_var, *var, None));
-                variable_mapping.push((old_var, *var));
-            } else {
-                debug_assert!(false, "");
+                let category = variable_registry.get_variable_category(old_var).expect("Expected category");
+                let check = if matches!(category, VariableCategory::Value | VariableCategory::ValueList) {
+                    debug_assert!(false, "Unreachable due to earlier checks");
+                    Comparison::new(Vertex::Variable(old_var), Vertex::Variable(*var), Comparator::Equal, None).into()
+                } else {
+                    Is::new(old_var, *var, None).into()
+                };
+                check_collector.push(check);
             }
             Ok::<(), Box<RepresentationError>>(())
         };
@@ -166,9 +170,9 @@ impl Constraints {
                 | Constraint::Unsatisfiable(_) => {}
             }
         }
-        self.constraints.extend(is_collector.iter().map(|is| Constraint::Is(is.clone())));
+        self.constraints.extend_from_slice(&check_collector);
 
-        Ok((is_collector, variable_mapping, constraint_mapping))
+        Ok((check_collector, constraint_mapping))
     }
 }
 
