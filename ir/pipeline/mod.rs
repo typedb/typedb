@@ -184,6 +184,20 @@ impl VariableRegistry {
         Ok(variable)
     }
 
+    pub(crate) fn create_anonymous_variable_copying(
+        &mut self,
+        variable: Variable,
+    ) -> Result<Variable, Box<RepresentationError>> {
+        let new_var = self.register_anonymous_variable(None)?;
+        if let Some(category) = self.get_variable_category(variable) {
+            self.set_variable_category(new_var, category, VariableCategorySource::Variable(variable))?;
+        }
+        if let Some(optionality) = self.variable_optionality.get(&variable) {
+            self.set_variable_is_optional(new_var, *optionality == VariableOptionality::Optional);
+        }
+        Ok(new_var)
+    }
+
     fn allocate_variable(
         &mut self,
         anonymous: bool,
@@ -354,6 +368,7 @@ pub enum VariableCategorySource {
     Reduce(Reducer),
     Argument,
     Delete,
+    Variable(Variable),
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
