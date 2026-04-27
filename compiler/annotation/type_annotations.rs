@@ -78,12 +78,18 @@ impl TypeAnnotations {
         self.vertex.get(vertex)
     }
 
-    pub(super) fn vertex_annotations_mut(&mut self) -> &mut BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
+    pub(crate) fn vertex_annotations_mut(&mut self) -> &mut BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>> {
         &mut self.vertex
     }
 
     pub fn value_annotations(&self) -> &BTreeMap<Vertex<Variable>, ExpressionValueType> {
         self.value_type_annotations.as_ref().expect("Expected value annotations")
+    }
+
+    pub(crate) fn value_type_annotations_mut(
+        &mut self,
+    ) -> Option<&mut BTreeMap<Vertex<Variable>, ExpressionValueType>> {
+        self.value_type_annotations.as_mut()
     }
 
     pub fn value_type_annotations_of(&self, vertex: &Vertex<Variable>) -> Option<&ExpressionValueType> {

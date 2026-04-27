@@ -440,7 +440,7 @@ fn annotate_and_compile_query(
         source_query,
     ));
 
-    match apply_transformations(snapshot, &type_manager, &mut annotated_pipeline) {
+    match apply_transformations(snapshot, &type_manager, variable_registry, &mut annotated_pipeline) {
         Ok(_) => {}
         Err(err) => {
             return Err(Box::new(QueryError::Transformation {

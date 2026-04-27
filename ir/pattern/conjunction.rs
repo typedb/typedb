@@ -73,6 +73,14 @@ impl Conjunction {
             Ok(_) | Err(_) => false,
         }
     }
+
+    pub fn register_copies_of_variables(&mut self, copies: &HashMap<Variable, Variable>) {
+        for (old_var, new_var) in copies {
+            if let Some(value) = self.pattern_variables.0.get(old_var).cloned() {
+                self.pattern_variables.0.insert(*new_var, value);
+            }
+        }
+    }
 }
 
 impl_pattern_from_pattern_variables!(Conjunction);
