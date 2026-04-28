@@ -35,6 +35,14 @@ mod monitoring_server;
 mod reporter;
 mod reports;
 
+#[macro_export]
+macro_rules! error_with_report {
+    ($($arg:tt)+) => {{
+        tracing::error!($($arg)+);
+        sentry::capture_message(&format!($($arg)+), sentry::Level::Error);
+    }};
+}
+
 type DatabaseHash = u64;
 type DatabaseHashOpt = Option<u64>;
 

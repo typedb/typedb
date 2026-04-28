@@ -77,6 +77,9 @@ features = {}
 	[dependencies.chrono-tz]
 		workspace = true
 
+	[dependencies.diagnostics]
+		workspace = true
+
 	[dependencies.bytes]
 		workspace = true
 
@@ -87,6 +90,9 @@ features = {}
 		workspace = true
 
 	[dependencies.chrono]
+		workspace = true
+
+	[dependencies.sentry]
 		workspace = true
 
 	[dependencies.lending_iterator]
