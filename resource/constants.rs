@@ -122,6 +122,10 @@ pub mod concept {
     pub const RELATION_INDEX_THRESHOLD: u64 = 5;
 }
 
+pub mod query {
+    pub const MAX_PIPELINE_STAGES: usize = 1000;
+}
+
 pub mod traversal {
     pub const CONSTANT_CONCEPT_LIMIT: usize = 1000;
     pub const FIXED_BATCH_ROWS_MAX: u32 = 64;

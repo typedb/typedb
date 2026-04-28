@@ -28,6 +28,7 @@ use ir::{
     translation::pipeline::{TranslatedPipeline, TranslatedStage},
 };
 use resource::{
+    constants::query::MAX_PIPELINE_STAGES,
     perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
     profile::{CompileProfile, QueryProfile},
 };
@@ -367,6 +368,13 @@ fn translate_pipeline<Snapshot: ReadableSnapshot>(
     query: &typeql::query::Pipeline,
     source_query: &str,
 ) -> Result<TranslatedPipeline, Box<QueryError>> {
+    if query.stages.len() > MAX_PIPELINE_STAGES {
+        return Err(Box::new(QueryError::PipelineStagesLimitExceeded {
+            source_query: source_query.to_string(),
+            actual: query.stages.len(),
+            max: MAX_PIPELINE_STAGES,
+        }));
+    }
     let preamble_signatures = HashMapFunctionSignatureIndex::build(
         query.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
     );
