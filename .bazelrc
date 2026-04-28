@@ -28,5 +28,3 @@ build:ci --disk_cache= --remote_download_minimal --experimental_remote_cache_evi
 
 # Windows: enable proper symlink support
 startup --windows_enable_symlinks
-startup --host_jvm_args=-Xmx2g
-build --jobs=4
