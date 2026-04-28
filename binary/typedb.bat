@@ -9,6 +9,7 @@ IF %TYPEDB_HOME:~-1%==\ SET TYPEDB_HOME=%TYPEDB_HOME:~0,-1%
 
 if "%1" == "" goto missingargument
 
+if "%1" == "admin"   goto startadmin
 if "%1" == "console" goto startconsole
 if "%1" == "server"  goto startserver
 
@@ -19,6 +20,11 @@ goto print_usage
 
  echo   Missing argument. Possible commands are:
 goto print_usage
+
+:startadmin
+for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
+"%TYPEDB_HOME%\admin\typedb_admin_bin.exe" %ARGS%
+goto exit
 
 :startconsole
 
@@ -36,6 +42,7 @@ exit /b 0
 
 :print_usage
 echo   Server:          typedb server [--help]
+echo   Admin:           typedb admin [--help]
 echo   Console:         typedb console [--help]
 goto exiterror
 

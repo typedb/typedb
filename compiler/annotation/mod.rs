@@ -233,8 +233,8 @@ pub mod tests {
             thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
         },
     };
-    use storage::{MVCCStorage, durability_client::WALClient};
-    use test_utils::{TempDir, create_tmp_dir, init_logging};
+    use storage::{durability_client::WALClient, MVCCStorage};
+    use test_utils::{create_tmp_storage_dir, init_logging, TempDir};
 
     use crate::annotation::match_inference::{
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
@@ -272,7 +272,7 @@ pub mod tests {
 
     pub(crate) fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
         init_logging();
-        let storage_path = create_tmp_dir();
+        let storage_path = create_tmp_storage_dir();
         let wal = WAL::create(&storage_path).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))

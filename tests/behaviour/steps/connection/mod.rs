@@ -12,9 +12,9 @@ use std::{
 };
 
 use macro_rules_attribute::apply;
-use resource::server_info::ServerInfo;
-use server::{Server, ServerBuilder, parameters::config::ConfigBuilder};
-use test_utils::{TempDir, create_tmp_dir};
+use resource::distribution_info::DistributionInfo;
+use server::{parameters::config::ConfigBuilder, Server, ServerBuilder};
+use test_utils::{create_tmp_storage_dir, TempDir};
 use tokio::sync::OnceCell;
 
 use crate::{Context, generic_step};
@@ -23,7 +23,8 @@ mod database;
 mod transaction;
 
 const ADDRESS: &str = "0.0.0.0:1729";
-const SERVER_INFO: ServerInfo = ServerInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
+const DISTRIBUTION_INFO: DistributionInfo =
+    DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
 static TYPEDB: OnceCell<(TempDir, Arc<Mutex<Server>>)> = OnceCell::const_new();
 
 fn config_path() -> PathBuf {
@@ -37,16 +38,17 @@ pub async fn typedb_starts(context: &mut Context) {
         .get_or_init(|| async {
             let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
             let shutdown_sender_clone = shutdown_sender.clone();
-            let server_dir = create_tmp_dir();
+            let server_dir = create_tmp_storage_dir();
             let config = ConfigBuilder::from_file(config_path())
                 .expect("Failed to load config file")
-                .server_address(ADDRESS)
+                .server_listen_address(ADDRESS)
+                .admin_enabled(false)
                 .data_directory(server_dir.as_ref())
                 .development_mode(true)
                 .build()
                 .unwrap();
-            let server = ServerBuilder::default()
-                .server_info(SERVER_INFO)
+            let server = ServerBuilder::new()
+                .distribution_info(DISTRIBUTION_INFO)
                 .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
                 .build(config)
                 .await

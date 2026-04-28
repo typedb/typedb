@@ -1,29 +1,31 @@
 diff --git a/BUILD b/BUILD
-index b00cb4a41..e8ae259e9 100644
+index dd59a2ef3..a55ad12c4 100644
 --- a/BUILD
 +++ b/BUILD
-@@ -22,7 +22,7 @@ load("@typedb_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
- load("@typedb_bazel_distribution//brew:rules.bzl", "deploy_brew")
- 
- exports_files(
--    ["VERSION", "deployment.bzl", "LICENSE", "README.md"],
-+    ["VERSION", "deployment.bzl", "LICENSE", "README.md", "typedb_server_bin.exe"],
- )
- 
- genrule(
-@@ -75,12 +75,12 @@ alias(
+@@ -77,13 +77,23 @@ alias(
      })
  )
  
--# The directory structure for distribution (Unix)
-+# The directory structure for distribution
++filegroup(
++    name = "typedb_server_bin_release",
++    srcs = ["typedb_server_bin.exe"],
++)
++
++filegroup(
++    name = "typedb_admin_bin_release",
++    srcs = ["typedb_admin_bin.exe"],
++)
++
+ # The directory structure for distribution
  pkg_files(
      name = "package-layout-server",
--    srcs = ["//:typedb_server_bin", "//binary:typedb", "//server:config.yml"],
-+    srcs = ["//:typedb_server_bin.exe", "//binary:typedb.bat", "//server:config.yml"],
+-    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml"],
++    srcs = ["//:typedb_server_bin_release", "//:typedb_admin_bin_release", "//binary:typedb.bat", "//server:config.yml"],
      renames = {
 -        "//:typedb_server_bin" : "server/typedb_server_bin",
-+        "//:typedb_server_bin.exe" : "server/typedb_server_bin.exe",
+-        "//admin:typedb_admin_bin" : "admin/typedb_admin_bin",
++        "//:typedb_server_bin_release" : "server/typedb_server_bin.exe",
++        "//:typedb_admin_bin_release" : "admin/typedb_admin_bin.exe",
          "//server:config.yml" : "server/config.yml",
      },
      attributes = binary_permissions,
