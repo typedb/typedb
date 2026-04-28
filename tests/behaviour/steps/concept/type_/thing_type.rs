@@ -20,7 +20,7 @@ use resource::profile::StorageCounters;
 use crate::{
     Context, generic_step,
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
-    unused_step, util, when_then, with_type,
+    unused_step, util, when_then,
 };
 
 #[macro_export]

@@ -41,6 +41,7 @@ rust_library(
         "//common/iterator",
         "//common/lending_iterator",
         "//common/primitive",
+        "//diagnostics",
         "//durability",
         "//encoding",
         "//resource",
@@ -56,8 +57,6 @@ rust_library(
         "@crates//:sentry",
         "@crates//:serde",
         "@crates//:tracing",
-
-        "//diagnostics",
     ],
     proc_macro_deps = [
         "@crates//:paste",

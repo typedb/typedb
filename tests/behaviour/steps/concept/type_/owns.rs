@@ -19,7 +19,7 @@ use super::thing_type::get_as_object_type;
 use crate::{
     Context, generic_step,
     transaction_context::{with_read_tx, with_schema_tx},
-    unused_step, util, when_then,
+    util, when_then,
 };
 
 #[apply(generic_step)]
