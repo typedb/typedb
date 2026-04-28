@@ -4,9 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, collections::BTreeMap, error::Error, sync::Arc};
+use std::{collections::BTreeMap, error::Error, sync::Arc};
 
-use bytes::Bytes;
 use durability::RawRecord;
 use error::typedb_error;
 use fail_point::{RECOVERY_PARTIAL_WRITE, fail_point};
@@ -17,7 +16,6 @@ use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
-    recovery::commit_recovery::StorageRecoveryError::DurabilityRecordDeserialize,
     sequence_number::SequenceNumber,
     write_batches::WriteBatches,
 };
