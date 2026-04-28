@@ -37,10 +37,33 @@ fn wait_process_timeout(process: &mut Child, timeout: Duration) -> std::io::Resu
     Ok(())
 }
 
-const BOOT_DURATION: Duration = Duration::from_secs(2);
+// Pattern borrowed from tests/behaviour/service/http/http_steps/lib.rs::wait_server_start.
+const SERVER_START_CHECK_INTERVAL: Duration = Duration::from_secs(1);
+const SERVER_MAX_START_TIME: Duration = Duration::from_secs(30);
 
 fn start_server() -> (Child, u16) {
     start_server_with_env(None, None)
+}
+
+/// Poll for either a server crash or for the gRPC port becoming reachable.
+/// Mirrors the loop shape of `Context::wait_server_start` in http_steps;
+/// uses TCP connect rather than HTTP `/health` to avoid pulling an HTTP client
+/// into the assembly test target. Returns true if the process exited.
+fn wait_server_start(process: &mut Child, port: u16) -> bool {
+    let starting_since = Instant::now();
+    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
+    loop {
+        if process.try_wait().unwrap().is_some() {
+            return true;
+        }
+        if std::net::TcpStream::connect_timeout(&addr, Duration::from_millis(200)).is_ok() {
+            return false;
+        }
+        if Instant::now().duration_since(starting_since) > SERVER_MAX_START_TIME {
+            panic!("Server has not started in {:?}. Aborting tests!", SERVER_MAX_START_TIME);
+        }
+        thread::sleep(SERVER_START_CHECK_INTERVAL);
+    }
 }
 
 fn start_server_with_env(env: Option<(&str, &str)>, expected_fail: Option<&str>) -> (Child, u16) {
@@ -52,22 +75,21 @@ fn start_server_with_env(env: Option<(&str, &str)>, expected_fail: Option<&str>)
         }
 
         let mut process = cmd.spawn().expect("Failed to run server");
-        thread::sleep(BOOT_DURATION);
+        let crashed = wait_server_start(&mut process, port);
 
-        match process.try_wait().unwrap() {
-            Some(_) => {
-                let mut buf = String::new();
-                process.stderr.as_mut().unwrap().read_to_string(&mut buf).unwrap();
-                if let Some(fail) = expected_fail {
-                    if buf.contains(fail) {
-                        break (process, port);
-                    }
-                }
-                if !buf.contains("SRO11") {
-                    panic!("Server process crashed for an unrelated reason: {buf}");
+        if crashed {
+            let mut buf = String::new();
+            process.stderr.as_mut().unwrap().read_to_string(&mut buf).unwrap();
+            if let Some(fail) = expected_fail {
+                if buf.contains(fail) {
+                    break (process, port);
                 }
             }
-            None => break (process, port),
+            if !buf.contains("SRO11") {
+                panic!("Server process crashed for an unrelated reason: {buf}");
+            }
+        } else {
+            break (process, port);
         }
         port += 1;
     }
