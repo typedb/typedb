@@ -37,7 +37,6 @@ fn wait_process_timeout(process: &mut Child, timeout: Duration) -> std::io::Resu
     Ok(())
 }
 
-// Pattern borrowed from tests/behaviour/service/http/http_steps/lib.rs::wait_server_start.
 const SERVER_START_CHECK_INTERVAL: Duration = Duration::from_secs(1);
 const SERVER_MAX_START_TIME: Duration = Duration::from_secs(30);
 
@@ -45,10 +44,6 @@ fn start_server() -> (Child, u16) {
     start_server_with_env(None, None)
 }
 
-/// Poll for either a server crash or for the gRPC port becoming reachable.
-/// Mirrors the loop shape of `Context::wait_server_start` in http_steps;
-/// uses TCP connect rather than HTTP `/health` to avoid pulling an HTTP client
-/// into the assembly test target. Returns true if the process exited.
 fn wait_server_start(process: &mut Child, port: u16) -> bool {
     let starting_since = Instant::now();
     let addr = std::net::SocketAddr::from(([127, 0, 0, 1], port));
