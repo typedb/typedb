@@ -44,6 +44,14 @@ impl TransactionProfile {
     pub fn commit_profile(&mut self) -> &mut CommitProfile {
         &mut self.commit_profile
     }
+
+    pub fn take_commit_profile(&mut self) -> CommitProfile {
+        std::mem::replace(&mut self.commit_profile, CommitProfile::DISABLED)
+    }
+
+    pub fn set_commit_profile(&mut self, commit_profile: CommitProfile) {
+        self.commit_profile = commit_profile;
+    }
 }
 
 #[derive(Debug)]
@@ -116,7 +124,11 @@ impl Display for CommitProfile {
                     f,
                     "    schema update statistics update micros: {}",
                     data.schema_update_statistics_update.as_nanos() as f64 / 1000.0
-                )
+                )?;
+                for (name, duration) in &data.named_stages {
+                    writeln!(f, "    {} micros: {}", name, duration.as_nanos() as f64 / 1000.0)?;
+                }
+                Ok(())
             }
         }
     }
@@ -132,9 +144,14 @@ impl CommitProfile {
         }
     }
 
+    pub fn enabled(&self) -> bool {
+        self.data.is_some()
+    }
+
     pub fn start(&mut self) {
         if let Some(data) = &mut self.data {
-            data.stage_start = Instant::now();
+            debug_assert!(data.stage_start.is_none(), "Commit profile cannot be started twice");
+            data.stage_start = Some(Instant::now());
         }
     }
 
@@ -146,134 +163,191 @@ impl CommitProfile {
 
     pub fn types_validated(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.types_validation = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn things_finalised(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.things_finalise = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn functions_finalised(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.functions_finalise = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn schema_update_statistics_durably_written(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.schema_update_statistics_durable_write = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn snapshot_put_statuses_checked(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.snapshot_put_statuses_check = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn snapshot_commit_record_created(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.snapshot_commit_record_create = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn snapshot_durable_write_data_submitted(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.snapshot_durable_write_data_submit = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn snapshot_isolation_validated(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.snapshot_isolation_validate = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn snapshot_durable_write_data_confirmed(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.snapshot_durable_write_data_confirm = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn snapshot_storage_written(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.snapshot_storage_write = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn snapshot_isolation_manager_notified(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.snapshot_isolation_manager_notify = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn snapshot_durable_write_commit_status_submitted(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.snapshot_durable_write_commit_status_submit = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn schema_update_caches_updated(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.schema_update_caches_update = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn schema_update_statistics_keys_updated(&mut self) {
         if let Some(data) = &mut self.data {
-            let elapsed = data.stage_start.elapsed();
+            let elapsed = data.stage_start_elapsed();
             data.schema_update_statistics_update = elapsed;
             data.total += elapsed;
-            data.stage_start = Instant::now();
+            data.set_stage_start_now();
         }
     }
 
     pub fn end(&mut self) {
         if let Some(data) = &mut self.data {
-            data.total += data.stage_start.elapsed();
+            if let Some(start) = data.stage_start.take() {
+                data.total += start.elapsed();
+            }
         }
+    }
+
+    pub fn total(&self) -> Duration {
+        match &self.data {
+            Some(data) => data.total,
+            None => Duration::ZERO,
+        }
+    }
+
+    pub fn record_named_stage(&mut self, name: &'static str, duration: Duration) {
+        if let Some(data) = &mut self.data {
+            data.named_stages.push((name, duration));
+            data.total += duration;
+        }
+    }
+
+    /// Fill in zero-valued profiling stages from another profile, adding them to self's total.
+    /// Also copies commit_size and storage counters if self's are at defaults.
+    /// Appends other's named stages (adding their durations to total).
+    pub fn fill_from(&mut self, other: CommitProfile) {
+        let (Some(self_data), Some(other_data)) = (&mut self.data, other.data) else {
+            return;
+        };
+        macro_rules! fill_zero {
+            ($($field:ident),* $(,)?) => {$(
+                if self_data.$field.is_zero() {
+                    self_data.$field = other_data.$field;
+                    self_data.total += other_data.$field;
+                }
+            )*};
+        }
+        fill_zero!(
+            types_validation,
+            things_finalise,
+            functions_finalise,
+            schema_update_statistics_durable_write,
+            snapshot_put_statuses_check,
+            snapshot_commit_record_create,
+            snapshot_durable_write_data_submit,
+            snapshot_isolation_validate,
+            snapshot_durable_write_data_confirm,
+            snapshot_storage_write,
+            snapshot_isolation_manager_notify,
+            snapshot_durable_write_commit_status_submit,
+            schema_update_caches_update,
+            schema_update_statistics_update,
+        );
+        if self_data.commit_size == 0 {
+            self_data.commit_size = other_data.commit_size;
+        }
+        self_data.counters = other_data.counters;
+        for &(_, duration) in &other_data.named_stages {
+            self_data.total += duration;
+        }
+        self_data.named_stages.extend(other_data.named_stages);
     }
 
     pub fn storage_counters(&self) -> StorageCounters {
@@ -290,7 +364,7 @@ impl CommitProfile {
 struct CommitProfileData {
     counters: StorageCounters,
     commit_size: usize,
-    stage_start: Instant,
+    stage_start: Option<Instant>,
     types_validation: Duration,
     things_finalise: Duration,
     functions_finalise: Duration,
@@ -305,6 +379,7 @@ struct CommitProfileData {
     snapshot_durable_write_commit_status_submit: Duration,
     schema_update_caches_update: Duration,
     schema_update_statistics_update: Duration,
+    named_stages: Vec<(&'static str, Duration)>,
     total: Duration,
 }
 
@@ -312,7 +387,7 @@ impl CommitProfileData {
     fn new() -> Self {
         Self {
             counters: StorageCounters::new_enabled(),
-            stage_start: Instant::now(), // DUMMY
+            stage_start: None,
             commit_size: 0,
             types_validation: Duration::ZERO,
             things_finalise: Duration::ZERO,
@@ -328,8 +403,17 @@ impl CommitProfileData {
             snapshot_durable_write_commit_status_submit: Duration::ZERO,
             schema_update_caches_update: Duration::ZERO,
             schema_update_statistics_update: Duration::ZERO,
+            named_stages: Vec::new(),
             total: Duration::ZERO,
         }
+    }
+
+    fn stage_start_elapsed(&self) -> Duration {
+        self.stage_start.expect("Expected to start the stage before recording profile data").elapsed()
+    }
+
+    fn set_stage_start_now(&mut self) {
+        self.stage_start = Some(Instant::now());
     }
 }
 

@@ -5,12 +5,16 @@
  */
 
 pub mod transaction_util {
+    #[allow(E0412)]
     use std::sync::Arc;
 
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::{
+        transaction::{
+            CommitIntent, DataCommitError, SchemaCommitError, SchemaCommitIntent, TransactionRead, TransactionSchema,
+            TransactionWrite,
+        },
         Database,
-        transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
     };
     use function::function_manager::FunctionManager;
     use options::TransactionOptions;
@@ -34,7 +38,7 @@ pub mod transaction_util {
         pub fn schema_transaction<T>(
             &self,
             fn_: impl Fn(&mut SchemaSnapshot<WALClient>, &TypeManager, &ThingManager, &FunctionManager, &QueryManager) -> T,
-        ) -> (TransactionProfile, Result<T, SchemaCommitError>) {
+        ) -> (TransactionProfile, Result<SchemaCommitIntent<WALClient>, SchemaCommitError>) {
             let TransactionSchema {
                 snapshot,
                 type_manager,
@@ -47,7 +51,7 @@ pub mod transaction_util {
             } = TransactionSchema::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
             let mut snapshot: SchemaSnapshot<WALClient> =
                 Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot"));
-            let result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
+            let _result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
             let tx = TransactionSchema::from_parts(
                 Arc::new(snapshot),
                 type_manager,
@@ -58,8 +62,8 @@ pub mod transaction_util {
                 transaction_options,
                 profile,
             );
-            let (profile, commit_result) = tx.commit();
-            (profile, commit_result.map(|_| result))
+            let (profile, result) = tx.finalise();
+            (profile, result)
         }
 
         pub fn read_transaction<T>(&self, fn_: impl Fn(TransactionRead<WALClient>) -> T) -> T {
@@ -109,8 +113,10 @@ pub mod transaction_util {
                 TransactionOptions::default(),
                 profile,
             );
-            let (profile, commit_result) = tx.commit();
-            (profile, commit_result.map(|_| rows))
+            let (mut profile, finalise_result) = tx.finalise();
+            let commit_result = finalise_result.and_then(|intent| intent.commit(profile.commit_profile()));
+            profile.commit_profile().end();
+            (profile, commit_result.map(|()| rows))
         }
     }
 }
@@ -122,14 +128,11 @@ pub mod query_util {
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::transaction::TransactionRead;
     use executor::{
+        pipeline::stage::{ExecutionContext, StageIterator},
         ExecutionInterrupt,
-        pipeline::{
-            PipelineExecutionError,
-            stage::{ExecutionContext, StageIterator},
-        },
     };
     use function::function_manager::FunctionManager;
-    use query::query_manager::QueryManager;
+    use query::{error::QueryError, query_manager::QueryManager};
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
 
@@ -139,32 +142,43 @@ pub mod query_util {
         tx: TransactionRead<WALClient>,
         pipeline: &Pipeline,
         source_query: &str,
-    ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>)
-    {
-        let prepared_pipeline = tx
-            .query_manager
-            .prepare_read_pipeline(
-                tx.snapshot.clone(),
-                &tx.type_manager,
-                tx.thing_manager.clone(),
-                &tx.function_manager,
-                pipeline,
-                source_query,
-            )
-            .unwrap();
+    ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>) {
+        let prepared_pipeline = match tx.query_manager.prepare_read_pipeline(
+            tx.snapshot.clone(),
+            &tx.type_manager,
+            tx.thing_manager.clone(),
+            &tx.function_manager,
+            pipeline,
+            source_query,
+        ) {
+            Ok(pipeline) => pipeline,
+            Err(err) => return (tx, Err(err)),
+        };
 
         let named_outputs = prepared_pipeline.rows_positions().unwrap().clone();
 
         let result_as_batch = match prepared_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
             Ok((iterator, _)) => iterator.collect_owned(),
-            Err((err, _)) => {
-                return (tx, Err(err));
+            Err((typedb_source, _)) => {
+                return (
+                    tx,
+                    Err(Box::new(QueryError::ReadPipelineExecution {
+                        source_query: source_query.to_string(),
+                        typedb_source,
+                    })),
+                );
             }
         };
 
         match result_as_batch {
             Ok(batch) => (tx, Ok(collect_answer(batch, named_outputs))),
-            Err(err) => (tx, Err(err)),
+            Err(typedb_source) => (
+                tx,
+                Err(Box::new(QueryError::ReadPipelineExecution {
+                    source_query: source_query.to_string(),
+                    typedb_source,
+                })),
+            ),
         }
     }
 
@@ -176,27 +190,44 @@ pub mod query_util {
         query_manager: &QueryManager,
         pipeline: &Pipeline,
         source_query: &str,
-    ) -> (
-        Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>,
-        Arc<WriteSnapshot<WALClient>>,
-    ) {
-        let prepared_pipeline = query_manager
-            .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline, source_query)
-            .unwrap();
+    ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, Box<QueryError>>, Arc<WriteSnapshot<WALClient>>) {
+        let prepared_pipeline = match query_manager.prepare_write_pipeline(
+            snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            pipeline,
+            source_query,
+        ) {
+            Ok(pipeline) => pipeline,
+            Err((snapshot, err)) => return (Err(err), Arc::new(snapshot)),
+        };
 
         let named_outputs = prepared_pipeline.rows_positions().unwrap().clone();
 
         let (result_as_batch, snapshot) =
             match prepared_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
                 Ok((iterator, ExecutionContext { snapshot, .. })) => (iterator.collect_owned(), snapshot),
-                Err((err, ExecutionContext { snapshot, .. })) => {
-                    return (Err(err), snapshot);
+                Err((typedb_source, ExecutionContext { snapshot, .. })) => {
+                    return (
+                        Err(Box::new(QueryError::WritePipelineExecution {
+                            source_query: source_query.to_string(),
+                            typedb_source,
+                        })),
+                        snapshot,
+                    );
                 }
             };
 
         match result_as_batch {
             Ok(batch) => (Ok(collect_answer(batch, named_outputs)), snapshot),
-            Err(err) => (Err(err), snapshot),
+            Err(typedb_source) => (
+                Err(Box::new(QueryError::WritePipelineExecution {
+                    source_query: source_query.to_string(),
+                    typedb_source,
+                })),
+                snapshot,
+            ),
         }
     }
 }

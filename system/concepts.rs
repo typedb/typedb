@@ -6,7 +6,7 @@
 
 use pwhash::bcrypt;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct User {
     pub name: String,
 }
@@ -17,7 +17,7 @@ impl User {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Credential {
     PasswordType { password_hash: PasswordHash },
 }

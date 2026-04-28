@@ -14,8 +14,9 @@ use tracing::{Level, event, trace};
 use crate::{
     MVCCStorage,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
-    isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
+    isolation_manager::{IsolationManager, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
+    record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
     sequence_number::SequenceNumber,
     write_batches::WriteBatches,
 };
@@ -60,6 +61,20 @@ pub fn load_commit_data_from_with_context(
         }
 
         match record_type {
+            LegacyCommitRecordV1::RECORD_TYPE => {
+                let legacy = LegacyCommitRecordV1::deserialise_from(&mut &*bytes)
+                    .map_err(|error| DurabilityRecordDeserialize { source: Arc::new(error) })?;
+                let commit_record = CommitRecord::from(legacy);
+                recovered_commits.insert(sequence_number, RecoveryCommitStatus::Pending(commit_record));
+                recovered_commit_sizes.insert(sequence_number, bytes.len());
+                bytes_read += bytes.len();
+                trace!(
+                    "Read legacy commit V1 @ {} with size {}; {} total",
+                    sequence_number,
+                    format_size(bytes.len()),
+                    format_size(bytes_read),
+                );
+            }
             CommitRecord::RECORD_TYPE => {
                 let commit_record = CommitRecord::deserialise_from(&mut &*bytes)
                     .map_err(|error| DurabilityRecordDeserialize { source: Arc::new(error) })?;

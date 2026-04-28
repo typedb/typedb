@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub use error::{IntoGrpcStatus, IntoProtocolErrorMessage};
+
 pub mod analyze;
 pub(crate) mod authenticator;
 pub(crate) mod concept;
@@ -11,7 +13,7 @@ mod diagnostics;
 mod document;
 pub(crate) mod encryption;
 mod error;
-mod migration;
+pub(crate) mod migration;
 mod options;
 mod request_parser;
 mod response_builders;

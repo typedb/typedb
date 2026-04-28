@@ -16,7 +16,7 @@ use executor::{
     row::MaybeOwnedRow,
 };
 use function::function_manager::FunctionManager;
-use ir::{RepresentationError, pipeline::FunctionRepresentationError};
+use ir::{RepresentationError};
 use itertools::Either;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};

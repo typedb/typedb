@@ -11,7 +11,9 @@ use std::{
     time::Duration,
 };
 
-use resource::constants::server::{DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT};
+use resource::constants::server::{
+    ADMIN_DEFAULT_PORT, DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT,
+};
 use serde::Deserialize;
 use serde_with::{DurationSeconds, serde_as};
 
@@ -21,7 +23,7 @@ use crate::parameters::{ConfigError, cli::CLIArgs};
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
     pub server: ServerConfig,
-    pub(crate) storage: StorageConfig,
+    pub storage: StorageConfig,
     #[serde(default)]
     pub diagnostics: DiagnosticsConfig,
     pub logging: LoggingConfig,
@@ -32,18 +34,23 @@ pub struct Config {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ServerConfig {
-    pub(crate) address: String,
-    pub(crate) http: HttpEndpointConfig,
-    pub(crate) authentication: AuthenticationConfig,
-    pub(crate) encryption: EncryptionConfig,
+    #[serde(alias = "address")]
+    pub listen_address: String,
+    pub advertise_address: Option<String>,
+    pub http: HttpEndpointConfig,
+    #[serde(default)]
+    pub admin: AdminConfig,
+    pub authentication: AuthenticationConfig,
+    pub encryption: EncryptionConfig,
 }
 
-#[serde_as]
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct HttpEndpointConfig {
-    pub(crate) enabled: bool,
-    pub(crate) address: String,
+    pub enabled: bool,
+    #[serde(alias = "address")]
+    pub listen_address: String,
+    pub advertise_address: Option<String>,
 }
 
 #[serde_as]
@@ -84,8 +91,21 @@ impl Default for EncryptionConfig {
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct StorageConfig {
-    pub(crate) data_directory: PathBuf,
+pub struct AdminConfig {
+    pub enabled: bool,
+    pub port: u16,
+}
+
+impl Default for AdminConfig {
+    fn default() -> Self {
+        Self { enabled: true, port: ADMIN_DEFAULT_PORT }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct StorageConfig {
+    pub data_directory: PathBuf,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -141,6 +161,7 @@ impl Default for DevelopmentModeConfig {
     }
 }
 
+#[macro_export]
 macro_rules! override_config {
     ($($target:expr => $field:expr;)*) => {
         $( if let Some(value) = $field {
@@ -150,9 +171,20 @@ macro_rules! override_config {
     }
 }
 
+#[macro_export]
+macro_rules! override_optional_config {
+    ($($target:expr => $field:expr;)*) => {
+        $( if let Some(value) = $field {
+            $target = Some(value);
+        }
+        )*
+    }
+}
+
 #[derive(Debug)]
 pub struct ConfigBuilder {
     config: Config,
+    raw_yaml: String,
 }
 
 impl ConfigBuilder {
@@ -162,23 +194,68 @@ impl ConfigBuilder {
     pub const IS_DEVELOPMENT_MODE_FORCED: bool = true;
 
     pub fn from_file(path: PathBuf) -> Result<Self, ConfigError> {
-        let mut config = String::new();
+        let mut raw_yaml = String::new();
         let resolved_path = Self::resolve_path_from_executable(&path);
         File::open(resolved_path.clone())
             .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path: resolved_path.clone() })?
-            .read_to_string(&mut config)
+            .read_to_string(&mut raw_yaml)
             .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?;
-        serde_yaml2::from_str::<Config>(config.as_str())
+        serde_yaml2::from_str::<Config>(raw_yaml.as_str())
             .map_err(|source| ConfigError::ErrorParsingYaml { source })
-            .map(|config| Self { config })
+            .map(|config| Self { config, raw_yaml })
+    }
+
+    /// Parse an extension config from the same YAML file. The type `T` is deserialized from
+    /// the YAML root — unknown fields are silently ignored, so `T` only needs to declare the
+    /// fields it requires.
+    ///
+    /// # Adding a new top-level section
+    ///
+    /// To parse a new section (e.g., `clustering:`) alongside the standard config:
+    /// ```ignore
+    /// #[derive(Deserialize)]
+    /// #[serde(rename_all = "kebab-case")]
+    /// struct ClusteringExtension {
+    ///     clustering: ClusteringConfig,
+    /// }
+    ///
+    /// let ext = builder.parse_extension::<ClusteringExtension>()?;
+    /// let clustering = ext.clustering;
+    /// ```
+    ///
+    /// # Extending an existing section
+    ///
+    /// To parse additional fields under `server:` (e.g., `server.clustering:`):
+    /// ```ignore
+    /// #[derive(Deserialize)]
+    /// #[serde(rename_all = "kebab-case")]
+    /// struct ServerClusteringFields {
+    ///     clustering: ClusteringConfig,
+    /// }
+    ///
+    /// #[derive(Deserialize)]
+    /// #[serde(rename_all = "kebab-case")]
+    /// struct ServerConfigClusteringExtension {
+    ///     server: ServerClusteringFields,
+    /// }
+    ///
+    /// let ext = builder.parse_extension::<ServerConfigClusteringExtension>()?;
+    /// let clustering = ext.server.clustering;
+    /// ```
+    pub fn parse_extension<T: serde::de::DeserializeOwned>(&self) -> Result<T, ConfigError> {
+        serde_yaml2::from_str::<T>(self.raw_yaml.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
     }
 
     pub fn override_with_cliargs(&mut self, cliargs: CLIArgs) {
         let CLIArgs {
             config_file_override: _,
-            server_address,
+            server_listen_address,
+            server_advertise_address,
             server_http_enabled,
-            server_http_address,
+            server_http_listen_address,
+            server_http_advertise_address,
+            server_admin_enabled,
+            server_admin_port,
             server_authentication_token_expiration_seconds,
             server_encryption_enabled,
             server_encryption_certificate,
@@ -192,11 +269,13 @@ impl ConfigBuilder {
             diagnostics_monitoring_port,
             development_mode_enabled,
         } = cliargs;
-        let Self { config } = self;
+        let Self { config, raw_yaml: _ } = self;
         override_config! {
-            config.server.address => server_address;
+            config.server.listen_address => server_listen_address;
             config.server.http.enabled => server_http_enabled;
-            config.server.http.address => server_http_address;
+            config.server.http.listen_address => server_http_listen_address;
+            config.server.admin.enabled => server_admin_enabled;
+            config.server.admin.port => server_admin_port;
             config.server.authentication.token_expiration => server_authentication_token_expiration_seconds.map(|secs| Duration::new(secs, 0));
 
             config.server.encryption.enabled => server_encryption_enabled;
@@ -214,10 +293,14 @@ impl ConfigBuilder {
 
             config.development_mode.enabled => development_mode_enabled;
         }
+        override_optional_config! {
+            config.server.advertise_address => server_advertise_address;
+            config.server.http.advertise_address => server_http_advertise_address;
+        }
     }
 
     pub fn build(self) -> Result<Config, ConfigError> {
-        let Self { mut config } = self;
+        let Self { mut config, raw_yaml: _ } = self;
         let encryption = &config.server.encryption;
         if encryption.enabled && encryption.certificate.is_none() {
             return Err(ConfigError::ValidationError {
@@ -245,8 +328,14 @@ impl ConfigBuilder {
     }
 
     // Overrides
-    pub fn server_address(mut self, address: impl Into<String>) -> Self {
-        self.config.server.address = address.into();
+
+    pub fn server_listen_address(mut self, address: impl Into<String>) -> Self {
+        self.config.server.listen_address = address.into();
+        self
+    }
+
+    pub fn server_advertise_address(mut self, address: impl Into<String>) -> Self {
+        self.config.server.advertise_address = Some(address.into());
         self
     }
 
@@ -255,8 +344,23 @@ impl ConfigBuilder {
         self
     }
 
-    pub fn server_http_address(mut self, address: impl Into<String>) -> Self {
-        self.config.server.http.address = address.into();
+    pub fn server_http_listen_address(mut self, address: impl Into<String>) -> Self {
+        self.config.server.http.listen_address = address.into();
+        self
+    }
+
+    pub fn server_http_advertise_address(mut self, address: impl Into<String>) -> Self {
+        self.config.server.http.advertise_address = Some(address.into());
+        self
+    }
+
+    pub fn admin_enabled(mut self, enabled: bool) -> Self {
+        self.config.server.admin.enabled = enabled;
+        self
+    }
+
+    pub fn admin_port(mut self, port: u16) -> Self {
+        self.config.server.admin.port = port;
         self
     }
 
@@ -324,8 +428,48 @@ pub mod tests {
     #[test]
     fn fields_can_be_overridden() {
         let set_to = "10.9.8.7:1234";
+        let result = load_and_parse(config_path(), vec!["--server.listen-address", set_to]).unwrap();
+        assert_eq!(result.server.listen_address.as_str(), set_to);
+        let result = load_and_parse(config_path(), vec!["--server.advertise-address", set_to]).unwrap();
+        assert_eq!(result.server.advertise_address.unwrap().as_str(), set_to);
+
+        // Outdated aliases
         let result = load_and_parse(config_path(), vec!["--server.address", set_to]).unwrap();
-        assert_eq!(result.server.address.as_str(), set_to);
+        assert_eq!(result.server.listen_address.as_str(), set_to);
+    }
+
+    #[test]
+    fn config_file_accepts_old_and_new_address_names() {
+        // The current config.yml uses the new names (listen-address). Verify it parses correctly
+        let config = load_and_parse(config_path(), vec![]).unwrap();
+        assert!(!config.server.listen_address.is_empty());
+
+        // Verify the old name "address" still works via alias
+        let yaml_with_old_names = r#"
+server:
+    address: 0.0.0.0:1729
+    advertise-address: 127.0.0.1:1729
+    http:
+        enabled: false
+        address: 0.0.0.0:8000
+        advertise-address: http://127.0.0.1:8000
+    authentication:
+        token-expiration-seconds: 5000
+    encryption:
+        enabled: false
+        certificate:
+        certificate-key:
+        ca-certificate:
+storage:
+    data-directory: "data"
+logging:
+    directory: "logs"
+"#;
+        let old_config: Config = serde_yaml2::from_str(yaml_with_old_names).unwrap();
+        assert_eq!(old_config.server.listen_address, "0.0.0.0:1729");
+        assert_eq!(old_config.server.advertise_address.unwrap(), "127.0.0.1:1729");
+        assert_eq!(old_config.server.http.listen_address, "0.0.0.0:8000");
+        assert_eq!(old_config.server.http.advertise_address.unwrap(), "http://127.0.0.1:8000");
     }
 
     #[test]

@@ -3,6 +3,7 @@
 # Do not modify this file.
 
 features = {}
+dev-dependencies = {}
 
 [package]
 	name = "concurrency"
@@ -16,5 +17,11 @@ features = {}
 [dependencies]
 
 	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.tokio-test]
+		workspace = true
+
+	[dependencies.tokio-util]
 		workspace = true
 

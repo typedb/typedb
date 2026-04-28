@@ -23,8 +23,8 @@ use encoding::{
     value::{string_bytes::StringBytes, struct_bytes::StructBytes},
 };
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::CommitProfile};
-use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
-use test_utils::{create_tmp_dir, init_logging};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;
 
 #[test]
@@ -193,7 +193,7 @@ fn generate_struct_attribute_vertex() {
 #[test]
 fn next_entity_and_relation_ids_are_determined_from_storage() {
     init_logging();
-    let storage_path = create_tmp_dir();
+    let storage_path = create_tmp_storage_dir();
     let type_id = TypeID::new(0);
     {
         let wal = WAL::create(&storage_path).unwrap();

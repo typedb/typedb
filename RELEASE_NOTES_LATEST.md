@@ -1,3 +1,6 @@
+**This is an alpha release for CLUSTERED TypeDB 3.x. Do not use this as a stable version of TypeDB.**
+**Instead, reference a non-alpha release of the same major and minor versions.**
+
 **Download from TypeDB Package Repository:**
 
 [Distributions for 3.10.4](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.10.4)
@@ -57,5 +60,3 @@
 - **Remove parallelism and memory options from .bazelrc**
 
 - **Bazel java runtime is hermitic (remote) - used for notes creation**
-
-    
