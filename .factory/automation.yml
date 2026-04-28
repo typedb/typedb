@@ -23,14 +23,6 @@ build:
         bazel test --config=ci $(bazel query 'kind(checkstyle_test, //...)') 
         bazel test --config=ci $(bazel query 'kind(rustfmt_test, //...)') --@rules_rust//:rustfmt.toml=//:rustfmt_config
 
-#    build-dependency:
-#      image: typedb-ubuntu-22.04
-#      command: |
-#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        dependencies/maven/update.sh
-#        git diff --exit-code dependencies/maven/artifacts.snapshot
-#        bazel run --config=ci @typedb_dependencies//tool/unuseddeps:unused-deps -- list
-
     cargo-check:
       image: typedb-ubuntu-22.04
       command: |
@@ -61,6 +53,7 @@ build:
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test --config=ci //common/cache:test_crate_cache --test_output=streamed
+        bazel test --config=ci //common/concurrency:test_crate_concurrency --test_output=streamed
         bazel test --config=ci //common/lending_iterator:test_crate_lending_iterator --test_output=streamed
         bazel test --config=ci //common/logger:test_crate_logger --test_output=streamed
         bazel test --config=ci //compiler:test_crate_compiler --test_output=streamed
@@ -73,6 +66,7 @@ build:
         bazel test --config=ci //ir:test_crate_ir --test_output=streamed
         bazel test --config=ci //query:test_crate_query --test_output=streamed
         bazel test --config=ci //server:test_crate_server --test_output=streamed
+        bazel test --config=ci //server:test_admin_service --test_output=streamed
         bazel test --config=ci //storage:test_crate_storage --test_output=streamed
 
     test-integration:
@@ -180,18 +174,19 @@ build:
 release:
   filter:
     owner: typedb
-    branch: [master]
-  validation:
-    validate-dependencies:
-      image: typedb-ubuntu-22.04
-      command: |
-        bazel test --config=ci //:release-validate-deps --test_output=streamed
-
-    validate-release-notes:
-      image: typedb-ubuntu-22.04
-      command: |
-        export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run --config=ci @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
+    branch: [master, cluster-support-feature-branch]
+# TODO: Return before merging into master
+#  validation:
+#    validate-dependencies:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        bazel test --config=ci //:release-validate-deps --test_output=streamed
+#
+#    validate-release-notes:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
+#        bazel run --config=ci @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
 
   deployment:
     trigger-release-circleci:

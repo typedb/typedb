@@ -8,14 +8,13 @@ use database::migration::database_importer::DatabaseImportError;
 use error::typedb_error;
 
 typedb_error! {
-    pub(crate) DatabaseImportServiceError(component = "Database import service", prefix = "DIS") {
+    pub DatabaseImportServiceError(component = "Database import service", prefix = "DIS") {
         DatabaseImport(1, "Error importing database.", typedb_source: DatabaseImportError),
         ConceptDecode(2, "Cannot decode imported concept.", typedb_source: Box<ConceptDecodeError>),
-        DuplicateImport(3, "Error importing '{name}': another import operation for database '{old_name}'was already initiated through this channel. It is a sign of a corrupted file or a client bug.", name: String, old_name: String),
-        DatabaseNotFoundForItems(4, "Imported database not found while loading data. Make sure to use a correct client."),
-        DatabaseNotFoundForDone(5, "Imported database not found while finalizing import. Make sure to use a correct client."),
-        EmptyItem(6, "An empty concept item received. It is a sign of a corrupted file or a client bug."),
-        AbsentAttributeValue(7, "Cannot process an attribute: value is absent."),
-        AttributesOwningAttributes(8, "Invalid migration item received: attributes cannot own attributes in this version of TypeDB (this was deprecated). Please modify your data accordingly and reexport the original database before trying again."),
+        DuplicateImport(3, "Error importing '{name}': another import operation for database '{old_name}' was already initiated through this channel. It is a sign of a corrupted file or a client bug.", name: String, old_name: String),
+        ImportDatabaseNotFound(4, "Imported database not found during {phase}. Make sure to use a correct client.", phase: String),
+        ImportEmptyItem(5, "An empty concept item received. It is a sign of a corrupted file or a client bug."),
+        AbsentAttributeValue(6, "Cannot process an attribute: value is absent."),
+        AttributesOwningAttributes(7, "Invalid migration item received: attributes cannot own attributes in this version of TypeDB (this was deprecated). Please modify your data accordingly and reexport the original database before trying again."),
     }
 }

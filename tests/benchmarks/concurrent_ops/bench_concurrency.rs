@@ -16,7 +16,7 @@ use std::{
     thread::JoinHandle,
     time::Instant,
 };
-
+use database::transaction::CommitIntent;
 use database::{
     Database,
     database_manager::DatabaseManager,
@@ -27,7 +27,7 @@ use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use options::{QueryOptions, TransactionOptions};
 use rand_core::RngCore;
 use storage::durability_client::WALClient;
-use test_utils::{TempDir, create_tmp_dir};
+use test_utils::{TempDir, create_tmp_storage_dir};
 use xoshiro::Xoshiro256Plus;
 
 const TOTAL_OPS: usize = 300_000;
@@ -138,7 +138,7 @@ impl TimingAnalysis {
 // --- Database setup helpers ---
 
 fn create_database(schema: &str) -> (TempDir, Arc<Database<WALClient>>) {
-    let tmp_dir = create_tmp_dir();
+    let tmp_dir = create_tmp_storage_dir();
     let dbm = DatabaseManager::new(&tmp_dir).unwrap();
     dbm.put_database(DB_NAME).unwrap();
     let database = dbm.database(DB_NAME).unwrap();
@@ -147,7 +147,8 @@ fn create_database(schema: &str) -> (TempDir, Arc<Database<WALClient>>) {
     let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
     let (tx, result) = execute_schema_query(tx, schema_query, schema.to_string());
     result.unwrap();
-    tx.commit().1.unwrap();
+    let (mut profile, intent) = tx.finalise();
+    intent.unwrap().commit(profile.commit_profile()).unwrap();
 
     (tmp_dir, database)
 }
@@ -173,7 +174,8 @@ fn seed_persons(database: &Arc<Database<WALClient>>, count: usize) {
             result.unwrap();
             tx = returned_tx;
         }
-        tx.commit().1.unwrap();
+        let (mut profile, intent) = tx.finalise();
+        intent.unwrap().commit(profile.commit_profile()).unwrap();
         offset += n;
     }
 }
@@ -208,7 +210,8 @@ fn execute_insert_batch(
     }
     let t2 = Instant::now();
 
-    tx.commit().1.unwrap();
+    let (mut profile, intent) = tx.finalise();
+    intent.unwrap().commit(profile.commit_profile()).unwrap();
     let t3 = Instant::now();
 
     timings.record((t1 - t0).as_nanos() as u64, (t2 - t1).as_nanos() as u64, (t3 - t2).as_nanos() as u64);
@@ -243,7 +246,8 @@ fn execute_update_batch(
     }
     let t2 = Instant::now();
 
-    tx.commit().1.unwrap();
+    let (mut profile, intent) = tx.finalise();
+    intent.unwrap().commit(profile.commit_profile()).unwrap();
     let t3 = Instant::now();
 
     timings.record((t1 - t0).as_nanos() as u64, (t2 - t1).as_nanos() as u64, (t3 - t2).as_nanos() as u64);
@@ -280,7 +284,8 @@ fn execute_relation_batch(
     }
     let t2 = Instant::now();
 
-    tx.commit().1.unwrap();
+    let (mut profile, intent) = tx.finalise();
+    intent.unwrap().commit(profile.commit_profile()).unwrap();
     let t3 = Instant::now();
 
     timings.record((t1 - t0).as_nanos() as u64, (t2 - t1).as_nanos() as u64, (t3 - t2).as_nanos() as u64);

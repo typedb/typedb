@@ -454,7 +454,7 @@ fn create_http_client() -> Client<HttpConnector> {
 
 fn create_https_client() -> Client<HttpsConnector<HttpConnector>> {
     let https = HttpsConnectorBuilder::new()
-        .with_native_roots() // TODO: Use custom roots?
+        .with_native_roots()
         .expect("Expected native roots")
         .https_only()
         .enable_http1()

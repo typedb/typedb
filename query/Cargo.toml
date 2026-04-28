@@ -104,6 +104,10 @@ features = {}
 	harness = false
 
 [[test]]
+	path = "tests/pipeline_stages_limit.rs"
+	name = "test_pipeline_stages_limit"
+
+[[test]]
 	path = "tests/fetch.rs"
 	name = "test_fetch"
 

@@ -9,7 +9,9 @@ CALL refreshenv
 
 REM build file
 cargo build --profile=release --features server/published
+cargo build --profile=release -p typedb_admin_bin
 copy target\release\typedb_server_bin.exe  .\
+copy target\release\typedb_admin_bin.exe  .\
 
 SET DEPLOY_ARTIFACT_USERNAME=%REPO_TYPEDB_USERNAME%
 SET DEPLOY_ARTIFACT_PASSWORD=%REPO_TYPEDB_PASSWORD%

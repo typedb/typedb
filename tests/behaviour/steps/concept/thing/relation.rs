@@ -218,7 +218,7 @@ async fn relation_get_players_contains(
     let players = with_read_tx!(context, |tx| {
         relation
             .get_players(tx.snapshot.as_ref(), &tx.thing_manager, StorageCounters::DISABLED)
-            .map(|result| (result.unwrap().0.player()))
+            .map(|result| result.unwrap().0.player())
             .collect_vec()
     });
     let player = &context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;

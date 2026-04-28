@@ -1,0 +1,14 @@
+[package]
+name = "server_admin_proto"
+edition = "2021"
+version = "0.0.0"
+
+[lib]
+path = "lib.rs"
+
+[build-dependencies]
+tonic-build = "^0.12"
+
+[dependencies]
+prost = { workspace = true }
+tonic = { workspace = true }

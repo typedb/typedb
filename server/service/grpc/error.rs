@@ -29,7 +29,6 @@ pub(crate) enum ProtocolError {
         driver_lang: String,
         driver_version: String,
     },
-    ErrorCompletingWrite {},
     FailedQueryResponse {},
 }
 
@@ -77,20 +76,17 @@ impl IntoGrpcStatus for ProtocolError {
                     ),
                 ),
             ),
-            Self::ErrorCompletingWrite {} => {
-                Status::new(Code::Internal, "Error completing currently executing write query.")
-            }
             Self::FailedQueryResponse {} => Status::internal("Failed to send response"),
         }
     }
 }
 
-pub(crate) trait IntoProtocolErrorMessage {
-    fn into_error_message(self) -> typedb_protocol::Error;
+pub trait IntoProtocolErrorMessage {
+    fn into_proto_error_message(self) -> typedb_protocol::Error;
 }
 
 impl<T: TypeDBError + Sync> IntoProtocolErrorMessage for T {
-    fn into_error_message(self) -> typedb_protocol::Error {
+    fn into_proto_error_message(self) -> typedb_protocol::Error {
         let root_source = self.root_source_typedb_error();
         typedb_protocol::Error {
             error_code: root_source.code().to_string(),
@@ -100,7 +96,7 @@ impl<T: TypeDBError + Sync> IntoProtocolErrorMessage for T {
     }
 }
 
-pub(crate) trait IntoGrpcStatus {
+pub trait IntoGrpcStatus {
     fn into_status(self) -> Status;
 }
 
@@ -110,6 +106,53 @@ impl IntoGrpcStatus for typedb_protocol::Error {
         details.set_debug_info(self.stack_trace, "");
         Status::with_error_details(Code::InvalidArgument, "Request generated error", details)
     }
+}
+
+impl<T: crate::error::ServerStateError + Sync> IntoGrpcStatus for T {
+    fn into_status(self) -> Status {
+        let category = self.error_response_category();
+        let proto_error = self.into_proto_error_message();
+        server_state_error_to_status(category, proto_error)
+    }
+}
+
+impl IntoGrpcStatus for crate::error::ArcServerStateError {
+    fn into_status(self) -> Status {
+        let category = self.error_response_category();
+        let proto_error = self.into_proto_error_message();
+        server_state_error_to_status(category, proto_error)
+    }
+}
+
+fn server_state_error_to_status(
+    category: crate::error::ErrorResponseCategory,
+    proto_error: typedb_protocol::Error,
+) -> Status {
+    use crate::error::ErrorResponseCategory;
+    let (code, message, extra_metadata) = match category {
+        ErrorResponseCategory::Redirect { grpc_address, .. } => match grpc_address {
+            Some(address) => {
+                let mut metadata = HashMap::new();
+                metadata.insert("address".to_string(), address);
+                (Code::Unavailable, "Redirected", Some(("REDIRECT", metadata)))
+            }
+            None => (Code::Unavailable, "Unavailable", None),
+        },
+        ErrorResponseCategory::NotFound => (Code::NotFound, "Not found", None),
+        ErrorResponseCategory::Unauthenticated => (Code::Unauthenticated, "Unauthenticated", None),
+        ErrorResponseCategory::Forbidden => (Code::PermissionDenied, "Forbidden", None),
+        ErrorResponseCategory::NotImplemented => (Code::Unimplemented, "Not implemented", None),
+        ErrorResponseCategory::Unavailable => (Code::Unavailable, "Unavailable", None),
+        ErrorResponseCategory::InvalidRequest => return proto_error.into_status(),
+        ErrorResponseCategory::Internal => (Code::Internal, "Internal error", None),
+    };
+
+    let mut details = ErrorDetails::with_error_info(proto_error.error_code, proto_error.domain, HashMap::new());
+    details.set_debug_info(proto_error.stack_trace, "");
+    if let Some((reason, metadata)) = extra_metadata {
+        details.set_error_info(reason, "typedb", metadata);
+    }
+    Status::with_error_details(code, message, details)
 }
 
 typedb_error! {

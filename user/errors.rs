@@ -34,7 +34,7 @@ typedb_error! {
     pub UserDeleteError(component = "User delete", prefix = "USD") {
         DefaultUserCannotBeDeleted(1, "Default user cannot be deleted."),
         IllegalUsername(2, "Invalid credential supplied."),
-        UserDoesNotExist(3, "User does not exist."),
+        UserNotFound(3, "User not found."),
         Unexpected(4, "An unexpected error has occurred in the process of deleting a user."),
     }
 }

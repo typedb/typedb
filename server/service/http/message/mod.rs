@@ -10,9 +10,10 @@ pub(crate) mod body;
 pub mod database;
 pub mod error;
 pub mod query;
+pub mod server;
 pub mod transaction;
 pub mod user;
-pub(crate) mod version;
+pub mod version;
 
 macro_rules! stringify_kebab_case {
     ($t:tt) => {

@@ -11,22 +11,26 @@ use std::{
 
 use database::{Database, migration::Checksums, transaction::TransactionRead};
 use options::TransactionOptions;
-use resource::{constants::common::SECONDS_IN_DAY, profile::StorageCounters, server_info::ServerInfo};
+use resource::{constants::common::SECONDS_IN_DAY, distribution_info::DistributionInfo, profile::StorageCounters};
 use storage::durability_client::WALClient;
 use tokio::sync::{mpsc::Sender, watch};
 use tonic::Status;
 use tracing::{Level, event};
 use typedb_protocol::{database::export::Server as ProtocolServer, migration::Item as MigrationItemProto};
 
-use crate::service::{
-    export_service::{DatabaseExportError, get_transaction_schema},
-    grpc::{
-        error::{IntoGrpcStatus, IntoProtocolErrorMessage},
-        migration::item::{
-            encode_attribute_item, encode_checksums_item, encode_entity_item, encode_header_item, encode_relation_item,
-        },
-        response_builders::database::{
-            database_export_initial_res_ok, database_export_res_done, database_export_res_part_items,
+use crate::{
+    error::LocalServerStateError,
+    service::{
+        export_service::{get_transaction_schema, DatabaseExportError},
+        grpc::{
+            error::IntoGrpcStatus,
+            migration::item::{
+                encode_attribute_item, encode_checksums_item, encode_entity_item, encode_header_item,
+                encode_relation_item,
+            },
+            response_builders::database::{
+                database_export_initial_res_ok, database_export_res_done, database_export_res_part_items,
+            },
         },
     },
 };
@@ -74,7 +78,7 @@ type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 
 #[derive(Debug)]
 pub(crate) struct DatabaseExportService {
-    server_info: ServerInfo,
+    distribution_info: DistributionInfo,
     database: Arc<Database<WALClient>>,
     response_sender: ResponseSender,
     checksums: Checksums,
@@ -91,13 +95,13 @@ impl DatabaseExportService {
     const OPTIONS_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(1 * SECONDS_IN_DAY).as_millis() as u64;
 
     pub(crate) fn new(
-        server_info: ServerInfo,
+        distribution_info: DistributionInfo,
         database: Arc<Database<WALClient>>,
         response_sender: ResponseSender,
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
         Self {
-            server_info,
+            distribution_info,
             database,
             response_sender,
             checksums: Checksums::new(),
@@ -108,7 +112,7 @@ impl DatabaseExportService {
 
     pub(crate) async fn export(mut self) {
         let start = Instant::now();
-        event!(Level::DEBUG, "Exporting '{}' from TypeDB {}.", self.database.name(), self.server_info.version);
+        event!(Level::DEBUG, "Exporting '{}' from TypeDB {}.", self.database.name(), self.distribution_info.version);
         let Some(transaction) = self.open_transaction().await else {
             return;
         };
@@ -134,7 +138,7 @@ impl DatabaseExportService {
             Level::INFO,
             "Export '{}' from TypeDB {} finished successfully. {} items exported in {} seconds.",
             self.database.name(),
-            self.server_info.version,
+            self.distribution_info.version,
             self.total_item_count,
             start.elapsed().as_secs()
         );
@@ -217,7 +221,7 @@ impl DatabaseExportService {
     async fn export_header(&mut self, buffer: &mut Vec<MigrationItemProto>) -> Result<(), DatabaseExportError> {
         self.buffer_push(
             buffer,
-            encode_header_item(self.server_info.version.to_string(), self.database.name().to_string()),
+            encode_header_item(self.distribution_info.version.to_string(), self.database.name().to_string()),
         );
         Ok(())
     }
@@ -247,7 +251,11 @@ impl DatabaseExportService {
     }
 
     async fn send_error(response_sender: &ResponseSender, error: DatabaseExportError) {
-        let _ = send_response!(response_sender, Err(error.into_error_message().into_status())).ok();
+        let _ = send_response!(
+            response_sender,
+            Err(LocalServerStateError::DatabaseExport { typedb_source: error }.into_status())
+        )
+        .ok();
     }
 
     async fn send_done(response_sender: &ResponseSender) -> Result<(), DatabaseExportError> {

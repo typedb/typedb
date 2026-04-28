@@ -5,7 +5,6 @@
  */
 
 use encoding::graph::type_::Kind;
-use macro_rules_attribute::apply;
 use params;
 
 use crate::{Context, generic_step};

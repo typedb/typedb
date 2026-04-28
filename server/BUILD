@@ -36,6 +36,9 @@ rust_library(
         "authentication/**/*.rs",
         "parameters/**/*.rs",
         "service/**/*.rs",
+        "state/**/*.rs",
+    ], exclude = [
+        "service/**/*_test.rs",
     ]),
     crate_features = select({
         ":development_mode": [],
@@ -59,6 +62,7 @@ rust_library(
         "//concept",
         "//database",
         "//diagnostics",
+        "//durability",
         "//encoding",
         "//executor",
         "//function",
@@ -68,12 +72,14 @@ rust_library(
         "//storage",
         "//system",
         "//user",
+        "//server/service/admin/proto:server_admin_proto",
         "@crates//:axum",
         "@crates//:axum-extra",
         "@crates//:axum-server",
         "@crates//:chrono",
         "@crates//:chrono-tz",
         "@crates//:clap",
+        "@crates//:erased-serde",
         "@crates//:futures",
         "@crates//:http",
         "@crates//:hyper",
@@ -92,6 +98,7 @@ rust_library(
         "@crates//:tokio",
         "@crates//:tokio-rustls",
         "@crates//:tokio-stream",
+        "@crates//:tokio-util",
         "@crates//:tonic",
         "@crates//:tonic-types",
         "@crates//:tower",
@@ -111,6 +118,22 @@ rust_test(
     crate_features = ["bazel"],
     data = [":config.yml"],
     deps = [],
+)
+
+rust_test(
+    name = "test_admin_service",
+    srcs = ["service/admin/admin_service_test.rs"],
+    data = [":config.yml"],
+    deps = [
+        ":server",
+        "//resource",
+        "//util/test:test_utils",
+        "@crates//:futures",
+        "@crates//:http",
+        "@crates//:tokio",
+        "@crates//:tonic",
+        "@crates//:tower",
+    ],
 )
 
 rustfmt_test(
