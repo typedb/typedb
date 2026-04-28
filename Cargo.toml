@@ -194,12 +194,12 @@ features = {}
 
 		[workspace.dependencies.uuid]
 			features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-			version = "1.21.0"
+			version = "1.23.1"
 			default-features = false
 
 		[workspace.dependencies.rand]
 			features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
-			version = "0.8.5"
+			version = "0.8.6"
 			default-features = false
 
 		[workspace.dependencies.seahash]
@@ -264,8 +264,8 @@ features = {}
 
 		[workspace.dependencies.typeql]
 			features = []
+			rev = "7029e9f036540ad75d9bdc3afb1207409741d42a"
 			git = "https://github.com/typedb/typeql"
-			tag = "3.10.1"
 			default-features = false
 
 		[workspace.dependencies.serde_with]
@@ -279,7 +279,7 @@ features = {}
 			default-features = false
 
 		[workspace.dependencies.tower]
-			features = ["__common", "balance", "buffer", "default", "discover", "filter", "futures-core", "futures-util", "indexmap", "limit", "load", "log", "make", "pin-project", "pin-project-lite", "rand", "ready-cache", "slab", "tokio", "tokio-util", "tracing", "util"]
+			features = ["__common", "balance", "buffer", "default", "discover", "futures-core", "futures-util", "indexmap", "limit", "load", "log", "make", "pin-project", "pin-project-lite", "rand", "ready-cache", "slab", "tokio", "tokio-util", "tracing", "util"]
 			version = "0.4.13"
 			default-features = false
 
@@ -300,8 +300,8 @@ features = {}
 
 		[workspace.dependencies.typedb-protocol]
 			features = []
+			rev = "da3e316cb0022cb284083996f0659ad22db13aca"
 			git = "https://github.com/typedb/typedb-protocol"
-			tag = "3.10.0"
 			default-features = false
 
 		[workspace.dependencies.resource]
@@ -486,7 +486,7 @@ features = {}
 
 		[workspace.dependencies.tracing-appender]
 			features = []
-			version = "0.2.4"
+			version = "0.2.5"
 			default-features = false
 
 		[workspace.dependencies.tempdir]
@@ -505,8 +505,8 @@ features = {}
 			default-features = false
 
 		[workspace.dependencies.tokio]
-			features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-			version = "1.52.0"
+			features = ["bytes", "default", "fs", "io-std", "io-util", "libc", "macros", "mio", "net", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
+			version = "1.52.1"
 			default-features = false
 
 		[workspace.dependencies.serde_yaml2]
@@ -615,7 +615,7 @@ features = {}
 			default-features = false
 
 		[workspace.dependencies.chrono]
-			features = ["alloc", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
+			features = ["alloc", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
 			version = "0.4.44"
 			default-features = false
 
@@ -625,7 +625,7 @@ features = {}
 			default-features = false
 
 		[workspace.dependencies.serde_json]
-			features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
+			features = ["default", "raw_value", "std"]
 			version = "1.0.149"
 			default-features = false
 
