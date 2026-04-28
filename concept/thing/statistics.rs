@@ -355,7 +355,7 @@ impl Statistics {
         match count.checked_add_signed(delta) {
             Some(value) => *count = value,
             None => {
-                event!(Level::ERROR, "Unexpected underflow in statistics {} count: {} + {}", label, *count, delta);
+                diagnostics::error_with_report!("Unexpected underflow in statistics {} count: {} + {}", label, *count, delta);
                 *count = 0;
             }
         }

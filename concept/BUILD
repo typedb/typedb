@@ -53,8 +53,11 @@ rust_library(
         "@crates//:chrono-tz",
         "@crates//:itertools",
         "@crates//:regex",
+        "@crates//:sentry",
         "@crates//:serde",
         "@crates//:tracing",
+
+        "//diagnostics",
     ],
     proc_macro_deps = [
         "@crates//:paste",
