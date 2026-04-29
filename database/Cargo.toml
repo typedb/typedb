@@ -97,3 +97,7 @@ features = {}
 	path = "tests/transaction.rs"
 	name = "test_transaction"
 
+[[test]]
+	path = "tests/statistics_synchronization.rs"
+	name = "test_statistics_synchronization"
+
