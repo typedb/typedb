@@ -324,7 +324,7 @@ features = {}
 			default-features = false
 
 		[workspace.dependencies.tokio-util]
-			features = ["codec", "default", "io"]
+			features = ["codec", "default", "futures-util", "io", "rt"]
 			version = "0.7.18"
 			default-features = false
 
