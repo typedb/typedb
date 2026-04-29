@@ -21,30 +21,39 @@ pub fn make_constraint_variables_unique(
     variable_registry: &mut VariableRegistry,
     block_annotations: &mut BlockAnnotations,
 ) -> Result<(), StaticOptimiserError> {
-    let (new_checks, constraint_mapping) = conjunction
-        .constraints_mut()
-        .make_variables_unique(variable_registry)
+    let (new_checks, constraint_mapping, variable_mapping) = conjunction
+        .make_constraint_variables_unique(variable_registry)
         .map_err(|typedb_source| StaticOptimiserError::Representation { typedb_source })?;
     let annotations = block_annotations.type_annotations_mut_of(conjunction).expect("Expected annotated conjunction");
 
     for check in new_checks {
         match check {
             Constraint::Comparison(cmp) => {
-                conjunction.register_variable_copy(cmp.lhs().as_variable().unwrap(), cmp.rhs().as_variable().unwrap());
-                let vertex_annotations = annotations.value_type_annotations_of(&cmp.lhs()).unwrap().clone();
+                let (new_vertex, old_vertex) = if variable_mapping.contains_key(&cmp.lhs().as_variable().unwrap()) {
+                    (cmp.lhs(), cmp.rhs())
+                } else {
+                    debug_assert!(variable_mapping.contains_key(&cmp.rhs().as_variable().unwrap()));
+                    (cmp.rhs(), cmp.lhs())
+                };
+                let vertex_annotations = annotations.value_type_annotations_of(old_vertex).unwrap().clone();
                 annotations
                     .value_type_annotations_mut()
                     .expect("ValueTypeAnnotations should be available by now")
-                    .insert(cmp.rhs().clone(), vertex_annotations);
+                    .insert(new_vertex.clone(), vertex_annotations);
             }
             Constraint::Is(is) => {
-                conjunction.register_variable_copy(is.lhs().as_variable().unwrap(), is.rhs().as_variable().unwrap());
-                let vertex_annotations = annotations.vertex_annotations_of(&is.lhs()).unwrap().clone();
+                let (new_vertex, old_vertex) = if variable_mapping.contains_key(&is.lhs().as_variable().unwrap()) {
+                    (is.lhs(), is.rhs())
+                } else {
+                    debug_assert!(variable_mapping.contains_key(&is.rhs().as_variable().unwrap()));
+                    (is.rhs(), is.lhs())
+                };
+                let vertex_annotations = annotations.vertex_annotations_of(old_vertex).unwrap().clone();
                 let lr_annotations: BTreeMap<_, _> = vertex_annotations.iter().map(|t| (*t, vec![*t])).collect();
                 let rl_annotations = lr_annotations.clone();
                 let new_is_annotations =
                     ConstraintTypeAnnotations::LeftRight(LeftRightAnnotations::new(lr_annotations, rl_annotations));
-                annotations.vertex_annotations_mut().insert(is.rhs().clone(), vertex_annotations);
+                annotations.vertex_annotations_mut().insert(new_vertex.clone(), vertex_annotations);
                 annotations.constraint_annotations_mut().insert(Constraint::Is(is), new_is_annotations);
             }
             _ => {
@@ -52,7 +61,7 @@ pub fn make_constraint_variables_unique(
             }
         }
     }
-    for (old_constraint, new_constraint) in constraint_mapping {
+    for (new_constraint, old_constraint) in constraint_mapping {
         let old_annos =
             annotations.constraint_annotations_of(old_constraint).cloned().expect("Expected old constraint");
         annotations.constraint_annotations_mut().insert(new_constraint, old_annos);

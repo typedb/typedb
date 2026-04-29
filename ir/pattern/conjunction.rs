@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{HashMap, hash_map},
+    collections::HashMap,
     fmt,
     hash::{DefaultHasher, Hasher},
 };
@@ -26,7 +26,7 @@ use crate::{
         nested_pattern::NestedPattern,
         optional::OptionalBuilder,
     },
-    pipeline::block::BlockBuilderContext,
+    pipeline::{VariableRegistry, block::BlockBuilderContext},
 };
 
 #[derive(Debug, Clone)]
@@ -74,10 +74,21 @@ impl Conjunction {
         }
     }
 
-    pub fn register_variable_copy(&mut self, source: Variable, copy: Variable) {
-        if let Some(value) = self.pattern_variables.0.get(&source).cloned() {
-            self.pattern_variables.0.insert(copy, value);
+    pub fn make_constraint_variables_unique(
+        &mut self,
+        variable_registry: &mut VariableRegistry,
+    ) -> Result<
+        (Vec<Constraint<Variable>>, HashMap<Constraint<Variable>, Constraint<Variable>>, HashMap<Variable, Variable>),
+        Box<RepresentationError>,
+    > {
+        let (new_checks, constraint_mapping, variable_mapping) =
+            self.constraints.make_variables_unique(variable_registry)?;
+        for (new_var, old_var) in &variable_mapping {
+            if let Some(value) = self.pattern_variables.0.get(old_var).cloned() {
+                self.pattern_variables.0.insert(*new_var, value);
+            };
         }
+        Ok((new_checks, constraint_mapping, variable_mapping))
     }
 }
 
