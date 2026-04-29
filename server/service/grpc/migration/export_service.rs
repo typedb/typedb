@@ -21,7 +21,7 @@ use typedb_protocol::{database::export::Server as ProtocolServer, migration::Ite
 use crate::{
     error::LocalServerStateError,
     service::{
-        export_service::{get_transaction_schema, DatabaseExportError},
+        export_service::{DatabaseExportError, get_transaction_schema},
         grpc::{
             error::IntoGrpcStatus,
             migration::item::{

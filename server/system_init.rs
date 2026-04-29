@@ -6,8 +6,8 @@
 use std::sync::Arc;
 
 use database::{
-    transaction::{CommitIntent, SchemaCommitIntent},
     Database,
+    transaction::{CommitIntent, SchemaCommitIntent},
 };
 use resource::{
     constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD},

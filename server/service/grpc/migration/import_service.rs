@@ -205,7 +205,7 @@ impl DatabaseImportService {
         let database_importer = match self.database_importer.as_mut() {
             Some(database_importer) => database_importer,
             None => {
-                return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "data loading".to_string() })
+                return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "data loading".to_string() });
             }
         };
 
@@ -226,7 +226,7 @@ impl DatabaseImportService {
         let database_importer = match &mut self.database_importer {
             Some(database_importer) => database_importer,
             None => {
-                return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "finalisation".to_string() })
+                return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "finalisation".to_string() });
             }
         };
 

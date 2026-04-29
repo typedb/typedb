@@ -162,13 +162,13 @@ impl IntervalTaskParameters {
 #[cfg(test)]
 mod tests {
     use std::sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc,
+        atomic::{AtomicUsize, Ordering},
     };
 
     use tokio::{
         sync::watch,
-        time::{self, advance, Duration},
+        time::{self, Duration, advance},
     };
 
     use super::*;

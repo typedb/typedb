@@ -43,9 +43,9 @@ use crate::{
                 database::{DatabasePath, encode_database, encode_databases},
                 query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 server::encode_servers,
-                transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},
-                user::{encode_user, encode_users, CreateUserPayload, UpdateUserPayload, UserPath},
-                version::{encode_server_version, ProtocolVersion, PROTOCOL_VERSION_LATEST},
+                transaction::{TransactionOpenPayload, TransactionPath, encode_transaction},
+                user::{CreateUserPayload, UpdateUserPayload, UserPath, encode_user, encode_users},
+                version::{PROTOCOL_VERSION_LATEST, ProtocolVersion, encode_server_version},
             },
             transaction_service::{
                 QueryAnswer, TransactionRequest, TransactionResponder, TransactionService, TransactionServiceResponse,

@@ -7,8 +7,8 @@
 use server_admin_proto as admin_proto;
 
 use crate::{
-    command::{CommandDefinition, CommandRegistry, CommandResult, Result},
     AdminClient,
+    command::{CommandDefinition, CommandRegistry, CommandResult, Result},
 };
 
 pub fn register(registry: CommandRegistry) -> CommandRegistry {

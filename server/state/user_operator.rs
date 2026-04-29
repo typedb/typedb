@@ -17,8 +17,8 @@ use user::{permission_manager::PermissionManager, user_manager::UserManager};
 
 use super::TransactionOperator;
 use crate::{
-    authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
-    error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},
+    authentication::{Accessor, credential_verifier::CredentialVerifier, token_manager::TokenManager},
+    error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
     system_init::SYSTEM_DB,
 };
 

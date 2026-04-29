@@ -7,8 +7,8 @@
 use std::sync::Arc;
 
 use database::{
-    transaction::{TransactionError, TransactionId, TransactionRead, TransactionSchema, TransactionWrite},
     Database,
+    transaction::{TransactionError, TransactionId, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::metrics::LoadKind;
 use options::TransactionOptions;

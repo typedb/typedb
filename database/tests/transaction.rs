@@ -15,7 +15,7 @@ use database::{
 };
 use options::TransactionOptions;
 use storage::durability_client::WALClient;
-use test_utils::{create_tmp_storage_dir, init_logging, TempDir};
+use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
 use tokio::{
     runtime::Runtime,
     sync::{Notify, broadcast},

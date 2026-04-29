@@ -18,7 +18,7 @@ use encoding::{
     },
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{durability_client::WALClient, key_value::StorageKey, snapshot::WriteSnapshot, MVCCStorage};
+use storage::{MVCCStorage, durability_client::WALClient, key_value::StorageKey, snapshot::WriteSnapshot};
 use test_utils::{create_tmp_storage_dir, init_logging};
 
 fn vertex_generation<D>(

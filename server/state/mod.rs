@@ -13,13 +13,13 @@ use std::{collections::HashSet, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use concurrency::{IntervalRunner, TokioTaskSpawner};
 use database::database_manager::DatabaseManager;
-use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
+use diagnostics::{Diagnostics, diagnostics_manager::DiagnosticsManager};
 use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo};
 use tokio::{net::lookup_host, sync::watch::Receiver};
 
 pub use self::{
     database_operator::{
-        get_database_schema, get_functions_syntax, get_types_syntax, DatabaseOperator, LocalDatabaseOperator,
+        DatabaseOperator, LocalDatabaseOperator, get_database_schema, get_functions_syntax, get_types_syntax,
     },
     server_operator::{LocalServerOperator, ServerOperator},
     transaction_operator::{LocalTransactionOperator, TransactionOperator},

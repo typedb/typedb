@@ -26,8 +26,8 @@ use concept::{
 use concurrency::IntervalRunner;
 use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
 use durability::{
-    wal::{WALError, WAL},
     DurabilitySequenceNumber, DurabilityServiceError,
+    wal::{WAL, WALError},
 };
 use encoding::{
     EncodingKeyspace,
@@ -332,7 +332,7 @@ impl Database<WALClient> {
         let wal = match WAL::load(path) {
             Ok(wal) => wal,
             Err(DurabilityServiceError::WAL { source: WALError::LoadDirectoryMissing { .. } }) => {
-                return Err(NotADatabase { name: name.to_owned() })
+                return Err(NotADatabase { name: name.to_owned() });
             }
             Err(source) => return Err(WALOpen { source }),
         };

@@ -5,7 +5,7 @@
  */
 use std::sync::Arc;
 
-use error::{typedb_error, TypeDBError};
+use error::{TypeDBError, typedb_error};
 
 use crate::{
     authentication::AuthenticationError,
