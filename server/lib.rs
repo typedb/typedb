@@ -463,11 +463,52 @@ impl Server {
             println!("  Drivers must be configured to connect *without TLS*.");
         }
 
+        let grpc_connect_address = server_status.grpc_advertise_address();
+        let http_connect_address = server_status.http_advertise_address();
+        if grpc_connect_address.is_some() || http_connect_address.is_some() {
+            println!("To connect:");
+            if let Some(http_connect_address) = http_connect_address {
+                println!("  Studio:  {}", Self::studio_connect_link(http_connect_address, encryption_config));
+            }
+            if let Some(grpc_connect_address) = grpc_connect_address {
+                println!("  Console: {}", Self::console_connect_command(grpc_connect_address, encryption_config));
+            }
+        }
+
         println!();
     }
 
     pub fn print_ready() {
         info!("\nReady!");
+    }
+
+    fn studio_connect_link(http_advertise_address: &str, encryption_config: &EncryptionConfig) -> String {
+        let scheme = if encryption_config.enabled { "https" } else { "http" };
+        let address = format!("{scheme}://{}", Self::reachable_address(http_advertise_address));
+        format!("https://studio.typedb.com/connect?address={address}&username=admin")
+    }
+
+    fn reachable_address(advertise_address: &str) -> String {
+        if let Ok(socket_addr) = advertise_address.parse::<SocketAddr>() {
+            if socket_addr.ip().is_unspecified() {
+                return format!("localhost:{}", socket_addr.port());
+            }
+        }
+        advertise_address.to_string()
+    }
+
+    fn console_connect_command(grpc_advertise_address: &str, encryption_config: &EncryptionConfig) -> String {
+        let address = Self::reachable_address(grpc_advertise_address);
+        if encryption_config.enabled {
+            if let Some(cert_path) = encryption_config.ca_certificate.as_ref() {
+                let cert_path = cert_path.as_path().display();
+                format!("typedb console --address https://{address} --username admin --tls-root-ca={cert_path}")
+            } else {
+                format!("typedb console --address https://{address} --username admin")
+            }
+        } else {
+            format!("typedb console --address {address} --tls-disabled --username admin")
+        }
     }
 
     fn spawn_shutdown_handler(shutdown_sender: Sender<()>) {
