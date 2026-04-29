@@ -14,8 +14,8 @@ use storage::{
     keyspace::IteratorPool,
     sequence_number::SequenceNumber,
     snapshot::{
-        buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, snapshot_id::SnapshotId, write::Write,
-        ReadableSnapshot, SnapshotGetError,
+        ReadableSnapshot, SnapshotGetError, buffer::BufferRangeIterator, iterator::SnapshotRangeIterator,
+        snapshot_id::SnapshotId, write::Write,
     },
 };
 

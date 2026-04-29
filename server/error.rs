@@ -8,11 +8,11 @@ use std::{fmt::Debug, io, net::SocketAddr, sync::Arc};
 
 use concept::error::ConceptReadError;
 use database::{
+    DatabaseDeleteError, DatabaseOpenError,
     database::DatabaseCreateError,
     transaction::{DataCommitError, SchemaCommitError, TransactionError},
-    DatabaseDeleteError, DatabaseOpenError,
 };
-use error::{typedb_error, TypeDBError};
+use error::{TypeDBError, typedb_error};
 use ir::pipeline::FunctionReadError;
 use tokio_rustls::rustls::{
     pki_types::pem::Error as RustlsCertError, server::VerifierBuilderError as RustlsVerifierError,
@@ -20,7 +20,7 @@ use tokio_rustls::rustls::{
 use user::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError};
 
 use crate::{
-    authentication::{token_manager::TokenManagerError, AuthenticationError},
+    authentication::{AuthenticationError, token_manager::TokenManagerError},
     service::{export_service::DatabaseExportError, import_service::DatabaseImportServiceError},
 };
 

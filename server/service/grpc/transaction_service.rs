@@ -17,8 +17,8 @@ use std::{
 use compiler::query_structure::PipelineStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::query::{
-    execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
-    WriteQueryAnswer, WriteQueryResult,
+    StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
+    execute_write_query_in_schema, execute_write_query_in_write,
 };
 use diagnostics::metrics::{ActionKind, ClientEndpoint, LoadKind};
 use executor::{
@@ -38,7 +38,7 @@ use tokio::{
     spawn,
     sync::{
         broadcast,
-        mpsc::{channel, Receiver, Sender},
+        mpsc::{Receiver, Sender, channel},
     },
     task::{JoinHandle, spawn_blocking},
     time::{Instant, timeout},
@@ -55,6 +55,7 @@ use uuid::Uuid;
 
 use crate::{
     service::{
+        TransactionType,
         grpc::{
             analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
             diagnostics::run_with_diagnostics_async,
@@ -75,10 +76,9 @@ use crate::{
         },
         may_encode_pipeline_structure,
         transaction_service::{
-            commit_schema_transaction, commit_write_transaction, init_transaction_timeout, is_write_pipeline,
-            with_readable_transaction, Transaction, TransactionServiceError,
+            Transaction, TransactionServiceError, commit_schema_transaction, commit_write_transaction,
+            init_transaction_timeout, is_write_pipeline, with_readable_transaction,
         },
-        TransactionType,
     },
     state::ServerState,
 };

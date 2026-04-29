@@ -9,15 +9,15 @@ use std::{
     hash::Hash,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     time::Duration,
 };
 
 use chrono::{Timelike, Utc};
 use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
-use error::{typedb_error, TypeDBError};
+use error::{TypeDBError, typedb_error};
 use hyper::{
     Body, Client, Request,
     client::HttpConnector,

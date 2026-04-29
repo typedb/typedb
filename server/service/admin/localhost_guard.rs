@@ -18,7 +18,7 @@ use std::{
 
 use futures::future::BoxFuture;
 use http::Request;
-use tonic::{body::BoxBody, transport::server::TcpConnectInfo, Status};
+use tonic::{Status, body::BoxBody, transport::server::TcpConnectInfo};
 use tower::{Layer, Service};
 
 #[derive(Debug, Clone)]

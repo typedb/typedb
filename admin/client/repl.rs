@@ -6,13 +6,13 @@
 
 use std::path::PathBuf;
 
-use rustyline::{error::ReadlineError, history::FileHistory, Config, Editor};
+use rustyline::{Config, Editor, error::ReadlineError, history::FileHistory};
 
 use crate::{
+    AdminClient,
     command::{CommandContext, CommandRegistry},
     commands::server::{execute_server_status, execute_server_version},
     error::AdminError,
-    AdminClient,
 };
 
 const PROMPT: &str = "admin> ";

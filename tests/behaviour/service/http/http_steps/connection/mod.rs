@@ -17,9 +17,8 @@ use server::{
 use test_utils::create_tmp_storage_dir;
 
 use crate::{
-    generic_step,
+    Context, HttpBehaviourTestError, TEST_TOKEN_EXPIRATION, generic_step,
     message::{authenticate, authenticate_default, check_health, databases, send_get_request, users, version},
-    Context, HttpBehaviourTestError, TEST_TOKEN_EXPIRATION,
 };
 
 mod database;

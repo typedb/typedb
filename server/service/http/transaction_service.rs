@@ -17,8 +17,8 @@ use std::{
 use compiler::query_structure::PipelineStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::query::{
-    execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
-    WriteQueryAnswer, WriteQueryResult,
+    StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
+    execute_write_query_in_schema, execute_write_query_in_write,
 };
 use diagnostics::metrics::{ClientEndpoint, LoadKind};
 use executor::{
@@ -42,7 +42,7 @@ use tokio::{
         mpsc::{Receiver, Sender},
         oneshot,
     },
-    task::{spawn_blocking, JoinHandle},
+    task::{JoinHandle, spawn_blocking},
     time::Instant,
 };
 use tracing::{Level, event};
@@ -50,20 +50,19 @@ use typeql::{parse_query, query::SchemaQuery};
 
 use crate::{
     service::{
+        QueryType, TransactionType,
         http::message::{
             analyze::{
-                encode_analyzed_query,
-                structure::{encode_analyzed_pipeline_for_studio, AnalyzedPipelineResponse},
-                AnalysedQueryResponse,
+                AnalysedQueryResponse, encode_analyzed_query,
+                structure::{AnalyzedPipelineResponse, encode_analyzed_pipeline_for_studio},
             },
             query::{document::encode_document, row::encode_row},
         },
         may_encode_pipeline_structure,
         transaction_service::{
-            commit_schema_transaction, commit_write_transaction, init_transaction_timeout, is_write_pipeline,
-            with_readable_transaction, Transaction, TransactionServiceError,
+            Transaction, TransactionServiceError, commit_schema_transaction, commit_write_transaction,
+            init_transaction_timeout, is_write_pipeline, with_readable_transaction,
         },
-        QueryType, TransactionType,
     },
     state::ServerState,
 };

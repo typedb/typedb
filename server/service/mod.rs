@@ -6,7 +6,7 @@
 
 use compiler::query_structure::{PipelineStructure, QueryStructureConjunctionID};
 use concept::error::ConceptReadError;
-pub use grpc::{migration::import_service::DatabaseImportService, IntoGrpcStatus, IntoProtocolErrorMessage};
+pub use grpc::{IntoGrpcStatus, IntoProtocolErrorMessage, migration::import_service::DatabaseImportService};
 use options::QueryOptions;
 use serde::{Deserialize, Serialize};
 

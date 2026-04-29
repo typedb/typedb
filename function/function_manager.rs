@@ -501,8 +501,8 @@ pub mod tests {
         },
     };
     use resource::profile::CommitProfile;
-    use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
-    use test_utils::{create_tmp_storage_dir, init_logging, TempDir};
+    use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
+    use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
 
     use crate::{
         function_cache::FunctionCache,
