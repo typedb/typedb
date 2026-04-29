@@ -306,7 +306,7 @@ pub async fn set_query_option_answer_count_limit(context: &mut Context, value: u
 }
 
 #[cucumber::given(expr = "set query option include_query_structure to: {boolean}")]
-async fn set_query_option_include_query_structure(context: &mut Context, set_to: params::Boolean, _step: &Step) {
+async fn set_query_option_include_query_structure(context: &mut Context, set_to: params::Boolean) {
     context.init_query_options_if_needed();
     context.query_options.as_mut().unwrap().include_query_structure = Some(set_to.to_bool());
 }
@@ -812,7 +812,7 @@ pub async fn answer_get_row_get_variable_try_get_specific_value_is_none(
     var_kind: ConceptKind,
     is_by_var_index: IsByVarIndex,
     var: Var,
-    value_type: params::ValueType,
+    _value_type: params::ValueType,
     is_or_not: IsOrNot,
 ) {
     if matches!(is_by_var_index, IsByVarIndex::Is) {
