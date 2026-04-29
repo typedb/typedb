@@ -77,15 +77,16 @@ impl Constraints {
         })
     }
 
-    pub fn make_variables_unique(
+    pub(super) fn make_variables_unique(
         &mut self,
         variable_registry: &mut VariableRegistry,
     ) -> Result<
-        (Vec<Constraint<Variable>>, HashMap<Constraint<Variable>, Constraint<Variable>>),
+        (Vec<Constraint<Variable>>, HashMap<Constraint<Variable>, Constraint<Variable>>, HashMap<Variable, Variable>),
         Box<RepresentationError>,
     > {
         let mut check_collector: Vec<Constraint<Variable>> = Vec::new();
         let mut constraint_mapping = HashMap::new();
+        let mut variable_mapping = HashMap::new();
         let mut replace_with_anonymous_var = |vertex: &mut Vertex<Variable>| {
             debug_assert!(vertex.is_variable());
             if let Vertex::Variable(var) = vertex {
@@ -98,6 +99,7 @@ impl Constraints {
                 } else {
                     Is::new(old_var, *var, None).into()
                 };
+                variable_mapping.insert(*var, old_var);
                 check_collector.push(check);
             }
             Ok::<(), Box<RepresentationError>>(())
@@ -109,14 +111,14 @@ impl Constraints {
                     if sub.subtype == sub.supertype && sub.supertype.is_variable() {
                         let old_sub = sub.clone();
                         replace_with_anonymous_var(&mut sub.supertype)?;
-                        constraint_mapping.insert(old_sub.into(), sub.clone().into());
+                        constraint_mapping.insert(sub.clone().into(), old_sub.into());
                     }
                 }
                 Constraint::Links(links) => {
                     if links.player == links.relation {
                         let old_links = links.clone();
                         replace_with_anonymous_var(&mut links.relation)?;
-                        constraint_mapping.insert(old_links.into(), links.clone().into());
+                        constraint_mapping.insert(links.clone().into(), old_links.into());
                     }
                 }
                 Constraint::IndexedRelation(indexed) => {
@@ -138,7 +140,7 @@ impl Constraints {
                         replace_with_anonymous_var(&mut indexed.role_type_2)?;
                     }
                     if let Some(old_indexed) = old_indexed {
-                        constraint_mapping.insert(old_indexed.into(), indexed.clone().into());
+                        constraint_mapping.insert(indexed.clone().into(), old_indexed.into());
                     }
                 }
                 Constraint::FunctionCallBinding(func_call) => {
@@ -152,7 +154,7 @@ impl Constraints {
                         }
                     }
                     if let Some(old_call) = old_call {
-                        constraint_mapping.insert(old_call.into(), func_call.clone().into());
+                        constraint_mapping.insert(func_call.clone().into(), old_call.into());
                     }
                 }
                 Constraint::ExpressionBinding(binding) => {
@@ -176,7 +178,7 @@ impl Constraints {
         }
         self.constraints.extend_from_slice(&check_collector);
 
-        Ok((check_collector, constraint_mapping))
+        Ok((check_collector, constraint_mapping, variable_mapping))
     }
 }
 
