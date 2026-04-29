@@ -654,7 +654,7 @@ mod tests {
     use assert as assert_true;
 
     use crate::{
-        isolation_manager::{CommitStatus, ReaderDropGuard, Timeline, TIMELINE_WINDOW_SIZE},
+        isolation_manager::{CommitStatus, ReaderDropGuard, TIMELINE_WINDOW_SIZE, Timeline},
         keyspace::{KeyspaceId, KeyspaceSet},
         record::{CommitRecord, CommitType},
         sequence_number::SequenceNumber,

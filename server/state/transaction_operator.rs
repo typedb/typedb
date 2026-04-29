@@ -16,12 +16,12 @@ use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
 use database::{database_manager::DatabaseManager, transaction::TransactionId};
 use options::TransactionOptions;
 use resource::constants::common::SECONDS_IN_MINUTE;
-use tokio::sync::{mpsc::Sender, RwLock};
+use tokio::sync::{RwLock, mpsc::Sender};
 
 use crate::{
-    error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},
+    error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
     service::TransactionType,
-    transaction::{open_transaction_blocking, Transaction},
+    transaction::{Transaction, open_transaction_blocking},
 };
 
 #[derive(Debug)]

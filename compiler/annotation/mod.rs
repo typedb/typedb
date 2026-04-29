@@ -233,8 +233,8 @@ pub mod tests {
             thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
         },
     };
-    use storage::{durability_client::WALClient, MVCCStorage};
-    use test_utils::{create_tmp_storage_dir, init_logging, TempDir};
+    use storage::{MVCCStorage, durability_client::WALClient};
+    use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
 
     use crate::annotation::match_inference::{
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,

@@ -8,11 +8,11 @@ use std::path::PathBuf;
 
 use resource::distribution_info::DistributionInfo;
 use server::{
+    ServerBuilder,
     admin_proto::{self, type_db_admin_client::TypeDbAdminClient},
     parameters::config::ConfigBuilder,
-    ServerBuilder,
 };
-use test_utils::{create_tmp_storage_dir, TempDir};
+use test_utils::{TempDir, create_tmp_storage_dir};
 use tokio::sync::OnceCell;
 
 const GRPC_ADDRESS: &str = "127.0.0.1:11729";
@@ -138,7 +138,7 @@ mod localhost_guard_middleware_tests {
     use futures::future::BoxFuture;
     use http::{Request, Response};
     use server::service::admin::localhost_guard::LocalhostGuardLayer;
-    use tonic::{body::BoxBody, transport::server::TcpConnectInfo, Status};
+    use tonic::{Status, body::BoxBody, transport::server::TcpConnectInfo};
     use tower::{Layer, Service};
 
     #[derive(Clone)]

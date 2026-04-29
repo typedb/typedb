@@ -41,8 +41,8 @@ pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATA
 mod non_transactional_rocks {
     use std::iter::zip;
 
-    use rocksdb::{Options, WriteBatch, WriteOptions, DB};
-    use test_utils::{create_tmp_storage_dir, TempDir};
+    use rocksdb::{DB, Options, WriteBatch, WriteOptions};
+    use test_utils::{TempDir, create_tmp_storage_dir};
 
     use crate::{RocksDatabase, RocksWriteBatch};
 
@@ -102,7 +102,7 @@ mod typedb_database {
         keyspace::{KeyspaceId, KeyspaceSet},
         snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
     };
-    use test_utils::{create_tmp_storage_dir, TempDir};
+    use test_utils::{TempDir, create_tmp_storage_dir};
 
     use crate::{KEY_SIZE, RocksDatabase, RocksWriteBatch};
 

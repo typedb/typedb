@@ -7,10 +7,10 @@ use std::sync::Arc;
 
 use cucumber::gherkin::Step;
 use database::{
+    Database,
     transaction::{
         CommitIntent, DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite,
     },
-    Database,
 };
 use error::TypeDBError;
 use futures::future::join_all;

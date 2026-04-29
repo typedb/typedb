@@ -6,7 +6,7 @@
 
 use std::{future::Future, pin::Pin};
 
-use crate::{error::AdminError, AdminClient};
+use crate::{AdminClient, error::AdminError};
 
 pub type Result<T> = std::result::Result<T, AdminError>;
 pub type CommandResult = Result<()>;

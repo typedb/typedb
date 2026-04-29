@@ -27,11 +27,11 @@ use storage::{
     durability_client::DurabilityClient,
     record::CommitRecord,
     snapshot::{
-        snapshot_id::SnapshotId, CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError,
-        WritableSnapshot, WriteSnapshot,
+        CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot,
+        WriteSnapshot, snapshot_id::SnapshotId,
     },
 };
-use tracing::{Level};
+use tracing::Level;
 
 use crate::Database;
 

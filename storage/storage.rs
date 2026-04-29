@@ -22,11 +22,11 @@ use std::{
 
 use ::error::typedb_error;
 use bytes::{Bytes, byte_array::ByteArray};
+use durability::DurabilitySequenceNumber;
 use fail_point::{
     COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS, COMMIT_DATA_UNSYNC_IN_WAL, COMMIT_REJECTED_WITHOUT_PERSISTING_STATUS,
     STORAGE_DELETED_KEYSPACES_BUT_NOT_WAL, STORAGE_EMPTY_STORAGE_DIR, STORAGE_MISSING_STORAGE_DIR, fail_point,
 };
-use durability::DurabilitySequenceNumber;
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use keyspace::KeyspaceDeleteError;
@@ -56,7 +56,7 @@ use crate::{
     },
     sequence_number::SequenceNumber,
     snapshot::{
-        snapshot_id::SnapshotId, write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot,
+        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot, snapshot_id::SnapshotId, write::Write,
     },
 };
 
@@ -738,15 +738,14 @@ mod tests {
     use test_utils::{create_tmp_storage_dir, init_logging};
 
     use crate::{
-        MVCCStorage,
+        Arc, MVCCStorage, SnapshotId,
         durability_client::{DurabilityClient, WALClient},
         key_value::StorageKeyArray,
         keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
         record::{CommitRecord, CommitType, LegacyCommitRecordV1, StatusRecord},
         sequence_number::SequenceNumber,
-        snapshot::{buffer::OperationsBuffer, WriteSnapshot},
+        snapshot::{WriteSnapshot, buffer::OperationsBuffer},
         write_batches::WriteBatches,
-        Arc, SnapshotId,
     };
 
     macro_rules! test_keyspace_set {

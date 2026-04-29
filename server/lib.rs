@@ -16,18 +16,19 @@ use std::{
     sync::Arc,
 };
 
-use axum_server::{tls_rustls::RustlsConfig, Handle};
+use axum_server::{Handle, tls_rustls::RustlsConfig};
 use concurrency::{TokioTaskSpawner, TokioTaskTracker};
 use database::database_manager::DatabaseManager;
 use futures::future::try_join_all;
 use rand::prelude::SliceRandom;
 use resource::{
     constants::server::{
-        DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH, GRPC_MAX_MESSAGE_SIZE,
+        DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, GRPC_MAX_MESSAGE_SIZE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
+        SERVER_ID_LENGTH,
     },
     distribution_info::DistributionInfo,
 };
-use tokio::sync::watch::{channel, Receiver, Sender};
+use tokio::sync::watch::{Receiver, Sender, channel};
 use tracing::info;
 
 use crate::{

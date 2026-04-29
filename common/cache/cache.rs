@@ -138,7 +138,7 @@ impl Error for CacheError {
 
 #[cfg(test)]
 pub mod tests {
-    use test_utils::{create_tmp_storage_dir, TempDir};
+    use test_utils::{TempDir, create_tmp_storage_dir};
 
     use crate::SpilloverCache;
     macro_rules! put {

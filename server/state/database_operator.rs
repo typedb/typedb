@@ -9,9 +9,9 @@ use std::{fmt::Debug, sync::Arc};
 use async_trait::async_trait;
 use concurrency::TokioTaskSpawner;
 use database::{
+    Database,
     database_manager::DatabaseManager,
     transaction::{CommitIntent, DataCommitIntent, SchemaCommitIntent, TransactionRead},
-    Database,
 };
 use durability::DurabilitySequenceNumber;
 use resource::profile::CommitProfile;
@@ -22,7 +22,7 @@ use storage::{
 use tokio::task::JoinHandle;
 
 use crate::{
-    error::{arc_server_state_err, ArcServerStateError, LocalServerStateError},
+    error::{ArcServerStateError, LocalServerStateError, arc_server_state_err},
     service::{
         export_service::{get_transaction_schema, get_transaction_type_schema},
         grpc::migration::import_service::DatabaseImportService,

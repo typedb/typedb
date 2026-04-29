@@ -16,12 +16,12 @@ use std::{
     thread::JoinHandle,
     time::Instant,
 };
-use database::transaction::CommitIntent;
+
 use database::{
     Database,
     database_manager::DatabaseManager,
     query::{execute_schema_query, execute_write_query_in_write},
-    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use options::{QueryOptions, TransactionOptions};
