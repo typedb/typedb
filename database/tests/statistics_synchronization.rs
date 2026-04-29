@@ -56,22 +56,17 @@ fn statistics_synchronization_under_concurrent_load() {
         result.unwrap();
         tx.commit().1.unwrap();
 
-        let next_batch = Arc::new(AtomicUsize::new(0));
-        let handles: Vec<_> = (0..NUM_THREADS)
-            .map(|_| {
-                let database = database.clone();
-                let next_batch = next_batch.clone();
-                thread::spawn(move || {
-                    loop {
-                        let batch_id = next_batch.fetch_add(1, Ordering::Relaxed);
-                        if batch_id >= total_batches {
-                            break;
-                        }
-                        run_insert_batch(&database, batch_id);
-                    }
-                })
-            })
-            .collect();
+        let mut handles = Vec::with_capacity(NUM_THREADS);
+        for thread_id in 0..NUM_THREADS {
+            let database = database.clone();
+            let handle = thread::spawn(move || {
+                for local_batch_id in 0..BATCHES_PER_THREAD {
+                    let batch_id = thread_id * BATCHES_PER_THREAD + local_batch_id;
+                    run_insert_batch(&database, batch_id);
+                }
+            });
+            handles.push(handle);
+        }
         for h in handles {
             h.join().unwrap();
         }

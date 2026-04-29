@@ -32,6 +32,10 @@ use storage::{
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
+fn retain_nonzero_1d<K: Eq + Hash>(map: &mut HashMap<K, u64>) {
+    map.retain(|_, v| *v > 0);
+}
+
 fn retain_nonzero_2d<K1: Eq + Hash, K2: Eq + Hash>(map: &mut HashMap<K1, HashMap<K2, u64>>) {
     for inner in map.values_mut() {
         inner.retain(|_, v| *v > 0);
@@ -71,10 +75,10 @@ macro_rules! assert_statistics_eq {
             links_index_counts: mut lhs_player_index_counts,
             ..
         } = $lhs;
-        lhs_entity_counts.retain(|_, v| *v > 0);
-        lhs_relation_counts.retain(|_, v| *v > 0);
-        lhs_attribute_counts.retain(|_, v| *v > 0);
-        lhs_role_counts.retain(|_, v| *v > 0);
+        retain_nonzero_1d(&mut lhs_entity_counts);
+        retain_nonzero_1d(&mut lhs_relation_counts);
+        retain_nonzero_1d(&mut lhs_attribute_counts);
+        retain_nonzero_1d(&mut lhs_role_counts);
         retain_nonzero_2d(&mut lhs_has_attribute_counts);
         retain_nonzero_2d(&mut lhs_attribute_owner_counts);
         retain_nonzero_2d(&mut lhs_role_player_counts);
@@ -104,10 +108,11 @@ macro_rules! assert_statistics_eq {
             links_index_counts: mut rhs_player_index_counts,
             ..
         } = $rhs;
-        rhs_entity_counts.retain(|_, v| *v > 0);
-        rhs_relation_counts.retain(|_, v| *v > 0);
-        rhs_attribute_counts.retain(|_, v| *v > 0);
-        rhs_role_counts.retain(|_, v| *v > 0);
+
+        retain_nonzero_1d(&mut rhs_entity_counts);
+        retain_nonzero_1d(&mut rhs_relation_counts);
+        retain_nonzero_1d(&mut rhs_attribute_counts);
+        retain_nonzero_1d(&mut rhs_role_counts);
         retain_nonzero_2d(&mut rhs_has_attribute_counts);
         retain_nonzero_2d(&mut rhs_attribute_owner_counts);
         retain_nonzero_2d(&mut rhs_role_player_counts);
@@ -412,15 +417,6 @@ fn unset_has() {
     let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-    name_type
-        .set_annotation(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            AttributeTypeAnnotation::Independent(AnnotationIndependent),
-            StorageCounters::DISABLED,
-        )
-        .unwrap();
     person_type
         .set_owns(
             &mut snapshot,
