@@ -5769,7 +5769,7 @@ dependencies = [
 [[package]]
 name = "typedb-protocol"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typedb-protocol?rev=2a6e7fe7df4ff085942adaee859499d336b23fdd#2a6e7fe7df4ff085942adaee859499d336b23fdd"
+source = "git+https://github.com/typedb/typedb-protocol?rev=bbe3d61970817b34687eeb145890af6712b7eec6#bbe3d61970817b34687eeb145890af6712b7eec6"
 dependencies = [
  "prost",
  "tonic",
@@ -5830,7 +5830,7 @@ checksum = "40ce102ab67701b8526c123c1bab5cbe42d7040ccfd0f64af1a385808d2f43de"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?rev=701dd0c28d22cf3d8662196ec3c5e581a865b022#701dd0c28d22cf3d8662196ec3c5e581a865b022"
+source = "git+https://github.com/typedb/typeql?rev=42ba8021d028e03b8a63f983b50997cd99d983c7#42ba8021d028e03b8a63f983b50997cd99d983c7"
 dependencies = [
  "chrono",
  "itertools 0.14.0",
