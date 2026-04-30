@@ -220,12 +220,6 @@ features = {}
 			features = []
 			default-features = false
 
-		[workspace.dependencies.typeql]
-			features = []
-			git = "https://github.com/typedb/typeql"
-			tag = "3.11.0"
-			default-features = false
-
 		[workspace.dependencies.cache]
 			path = "common/cache"
 			features = []
@@ -469,6 +463,12 @@ features = {}
 		[workspace.dependencies.same-file]
 			features = []
 			version = "1.0.6"
+			default-features = false
+
+		[workspace.dependencies.typeql]
+			features = []
+			rev = "fc420c4f1f035211e46291bb0ae2e32626a5f12c"
+			git = "https://github.com/typedb/typeql"
 			default-features = false
 
 		[workspace.dependencies.serde_with]
