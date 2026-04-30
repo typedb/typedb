@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeSet, HashSet};
+use std::{
+    collections::{BTreeSet, HashSet},
+    sync::Arc,
+};
 
 use answer::Type;
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
@@ -1470,4 +1473,17 @@ pub fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
     } else {
         Ok(None)
     }
+}
+
+pub fn get_all_concept_types(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+) -> Result<Arc<BTreeSet<Type>>, Box<ConceptReadError>> {
+    // TODO: Use for FunctionParameterAnnotation::AnyConcept
+    let object_types = type_manager.get_object_types(snapshot)?;
+    let attribute_types = type_manager.get_attribute_types(snapshot)?;
+    let concept_types =
+        Iterator::chain(object_types.into_iter().map(Type::from), attribute_types.into_iter().map(Type::from))
+            .collect();
+    Ok(Arc::new(concept_types))
 }

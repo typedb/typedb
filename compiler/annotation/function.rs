@@ -17,7 +17,7 @@ use encoding::{
     graph::definition::definition_key::DefinitionKey,
     value::{label::Label, value_type::ValueType},
 };
-use error::{needs_update_when_feature_is_implemented, todo_must_implement};
+use error::needs_update_when_feature_is_implemented;
 use ir::{
     pattern::{Vertex, expression::BuiltinConceptFunctionID},
     pipeline::{
@@ -38,7 +38,9 @@ use crate::{
     annotation::{
         FunctionAnnotationError, TypeInferenceError,
         expression::compiled_expression::ExpressionValueType,
-        pipeline::{AnnotatedStage, annotate_pipeline_stages, resolve_reducer_by_value_type},
+        pipeline::{
+            AnnotatedStage, RunningVariableAnnotations, annotate_pipeline_stages, resolve_reducer_by_value_type,
+        },
         type_seeder,
     },
     executable::reduce::ReduceInstruction,
@@ -231,31 +233,19 @@ pub(crate) fn annotate_anonymous_function(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
-    caller_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    caller_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
+    input_annotations: &RunningVariableAnnotations,
     _source_span: Option<Span>,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function { arguments, argument_labels, .. } = function;
     debug_assert!(argument_labels.is_none());
-    let mut argument_concept_variable_types = BTreeMap::new();
-    let mut argument_value_variable_types = BTreeMap::new();
-    for var in arguments {
-        if let Some(concept_annotation) = caller_type_annotations.get(var) {
-            argument_concept_variable_types.insert(*var, concept_annotation.clone());
-        } else if let Some(value_annotation) = caller_value_type_annotations.get(var) {
-            argument_value_variable_types.insert(*var, value_annotation.clone());
-        } else {
-            unreachable!("The type annotations for the argument in the function call should be known by now")
-        }
-    }
-    annotate_function_impl(
-        function,
-        snapshot,
-        type_manager,
-        annotated_function_signatures,
-        argument_concept_variable_types,
-        argument_value_variable_types,
-    )
+    let argument_types_iter = arguments.iter().map(|var| {
+        let arg_type = input_annotations
+            .get_param(var)
+            .expect("The type annotations for the argument in the function call should be known by now");
+        (*var, arg_type)
+    });
+    let argument_annotations = RunningVariableAnnotations::from_iterator(argument_types_iter);
+    annotate_function_impl(function, snapshot, type_manager, annotated_function_signatures, argument_annotations)
 }
 
 pub(super) fn annotate_named_function(
@@ -266,58 +256,15 @@ pub(super) fn annotate_named_function(
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function { arguments, argument_labels, .. } = function;
     debug_assert!(argument_labels.is_some());
-    let mut argument_concept_variable_types = BTreeMap::new();
-    let mut argument_value_variable_types = BTreeMap::new();
-    for (arg_index, (var, label)) in zip(arguments, argument_labels.as_ref().unwrap()).enumerate() {
-        let argument_annotations =
-            get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
-                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType {
-                    index: arg_index,
-                    source_span: label.span(),
-                    typedb_source,
-                })
-            })?;
-        match argument_annotations {
-            FunctionParameterAnnotation::AnyConcept => {
-                let object_types = type_manager.get_object_types(snapshot).map_err(|typedb_source| {
-                    FunctionAnnotationError::CouldNotResolveArgumentType {
-                        index: arg_index,
-                        source_span: label.span(),
-                        typedb_source: TypeInferenceError::ConceptRead { typedb_source },
-                    }
-                })?;
-                let attribute_types = type_manager.get_attribute_types(snapshot).map_err(|typedb_source| {
-                    FunctionAnnotationError::CouldNotResolveArgumentType {
-                        index: arg_index,
-                        source_span: label.span(),
-                        typedb_source: TypeInferenceError::ConceptRead { typedb_source },
-                    }
-                })?;
-
-                let concept_types = Iterator::chain(
-                    object_types.into_iter().map(Type::from),
-                    attribute_types.into_iter().map(Type::from),
-                )
-                .collect();
-
-                argument_concept_variable_types.insert(*var, Arc::new(concept_types));
-            }
-            FunctionParameterAnnotation::Concept(concept_annotation) => {
-                argument_concept_variable_types.insert(*var, Arc::new(concept_annotation));
-            }
-            FunctionParameterAnnotation::Value(value_annotation) => {
-                argument_value_variable_types.insert(*var, ExpressionValueType::Single(value_annotation));
-            }
-        }
-    }
-    annotate_function_impl(
-        function,
-        snapshot,
-        type_manager,
-        annotated_function_signatures,
-        argument_concept_variable_types,
-        argument_value_variable_types,
-    )
+    let arg_labels = argument_labels.as_ref().unwrap();
+    let types = get_annotations_from_labels_vec(snapshot, type_manager, arg_labels).map_err(
+        |(index, source_span, typedb_source)| {
+            Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index, source_span, typedb_source })
+        },
+    )?;
+    let argument_annotations =
+        RunningVariableAnnotations::from_iterator(zip(arguments.iter().copied(), types.into_iter()));
+    annotate_function_impl(function, snapshot, type_manager, annotated_function_signatures, argument_annotations)
 }
 
 fn annotate_function_impl(
@@ -325,22 +272,20 @@ fn annotate_function_impl(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
-    argument_concept_variable_types: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    argument_value_variable_types: BTreeMap<Variable, ExpressionValueType>,
+    argument_annotations_from_declaration: RunningVariableAnnotations,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function {
         name, context, parameters, function_body: FunctionBody { stages, return_operation }, arguments, ..
     } = function;
 
-    let (stages, running_variable_types, running_value_types) = annotate_pipeline_stages(
+    let (stages, output_annotations) = annotate_pipeline_stages(
         snapshot,
         type_manager,
         annotated_function_signatures,
         &mut context.variable_registry,
         parameters,
         stages.clone(),
-        argument_concept_variable_types.clone(),
-        argument_value_variable_types.clone(),
+        argument_annotations_from_declaration.clone(),
         Some(return_operation.variables().as_ref()),
     )
     .map_err(|err| {
@@ -351,19 +296,13 @@ fn annotate_function_impl(
         type_manager,
         &context.variable_registry,
         return_operation,
-        &running_variable_types,
-        &running_value_types,
+        &output_annotations,
     )?;
-    let return_annotations = annotate_return(&mapped_return, &running_variable_types, &running_value_types);
+    let return_annotations = annotate_return(&mapped_return, &output_annotations);
     if let Some(output) = function.output.as_ref() {
         validate_return_against_signature(snapshot, type_manager, function.name.as_str(), &return_annotations, output)?;
     }
-    let argument_annotations = annotate_arguments(
-        stages.as_slice(),
-        arguments,
-        &argument_concept_variable_types,
-        &argument_value_variable_types,
-    );
+    let argument_annotations = annotate_arguments(stages.as_slice(), arguments, &argument_annotations_from_declaration);
     let is_stream = matches!(function.output, Some(Output::Stream(_)));
     let annotated_signature =
         AnnotatedFunctionSignature { is_stream, arguments: argument_annotations, returns: return_annotations };
@@ -388,15 +327,11 @@ fn validate_return_against_signature(
         Output::Stream(stream) => &stream.types,
         Output::Single(single) => &single.types,
     };
-    let declared_return = return_labels
-        .iter()
-        .enumerate()
-        .map(|(index, label)| {
-            get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
-                Box::new(FunctionAnnotationError::CouldNotResolveReturnType { index, typedb_source })
-            })
-        })
-        .collect::<Result<Vec<_>, Box<FunctionAnnotationError>>>()?;
+    let declared_return = get_annotations_from_labels_vec(snapshot, type_manager, return_labels.as_slice()).map_err(
+        |(index, _span, typedb_source)| {
+            Box::new(FunctionAnnotationError::CouldNotResolveReturnType { index, typedb_source })
+        },
+    )?;
 
     debug_assert!(inferred_return.len() == declared_return.len());
     zip(inferred_return, declared_return).enumerate().try_for_each(|(i, (inferred, declared))| {
@@ -428,33 +363,21 @@ fn annotate_signature_based_on_labels(
     type_manager: &TypeManager,
     function: &Function,
 ) -> Result<AnnotatedFunctionSignature, Box<FunctionAnnotationError>> {
-    let argument_annotations: Vec<FunctionParameterAnnotation> = function
-        .argument_labels
-        .as_ref()
-        .unwrap()
-        .iter()
-        .enumerate()
-        .map(|(index, label)| {
-            get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
-                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType {
-                    index,
-                    source_span: label.span(),
-                    typedb_source,
-                })
-            })
-        })
-        .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
-    let returned = match function.output.as_ref().unwrap() {
-        Output::Stream(stream) => stream.types.iter(),
-        Output::Single(single) => single.types.iter(),
-    }
-    .enumerate()
-    .map(|(index, label)| {
-        get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
+    let argument_labels = function.argument_labels.as_ref().unwrap();
+    let argument_annotations = get_annotations_from_labels_vec(snapshot, type_manager, argument_labels).map_err(
+        |(index, source_span, typedb_source)| {
+            Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index, source_span, typedb_source })
+        },
+    )?;
+    let return_labels = match function.output.as_ref().unwrap() {
+        Output::Stream(stream) => stream.types.as_slice(),
+        Output::Single(single) => single.types.as_slice(),
+    };
+    let returned = get_annotations_from_labels_vec(snapshot, type_manager, &return_labels).map_err(
+        |(index, _span, typedb_source)| {
             Box::new(FunctionAnnotationError::CouldNotResolveReturnType { index, typedb_source })
-        })
-    })
-    .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
+        },
+    )?;
     let is_stream = matches!(function.output, Some(Output::Stream(_)));
     Ok(AnnotatedFunctionSignature { is_stream, arguments: argument_annotations, returns: returned })
 }
@@ -464,8 +387,7 @@ fn resolve_return_operators(
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     return_operation: &ReturnOperation,
-    input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
+    output_annotations: &RunningVariableAnnotations,
 ) -> Result<AnnotatedFunctionReturn, Box<FunctionAnnotationError>> {
     let return_ = match return_operation {
         ReturnOperation::Stream(variables, _) => AnnotatedFunctionReturn::Stream { variables: variables.clone() },
@@ -481,8 +403,7 @@ fn resolve_return_operators(
                     type_manager,
                     variable_registry,
                     reducer,
-                    input_type_annotations,
-                    input_value_type_annotations,
+                    output_annotations,
                     *source_span,
                 )
                 .map_err(|err| Box::new(FunctionAnnotationError::ReturnReduce { typedb_source: Box::new(err) }))?;
@@ -497,8 +418,7 @@ fn resolve_return_operators(
 fn annotate_arguments(
     annotated_stages: &[AnnotatedStage],
     arguments: &[Variable],
-    argument_annotations_from_signature: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    argument_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
+    argument_annotations_from_signature: &RunningVariableAnnotations,
 ) -> Vec<FunctionParameterAnnotation> {
     arguments
         .iter()
@@ -517,10 +437,10 @@ fn annotate_arguments(
             if let Some(arced_types) = body_variable_annotations.as_ref() {
                 let types: &BTreeSet<Type> = arced_types;
                 FunctionParameterAnnotation::Concept(types.clone())
-            } else if let Some(arced_types) = argument_annotations_from_signature.get(&var) {
+            } else if let Some(arced_types) = argument_annotations_from_signature.concepts.get(&var) {
                 let types: &BTreeSet<Type> = arced_types;
                 FunctionParameterAnnotation::Concept(types.clone())
-            } else if let Some(expression_value_type) = argument_value_type_annotations.get(&var) {
+            } else if let Some(expression_value_type) = argument_annotations_from_signature.values.get(&var) {
                 FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())
             } else {
                 unreachable!("Could not find annotations for a function argument or return variable.")
@@ -531,17 +451,16 @@ fn annotate_arguments(
 
 fn annotate_return(
     return_operation: &AnnotatedFunctionReturn,
-    final_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
-    final_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
+    final_stage_annotations: &RunningVariableAnnotations,
 ) -> Vec<FunctionParameterAnnotation> {
     match return_operation {
         AnnotatedFunctionReturn::Stream { variables } | AnnotatedFunctionReturn::Single { variables, .. } => variables
             .iter()
             .map(|&var| {
-                if let Some(arced_types) = final_type_annotations.get(&var) {
+                if let Some(arced_types) = final_stage_annotations.concepts.get(&var) {
                     let types: &BTreeSet<Type> = arced_types;
                     FunctionParameterAnnotation::Concept(types.clone())
-                } else if let Some(expression_value_type) = final_value_type_annotations.get(&var) {
+                } else if let Some(expression_value_type) = final_stage_annotations.values.get(&var) {
                     FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())
                 } else {
                     unreachable!("Could not find annotations for a function argument or return variable.")
@@ -571,7 +490,22 @@ fn get_function_parameter<V: From<Variable> + Ord>(
     }
 }
 
-fn get_annotations_from_labels(
+pub(super) fn get_annotations_from_labels_vec(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    typeql_labels: &[NamedTypeAny],
+) -> Result<Vec<FunctionParameterAnnotation>, (usize, Option<Span>, TypeInferenceError)> {
+    typeql_labels
+        .iter()
+        .enumerate()
+        .map(|(index, label)| {
+            get_annotations_from_labels(snapshot, type_manager, label)
+                .map_err(|err| (index, typeql_labels[index].span(), err))
+        })
+        .collect::<Result<Vec<_>, _>>()
+}
+
+pub(super) fn get_annotations_from_labels(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     typeql_label: &NamedTypeAny,
