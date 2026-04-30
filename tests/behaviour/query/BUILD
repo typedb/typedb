@@ -28,6 +28,7 @@ rust_test(
         "@typedb_behaviour//query/language:fetch.feature",
         "@typedb_behaviour//query/language:insert.feature",
         "@typedb_behaviour//query/language:match.feature",
+        "@typedb_behaviour//query/language:metadata.feature",
         "@typedb_behaviour//query/language:modifiers.feature",
         "@typedb_behaviour//query/language:negation.feature",
         "@typedb_behaviour//query/language:disjunction.feature",

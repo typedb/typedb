@@ -13,6 +13,7 @@ mod expressions;
 mod fetch;
 mod insert;
 mod r#match;
+mod metadata;
 mod modifiers;
 mod negation;
 mod optional;
