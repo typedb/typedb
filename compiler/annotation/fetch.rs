@@ -6,17 +6,17 @@
 
 use std::collections::{BTreeSet, HashMap, HashSet};
 
-use answer::{Type, variable::Variable};
-use concept::type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType};
+use answer::{variable::Variable, Type};
+use concept::type_::{attribute_type::AttributeType, OwnerAPI, TypeAPI};
 use encoding::graph::type_::Kind;
 use ir::{
     pattern::ParameterID,
     pipeline::{
-        ParameterRegistry, VariableRegistry,
         fetch::{
             FetchListAttributeAsList, FetchListAttributeFromList, FetchListSubFetch, FetchObject, FetchSingleAttribute,
             FetchSome,
-        },
+        }, ParameterRegistry,
+        VariableRegistry,
     },
     translation::PipelineTranslationContext,
 };
@@ -24,10 +24,11 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
 use crate::annotation::{
-    AnnotationContext, AnnotationError,
-    function::{AnnotatedFunction, annotate_anonymous_function},
-    pipeline::{AnnotatedStage, RunningVariableAnnotations, annotate_stages_and_fetch},
+    function::{annotate_anonymous_function, AnnotatedFunction},
+    pipeline::{annotate_stages_and_fetch, AnnotatedStage, RunningVariableAnnotations},
+    AnnotationError,
 };
+use crate::annotation::utils::{AnnotationContext, PipelineAnnotationContext};
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFetch {
@@ -62,49 +63,43 @@ pub struct AnnotatedFetchListSubFetch {
     pub fetch: AnnotatedFetch,
 }
 
-pub(crate) fn annotate_fetch<Snapshot: ReadableSnapshot>(
-    ctx: &AnnotationContext<'_, Snapshot>,
+pub(crate) fn annotate_fetch(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     fetch: FetchObject,
-    variable_registry: &VariableRegistry,
-    parameters: &ParameterRegistry,
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<AnnotatedFetch, AnnotationError> {
-    let object = annotate_object(ctx, fetch, variable_registry, parameters, input_annotations)?;
+    let object = annotate_object(ctx, fetch, input_annotations)?;
     Ok(AnnotatedFetch { object })
 }
 
-fn annotate_object<Snapshot: ReadableSnapshot>(
-    ctx: &AnnotationContext<'_, Snapshot>,
+fn annotate_object(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     object: FetchObject,
-    variable_registry: &VariableRegistry,
-    parameters: &ParameterRegistry,
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<AnnotatedFetchObject, AnnotationError> {
     match object {
         FetchObject::Entries(entries, source_spans) => {
             let annotated_entries =
-                annotated_object_entries(ctx, entries, source_spans, variable_registry, parameters, input_annotations)?;
+                annotated_object_entries(ctx, entries, source_spans, input_annotations)?;
             Ok(AnnotatedFetchObject::Entries(annotated_entries))
         }
         FetchObject::Attributes(attributes, _source_span) => Ok(AnnotatedFetchObject::Attributes(attributes)),
     }
 }
 
-fn annotated_object_entries<Snapshot: ReadableSnapshot>(
-    ctx: &AnnotationContext<'_, Snapshot>,
+fn annotated_object_entries(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     entries: HashMap<ParameterID, FetchSome>,
     entries_spans: HashMap<ParameterID, Option<Span>>,
-    variable_registry: &VariableRegistry,
-    parameters: &ParameterRegistry,
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<HashMap<ParameterID, AnnotatedFetchSome>, AnnotationError> {
     let mut annotated_entries = HashMap::new();
     for (key, value) in entries.into_iter() {
         let source_span = entries_spans.get(&key).cloned().flatten();
         let annotated_value =
-            annotate_some(ctx, value, variable_registry, parameters, input_annotations, source_span)
+            annotate_some(ctx, value, input_annotations, source_span)
                 .map_err(|err| AnnotationError::FetchEntry {
-                    key: parameters.fetch_key(&key).unwrap().clone(),
+                    key: ctx.parameters.fetch_key(&key).unwrap().clone(),
                     typedb_source: Box::new(err),
                 })?;
         annotated_entries.insert(key, annotated_value);
@@ -112,18 +107,16 @@ fn annotated_object_entries<Snapshot: ReadableSnapshot>(
     Ok(annotated_entries)
 }
 
-fn annotate_some<Snapshot: ReadableSnapshot>(
-    ctx: &AnnotationContext<'_, Snapshot>,
+fn annotate_some(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     some: FetchSome,
-    variable_registry: &VariableRegistry,
-    parameters: &ParameterRegistry,
     input_annotations: &RunningVariableAnnotations,
     source_span: Option<Span>,
 ) -> Result<AnnotatedFetchSome, AnnotationError> {
     match some {
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
         FetchSome::SingleAttribute(FetchSingleAttribute { variable, attribute }) => {
-            let variable_name = variable_registry
+            let variable_name = ctx.variable_registry
                 .get_variable_name(variable)
                 .expect("Expected fetched variable names to be validated during translation");
             let attribute_type = ctx
@@ -141,26 +134,26 @@ fn annotate_some<Snapshot: ReadableSnapshot>(
         }
         FetchSome::SingleFunction(mut function) => {
             let annotated_function =
-                annotate_anonymous_function(&mut function, ctx, input_annotations, source_span)
+                annotate_anonymous_function(&mut function, ctx.snapshot, ctx.type_manager, ctx.annotated_function_signatures, input_annotations, source_span)
                     .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::SingleFunction(annotated_function))
         }
         FetchSome::Object(object) => {
-            let object = annotate_object(ctx, *object, variable_registry, parameters, input_annotations)?;
+            let object = annotate_object(ctx, *object, input_annotations)?;
             Ok(AnnotatedFetchSome::Object(Box::new(object)))
         }
         FetchSome::ListFunction(mut function) => {
             let annotated_function =
-                annotate_anonymous_function(&mut function, ctx, input_annotations, source_span)
+                annotate_anonymous_function(&mut function, ctx.snapshot, ctx.type_manager, ctx.annotated_function_signatures, input_annotations, source_span)
                     .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::ListFunction(annotated_function))
         }
         FetchSome::ListSubFetch(sub_fetch) => {
-            let annotated_sub_fetch = annotate_sub_fetch(ctx, parameters, sub_fetch, input_annotations);
+            let annotated_sub_fetch = annotate_sub_fetch(ctx, sub_fetch, input_annotations);
             Ok(AnnotatedFetchSome::ListSubFetch(annotated_sub_fetch?))
         }
         FetchSome::ListAttributesAsList(FetchListAttributeAsList { variable, attribute }) => {
-            let variable_name = variable_registry
+            let variable_name = ctx.variable_registry
                 .get_variable_name(variable)
                 .expect("Expected fetched variable names to be validated during translation");
             let attribute_type = ctx
@@ -187,8 +180,8 @@ fn annotate_some<Snapshot: ReadableSnapshot>(
     }
 }
 
-fn validate_attribute_owned_and_scalar<Snapshot: ReadableSnapshot>(
-    ctx: &AnnotationContext<'_, Snapshot>,
+fn validate_attribute_owned_and_scalar(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     owner: &str,
     owner_types: &BTreeSet<Type>,
     attribute_type: AttributeType,
@@ -232,8 +225,8 @@ fn validate_attribute_owned_and_scalar<Snapshot: ReadableSnapshot>(
     Ok(())
 }
 
-fn validate_attribute_owned_and_streamable<Snapshot: ReadableSnapshot>(
-    ctx: &AnnotationContext<'_, Snapshot>,
+fn validate_attribute_owned_and_streamable(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     owner: &str,
     owner_type: &Type,
     attribute_type: AttributeType,
@@ -261,9 +254,8 @@ fn validate_attribute_owned_and_streamable<Snapshot: ReadableSnapshot>(
     Ok(())
 }
 
-fn annotate_sub_fetch<Snapshot: ReadableSnapshot>(
-    ctx: &AnnotationContext<'_, Snapshot>,
-    parameters: &ParameterRegistry,
+fn annotate_sub_fetch(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     sub_fetch: FetchListSubFetch,
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
@@ -271,8 +263,6 @@ fn annotate_sub_fetch<Snapshot: ReadableSnapshot>(
     let PipelineTranslationContext { mut variable_registry, .. } = context;
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
         ctx,
-        &mut variable_registry,
-        parameters,
         stages,
         Some(fetch),
         input_annotations.clone(),

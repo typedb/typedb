@@ -9,29 +9,24 @@ use std::{
     sync::Arc,
 };
 
-use answer::{Type, variable::Variable};
-use concept::type_::type_manager::TypeManager;
+use answer::{variable::Variable, Type};
 use ir::{
     pattern::{
-        Vertex,
         constraint::{Constraint, Has, Links},
         nested_pattern::NestedPattern,
+        Vertex,
     },
-    pipeline::{VariableRegistry, block::Block},
+    pipeline::block::Block,
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
-use crate::annotation::{
-    TypeInferenceError,
-    type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
-};
+use crate::annotation::{type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations}, TypeInferenceError};
+use crate::annotation::utils::{NameForError, PipelineAnnotationContext};
 
 pub fn check_type_combinations_for_write(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    variable_registry: &VariableRegistry,
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     block: &Block,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -39,10 +34,8 @@ pub fn check_type_combinations_for_write(
 ) -> Result<(), TypeInferenceError> {
     let conjunction = block.conjunction();
     check_type_combinations_for_write_conjunction(
+        ctx,
         conjunction,
-        snapshot,
-        type_manager,
-        variable_registry,
         input_annotations_variables,
         input_annotations_constraints,
         insert_annotations,
@@ -56,10 +49,8 @@ pub fn check_type_combinations_for_write(
                 unreachable!("Negation in write should have been rejected")
             }
             NestedPattern::Optional(optional) => check_type_combinations_for_write_conjunction(
+                ctx,
                 optional.conjunction(),
-                snapshot,
-                type_manager,
-                variable_registry,
                 input_annotations_variables,
                 input_annotations_constraints,
                 insert_annotations,
@@ -70,10 +61,8 @@ pub fn check_type_combinations_for_write(
 }
 
 fn check_type_combinations_for_write_conjunction(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     conjunction: &ir::pattern::conjunction::Conjunction,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    variable_registry: &VariableRegistry,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     insert_annotations: &BlockAnnotations,
@@ -82,9 +71,7 @@ fn check_type_combinations_for_write_conjunction(
         match constraint {
             Constraint::Has(has) => {
                 validate_has_type_combinations_for_write(
-                    snapshot,
-                    type_manager,
-                    variable_registry,
+                    ctx,
                     has,
                     input_annotations_variables,
                     input_annotations_constraints,
@@ -98,9 +85,7 @@ fn check_type_combinations_for_write_conjunction(
             }
             Constraint::Links(links) => {
                 validate_links_type_combinations_for_write(
-                    snapshot,
-                    type_manager,
-                    variable_registry,
+                    ctx,
                     links,
                     input_annotations_variables,
                     input_annotations_constraints,
@@ -138,9 +123,7 @@ fn check_type_combinations_for_write_conjunction(
 }
 
 pub(crate) fn validate_has_type_combinations_for_write(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    variable_registry: &VariableRegistry,
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     insert_has: &Has<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
@@ -162,7 +145,7 @@ pub(crate) fn validate_has_type_combinations_for_write(
     let match_pairs = match may_intersect_all(applicable_constraint_annotations) {
         Some(pairs) => pairs,
         None => pairs_from_vertex_annotations(
-            variable_registry,
+            ctx,
             input_annotations_variables,
             insert_has.owner(),
             insert_has.attribute(),
@@ -170,19 +153,16 @@ pub(crate) fn validate_has_type_combinations_for_write(
         )?,
     };
     check_insert_types_against_match_types(
+        ctx,
         valid_insert_types.left_to_right(),
         match_pairs,
         insert_has,
-        snapshot,
-        type_manager,
         insert_has.source_span(),
     )
 }
 
 pub(crate) fn validate_links_type_combinations_for_write(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    variable_registry: &VariableRegistry,
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     insert_links: &Links<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
@@ -210,7 +190,7 @@ pub(crate) fn validate_links_type_combinations_for_write(
             .map(|(_, annotations)| annotations.as_left_right().left_to_right());
         let match_pairs = match (may_intersect_all(link_annotations), may_intersect_all(relates_annotations)) {
             (None, None) => pairs_from_vertex_annotations(
-                variable_registry,
+                ctx,
                 input_annotations_variables,
                 insert_links.relation(),
                 insert_links.role_type(),
@@ -220,11 +200,10 @@ pub(crate) fn validate_links_type_combinations_for_write(
             (Some(a), Some(b)) => a.intersection(&b).cloned().collect(),
         };
         check_insert_types_against_match_types(
+            ctx,
             valid_insert_types.relation_to_role(),
             match_pairs,
             insert_links,
-            snapshot,
-            type_manager,
             insert_links.source_span(),
         )?;
     }
@@ -247,7 +226,7 @@ pub(crate) fn validate_links_type_combinations_for_write(
             .map(|(_, annotations)| annotations.as_left_right().left_to_right());
         let match_pairs = match (may_intersect_all(link_annotations), may_intersect_all(plays_annotations)) {
             (None, None) => pairs_from_vertex_annotations(
-                variable_registry,
+                ctx,
                 input_annotations_variables,
                 insert_links.player(),
                 insert_links.role_type(),
@@ -257,11 +236,10 @@ pub(crate) fn validate_links_type_combinations_for_write(
             (Some(a), Some(b)) => a.intersection(&b).cloned().collect(),
         };
         check_insert_types_against_match_types(
+            ctx,
             valid_insert_types.player_to_role(),
             match_pairs,
             insert_links,
-            snapshot,
-            type_manager,
             insert_links.source_span(),
         )?;
     }
@@ -288,33 +266,30 @@ fn may_intersect_all<T: ContainsAndIterOnType>(
 }
 
 fn pairs_from_vertex_annotations(
-    variable_registry: &VariableRegistry,
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     left: &Vertex<Variable>,
     right: &Vertex<Variable>,
     source_span: Option<Span>,
 ) -> Result<BTreeSet<(Type, Type)>, TypeInferenceError> {
-    let left_types = input_annotations_variables.get(left.as_variable().as_ref().unwrap()).ok_or(
-        TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: variable_registry.get_variable_name_or_unnamed(left.as_variable().unwrap()).to_owned(),
-            source_span,
-        },
-    )?;
-    let right_types = input_annotations_variables.get(right.as_variable().as_ref().unwrap()).ok_or(
-        TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: variable_registry.get_variable_name_or_unnamed(right.as_variable().unwrap()).to_owned(),
-            source_span,
-        },
-    )?;
-    Ok(left_types.iter().cloned().cartesian_product(right_types.iter().cloned()).collect())
+    let get_types = |var: Variable| {
+        input_annotations_variables.get(&var)
+            .map(|types| types.iter().cloned())
+            .ok_or(TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
+                variable: var.name_for_error(ctx)?,
+                source_span,
+            })
+    };
+    let left_types = get_types(left.as_variable().unwrap())?;
+    let right_types = get_types(right.as_variable().unwrap())?;
+    Ok(left_types.cartesian_product(right_types).collect())
 }
 
 fn check_insert_types_against_match_types<T: ContainsAndIterOnType>(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     valid_insert_pairs: Arc<BTreeMap<Type, T>>,
     match_pairs: BTreeSet<(Type, Type)>,
     constraint: &(impl Into<Constraint<Variable>> + Clone),
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
     source_span: Option<Span>,
 ) -> Result<(), TypeInferenceError> {
     let mut invalid_iter = match_pairs.iter().filter(|(left_type, right_type)| {
@@ -324,20 +299,11 @@ fn check_insert_types_against_match_types<T: ContainsAndIterOnType>(
             .unwrap_or(false)
     });
     if let Some((left_type, right_type)) = invalid_iter.next() {
+        let as_constraint = Into::<Constraint<Variable>>::into(constraint.clone());
         Err(TypeInferenceError::IllegalTypeCombinationForWrite {
-            constraint_name: Into::<Constraint<Variable>>::into(constraint.clone()).name().to_string(),
-            left_type: left_type
-                .get_label(snapshot, type_manager)
-                .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
-                .scoped_name()
-                .as_str()
-                .to_string(),
-            right_type: right_type
-                .get_label(snapshot, type_manager)
-                .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
-                .scoped_name()
-                .as_str()
-                .to_string(),
+            constraint_name: as_constraint.name().to_string(),
+            left_type: left_type.name_for_error(ctx)?,
+            right_type: right_type.name_for_error(ctx)?,
             source_span,
         })
     } else {
