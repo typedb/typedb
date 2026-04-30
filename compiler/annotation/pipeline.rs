@@ -48,7 +48,7 @@ use crate::{
             AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions,
             AnnotatedSchemaFunctions, FunctionParameterAnnotation, annotate_preamble_functions,
         },
-        match_inference::infer_types,
+        match_inference::infer_types_for_block,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
         utils::PipelineAnnotationContext,
@@ -191,16 +191,8 @@ fn annotate_stage(
 ) -> Result<AnnotatedStage, AnnotationError> {
     match stage {
         TranslatedStage::Match { block, source_span } => {
-            let mut block_annotations = infer_types(
-                ctx.snapshot,
-                &block,
-                ctx.variable_registry,
-                ctx.type_manager,
-                &running_annotations.concepts,
-                ctx.annotated_function_signatures,
-                false,
-            )
-            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            let mut block_annotations = infer_types_for_block(ctx, &running_annotations, &block, false)
+                .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
             root_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
                 if let Some(var) = vertex.as_variable() {
@@ -272,16 +264,8 @@ fn annotate_stage(
         }
 
         TranslatedStage::Put { block, source_span } => {
-            let mut match_annotations = infer_types(
-                ctx.snapshot,
-                &block,
-                &ctx.variable_registry,
-                ctx.type_manager,
-                &running_annotations.concepts,
-                ctx.annotated_function_signatures,
-                false,
-            )
-            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            let mut match_annotations = infer_types_for_block(ctx, running_annotations, &block, false)
+                .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             complete_block_annotations_with_value_types(
                 ctx,
                 &running_annotations,
@@ -429,16 +413,8 @@ fn annotate_write_stage(
     running_annotations: &mut RunningVariableAnnotations,
     block: &Block,
 ) -> Result<BlockAnnotations, AnnotationError> {
-    let mut block_annotations = infer_types(
-        ctx.snapshot,
-        block,
-        ctx.variable_registry,
-        ctx.type_manager,
-        &running_annotations.concepts,
-        ctx.annotated_function_signatures,
-        true,
-    )
-    .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+    let mut block_annotations = infer_types_for_block(ctx, running_annotations, block, true)
+        .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
     complete_block_annotations_with_value_types(
         ctx,
