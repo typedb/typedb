@@ -264,7 +264,7 @@ features = {}
 
 		[workspace.dependencies.typeql]
 			features = []
-			rev = "7029e9f036540ad75d9bdc3afb1207409741d42a"
+			rev = "fc420c4f1f035211e46291bb0ae2e32626a5f12c"
 			git = "https://github.com/typedb/typeql"
 			default-features = false
 
@@ -461,7 +461,7 @@ features = {}
 
 		[workspace.dependencies.itertools]
 			features = ["default", "use_alloc", "use_std"]
-			version = "0.10.5"
+			version = "0.14.0"
 			default-features = false
 
 		[workspace.dependencies.jsonwebtoken]
