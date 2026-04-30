@@ -17,7 +17,7 @@ async fn test_read_modifiers() {
     let path = "../typedb_behaviour+/query/language/modifiers.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/language/modifiers.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/language/modifiers.feature";
 
     assert!(Context::test(path, true).await);
 }

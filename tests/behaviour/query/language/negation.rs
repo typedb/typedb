@@ -17,7 +17,7 @@ async fn test_read_negation() {
     let path = "../typedb_behaviour+/query/language/negation.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/language/negation.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/language/negation.feature";
 
     assert!(Context::test(path, true).await);
 }

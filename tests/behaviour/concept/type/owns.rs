@@ -17,7 +17,7 @@ async fn test_owns() {
     let path = "../typedb_behaviour+/concept/type/owns.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/concept/type/owns.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/concept/type/owns.feature";
 
     assert!(Context::test(path, true).await);
 }
