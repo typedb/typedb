@@ -11,7 +11,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{TypeInferenceError, function::AnnotatedFunctionSignatures};
 
-pub(crate) struct PipelineAnnotationContext<'a, Snapshot: ReadableSnapshot> {
+pub struct PipelineAnnotationContext<'a, Snapshot: ReadableSnapshot> {
     pub(crate) snapshot: &'a Snapshot,
     pub(crate) type_manager: &'a TypeManager,
     pub(crate) annotated_function_signatures: &'a dyn AnnotatedFunctionSignatures,
@@ -20,7 +20,7 @@ pub(crate) struct PipelineAnnotationContext<'a, Snapshot: ReadableSnapshot> {
 }
 
 impl<'a, Snapshot: ReadableSnapshot> PipelineAnnotationContext<'a, Snapshot> {
-    pub(crate) fn new(
+    pub fn new(
         snapshot: &'a Snapshot,
         type_manager: &'a TypeManager,
         annotated_function_signatures: &'a dyn AnnotatedFunctionSignatures,

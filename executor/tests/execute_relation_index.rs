@@ -5,14 +5,17 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     sync::Arc,
 };
 
 use answer::variable::Variable;
 use compiler::{
     ExecutorVariable, VariablePosition,
-    annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
+    annotation::{
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_in_block,
+        utils::PipelineAnnotationContext,
+    },
     executable::{
         function::ExecutableFunctionRegistry,
         match_::{
@@ -333,23 +336,19 @@ fn traverse_index_from_unbound() {
     conjunction.constraints_mut().add_label(var_casting_character_type, CASTING_CHARACTER_LABEL.clone()).unwrap();
 
     let entry = builder.finish().unwrap();
-    let value_parameters = Arc::new(value_parameters);
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let block_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &entry,
-        variable_registry,
         &type_manager,
-        previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
+    let value_parameters = Arc::new(value_parameters);
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_movie, var_character, var_casting],
@@ -592,18 +591,14 @@ fn traverse_index_from_bound() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let block_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &entry,
-        variable_registry,
         &type_manager,
-        previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
@@ -758,18 +753,14 @@ fn traverse_index_bound_role_type_filtered_correctly() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let block_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &entry,
-        variable_registry,
         &type_manager,
-        previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(

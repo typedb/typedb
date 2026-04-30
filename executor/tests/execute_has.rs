@@ -6,14 +6,17 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     sync::Arc,
 };
 
 use answer::variable::Variable;
 use compiler::{
     ExecutorVariable, VariablePosition,
-    annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
+    annotation::{
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_in_block,
+        utils::PipelineAnnotationContext,
+    },
     executable::{
         function::ExecutableFunctionRegistry,
         match_::{
@@ -186,18 +189,14 @@ fn traverse_has_unbounded_sorted_from() {
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let block_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &entry,
-        variable_registry,
         &type_manager,
-        previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -282,18 +281,14 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let entry = builder.finish().unwrap();
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let block_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &entry,
-        variable_registry,
         &type_manager,
-        previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person_1, var_person_2, var_name], [var_person_type, var_name_type]);
@@ -391,18 +386,14 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let block_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &entry,
-        variable_registry,
         &type_manager,
-        previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -478,18 +469,14 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let block_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &entry,
-        variable_registry,
         &type_manager,
-        previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -586,18 +573,14 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let block_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &entry,
-        variable_registry,
         &type_manager,
-        previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =

@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, sync::Arc};
+use std::sync::Arc;
 
 use compiler::{
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types, type_annotations::BlockAnnotations,
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_in_block,
+        type_annotations::BlockAnnotations, utils::PipelineAnnotationContext,
     },
     transformation::{
         redundant_constraints::optimize_away_statically_unsatisfiable_conjunctions,
@@ -104,16 +105,14 @@ fn translate_and_annotate(
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
 
     let block = translated.finish().unwrap();
-    let type_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         snapshot,
-        &block,
-        &context.variable_registry,
         type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut context.variable_registry,
+        &parameters,
+    );
+    let type_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
     (block, type_annotations)
 }
 
@@ -172,16 +171,14 @@ fn run_test_relation_index_transformation_single(
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
 
     let mut block = translated.finish().unwrap();
-    let mut type_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &block,
-        &context.variable_registry,
         type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut context.variable_registry,
+        &parameters,
+    );
+    let mut type_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
 
     let conjunction = block.conjunction_mut();
 
@@ -262,16 +259,14 @@ fn run_test_relation_index_transformation_dual(
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
 
     let mut block = translated.finish().unwrap();
-    let mut type_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &block,
-        &context.variable_registry,
         type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut context.variable_registry,
+        &parameters,
+    );
+    let mut type_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
 
     let conjunction = block.conjunction_mut();
 
@@ -365,16 +360,14 @@ fn run_test_relation_index_transformation_not_applied_ternary(
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
 
     let mut block = translated.finish().unwrap();
-    let mut type_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &block,
-        &context.variable_registry,
         type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut context.variable_registry,
+        &parameters,
+    );
+    let mut type_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
 
     let conjunction = block.conjunction_mut();
 

@@ -104,18 +104,14 @@ where
     }
 }
 
-// pub fn infer_types(
-//     snapshot: &impl ReadableSnapshot,
-//     block: &Block,
-//     variable_registry: &mut VariableRegistry,
-//     type_manager: &TypeManager,
-//     previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
-//     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
-//     is_write_stage: bool,
-// ) -> Result<BlockAnnotations, TypeInferenceError> {
-//     let ctx = PipelineAnnotationContext::new(snapshot, type_manager, annotated_function_signatures, variable_registry, &ParameterRegistry::new());
-//     infer_types_for_block(ctx, RunningVariableAnnotations::, )
-// }
+pub fn infer_types_in_block(
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    block: &Block,
+    is_write_stage: bool,
+) -> Result<BlockAnnotations, TypeInferenceError> {
+    let empty_annotations = RunningVariableAnnotations { concepts: BTreeMap::new(), values: BTreeMap::new() };
+    infer_types_for_block(ctx, &empty_annotations, block, is_write_stage)
+}
 
 pub(crate) fn infer_types_for_block(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,

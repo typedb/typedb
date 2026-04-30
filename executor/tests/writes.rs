@@ -5,7 +5,7 @@
 */
 
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     sync::Arc,
     vec,
 };
@@ -13,7 +13,10 @@ use std::{
 use answer::variable_value::VariableValue;
 use compiler::{
     self, VariablePosition,
-    annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
+    annotation::{
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_in_block,
+        utils::PipelineAnnotationContext,
+    },
 };
 use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
@@ -177,18 +180,14 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let block_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &snapshot,
-        &block,
-        variable_registry,
         &type_manager,
-        previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let block_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
 
     let insert_plan = compiler::executable::insert::executable::compile(
         &block,
@@ -263,18 +262,14 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         .unwrap()
         .finish()
         .unwrap();
-        let variable_registry = &translation_context.variable_registry;
-        let previous_stage_variable_annotations = &BTreeMap::new();
-        infer_types(
+        let mut ctx = PipelineAnnotationContext::new(
             &snapshot,
-            &block,
-            variable_registry,
             &type_manager,
-            previous_stage_variable_annotations,
             &EmptyAnnotatedFunctionSignatures,
-            false,
-        )
-        .unwrap()
+            &mut translation_context.variable_registry,
+            &value_parameters,
+        );
+        infer_types_in_block(&mut ctx, &block, false).unwrap()
     };
 
     let typeql_delete =

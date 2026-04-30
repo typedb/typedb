@@ -86,7 +86,7 @@ pub mod tests {
         },
         match_inference::{
             NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
-            compute_type_inference_graph, infer_types, prune_types,
+            compute_type_inference_graph, prune_types,
         },
         pipeline::AnnotatedStage,
         tests::{
