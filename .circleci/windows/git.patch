@@ -1,11 +1,10 @@
-diff --git a/BUILD b/BUILD
-index dd59a2ef3..a55ad12c4 100644
---- a/BUILD
-+++ b/BUILD
-@@ -77,13 +77,23 @@ alias(
+--- a/BUILD	2026-04-30 14:54:24.805494009 +0000
++++ b/BUILD	2026-04-30 14:54:40.840196003 +0000
+@@ -77,13 +77,23 @@
      })
  )
  
+-# The directory structure for distribution (Unix)
 +filegroup(
 +    name = "typedb_server_bin_release",
 +    srcs = ["typedb_server_bin.exe"],
@@ -16,7 +15,7 @@ index dd59a2ef3..a55ad12c4 100644
 +    srcs = ["typedb_admin_bin.exe"],
 +)
 +
- # The directory structure for distribution
++# The directory structure for distribution (Windows)
  pkg_files(
      name = "package-layout-server",
 -    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml"],
