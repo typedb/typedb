@@ -39,10 +39,8 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineAnnotationContext<'a, Snapshot> {
         &mut self,
     ) -> (AnnotationContext<'a, Snapshot>, &mut VariableRegistry, &ParameterRegistry) {
         let Self { snapshot, type_manager, annotated_function_signatures, variable_registry, parameters } = self;
-        let cloned_reference_annotated_function_signatures =
-            <&dyn AnnotatedFunctionSignatures as Clone>::clone(annotated_function_signatures);
         (
-            AnnotationContext::new(snapshot, type_manager, cloned_reference_annotated_function_signatures),
+            AnnotationContext::new(snapshot, type_manager, *annotated_function_signatures),
             variable_registry,
             parameters,
         )
