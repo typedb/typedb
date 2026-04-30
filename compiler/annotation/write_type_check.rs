@@ -22,10 +22,10 @@ use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
-use crate::annotation::utils::{NameForError, PipelineAnnotationContext};
 use crate::annotation::{
     TypeInferenceError,
     type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
+    utils::PipelineAnnotationContext,
 };
 
 pub fn check_type_combinations_for_write(
@@ -278,7 +278,7 @@ fn pairs_from_vertex_annotations(
     let get_types = |var: Variable| {
         input_annotations_variables.get(&var).map(|types| types.iter().cloned()).ok_or(
             TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-                variable: var.name_for_error(ctx)?,
+                variable: ctx.name_for_error(var),
                 source_span,
             },
         )
@@ -305,8 +305,8 @@ fn check_insert_types_against_match_types<T: ContainsAndIterOnType>(
         let as_constraint = Into::<Constraint<Variable>>::into(constraint.clone());
         Err(TypeInferenceError::IllegalTypeCombinationForWrite {
             constraint_name: as_constraint.name().to_string(),
-            left_type: left_type.name_for_error(ctx)?,
-            right_type: right_type.name_for_error(ctx)?,
+            left_type: ctx.type_label_for_error(*left_type)?,
+            right_type: ctx.type_label_for_error(*right_type)?,
             source_span,
         })
     } else {

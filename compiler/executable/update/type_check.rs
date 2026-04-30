@@ -17,10 +17,10 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 
-use crate::annotation::utils::{NameForError, PipelineAnnotationContext};
 use crate::annotation::{
     TypeInferenceError,
     type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
+    utils::PipelineAnnotationContext,
     write_type_check::{validate_has_type_combinations_for_write, validate_links_type_combinations_for_write},
 };
 
@@ -31,6 +31,8 @@ pub fn check_annotations(
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     insert_annotations: &BlockAnnotations,
 ) -> Result<(), TypeInferenceError> {
+    let constraint_annotations =
+        insert_annotations.type_annotations_of(block.conjunction()).unwrap().constraint_annotations();
     for constraint in block.conjunction().constraints() {
         match constraint {
             Constraint::Has(has) => {
@@ -39,12 +41,7 @@ pub fn check_annotations(
                     has,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    insert_annotations
-                        .type_annotations_of(block.conjunction())
-                        .unwrap()
-                        .constraint_annotations_of(constraint.clone())
-                        .unwrap()
-                        .as_left_right(),
+                    constraint_annotations[constraint].as_left_right(),
                 )?;
             }
             Constraint::Links(links) => {
@@ -53,12 +50,7 @@ pub fn check_annotations(
                     links,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    insert_annotations
-                        .type_annotations_of(block.conjunction())
-                        .unwrap()
-                        .constraint_annotations_of(constraint.clone())
-                        .unwrap()
-                        .as_links(),
+                    constraint_annotations[constraint].as_links(),
                 )?;
             }
 
@@ -104,16 +96,13 @@ fn validate_has_updatable(
 
     let input_owner_types = input_annotations_variables.get(&has.owner().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: ctx.variable_registry.get_variable_name_or_unnamed(has.owner().as_variable().unwrap()).to_owned(),
+            variable: ctx.name_for_error(has.owner().as_variable().unwrap()),
             source_span: has.source_span(),
         },
     )?;
     let input_attr_types = input_annotations_variables.get(&has.attribute().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: ctx
-                .variable_registry
-                .get_variable_name_or_unnamed(has.attribute().as_variable().unwrap())
-                .to_owned(),
+            variable: ctx.name_for_error(has.attribute().as_variable().unwrap()),
             source_span: has.source_span(),
         },
     )?;
@@ -192,8 +181,8 @@ fn validate_has_cardinality(
     if incorrect_cardinality.is_some() {
         Err(TypeInferenceError::IllegalUpdatableTypesDueToCardinality {
             constraint_name: Constraint::Has(has.clone()).name().to_string(),
-            left_type: object_type.name_for_error(ctx)?,
-            right_type: attribute_type.name_for_error(ctx)?,
+            left_type: ctx.label_for_error(object_type)?,
+            right_type: ctx.label_for_error(attribute_type)?,
             source_span: has.source_span(),
         })
     } else {
@@ -225,8 +214,8 @@ fn validate_links_cardinality(
     if incorrect_cardinality.is_some() {
         Err(TypeInferenceError::IllegalUpdatableTypesDueToCardinality {
             constraint_name: Constraint::Links(links.clone()).name().to_string(),
-            left_type: relation_type.name_for_error(&ctx)?,
-            right_type: role_type.name_for_error(&ctx)?,
+            left_type: ctx.label_for_error(relation_type)?,
+            right_type: ctx.label_for_error(role_type)?,
             source_span: links.source_span(),
         })
     } else {

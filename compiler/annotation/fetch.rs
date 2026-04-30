@@ -23,11 +23,11 @@ use ir::{
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
-use crate::annotation::utils::{AnnotationContext, PipelineAnnotationContext};
 use crate::annotation::{
     AnnotationError,
     function::{AnnotatedFunction, annotate_anonymous_function},
     pipeline::{AnnotatedStage, RunningVariableAnnotations, annotate_stages_and_fetch},
+    utils::{AnnotationContext, PipelineAnnotationContext},
 };
 
 #[derive(Debug, Clone)]

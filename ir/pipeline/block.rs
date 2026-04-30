@@ -267,10 +267,7 @@ fn validate_optional_returns_recursive(
         Some(mode) => *mode != BindingMode::OptionallyBinding,
     });
     if let Some((var, source_span)) = reused_optional_return_opt {
-        let variable = context
-            .get_variable_name(*var)
-            .map_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME, String::as_str)
-            .to_owned();
+        let variable = context.get_variable_name_or_unnamed(*var).to_owned();
         let source_span = source_span.clone();
         // Err(Box::new(RepresentationError::OptionalFunctionReturnReferenced { variable, source_span }))
         use error::TypeDBError;
@@ -348,6 +345,10 @@ impl<'a> BlockBuilderContext<'a> {
 
     pub(crate) fn get_variable_name(&self, variable: Variable) -> Option<&String> {
         self.variable_registry.get_variable_name(variable)
+    }
+
+    pub(crate) fn get_variable_name_or_unnamed(&self, variable: Variable) -> &str {
+        self.variable_registry.get_variable_name_or_unnamed(variable)
     }
 
     pub(crate) fn get_or_declare_variable(

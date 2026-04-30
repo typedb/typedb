@@ -35,8 +35,6 @@ use ir::{
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
-use crate::annotation::utils::AnnotationContext;
-use crate::annotation::utils::PipelineAnnotationContext;
 use crate::{
     annotation::{
         AnnotationError,
@@ -53,6 +51,7 @@ use crate::{
         match_inference::infer_types,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
+        utils::PipelineAnnotationContext,
         write_type_check::check_type_combinations_for_write,
     },
     executable::{reduce::ReduceInstruction, update},
@@ -209,12 +208,7 @@ fn annotate_stage(
                 }
             });
 
-            collect_value_types_of_function_call_assignments(
-                block.conjunction(),
-                ctx.annotated_function_signatures,
-                &mut running_annotations.values,
-                ctx.variable_registry,
-            )?;
+            collect_value_types_of_function_call_assignments(ctx, running_annotations, block.conjunction())?;
 
             // TODO: Why not pass PipelineAnnotationContext?
             let compiled_expressions = compile_expressions(
@@ -234,10 +228,10 @@ fn annotate_stage(
                 debug_assert!(_existing.is_none() || _existing == Some(compiled.return_type().clone()))
             });
             complete_block_annotations_with_value_types(
+                ctx,
+                &running_annotations,
                 block.conjunction(),
                 &mut block_annotations,
-                ctx.variable_registry,
-                &running_annotations.values,
             )?;
             Ok(AnnotatedStage::Match {
                 block,
@@ -289,10 +283,10 @@ fn annotate_stage(
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             complete_block_annotations_with_value_types(
+                ctx,
+                &running_annotations,
                 block.conjunction(),
                 &mut match_annotations,
-                ctx.variable_registry,
-                &running_annotations.values,
             )?;
             let insert_annotations = annotate_write_stage(ctx, running_annotations, &block)?;
             check_type_combinations_for_write(
@@ -357,41 +351,36 @@ fn annotate_stage(
 }
 
 fn complete_block_annotations_with_value_types(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    source_running_annotations: &RunningVariableAnnotations,
     conjunction: &Conjunction,
     block_annotations: &mut BlockAnnotations,
-    variable_registry: &VariableRegistry,
-    source_value_variable_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<(), AnnotationError> {
     let value_types_in_conjunction = conjunction
         .constraints()
         .iter()
         .flat_map(|c| c.ids())
-        .filter(|v| variable_registry.get_variable_category(*v).map_or(false, |cat| cat == VariableCategory::Value))
+        .filter(|v| ctx.variable_registry.get_variable_category(*v).map_or(false, |cat| cat == VariableCategory::Value))
         .map(|v| {
-            (Vertex::Variable(v), source_value_variable_annotations.get(&v).expect("Expected value annotation").clone())
+            (Vertex::Variable(v), source_running_annotations.values.get(&v).expect("Expected value annotation").clone())
         })
         .collect();
     let _existing = block_annotations.set_value_types_of(conjunction, value_types_in_conjunction);
     conjunction.nested_patterns().iter().try_for_each(|pattern| match pattern {
         NestedPattern::Disjunction(disjunction) => disjunction.conjunctions().iter().try_for_each(|c| {
-            complete_block_annotations_with_value_types(
-                c,
-                block_annotations,
-                variable_registry,
-                source_value_variable_annotations,
-            )
+            complete_block_annotations_with_value_types(ctx, source_running_annotations, c, block_annotations)
         }),
         NestedPattern::Negation(inner) => complete_block_annotations_with_value_types(
+            ctx,
+            source_running_annotations,
             inner.conjunction(),
             block_annotations,
-            variable_registry,
-            source_value_variable_annotations,
         ),
         NestedPattern::Optional(inner) => complete_block_annotations_with_value_types(
+            ctx,
+            source_running_annotations,
             inner.conjunction(),
             block_annotations,
-            variable_registry,
-            source_value_variable_annotations,
         ),
     })
 }
@@ -408,7 +397,7 @@ pub fn validate_sort_variables_comparable(
             let value_types = resolve_value_types(&(**types), ctx.snapshot, ctx.type_manager)
                 .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             if value_types.is_empty() {
-                let variable_name = ctx.variable_registry.get_variable_name(sort_var.variable()).unwrap().clone();
+                let variable_name = ctx.name_for_error(sort_var.variable());
                 return Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput {
                     variable: variable_name,
                     source_span: sort.source_span(),
@@ -419,7 +408,7 @@ pub fn validate_sort_variables_comparable(
             for other_type in value_types.iter().map(|v| v.category()) {
                 // Don't need to do pairwise if comparable is transitive
                 if !allowed_categories.contains(&other_type) {
-                    let variable_name = ctx.variable_registry.get_variable_name(sort_var.variable()).unwrap().clone();
+                    let variable_name = ctx.name_for_error(sort_var.variable());
                     return Err(AnnotationError::UncomparableValueTypesForSortVariable {
                         variable: variable_name,
                         category1: first_category,
@@ -452,10 +441,10 @@ fn annotate_write_stage(
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
     complete_block_annotations_with_value_types(
+        ctx,
+        &running_annotations,
         block.conjunction(),
         &mut block_annotations,
-        ctx.variable_registry,
-        &running_annotations.values,
     )?;
 
     let annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
@@ -546,7 +535,7 @@ fn determine_value_type_for_reducer(
         match assigned_type {
             ExpressionValueType::Single(value_type) => Ok(value_type.clone()),
             ExpressionValueType::List(_) => {
-                let variable_name = ctx.variable_registry.variable_names()[&variable].clone();
+                let variable_name = ctx.name_for_error(variable);
                 Err(AnnotationError::ReducerInputVariableIsList {
                     reducer: reducer.name(),
                     variable: variable_name,
@@ -558,7 +547,7 @@ fn determine_value_type_for_reducer(
         let value_types = resolve_value_types(types, ctx.snapshot, ctx.type_manager)
             .map_err(|source| AnnotationError::TypeInference { typedb_source: source })?;
         if value_types.len() != 1 {
-            let variable_name = ctx.variable_registry.variable_names()[&variable].clone();
+            let variable_name = ctx.name_for_error(variable);
             Err(AnnotationError::ReducerInputVariableDidNotHaveSingleValueType {
                 variable: variable_name,
                 source_span: reduce_source_span,
@@ -567,7 +556,7 @@ fn determine_value_type_for_reducer(
             Ok(value_types.iter().next().unwrap().clone())
         }
     } else {
-        let variable_name = ctx.variable_registry.variable_names()[&variable].clone();
+        let variable_name = ctx.name_for_error(variable);
         Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput {
             variable: variable_name,
             source_span: reduce_source_span,
@@ -587,7 +576,7 @@ fn resolve_reduce_instruction_by_value_type(
     let err = || {
         let var = reducer.variable().unwrap();
         let reducer_name = reducer.name();
-        let variable_name = ctx.variable_registry.variable_names()[&var].clone();
+        let variable_name = ctx.name_for_error(var);
         Err(AnnotationError::UnsupportedValueTypeForReducer {
             reducer: reducer_name,
             variable: variable_name,
@@ -667,10 +656,9 @@ fn resolve_reduce_instruction_by_value_type(
 }
 
 fn collect_value_types_of_function_call_assignments(
+    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    running_annotations_to_update: &mut RunningVariableAnnotations,
     conjunction: &Conjunction,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
-    value_type_annotations: &mut BTreeMap<Variable, ExpressionValueType>,
-    variable_registry: &VariableRegistry,
 ) -> Result<(), AnnotationError> {
     conjunction
         .constraints()
@@ -680,15 +668,15 @@ fn collect_value_types_of_function_call_assignments(
             _ => None,
         })
         .try_for_each(|binding| {
-            let return_ = &annotated_function_signatures
+            let return_ = &ctx
+                .annotated_function_signatures
                 .get_annotated_signature(&binding.function_call().function_id())
                 .unwrap()
                 .returns;
             zip(binding.assigned(), return_.iter()).try_for_each(|(var, annotation)| match &annotation {
                 FunctionParameterAnnotation::Value(value_type) => {
-                    if value_type_annotations.contains_key(&var.as_variable().unwrap()) {
-                        let assign_variable =
-                            variable_registry.get_variable_name_or_unnamed(var.as_variable().unwrap()).to_owned();
+                    if running_annotations_to_update.values.contains_key(&var.as_variable().unwrap()) {
+                        let assign_variable = ctx.name_for_error(var.as_variable().unwrap());
                         return Err(AnnotationError::ExpressionCompilation {
                             typedb_source: Box::new(ExpressionCompileError::MultipleAssignmentsForVariable {
                                 variable: assign_variable,
@@ -696,7 +684,8 @@ fn collect_value_types_of_function_call_assignments(
                             }),
                         });
                     }
-                    value_type_annotations
+                    running_annotations_to_update
+                        .values
                         .insert(var.as_variable().unwrap(), ExpressionValueType::Single(value_type.clone()));
                     Ok(())
                 }
@@ -705,25 +694,14 @@ fn collect_value_types_of_function_call_assignments(
         })?;
     conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
         NestedPattern::Disjunction(disjunction) => disjunction.conjunctions().iter().try_for_each(|inner| {
-            collect_value_types_of_function_call_assignments(
-                inner,
-                annotated_function_signatures,
-                value_type_annotations,
-                variable_registry,
-            )
+            collect_value_types_of_function_call_assignments(ctx, running_annotations_to_update, inner)
         }),
-        NestedPattern::Negation(negation) => collect_value_types_of_function_call_assignments(
-            negation.conjunction(),
-            annotated_function_signatures,
-            value_type_annotations,
-            variable_registry,
-        ),
-        NestedPattern::Optional(optional) => collect_value_types_of_function_call_assignments(
-            optional.conjunction(),
-            annotated_function_signatures,
-            value_type_annotations,
-            variable_registry,
-        ),
+        NestedPattern::Negation(negation) => {
+            collect_value_types_of_function_call_assignments(ctx, running_annotations_to_update, negation.conjunction())
+        }
+        NestedPattern::Optional(optional) => {
+            collect_value_types_of_function_call_assignments(ctx, running_annotations_to_update, optional.conjunction())
+        }
     })?;
     Ok(())
 }

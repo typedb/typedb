@@ -34,7 +34,6 @@ use typeql::{
     type_::{NamedType, NamedTypeAny},
 };
 
-use crate::annotation::utils::{AnnotationContext, PipelineAnnotationContext};
 use crate::{
     annotation::{
         FunctionAnnotationError, TypeInferenceError,
@@ -43,6 +42,7 @@ use crate::{
             AnnotatedStage, RunningVariableAnnotations, annotate_pipeline_stages, resolve_reducer_by_value_type,
         },
         type_seeder,
+        utils::{AnnotationContext, PipelineAnnotationContext},
     },
     executable::reduce::ReduceInstruction,
 };

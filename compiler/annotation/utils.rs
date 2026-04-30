@@ -4,17 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::annotation::TypeInferenceError;
-use crate::annotation::function::AnnotatedFunctionSignatures;
 use answer::variable::Variable;
-use concept::type_::TypeAPI;
-use concept::type_::attribute_type::AttributeType;
-use concept::type_::object_type::ObjectType;
-use concept::type_::relation_type::RelationType;
-use concept::type_::role_type::RoleType;
-use concept::type_::type_manager::TypeManager;
+use concept::type_::{TypeAPI, type_manager::TypeManager};
 use ir::pipeline::{ParameterRegistry, VariableRegistry};
 use storage::snapshot::ReadableSnapshot;
+
+use crate::annotation::{TypeInferenceError, function::AnnotatedFunctionSignatures};
 
 pub(crate) struct PipelineAnnotationContext<'a, Snapshot: ReadableSnapshot> {
     pub(crate) snapshot: &'a Snapshot,
@@ -39,11 +34,25 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineAnnotationContext<'a, Snapshot> {
         &mut self,
     ) -> (AnnotationContext<'a, Snapshot>, &mut VariableRegistry, &ParameterRegistry) {
         let Self { snapshot, type_manager, annotated_function_signatures, variable_registry, parameters } = self;
-        (
-            AnnotationContext::new(snapshot, type_manager, *annotated_function_signatures),
-            variable_registry,
-            parameters,
-        )
+        (AnnotationContext::new(snapshot, type_manager, *annotated_function_signatures), variable_registry, parameters)
+    }
+
+    pub(crate) fn name_for_error(&self, variable: Variable) -> String {
+        self.variable_registry.get_variable_name_or_unnamed(variable).to_owned()
+    }
+
+    pub(crate) fn label_for_error(&self, type_: impl TypeAPI) -> Result<String, TypeInferenceError> {
+        match type_.get_label(self.snapshot, self.type_manager) {
+            Ok(label) => Ok(label.scoped_name().as_str().to_string()),
+            Err(typedb_source) => Err(TypeInferenceError::ConceptRead { typedb_source }),
+        }
+    }
+
+    pub(crate) fn type_label_for_error(&self, type_: answer::Type) -> Result<String, TypeInferenceError> {
+        match type_.get_label(self.snapshot, self.type_manager) {
+            Ok(label) => Ok(label.scoped_name().as_str().to_string()),
+            Err(typedb_source) => Err(TypeInferenceError::ConceptRead { typedb_source }),
+        }
     }
 }
 
@@ -76,34 +85,3 @@ impl<'a, Snapshot: ReadableSnapshot> AnnotationContext<'a, Snapshot> {
         )
     }
 }
-
-pub(crate) trait NameForError {
-    fn name_for_error(
-        &self,
-        ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
-    ) -> Result<String, TypeInferenceError>;
-}
-
-impl NameForError for Variable {
-    fn name_for_error(
-        &self,
-        ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
-    ) -> Result<String, TypeInferenceError> {
-        Ok(ctx.variable_registry.get_variable_name_or_unnamed(*self).to_owned())
-    }
-}
-
-macro_rules! impl_name_error_for_label {
-    ( $($type_:ty,)* ) => { $(
-        impl NameForError for $type_ {
-            fn name_for_error(&self, ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>) -> Result<String, TypeInferenceError> {
-                match self.get_label(ctx.snapshot, ctx.type_manager) {
-                    Ok(label) => Ok(label.scoped_name().as_str().to_string()),
-                    Err(typedb_source) => Err(TypeInferenceError::ConceptRead { typedb_source }),
-                }
-            }
-        }
-    )*};
-}
-
-impl_name_error_for_label!(ObjectType, AttributeType, RoleType, RelationType, answer::Type,);
