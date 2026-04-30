@@ -2045,7 +2045,7 @@
     "@@rules_python+//python/extensions:pip.bzl%pip": {
       "general": {
         "bzlTransitiveDigest": "N8A7SMSctOF8gpEq1rUWGJMTB3s25iGPNKAcgmIMFRI=",
-        "usagesDigest": "9+c5u5dqYloX74wDvGFH/1DzoiicJFIM7zxbdgkFT1o=",
+        "usagesDigest": "nb2/bhnIQVBFEJ4Fq1No95LwF0ANq/0smo8duA/vS7A=",
         "recordedFileInputs": {
           "@@grpc+//requirements.bazel.txt": "4c8c19a2a8f22108bf29feb5cc2694eb0c7e0c82ba0364df27fe5f5e4d7936e5",
           "@@protobuf+//python/requirements.txt": "983be60d3cec4b319dcab6d48aeb3f5b2f7c3350f26b3a9e97486c37967c73c5",
