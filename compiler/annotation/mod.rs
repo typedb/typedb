@@ -4,11 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use concept::error::ConceptReadError;
+use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value_type::ValueTypeCategory};
 use error::typedb_error;
 use expression::ExpressionCompileError;
+use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
+use ir::pipeline::{ParameterRegistry, VariableRegistry};
+use crate::annotation::function::AnnotatedFunctionSignatures;
 
 pub mod expression;
 pub mod fetch;
@@ -19,6 +22,30 @@ pub mod type_annotations;
 pub mod type_inference;
 mod type_seeder;
 pub(crate) mod write_type_check;
+
+pub(crate) struct BlockAnnotationContext<'a, Snapshot: ReadableSnapshot> {
+    pub(crate) snapshot: &'a Snapshot,
+    pub(crate) type_manager: &'a TypeManager,
+    pub(crate) annotated_function_signatures: &'a dyn AnnotatedFunctionSignatures,
+    pub(crate) variable_registry: &'a mut VariableRegistry,
+    pub(crate) parameters: &'a ParameterRegistry,
+}
+
+pub(crate) struct AnnotationContext<'a, Snapshot: ReadableSnapshot> {
+    pub(crate) snapshot: &'a Snapshot,
+    pub(crate) type_manager: &'a TypeManager,
+    pub(crate) annotated_function_signatures: &'a dyn AnnotatedFunctionSignatures,
+}
+
+impl<'a, Snapshot: ReadableSnapshot> AnnotationContext<'a, Snapshot> {
+    pub(crate) fn new(
+        snapshot: &'a Snapshot,
+        type_manager: &'a TypeManager,
+        annotated_function_signatures: &'a dyn AnnotatedFunctionSignatures,
+    ) -> Self {
+        Self { snapshot, type_manager, annotated_function_signatures }
+    }
+}
 
 typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {

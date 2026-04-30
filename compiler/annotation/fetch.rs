@@ -7,7 +7,7 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 use answer::{Type, variable::Variable};
-use concept::type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType, type_manager::TypeManager};
+use concept::type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType};
 use encoding::graph::type_::Kind;
 use ir::{
     pattern::ParameterID,
@@ -24,8 +24,8 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
 use crate::annotation::{
-    AnnotationError,
-    function::{AnnotatedFunction, AnnotatedFunctionSignatures, annotate_anonymous_function},
+    AnnotationContext, AnnotationError,
+    function::{AnnotatedFunction, annotate_anonymous_function},
     pipeline::{AnnotatedStage, RunningVariableAnnotations, annotate_stages_and_fetch},
 };
 
@@ -62,93 +62,61 @@ pub struct AnnotatedFetchListSubFetch {
     pub fetch: AnnotatedFetch,
 }
 
-pub(crate) fn annotate_fetch(
+pub(crate) fn annotate_fetch<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     fetch: FetchObject,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<AnnotatedFetch, AnnotationError> {
-    let object = annotate_object(
-        fetch,
-        snapshot,
-        type_manager,
-        variable_registry,
-        parameters,
-        annotated_function_signatures,
-        input_annotations,
-    )?;
+    let object = annotate_object(ctx, fetch, variable_registry, parameters, input_annotations)?;
     Ok(AnnotatedFetch { object })
 }
 
-fn annotate_object(
+fn annotate_object<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     object: FetchObject,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<AnnotatedFetchObject, AnnotationError> {
     match object {
         FetchObject::Entries(entries, source_spans) => {
-            let annotated_entries = annotated_object_entries(
-                entries,
-                source_spans,
-                snapshot,
-                type_manager,
-                variable_registry,
-                parameters,
-                annotated_function_signatures,
-                input_annotations,
-            )?;
+            let annotated_entries =
+                annotated_object_entries(ctx, entries, source_spans, variable_registry, parameters, input_annotations)?;
             Ok(AnnotatedFetchObject::Entries(annotated_entries))
         }
         FetchObject::Attributes(attributes, _source_span) => Ok(AnnotatedFetchObject::Attributes(attributes)),
     }
 }
 
-fn annotated_object_entries(
+fn annotated_object_entries<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     entries: HashMap<ParameterID, FetchSome>,
     entries_spans: HashMap<ParameterID, Option<Span>>,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<HashMap<ParameterID, AnnotatedFetchSome>, AnnotationError> {
     let mut annotated_entries = HashMap::new();
     for (key, value) in entries.into_iter() {
         let source_span = entries_spans.get(&key).cloned().flatten();
-        let annotated_value = annotate_some(
-            value,
-            snapshot,
-            type_manager,
-            variable_registry,
-            parameters,
-            annotated_function_signatures,
-            input_annotations,
-            source_span,
-        )
-        .map_err(|err| AnnotationError::FetchEntry {
-            key: parameters.fetch_key(&key).unwrap().clone(),
-            typedb_source: Box::new(err),
-        })?;
+        let annotated_value =
+            annotate_some(ctx, value, variable_registry, parameters, input_annotations, source_span)
+                .map_err(|err| AnnotationError::FetchEntry {
+                    key: parameters.fetch_key(&key).unwrap().clone(),
+                    typedb_source: Box::new(err),
+                })?;
         annotated_entries.insert(key, annotated_value);
     }
     Ok(annotated_entries)
 }
 
-fn annotate_some(
+fn annotate_some<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     some: FetchSome,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_annotations: &RunningVariableAnnotations,
     source_span: Option<Span>,
 ) -> Result<AnnotatedFetchSome, AnnotationError> {
@@ -158,8 +126,9 @@ fn annotate_some(
             let variable_name = variable_registry
                 .get_variable_name(variable)
                 .expect("Expected fetched variable names to be validated during translation");
-            let attribute_type = type_manager
-                .get_attribute_type(snapshot, &attribute)
+            let attribute_type = ctx
+                .type_manager
+                .get_attribute_type(ctx.snapshot, &attribute)
                 .map_err(|err| AnnotationError::ConceptRead { typedb_source: err })?
                 .ok_or_else(|| AnnotationError::FetchAttributeNotFound {
                     var: variable_name.clone(),
@@ -167,69 +136,36 @@ fn annotate_some(
                     attribute,
                 })?;
             let owner_types = input_annotations.concepts.get(&variable).unwrap();
-            validate_attribute_owned_and_scalar(
-                snapshot,
-                type_manager,
-                variable_name,
-                owner_types,
-                attribute_type,
-                source_span,
-            )?;
+            validate_attribute_owned_and_scalar(ctx, variable_name, owner_types, attribute_type, source_span)?;
             Ok(AnnotatedFetchSome::SingleAttribute(variable, attribute_type))
         }
         FetchSome::SingleFunction(mut function) => {
-            let annotated_function = annotate_anonymous_function(
-                &mut function,
-                snapshot,
-                type_manager,
-                annotated_function_signatures,
-                input_annotations,
-                source_span,
-            )
-            .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
+            let annotated_function =
+                annotate_anonymous_function(&mut function, ctx, input_annotations, source_span)
+                    .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::SingleFunction(annotated_function))
         }
         FetchSome::Object(object) => {
-            let object = annotate_object(
-                *object,
-                snapshot,
-                type_manager,
-                variable_registry,
-                parameters,
-                annotated_function_signatures,
-                input_annotations,
-            )?;
+            let object = annotate_object(ctx, *object, variable_registry, parameters, input_annotations)?;
             Ok(AnnotatedFetchSome::Object(Box::new(object)))
         }
         FetchSome::ListFunction(mut function) => {
-            let annotated_function = annotate_anonymous_function(
-                &mut function,
-                snapshot,
-                type_manager,
-                annotated_function_signatures,
-                input_annotations,
-                source_span,
-            )
-            .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
+            let annotated_function =
+                annotate_anonymous_function(&mut function, ctx, input_annotations, source_span)
+                    .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::ListFunction(annotated_function))
         }
         FetchSome::ListSubFetch(sub_fetch) => {
-            let annotated_sub_fetch = annotate_sub_fetch(
-                snapshot,
-                type_manager,
-                annotated_function_signatures,
-                parameters,
-                sub_fetch,
-                input_annotations,
-            );
+            let annotated_sub_fetch = annotate_sub_fetch(ctx, parameters, sub_fetch, input_annotations);
             Ok(AnnotatedFetchSome::ListSubFetch(annotated_sub_fetch?))
         }
         FetchSome::ListAttributesAsList(FetchListAttributeAsList { variable, attribute }) => {
             let variable_name = variable_registry
                 .get_variable_name(variable)
                 .expect("Expected fetched variable names to be validated during translation");
-            let attribute_type = type_manager
-                .get_attribute_type(snapshot, &attribute)
+            let attribute_type = ctx
+                .type_manager
+                .get_attribute_type(ctx.snapshot, &attribute)
                 .map_err(|err| AnnotationError::ConceptRead { typedb_source: err })?
                 .ok_or_else(|| AnnotationError::FetchAttributeNotFound {
                     var: variable_name.clone(),
@@ -237,14 +173,7 @@ fn annotate_some(
                     attribute,
                 })?;
             for owner_type in input_annotations.concepts.get(&variable).unwrap().iter() {
-                validate_attribute_owned_and_streamable(
-                    snapshot,
-                    type_manager,
-                    variable_name,
-                    owner_type,
-                    attribute_type,
-                    source_span,
-                )?;
+                validate_attribute_owned_and_streamable(ctx, variable_name, owner_type, attribute_type, source_span)?;
             }
             Ok(AnnotatedFetchSome::ListAttributesAsList(variable, attribute_type))
         }
@@ -258,9 +187,8 @@ fn annotate_some(
     }
 }
 
-fn validate_attribute_owned_and_scalar(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
+fn validate_attribute_owned_and_scalar<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     owner: &str,
     owner_types: &BTreeSet<Type>,
     attribute_type: AttributeType,
@@ -271,32 +199,32 @@ fn validate_attribute_owned_and_scalar(
             return Err(AnnotationError::FetchSingleAttributeCannotBeOwnedByKind {
                 var: owner.to_owned(),
                 kind: kind.to_string(),
-                attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+                attribute: attribute_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
                 source_span,
             });
         }
         let object_type = owner_type.as_object_type();
         if object_type
-            .get_owns_attribute(snapshot, type_manager, attribute_type)
+            .get_owns_attribute(ctx.snapshot, ctx.type_manager, attribute_type)
             .map_err(|err| AnnotationError::ConceptRead { typedb_source: err })?
             .is_none()
         {
             return Err(AnnotationError::FetchSingleAttributeNotOwned {
                 var: owner.to_owned(),
-                owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
-                attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+                owner: owner_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
+                attribute: attribute_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
                 source_span,
             });
         }
 
         let is_bounded_to_one = object_type
-            .is_owned_attribute_type_bounded_to_one(snapshot, type_manager, attribute_type)
+            .is_owned_attribute_type_bounded_to_one(ctx.snapshot, ctx.type_manager, attribute_type)
             .map_err(|err| AnnotationError::ConceptRead { typedb_source: err })?;
         if !is_bounded_to_one {
             return Err(AnnotationError::AttributeFetchCardTooHigh {
                 var: owner.to_owned(),
-                owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
-                attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+                owner: owner_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
+                attribute: attribute_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
                 source_span,
             });
         }
@@ -304,9 +232,8 @@ fn validate_attribute_owned_and_scalar(
     Ok(())
 }
 
-fn validate_attribute_owned_and_streamable(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
+fn validate_attribute_owned_and_streamable<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     owner: &str,
     owner_type: &Type,
     attribute_type: AttributeType,
@@ -316,28 +243,26 @@ fn validate_attribute_owned_and_streamable(
         return Err(AnnotationError::FetchAttributesCannotBeOwnedByKind {
             var: owner.to_owned(),
             kind: kind.to_string(),
-            attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+            attribute: attribute_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
             source_span,
         });
     }
 
     let _ = owner_type
         .as_object_type()
-        .get_owns_attribute(snapshot, type_manager, attribute_type)
+        .get_owns_attribute(ctx.snapshot, ctx.type_manager, attribute_type)
         .map_err(|err| AnnotationError::ConceptRead { typedb_source: err })?
         .ok_or_else(|| AnnotationError::FetchAttributesNotOwned {
             var: owner.to_owned(),
-            owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
-            attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+            owner: owner_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
+            attribute: attribute_type.get_label(ctx.snapshot, ctx.type_manager).unwrap().name().as_str().to_owned(),
             source_span,
         })?;
     Ok(())
 }
 
-fn annotate_sub_fetch(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
+fn annotate_sub_fetch<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     parameters: &ParameterRegistry,
     sub_fetch: FetchListSubFetch,
     input_annotations: &RunningVariableAnnotations,
@@ -345,9 +270,7 @@ fn annotate_sub_fetch(
     let FetchListSubFetch { context, input_variables, stages, fetch } = sub_fetch;
     let PipelineTranslationContext { mut variable_registry, .. } = context;
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
-        snapshot,
-        type_manager,
-        annotated_function_signatures,
+        ctx,
         &mut variable_registry,
         parameters,
         stages,

@@ -37,7 +37,7 @@ use typeql::common::Span;
 
 use crate::{
     annotation::{
-        AnnotationError,
+        AnnotationContext, AnnotationError,
         expression::{
             ExpressionCompileError,
             block_compiler::compile_expressions,
@@ -118,11 +118,10 @@ pub fn annotate_preamble_and_pipeline(
             .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
     let combined_signature_annotations =
         AnnotatedFunctionSignaturesImpl::new(&schema_function_annotations, &annotated_preamble);
+    let ctx = AnnotationContext::new(snapshot, type_manager, &combined_signature_annotations);
     let input_annotations = RunningVariableAnnotations::from_iterator(zip([].into_iter(), [].into_iter()));
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
-        snapshot,
-        type_manager,
-        &combined_signature_annotations,
+        &ctx,
         variable_registry,
         parameters,
         translated_stages,
@@ -132,48 +131,28 @@ pub fn annotate_preamble_and_pipeline(
     Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
 }
 
-pub(crate) fn annotate_stages_and_fetch(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
+pub(crate) fn annotate_stages_and_fetch<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     variable_registry: &mut VariableRegistry,
     parameters: &ParameterRegistry,
     translated_stages: Vec<TranslatedStage>,
     translated_fetch: Option<FetchObject>,
     input_annotations: RunningVariableAnnotations,
 ) -> Result<(Vec<AnnotatedStage>, Option<AnnotatedFetch>), AnnotationError> {
-    let (annotated_stages, output_annotations) = annotate_pipeline_stages(
-        snapshot,
-        type_manager,
-        annotated_function_signatures,
-        variable_registry,
-        parameters,
-        translated_stages,
-        input_annotations,
-        None,
-    )?;
+    let (annotated_stages, output_annotations) =
+        annotate_pipeline_stages(ctx, variable_registry, parameters, translated_stages, input_annotations, None)?;
     let annotated_fetch = match translated_fetch {
         None => None,
         Some(fetch) => {
-            let annotated = annotate_fetch(
-                fetch,
-                snapshot,
-                type_manager,
-                variable_registry,
-                parameters,
-                annotated_function_signatures,
-                &output_annotations,
-            );
+            let annotated = annotate_fetch(ctx, fetch, variable_registry, parameters, &output_annotations);
             Some(annotated?)
         }
     };
     Ok((annotated_stages, annotated_fetch))
 }
 
-pub(crate) fn annotate_pipeline_stages(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
+pub(crate) fn annotate_pipeline_stages<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     variable_registry: &mut VariableRegistry,
     parameters: &ParameterRegistry,
     translated_stages: Vec<TranslatedStage>,
@@ -195,12 +174,10 @@ pub(crate) fn annotate_pipeline_stages(
             })
             .unwrap_or(&empty_constraint_annotations);
         let annotated_stage = annotate_stage(
+            ctx,
             &mut running_annotations,
             variable_registry,
             parameters,
-            snapshot,
-            type_manager,
-            annotated_function_signatures,
             running_constraint_annotations,
             stage,
         )?;
@@ -216,25 +193,23 @@ pub(crate) fn annotate_pipeline_stages(
     Ok((annotated_stages, running_annotations))
 }
 
-fn annotate_stage(
+fn annotate_stage<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     running_annotations: &mut RunningVariableAnnotations,
     variable_registry: &mut VariableRegistry,
     parameters: &ParameterRegistry,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     running_constraint_annotations: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     stage: TranslatedStage,
 ) -> Result<AnnotatedStage, AnnotationError> {
     match stage {
         TranslatedStage::Match { block, source_span } => {
             let mut block_annotations = infer_types(
-                snapshot,
+                ctx.snapshot,
                 &block,
                 variable_registry,
-                type_manager,
+                ctx.type_manager,
                 &running_annotations.concepts,
-                annotated_function_signatures,
+                ctx.annotated_function_signatures,
                 false,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
@@ -247,14 +222,14 @@ fn annotate_stage(
 
             collect_value_types_of_function_call_assignments(
                 block.conjunction(),
-                annotated_function_signatures,
+                ctx.annotated_function_signatures,
                 &mut running_annotations.values,
                 variable_registry,
             )?;
 
             let compiled_expressions = compile_expressions(
-                snapshot,
-                type_manager,
+                ctx.snapshot,
+                ctx.type_manager,
                 &block,
                 variable_registry,
                 parameters,
@@ -283,18 +258,11 @@ fn annotate_stage(
         }
 
         TranslatedStage::Insert { block, source_span } => {
-            let annotations = annotate_write_stage(
-                running_annotations,
-                variable_registry,
-                snapshot,
-                type_manager,
-                annotated_function_signatures,
-                &block,
-            )?;
+            let annotations = annotate_write_stage(ctx, running_annotations, variable_registry, &block)?;
 
             check_type_combinations_for_write(
-                snapshot,
-                type_manager,
+                ctx.snapshot,
+                ctx.type_manager,
                 variable_registry,
                 &block,
                 &running_annotations.concepts,
@@ -307,18 +275,11 @@ fn annotate_stage(
         }
 
         TranslatedStage::Update { block, source_span } => {
-            let annotations = annotate_write_stage(
-                running_annotations,
-                variable_registry,
-                snapshot,
-                type_manager,
-                annotated_function_signatures,
-                &block,
-            )?;
+            let annotations = annotate_write_stage(ctx, running_annotations, variable_registry, &block)?;
 
             update::type_check::check_annotations(
-                snapshot,
-                type_manager,
+                ctx.snapshot,
+                ctx.type_manager,
                 variable_registry,
                 &block,
                 &running_annotations.concepts,
@@ -332,12 +293,12 @@ fn annotate_stage(
 
         TranslatedStage::Put { block, source_span } => {
             let mut match_annotations = infer_types(
-                snapshot,
+                ctx.snapshot,
                 &block,
                 variable_registry,
-                type_manager,
+                ctx.type_manager,
                 &running_annotations.concepts,
-                annotated_function_signatures,
+                ctx.annotated_function_signatures,
                 false,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
@@ -347,17 +308,10 @@ fn annotate_stage(
                 variable_registry,
                 &running_annotations.values,
             )?;
-            let insert_annotations = annotate_write_stage(
-                running_annotations,
-                variable_registry,
-                snapshot,
-                type_manager,
-                annotated_function_signatures,
-                &block,
-            )?;
+            let insert_annotations = annotate_write_stage(ctx, running_annotations, variable_registry, &block)?;
             check_type_combinations_for_write(
-                snapshot,
-                type_manager,
+                ctx.snapshot,
+                ctx.type_manager,
                 variable_registry,
                 &block,
                 &running_annotations.concepts,
@@ -377,17 +331,10 @@ fn annotate_stage(
             Ok(AnnotatedStage::Put { block, match_annotations, insert_annotations, source_span })
         }
         TranslatedStage::Delete { block, deleted_variables, source_span } => {
-            let delete_annotations = annotate_write_stage(
-                running_annotations,
-                variable_registry,
-                snapshot,
-                type_manager,
-                annotated_function_signatures,
-                &block,
-            )?;
+            let delete_annotations = annotate_write_stage(ctx, running_annotations, variable_registry, &block)?;
             check_type_combinations_for_write(
-                snapshot,
-                type_manager,
+                ctx.snapshot,
+                ctx.type_manager,
                 variable_registry,
                 &block,
                 &running_annotations.concepts,
@@ -400,7 +347,7 @@ fn annotate_stage(
             Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations, source_span })
         }
         TranslatedStage::Sort(sort) => {
-            validate_sort_variables_comparable(&sort, running_annotations, snapshot, type_manager, variable_registry)?;
+            validate_sort_variables_comparable(ctx, &sort, running_annotations, variable_registry)?;
             Ok(AnnotatedStage::Sort(sort))
         }
         TranslatedStage::Select(select) => {
@@ -415,14 +362,8 @@ fn annotate_stage(
         TranslatedStage::Reduce(reduce) => {
             let mut reduce_instructions = Vec::with_capacity(reduce.assigned_reductions.len());
             for &AssignedReduction { assigned, reduction } in &reduce.assigned_reductions {
-                let typed_reduce = resolve_reducer_by_value_type(
-                    snapshot,
-                    type_manager,
-                    variable_registry,
-                    reduction,
-                    running_annotations,
-                    reduce.source_span(),
-                )?;
+                let typed_reduce =
+                    resolve_reducer_by_value_type(ctx, variable_registry, reduction, running_annotations, reduce.source_span())?;
                 running_annotations
                     .values
                     .insert(assigned, ExpressionValueType::Single(typed_reduce.output_type().clone()));
@@ -473,18 +414,17 @@ fn complete_block_annotations_with_value_types(
     })
 }
 
-pub fn validate_sort_variables_comparable(
+pub fn validate_sort_variables_comparable<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     sort: &Sort,
     input_annotations: &RunningVariableAnnotations,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
 ) -> Result<(), AnnotationError> {
     for sort_var in &sort.variables {
         if input_annotations.values.contains_key(&sort_var.variable()) {
             continue; // Expressions always return the same type.
         } else if let Some(types) = input_annotations.concepts.get(&sort_var.variable()) {
-            let value_types = resolve_value_types(&(*types), snapshot, type_manager)
+            let value_types = resolve_value_types(&(*types), ctx.snapshot, ctx.type_manager)
                 .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             if value_types.is_empty() {
                 let variable_name = variable_registry.variable_names().get(&sort_var.variable()).unwrap().clone();
@@ -514,21 +454,19 @@ pub fn validate_sort_variables_comparable(
     Ok(())
 }
 
-fn annotate_write_stage(
+fn annotate_write_stage<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     running_annotations: &mut RunningVariableAnnotations,
     variable_registry: &mut VariableRegistry,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     block: &Block,
 ) -> Result<BlockAnnotations, AnnotationError> {
     let mut block_annotations = infer_types(
-        snapshot,
+        ctx.snapshot,
         block,
         variable_registry,
-        type_manager,
+        ctx.type_manager,
         &running_annotations.concepts,
-        annotated_function_signatures,
+        ctx.annotated_function_signatures,
         true,
     )
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
@@ -595,9 +533,8 @@ fn annotate_write_constraint(
     }
 }
 
-pub fn resolve_reducer_by_value_type(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
+pub fn resolve_reducer_by_value_type<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     variable_registry: &VariableRegistry,
     reducer: Reducer,
     variable_annotations: &RunningVariableAnnotations,
@@ -612,26 +549,18 @@ pub fn resolve_reducer_by_value_type(
         | Reducer::Median(variable)
         | Reducer::Min(variable)
         | Reducer::Std(variable) => {
-            let value_type = determine_value_type_for_reducer(
-                reducer,
-                variable,
-                variable_annotations,
-                snapshot,
-                type_manager,
-                variable_registry,
-                reduce_source_span,
-            )?;
-            resolve_reduce_instruction_by_value_type(reducer, value_type, variable_registry, reduce_source_span)
+            let value_type =
+                determine_value_type_for_reducer(ctx, reducer, variable, variable_annotations, variable_registry, reduce_source_span)?;
+            resolve_reduce_instruction_by_value_type(ctx, reducer, value_type, variable_registry, reduce_source_span)
         }
     }
 }
 
-fn determine_value_type_for_reducer(
+fn determine_value_type_for_reducer<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     reducer: Reducer,
     variable: Variable,
     variable_annotations: &RunningVariableAnnotations,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     reduce_source_span: Option<Span>,
 ) -> Result<ValueType, AnnotationError> {
@@ -648,7 +577,7 @@ fn determine_value_type_for_reducer(
             }
         }
     } else if let Some(types) = variable_annotations.concepts.get(&variable) {
-        let value_types = resolve_value_types(types, snapshot, type_manager)
+        let value_types = resolve_value_types(types, ctx.snapshot, ctx.type_manager)
             .map_err(|source| AnnotationError::TypeInference { typedb_source: source })?;
         if value_types.len() != 1 {
             let variable_name = variable_registry.variable_names()[&variable].clone();
@@ -668,7 +597,8 @@ fn determine_value_type_for_reducer(
     }
 }
 
-pub fn resolve_reduce_instruction_by_value_type(
+pub fn resolve_reduce_instruction_by_value_type<Snapshot: ReadableSnapshot>(
+    _ctx: &AnnotationContext<'_, Snapshot>,
     reducer: Reducer,
     value_type: ValueType,
     variable_registry: &VariableRegistry,

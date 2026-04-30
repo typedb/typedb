@@ -36,7 +36,7 @@ use typeql::{
 
 use crate::{
     annotation::{
-        FunctionAnnotationError, TypeInferenceError,
+        AnnotationContext, FunctionAnnotationError, TypeInferenceError,
         expression::compiled_expression::ExpressionValueType,
         pipeline::{
             AnnotatedStage, RunningVariableAnnotations, annotate_pipeline_stages, resolve_reducer_by_value_type,
@@ -163,9 +163,10 @@ pub fn annotate_stored_functions(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<AnnotatedSchemaFunctions, Box<FunctionAnnotationError>> {
+    let label_ctx = AnnotationContext::new(snapshot, type_manager, &EmptyAnnotatedFunctionSignatures);
     let annotations_from_declaration = functions
         .iter()
-        .map(|(id, function)| Ok((id.clone(), annotate_signature_based_on_labels(snapshot, type_manager, function)?)))
+        .map(|(id, function)| Ok((id.clone(), annotate_signature_based_on_labels(&label_ctx, function)?)))
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
     let empty_preamble_annotations = Vec::<AnnotatedFunctionSignature>::new();
     let declared_annotations =
@@ -174,7 +175,8 @@ pub fn annotate_stored_functions(
     let preliminary_signature_annotations = functions
         .iter_mut()
         .map(|(function_id, function)| {
-            Ok((function_id.clone(), annotate_named_function(function, snapshot, type_manager, &declared_annotations)?))
+            let ctx = AnnotationContext::new(snapshot, type_manager, &declared_annotations);
+            Ok((function_id.clone(), annotate_named_function(function, &ctx)?))
         })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
     let preliminary_signature_annotations =
@@ -183,10 +185,8 @@ pub fn annotate_stored_functions(
     let annotated_functions = functions
         .iter_mut()
         .map(|(id, function)| {
-            Ok((
-                id.clone(),
-                annotate_named_function(function, snapshot, type_manager, &preliminary_signature_annotations)?,
-            ))
+            let ctx = AnnotationContext::new(snapshot, type_manager, &preliminary_signature_annotations);
+            Ok((id.clone(), annotate_named_function(function, &ctx)?))
         })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
 
@@ -203,22 +203,29 @@ pub fn annotate_preamble_functions(
     type_manager: &TypeManager,
     schema_function_signatures: Arc<AnnotatedSchemaFunctions>,
 ) -> Result<AnnotatedPreambleFunctions, Box<FunctionAnnotationError>> {
+    let label_ctx = AnnotationContext::new(snapshot, type_manager, &EmptyAnnotatedFunctionSignatures);
     let preamble_annotations_from_labels_as_map = functions
         .iter()
-        .map(|function| annotate_signature_based_on_labels(snapshot, type_manager, function))
+        .map(|function| annotate_signature_based_on_labels(&label_ctx, function))
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
     let label_based_signature_annotations =
         AnnotatedFunctionSignaturesImpl::new(&schema_function_signatures, &preamble_annotations_from_labels_as_map);
     let preliminary_signature_annotations_as_map = functions
         .iter_mut()
-        .map(|function| annotate_named_function(function, snapshot, type_manager, &label_based_signature_annotations))
+        .map(|function| {
+            let ctx = AnnotationContext::new(snapshot, type_manager, &label_based_signature_annotations);
+            annotate_named_function(function, &ctx)
+        })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
     // In the second round, finer annotations are available at the function calls so the annotations in function bodies can be refined.
     let preliminary_signature_annotations =
         AnnotatedFunctionSignaturesImpl::new(&schema_function_signatures, &preliminary_signature_annotations_as_map);
     let annotated_functions = functions
         .iter_mut()
-        .map(|function| annotate_named_function(function, snapshot, type_manager, &preliminary_signature_annotations))
+        .map(|function| {
+            let ctx = AnnotationContext::new(snapshot, type_manager, &preliminary_signature_annotations);
+            annotate_named_function(function, &ctx)
+        })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
 
     // TODO: ^Optimise. There's no reason to do all of type inference again. We can re-use the graphs, and restart at the source of any SCC.
@@ -228,11 +235,9 @@ pub fn annotate_preamble_functions(
     Ok(annotated_functions)
 }
 
-pub(crate) fn annotate_anonymous_function(
+pub(crate) fn annotate_anonymous_function<Snapshot: ReadableSnapshot>(
     function: &mut Function,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
+    ctx: &AnnotationContext<'_, Snapshot>,
     input_annotations: &RunningVariableAnnotations,
     _source_span: Option<Span>,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
@@ -245,33 +250,29 @@ pub(crate) fn annotate_anonymous_function(
         (*var, arg_type)
     });
     let argument_annotations = RunningVariableAnnotations::from_iterator(argument_types_iter);
-    annotate_function_impl(function, snapshot, type_manager, annotated_function_signatures, argument_annotations)
+    annotate_function_impl(function, ctx, argument_annotations)
 }
 
-pub(super) fn annotate_named_function(
+pub(super) fn annotate_named_function<Snapshot: ReadableSnapshot>(
     function: &mut Function,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
+    ctx: &AnnotationContext<'_, Snapshot>,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function { arguments, argument_labels, .. } = function;
     debug_assert!(argument_labels.is_some());
     let arg_labels = argument_labels.as_ref().unwrap();
-    let types = get_annotations_from_labels_vec(snapshot, type_manager, arg_labels).map_err(
+    let types = get_annotations_from_labels_vec(ctx, arg_labels).map_err(
         |(index, source_span, typedb_source)| {
             Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index, source_span, typedb_source })
         },
     )?;
     let argument_annotations =
         RunningVariableAnnotations::from_iterator(zip(arguments.iter().copied(), types.into_iter()));
-    annotate_function_impl(function, snapshot, type_manager, annotated_function_signatures, argument_annotations)
+    annotate_function_impl(function, ctx, argument_annotations)
 }
 
-fn annotate_function_impl(
+fn annotate_function_impl<Snapshot: ReadableSnapshot>(
     function: &mut Function,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
+    ctx: &AnnotationContext<'_, Snapshot>,
     argument_annotations_from_declaration: RunningVariableAnnotations,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function {
@@ -279,9 +280,7 @@ fn annotate_function_impl(
     } = function;
 
     let (stages, output_annotations) = annotate_pipeline_stages(
-        snapshot,
-        type_manager,
-        annotated_function_signatures,
+        ctx,
         &mut context.variable_registry,
         parameters,
         stages.clone(),
@@ -291,16 +290,10 @@ fn annotate_function_impl(
     .map_err(|err| {
         Box::new(FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) })
     })?;
-    let mapped_return = resolve_return_operators(
-        snapshot,
-        type_manager,
-        &context.variable_registry,
-        return_operation,
-        &output_annotations,
-    )?;
+    let mapped_return = resolve_return_operators(ctx, &context.variable_registry, return_operation, &output_annotations)?;
     let return_annotations = annotate_return(&mapped_return, &output_annotations);
     if let Some(output) = function.output.as_ref() {
-        validate_return_against_signature(snapshot, type_manager, function.name.as_str(), &return_annotations, output)?;
+        validate_return_against_signature(ctx, function.name.as_str(), &return_annotations, output)?;
     }
     let argument_annotations = annotate_arguments(stages.as_slice(), arguments, &argument_annotations_from_declaration);
     let is_stream = matches!(function.output, Some(Output::Stream(_)));
@@ -316,9 +309,8 @@ fn annotate_function_impl(
     })
 }
 
-fn validate_return_against_signature(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
+fn validate_return_against_signature<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     name: &str,
     inferred_return: &[FunctionParameterAnnotation],
     signature_return: &Output,
@@ -327,7 +319,7 @@ fn validate_return_against_signature(
         Output::Stream(stream) => &stream.types,
         Output::Single(single) => &single.types,
     };
-    let declared_return = get_annotations_from_labels_vec(snapshot, type_manager, return_labels.as_slice()).map_err(
+    let declared_return = get_annotations_from_labels_vec(ctx, return_labels.as_slice()).map_err(
         |(index, _span, typedb_source)| {
             Box::new(FunctionAnnotationError::CouldNotResolveReturnType { index, typedb_source })
         },
@@ -358,13 +350,12 @@ fn validate_return_against_signature(
     })
 }
 
-fn annotate_signature_based_on_labels(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
+fn annotate_signature_based_on_labels<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     function: &Function,
 ) -> Result<AnnotatedFunctionSignature, Box<FunctionAnnotationError>> {
     let argument_labels = function.argument_labels.as_ref().unwrap();
-    let argument_annotations = get_annotations_from_labels_vec(snapshot, type_manager, argument_labels).map_err(
+    let argument_annotations = get_annotations_from_labels_vec(ctx, argument_labels).map_err(
         |(index, source_span, typedb_source)| {
             Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index, source_span, typedb_source })
         },
@@ -373,7 +364,7 @@ fn annotate_signature_based_on_labels(
         Output::Stream(stream) => stream.types.as_slice(),
         Output::Single(single) => single.types.as_slice(),
     };
-    let returned = get_annotations_from_labels_vec(snapshot, type_manager, &return_labels).map_err(
+    let returned = get_annotations_from_labels_vec(ctx, &return_labels).map_err(
         |(index, _span, typedb_source)| {
             Box::new(FunctionAnnotationError::CouldNotResolveReturnType { index, typedb_source })
         },
@@ -382,9 +373,8 @@ fn annotate_signature_based_on_labels(
     Ok(AnnotatedFunctionSignature { is_stream, arguments: argument_annotations, returns: returned })
 }
 
-fn resolve_return_operators(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
+fn resolve_return_operators<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     variable_registry: &VariableRegistry,
     return_operation: &ReturnOperation,
     output_annotations: &RunningVariableAnnotations,
@@ -398,15 +388,9 @@ fn resolve_return_operators(
         ReturnOperation::ReduceReducer(reducers, source_span) => {
             let mut instructions = Vec::with_capacity(reducers.len());
             for &reducer in reducers {
-                let instruction = resolve_reducer_by_value_type(
-                    snapshot,
-                    type_manager,
-                    variable_registry,
-                    reducer,
-                    output_annotations,
-                    *source_span,
-                )
-                .map_err(|err| Box::new(FunctionAnnotationError::ReturnReduce { typedb_source: Box::new(err) }))?;
+                let instruction =
+                    resolve_reducer_by_value_type(ctx, variable_registry, reducer, output_annotations, *source_span)
+                        .map_err(|err| Box::new(FunctionAnnotationError::ReturnReduce { typedb_source: Box::new(err) }))?;
                 instructions.push(instruction);
             }
             AnnotatedFunctionReturn::ReduceReducer { instructions }
@@ -490,24 +474,21 @@ fn get_function_parameter<V: From<Variable> + Ord>(
     }
 }
 
-pub(super) fn get_annotations_from_labels_vec(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
+pub(super) fn get_annotations_from_labels_vec<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     typeql_labels: &[NamedTypeAny],
 ) -> Result<Vec<FunctionParameterAnnotation>, (usize, Option<Span>, TypeInferenceError)> {
     typeql_labels
         .iter()
         .enumerate()
         .map(|(index, label)| {
-            get_annotations_from_labels(snapshot, type_manager, label)
-                .map_err(|err| (index, typeql_labels[index].span(), err))
+            get_annotations_from_labels(ctx, label).map_err(|err| (index, typeql_labels[index].span(), err))
         })
         .collect::<Result<Vec<_>, _>>()
 }
 
-pub(super) fn get_annotations_from_labels(
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
+pub(super) fn get_annotations_from_labels<Snapshot: ReadableSnapshot>(
+    ctx: &AnnotationContext<'_, Snapshot>,
     typeql_label: &NamedTypeAny,
 ) -> Result<FunctionParameterAnnotation, TypeInferenceError> {
     let named_type = match typeql_label {
@@ -522,8 +503,8 @@ pub(super) fn get_annotations_from_labels(
         NamedType::Label(label) => {
             // TODO: could be a struct value type in the future!
             let types = type_seeder::get_type_annotation_and_subtypes_from_label(
-                snapshot,
-                type_manager,
+                ctx.snapshot,
+                ctx.type_manager,
                 &Label::build(label.ident.as_str_unchecked(), label.span()),
             )?;
             Ok(FunctionParameterAnnotation::Concept(types))
