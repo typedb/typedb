@@ -17,7 +17,7 @@ async fn test_metadata_annotations() {
     let path = "../typedb_behaviour+/query/language/metadata.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/language/metadata.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/language/metadata.feature";
 
     assert!(Context::test(path, true).await);
 }
