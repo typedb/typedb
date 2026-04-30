@@ -18,8 +18,8 @@ pub mod pipeline;
 pub mod type_annotations;
 pub mod type_inference;
 mod type_seeder;
-pub(crate) mod write_type_check;
 pub(crate) mod utils;
+pub(crate) mod write_type_check;
 
 typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {
@@ -226,16 +226,16 @@ pub mod tests {
         thing::{statistics::Statistics, thing_manager::ThingManager},
         type_::type_manager::TypeManager,
     };
-    use durability::{wal::WAL, DurabilitySequenceNumber};
+    use durability::{DurabilitySequenceNumber, wal::WAL};
     use encoding::{
+        EncodingKeyspace,
         graph::{
             definition::definition_key_generator::DefinitionKeyGenerator,
             thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
         },
-        EncodingKeyspace,
     };
-    use storage::{durability_client::WALClient, MVCCStorage};
-    use test_utils::{create_tmp_dir, init_logging, TempDir};
+    use storage::{MVCCStorage, durability_client::WALClient};
+    use test_utils::{TempDir, create_tmp_dir, init_logging};
 
     use crate::annotation::match_inference::{
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
@@ -302,8 +302,8 @@ pub mod tests {
         use concept::{
             thing::thing_manager::ThingManager,
             type_::{
-                annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation, entity_type::EntityTypeAnnotation, type_manager::TypeManager, Ordering,
-                OwnerAPI, PlayerAPI,
+                Ordering, OwnerAPI, PlayerAPI, annotation::AnnotationAbstract, attribute_type::AttributeTypeAnnotation,
+                entity_type::EntityTypeAnnotation, type_manager::TypeManager,
             },
         };
         use encoding::value::{label::Label, value_type::ValueType};

@@ -4,17 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use crate::annotation::TypeInferenceError;
+use crate::annotation::function::AnnotatedFunctionSignatures;
 use answer::variable::Variable;
+use concept::type_::TypeAPI;
 use concept::type_::attribute_type::AttributeType;
 use concept::type_::object_type::ObjectType;
 use concept::type_::relation_type::RelationType;
 use concept::type_::role_type::RoleType;
 use concept::type_::type_manager::TypeManager;
-use concept::type_::TypeAPI;
 use ir::pipeline::{ParameterRegistry, VariableRegistry};
 use storage::snapshot::ReadableSnapshot;
-use crate::annotation::function::AnnotatedFunctionSignatures;
-use crate::annotation::TypeInferenceError;
 
 pub(crate) struct PipelineAnnotationContext<'a, Snapshot: ReadableSnapshot> {
     pub(crate) snapshot: &'a Snapshot,
@@ -35,14 +35,16 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineAnnotationContext<'a, Snapshot> {
         Self { snapshot, type_manager, annotated_function_signatures, variable_registry, parameters }
     }
 
-    pub(crate) fn to_plain_mut(&mut self) -> (AnnotationContext<'a, Snapshot>, &mut VariableRegistry, &ParameterRegistry){
+    pub(crate) fn to_plain_mut(
+        &mut self,
+    ) -> (AnnotationContext<'a, Snapshot>, &mut VariableRegistry, &ParameterRegistry) {
         let Self { snapshot, type_manager, annotated_function_signatures, variable_registry, parameters } = self;
         let cloned_reference_annotated_function_signatures =
-        <&dyn AnnotatedFunctionSignatures as Clone>::clone(annotated_function_signatures);
+            <&dyn AnnotatedFunctionSignatures as Clone>::clone(annotated_function_signatures);
         (
             AnnotationContext::new(snapshot, type_manager, cloned_reference_annotated_function_signatures),
             variable_registry,
-            parameters
+            parameters,
         )
     }
 }
@@ -62,17 +64,33 @@ impl<'a, Snapshot: ReadableSnapshot> AnnotationContext<'a, Snapshot> {
         Self { snapshot, type_manager, annotated_function_signatures }
     }
 
-    pub(crate) fn for_pipeline(&self, variable_registry: &'a mut VariableRegistry, parameters: &'a ParameterRegistry) -> PipelineAnnotationContext<'a, Snapshot> {
-        PipelineAnnotationContext::new(self.snapshot, self.type_manager, self.annotated_function_signatures, variable_registry, parameters)
+    pub(crate) fn for_pipeline(
+        &self,
+        variable_registry: &'a mut VariableRegistry,
+        parameters: &'a ParameterRegistry,
+    ) -> PipelineAnnotationContext<'a, Snapshot> {
+        PipelineAnnotationContext::new(
+            self.snapshot,
+            self.type_manager,
+            self.annotated_function_signatures,
+            variable_registry,
+            parameters,
+        )
     }
 }
 
 pub(crate) trait NameForError {
-    fn name_for_error(&self, ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>) -> Result<String, TypeInferenceError>;
+    fn name_for_error(
+        &self,
+        ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ) -> Result<String, TypeInferenceError>;
 }
 
 impl NameForError for Variable {
-    fn name_for_error(&self, ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>) -> Result<String, TypeInferenceError> {
+    fn name_for_error(
+        &self,
+        ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ) -> Result<String, TypeInferenceError> {
         Ok(ctx.variable_registry.get_variable_name_or_unnamed(*self).to_owned())
     }
 }

@@ -9,12 +9,12 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use ir::{
     pattern::{
+        Vertex,
         constraint::{Constraint, Has, Links},
         nested_pattern::NestedPattern,
-        Vertex,
     },
     pipeline::block::Block,
 };
@@ -22,8 +22,11 @@ use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
-use crate::annotation::{type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations}, TypeInferenceError};
 use crate::annotation::utils::{NameForError, PipelineAnnotationContext};
+use crate::annotation::{
+    TypeInferenceError,
+    type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
+};
 
 pub fn check_type_combinations_for_write(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
@@ -273,12 +276,12 @@ fn pairs_from_vertex_annotations(
     source_span: Option<Span>,
 ) -> Result<BTreeSet<(Type, Type)>, TypeInferenceError> {
     let get_types = |var: Variable| {
-        input_annotations_variables.get(&var)
-            .map(|types| types.iter().cloned())
-            .ok_or(TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
+        input_annotations_variables.get(&var).map(|types| types.iter().cloned()).ok_or(
+            TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
                 variable: var.name_for_error(ctx)?,
                 source_span,
-            })
+            },
+        )
     };
     let left_types = get_types(left.as_variable().unwrap())?;
     let right_types = get_types(right.as_variable().unwrap())?;

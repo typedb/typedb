@@ -6,29 +6,29 @@
 
 use std::collections::{BTreeSet, HashMap, HashSet};
 
-use answer::{variable::Variable, Type};
-use concept::type_::{attribute_type::AttributeType, OwnerAPI, TypeAPI};
+use answer::{Type, variable::Variable};
+use concept::type_::{OwnerAPI, TypeAPI, attribute_type::AttributeType};
 use encoding::graph::type_::Kind;
 use ir::{
     pattern::ParameterID,
     pipeline::{
+        VariableRegistry,
         fetch::{
             FetchListAttributeAsList, FetchListAttributeFromList, FetchListSubFetch, FetchObject, FetchSingleAttribute,
             FetchSome,
         },
-        VariableRegistry,
     },
     translation::PipelineTranslationContext,
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
-use crate::annotation::{
-    function::{annotate_anonymous_function, AnnotatedFunction},
-    pipeline::{annotate_stages_and_fetch, AnnotatedStage, RunningVariableAnnotations},
-    AnnotationError,
-};
 use crate::annotation::utils::{AnnotationContext, PipelineAnnotationContext};
+use crate::annotation::{
+    AnnotationError,
+    function::{AnnotatedFunction, annotate_anonymous_function},
+    pipeline::{AnnotatedStage, RunningVariableAnnotations, annotate_stages_and_fetch},
+};
 
 #[derive(Debug, Clone)]
 pub struct AnnotatedFetch {
@@ -79,8 +79,7 @@ fn annotate_object(
 ) -> Result<AnnotatedFetchObject, AnnotationError> {
     match object {
         FetchObject::Entries(entries, source_spans) => {
-            let annotated_entries =
-                annotated_object_entries(ctx, entries, source_spans, input_annotations)?;
+            let annotated_entries = annotated_object_entries(ctx, entries, source_spans, input_annotations)?;
             Ok(AnnotatedFetchObject::Entries(annotated_entries))
         }
         FetchObject::Attributes(attributes, _source_span) => Ok(AnnotatedFetchObject::Attributes(attributes)),
@@ -97,11 +96,10 @@ fn annotated_object_entries(
     for (key, value) in entries.into_iter() {
         let source_span = entries_spans.get(&key).cloned().flatten();
         let annotated_value =
-            annotate_some(ctx, value, input_annotations, source_span)
-                .map_err(|err| AnnotationError::FetchEntry {
-                    key: ctx.parameters.fetch_key(&key).unwrap().clone(),
-                    typedb_source: Box::new(err),
-                })?;
+            annotate_some(ctx, value, input_annotations, source_span).map_err(|err| AnnotationError::FetchEntry {
+                key: ctx.parameters.fetch_key(&key).unwrap().clone(),
+                typedb_source: Box::new(err),
+            })?;
         annotated_entries.insert(key, annotated_value);
     }
     Ok(annotated_entries)
@@ -263,12 +261,8 @@ fn annotate_sub_fetch(
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
     let FetchListSubFetch { context, input_variables, stages, fetch } = sub_fetch;
     let PipelineTranslationContext { mut variable_registry, .. } = context;
-    let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
-        ctx,
-        stages,
-        Some(fetch),
-        input_annotations.clone(),
-    )?;
+    let (annotated_stages, annotated_fetch) =
+        annotate_stages_and_fetch(ctx, stages, Some(fetch), input_annotations.clone())?;
     Ok(AnnotatedFetchListSubFetch {
         variable_registry,
         input_variables,

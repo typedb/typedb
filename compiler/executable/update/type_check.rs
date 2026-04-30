@@ -9,16 +9,20 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
-use concept::type_::{constraint::Constraint as TypeConstraint, OwnerAPI};
+use answer::{Type, variable::Variable};
+use concept::type_::{OwnerAPI, constraint::Constraint as TypeConstraint};
 use ir::{
     pattern::constraint::{Constraint, Has, Links},
     pipeline::block::Block,
 };
 use storage::snapshot::ReadableSnapshot;
 
-use crate::annotation::{type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations}, write_type_check::{validate_has_type_combinations_for_write, validate_links_type_combinations_for_write}, TypeInferenceError};
 use crate::annotation::utils::{NameForError, PipelineAnnotationContext};
+use crate::annotation::{
+    TypeInferenceError,
+    type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
+    write_type_check::{validate_has_type_combinations_for_write, validate_links_type_combinations_for_write},
+};
 
 pub fn check_annotations(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
@@ -106,7 +110,10 @@ fn validate_has_updatable(
     )?;
     let input_attr_types = input_annotations_variables.get(&has.attribute().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: ctx.variable_registry.get_variable_name_or_unnamed(has.attribute().as_variable().unwrap()).to_owned(),
+            variable: ctx
+                .variable_registry
+                .get_variable_name_or_unnamed(has.attribute().as_variable().unwrap())
+                .to_owned(),
             source_span: has.source_span(),
         },
     )?;
@@ -136,7 +143,8 @@ fn validate_links_updatable(
 
     let input_relation_types = input_annotations_variables.get(&links.relation().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: ctx.variable_registry
+            variable: ctx
+                .variable_registry
                 .get_variable_name_or_unnamed(links.relation().as_variable().unwrap())
                 .to_owned(),
             source_span: links.source_span(),
@@ -144,7 +152,8 @@ fn validate_links_updatable(
     )?;
     let input_role_types = input_annotations_variables.get(&links.role_type().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: ctx.variable_registry
+            variable: ctx
+                .variable_registry
                 .get_variable_name_or_unnamed(links.role_type().as_variable().unwrap())
                 .to_owned(),
             source_span: links.source_span(),

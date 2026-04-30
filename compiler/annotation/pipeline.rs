@@ -10,53 +10,53 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::{Type, variable::Variable};
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use error::needs_update_when_feature_is_implemented;
 use ir::{
     pattern::{
+        Vertex,
         conjunction::Conjunction,
         constraint::{Constraint, ExpressionBinding},
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Vertex,
     },
     pipeline::{
-        block::Block, fetch::FetchObject,
+        ParameterRegistry, VariableRegistry,
+        block::Block,
+        fetch::FetchObject,
         function::Function,
         modifier::{Distinct, Limit, Offset, Require, Select, Sort},
         reduce::{AssignedReduction, Reduce, Reducer},
-        ParameterRegistry,
-        VariableRegistry,
     },
     translation::pipeline::TranslatedStage,
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
+use crate::annotation::utils::AnnotationContext;
+use crate::annotation::utils::PipelineAnnotationContext;
 use crate::{
     annotation::{
+        AnnotationError,
         expression::{
+            ExpressionCompileError,
             block_compiler::compile_expressions,
             compiled_expression::{ExecutableExpression, ExpressionValueType},
-            ExpressionCompileError,
         },
-        fetch::{annotate_fetch, AnnotatedFetch},
+        fetch::{AnnotatedFetch, annotate_fetch},
         function::{
-            annotate_preamble_functions, AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl,
-            AnnotatedPreambleFunctions, AnnotatedSchemaFunctions, FunctionParameterAnnotation,
+            AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions,
+            AnnotatedSchemaFunctions, FunctionParameterAnnotation, annotate_preamble_functions,
         },
         match_inference::infer_types,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
         write_type_check::check_type_combinations_for_write,
-        AnnotationError,
     },
     executable::{reduce::ReduceInstruction, update},
 };
-use crate::annotation::utils::PipelineAnnotationContext;
-use crate::annotation::utils::AnnotationContext;
 
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedPreambleFunctions,
@@ -120,14 +120,16 @@ pub fn annotate_preamble_and_pipeline(
             .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
     let combined_signature_annotations =
         AnnotatedFunctionSignaturesImpl::new(&schema_function_annotations, &annotated_preamble);
-    let mut ctx = PipelineAnnotationContext::new(snapshot, type_manager, &combined_signature_annotations, variable_registry, parameters);
+    let mut ctx = PipelineAnnotationContext::new(
+        snapshot,
+        type_manager,
+        &combined_signature_annotations,
+        variable_registry,
+        parameters,
+    );
     let input_annotations = RunningVariableAnnotations::from_iterator(zip([].into_iter(), [].into_iter()));
-    let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
-        &mut ctx,
-        translated_stages,
-        translated_fetch,
-        input_annotations,
-    )?;
+    let (annotated_stages, annotated_fetch) =
+        annotate_stages_and_fetch(&mut ctx, translated_stages, translated_fetch, input_annotations)?;
     Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
 }
 
@@ -169,12 +171,7 @@ pub(crate) fn annotate_pipeline_stages(
                 block_annotations.type_annotations_of(block.conjunction()).unwrap().constraint_annotations()
             })
             .unwrap_or(&empty_constraint_annotations);
-        let annotated_stage = annotate_stage(
-            ctx,
-            &mut running_annotations,
-            running_constraint_annotations,
-            stage,
-        )?;
+        let annotated_stage = annotate_stage(ctx, &mut running_annotations, running_constraint_annotations, stage)?;
 
         let retain_running_var_fn =
             |var: &Variable| var.is_named() || return_variables.map(|vars| vars.contains(var)).unwrap_or(false);
