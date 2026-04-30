@@ -22,7 +22,7 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::UnimplementedFeature;
 use ir::pipeline::function_signature::FunctionID;
 use itertools::Itertools;
-use resource::profile::QueryProfile;
+use resource::profile::{PatternProfile, QueryProfile, StageProfile};
 use storage::snapshot::ReadableSnapshot;
 use typeql::schema::definable::function::SingleSelector;
 
@@ -37,6 +37,7 @@ use crate::{
         tabled_call_executor::TabledCallExecutor,
     },
 };
+use crate::read::step_executor;
 
 #[derive(Debug)]
 pub enum StepExecutors {
@@ -153,48 +154,43 @@ pub(crate) fn create_executors_for_conjunction(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
-    query_profile: &QueryProfile,
+    pattern_profile: Arc<PatternProfile>,
     conjunction_executable: &ConjunctionExecutable,
 ) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
-    let stage_profile = query_profile.profile_stage(
-        || format!("Match\n  ~ {}", conjunction_executable.planner_statistics()),
-        conjunction_executable.executable_id(),
-    );
     let mut steps = Vec::with_capacity(conjunction_executable.steps().len());
     for (index, step) in conjunction_executable.steps().iter().enumerate() {
         match step {
             ExecutionStep::Intersection(inner) => {
-                let step_profile = stage_profile.extend_or_get(index, || {
+                let step_profile = pattern_profile.extend_or_get_step(index, || {
                     format!("{}", inner.make_var_mapped(conjunction_executable.variable_reverse_map()))
                 });
                 let step = ImmediateExecutor::new_intersection(inner, snapshot, thing_manager, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::UnsortedJoin(inner) => {
-                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
+                let step_profile = pattern_profile.extend_or_get_step(index, || format!("{}", inner));
                 let step = ImmediateExecutor::new_unsorted_join(inner, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::Assignment(inner) => {
-                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
+                let step_profile = pattern_profile.extend_or_get_step(index, || format!("{}", inner));
                 let step = ImmediateExecutor::new_assignment(inner, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::Check(inner) => {
-                let step_profile = stage_profile.extend_or_get(index, || {
+                let step_profile = pattern_profile.extend_or_get_step(index, || {
                     format!("{}", inner.make_var_mapped(conjunction_executable.variable_reverse_map()))
                 });
                 let step = ImmediateExecutor::new_check(inner, step_profile)?;
                 steps.push(step.into());
             }
             ExecutionStep::Negation(negation_step) => {
-                // NOTE: still create the profile so each step has an entry in the profile, even if unused
-                let _step_profile = stage_profile.extend_or_get(index, || format!("{}", negation_step));
+                let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || format!("{}", negation_step));
                 let inner = create_executors_for_conjunction(
                     snapshot,
                     thing_manager,
                     function_registry,
-                    query_profile,
+                    subpattern_profile,
                     &negation_step.negation,
                 )?;
                 // I shouldn't need to pass recursive here since it's stratified
@@ -204,14 +200,14 @@ pub(crate) fn create_executors_for_conjunction(
             }
             ExecutionStep::FunctionCall(function_call) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
-                let step_profile = stage_profile.extend_or_get(index, || format!("{}", function_call));
                 if let FunctionID::Builtin(builtin_id) = function_call.function_id {
+                    let builtin_profile = pattern_profile.extend_or_get_step(index, || format!("{}", function_call));
                     let executor = BuiltinCallExecutor::new(
                         builtin_id,
                         function_call.arguments.clone(),
                         function_call.assigned.clone(),
                         function_call.output_width,
-                        step_profile,
+                        builtin_profile,
                     );
                     steps.push(StepExecutors::Immediate(ImmediateExecutor::BuiltinCall(executor)));
                 } else {
@@ -225,11 +221,12 @@ pub(crate) fn create_executors_for_conjunction(
                         );
                         steps.push(StepExecutors::TabledCall(executor))
                     } else {
+                        let subquery_profile = pattern_profile.extend_or_get_subquery(index, || format!("{}", function_call));
                         let inner_executors = create_executors_for_function(
                             snapshot,
                             thing_manager,
                             function_registry,
-                            query_profile,
+                            subquery_profile,
                             function,
                         )?;
                         let inner = PatternExecutor::new(function.executable_id, inner_executors);
@@ -240,7 +237,7 @@ pub(crate) fn create_executors_for_conjunction(
             }
             ExecutionStep::Disjunction(step) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
-                let _step_profile = stage_profile.extend_or_get(index, || format!("{}", step));
+                let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || format!("{}", step));
 
                 // I shouldn't need to pass recursive here since it's stratified
                 let branches: Vec<PatternExecutor> = step
@@ -251,7 +248,7 @@ pub(crate) fn create_executors_for_conjunction(
                             snapshot,
                             thing_manager,
                             function_registry,
-                            query_profile,
+                            subpattern_profile.clone(),
                             branch_executable,
                         )?;
                         Ok::<_, Box<_>>(PatternExecutor::new(branch_executable.executable_id(), executors))
@@ -273,12 +270,12 @@ pub(crate) fn create_executors_for_conjunction(
             }
             ExecutionStep::Optional(step) => {
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
-                let _step_profile = stage_profile.extend_or_get(index, || format!("{}", step));
+                let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || format!("{}", step));
                 let inner = create_executors_for_conjunction(
                     snapshot,
                     thing_manager,
                     function_registry,
-                    query_profile,
+                    subpattern_profile,
                     &step.optional,
                 )?;
                 let inner_executor = PatternExecutor::new(step.optional.executable_id(), inner);
@@ -299,7 +296,7 @@ pub(crate) fn create_executors_for_function(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
-    query_profile: &QueryProfile,
+    query_profile: Arc<QueryProfile>,
     executable_function: &ExecutableFunction,
 ) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let executable_stages = &executable_function.executable_stages;
@@ -307,7 +304,7 @@ pub(crate) fn create_executors_for_function(
         snapshot,
         thing_manager,
         function_registry,
-        query_profile,
+        &query_profile,
         executable_stages,
         executable_stages.len() - 1,
     )?;
@@ -340,6 +337,7 @@ pub(crate) fn create_executors_for_function(
     }
 }
 
+// TODO: Turn this recursion into iteration to prevent stack overflows of really long functions
 pub(super) fn create_executors_for_function_pipeline_stages(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
@@ -363,11 +361,13 @@ pub(super) fn create_executors_for_function_pipeline_stages(
     // TODO: Do we need to remap according to the output_row_mapping? It's ignored currently
     match &executable_stages[at_index] {
         ExecutableStage::Match(conjunction_executable) => {
+            let stage_profile = query_profile.profile_stage(|| String::from("Match"), conjunction_executable.executable_id());
+            let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Conjunction"));
             let mut executors = create_executors_for_conjunction(
                 snapshot,
                 thing_manager,
                 function_registry,
-                query_profile,
+                pattern_profile,
                 conjunction_executable,
             )?;
             previous_stage_steps.append(&mut executors);

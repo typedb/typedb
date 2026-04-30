@@ -49,7 +49,8 @@ where
         let Self { executable, .. } = self;
 
         let profile = context.profile.profile_stage(|| String::from("Reduce (not timed)"), executable.executable_id);
-        let step_profile = profile.extend_or_get(0, || String::from("Reduction (not timed)"));
+        let pattern_profile = profile.create_or_get_pattern(|| String::from("Reduce (not timed)"));
+        let step_profile = pattern_profile.extend_or_get_step(0, || String::from("Reduction (not timed)"));
         let rows = match reduce_iterator(&context, executable, input_iterator) {
             Ok(rows) => rows,
             Err(err) => return Err((err, context)),

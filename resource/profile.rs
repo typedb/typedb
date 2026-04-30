@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use itertools::Itertools;
+use std::sync::OnceLock;
 use std::{
     collections::HashMap,
     fmt,
@@ -14,8 +16,6 @@ use std::{
     },
     time::{Duration, Instant},
 };
-
-use itertools::Itertools;
 
 #[derive(Debug)]
 pub struct TransactionProfile {
@@ -444,46 +444,42 @@ impl QueryProfile {
                 profile.clone()
             } else {
                 drop(profiles);
-                let profile = Arc::new(StageProfile::new(description_fn(), true));
+                let profile = Arc::new(StageProfile::new(description_fn, true));
                 self.stage_profiles.write().unwrap().insert(id, profile.clone());
                 profile
             }
         } else {
-            Arc::new(StageProfile::new(String::new(), false))
+            Arc::new(StageProfile::new(|| String::new(), false))
         }
     }
 
     pub fn stage_profiles(&self) -> &RwLock<HashMap<u64, Arc<StageProfile>>> {
         &self.stage_profiles
     }
-}
 
-impl fmt::Display for QueryProfile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let compile_micros = self.compile_profile.total_micros();
+    fn total_nanos(&self) -> u64 {
+        let compile_micros = self.compile_profile.total_nanos();
         let stage_profiles = self.stage_profiles.read().unwrap();
         let total_micros = compile_micros
             + stage_profiles
                 .iter()
                 .map(|(_, stage_profile)| {
-                    stage_profile
-                        .step_profiles
-                        .read()
-                        .unwrap()
-                        .iter()
-                        .map(|step_profile| {
-                            step_profile.data.as_ref().map(|data| data.nanos.load(Ordering::SeqCst)).unwrap_or(0)
-                        })
-                        .sum::<u64>()
+                    stage_profile.pattern_profile.get().map(|profile| profile.total_nanos()).unwrap_or(0)
                 })
-                .sum::<u64>() as f64
-                / 1000.0;
+                .sum::<u64>();
+        total_micros
+    }
+}
+
+impl fmt::Display for QueryProfile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let total_micros = self.total_nanos() as f64 / 1000.0;
         writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
         writeln!(f, "{}", self.compile_profile)?;
-        for (id, pattern_profile) in stage_profiles.iter().sorted_by_key(|(id, _)| *id) {
+        let stage_profiles = self.stage_profiles.read().unwrap();
+        for (id, stage_profile) in stage_profiles.iter().sorted_by_key(|(id, _)| *id) {
             writeln!(f, "  -----")?;
-            writeln!(f, "  Stage or Pattern [id={}] - {}", id, &pattern_profile.description)?;
-            write!(f, "{}", pattern_profile)?;
+            write!(f, "  Stage[root pattern id={}] - {}", id, stage_profile)?;
         }
         Ok(())
     }
@@ -545,11 +541,11 @@ impl CompileProfile {
         }
     }
 
-    fn total_micros(&self) -> f64 {
+    fn total_nanos(&self) -> u64 {
         match &self.data {
-            None => 0.0,
+            None => 0,
             Some(data) => {
-                (data.translation + data.validation + data.annotation + data.compilation).as_nanos() as f64 / 1000.0
+                (data.translation + data.validation + data.annotation + data.compilation).as_nanos() as u64
             }
         }
     }
@@ -560,7 +556,7 @@ impl Display for CompileProfile {
         match &self.data {
             None => writeln!(f, "  Compile[enabled=false]"),
             Some(data) => {
-                writeln!(f, "  Compile[enabled=true, total micros={}]", self.total_micros())?;
+                writeln!(f, "  Compile[enabled=true, total micros={}]", self.total_nanos() as f64 / 1000.0)?;
                 writeln!(f, "    translation micros: {}", data.translation.as_nanos() as f64 / 1000.0)?;
                 writeln!(f, "    validation micros: {}", data.validation.as_nanos() as f64 / 1000.0)?;
                 writeln!(f, "    annotation micros: {}", data.annotation.as_nanos() as f64 / 1000.0)?;
@@ -610,42 +606,178 @@ impl Display for EncodingProfile {
 
 #[derive(Debug)]
 pub struct StageProfile {
-    description: String,
-    step_profiles: RwLock<Vec<Arc<StepProfile>>>,
+    description: Option<String>,
+    pattern_profile: OnceLock<Arc<PatternProfile>>,
     enabled: bool,
 }
 
 impl StageProfile {
-    fn new(description: String, enabled: bool) -> Self {
-        Self { description, step_profiles: RwLock::new(Vec::new()), enabled }
+    fn new(description_fn: impl Fn() -> String, enabled: bool) -> Self {
+        if enabled {
+            Self { description: Some(description_fn()), pattern_profile: OnceLock::new(), enabled }
+        } else {
+            Self { description: None, pattern_profile: OnceLock::new(), enabled: false }
+        }
     }
 
-    pub fn extend_or_get(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<StepProfile> {
+    pub fn create_or_get_pattern(&self, pattern_description: impl Fn() -> String) -> Arc<PatternProfile> {
+        self.pattern_profile
+            .get_or_init(|| {
+                if self.enabled {
+                    Arc::new(PatternProfile::new_enabled(pattern_description))
+                } else {
+                    Arc::new(PatternProfile::new_disabled())
+                }
+            })
+            .clone()
+    }
+}
+
+impl Display for StageProfile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.description.as_ref().map(|inner| inner.as_str()).unwrap_or(""))?;
+        match self.pattern_profile.get() {
+            None => writeln!(f, "Disabled"),
+            Some(profile) => write!(f, "{}", profile),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum SubstepProfile {
+    QueryProfile(Arc<QueryProfile>), // function call
+    PatternProfile(Arc<PatternProfile>),
+    StepProfile(Arc<StepProfile>),
+}
+
+impl SubstepProfile {
+    fn total_nanos(&self) -> u64 {
+        match self {
+            SubstepProfile::QueryProfile(query_profile) => query_profile.total_nanos(),
+            SubstepProfile::PatternProfile(pattern_profile) => pattern_profile.total_nanos(),
+            SubstepProfile::StepProfile(step_profile) => step_profile.total_nanos(),
+        }
+    }
+}
+
+impl Display for SubstepProfile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            SubstepProfile::QueryProfile(query_profile) => Display::fmt(query_profile, f),
+            SubstepProfile::PatternProfile(pattern_profile) => Display::fmt(pattern_profile, f),
+            SubstepProfile::StepProfile(step_profile) => Display::fmt(step_profile, f),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct PatternProfile {
+    substeps: RwLock<Vec<SubstepProfile>>,
+    enabled: bool,
+    description: Option<String>,
+}
+
+impl PatternProfile {
+    fn new_enabled(description_getter: impl Fn() -> String) -> Self {
+        Self { substeps: RwLock::new(Vec::new()), enabled: true, description: Some(description_getter()) }
+    }
+
+    fn new_disabled() -> Self {
+        Self { substeps: RwLock::new(Vec::with_capacity(0)), enabled: false, description: None }
+    }
+
+    pub fn extend_or_get_subquery(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<QueryProfile> {
         if self.enabled {
-            let profiles = self.step_profiles.read().unwrap();
+            let profiles = self.substeps.read().unwrap();
             if index < profiles.len() {
-                profiles[index].clone()
+                match &profiles[index] {
+                    SubstepProfile::PatternProfile(_) | SubstepProfile::StepProfile(_) => {
+                        panic!(
+                            "Found unexpected sub-profile - indices must always be used with the same type of profile."
+                        );
+                    }
+                    SubstepProfile::QueryProfile(query_profile) => query_profile.clone(),
+                }
             } else {
                 debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
-                let profile = Arc::new(StepProfile::new_enabled(description_getter()));
+                let query_profile = Arc::new(QueryProfile::new(true));
+                let profile = SubstepProfile::QueryProfile(query_profile.clone());
                 drop(profiles);
-                let mut profiles_mut = self.step_profiles.write().unwrap();
-                profiles_mut.push(profile.clone());
-                profile
+                let mut profiles_mut = self.substeps.write().unwrap();
+                profiles_mut.push(profile);
+                query_profile
+            }
+        } else {
+            Arc::new(QueryProfile::new(false))
+        }
+    }
+
+    pub fn extend_or_get_subpattern(
+        &self,
+        index: usize,
+        description_getter: impl Fn() -> String,
+    ) -> Arc<PatternProfile> {
+        if self.enabled {
+            let profiles = self.substeps.read().unwrap();
+            if index < profiles.len() {
+                match &profiles[index] {
+                    SubstepProfile::PatternProfile(pattern_profile) => pattern_profile.clone(),
+                    SubstepProfile::StepProfile(_) | SubstepProfile::QueryProfile(_) => {
+                        panic!(
+                            "Found unexpected sub-profile - indices must always be used with the same type of profile."
+                        );
+                    }
+                }
+            } else {
+                debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
+                let pattern_profile = Arc::new(PatternProfile::new_enabled(description_getter));
+                let profile = SubstepProfile::PatternProfile(pattern_profile.clone());
+                drop(profiles);
+                let mut profiles_mut = self.substeps.write().unwrap();
+                profiles_mut.push(profile);
+                pattern_profile
+            }
+        } else {
+            Arc::new(PatternProfile::new_disabled())
+        }
+    }
+
+    pub fn extend_or_get_step(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<StepProfile> {
+        if self.enabled {
+            let profiles = self.substeps.read().unwrap();
+            if index < profiles.len() {
+                match &profiles[index] {
+                    SubstepProfile::PatternProfile(_) | SubstepProfile::QueryProfile(_) => {
+                        panic!(
+                            "Found unexpected sub-profile - indices must always be used with the same type of profile."
+                        );
+                    }
+                    SubstepProfile::StepProfile(step_profile) => step_profile.clone(),
+                }
+            } else {
+                debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
+                let step_profile = Arc::new(StepProfile::new_enabled(description_getter()));
+                let profile = SubstepProfile::StepProfile(step_profile.clone());
+                drop(profiles);
+                let mut profiles_mut = self.substeps.write().unwrap();
+                profiles_mut.push(profile);
+                step_profile
             }
         } else {
             Arc::new(StepProfile::new_disabled())
         }
     }
+
+    fn total_nanos(&self) -> u64 {
+        self.substeps.read().unwrap().iter().map(|substep_profile| substep_profile.total_nanos()).sum::<u64>()
+    }
 }
 
-impl fmt::Display for StageProfile {
+impl Display for PatternProfile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (i, step_profile) in self.step_profiles.read().unwrap().iter().enumerate() {
-            match step_profile.data.as_ref() {
-                None => writeln!(f, "    {}.\n", i)?,
-                Some(data) => writeln!(f, "    {}. {}\n", i, data)?,
-            }
+        writeln!(f, "{}", self.description.as_ref().map(|inner| inner.as_str()).unwrap_or(""))?;
+        for (i, substep) in self.substeps.read().unwrap().iter().enumerate() {
+            write!(f, "{} -- {}", i, substep)?;
         }
         Ok(())
     }
@@ -693,9 +825,22 @@ impl StepProfile {
     pub fn storage_counters(&self) -> StorageCounters {
         if let Some(data) = self.data.as_ref() { data.storage.clone() } else { StorageCounters::DISABLED }
     }
+
+    pub fn total_nanos(&self) -> u64 {
+        self.data.as_ref().map(|data| data.nanos.load(Ordering::SeqCst)).unwrap_or(0)
+    }
 }
 
-impl fmt::Display for StepProfileData {
+impl Display for StepProfile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.data.as_ref() {
+            None => Ok(()),
+            Some(data) => writeln!(f, "{}\n", data),
+        }
+    }
+}
+
+impl Display for StepProfileData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let rows = self.rows.load(Ordering::Relaxed);
         let micros = Duration::from_nanos(self.nanos.load(Ordering::Relaxed)).as_micros();

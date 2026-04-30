@@ -217,8 +217,10 @@ impl CollectorTrait for SortCollector {
 
     fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
         let Self { sort_on, collector } = self;
+        // Note: bit hacky!
         let profile = context.profile.profile_stage(|| String::from("Sort"), 0); // TODO executable id
-        let step_profile = profile.extend_or_get(0, || String::from("Sort execution"));
+        let pattern_profile = profile.create_or_get_pattern(|| String::from("Sort execution"));
+        let step_profile = pattern_profile.extend_or_get_step(0, || String::from("Sort step"));
         let sorted_indices =
             collector.indices_sorted_by(context, &sort_on, step_profile.storage_counters()).into_iter().peekable();
         CollectedStageIterator::Sort(SortStageIterator { unsorted: collector, sorted_indices })

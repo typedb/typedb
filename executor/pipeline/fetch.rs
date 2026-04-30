@@ -109,7 +109,8 @@ fn execute_fetch(
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
 ) -> Result<ConceptDocument, FetchExecutionError> {
-    let step = stage_profile.extend_or_get(0, || String::from("Root fetch"));
+    let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Fetch pattern"));
+    let step = pattern_profile.extend_or_get_step(0, || String::from("Root fetch"));
     let measurement = step.start_measurement();
     let node = execute_object(
         &fetch.object_instruction,

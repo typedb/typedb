@@ -138,7 +138,8 @@ macro_rules! reducer_executor {
             impl ReducerExecutor {
                 fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
                     let profile = context.profile.profile_stage(|| String::from("Reduce"), 0); // TODO executable id
-                    let step_profile = profile.extend_or_get(0, || String::from("Reduce execution"));
+                    let pattern_profile = profile.create_or_get_pattern(|| String::from("Reduce pattern"));
+                    let step_profile = pattern_profile.extend_or_get_step(0, || String::from("Reduce execution"));
                     let storage_counters = step_profile.storage_counters();
                     match self {
                         Self::$count(reducer) => reducer.accept(row, context, storage_counters),

@@ -20,6 +20,7 @@ use resource::{
     constants::traversal::{BATCH_DEFAULT_CAPACITY, CHECK_INTERRUPT_FREQUENCY_ROWS},
     profile::StageProfile,
 };
+use resource::profile::PatternProfile;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -155,13 +156,14 @@ pub(crate) fn execute_insert(
     debug_assert!(row.get_multiplicity() == 1);
     debug_assert!(row.len() == executable.output_row_schema.len());
     let mut profile_index = 0;
+    let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Insert pattern"));
     execute_concept_instructions(
         &executable.concept_instructions,
         snapshot,
         thing_manager,
         parameters,
         row,
-        stage_profile,
+        &pattern_profile,
         &mut profile_index,
     )?;
     execute_connection_instructions(
@@ -170,11 +172,11 @@ pub(crate) fn execute_insert(
         thing_manager,
         parameters,
         row,
-        stage_profile,
+        &pattern_profile,
         &mut profile_index,
     )?;
     for optional in &executable.optional_inserts {
-        execute_optional_insert(optional, snapshot, thing_manager, parameters, row, stage_profile, &mut profile_index)?;
+        execute_optional_insert(optional, snapshot, thing_manager, parameters, row, &pattern_profile, &mut profile_index)?;
     }
     Ok(())
 }
@@ -185,7 +187,7 @@ fn execute_optional_insert(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
-    stage_profile: &StageProfile,
+    pattern_profile: &PatternProfile,
     profile_index: &mut usize,
 ) -> Result<(), Box<WriteError>> {
     for &input in &optional.required_input_variables {
@@ -199,7 +201,7 @@ fn execute_optional_insert(
         thing_manager,
         parameters,
         row,
-        stage_profile,
+        pattern_profile,
         profile_index,
     )?;
     execute_connection_instructions(
@@ -208,7 +210,7 @@ fn execute_optional_insert(
         thing_manager,
         parameters,
         row,
-        stage_profile,
+        pattern_profile,
         profile_index,
     )?;
     Ok(())
@@ -219,11 +221,11 @@ fn execute_concept_instructions(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
-    stage_profile: &StageProfile,
+    pattern_profile: &PatternProfile,
     profile_index: &mut usize,
 ) -> Result<(), Box<WriteError>> {
     for instruction in concept_instructions {
-        let step_profile = stage_profile.extend_or_get(*profile_index, || format!("{}", instruction));
+        let step_profile = pattern_profile.extend_or_get_step(*profile_index, || format!("{}", instruction));
         let measurement = step_profile.start_measurement();
         match instruction {
             ConceptInstruction::PutAttribute(isa_attr) => {
@@ -245,11 +247,11 @@ fn execute_connection_instructions(
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
-    stage_profile: &StageProfile,
+    pattern_profile: &PatternProfile,
     profile_index: &mut usize,
 ) -> Result<(), Box<WriteError>> {
     for instruction in connection_instructions {
-        let step_profile = stage_profile.extend_or_get(*profile_index, || format!("{}", instruction));
+        let step_profile = pattern_profile.extend_or_get_step(*profile_index, || format!("{}", instruction));
         let measurement = step_profile.start_measurement();
         match instruction {
             ConnectionInstruction::Has(has) => {

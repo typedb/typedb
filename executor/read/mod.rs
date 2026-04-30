@@ -10,7 +10,7 @@ use compiler::executable::{
     function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use resource::profile::QueryProfile;
+use resource::profile::{QueryProfile, StageProfile};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::pattern_executor::PatternExecutor;
@@ -59,13 +59,16 @@ pub(super) fn create_pattern_executor_for_conjunction(
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     conjunction_executable: &ConjunctionExecutable,
-    profile: &QueryProfile,
+    profile: Arc<StageProfile>,
 ) -> Result<PatternExecutor, Box<ConceptReadError>> {
+    let pattern_profile = profile.create_or_get_pattern(|| {
+        format!("Conjunction [id: {}] \n  ~ {}", conjunction_executable.executable_id(),conjunction_executable.planner_statistics())
+    });
     let executors = step_executor::create_executors_for_conjunction(
         snapshot,
         thing_manager,
         function_registry,
-        profile,
+        pattern_profile,
         conjunction_executable,
     )?;
     Ok(PatternExecutor::new(conjunction_executable.executable_id(), executors))
