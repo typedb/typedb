@@ -106,8 +106,8 @@ workspace_refs = use_repo_rule("@typedb_bazel_distribution//common/workspace_ref
 workspace_refs(
     name = "typedb_workspace_refs",
     workspace_commit_dict = {
-        "typeql+": "7029e9f036540ad75d9bdc3afb1207409741d42a",
-        "typedb_protocol+": "da3e316cb0022cb284083996f0659ad22db13aca",
+        "typeql+": "701dd0c28d22cf3d8662196ec3c5e581a865b022",
+        "typedb_protocol+": "2a6e7fe7df4ff085942adaee859499d336b23fdd",
     },
     workspace_tag_dict = {
     },
@@ -134,37 +134,37 @@ use_repo(
 # TypeDB repos
 # ===========================================================
 
-bazel_dep(name = "typedb_dependencies", version = "0.0.0")
-git_override(
-    module_name = "typedb_dependencies",
-    remote = "https://github.com/typedb/dependencies",
-    commit = "32a7fde17ad17b775a8ccc0867c87f119749e7ea",
-)
-
 bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
 git_override(
     module_name = "typedb_bazel_distribution",
     remote = "https://github.com/typedb/bazel-distribution",
-    commit = "4e400ddcc52da12809db323874eb3516ee9ab5c3",
+    commit = "10c8e442f0507153125b7e3ab5005da8100a4d23",
+)
+
+bazel_dep(name = "typedb_dependencies", version = "0.0.0")
+git_override(
+    module_name = "typedb_dependencies",
+    remote = "https://github.com/typedb/dependencies",
+    commit = "97f225e35b971f1d4129188378e8b577e9b2e369",
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")
 git_override(
     module_name = "typeql",
     remote = "https://github.com/typedb/typeql",
-    commit = "7029e9f036540ad75d9bdc3afb1207409741d42a",
+    commit = "701dd0c28d22cf3d8662196ec3c5e581a865b022",
 )
 
 bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    commit = "da3e316cb0022cb284083996f0659ad22db13aca",
+    commit = "2a6e7fe7df4ff085942adaee859499d336b23fdd",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
 git_override(
     module_name = "typedb_behaviour",
     remote = "https://github.com/typedb/typedb-behaviour",
-    commit = "0f894490977360ba7b625517121ce0461c22df7f",
+    commit = "caeb557f2d0d48b75da9e048a0f3b99ef0d5e8eb",
 )

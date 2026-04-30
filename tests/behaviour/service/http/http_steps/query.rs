@@ -21,7 +21,7 @@ use server::service::{
             },
             structure::bdd::{encode_function_structure_as_functor, encode_pipeline_structure_as_functor},
         },
-        query::{QueryAnswerResponse, QueryOptionsPayload},
+        query::QueryAnswerResponse,
     },
 };
 
@@ -306,7 +306,7 @@ pub async fn set_query_option_answer_count_limit(context: &mut Context, value: u
 }
 
 #[cucumber::given(expr = "set query option include_query_structure to: {boolean}")]
-async fn set_query_option_include_query_structure(context: &mut Context, set_to: params::Boolean, step: &Step) {
+async fn set_query_option_include_query_structure(context: &mut Context, set_to: params::Boolean) {
     context.init_query_options_if_needed();
     context.query_options.as_mut().unwrap().include_query_structure = Some(set_to.to_bool());
 }
@@ -416,10 +416,10 @@ pub async fn answer_query_type_is(context: &mut Context, is_or_not: IsOrNot, que
 #[apply(generic_step)]
 #[step(expr = r"answer get row\({int}\) query type {is_or_not}: {query_type}")]
 pub async fn answer_get_row_query_type_is(
-    context: &mut Context,
-    index: usize,
-    is_or_not: IsOrNot,
-    query_type: crate::params::QueryType,
+    _context: &mut Context,
+    _index: usize,
+    _is_or_not: IsOrNot,
+    _query_type: crate::params::QueryType,
 ) {
     // no-op
 }
@@ -812,7 +812,7 @@ pub async fn answer_get_row_get_variable_try_get_specific_value_is_none(
     var_kind: ConceptKind,
     is_by_var_index: IsByVarIndex,
     var: Var,
-    value_type: params::ValueType,
+    _value_type: params::ValueType,
     is_or_not: IsOrNot,
 ) {
     if matches!(is_by_var_index, IsByVarIndex::Is) {
@@ -1019,7 +1019,7 @@ pub async fn answer_get_row_get_variable_is_struct(
     var_kind: ConceptKind,
     is_by_var_index: IsByVarIndex,
     var: Var,
-    is_struct: params::Boolean,
+    _is_struct: params::Boolean,
 ) {
     if matches!(is_by_var_index, IsByVarIndex::Is) {
         return; // http does not have indices

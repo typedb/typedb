@@ -3,55 +3,26 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::{sync::Arc, time::Duration};
 
-use std::time::Duration;
-
-use database::transaction::{
-    DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema, TransactionWrite,
-};
-use diagnostics::metrics::LoadKind;
+use database::transaction::{CommitIntent, TransactionError, TransactionSchema, TransactionWrite};
 use error::typedb_error;
 use executor::{InterruptType, pipeline::PipelineExecutionError};
 use query::error::QueryError;
-use resource::constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS;
+use resource::{constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS, profile::TransactionProfile};
 use storage::durability_client::WALClient;
 use tokio::time::Instant;
+use tracing::{Level, event};
 use typeql::query::stage::Stage;
 use uuid::Uuid;
 
+pub(crate) use crate::transaction::{Transaction, with_readable_transaction};
+use crate::{
+    error::{ArcServerStateError, LocalServerStateError},
+    state::ServerState,
+};
+
 pub(crate) const TRANSACTION_REQUEST_BUFFER_SIZE: usize = 10;
-
-#[derive(Debug)]
-pub enum Transaction {
-    Read(TransactionRead<WALClient>),
-    Write(TransactionWrite<WALClient>),
-    Schema(TransactionSchema<WALClient>),
-}
-
-macro_rules! with_readable_transaction {
-    ($match_:expr, |$transaction:ident| $block:block) => {{
-        match $match_ {
-            Transaction::Read($transaction) => $block
-            Transaction::Write($transaction) => $block
-            Transaction::Schema($transaction) => $block
-        }
-    }}
-}
-pub(crate) use with_readable_transaction;
-
-impl Transaction {
-    pub fn load_kind(&self) -> LoadKind {
-        match self {
-            Transaction::Read(_) => LoadKind::ReadTransactions,
-            Transaction::Write(_) => LoadKind::WriteTransactions,
-            Transaction::Schema(_) => LoadKind::SchemaTransactions,
-        }
-    }
-
-    pub fn database_name(&self) -> &str {
-        with_readable_transaction!(self, |transaction| { transaction.database.name() })
-    }
-}
 
 pub(crate) fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
     for stage in &pipeline.stages {
@@ -67,18 +38,72 @@ pub(crate) fn init_transaction_timeout(transaction_timeout_millis: Option<u64>) 
     Instant::now() + Duration::from_millis(transaction_timeout_millis.unwrap_or(DEFAULT_TRANSACTION_TIMEOUT_MILLIS))
 }
 
+pub(crate) async fn commit_schema_transaction(
+    server_state: Arc<ServerState>,
+    transaction: TransactionSchema<WALClient>,
+) -> (TransactionProfile, Result<(), ArcServerStateError>) {
+    let (mut profile, result) = match transaction.finalise() {
+        (mut profile, Ok(commit_intent)) => {
+            if !commit_intent.has_changes() {
+                (profile, Ok(()))
+            } else {
+                let commit_profile = profile.take_commit_profile();
+                let (commit_profile, result) =
+                    server_state.databases().schema_commit(commit_intent, commit_profile).await;
+                profile.set_commit_profile(commit_profile);
+                (profile, result)
+            }
+        }
+        (profile, Err(typedb_source)) => {
+            (profile, Err(LocalServerStateError::DatabaseSchemaCommitFailed { typedb_source }.into()))
+        }
+    };
+    profile.commit_profile().end();
+    if profile.is_enabled() {
+        event!(Level::INFO, "schema commit done.\n{}", profile);
+    }
+    (profile, result)
+}
+
+pub(crate) async fn commit_write_transaction(
+    server_state: Arc<ServerState>,
+    transaction: TransactionWrite<WALClient>,
+) -> (TransactionProfile, Result<(), ArcServerStateError>) {
+    let (mut profile, result) = match transaction.finalise() {
+        (mut profile, Ok(commit_intent)) => {
+            if !commit_intent.has_changes() {
+                (profile, Ok(()))
+            } else {
+                let commit_profile = profile.take_commit_profile();
+                let (commit_profile, result) =
+                    server_state.databases().data_commit(commit_intent, commit_profile).await;
+                profile.set_commit_profile(commit_profile);
+                (profile, result)
+            }
+        }
+        (profile, Err(typedb_source)) => {
+            (profile, Err(LocalServerStateError::DatabaseDataCommitFailed { typedb_source }.into()))
+        }
+    };
+    profile.commit_profile().end();
+    if profile.is_enabled() {
+        event!(Level::INFO, "data commit done.\n{}", profile);
+    }
+    (profile, result)
+}
+
 typedb_error! {
-    pub(crate) TransactionServiceError(component = "Transaction service", prefix = "TSV") {
+    pub TransactionServiceError(component = "Transaction service", prefix = "TSV") {
         DatabaseNotFound(1, "Database '{name}' not found.", name: String),
         CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
         CannotRollbackReadTransaction(3, "Read transactions cannot be rolled back, since they never contain writes."),
         TransactionFailed(4, "Transaction failed.", typedb_source: TransactionError),
-        DataCommitFailed(5, "Data transaction commit failed.", typedb_source: DataCommitError),
-        SchemaCommitFailed(6, "Schema transaction commit failed.", typedb_source: SchemaCommitError),
+        DataCommitFailed(5, "Data transaction commit failed.", typedb_source: ArcServerStateError),
+        SchemaCommitFailed(6, "Schema transaction commit failed.", typedb_source: ArcServerStateError),
         QueryParseFailed(7, "Query parsing failed.", typedb_source: typeql::Error),
         SchemaQueryRequiresSchemaTransaction(8, "Schema modification queries require schema transactions."),
         WriteQueryRequiresSchemaOrWriteTransaction(9, "Data modification queries require either write or schema transactions."),
-        TxnAbortSchemaQueryFailed(10, "Aborting transaction due to failed schema query.", typedb_source: QueryError),
+        SchemaQueryFailedAbortingTransaction(10, "Aborting transaction due to failed schema query.", typedb_source: Box<QueryError>),
         QueryFailed(11, "Query failed.", typedb_source: Box<QueryError>),
         NoOpenTransaction(12, "Operation failed: no open transaction."),
         QueryInterrupted(13, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
@@ -90,11 +115,12 @@ typedb_error! {
             "#,
             query_request_id: Uuid
         ),
-        ServiceFailedQueueCleanup(15, "The operation failed since the service is closing."),
+        QueueCleanupFailed(15, "The operation failed since the service is closing."),
         PipelineExecution(16, "Pipeline execution failed.", typedb_source: PipelineExecutionError),
         TransactionTimeout(17, "Operation failed: transaction timeout."),
         InvalidPrefetchSize(18, "Invalid query option: prefetch size should be >= 1, got {value} instead.", value: usize),
         AnalyseQueryExpectsPipeline(19, "Query analyse received a schema query.Only query pipeline can be analysed."),
         AnalyseQueryFailed(20, "Analysing the query failed.", typedb_source: QueryError),
+        CannotOpen(21, "Could not open transaction.", typedb_source: ArcServerStateError),
     }
 }

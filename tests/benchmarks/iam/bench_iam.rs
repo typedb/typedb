@@ -9,12 +9,12 @@ use std::{fs::File, io::Read, path::Path, sync::Arc, time::Instant};
 use database::{
     Database,
     database_manager::DatabaseManager,
-    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
 use options::TransactionOptions;
 use storage::durability_client::WALClient;
-use test_utils::create_tmp_dir;
+use test_utils::create_tmp_storage_dir;
 
 const DB_NAME: &str = "benchmark-iam";
 const RESOURCE_PATH: &str = "tests/benchmarks/iam";
@@ -61,7 +61,8 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
         transaction_options,
         profile,
     );
-    tx.commit().1.unwrap();
+    let (mut profile, intent) = tx.finalise();
+    intent.unwrap().commit(profile.commit_profile()).unwrap();
 }
 
 fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
@@ -102,11 +103,12 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
         transaction_options,
         profile,
     );
-    tx.commit().1.unwrap();
+    let (mut profile, intent) = tx.finalise();
+    intent.unwrap().commit(profile.commit_profile()).unwrap();
 }
 
 fn setup() -> Arc<Database<WALClient>> {
-    let tmp_dir = create_tmp_dir();
+    let tmp_dir = create_tmp_storage_dir();
     {
         let dbm = DatabaseManager::new(&tmp_dir).unwrap();
         dbm.put_database(DB_NAME).unwrap();

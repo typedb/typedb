@@ -8,7 +8,9 @@ use std::sync::Arc;
 use cucumber::gherkin::Step;
 use database::{
     Database,
-    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{
+        CommitIntent, DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite,
+    },
 };
 use error::TypeDBError;
 use futures::future::join_all;
@@ -118,7 +120,8 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
             ));
         }
         ActiveTransaction::Write(tx) => {
-            let (_profile, result) = tx.commit();
+            let (mut profile, result) = tx.finalise();
+            let result = result.and_then(|intent| intent.commit(profile.commit_profile()));
             if let Either::Right(error) = may_error.check(result) {
                 match error {
                     DataCommitError::ConceptWriteErrors { write_errors: errors, .. } => {
@@ -137,7 +140,8 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
         }
         ActiveTransaction::Schema(tx) => {
             let types_syntax = tx.type_manager.get_types_syntax(tx.snapshot.as_ref()).unwrap();
-            let (_profile, result) = tx.commit();
+            let (mut profile, result) = tx.finalise();
+            let result = result.and_then(|intent| intent.commit(profile.commit_profile()));
             if let Either::Right(error) = may_error.check(result) {
                 match error {
                     SchemaCommitError::ConceptWriteErrors { write_errors: errors, .. } => {
@@ -157,13 +161,13 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                 }
             } else {
                 // after each successful schema trasaction, we re-test the schema export/import
-                test_schema_export(context, &types_syntax);
+                test_schema_export(context, &types_syntax).await;
             }
         }
     }
 }
 
-fn test_schema_export(context: &mut Context, types_syntax: &str) {
+async fn test_schema_export(context: &mut Context, types_syntax: &str) {
     // export, re-import, and export schema and verify that's equal!
     let guard = context.server.as_ref().unwrap().lock().unwrap();
     let database_manager = guard.database_manager();
@@ -211,7 +215,10 @@ fn execute_schema_transaction(
             &schema_define,
         )
         .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
-    transaction.commit().1.map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
+    let (mut profile, result) = transaction.finalise();
+    result
+        .and_then(|intent| intent.commit(profile.commit_profile()))
+        .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
     Ok(())
 }
 

@@ -31,13 +31,14 @@ pub mod server {
 
     use crate::{
         constants::common::{GB, SECONDS_IN_HOUR, SECONDS_IN_MINUTE, SECONDS_IN_YEAR},
-        server_info::ServerInfo,
+        distribution_info::DistributionInfo,
     };
 
-    const DISTRIBUTION: &str = "TypeDB CE";
+    pub const DISTRIBUTION: &str = "TypeDB CE";
     const VERSION: &str = include_str!("../VERSION");
     const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
-    pub const SERVER_INFO: ServerInfo = ServerInfo { logo: ASCII_LOGO, distribution: DISTRIBUTION, version: VERSION };
+    pub const DISTRIBUTION_INFO: DistributionInfo =
+        DistributionInfo { logo: ASCII_LOGO, distribution: DISTRIBUTION, version: VERSION };
     pub const DEFAULT_CONFIG_PATH: &str = "config.yml";
 
     #[macro_export]
@@ -66,6 +67,8 @@ pub mod server {
 
     pub const PERF_COUNTERS_ENABLED: bool = true;
 
+    pub const ADMIN_DEFAULT_PORT: u16 = 1728;
+    pub const ADMIN_DEFAULT_ADDRESS: &str = "127.0.0.1:1728";
     pub const MONITORING_DEFAULT_PORT: u16 = 4104;
 
     pub const SERVER_ID_FILE_NAME: &str = concat!(system_file_prefix!(), "server_id");

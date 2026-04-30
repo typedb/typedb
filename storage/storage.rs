@@ -22,6 +22,7 @@ use std::{
 
 use ::error::typedb_error;
 use bytes::{Bytes, byte_array::ByteArray};
+use durability::DurabilitySequenceNumber;
 use fail_point::{
     COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS, COMMIT_DATA_UNSYNC_IN_WAL, COMMIT_REJECTED_WITHOUT_PERSISTING_STATUS,
     STORAGE_DELETED_KEYSPACES_BUT_NOT_WAL, STORAGE_EMPTY_STORAGE_DIR, STORAGE_MISSING_STORAGE_DIR, fail_point,
@@ -40,7 +41,7 @@ use tracing::trace;
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
     error::{MVCCStorageError, MVCCStorageErrorKind},
-    isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
+    isolation_manager::{IsolationManager, ValidatedCommit},
     iterator::MVCCRangeIterator,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
@@ -48,12 +49,15 @@ use crate::{
         IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
         iterator::KeyspaceRangeIterator,
     },
+    record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
     recovery::{
         checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
         commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
     },
     sequence_number::SequenceNumber,
-    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot, write::Write},
+    snapshot::{
+        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot, snapshot_id::SnapshotId, write::Write,
+    },
 };
 
 pub mod durability_client;
@@ -63,6 +67,7 @@ pub mod iterator;
 pub mod key_range;
 pub mod key_value;
 pub mod keyspace;
+pub mod record;
 pub mod recovery;
 pub mod sequence_number;
 pub mod snapshot;
@@ -176,6 +181,7 @@ impl<Durability> MVCCStorage<Durability> {
     }
 
     fn register_durability_record_types(durability_client: &mut impl DurabilityClient) {
+        durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         durability_client.register_record_type::<StatusRecord>();
     }
@@ -200,13 +206,21 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.highest_committed_snapshot();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        WriteSnapshot::new(self, open_sequence_number)
+        WriteSnapshot::new_with_open_sequence_number(self, open_sequence_number)
     }
 
     pub fn open_snapshot_write_at(self: Arc<Self>, sequence_number: SequenceNumber) -> WriteSnapshot<Durability> {
+        let current_watermark = self.snapshot_watermark();
+        if sequence_number < current_watermark {
+            // Opening a committable snapshot at a historical position is not supported.
+            // The commit idempotency check (commit_record_exists) relies
+            // on SnapshotIds to be unique for an open seqnum. With the current nature of
+            // SnapshotIds, opening a write snapshot in the past can lead to SnapshotId collisions.
+            todo!("Opening committable snapshots at historical positions is not supported");
+        }
         // guarantee external consistency: await this sequence number to be behind the watermark
         self.wait_for_watermark(sequence_number);
-        WriteSnapshot::new(self, sequence_number)
+        WriteSnapshot::new_with_open_sequence_number(self, sequence_number)
     }
 
     pub fn open_snapshot_read(self: Arc<Self>) -> ReadSnapshot<Durability> {
@@ -225,7 +239,7 @@ impl<Durability> MVCCStorage<Durability> {
         // guarantee external consistency: we always await the latest snapshots to finish
         let possible_sequence_number = self.highest_committed_snapshot();
         let open_sequence_number = self.wait_for_watermark(possible_sequence_number);
-        SchemaSnapshot::new(self, open_sequence_number)
+        SchemaSnapshot::new_with_open_sequence_number(self, open_sequence_number)
     }
 
     fn wait_for_watermark(&self, target: SequenceNumber) -> SequenceNumber {
@@ -239,7 +253,7 @@ impl<Durability> MVCCStorage<Durability> {
         watermark
     }
 
-    fn snapshot_commit(
+    pub fn snapshot_commit(
         &self,
         snapshot: impl CommittableSnapshot<Durability>,
         commit_profile: &mut CommitProfile,
@@ -359,6 +373,26 @@ impl<Durability> MVCCStorage<Durability> {
             }
         }
         Ok(())
+    }
+
+    // WARNING: this method scans the whole WAL starting from the snapshot_id's sequence number.
+    // WARNING: this method checks only the WAL, and records removed from the WAL will be missing.
+    pub fn commit_record_exists(
+        &self,
+        open_sequence_number: DurabilitySequenceNumber,
+        snapshot_id: SnapshotId,
+    ) -> Result<bool, DurabilityClientError>
+    where
+        Durability: DurabilityClient,
+    {
+        let mut iter = self.durability_client.iter_sequenced_type_from::<CommitRecord>(open_sequence_number)?;
+        while let Some(entry) = iter.next() {
+            let (_, iter_record) = entry?;
+            if iter_record.snapshot_id() == snapshot_id && iter_record.open_sequence_number() == open_sequence_number {
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
 
     fn persist_commit_status(
@@ -700,16 +734,17 @@ impl StorageOperation {
 mod tests {
     use bytes::byte_array::ByteArray;
     use durability::wal::WAL;
-    use resource::profile::StorageCounters;
-    use test_utils::{create_tmp_dir, init_logging};
+    use resource::profile::{CommitProfile, StorageCounters};
+    use test_utils::{create_tmp_storage_dir, init_logging};
 
     use crate::{
-        MVCCStorage,
+        Arc, MVCCStorage, SnapshotId,
         durability_client::{DurabilityClient, WALClient},
-        isolation_manager::{CommitRecord, CommitType},
         key_value::StorageKeyArray,
         keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
-        snapshot::buffer::OperationsBuffer,
+        record::{CommitRecord, CommitType, LegacyCommitRecordV1, StatusRecord},
+        sequence_number::SequenceNumber,
+        snapshot::{WriteSnapshot, buffer::OperationsBuffer},
         write_batches::WriteBatches,
     };
 
@@ -733,14 +768,14 @@ mod tests {
     }
 
     #[test]
-    fn test_recovery_from_partial_write() {
+    fn test_storage_recovery_from_partial_write() {
         test_keyspace_set! {
             PersistedKeyspace => 0: "write",
             FailedKeyspace => 1: "failed",
         }
 
         init_logging();
-        let storage_path = create_tmp_dir();
+        let storage_path = create_tmp_storage_dir();
         let key_1 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"hello"));
         let key_2 = StorageKeyArray::from((TestKeyspaceSet::FailedKeyspace, b"world"));
 
@@ -755,9 +790,15 @@ mod tests {
                 .insert(key_1.byte_array().clone(), ByteArray::empty());
 
             let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+            durability_client.register_record_type::<LegacyCommitRecordV1>();
             durability_client.register_record_type::<CommitRecord>();
             let seq = durability_client
-                .sequenced_write(&CommitRecord::new(full_operations, durability_client.previous(), CommitType::Data))
+                .sequenced_write(&CommitRecord::new(
+                    full_operations,
+                    durability_client.previous(),
+                    CommitType::Data,
+                    SnapshotId::new(),
+                ))
                 .unwrap();
 
             let partial_commit = WriteBatches::from_operations(seq, &partial_operations);
@@ -772,6 +813,7 @@ mod tests {
         };
 
         let mut durability_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         let storage =
             MVCCStorage::<WALClient>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
@@ -780,5 +822,179 @@ mod tests {
             storage.get::<0>(&IteratorPool::new(), &key_2, seq, StorageCounters::DISABLED).unwrap().unwrap(),
             ByteArray::empty()
         );
+    }
+
+    #[test]
+    fn test_storage_snapshot_id_search() {
+        test_keyspace_set! {
+            PersistedKeyspace => 0: "write",
+            FailedKeyspace => 1: "failed",
+        }
+
+        init_logging();
+        let mut profile = CommitProfile::DISABLED;
+
+        let storage_path = create_tmp_storage_dir();
+        let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        durability_client.register_record_type::<LegacyCommitRecordV1>();
+        durability_client.register_record_type::<CommitRecord>();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::create::<TestKeyspaceSet>("storage", &storage_path, durability_client).unwrap(),
+        );
+
+        // Parallel snapshot commits with the same open seqnum
+
+        let key_1 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"hello"));
+        let mut snapshot1_operations = OperationsBuffer::new();
+        snapshot1_operations.writes_in_mut(key_1.keyspace_id()).insert(key_1.byte_array().clone(), ByteArray::empty());
+        let commit_record1 = CommitRecord::new(
+            snapshot1_operations,
+            storage.durability_client.previous(),
+            CommitType::Data,
+            SnapshotId::new(),
+        );
+        let snapshot_id1 = commit_record1.snapshot_id();
+        let seqnum1 = commit_record1.open_sequence_number();
+
+        let key_2 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"world"));
+        let mut snapshot2_operations = OperationsBuffer::new();
+        snapshot2_operations.writes_in_mut(key_2.keyspace_id()).insert(key_2.byte_array().clone(), ByteArray::empty());
+        let commit_record2 = CommitRecord::new(
+            snapshot2_operations,
+            storage.durability_client.previous(),
+            CommitType::Data,
+            SnapshotId::new(),
+        );
+        let snapshot_id2 = commit_record2.snapshot_id();
+        let seqnum2 = commit_record2.open_sequence_number();
+
+        assert!(!storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        assert!(!storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+        storage
+            .snapshot_commit(WriteSnapshot::new_with_commit_record(storage.clone(), commit_record1), &mut profile)
+            .unwrap();
+        assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        assert!(!storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+
+        storage
+            .snapshot_commit(WriteSnapshot::new_with_commit_record(storage.clone(), commit_record2), &mut profile)
+            .unwrap();
+        assert_eq!(seqnum1, seqnum2);
+        assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+
+        // New seqnum, new Snapshot id
+
+        let key_3 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"!"));
+        let mut snapshot3_operations = OperationsBuffer::new();
+        snapshot3_operations.writes_in_mut(key_3.keyspace_id()).insert(key_3.byte_array().clone(), ByteArray::empty());
+        let commit_record3 = CommitRecord::new(
+            snapshot3_operations,
+            storage.durability_client.previous(),
+            CommitType::Schema,
+            SnapshotId::new(),
+        );
+        let snapshot_id3 = commit_record3.snapshot_id();
+        let seqnum3 = commit_record3.open_sequence_number();
+
+        assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+        assert!(!storage.commit_record_exists(seqnum3, snapshot_id3).unwrap());
+
+        storage
+            .snapshot_commit(WriteSnapshot::new_with_commit_record(storage.clone(), commit_record3), &mut profile)
+            .unwrap();
+        assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+        assert!(storage.commit_record_exists(seqnum3, snapshot_id3).unwrap());
+
+        // New seqnum, duplicated Snapshot id
+
+        let key_4 = StorageKeyArray::from((TestKeyspaceSet::PersistedKeyspace, b"!!"));
+        let mut snapshot4_operations = OperationsBuffer::new();
+        snapshot4_operations.writes_in_mut(key_4.keyspace_id()).insert(key_4.byte_array().clone(), ByteArray::empty());
+        let commit_record4 = CommitRecord::new(
+            snapshot4_operations,
+            storage.durability_client.previous(),
+            CommitType::Schema,
+            snapshot_id2,
+        );
+        let snapshot_id4 = commit_record4.snapshot_id();
+        let seqnum4 = commit_record4.open_sequence_number();
+
+        assert_eq!(snapshot_id2, snapshot_id4);
+        assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+        assert!(storage.commit_record_exists(seqnum3, snapshot_id3).unwrap());
+        assert!(!storage.commit_record_exists(seqnum4, snapshot_id4).unwrap());
+
+        storage
+            .snapshot_commit(WriteSnapshot::new_with_commit_record(storage.clone(), commit_record4), &mut profile)
+            .unwrap();
+        assert!(storage.commit_record_exists(seqnum1, snapshot_id1).unwrap());
+        assert!(storage.commit_record_exists(seqnum2, snapshot_id2).unwrap());
+        assert!(storage.commit_record_exists(seqnum3, snapshot_id3).unwrap());
+        assert!(storage.commit_record_exists(seqnum4, snapshot_id4).unwrap());
+    }
+
+    #[test]
+    fn test_mixed_legacy_and_current_commit_records() {
+        test_keyspace_set! {
+            TestKeyspace => 0: "test",
+        }
+
+        init_logging();
+        let storage_path = create_tmp_storage_dir();
+
+        let mut wal_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        wal_client.register_record_type::<LegacyCommitRecordV1>();
+        wal_client.register_record_type::<CommitRecord>();
+        wal_client.register_record_type::<StatusRecord>();
+
+        // Write legacy records (RECORD_TYPE=0) directly to WAL
+        let key_legacy = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"legacy"));
+        let mut legacy_ops = OperationsBuffer::new();
+        legacy_ops.writes_in_mut(key_legacy.keyspace_id()).insert(key_legacy.byte_array().clone(), ByteArray::empty());
+        let legacy_record = LegacyCommitRecordV1::new(legacy_ops, wal_client.previous(), CommitType::Data);
+        let legacy_seqnum = wal_client.sequenced_write(&legacy_record).unwrap();
+
+        // Load WAL back
+        drop(wal_client);
+        let mut wal_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        wal_client.register_record_type::<LegacyCommitRecordV1>();
+        wal_client.register_record_type::<CommitRecord>();
+        wal_client.register_record_type::<StatusRecord>();
+
+        // Write a new-format record
+        let key_new = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"new"));
+        let mut new_ops = OperationsBuffer::new();
+        new_ops.writes_in_mut(key_new.keyspace_id()).insert(key_new.byte_array().clone(), ByteArray::empty());
+        let new_snapshot_id = SnapshotId::new();
+        let new_record = CommitRecord::new(new_ops, wal_client.previous(), CommitType::Data, new_snapshot_id);
+        let new_seqnum = wal_client.sequenced_write(&new_record).unwrap();
+
+        assert_ne!(legacy_seqnum, new_seqnum);
+
+        // Read both record types back from WAL
+        // Legacy records are read as LegacyCommitRecordV1 and can be converted
+        let legacy_records: Vec<_> = wal_client
+            .iter_sequenced_type_from::<LegacyCommitRecordV1>(SequenceNumber::MIN)
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert_eq!(legacy_records.len(), 1, "Expected exactly one legacy record");
+
+        // New records are read as CommitRecord
+        let new_records: Vec<_> = wal_client
+            .iter_sequenced_type_from::<CommitRecord>(SequenceNumber::MIN)
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert_eq!(new_records.len(), 1, "Expected exactly one new-format record");
+        assert_eq!(new_records[0].1.snapshot_id(), new_snapshot_id);
+
+        // Legacy records convert to CommitRecord with UNSET snapshot_id
+        let converted = CommitRecord::from(legacy_records.into_iter().next().unwrap().1);
+        assert_eq!(converted.snapshot_id(), SnapshotId::UNSET);
     }
 }

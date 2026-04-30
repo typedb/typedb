@@ -3,10 +3,15 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 server:
-    address: 0.0.0.0:1729
+    listen-address: 0.0.0.0:1729
+    advertise-address: 127.0.0.1:1729
     http:
         enabled: true
-        address: 0.0.0.0:8000
+        listen-address: 0.0.0.0:8000
+        advertise-address: http://127.0.0.1:8000
+    admin:
+        enabled: true
+        port: 1728
 
     authentication:
         token-expiration-seconds: 5000

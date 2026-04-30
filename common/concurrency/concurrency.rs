@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub use crate::{interval_runner::IntervalRunner, tokio_interval_runner::TokioIntervalRunner};
+pub use crate::{
+    interval_runner::IntervalRunner,
+    tokio_task::{IntervalTaskParameters, TokioTaskSpawner, TokioTaskTracker},
+};
 
 mod interval_runner;
-mod tokio_interval_runner;
+mod tokio_task;
