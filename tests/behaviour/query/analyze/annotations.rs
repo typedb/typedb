@@ -17,7 +17,7 @@ async fn test_analyze_annotations() {
     let path = "../typedb_behaviour+/query/analyze/annotations.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/analyze/annotations.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/analyze/annotations.feature";
 
     assert!(Context::test(path, true).await);
 }

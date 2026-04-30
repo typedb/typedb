@@ -17,7 +17,7 @@ async fn test_owns_annotations() {
     let path = "../typedb_behaviour+/concept/type/owns-annotations.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/concept/type/owns-annotations.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/concept/type/owns-annotations.feature";
 
     assert!(Context::test(path, true).await);
 }

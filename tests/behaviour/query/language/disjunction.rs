@@ -17,7 +17,7 @@ async fn test_read_disjunction() {
     let path = "../typedb_behaviour+/query/language/disjunction.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/language/disjunction.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/language/disjunction.feature";
 
     assert!(Context::test(path, true).await);
 }
