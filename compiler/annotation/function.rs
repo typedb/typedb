@@ -164,30 +164,29 @@ pub fn annotate_stored_functions(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<AnnotatedSchemaFunctions, Box<FunctionAnnotationError>> {
-    let label_ctx = AnnotationContext::new(snapshot, type_manager, &EmptyAnnotatedFunctionSignatures);
+    let empty_ctx = AnnotationContext::new(snapshot, type_manager, &EmptyAnnotatedFunctionSignatures);
     let annotations_from_declaration = functions
         .iter()
-        .map(|(id, function)| Ok((id.clone(), annotate_signature_based_on_labels(&label_ctx, function)?)))
+        .map(|(id, function)| Ok((id.clone(), annotate_signature_based_on_labels(&empty_ctx, function)?)))
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
     let empty_preamble_annotations = Vec::<AnnotatedFunctionSignature>::new();
     let declared_annotations =
         AnnotatedFunctionSignaturesImpl::new(&annotations_from_declaration, &empty_preamble_annotations);
-
+    let declared_ctx = AnnotationContext::new(snapshot, type_manager, &declared_annotations);
     let preliminary_signature_annotations = functions
         .iter_mut()
         .map(|(function_id, function)| {
-            let ctx = AnnotationContext::new(snapshot, type_manager, &declared_annotations);
-            Ok((function_id.clone(), annotate_named_function(function, ctx.snapshot, ctx.type_manager, ctx.annotated_function_signatures)?))
+            Ok((function_id.clone(), annotate_named_function(function, &declared_ctx)?))
         })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
     let preliminary_signature_annotations =
         AnnotatedFunctionSignaturesImpl::new(&preliminary_signature_annotations, &empty_preamble_annotations);
+    let refined_ctx = AnnotationContext::new(snapshot, type_manager, &preliminary_signature_annotations);
     // In the second round, finer annotations are available at the function calls so the annotations in function bodies can be refined.
     let annotated_functions = functions
         .iter_mut()
         .map(|(id, function)| {
-            let ctx = AnnotationContext::new(snapshot, type_manager, &preliminary_signature_annotations);
-            Ok((id.clone(), annotate_named_function(function, ctx.snapshot, ctx.type_manager, ctx.annotated_function_signatures)?))
+            Ok((id.clone(), annotate_named_function(function, &refined_ctx)?))
         })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
 
@@ -204,28 +203,28 @@ pub fn annotate_preamble_functions(
     type_manager: &TypeManager,
     schema_function_signatures: Arc<AnnotatedSchemaFunctions>,
 ) -> Result<AnnotatedPreambleFunctions, Box<FunctionAnnotationError>> {
-    let label_ctx = AnnotationContext::new(snapshot, type_manager, &EmptyAnnotatedFunctionSignatures);
+    let empty_ctx = AnnotationContext::new(snapshot, type_manager, &EmptyAnnotatedFunctionSignatures);
     let preamble_annotations_from_labels_as_map = functions
         .iter()
-        .map(|function| annotate_signature_based_on_labels(&label_ctx, function))
+        .map(|function| annotate_signature_based_on_labels(&empty_ctx, function))
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
     let label_based_signature_annotations =
         AnnotatedFunctionSignaturesImpl::new(&schema_function_signatures, &preamble_annotations_from_labels_as_map);
+    let declared_ctx = AnnotationContext::new(snapshot, type_manager, &label_based_signature_annotations);
     let preliminary_signature_annotations_as_map = functions
         .iter_mut()
         .map(|function| {
-            let ctx = AnnotationContext::new(snapshot, type_manager, &label_based_signature_annotations);
-            annotate_named_function(function, ctx.snapshot, ctx.type_manager, ctx.annotated_function_signatures)
+            annotate_named_function(function, &declared_ctx)
         })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
     // In the second round, finer annotations are available at the function calls so the annotations in function bodies can be refined.
     let preliminary_signature_annotations =
         AnnotatedFunctionSignaturesImpl::new(&schema_function_signatures, &preliminary_signature_annotations_as_map);
+    let refined_ctx = AnnotationContext::new(snapshot, type_manager, &preliminary_signature_annotations);
     let annotated_functions = functions
         .iter_mut()
         .map(|function| {
-            let ctx = AnnotationContext::new(snapshot, type_manager, &preliminary_signature_annotations);
-            annotate_named_function(function, ctx.snapshot, ctx.type_manager, ctx.annotated_function_signatures)
+            annotate_named_function(function, &refined_ctx)
         })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
 
@@ -238,15 +237,12 @@ pub fn annotate_preamble_functions(
 
 pub(crate) fn annotate_anonymous_function(
     function: &mut Function,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
+    ctx: &AnnotationContext<'_, impl ReadableSnapshot>,
     input_annotations: &RunningVariableAnnotations,
     _source_span: Option<Span>,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function { arguments, argument_labels, .. } = function;
     debug_assert!(argument_labels.is_none());
-    let ctx = AnnotationContext::new(snapshot, type_manager, annotated_function_signatures);
     let argument_types_iter = arguments.iter().map(|var| {
         let arg_type = input_annotations
             .get_param(var)
@@ -259,12 +255,9 @@ pub(crate) fn annotate_anonymous_function(
 
 pub(super) fn annotate_named_function(
     function: &mut Function,
-    snapshot: &impl ReadableSnapshot,
-    type_manager: &TypeManager,
-    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
+    ctx: &AnnotationContext<'_, impl ReadableSnapshot>,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function { arguments, argument_labels, .. } = function;
-    let ctx = AnnotationContext::new(snapshot, type_manager, annotated_function_signatures);
     debug_assert!(argument_labels.is_some());
     let arg_labels = argument_labels.as_ref().unwrap();
     let types = get_annotations_from_labels_vec(&ctx, arg_labels).map_err(
@@ -285,9 +278,9 @@ fn annotate_function_impl(
     let Function {
         name, context, parameters, function_body: FunctionBody { stages, return_operation }, arguments, ..
     } = function;
-    let ctx = PipelineAnnotationContext::new(annotation_ctx.snapshot, annotation_ctx.type_manager, annotation_ctx.annotated_function_signatures, &mut context.variable_registry, parameters);
+    let mut ctx = annotation_ctx.for_pipeline(&mut context.variable_registry, parameters);
     let (stages, output_annotations) = annotate_pipeline_stages(
-        &ctx,
+        &mut ctx,
         stages.clone(),
         argument_annotations_from_declaration.clone(),
         Some(return_operation.variables().as_ref()),
@@ -295,7 +288,7 @@ fn annotate_function_impl(
     .map_err(|err| {
         Box::new(FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) })
     })?;
-    let mapped_return = resolve_return_operators(&ctx, return_operation, &output_annotations)?;
+    let mapped_return = resolve_return_operators(&mut ctx, return_operation, &output_annotations)?;
     let return_annotations = annotate_return(&mapped_return, &output_annotations);
     if let Some(output) = function.output.as_ref() {
         validate_return_against_signature(&annotation_ctx, function.name.as_str(), &return_annotations, output)?;
@@ -379,7 +372,7 @@ fn annotate_signature_based_on_labels(
 }
 
 fn resolve_return_operators(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     return_operation: &ReturnOperation,
     output_annotations: &RunningVariableAnnotations,
 ) -> Result<AnnotatedFunctionReturn, Box<FunctionAnnotationError>> {

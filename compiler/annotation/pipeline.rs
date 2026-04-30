@@ -120,10 +120,10 @@ pub fn annotate_preamble_and_pipeline(
             .map_err(|typedb_source| AnnotationError::PreambleTypeInference { typedb_source })?;
     let combined_signature_annotations =
         AnnotatedFunctionSignaturesImpl::new(&schema_function_annotations, &annotated_preamble);
-    let ctx = PipelineAnnotationContext::new(snapshot, type_manager, &combined_signature_annotations, variable_registry, parameters);
+    let mut ctx = PipelineAnnotationContext::new(snapshot, type_manager, &combined_signature_annotations, variable_registry, parameters);
     let input_annotations = RunningVariableAnnotations::from_iterator(zip([].into_iter(), [].into_iter()));
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
-        &ctx,
+        &mut ctx,
         translated_stages,
         translated_fetch,
         input_annotations,
@@ -132,7 +132,7 @@ pub fn annotate_preamble_and_pipeline(
 }
 
 pub(crate) fn annotate_stages_and_fetch(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     translated_stages: Vec<TranslatedStage>,
     translated_fetch: Option<FetchObject>,
     input_annotations: RunningVariableAnnotations,
@@ -150,7 +150,7 @@ pub(crate) fn annotate_stages_and_fetch(
 }
 
 pub(crate) fn annotate_pipeline_stages(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     translated_stages: Vec<TranslatedStage>,
     input_annotations: RunningVariableAnnotations,
     return_variables: Option<&[Variable]>, // Remove if anonymous vars can't cross stage boundaries
@@ -188,7 +188,7 @@ pub(crate) fn annotate_pipeline_stages(
 }
 
 fn annotate_stage(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     running_annotations: &mut RunningVariableAnnotations,
     running_constraint_annotations: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     stage: TranslatedStage,
@@ -400,7 +400,7 @@ fn complete_block_annotations_with_value_types(
 }
 
 pub fn validate_sort_variables_comparable(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     sort: &Sort,
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<(), AnnotationError> {
@@ -439,7 +439,7 @@ pub fn validate_sort_variables_comparable(
 }
 
 fn annotate_write_stage(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     running_annotations: &mut RunningVariableAnnotations,
     block: &Block,
 ) -> Result<BlockAnnotations, AnnotationError> {
@@ -517,7 +517,7 @@ fn annotate_write_constraint(
 }
 
 pub fn resolve_reducer_by_value_type(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     reducer: Reducer,
     variable_annotations: &RunningVariableAnnotations,
     reduce_source_span: Option<Span>,
@@ -539,7 +539,7 @@ pub fn resolve_reducer_by_value_type(
 }
 
 fn determine_value_type_for_reducer(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     reducer: Reducer,
     variable: Variable,
     variable_annotations: &RunningVariableAnnotations,
@@ -579,7 +579,7 @@ fn determine_value_type_for_reducer(
 }
 
 fn resolve_reduce_instruction_by_value_type(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     reducer: Reducer,
     value_type: ValueType,
     source_span: Option<Span>,

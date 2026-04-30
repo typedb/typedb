@@ -26,7 +26,7 @@ use crate::annotation::{type_annotations::{BlockAnnotations, ConstraintTypeAnnot
 use crate::annotation::utils::{NameForError, PipelineAnnotationContext};
 
 pub fn check_type_combinations_for_write(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     block: &Block,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -61,7 +61,7 @@ pub fn check_type_combinations_for_write(
 }
 
 fn check_type_combinations_for_write_conjunction(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     conjunction: &ir::pattern::conjunction::Conjunction,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -123,7 +123,7 @@ fn check_type_combinations_for_write_conjunction(
 }
 
 pub(crate) fn validate_has_type_combinations_for_write(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     insert_has: &Has<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
@@ -162,7 +162,7 @@ pub(crate) fn validate_has_type_combinations_for_write(
 }
 
 pub(crate) fn validate_links_type_combinations_for_write(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     insert_links: &Links<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
@@ -266,7 +266,7 @@ fn may_intersect_all<T: ContainsAndIterOnType>(
 }
 
 fn pairs_from_vertex_annotations(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     left: &Vertex<Variable>,
     right: &Vertex<Variable>,
@@ -286,7 +286,7 @@ fn pairs_from_vertex_annotations(
 }
 
 fn check_insert_types_against_match_types<T: ContainsAndIterOnType>(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     valid_insert_pairs: Arc<BTreeMap<Type, T>>,
     match_pairs: BTreeSet<(Type, Type)>,
     constraint: &(impl Into<Constraint<Variable>> + Clone),

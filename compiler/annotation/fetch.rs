@@ -15,7 +15,7 @@ use ir::{
         fetch::{
             FetchListAttributeAsList, FetchListAttributeFromList, FetchListSubFetch, FetchObject, FetchSingleAttribute,
             FetchSome,
-        }, ParameterRegistry,
+        },
         VariableRegistry,
     },
     translation::PipelineTranslationContext,
@@ -64,7 +64,7 @@ pub struct AnnotatedFetchListSubFetch {
 }
 
 pub(crate) fn annotate_fetch(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     fetch: FetchObject,
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<AnnotatedFetch, AnnotationError> {
@@ -73,7 +73,7 @@ pub(crate) fn annotate_fetch(
 }
 
 fn annotate_object(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     object: FetchObject,
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<AnnotatedFetchObject, AnnotationError> {
@@ -88,7 +88,7 @@ fn annotate_object(
 }
 
 fn annotated_object_entries(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     entries: HashMap<ParameterID, FetchSome>,
     entries_spans: HashMap<ParameterID, Option<Span>>,
     input_annotations: &RunningVariableAnnotations,
@@ -108,7 +108,7 @@ fn annotated_object_entries(
 }
 
 fn annotate_some(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     some: FetchSome,
     input_annotations: &RunningVariableAnnotations,
     source_span: Option<Span>,
@@ -116,7 +116,8 @@ fn annotate_some(
     match some {
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
         FetchSome::SingleAttribute(FetchSingleAttribute { variable, attribute }) => {
-            let variable_name = ctx.variable_registry
+            let (ctx, variable_registry, _params) = ctx.to_plain_mut();
+            let variable_name = variable_registry
                 .get_variable_name(variable)
                 .expect("Expected fetched variable names to be validated during translation");
             let attribute_type = ctx
@@ -129,12 +130,12 @@ fn annotate_some(
                     attribute,
                 })?;
             let owner_types = input_annotations.concepts.get(&variable).unwrap();
-            validate_attribute_owned_and_scalar(ctx, variable_name, owner_types, attribute_type, source_span)?;
+            validate_attribute_owned_and_scalar(&ctx, variable_name, owner_types, attribute_type, source_span)?;
             Ok(AnnotatedFetchSome::SingleAttribute(variable, attribute_type))
         }
         FetchSome::SingleFunction(mut function) => {
             let annotated_function =
-                annotate_anonymous_function(&mut function, ctx.snapshot, ctx.type_manager, ctx.annotated_function_signatures, input_annotations, source_span)
+                annotate_anonymous_function(&mut function, &ctx.to_plain_mut().0, input_annotations, source_span)
                     .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::SingleFunction(annotated_function))
         }
@@ -144,7 +145,7 @@ fn annotate_some(
         }
         FetchSome::ListFunction(mut function) => {
             let annotated_function =
-                annotate_anonymous_function(&mut function, ctx.snapshot, ctx.type_manager, ctx.annotated_function_signatures, input_annotations, source_span)
+                annotate_anonymous_function(&mut function, &ctx.to_plain_mut().0, input_annotations, source_span)
                     .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::ListFunction(annotated_function))
         }
@@ -153,7 +154,8 @@ fn annotate_some(
             Ok(AnnotatedFetchSome::ListSubFetch(annotated_sub_fetch?))
         }
         FetchSome::ListAttributesAsList(FetchListAttributeAsList { variable, attribute }) => {
-            let variable_name = ctx.variable_registry
+            let (ctx, variable_registry, _params) = ctx.to_plain_mut();
+            let variable_name = variable_registry
                 .get_variable_name(variable)
                 .expect("Expected fetched variable names to be validated during translation");
             let attribute_type = ctx
@@ -166,7 +168,7 @@ fn annotate_some(
                     attribute,
                 })?;
             for owner_type in input_annotations.concepts.get(&variable).unwrap().iter() {
-                validate_attribute_owned_and_streamable(ctx, variable_name, owner_type, attribute_type, source_span)?;
+                validate_attribute_owned_and_streamable(&ctx, variable_name, owner_type, attribute_type, source_span)?;
             }
             Ok(AnnotatedFetchSome::ListAttributesAsList(variable, attribute_type))
         }
@@ -181,7 +183,7 @@ fn annotate_some(
 }
 
 fn validate_attribute_owned_and_scalar(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &AnnotationContext<'_, impl ReadableSnapshot>,
     owner: &str,
     owner_types: &BTreeSet<Type>,
     attribute_type: AttributeType,
@@ -226,7 +228,7 @@ fn validate_attribute_owned_and_scalar(
 }
 
 fn validate_attribute_owned_and_streamable(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &AnnotationContext<'_, impl ReadableSnapshot>,
     owner: &str,
     owner_type: &Type,
     attribute_type: AttributeType,
@@ -255,7 +257,7 @@ fn validate_attribute_owned_and_streamable(
 }
 
 fn annotate_sub_fetch(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     sub_fetch: FetchListSubFetch,
     input_annotations: &RunningVariableAnnotations,
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {

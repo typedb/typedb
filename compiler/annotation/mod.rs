@@ -8,9 +8,7 @@ use concept::error::ConceptReadError;
 use encoding::value::{label::Label, value_type::ValueTypeCategory};
 use error::typedb_error;
 use expression::ExpressionCompileError;
-use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
-use crate::annotation::function::AnnotatedFunctionSignatures;
 
 pub mod expression;
 pub mod fetch;

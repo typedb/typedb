@@ -10,7 +10,7 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use concept::type_::{constraint::Constraint as TypeConstraint, type_manager::TypeManager, OwnerAPI, TypeAPI};
+use concept::type_::{constraint::Constraint as TypeConstraint, OwnerAPI};
 use ir::{
     pattern::constraint::{Constraint, Has, Links},
     pipeline::block::Block,
@@ -21,7 +21,7 @@ use crate::annotation::{type_annotations::{BlockAnnotations, ConstraintTypeAnnot
 use crate::annotation::utils::{NameForError, PipelineAnnotationContext};
 
 pub fn check_annotations(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     block: &Block,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
@@ -84,7 +84,7 @@ pub fn check_annotations(
 }
 
 fn validate_has_updatable(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     has: &Has<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
@@ -120,7 +120,7 @@ fn validate_has_updatable(
 }
 
 fn validate_links_updatable(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     links: &Links<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
@@ -160,7 +160,7 @@ fn validate_links_updatable(
 }
 
 fn validate_has_cardinality(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     has: &Has<Variable>,
     object_type: &Type,
     interface_type: &Type,
@@ -193,7 +193,7 @@ fn validate_has_cardinality(
 }
 
 fn validate_links_cardinality(
-    ctx: &PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     links: &Links<Variable>,
     relation_type: &Type,
     role_type: &Type,

@@ -13,7 +13,7 @@ use concept::type_::type_manager::TypeManager;
 use concept::type_::TypeAPI;
 use ir::pipeline::{ParameterRegistry, VariableRegistry};
 use storage::snapshot::ReadableSnapshot;
-use crate::annotation::function::{AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl};
+use crate::annotation::function::AnnotatedFunctionSignatures;
 use crate::annotation::TypeInferenceError;
 
 pub(crate) struct PipelineAnnotationContext<'a, Snapshot: ReadableSnapshot> {
@@ -34,6 +34,17 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineAnnotationContext<'a, Snapshot> {
     ) -> Self {
         Self { snapshot, type_manager, annotated_function_signatures, variable_registry, parameters }
     }
+
+    pub(crate) fn to_plain_mut(&mut self) -> (AnnotationContext<'a, Snapshot>, &mut VariableRegistry, &ParameterRegistry){
+        let Self { snapshot, type_manager, annotated_function_signatures, variable_registry, parameters } = self;
+        let cloned_reference_annotated_function_signatures =
+        <&dyn AnnotatedFunctionSignatures as Clone>::clone(annotated_function_signatures);
+        (
+            AnnotationContext::new(snapshot, type_manager, cloned_reference_annotated_function_signatures),
+            variable_registry,
+            parameters
+        )
+    }
 }
 
 pub(crate) struct AnnotationContext<'a, Snapshot: ReadableSnapshot> {
@@ -49,6 +60,10 @@ impl<'a, Snapshot: ReadableSnapshot> AnnotationContext<'a, Snapshot> {
         annotated_function_signatures: &'a dyn AnnotatedFunctionSignatures,
     ) -> Self {
         Self { snapshot, type_manager, annotated_function_signatures }
+    }
+
+    pub(crate) fn for_pipeline(&self, variable_registry: &'a mut VariableRegistry, parameters: &'a ParameterRegistry) -> PipelineAnnotationContext<'a, Snapshot> {
+        PipelineAnnotationContext::new(self.snapshot, self.type_manager, self.annotated_function_signatures, variable_registry, parameters)
     }
 }
 
