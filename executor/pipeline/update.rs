@@ -141,7 +141,15 @@ fn execute_update(
         &mut profile_index,
     )?;
     for optional in &executable.optional_updates {
-        execute_optional_update(optional, snapshot, thing_manager, parameters, row, pattern_profile, &mut profile_index)?;
+        execute_optional_update(
+            optional,
+            snapshot,
+            thing_manager,
+            parameters,
+            row,
+            pattern_profile,
+            &mut profile_index,
+        )?;
     }
     Ok(())
 }

@@ -184,7 +184,7 @@ pub(crate) fn create_executors_for_conjunction(
                 steps.push(step.into());
             }
             ExecutionStep::Negation(negation_step) => {
-                let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || format!("{}", negation_step));
+                let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || "Negation".to_string());
                 let inner = create_executors_for_conjunction(
                     snapshot,
                     thing_manager,
@@ -219,7 +219,7 @@ pub(crate) fn create_executors_for_conjunction(
                         );
                         steps.push(StepExecutors::TabledCall(executor))
                     } else {
-                        let subquery_profile = pattern_profile.extend_or_get_subquery(index, || format!("{}", function_call));
+                        let subquery_profile = pattern_profile.extend_or_get_subquery(index, || "FnCall".to_string());
                         let inner_executors = create_executors_for_function(
                             snapshot,
                             thing_manager,
@@ -234,7 +234,7 @@ pub(crate) fn create_executors_for_conjunction(
                 }
             }
             ExecutionStep::Disjunction(step) => {
-                let disjunction_profile = pattern_profile.extend_or_get_subpattern(index, || format!("{}", step));
+                let disjunction_profile = pattern_profile.extend_or_get_subpattern(index, || "Disjunction".to_string());
 
                 // I shouldn't need to pass recursive here since it's stratified
                 let branches: Vec<PatternExecutor> = step
@@ -270,7 +270,7 @@ pub(crate) fn create_executors_for_conjunction(
                 steps.push(step);
             }
             ExecutionStep::Optional(step) => {
-                let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || format!("{}", step));
+                let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || "Optional".to_string());
                 let inner = create_executors_for_conjunction(
                     snapshot,
                     thing_manager,
@@ -365,7 +365,7 @@ pub(super) fn create_executors_for_function_pipeline_stages(
                 query_profile.profile_stage(|| String::from("Match"), conjunction_executable.executable_id());
             let pattern_profile = stage_profile.create_or_get_pattern(|| {
                 format!(
-                    "Conjunction [id: {}]\n  ~ {}",
+                    "Conjunction [id: {}]  ~ {}",
                     conjunction_executable.executable_id(),
                     conjunction_executable.planner_statistics()
                 )

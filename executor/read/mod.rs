@@ -63,7 +63,7 @@ pub(super) fn create_pattern_executor_for_conjunction(
 ) -> Result<PatternExecutor, Box<ConceptReadError>> {
     let pattern_profile = profile.create_or_get_pattern(|| {
         format!(
-            "Conjunction [id: {}]\n  ~ {}",
+            "Conjunction [id: {}] ~ {}",
             conjunction_executable.executable_id(),
             conjunction_executable.planner_statistics()
         )

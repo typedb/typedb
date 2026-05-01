@@ -175,7 +175,15 @@ pub(crate) fn execute_insert(
         &mut profile_index,
     )?;
     for optional in &executable.optional_inserts {
-        execute_optional_insert(optional, snapshot, thing_manager, parameters, row, &pattern_profile, &mut profile_index)?;
+        execute_optional_insert(
+            optional,
+            snapshot,
+            thing_manager,
+            parameters,
+            row,
+            &pattern_profile,
+            &mut profile_index,
+        )?;
     }
     Ok(())
 }

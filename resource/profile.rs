@@ -659,16 +659,23 @@ impl StageProfile {
 
 impl IndentDisplay for StageProfile {
     fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
-        if let Some(description) = self.description.as_deref() {
-            write_indent(f, indent)?;
-            writeln!(f, "{}", description)?;
-        }
         match self.pattern_profile.get() {
             None => {
+                if let Some(description) = self.description.as_deref() {
+                    write_indent(f, indent)?;
+                    writeln!(f, "{}", description)?;
+                }
                 write_indent(f, indent)?;
                 writeln!(f, "Disabled")
             }
-            Some(profile) => profile.indent_fmt(f, indent),
+            Some(profile) => {
+                if let Some(description) = self.description.as_deref() {
+                    write_indent(f, indent)?;
+                    writeln!(f, "{} ~~ {} us", description, profile.total_nanos() as f64 / 1000.0)?;
+                }
+                write_indent(f, indent)?;
+                profile.indent_fmt(f, indent)
+            }
         }
     }
 }
@@ -737,10 +744,10 @@ impl PatternProfile {
         debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
         drop(profiles);
         let query_profile = Arc::new(QueryProfile::new(true));
-        self.substeps.write().unwrap().push(SubstepProfile::QueryProfile {
-            description: description_getter(),
-            profile: query_profile.clone(),
-        });
+        self.substeps
+            .write()
+            .unwrap()
+            .push(SubstepProfile::QueryProfile { description: description_getter(), profile: query_profile.clone() });
         query_profile
     }
 
@@ -792,12 +799,12 @@ impl PatternProfile {
 impl IndentDisplay for PatternProfile {
     fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
         if let Some(description) = self.description.as_deref() {
-            write_indent(f, indent)?;
+            // write_indent(f, indent)?;
             writeln!(f, "{}", description)?;
         }
         for (i, substep) in self.substeps.read().unwrap().iter().enumerate() {
             write_indent(f, indent)?;
-            writeln!(f, "[{}]", i)?;
+            write!(f, "[{}] ", i)?;
             substep.indent_fmt(f, indent + 1)?;
         }
         Ok(())
@@ -867,8 +874,13 @@ impl IndentDisplay for StepProfileData {
         let micros = Duration::from_nanos(self.nanos.load(Ordering::Relaxed)).as_micros();
         let micros_per_row: f64 = micros as f64 / rows as f64;
         // TODO: print storage ops
-        write_indent(f, indent)?;
-        writeln!(f, "{}", self.description)?;
+        // write_indent(f, indent + 1)?;
+        let descriptions = self.description.split("\n").collect_vec();
+        writeln!(f, "{}", descriptions[0])?;
+        for description in &descriptions[1..] {
+            write_indent(f, indent)?;
+            writeln!(f, "{}", description)?;
+        }
         write_indent(f, indent + 1)?;
         writeln!(
             f,
