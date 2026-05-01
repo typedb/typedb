@@ -17,6 +17,21 @@ use std::{
 
 use itertools::Itertools;
 
+const INDENT_STEP: usize = 2;
+
+/// Indented variant of [`Display`] for nested profile output.
+///
+/// Each implementation writes its content starting at the given indent level,
+/// terminating with a newline. Each child is emitted via `indent_fmt(f, indent + 1)`,
+/// which adds two more leading spaces per nesting depth.
+pub trait IndentDisplay {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result;
+}
+
+fn write_indent(f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
+    write!(f, "{:width$}", "", width = indent * INDENT_STEP)
+}
+
 #[derive(Debug)]
 pub struct TransactionProfile {
     enabled: bool,
@@ -469,13 +484,23 @@ impl QueryProfile {
 
 impl Display for QueryProfile {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.indent_fmt(f, 0)
+    }
+}
+
+impl IndentDisplay for QueryProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
         let total_micros = self.total_nanos() as f64 / 1000.0;
+        write_indent(f, indent)?;
         writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
-        writeln!(f, "{}", self.compile_profile)?;
+        self.compile_profile.indent_fmt(f, indent + 1)?;
         let stage_profiles = self.stage_profiles.read().unwrap();
         for (id, stage_profile) in stage_profiles.iter().sorted_by_key(|(id, _)| *id) {
-            writeln!(f, "  -----")?;
-            write!(f, "  Stage[root pattern id={}] - {}", id, stage_profile)?;
+            write_indent(f, indent + 1)?;
+            writeln!(f, "-----")?;
+            write_indent(f, indent + 1)?;
+            writeln!(f, "Stage[root pattern id={}]", id)?;
+            stage_profile.indent_fmt(f, indent + 2)?;
         }
         Ok(())
     }
@@ -545,16 +570,21 @@ impl CompileProfile {
     }
 }
 
-impl Display for CompileProfile {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl IndentDisplay for CompileProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
+        write_indent(f, indent)?;
         match &self.data {
-            None => writeln!(f, "  Compile[enabled=false]"),
+            None => writeln!(f, "Compile[enabled=false]"),
             Some(data) => {
-                writeln!(f, "  Compile[enabled=true, total micros={}]", self.total_nanos() as f64 / 1000.0)?;
-                writeln!(f, "    translation micros: {}", data.translation.as_nanos() as f64 / 1000.0)?;
-                writeln!(f, "    validation micros: {}", data.validation.as_nanos() as f64 / 1000.0)?;
-                writeln!(f, "    annotation micros: {}", data.annotation.as_nanos() as f64 / 1000.0)?;
-                writeln!(f, "    compilation micros: {}", data.compilation.as_nanos() as f64 / 1000.0)
+                writeln!(f, "Compile[enabled=true, total micros={}]", self.total_nanos() as f64 / 1000.0)?;
+                write_indent(f, indent + 1)?;
+                writeln!(f, "translation micros: {}", data.translation.as_nanos() as f64 / 1000.0)?;
+                write_indent(f, indent + 1)?;
+                writeln!(f, "validation micros: {}", data.validation.as_nanos() as f64 / 1000.0)?;
+                write_indent(f, indent + 1)?;
+                writeln!(f, "annotation micros: {}", data.annotation.as_nanos() as f64 / 1000.0)?;
+                write_indent(f, indent + 1)?;
+                writeln!(f, "compilation micros: {}", data.compilation.as_nanos() as f64 / 1000.0)
             }
         }
     }
@@ -627,12 +657,18 @@ impl StageProfile {
     }
 }
 
-impl Display for StageProfile {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.description.as_deref().unwrap_or(""))?;
+impl IndentDisplay for StageProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
+        if let Some(description) = self.description.as_deref() {
+            write_indent(f, indent)?;
+            writeln!(f, "{}", description)?;
+        }
         match self.pattern_profile.get() {
-            None => writeln!(f, "Disabled"),
-            Some(profile) => write!(f, "{}", profile),
+            None => {
+                write_indent(f, indent)?;
+                writeln!(f, "Disabled")
+            }
+            Some(profile) => profile.indent_fmt(f, indent),
         }
     }
 }
@@ -654,15 +690,16 @@ impl SubstepProfile {
     }
 }
 
-impl Display for SubstepProfile {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl IndentDisplay for SubstepProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
         match self {
             Self::QueryProfile { description, profile } => {
+                write_indent(f, indent)?;
                 writeln!(f, "Function call: {}", description)?;
-                Display::fmt(profile, f)
+                profile.indent_fmt(f, indent + 1)
             }
-            Self::PatternProfile(profile) => Display::fmt(profile, f),
-            Self::StepProfile(profile) => Display::fmt(profile, f),
+            Self::PatternProfile(profile) => profile.indent_fmt(f, indent),
+            Self::StepProfile(profile) => profile.indent_fmt(f, indent),
         }
     }
 }
@@ -752,11 +789,16 @@ impl PatternProfile {
     }
 }
 
-impl Display for PatternProfile {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.description.as_deref().unwrap_or(""))?;
+impl IndentDisplay for PatternProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
+        if let Some(description) = self.description.as_deref() {
+            write_indent(f, indent)?;
+            writeln!(f, "{}", description)?;
+        }
         for (i, substep) in self.substeps.read().unwrap().iter().enumerate() {
-            write!(f, "{} -- {}", i, substep)?;
+            write_indent(f, indent)?;
+            writeln!(f, "[{}]", i)?;
+            substep.indent_fmt(f, indent + 1)?;
         }
         Ok(())
     }
@@ -810,25 +852,27 @@ impl StepProfile {
     }
 }
 
-impl Display for StepProfile {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl IndentDisplay for StepProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
         match self.data.as_ref() {
             None => Ok(()),
-            Some(data) => writeln!(f, "{}\n", data),
+            Some(data) => data.indent_fmt(f, indent),
         }
     }
 }
 
-impl Display for StepProfileData {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl IndentDisplay for StepProfileData {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
         let rows = self.rows.load(Ordering::Relaxed);
         let micros = Duration::from_nanos(self.nanos.load(Ordering::Relaxed)).as_micros();
         let micros_per_row: f64 = micros as f64 / rows as f64;
         // TODO: print storage ops
-        write!(
+        write_indent(f, indent)?;
+        writeln!(f, "{}", self.description)?;
+        write_indent(f, indent + 1)?;
+        writeln!(
             f,
-            "{}\n    ==> batches: {}, rows: {}, micros: {}, micros/row: {:.1} ({})",
-            &self.description,
+            "==> batches: {}, rows: {}, micros: {}, micros/row: {:.1} ({})",
             self.batches.load(Ordering::Relaxed),
             rows,
             micros,
