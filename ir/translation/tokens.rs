@@ -6,7 +6,8 @@
 
 use concept::type_::annotation::{
     Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory, AnnotationDistinct,
-    AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
+    AnnotationDoc, AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique,
+    AnnotationValues,
 };
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use typeql::{
@@ -55,29 +56,36 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
         typeql::Annotation::Values(values) => Annotation::Values(AnnotationValues::new(
             values.values.iter().map(translate_literal).collect::<Result<Vec<_>, _>>()?,
         )),
+        typeql::Annotation::Doc(doc) => {
+            Annotation::Doc(AnnotationDoc::new(String::from_typeql_literal(&doc.doc, doc.span())?))
+        }
+        typeql::Annotation::Meta(meta) => todo!("anno meta"),
     })
 }
 
 pub fn translate_annotation_category(
-    annotation_category: token::Annotation,
+    annotation_category: &typeql::schema::undefinable::AnnotationCategory,
 ) -> Result<AnnotationCategory, LiteralParseError> {
-    Ok(match annotation_category {
-        token::Annotation::Abstract => AnnotationCategory::Abstract,
-        token::Annotation::Cardinality => AnnotationCategory::Cardinality,
-        token::Annotation::Cascade => AnnotationCategory::Cascade,
-        token::Annotation::Distinct => AnnotationCategory::Distinct,
-        token::Annotation::Independent => AnnotationCategory::Independent,
-        token::Annotation::Key => AnnotationCategory::Key,
-        token::Annotation::Range => AnnotationCategory::Range,
-        token::Annotation::Regex => AnnotationCategory::Regex,
-        token::Annotation::Subkey => {
-            return Err(LiteralParseError::UnimplementedLanguageFeature {
-                feature: error::UnimplementedFeature::Subkey,
-            });
+    match annotation_category {
+        typeql::schema::undefinable::AnnotationCategory::Abstract => Ok(AnnotationCategory::Abstract),
+        typeql::schema::undefinable::AnnotationCategory::Cardinality => Ok(AnnotationCategory::Cardinality),
+        typeql::schema::undefinable::AnnotationCategory::Cascade => Ok(AnnotationCategory::Cascade),
+        typeql::schema::undefinable::AnnotationCategory::Distinct => Ok(AnnotationCategory::Distinct),
+        typeql::schema::undefinable::AnnotationCategory::Independent => Ok(AnnotationCategory::Independent),
+        typeql::schema::undefinable::AnnotationCategory::Key => Ok(AnnotationCategory::Key),
+        typeql::schema::undefinable::AnnotationCategory::Range => Ok(AnnotationCategory::Range),
+        typeql::schema::undefinable::AnnotationCategory::Regex => Ok(AnnotationCategory::Regex),
+        typeql::schema::undefinable::AnnotationCategory::Subkey => {
+            Err(LiteralParseError::UnimplementedLanguageFeature { feature: error::UnimplementedFeature::Subkey })
         }
-        token::Annotation::Unique => AnnotationCategory::Unique,
-        token::Annotation::Values => AnnotationCategory::Values,
-    })
+        typeql::schema::undefinable::AnnotationCategory::Unique => Ok(AnnotationCategory::Unique),
+        typeql::schema::undefinable::AnnotationCategory::Values => Ok(AnnotationCategory::Values),
+        typeql::schema::undefinable::AnnotationCategory::Doc => Ok(AnnotationCategory::Doc),
+        typeql::schema::undefinable::AnnotationCategory::Meta(meta) => {
+            // TODO: AnnotationCategory span
+            Ok(AnnotationCategory::Meta(String::from_typeql_literal(meta, None)?))
+        }
+    }
 }
 
 pub fn translate_kind(typeql_kind: token::Kind) -> Kind {

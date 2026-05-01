@@ -42,6 +42,8 @@ pub enum Annotation {
     Cascade(AnnotationCascade),
     Range(AnnotationRange),
     Values(AnnotationValues),
+    Doc(AnnotationDoc),
+    Meta(AnnotationMeta),
     // TODO: Subkey
     // TODO: Replace
 }
@@ -59,6 +61,8 @@ impl fmt::Display for Annotation {
             Annotation::Cascade(annotation) => fmt::Display::fmt(annotation, f),
             Annotation::Range(annotation) => fmt::Display::fmt(annotation, f),
             Annotation::Values(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Doc(annotation) => fmt::Display::fmt(annotation, f),
+            Annotation::Meta(annotation) => fmt::Display::fmt(annotation, f),
         }
     }
 }
@@ -511,7 +515,77 @@ impl fmt::Display for AnnotationValues {
     }
 }
 
+#[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationDoc {
+    // ##########################################################################
+    // ###### WARNING: any changes here may break backwards compatibility! ######
+    // ##########################################################################
+    doc: String,
+}
+
+impl AnnotationDoc {
+    pub const fn new(doc: String) -> Self {
+        Self { doc }
+    }
+
+    pub const fn default() -> Self {
+        Self { doc: String::new() }
+    }
+
+    pub fn doc(&self) -> &str {
+        &self.doc
+    }
+}
+
+impl fmt::Display for AnnotationDoc {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "@doc({:?})", self.doc)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct AnnotationMeta {
+    // ##########################################################################
+    // ###### WARNING: any changes here may break backwards compatibility! ######
+    // ##########################################################################
+    key: String,
+    value: String,
+}
+
+impl AnnotationMeta {
+    pub const fn new(key: String, value: String) -> Self {
+        Self { key, value }
+    }
+
+    pub const fn default(key: String) -> AnnotationMeta {
+        Self { key, value: String::new() }
+    }
+}
+
+impl fmt::Display for AnnotationMeta {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "@meta({:?}, {:?})", self.key, self.value)
+    }
+}
+
 impl Annotation {
+    pub fn has_category(&self, category: &AnnotationCategory) -> bool {
+        match category {
+            AnnotationCategory::Abstract => matches!(self, Self::Abstract(_)),
+            AnnotationCategory::Distinct => matches!(self, Self::Distinct(_)),
+            AnnotationCategory::Independent => matches!(self, Self::Independent(_)),
+            AnnotationCategory::Unique => matches!(self, Self::Unique(_)),
+            AnnotationCategory::Key => matches!(self, Self::Key(_)),
+            AnnotationCategory::Cardinality => matches!(self, Self::Cardinality(_)),
+            AnnotationCategory::Regex => matches!(self, Self::Regex(_)),
+            AnnotationCategory::Cascade => matches!(self, Self::Cascade(_)),
+            AnnotationCategory::Range => matches!(self, Self::Range(_)),
+            AnnotationCategory::Values => matches!(self, Self::Values(_)),
+            AnnotationCategory::Doc => matches!(self, Self::Doc(_)),
+            AnnotationCategory::Meta(key) => matches!(self, Self::Meta(meta) if meta.key == *key),
+        }
+    }
+
     pub fn category(&self) -> AnnotationCategory {
         match self {
             Self::Abstract(_) => AnnotationCategory::Abstract,
@@ -524,6 +598,8 @@ impl Annotation {
             Self::Cascade(_) => AnnotationCategory::Cascade,
             Self::Range(_) => AnnotationCategory::Range,
             Self::Values(_) => AnnotationCategory::Values,
+            Self::Doc(_) => AnnotationCategory::Doc,
+            Self::Meta(meta) => AnnotationCategory::Meta(meta.key.clone()),
         }
     }
 
@@ -550,7 +626,7 @@ impl Annotation {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum AnnotationCategory {
     Abstract,
     Distinct,
@@ -562,12 +638,14 @@ pub enum AnnotationCategory {
     Cascade,
     Range,
     Values,
+    Doc,
+    Meta(String),
     // TODO: Subkey
     // TODO: Replace
 }
 
 impl AnnotationCategory {
-    const fn to_default(self) -> Annotation {
+    fn to_default(&self) -> Annotation {
         match self {
             AnnotationCategory::Abstract => Annotation::Abstract(AnnotationAbstract),
             AnnotationCategory::Distinct => Annotation::Distinct(AnnotationDistinct),
@@ -579,10 +657,12 @@ impl AnnotationCategory {
             AnnotationCategory::Cascade => Annotation::Cascade(AnnotationCascade),
             AnnotationCategory::Range => Annotation::Range(AnnotationRange::default()),
             AnnotationCategory::Values => Annotation::Values(AnnotationValues::default()),
+            AnnotationCategory::Doc => Annotation::Doc(AnnotationDoc::default()),
+            AnnotationCategory::Meta(key) => Annotation::Meta(AnnotationMeta::default(key.clone())),
         }
     }
 
-    pub fn declarable_alongside(&self, other: AnnotationCategory) -> bool {
+    pub fn declarable_alongside(&self, other: &AnnotationCategory) -> bool {
         match self {
             AnnotationCategory::Unique => !matches!(other, AnnotationCategory::Key),
             AnnotationCategory::Cardinality => !matches!(other, AnnotationCategory::Key),
@@ -593,7 +673,9 @@ impl AnnotationCategory {
             | AnnotationCategory::Regex
             | AnnotationCategory::Cascade
             | AnnotationCategory::Range
-            | AnnotationCategory::Values => true,
+            | AnnotationCategory::Values
+            | AnnotationCategory::Doc
+            | AnnotationCategory::Meta(_) => true,
         }
     }
 
@@ -609,7 +691,9 @@ impl AnnotationCategory {
             | AnnotationCategory::Cardinality
             | AnnotationCategory::Regex
             | AnnotationCategory::Range
-            | AnnotationCategory::Values => true,
+            | AnnotationCategory::Values
+            | AnnotationCategory::Doc
+            | AnnotationCategory::Meta(_) => true,
         }
     }
 
@@ -625,6 +709,8 @@ impl AnnotationCategory {
             AnnotationCategory::Cascade => typeql::token::Annotation::Cascade.as_str(),
             AnnotationCategory::Range => typeql::token::Annotation::Range.as_str(),
             AnnotationCategory::Values => typeql::token::Annotation::Values.as_str(),
+            AnnotationCategory::Doc => typeql::token::Annotation::Doc.as_str(),
+            AnnotationCategory::Meta(_) => typeql::token::Annotation::Meta.as_str(), // do we need key?
         }
     }
 }
@@ -642,7 +728,7 @@ impl fmt::Debug for AnnotationCategory {
 }
 
 pub trait DefaultFrom<FromType, ErrorType> {
-    fn try_getting_default(from: FromType) -> Result<Self, ErrorType>
+    fn try_getting_default(from: &FromType) -> Result<Self, ErrorType>
     where
         Self: Sized;
 }
@@ -652,7 +738,7 @@ where
     T: TryFrom<Annotation, Error = AnnotationError>,
 {
     // Note: creating default annotation from category is a workaround for creating new category types per Attribute/Entity/Relation/etc
-    fn try_getting_default(from: AnnotationCategory) -> Result<Self, AnnotationError> {
+    fn try_getting_default(from: &AnnotationCategory) -> Result<Self, AnnotationError> {
         from.to_default().try_into()
     }
 }
@@ -738,6 +824,30 @@ impl TypeVertexPropertyEncoding for AnnotationValues {
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
+    }
+}
+
+impl TypeVertexPropertyEncoding for AnnotationDoc {
+    const INFIX: Infix = Infix::PropertyAnnotationDoc;
+
+    fn from_value_bytes(value: &[u8]) -> Self {
+        AnnotationDoc::new(std::str::from_utf8(value).unwrap().to_owned())
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Array(ByteArray::copy(self.doc().as_bytes())))
+    }
+}
+
+impl TypeVertexPropertyEncoding for AnnotationMeta {
+    const INFIX: Infix = Infix::PropertyAnnotationDoc;
+
+    fn from_value_bytes(value: &[u8]) -> Self {
+        todo!("meta TypeVertexPropertyEncoding::from_value_bytes")
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        todo!("meta TypeVertexPropertyEncoding::to_value_bytes")
     }
 }
 
@@ -833,6 +943,30 @@ impl TypeEdgePropertyEncoding for AnnotationValues {
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
+    }
+}
+
+impl TypeEdgePropertyEncoding for AnnotationDoc {
+    const INFIX: Infix = Infix::PropertyAnnotationDoc;
+
+    fn from_value_bytes(value: &[u8]) -> Self {
+        AnnotationDoc::new(std::str::from_utf8(value).unwrap().to_owned())
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Array(ByteArray::copy(self.doc().as_bytes())))
+    }
+}
+
+impl TypeEdgePropertyEncoding for AnnotationMeta {
+    const INFIX: Infix = Infix::PropertyAnnotationMeta;
+
+    fn from_value_bytes(value: &[u8]) -> Self {
+        todo!("meta TypeEdgePropertyEncoding::from_value_bytes")
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        todo!("meta TypeEdgePropertyEncoding::to_value_bytes")
     }
 }
 

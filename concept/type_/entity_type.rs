@@ -33,7 +33,10 @@ use crate::{
     thing::{entity::Entity, thing_manager::ThingManager},
     type_::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
-        annotation::{Annotation, AnnotationAbstract, AnnotationCategory, AnnotationError, DefaultFrom},
+        annotation::{
+            Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
+            DefaultFrom,
+        },
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
@@ -255,7 +258,9 @@ impl EntityType {
             EntityTypeAnnotation::Abstract(_) => {
                 type_manager.set_entity_type_annotation_abstract(snapshot, thing_manager, *self, storage_counters)?
             }
-        };
+            EntityTypeAnnotation::Doc(doc) => type_manager.set_entity_type_annotation_doc(snapshot, *self, doc)?,
+            EntityTypeAnnotation::Meta(meta) => type_manager.set_entity_type_annotation_meta(snapshot, *self, meta)?,
+        }
         Ok(())
     }
 
@@ -263,12 +268,16 @@ impl EntityType {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        annotation_category: AnnotationCategory,
+        annotation_category: &AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
         let entity_annotation = EntityTypeAnnotation::try_getting_default(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match entity_annotation {
             EntityTypeAnnotation::Abstract(_) => type_manager.unset_entity_type_annotation_abstract(snapshot, *self)?,
+            EntityTypeAnnotation::Doc(doc) => type_manager.unset_entity_type_annotation_doc(snapshot, *self)?,
+            EntityTypeAnnotation::Meta(meta) => {
+                type_manager.unset_entity_type_annotation_meta(snapshot, *self, meta)?
+            }
         }
 
         Ok(())
@@ -492,9 +501,11 @@ impl fmt::Display for EntityType {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum EntityTypeAnnotation {
     Abstract(AnnotationAbstract),
+    Doc(AnnotationDoc),
+    Meta(AnnotationMeta),
 }
 
 impl TryFrom<Annotation> for EntityTypeAnnotation {
@@ -502,6 +513,8 @@ impl TryFrom<Annotation> for EntityTypeAnnotation {
     fn try_from(annotation: Annotation) -> Result<EntityTypeAnnotation, AnnotationError> {
         match annotation {
             Annotation::Abstract(annotation) => Ok(EntityTypeAnnotation::Abstract(annotation)),
+            Annotation::Doc(annotation) => Ok(EntityTypeAnnotation::Doc(annotation)),
+            Annotation::Meta(annotation) => Ok(EntityTypeAnnotation::Meta(annotation)),
 
             | Annotation::Distinct(_)
             | Annotation::Independent(_)
@@ -522,6 +535,8 @@ impl From<EntityTypeAnnotation> for Annotation {
     fn from(val: EntityTypeAnnotation) -> Self {
         match val {
             EntityTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
+            EntityTypeAnnotation::Doc(annotation) => Annotation::Doc(annotation),
+            EntityTypeAnnotation::Meta(annotation) => Annotation::Meta(annotation),
         }
     }
 }

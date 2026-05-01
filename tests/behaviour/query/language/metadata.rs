@@ -21,4 +21,3 @@ async fn test_metadata_annotations() {
 
     assert!(Context::test(path, true).await);
 }
-

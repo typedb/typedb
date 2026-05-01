@@ -201,7 +201,7 @@ pub async fn get_plays_unset_annotation(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
-            annotation_category.into_typedb(),
+            &annotation_category.into_typedb(),
         );
         may_error.check_concept_write_without_read_errors(&res);
     });
