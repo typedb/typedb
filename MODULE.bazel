@@ -107,9 +107,9 @@ workspace_refs(
     name = "typedb_workspace_refs",
     workspace_commit_dict = {
         "typeql+": "a273575dbca43965b0248112ac238a854c456d37",
-        "typedb_protocol+": "c2e8fbbb3c67360630d4c331b5077ab21271285a",
     },
     workspace_tag_dict = {
+        "typedb_protocol+": "3.10.0-alpha-0",
     },
 )
 
@@ -119,7 +119,7 @@ native_artifact_files.artifact(
     name = "typedb_console_artifact",
     group_name = "typedb-console-{platform}",
     artifact_name = "typedb-console-{platform}-{version}.{ext}",
-    commit = "a7f945b8488cc0cea6f776548ca52e719d40d06f",
+    tag = "3.10.0-alpha-1",
 )
 use_repo(
     native_artifact_files,
@@ -159,7 +159,7 @@ bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    commit = "c2e8fbbb3c67360630d4c331b5077ab21271285a",
+    tag = "3.10.0-alpha-0",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")

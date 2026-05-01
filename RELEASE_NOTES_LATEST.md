@@ -9,6 +9,7 @@
 
 ```docker pull typedb/typedb:3.10.4```
 
+## New Features
 
 ## New Features
 
