@@ -41,7 +41,7 @@ impl MatchExecutor {
         profile: &QueryProfile,
     ) -> Result<Self, Box<ConceptReadError>> {
         let stage_profile = profile.profile_stage(
-            || format!("Match\n  ~ {}", conjunction_executable.planner_statistics()),
+            || "Match".to_string(),
             conjunction_executable.executable_id(),
         );
         Ok(Self {

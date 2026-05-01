@@ -566,7 +566,7 @@ fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
     let args = MaybeOwnedRow::new_owned(args, row.multiplicity(), Provenance::INITIAL);
 
     let step_executors =
-        create_executors_for_function(&snapshot, &thing_manager, &functions_registry, &query_profile, function)
+        create_executors_for_function(&snapshot, &thing_manager, &functions_registry, query_profile, function)
             .map_err(|err| FetchExecutionError::ConceptRead { typedb_source: err })?;
     let mut pattern_executor = PatternExecutor::new(next_executable_id(), step_executors);
     pattern_executor.prepare(FixedBatch::from(args));

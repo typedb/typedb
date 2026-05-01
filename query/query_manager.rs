@@ -70,7 +70,8 @@ impl QueryManager {
         let result = match query {
             SchemaQuery::Define(define) => {
                 let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
-                let step_profile = profile.extend_or_get(0, || String::from("Define execution"));
+                let pattern_profile = profile.create_or_get_pattern(|| String::from("Define pattern"));
+                let step_profile = pattern_profile.extend_or_get_step(0, || String::from("Define execution"));
                 define::execute(
                     snapshot,
                     type_manager,
@@ -85,7 +86,8 @@ impl QueryManager {
             }
             SchemaQuery::Redefine(redefine) => {
                 let profile = query_profile.profile_stage(|| String::from("Redefine"), 0); // TODO executable id
-                let step_profile = profile.extend_or_get(0, || String::from("Redefine execution"));
+                let pattern_profile = profile.create_or_get_pattern(|| String::from("Redefine pattern"));
+                let step_profile = pattern_profile.extend_or_get_step(0, || String::from("Redefine execution"));
                 redefine::execute(
                     snapshot,
                     type_manager,
