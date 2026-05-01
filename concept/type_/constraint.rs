@@ -14,8 +14,9 @@ use storage::snapshot::ReadableSnapshot;
 use crate::type_::{
     Capability, KindAPI, Ordering,
     annotation::{
-        Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
-        AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
+        Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationDoc,
+        AnnotationIndependent, AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationUnique,
+        AnnotationValues,
     },
     owns::Owns,
     plays::Plays,
@@ -59,6 +60,8 @@ pub enum ConstraintCategory {
     Regex,
     Range,
     Values,
+    Doc,
+    Meta,
 }
 
 impl fmt::Display for ConstraintCategory {
@@ -78,6 +81,8 @@ impl fmt::Debug for ConstraintCategory {
             Self::Regex => write!(f, "{}", AnnotationCategory::Regex),
             Self::Range => write!(f, "{}", AnnotationCategory::Range),
             Self::Values => write!(f, "{}", AnnotationCategory::Values),
+            Self::Doc => write!(f, "{}", AnnotationCategory::Doc),
+            Self::Meta => write!(f, "{}", AnnotationCategory::Meta(String::from("?"))), // FIXME
         }
     }
 }
@@ -92,6 +97,8 @@ pub enum ConstraintDescription {
     Regex(AnnotationRegex),
     Range(AnnotationRange),
     Values(AnnotationValues),
+    Doc(AnnotationDoc),
+    Meta(AnnotationMeta),
 }
 
 impl ConstraintDescription {
@@ -109,6 +116,8 @@ impl ConstraintDescription {
             Annotation::Regex(annotation) => HashSet::from([ConstraintDescription::Regex(annotation)]),
             Annotation::Range(annotation) => HashSet::from([ConstraintDescription::Range(annotation)]),
             Annotation::Values(annotation) => HashSet::from([ConstraintDescription::Values(annotation)]),
+            Annotation::Doc(annotation) => HashSet::from([ConstraintDescription::Doc(annotation)]),
+            Annotation::Meta(annotation) => HashSet::from([ConstraintDescription::Meta(annotation)]),
 
             Annotation::Key(_) => HashSet::from(KEY_CONSTRAINTS.clone()),
 
@@ -127,12 +136,16 @@ impl ConstraintDescription {
             ConstraintDescription::Regex(_) => ConstraintCategory::Regex,
             ConstraintDescription::Range(_) => ConstraintCategory::Range,
             ConstraintDescription::Values(_) => ConstraintCategory::Values,
+            ConstraintDescription::Doc(_) => ConstraintCategory::Doc,
+            ConstraintDescription::Meta(_) => ConstraintCategory::Meta,
         }
     }
 
     pub(crate) fn scope(&self) -> ConstraintScope {
         match self {
             ConstraintDescription::Abstract(_) => ConstraintScope::SingleInstanceOfType,
+            ConstraintDescription::Doc(_) => ConstraintScope::SingleInstanceOfType,
+            ConstraintDescription::Meta(_) => ConstraintScope::SingleInstanceOfType,
 
             ConstraintDescription::Distinct(_)
             | ConstraintDescription::Independent(_)
@@ -183,6 +196,8 @@ impl ConstraintDescription {
             ConstraintDescription::Distinct(_) => true,
             ConstraintDescription::Independent(_) => true,
             ConstraintDescription::Unique(_) => true,
+            ConstraintDescription::Doc(_) => true,
+            ConstraintDescription::Meta(_) => true,
             ConstraintDescription::Regex(regex) => {
                 with_constraint_description!(other, Regex, default(), |other_regex| regex
                     .narrowed_correctly_by(other_regex))
@@ -231,6 +246,8 @@ impl fmt::Debug for ConstraintDescription {
             ConstraintDescription::Regex(annotation) => write!(f, "{}", annotation),
             ConstraintDescription::Range(annotation) => write!(f, "{}", annotation),
             ConstraintDescription::Values(annotation) => write!(f, "{}", annotation),
+            ConstraintDescription::Doc(annotation) => write!(f, "{}", annotation),
+            ConstraintDescription::Meta(annotation) => write!(f, "{}", annotation),
         }
     }
 }

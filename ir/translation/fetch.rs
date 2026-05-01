@@ -239,6 +239,8 @@ fn translate_fetch_single(
             Expression::ListIndexRange(_) => {
                 Err(Box::new(FetchRepresentationError::Unimplemented { description: "list index range".to_string() }))
             }
+            Expression::ScopedLabel(scoped_label) => todo!("fetch scoped label"),
+            Expression::Label(label) => todo!("fetch label"),
         },
         FetchSingle::FunctionBlock(block) => {
             // clone context, since we don't want the inline function to affect the parent context

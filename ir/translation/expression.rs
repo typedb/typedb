@@ -109,6 +109,8 @@ fn build_recursive(
             let right_id = build_recursive(function_index, constraints, &range.to, tree)?;
             Expression::ListIndexRange(ListIndexRange::new(list_variable, left_id, right_id, range.span()))
         }
+        typeql::Expression::ScopedLabel(scoped_label) => todo!("expr scoped label"),
+        typeql::Expression::Label(label) => todo!("expr label"),
     };
     Ok(tree.add(expression))
 }

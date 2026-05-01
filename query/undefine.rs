@@ -267,7 +267,7 @@ fn undefine_capability_annotation(
         checked_identifier(&annotation_undefinable.type_.ident)?,
         annotation_undefinable.type_.span(),
     );
-    let annotation_category = translate_annotation_category(annotation_undefinable.annotation_category)
+    let annotation_category = translate_annotation_category(&annotation_undefinable.annotation_category)
         .map_err(|typedb_source| UndefineError::LiteralParseError { typedb_source })?;
 
     match &annotation_undefinable.capability {
@@ -320,11 +320,11 @@ fn undefine_capability_annotation(
                 snapshot,
                 type_manager,
                 owns,
-                annotation_category,
+                &annotation_category,
                 annotation_undefinable,
             )?;
 
-            owns.unset_annotation(snapshot, type_manager, thing_manager, annotation_category)
+            owns.unset_annotation(snapshot, type_manager, thing_manager, &annotation_category)
         }
         CapabilityBase::Plays(typeql_plays) => {
             let object_type = resolve_object_type(snapshot, type_manager, &label)
@@ -344,11 +344,11 @@ fn undefine_capability_annotation(
                 snapshot,
                 type_manager,
                 plays,
-                annotation_category,
+                &annotation_category,
                 annotation_undefinable,
             )?;
 
-            plays.unset_annotation(snapshot, type_manager, thing_manager, annotation_category)
+            plays.unset_annotation(snapshot, type_manager, thing_manager, &annotation_category)
         }
         CapabilityBase::Relates(typeql_relates) => {
             let relation_type = resolve_relation_type(snapshot, type_manager, &label)
@@ -392,14 +392,14 @@ fn undefine_capability_annotation(
                 snapshot,
                 type_manager,
                 relates,
-                annotation_category,
+                &annotation_category,
                 annotation_undefinable,
             )?;
 
-            relates.unset_annotation(snapshot, type_manager, thing_manager, annotation_category)
+            relates.unset_annotation(snapshot, type_manager, thing_manager, &annotation_category)
         }
         CapabilityBase::ValueType(_) => {
-            if !AttributeTypeAnnotation::is_value_type_annotation_category(annotation_category) {
+            if !AttributeTypeAnnotation::is_value_type_annotation_category(&annotation_category) {
                 return Err(UndefineError::IllegalAnnotation {
                     typedb_source: AnnotationError::UnsupportedAnnotationForValueType { category: annotation_category },
                 });
@@ -408,11 +408,11 @@ fn undefine_capability_annotation(
             let attribute_type = resolve_attribute_type(snapshot, type_manager, &label)
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
             let definition_status =
-                get_type_annotation_category_status(snapshot, type_manager, attribute_type, annotation_category)
+                get_type_annotation_category_status(snapshot, type_manager, attribute_type, &annotation_category)
                     .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
             match definition_status {
                 DefinableStatus::ExistsSame(_) => {
-                    attribute_type.unset_annotation(snapshot, type_manager, annotation_category)
+                    attribute_type.unset_annotation(snapshot, type_manager, &annotation_category)
                 }
                 DefinableStatus::ExistsDifferent(_) => unreachable!("Annotation categories cannot differ"),
                 DefinableStatus::DoesNotExist => {
@@ -783,7 +783,7 @@ fn undefine_type_annotation(
     );
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
-    let annotation_category = translate_annotation_category(annotation_undefinable.annotation_category)
+    let annotation_category = translate_annotation_category(&annotation_undefinable.annotation_category)
         .map_err(|typedb_source| UndefineError::LiteralParseError { typedb_source })?;
     match type_ {
         TypeEnum::Entity(entity_type) => {
@@ -792,10 +792,10 @@ fn undefine_type_annotation(
                 type_manager,
                 &label,
                 entity_type,
-                annotation_category,
+                &annotation_category,
                 annotation_undefinable,
             )?;
-            entity_type.unset_annotation(snapshot, type_manager, annotation_category)
+            entity_type.unset_annotation(snapshot, type_manager, &annotation_category)
         }
         TypeEnum::Relation(relation_type) => {
             check_can_and_need_undefine_type_annotation(
@@ -803,13 +803,13 @@ fn undefine_type_annotation(
                 type_manager,
                 &label,
                 relation_type,
-                annotation_category,
+                &annotation_category,
                 annotation_undefinable,
             )?;
-            relation_type.unset_annotation(snapshot, type_manager, annotation_category)
+            relation_type.unset_annotation(snapshot, type_manager, &annotation_category)
         }
         TypeEnum::Attribute(attribute_type) => {
-            if AttributeTypeAnnotation::is_value_type_annotation_category(annotation_category) {
+            if AttributeTypeAnnotation::is_value_type_annotation_category(&annotation_category) {
                 return Err(UndefineError::IllegalAnnotation {
                     typedb_source: AnnotationError::UnsupportedAnnotationForAttributeType {
                         category: annotation_category,
@@ -821,10 +821,10 @@ fn undefine_type_annotation(
                 type_manager,
                 &label,
                 attribute_type,
-                annotation_category,
+                &annotation_category,
                 annotation_undefinable,
             )?;
-            attribute_type.unset_annotation(snapshot, type_manager, annotation_category)
+            attribute_type.unset_annotation(snapshot, type_manager, &annotation_category)
         }
         TypeEnum::RoleType(_) => unreachable!("Role annotations are syntactically on relates"),
     }
@@ -918,7 +918,7 @@ fn check_can_and_need_undefine_type_annotation<T: KindAPI>(
     type_manager: &TypeManager,
     label: &Label,
     type_: T,
-    annotation_category: AnnotationCategory,
+    annotation_category: &AnnotationCategory,
     declaration: &AnnotationType,
 ) -> Result<bool, UndefineError> {
     let definition_status = get_type_annotation_category_status(snapshot, type_manager, type_, annotation_category)
@@ -928,7 +928,7 @@ fn check_can_and_need_undefine_type_annotation<T: KindAPI>(
         DefinableStatus::ExistsDifferent(_) => unreachable!("Annotation categories cannot differ"),
         DefinableStatus::DoesNotExist => Err(UndefineError::TypeAnnotationNotDefined {
             type_: label.clone(),
-            annotation: annotation_category,
+            annotation: annotation_category.clone(),
             source_span: declaration.span(),
         }),
     }
@@ -938,7 +938,7 @@ fn check_can_and_need_undefine_capability_annotation<CAP: Capability>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     capability: CAP,
-    annotation_category: AnnotationCategory,
+    annotation_category: &AnnotationCategory,
     declaration: &AnnotationCapability,
 ) -> Result<bool, UndefineError> {
     let definition_status =
@@ -948,7 +948,7 @@ fn check_can_and_need_undefine_capability_annotation<CAP: Capability>(
         DefinableStatus::ExistsSame(_) => Ok(true),
         DefinableStatus::ExistsDifferent(_) => unreachable!("Annotation categories cannot differ"),
         DefinableStatus::DoesNotExist => Err(UndefineError::CapabilityAnnotationNotDefined {
-            annotation: annotation_category,
+            annotation: annotation_category.clone(),
             source_span: declaration.span(),
         }),
     }
