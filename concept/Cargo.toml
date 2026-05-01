@@ -37,6 +37,8 @@ features = {}
 		workspace = true
 
 [dependencies]
+    [dependencies.macro_rules_attribute]
+        workspace = true
 
 	[dependencies.tracing]
 		workspace = true

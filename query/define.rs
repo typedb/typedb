@@ -12,7 +12,7 @@ use concept::{
     thing::thing_manager::ThingManager,
     type_::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
-        annotation::{Annotation, AnnotationError},
+        annotation::{Annotation, AnnotationError, HasAnnotationCategory},
         attribute_type::AttributeType,
         owns::Owns,
         plays::Plays,
@@ -1034,7 +1034,7 @@ fn type_convert_and_validate_annotation_definition_need<T: KindAPI>(
     })?;
 
     let definition_status =
-        get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
+        get_type_annotation_status(snapshot, type_manager, type_, &converted, &annotation.category())
             .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(Some(converted)),
