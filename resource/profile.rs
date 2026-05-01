@@ -419,6 +419,7 @@ impl CommitProfileData {
 
 #[derive(Debug)]
 pub struct QueryProfile {
+    description: Option<String>,
     compile_profile: CompileProfile,
     stage_profiles: RwLock<HashMap<u64, Arc<StageProfile>>>,
     enabled: bool,
@@ -426,7 +427,21 @@ pub struct QueryProfile {
 
 impl QueryProfile {
     pub fn new(enabled: bool) -> Self {
-        Self { compile_profile: CompileProfile::new(enabled), stage_profiles: RwLock::new(HashMap::new()), enabled }
+        Self {
+            description: None,
+            compile_profile: CompileProfile::new(enabled),
+            stage_profiles: RwLock::new(HashMap::new()),
+            enabled,
+        }
+    }
+
+    fn new_subquery(description_fn: impl Fn() -> String) -> Self {
+        Self {
+            description: Some(description_fn()),
+            compile_profile: CompileProfile::new(true),
+            stage_profiles: RwLock::new(HashMap::new()),
+            enabled: true,
+        }
     }
 
     pub fn is_enabled(&self) -> bool {
@@ -470,7 +485,18 @@ impl QueryProfile {
 impl Display for QueryProfile {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let total_micros = self.total_nanos() as f64 / 1000.0;
-        writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
+        match self.description.as_deref() {
+            None => writeln!(
+                f,
+                "Query profile[measurements_enabled={}, total micros: {}]",
+                self.enabled, total_micros
+            )?,
+            Some(description) => writeln!(
+                f,
+                "Query profile[measurements_enabled={}, total micros: {}] - {}",
+                self.enabled, total_micros, description
+            )?,
+        }
         writeln!(f, "{}", self.compile_profile)?;
         let stage_profiles = self.stage_profiles.read().unwrap();
         for (id, stage_profile) in stage_profiles.iter().sorted_by_key(|(id, _)| *id) {
@@ -683,7 +709,7 @@ impl PatternProfile {
         Self { substeps: RwLock::new(Vec::new()), enabled: false, description: None }
     }
 
-    pub fn extend_or_get_subquery(&self, index: usize, _description_getter: impl Fn() -> String) -> Arc<QueryProfile> {
+    pub fn extend_or_get_subquery(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<QueryProfile> {
         if !self.enabled {
             return Arc::new(QueryProfile::new(false));
         }
@@ -696,7 +722,7 @@ impl PatternProfile {
         }
         debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
         drop(profiles);
-        let query_profile = Arc::new(QueryProfile::new(true));
+        let query_profile = Arc::new(QueryProfile::new_subquery(description_getter));
         self.substeps.write().unwrap().push(SubstepProfile::QueryProfile(query_profile.clone()));
         query_profile
     }

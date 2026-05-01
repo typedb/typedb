@@ -234,18 +234,22 @@ pub(crate) fn create_executors_for_conjunction(
                 }
             }
             ExecutionStep::Disjunction(step) => {
-                let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || format!("{}", step));
+                let disjunction_profile = pattern_profile.extend_or_get_subpattern(index, || format!("{}", step));
 
                 // I shouldn't need to pass recursive here since it's stratified
                 let branches: Vec<PatternExecutor> = step
                     .branches
                     .iter()
-                    .map(|branch_executable| {
+                    .enumerate()
+                    .map(|(branch_index, branch_executable)| {
+                        let branch_profile = disjunction_profile.extend_or_get_subpattern(branch_index, || {
+                            format!("Branch {} [id: {}]", branch_index, branch_executable.executable_id())
+                        });
                         let executors = create_executors_for_conjunction(
                             snapshot,
                             thing_manager,
                             function_registry,
-                            subpattern_profile.clone(),
+                            branch_profile,
                             branch_executable,
                         )?;
                         Ok::<_, Box<_>>(PatternExecutor::new(branch_executable.executable_id(), executors))
