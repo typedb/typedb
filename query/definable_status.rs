@@ -146,13 +146,13 @@ pub(crate) fn get_type_annotation_category_status<T: KindAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     type_: T,
-    annotation_category: AnnotationCategory,
+    annotation_category: &AnnotationCategory,
 ) -> Result<DefinableStatus<T::AnnotationType>, Box<ConceptReadError>> {
     let existing_annotations = type_.get_annotations_declared(snapshot, type_manager)?;
 
     let same_annotation_category_opt = existing_annotations
         .into_iter()
-        .find(|annotation| (*annotation).clone().into().category() == annotation_category);
+        .find(|annotation| (*annotation).clone().into().has_category(annotation_category));
     return_exists_same_none_if_some!(same_annotation_category_opt);
 
     Ok(DefinableStatus::DoesNotExist)
@@ -183,13 +183,13 @@ pub(crate) fn get_capability_annotation_category_status<CAP: Capability>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     capability: &CAP,
-    annotation_category: AnnotationCategory,
+    annotation_category: &AnnotationCategory,
 ) -> Result<DefinableStatus<CAP::AnnotationType>, Box<ConceptReadError>> {
     let existing_annotations = capability.get_annotations_declared(snapshot, type_manager)?;
 
     let same_annotation_category_opt = existing_annotations
         .into_iter()
-        .find(|annotation| (*annotation).clone().into().category() == annotation_category);
+        .find(|annotation| (*annotation).clone().into().has_category(annotation_category));
     return_exists_same_none_if_some!(same_annotation_category_opt);
 
     Ok(DefinableStatus::DoesNotExist)

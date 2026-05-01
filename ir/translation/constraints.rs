@@ -583,7 +583,9 @@ fn add_typeql_iterable_binding(
         | typeql::Expression::ListIndex(_)
         | typeql::Expression::Value(_)
         | typeql::Expression::Operation(_)
-        | typeql::Expression::Paren(_) => unreachable!(),
+        | typeql::Expression::Paren(_)
+        | typeql::Expression::ScopedLabel(_)
+        | typeql::Expression::Label(_) => unreachable!(),
     }
 }
 

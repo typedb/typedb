@@ -22,7 +22,7 @@ use crate::{
         Capability, Ordering,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
-            AnnotationError, DefaultFrom,
+            AnnotationDoc, AnnotationError, AnnotationMeta, DefaultFrom,
         },
         constraint::CapabilityConstraint,
         relation_type::RelationType,
@@ -122,7 +122,9 @@ impl Relates {
             RelatesAnnotation::Cardinality(cardinality) => {
                 type_manager.set_relates_annotation_cardinality(snapshot, thing_manager, *self, cardinality)?
             }
-        };
+            RelatesAnnotation::Doc(doc) => type_manager.set_relates_annotation_doc(snapshot, *self, doc)?,
+            RelatesAnnotation::Meta(meta) => type_manager.set_relates_annotation_meta(snapshot, *self, meta)?,
+        }
         Ok(())
     }
 
@@ -131,7 +133,7 @@ impl Relates {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        annotation_category: AnnotationCategory,
+        annotation_category: &AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
         let relates_annotation = RelatesAnnotation::try_getting_default(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
@@ -141,6 +143,8 @@ impl Relates {
             RelatesAnnotation::Cardinality(_) => {
                 type_manager.unset_relates_annotation_cardinality(snapshot, thing_manager, *self)?
             }
+            RelatesAnnotation::Doc(_) => type_manager.unset_relates_annotation_doc(snapshot, *self)?,
+            RelatesAnnotation::Meta(meta) => type_manager.unset_relates_annotation_meta(snapshot, *self, meta)?,
         }
         Ok(())
     }
@@ -238,11 +242,13 @@ impl Capability for Relates {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum RelatesAnnotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
     Cardinality(AnnotationCardinality),
+    Doc(AnnotationDoc),
+    Meta(AnnotationMeta),
 }
 
 impl TryFrom<Annotation> for RelatesAnnotation {
@@ -253,6 +259,8 @@ impl TryFrom<Annotation> for RelatesAnnotation {
             Annotation::Abstract(annotation) => Ok(RelatesAnnotation::Abstract(annotation)),
             Annotation::Distinct(annotation) => Ok(RelatesAnnotation::Distinct(annotation)),
             Annotation::Cardinality(annotation) => Ok(RelatesAnnotation::Cardinality(annotation)),
+            Annotation::Doc(annotation) => Ok(RelatesAnnotation::Doc(annotation)),
+            Annotation::Meta(annotation) => Ok(RelatesAnnotation::Meta(annotation)),
 
             | Annotation::Independent(_)
             | Annotation::Unique(_)
@@ -273,6 +281,8 @@ impl From<RelatesAnnotation> for Annotation {
             RelatesAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
             RelatesAnnotation::Distinct(annotation) => Annotation::Distinct(annotation),
             RelatesAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
+            RelatesAnnotation::Doc(annotation) => Annotation::Doc(annotation),
+            RelatesAnnotation::Meta(annotation) => Annotation::Meta(annotation),
         }
     }
 }
