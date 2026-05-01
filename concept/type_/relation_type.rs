@@ -21,6 +21,7 @@ use encoding::{
 };
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
@@ -36,7 +37,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationDoc, AnnotationError,
-            AnnotationMeta, DefaultFrom,
+            AnnotationMeta, DefaultFrom, HasAnnotationCategory, HasAnnotationCategory_,
         },
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, Constraint, TypeConstraint},
@@ -880,12 +881,12 @@ impl PlayerAPI for RelationType {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, HasAnnotationCategory_!)]
 pub enum RelationTypeAnnotation {
+    Meta(AnnotationMeta),
     Abstract(AnnotationAbstract),
     Cascade(AnnotationCascade),
     Doc(AnnotationDoc),
-    Meta(AnnotationMeta),
 }
 
 impl TryFrom<Annotation> for RelationTypeAnnotation {

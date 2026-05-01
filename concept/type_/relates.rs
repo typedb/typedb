@@ -11,6 +11,7 @@ use encoding::{
     layout::prefix::Prefix,
 };
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -22,7 +23,7 @@ use crate::{
         Capability, Ordering,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
-            AnnotationDoc, AnnotationError, AnnotationMeta, DefaultFrom,
+            AnnotationDoc, AnnotationError, AnnotationMeta, DefaultFrom, HasAnnotationCategory, HasAnnotationCategory_,
         },
         constraint::CapabilityConstraint,
         relation_type::RelationType,
@@ -242,13 +243,13 @@ impl Capability for Relates {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, HasAnnotationCategory_!)]
 pub enum RelatesAnnotation {
+    Meta(AnnotationMeta),
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
     Cardinality(AnnotationCardinality),
     Doc(AnnotationDoc),
-    Meta(AnnotationMeta),
 }
 
 impl TryFrom<Annotation> for RelatesAnnotation {

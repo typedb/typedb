@@ -20,6 +20,7 @@ use encoding::{
     value::label::Label,
 };
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
@@ -35,7 +36,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
-            DefaultFrom,
+            DefaultFrom, HasAnnotationCategory, HasAnnotationCategory_,
         },
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, TypeConstraint},
@@ -274,7 +275,7 @@ impl EntityType {
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match entity_annotation {
             EntityTypeAnnotation::Abstract(_) => type_manager.unset_entity_type_annotation_abstract(snapshot, *self)?,
-            EntityTypeAnnotation::Doc(doc) => type_manager.unset_entity_type_annotation_doc(snapshot, *self)?,
+            EntityTypeAnnotation::Doc(_) => type_manager.unset_entity_type_annotation_doc(snapshot, *self)?,
             EntityTypeAnnotation::Meta(meta) => {
                 type_manager.unset_entity_type_annotation_meta(snapshot, *self, meta)?
             }
@@ -501,11 +502,11 @@ impl fmt::Display for EntityType {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, HasAnnotationCategory_!)]
 pub enum EntityTypeAnnotation {
+    Meta(AnnotationMeta),
     Abstract(AnnotationAbstract),
     Doc(AnnotationDoc),
-    Meta(AnnotationMeta),
 }
 
 impl TryFrom<Annotation> for EntityTypeAnnotation {

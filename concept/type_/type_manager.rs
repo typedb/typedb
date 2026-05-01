@@ -39,7 +39,7 @@ use crate::{
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory,
             AnnotationDistinct, AnnotationDoc, AnnotationIndependent, AnnotationKey, AnnotationMeta, AnnotationRange,
-            AnnotationRegex, AnnotationUnique, AnnotationValues,
+            AnnotationRegex, AnnotationUnique, AnnotationValues, HasAnnotationCategory,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{
@@ -247,7 +247,7 @@ macro_rules! get_annotation_declared_by_category_methods {
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_, annotation_category: &AnnotationCategory,
             ) -> Result<Option<$annotation_type>, Box<ConceptReadError>> {
                 Ok(type_.get_annotations_declared(snapshot, self)?.into_iter().find(|&type_annotation| {
-                    Annotation::from(type_annotation.clone()).has_category(annotation_category)
+                    type_annotation.has_category(annotation_category)
                 }).cloned())
             }
         )*
@@ -321,10 +321,8 @@ macro_rules! storage_save_annotation {
 macro_rules! storage_delete_annotation {
     ($snapshot:ident, $type_:ident, $annotation_category:ident, $get_func:path, $delete_func:ident) => {
         let annotations = $get_func($snapshot, $type_.clone())?;
-        let annotation_exists = annotations
-            .into_iter()
-            .find(|annotation| annotation.clone().into().category() == $annotation_category)
-            .is_some();
+        let annotation_exists =
+            annotations.into_iter().any(|annotation| annotation.has_category(&$annotation_category));
 
         if annotation_exists {
             match $annotation_category {
@@ -1539,7 +1537,7 @@ impl TypeManager {
         capability: impl Capability,
     ) -> Result<(), Box<ConceptWriteError>> {
         for annotation in TypeReader::get_capability_annotations_declared(snapshot, capability)? {
-            self.unset_capability_annotation(snapshot, capability, annotation.clone().into().category())?;
+            self.unset_capability_annotation(snapshot, capability, annotation.category())?;
         }
         TypeWriter::storage_delete_edge(snapshot, capability);
         Ok(())

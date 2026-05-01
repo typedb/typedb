@@ -7,7 +7,9 @@
 use std::sync::Arc;
 
 use concept::type_::{
-    Capability, Ordering, OwnerAPI, TypeAPI, annotation, annotation::Annotation, constraint::Constraint,
+    Capability, Ordering, OwnerAPI, TypeAPI,
+    annotation::{Annotation, HasAnnotationCategory},
+    constraint::Constraint,
 };
 use cucumber::gherkin::Step;
 use itertools::Itertools;
@@ -332,9 +334,8 @@ pub async fn get_owns_declared_annotation_categories_contains(
         let actual_contains = owns
             .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
-            .into_iter()
-            .map(|annotation| Annotation::from(annotation.clone()).category())
-            .contains(&parsed_annotation_category);
+            .iter()
+            .any(|annotation| annotation.has_category(&parsed_annotation_category));
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
@@ -376,7 +377,7 @@ pub async fn get_owns_cardinality(
         let owns = object_type.get_owns_attribute(tx.snapshot.as_ref(), &tx.type_manager, attr_type).unwrap().unwrap();
         let actual_cardinality = owns.get_cardinality(tx.snapshot.as_ref(), &tx.type_manager).unwrap();
         match cardinality_annotation.into_typedb(None) {
-            annotation::Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
+            Annotation::Cardinality(card) => assert_eq!(actual_cardinality, card),
             _ => panic!("Expected annotations is not Cardinality"),
         }
     });

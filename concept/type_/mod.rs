@@ -34,7 +34,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{ThingAPI, thing_manager::ThingManager},
     type_::{
-        annotation::{Annotation, AnnotationCardinality, AnnotationError},
+        annotation::{Annotation, AnnotationCardinality, AnnotationError, HasAnnotationCategory},
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, Constraint, TypeConstraint},
         object_type::ObjectType,
@@ -189,7 +189,12 @@ pub trait TypeAPI: ConceptAPI + TypeVertexEncoding + Copy + Sized + Hash + Eq {
 }
 
 pub trait KindAPI: TypeAPI {
-    type AnnotationType: Hash + Eq + Clone + TryFrom<Annotation, Error = AnnotationError> + Into<Annotation>;
+    type AnnotationType: Hash
+        + Eq
+        + Clone
+        + TryFrom<Annotation, Error = AnnotationError>
+        + Into<Annotation>
+        + HasAnnotationCategory;
     const KIND: Kind;
 
     fn get_annotations_declared<'this>(
@@ -799,7 +804,12 @@ impl TypeVertexPropertyEncoding for Independent {
 pub trait Capability:
     TypeEdgeEncoding<From = Self::ObjectType, To = Self::InterfaceType> + Sized + Copy + Hash + Eq + 'static
 {
-    type AnnotationType: Hash + Eq + Clone + TryFrom<Annotation, Error = AnnotationError> + Into<Annotation>;
+    type AnnotationType: Hash
+        + Eq
+        + Clone
+        + TryFrom<Annotation, Error = AnnotationError>
+        + Into<Annotation>
+        + HasAnnotationCategory;
     type ObjectType: TypeAPI;
     type InterfaceType: KindAPI;
     const KIND: CapabilityKind;

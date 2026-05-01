@@ -21,6 +21,7 @@ use encoding::{
     value::{ValueEncodable, value::Value, value_type::ValueType},
 };
 use error::typedb_error;
+use macro_rules_attribute::derive;
 use regex::Regex;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
@@ -30,8 +31,9 @@ use crate::type_::{
     constraint::{CapabilityConstraint, ConstraintDescription, TypeConstraint},
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, HasAnnotationCategory_!)]
 pub enum Annotation {
+    Meta(AnnotationMeta),
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
     Independent(AnnotationIndependent),
@@ -43,7 +45,6 @@ pub enum Annotation {
     Range(AnnotationRange),
     Values(AnnotationValues),
     Doc(AnnotationDoc),
-    Meta(AnnotationMeta),
     // TODO: Subkey
     // TODO: Replace
 }
@@ -560,6 +561,10 @@ impl AnnotationMeta {
     pub const fn default(key: String) -> AnnotationMeta {
         Self { key, value: String::new() }
     }
+
+    pub fn key(&self) -> &str {
+        &self.key
+    }
 }
 
 impl fmt::Display for AnnotationMeta {
@@ -569,40 +574,6 @@ impl fmt::Display for AnnotationMeta {
 }
 
 impl Annotation {
-    pub fn has_category(&self, category: &AnnotationCategory) -> bool {
-        match category {
-            AnnotationCategory::Abstract => matches!(self, Self::Abstract(_)),
-            AnnotationCategory::Distinct => matches!(self, Self::Distinct(_)),
-            AnnotationCategory::Independent => matches!(self, Self::Independent(_)),
-            AnnotationCategory::Unique => matches!(self, Self::Unique(_)),
-            AnnotationCategory::Key => matches!(self, Self::Key(_)),
-            AnnotationCategory::Cardinality => matches!(self, Self::Cardinality(_)),
-            AnnotationCategory::Regex => matches!(self, Self::Regex(_)),
-            AnnotationCategory::Cascade => matches!(self, Self::Cascade(_)),
-            AnnotationCategory::Range => matches!(self, Self::Range(_)),
-            AnnotationCategory::Values => matches!(self, Self::Values(_)),
-            AnnotationCategory::Doc => matches!(self, Self::Doc(_)),
-            AnnotationCategory::Meta(key) => matches!(self, Self::Meta(meta) if meta.key == *key),
-        }
-    }
-
-    pub fn category(&self) -> AnnotationCategory {
-        match self {
-            Self::Abstract(_) => AnnotationCategory::Abstract,
-            Self::Distinct(_) => AnnotationCategory::Distinct,
-            Self::Independent(_) => AnnotationCategory::Independent,
-            Self::Unique(_) => AnnotationCategory::Unique,
-            Self::Key(_) => AnnotationCategory::Key,
-            Self::Cardinality(_) => AnnotationCategory::Cardinality,
-            Self::Regex(_) => AnnotationCategory::Regex,
-            Self::Cascade(_) => AnnotationCategory::Cascade,
-            Self::Range(_) => AnnotationCategory::Range,
-            Self::Values(_) => AnnotationCategory::Values,
-            Self::Doc(_) => AnnotationCategory::Doc,
-            Self::Meta(meta) => AnnotationCategory::Meta(meta.key.clone()),
-        }
-    }
-
     pub fn to_type_constraints<T: KindAPI>(&self, source: T) -> HashSet<TypeConstraint<T>> {
         self.clone().into_type_constraints(source)
     }
@@ -624,6 +595,44 @@ impl Annotation {
             .map(|description| CapabilityConstraint::new(description.clone(), source))
             .collect()
     }
+}
+
+macro_rules! HasAnnotationCategory_ {
+    (
+       $(#[$meta:meta])*
+       $vis:vis
+       enum $Enum:ident {
+           Meta(AnnotationMeta),
+           $($Variant:ident($Inner:ty)),*
+           $(,)?
+       }
+    ) => {
+        impl $crate::type_::annotation::HasAnnotationCategory for $Enum{
+            fn has_category(&self, category: &$crate::type_::annotation::AnnotationCategory) -> bool {
+                use $crate::type_::annotation::AnnotationCategory;
+                #[allow(unreachable_patterns)]
+                match category {
+                    $(AnnotationCategory::$Variant => matches!(self, Self::$Variant(_)),)*
+                    AnnotationCategory::Meta(key) => matches!(self, Self::Meta(meta) if meta.key() == key),
+                    _ => false,
+                }
+            }
+
+            fn category(&self) -> $crate::type_::annotation::AnnotationCategory {
+                use $crate::type_::annotation::AnnotationCategory;
+                match self {
+                    $(Self::$Variant(_) => AnnotationCategory::$Variant,)*
+                    Self::Meta(meta) => AnnotationCategory::Meta(meta.key().to_owned()),
+                }
+            }
+        }
+    };
+}
+pub(crate) use HasAnnotationCategory_;
+
+pub trait HasAnnotationCategory {
+    fn has_category(&self, category: &AnnotationCategory) -> bool;
+    fn category(&self) -> AnnotationCategory;
 }
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]

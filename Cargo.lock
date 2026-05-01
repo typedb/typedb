@@ -927,6 +927,7 @@ dependencies = [
  "itertools 0.14.0",
  "lending_iterator",
  "logger",
+ "macro_rules_attribute",
  "paste",
  "pprof",
  "primitive",

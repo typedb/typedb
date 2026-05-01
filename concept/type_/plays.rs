@@ -11,6 +11,7 @@ use encoding::{
     layout::prefix::Prefix,
 };
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -21,7 +22,7 @@ use crate::{
         Capability,
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
-            DefaultFrom,
+            DefaultFrom, HasAnnotationCategory, HasAnnotationCategory_,
         },
         constraint::CapabilityConstraint,
         object_type::ObjectType,
@@ -180,11 +181,11 @@ impl Capability for Plays {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, HasAnnotationCategory_!)]
 pub enum PlaysAnnotation {
+    Meta(AnnotationMeta),
     Cardinality(AnnotationCardinality),
     Doc(AnnotationDoc),
-    Meta(AnnotationMeta),
 }
 
 impl TryFrom<Annotation> for PlaysAnnotation {

@@ -25,6 +25,7 @@ use encoding::{
 };
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -37,7 +38,8 @@ use crate::{
         KindAPI, ThingTypeAPI, TypeAPI, TypeQLSyntax,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationIndependent,
-            AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, DefaultFrom,
+            AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, DefaultFrom, HasAnnotationCategory,
+            HasAnnotationCategory_,
         },
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
@@ -482,15 +484,15 @@ impl AttributeType {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, HasAnnotationCategory_!)]
 pub enum AttributeTypeAnnotation {
+    Meta(AnnotationMeta),
     Abstract(AnnotationAbstract),
     Independent(AnnotationIndependent),
     Regex(AnnotationRegex),
     Range(AnnotationRange),
     Values(AnnotationValues),
     Doc(AnnotationDoc),
-    Meta(AnnotationMeta),
 }
 
 impl AttributeTypeAnnotation {

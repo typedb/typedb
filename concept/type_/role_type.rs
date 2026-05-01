@@ -25,6 +25,7 @@ use encoding::{
     value::label::Label,
 };
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -39,7 +40,7 @@ use crate::{
     thing::thing_manager::ThingManager,
     type_::{
         KindAPI, TypeAPI,
-        annotation::{Annotation, AnnotationError},
+        annotation::{Annotation, AnnotationError, AnnotationMeta, HasAnnotationCategory, HasAnnotationCategory_},
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
         plays::Plays,
@@ -312,8 +313,10 @@ impl fmt::Display for RoleType {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum RoleTypeAnnotation {}
+#[derive(Debug, Clone, Eq, PartialEq, Hash, HasAnnotationCategory_!)]
+pub enum RoleTypeAnnotation {
+    Meta(AnnotationMeta),
+}
 
 impl TryFrom<Annotation> for RoleTypeAnnotation {
     type Error = AnnotationError;
