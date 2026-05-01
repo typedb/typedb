@@ -18,8 +18,7 @@ use compiler::{
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
-use resource::{constants::traversal::CHECK_INTERRUPT_FREQUENCY_ROWS, profile::StageProfile};
-use resource::profile::PatternProfile;
+use resource::{constants::traversal::CHECK_INTERRUPT_FREQUENCY_ROWS, profile::PatternProfile};
 use storage::snapshot::WritableSnapshot;
 
 use crate::{

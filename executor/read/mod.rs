@@ -62,7 +62,11 @@ pub(super) fn create_pattern_executor_for_conjunction(
     profile: Arc<StageProfile>,
 ) -> Result<PatternExecutor, Box<ConceptReadError>> {
     let pattern_profile = profile.create_or_get_pattern(|| {
-        format!("Conjunction [id: {}] \n  ~ {}", conjunction_executable.executable_id(),conjunction_executable.planner_statistics())
+        format!(
+            "Conjunction [id: {}]\n  ~ {}",
+            conjunction_executable.executable_id(),
+            conjunction_executable.planner_statistics()
+        )
     });
     let executors = step_executor::create_executors_for_conjunction(
         snapshot,

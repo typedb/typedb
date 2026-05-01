@@ -18,9 +18,8 @@ use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
 use resource::{
     constants::traversal::{BATCH_DEFAULT_CAPACITY, CHECK_INTERRUPT_FREQUENCY_ROWS},
-    profile::StageProfile,
+    profile::{PatternProfile, StageProfile},
 };
-use resource::profile::PatternProfile;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{

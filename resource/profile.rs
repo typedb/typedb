@@ -4,18 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use itertools::Itertools;
-use std::sync::OnceLock;
 use std::{
     collections::HashMap,
     fmt,
     fmt::{Display, Formatter},
     sync::{
-        Arc, RwLock,
+        Arc, OnceLock, RwLock,
         atomic::{AtomicU64, Ordering},
     },
     time::{Duration, Instant},
 };
+
+use itertools::Itertools;
 
 #[derive(Debug)]
 pub struct TransactionProfile {
@@ -438,19 +438,17 @@ impl QueryProfile {
     }
 
     pub fn profile_stage(&self, description_fn: impl Fn() -> String, id: u64) -> Arc<StageProfile> {
-        if self.enabled {
-            let profiles = self.stage_profiles.read().unwrap();
-            if let Some(profile) = profiles.get(&id) {
-                profile.clone()
-            } else {
-                drop(profiles);
-                let profile = Arc::new(StageProfile::new(description_fn, true));
-                self.stage_profiles.write().unwrap().insert(id, profile.clone());
-                profile
-            }
-        } else {
-            Arc::new(StageProfile::new(|| String::new(), false))
+        if !self.enabled {
+            return Arc::new(StageProfile::new_disabled());
         }
+        let profiles = self.stage_profiles.read().unwrap();
+        if let Some(profile) = profiles.get(&id) {
+            return profile.clone();
+        }
+        drop(profiles);
+        let profile = Arc::new(StageProfile::new_enabled(description_fn));
+        self.stage_profiles.write().unwrap().insert(id, profile.clone());
+        profile
     }
 
     pub fn stage_profiles(&self) -> &RwLock<HashMap<u64, Arc<StageProfile>>> {
@@ -458,21 +456,19 @@ impl QueryProfile {
     }
 
     fn total_nanos(&self) -> u64 {
-        let compile_micros = self.compile_profile.total_nanos();
-        let stage_profiles = self.stage_profiles.read().unwrap();
-        let total_micros = compile_micros
-            + stage_profiles
-                .iter()
-                .map(|(_, stage_profile)| {
-                    stage_profile.pattern_profile.get().map(|profile| profile.total_nanos()).unwrap_or(0)
-                })
-                .sum::<u64>();
-        total_micros
+        let stage_nanos: u64 = self
+            .stage_profiles
+            .read()
+            .unwrap()
+            .values()
+            .map(|stage_profile| stage_profile.pattern_profile.get().map_or(0, |profile| profile.total_nanos()))
+            .sum();
+        self.compile_profile.total_nanos() + stage_nanos
     }
 }
 
-impl fmt::Display for QueryProfile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for QueryProfile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let total_micros = self.total_nanos() as f64 / 1000.0;
         writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
         writeln!(f, "{}", self.compile_profile)?;
@@ -544,9 +540,7 @@ impl CompileProfile {
     fn total_nanos(&self) -> u64 {
         match &self.data {
             None => 0,
-            Some(data) => {
-                (data.translation + data.validation + data.annotation + data.compilation).as_nanos() as u64
-            }
+            Some(data) => (data.translation + data.validation + data.annotation + data.compilation).as_nanos() as u64,
         }
     }
 }
@@ -612,12 +606,12 @@ pub struct StageProfile {
 }
 
 impl StageProfile {
-    fn new(description_fn: impl Fn() -> String, enabled: bool) -> Self {
-        if enabled {
-            Self { description: Some(description_fn()), pattern_profile: OnceLock::new(), enabled }
-        } else {
-            Self { description: None, pattern_profile: OnceLock::new(), enabled: false }
-        }
+    fn new_enabled(description_fn: impl Fn() -> String) -> Self {
+        Self { description: Some(description_fn()), pattern_profile: OnceLock::new(), enabled: true }
+    }
+
+    fn new_disabled() -> Self {
+        Self { description: None, pattern_profile: OnceLock::new(), enabled: false }
     }
 
     pub fn create_or_get_pattern(&self, pattern_description: impl Fn() -> String) -> Arc<PatternProfile> {
@@ -635,7 +629,7 @@ impl StageProfile {
 
 impl Display for StageProfile {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.description.as_ref().map(|inner| inner.as_str()).unwrap_or(""))?;
+        writeln!(f, "{}", self.description.as_deref().unwrap_or(""))?;
         match self.pattern_profile.get() {
             None => writeln!(f, "Disabled"),
             Some(profile) => write!(f, "{}", profile),
@@ -653,9 +647,9 @@ pub enum SubstepProfile {
 impl SubstepProfile {
     fn total_nanos(&self) -> u64 {
         match self {
-            SubstepProfile::QueryProfile(query_profile) => query_profile.total_nanos(),
-            SubstepProfile::PatternProfile(pattern_profile) => pattern_profile.total_nanos(),
-            SubstepProfile::StepProfile(step_profile) => step_profile.total_nanos(),
+            Self::QueryProfile(profile) => profile.total_nanos(),
+            Self::PatternProfile(profile) => profile.total_nanos(),
+            Self::StepProfile(profile) => profile.total_nanos(),
         }
     }
 }
@@ -663,12 +657,15 @@ impl SubstepProfile {
 impl Display for SubstepProfile {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            SubstepProfile::QueryProfile(query_profile) => Display::fmt(query_profile, f),
-            SubstepProfile::PatternProfile(pattern_profile) => Display::fmt(pattern_profile, f),
-            SubstepProfile::StepProfile(step_profile) => Display::fmt(step_profile, f),
+            Self::QueryProfile(profile) => Display::fmt(profile, f),
+            Self::PatternProfile(profile) => Display::fmt(profile, f),
+            Self::StepProfile(profile) => Display::fmt(profile, f),
         }
     }
 }
+
+const MISMATCHED_SUBSTEP_PROFILE_TYPE: &str =
+    "Found unexpected sub-profile - indices must always be used with the same type of profile.";
 
 #[derive(Debug)]
 pub struct PatternProfile {
@@ -683,33 +680,25 @@ impl PatternProfile {
     }
 
     fn new_disabled() -> Self {
-        Self { substeps: RwLock::new(Vec::with_capacity(0)), enabled: false, description: None }
+        Self { substeps: RwLock::new(Vec::new()), enabled: false, description: None }
     }
 
-    pub fn extend_or_get_subquery(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<QueryProfile> {
-        if self.enabled {
-            let profiles = self.substeps.read().unwrap();
-            if index < profiles.len() {
-                match &profiles[index] {
-                    SubstepProfile::PatternProfile(_) | SubstepProfile::StepProfile(_) => {
-                        panic!(
-                            "Found unexpected sub-profile - indices must always be used with the same type of profile."
-                        );
-                    }
-                    SubstepProfile::QueryProfile(query_profile) => query_profile.clone(),
-                }
-            } else {
-                debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
-                let query_profile = Arc::new(QueryProfile::new(true));
-                let profile = SubstepProfile::QueryProfile(query_profile.clone());
-                drop(profiles);
-                let mut profiles_mut = self.substeps.write().unwrap();
-                profiles_mut.push(profile);
-                query_profile
-            }
-        } else {
-            Arc::new(QueryProfile::new(false))
+    pub fn extend_or_get_subquery(&self, index: usize, _description_getter: impl Fn() -> String) -> Arc<QueryProfile> {
+        if !self.enabled {
+            return Arc::new(QueryProfile::new(false));
         }
+        let profiles = self.substeps.read().unwrap();
+        if let Some(substep) = profiles.get(index) {
+            return match substep {
+                SubstepProfile::QueryProfile(profile) => profile.clone(),
+                _ => panic!("{}", MISMATCHED_SUBSTEP_PROFILE_TYPE),
+            };
+        }
+        debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
+        drop(profiles);
+        let query_profile = Arc::new(QueryProfile::new(true));
+        self.substeps.write().unwrap().push(SubstepProfile::QueryProfile(query_profile.clone()));
+        query_profile
     }
 
     pub fn extend_or_get_subpattern(
@@ -717,65 +706,49 @@ impl PatternProfile {
         index: usize,
         description_getter: impl Fn() -> String,
     ) -> Arc<PatternProfile> {
-        if self.enabled {
-            let profiles = self.substeps.read().unwrap();
-            if index < profiles.len() {
-                match &profiles[index] {
-                    SubstepProfile::PatternProfile(pattern_profile) => pattern_profile.clone(),
-                    SubstepProfile::StepProfile(_) | SubstepProfile::QueryProfile(_) => {
-                        panic!(
-                            "Found unexpected sub-profile - indices must always be used with the same type of profile."
-                        );
-                    }
-                }
-            } else {
-                debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
-                let pattern_profile = Arc::new(PatternProfile::new_enabled(description_getter));
-                let profile = SubstepProfile::PatternProfile(pattern_profile.clone());
-                drop(profiles);
-                let mut profiles_mut = self.substeps.write().unwrap();
-                profiles_mut.push(profile);
-                pattern_profile
-            }
-        } else {
-            Arc::new(PatternProfile::new_disabled())
+        if !self.enabled {
+            return Arc::new(PatternProfile::new_disabled());
         }
+        let profiles = self.substeps.read().unwrap();
+        if let Some(substep) = profiles.get(index) {
+            return match substep {
+                SubstepProfile::PatternProfile(profile) => profile.clone(),
+                _ => panic!("{}", MISMATCHED_SUBSTEP_PROFILE_TYPE),
+            };
+        }
+        debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
+        drop(profiles);
+        let pattern_profile = Arc::new(PatternProfile::new_enabled(description_getter));
+        self.substeps.write().unwrap().push(SubstepProfile::PatternProfile(pattern_profile.clone()));
+        pattern_profile
     }
 
     pub fn extend_or_get_step(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<StepProfile> {
-        if self.enabled {
-            let profiles = self.substeps.read().unwrap();
-            if index < profiles.len() {
-                match &profiles[index] {
-                    SubstepProfile::PatternProfile(_) | SubstepProfile::QueryProfile(_) => {
-                        panic!(
-                            "Found unexpected sub-profile - indices must always be used with the same type of profile."
-                        );
-                    }
-                    SubstepProfile::StepProfile(step_profile) => step_profile.clone(),
-                }
-            } else {
-                debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
-                let step_profile = Arc::new(StepProfile::new_enabled(description_getter()));
-                let profile = SubstepProfile::StepProfile(step_profile.clone());
-                drop(profiles);
-                let mut profiles_mut = self.substeps.write().unwrap();
-                profiles_mut.push(profile);
-                step_profile
-            }
-        } else {
-            Arc::new(StepProfile::new_disabled())
+        if !self.enabled {
+            return Arc::new(StepProfile::new_disabled());
         }
+        let profiles = self.substeps.read().unwrap();
+        if let Some(substep) = profiles.get(index) {
+            return match substep {
+                SubstepProfile::StepProfile(profile) => profile.clone(),
+                _ => panic!("{}", MISMATCHED_SUBSTEP_PROFILE_TYPE),
+            };
+        }
+        debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
+        drop(profiles);
+        let step_profile = Arc::new(StepProfile::new_enabled(description_getter()));
+        self.substeps.write().unwrap().push(SubstepProfile::StepProfile(step_profile.clone()));
+        step_profile
     }
 
     fn total_nanos(&self) -> u64 {
-        self.substeps.read().unwrap().iter().map(|substep_profile| substep_profile.total_nanos()).sum::<u64>()
+        self.substeps.read().unwrap().iter().map(SubstepProfile::total_nanos).sum()
     }
 }
 
 impl Display for PatternProfile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.description.as_ref().map(|inner| inner.as_str()).unwrap_or(""))?;
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.description.as_deref().unwrap_or(""))?;
         for (i, substep) in self.substeps.read().unwrap().iter().enumerate() {
             write!(f, "{} -- {}", i, substep)?;
         }
@@ -827,7 +800,7 @@ impl StepProfile {
     }
 
     pub fn total_nanos(&self) -> u64 {
-        self.data.as_ref().map(|data| data.nanos.load(Ordering::SeqCst)).unwrap_or(0)
+        self.data.as_ref().map_or(0, |data| data.nanos.load(Ordering::SeqCst))
     }
 }
 
@@ -841,7 +814,7 @@ impl Display for StepProfile {
 }
 
 impl Display for StepProfileData {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let rows = self.rows.load(Ordering::Relaxed);
         let micros = Duration::from_nanos(self.nanos.load(Ordering::Relaxed)).as_micros();
         let micros_per_row: f64 = micros as f64 / rows as f64;

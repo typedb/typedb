@@ -21,7 +21,7 @@ use error::{UnimplementedFeature, unimplemented_feature};
 use ir::pattern::expression::BuiltinConceptFunctionID;
 use itertools::Itertools;
 use lending_iterator::{LendingIterator, Peekable};
-use resource::profile::{PatternProfile, StepProfile};
+use resource::profile::StepProfile;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

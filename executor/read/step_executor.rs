@@ -22,7 +22,7 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::UnimplementedFeature;
 use ir::pipeline::function_signature::FunctionID;
 use itertools::Itertools;
-use resource::profile::{PatternProfile, QueryProfile, StageProfile};
+use resource::profile::{PatternProfile, QueryProfile};
 use storage::snapshot::ReadableSnapshot;
 use typeql::schema::definable::function::SingleSelector;
 
@@ -37,7 +37,6 @@ use crate::{
         tabled_call_executor::TabledCallExecutor,
     },
 };
-use crate::read::step_executor;
 
 #[derive(Debug)]
 pub enum StepExecutors {
@@ -199,7 +198,6 @@ pub(crate) fn create_executors_for_conjunction(
                 )
             }
             ExecutionStep::FunctionCall(function_call) => {
-                // NOTE: still create the profile so each step has an entry in the profile, even if unused
                 if let FunctionID::Builtin(builtin_id) = function_call.function_id {
                     let builtin_profile = pattern_profile.extend_or_get_step(index, || format!("{}", function_call));
                     let executor = BuiltinCallExecutor::new(
@@ -236,7 +234,6 @@ pub(crate) fn create_executors_for_conjunction(
                 }
             }
             ExecutionStep::Disjunction(step) => {
-                // NOTE: still create the profile so each step has an entry in the profile, even if unused
                 let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || format!("{}", step));
 
                 // I shouldn't need to pass recursive here since it's stratified
@@ -269,7 +266,6 @@ pub(crate) fn create_executors_for_conjunction(
                 steps.push(step);
             }
             ExecutionStep::Optional(step) => {
-                // NOTE: still create the profile so each step has an entry in the profile, even if unused
                 let subpattern_profile = pattern_profile.extend_or_get_subpattern(index, || format!("{}", step));
                 let inner = create_executors_for_conjunction(
                     snapshot,
@@ -361,8 +357,15 @@ pub(super) fn create_executors_for_function_pipeline_stages(
     // TODO: Do we need to remap according to the output_row_mapping? It's ignored currently
     match &executable_stages[at_index] {
         ExecutableStage::Match(conjunction_executable) => {
-            let stage_profile = query_profile.profile_stage(|| String::from("Match"), conjunction_executable.executable_id());
-            let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Conjunction"));
+            let stage_profile =
+                query_profile.profile_stage(|| String::from("Match"), conjunction_executable.executable_id());
+            let pattern_profile = stage_profile.create_or_get_pattern(|| {
+                format!(
+                    "Conjunction [id: {}]\n  ~ {}",
+                    conjunction_executable.executable_id(),
+                    conjunction_executable.planner_statistics()
+                )
+            });
             let mut executors = create_executors_for_conjunction(
                 snapshot,
                 thing_manager,
