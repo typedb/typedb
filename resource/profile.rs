@@ -419,7 +419,6 @@ impl CommitProfileData {
 
 #[derive(Debug)]
 pub struct QueryProfile {
-    description: Option<String>,
     compile_profile: CompileProfile,
     stage_profiles: RwLock<HashMap<u64, Arc<StageProfile>>>,
     enabled: bool,
@@ -427,21 +426,7 @@ pub struct QueryProfile {
 
 impl QueryProfile {
     pub fn new(enabled: bool) -> Self {
-        Self {
-            description: None,
-            compile_profile: CompileProfile::new(enabled),
-            stage_profiles: RwLock::new(HashMap::new()),
-            enabled,
-        }
-    }
-
-    fn new_subquery(description_fn: impl Fn() -> String) -> Self {
-        Self {
-            description: Some(description_fn()),
-            compile_profile: CompileProfile::new(true),
-            stage_profiles: RwLock::new(HashMap::new()),
-            enabled: true,
-        }
+        Self { compile_profile: CompileProfile::new(enabled), stage_profiles: RwLock::new(HashMap::new()), enabled }
     }
 
     pub fn is_enabled(&self) -> bool {
@@ -485,18 +470,7 @@ impl QueryProfile {
 impl Display for QueryProfile {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let total_micros = self.total_nanos() as f64 / 1000.0;
-        match self.description.as_deref() {
-            None => writeln!(
-                f,
-                "Query profile[measurements_enabled={}, total micros: {}]",
-                self.enabled, total_micros
-            )?,
-            Some(description) => writeln!(
-                f,
-                "Query profile[measurements_enabled={}, total micros: {}] - {}",
-                self.enabled, total_micros, description
-            )?,
-        }
+        writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
         writeln!(f, "{}", self.compile_profile)?;
         let stage_profiles = self.stage_profiles.read().unwrap();
         for (id, stage_profile) in stage_profiles.iter().sorted_by_key(|(id, _)| *id) {
@@ -665,7 +639,7 @@ impl Display for StageProfile {
 
 #[derive(Debug)]
 pub enum SubstepProfile {
-    QueryProfile(Arc<QueryProfile>), // function call
+    QueryProfile { description: String, profile: Arc<QueryProfile> }, // function call
     PatternProfile(Arc<PatternProfile>),
     StepProfile(Arc<StepProfile>),
 }
@@ -673,7 +647,7 @@ pub enum SubstepProfile {
 impl SubstepProfile {
     fn total_nanos(&self) -> u64 {
         match self {
-            Self::QueryProfile(profile) => profile.total_nanos(),
+            Self::QueryProfile { profile, .. } => profile.total_nanos(),
             Self::PatternProfile(profile) => profile.total_nanos(),
             Self::StepProfile(profile) => profile.total_nanos(),
         }
@@ -683,7 +657,10 @@ impl SubstepProfile {
 impl Display for SubstepProfile {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::QueryProfile(profile) => Display::fmt(profile, f),
+            Self::QueryProfile { description, profile } => {
+                writeln!(f, "Function call: {}", description)?;
+                Display::fmt(profile, f)
+            }
             Self::PatternProfile(profile) => Display::fmt(profile, f),
             Self::StepProfile(profile) => Display::fmt(profile, f),
         }
@@ -716,14 +693,17 @@ impl PatternProfile {
         let profiles = self.substeps.read().unwrap();
         if let Some(substep) = profiles.get(index) {
             return match substep {
-                SubstepProfile::QueryProfile(profile) => profile.clone(),
+                SubstepProfile::QueryProfile { profile, .. } => profile.clone(),
                 _ => panic!("{}", MISMATCHED_SUBSTEP_PROFILE_TYPE),
             };
         }
         debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
         drop(profiles);
-        let query_profile = Arc::new(QueryProfile::new_subquery(description_getter));
-        self.substeps.write().unwrap().push(SubstepProfile::QueryProfile(query_profile.clone()));
+        let query_profile = Arc::new(QueryProfile::new(true));
+        self.substeps.write().unwrap().push(SubstepProfile::QueryProfile {
+            description: description_getter(),
+            profile: query_profile.clone(),
+        });
         query_profile
     }
 
