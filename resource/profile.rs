@@ -32,22 +32,6 @@ fn write_indent(f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
     write!(f, "{:width$}", "", width = indent * INDENT_STEP)
 }
 
-/// Writes a (possibly multi-line) description with each line re-indented.
-/// The first line sits at `indent`; subsequent lines (e.g. `  ~ Cost: ...`)
-/// sit at `indent + 2` so they're visibly nested under the first line.
-fn write_description(f: &mut Formatter<'_>, indent: usize, description: &str) -> fmt::Result {
-    let mut lines = description.lines();
-    if let Some(first) = lines.next() {
-        write_indent(f, indent)?;
-        writeln!(f, "{}", first)?;
-    }
-    for line in lines {
-        write_indent(f, indent + 2)?;
-        writeln!(f, "{}", line.trim_start())?;
-    }
-    Ok(())
-}
-
 #[derive(Debug)]
 pub struct TransactionProfile {
     enabled: bool,
@@ -676,7 +660,8 @@ impl StageProfile {
 impl IndentDisplay for StageProfile {
     fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
         if let Some(description) = self.description.as_deref() {
-            write_description(f, indent, description)?;
+            write_indent(f, indent)?;
+            writeln!(f, "{}", description)?;
         }
         match self.pattern_profile.get() {
             None => {
@@ -709,13 +694,8 @@ impl IndentDisplay for SubstepProfile {
     fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
         match self {
             Self::QueryProfile { description, profile } => {
-                let mut lines = description.lines();
                 write_indent(f, indent)?;
-                writeln!(f, "Function call: {}", lines.next().unwrap_or(""))?;
-                for line in lines {
-                    write_indent(f, indent + 2)?;
-                    writeln!(f, "{}", line.trim_start())?;
-                }
+                writeln!(f, "Function call: {}", description)?;
                 profile.indent_fmt(f, indent + 1)
             }
             Self::PatternProfile(profile) => profile.indent_fmt(f, indent),
@@ -812,7 +792,8 @@ impl PatternProfile {
 impl IndentDisplay for PatternProfile {
     fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
         if let Some(description) = self.description.as_deref() {
-            write_description(f, indent, description)?;
+            write_indent(f, indent)?;
+            writeln!(f, "{}", description)?;
         }
         for (i, substep) in self.substeps.read().unwrap().iter().enumerate() {
             write_indent(f, indent)?;
@@ -886,7 +867,8 @@ impl IndentDisplay for StepProfileData {
         let micros = Duration::from_nanos(self.nanos.load(Ordering::Relaxed)).as_micros();
         let micros_per_row: f64 = micros as f64 / rows as f64;
         // TODO: print storage ops
-        write_description(f, indent, &self.description)?;
+        write_indent(f, indent)?;
+        writeln!(f, "{}", self.description)?;
         write_indent(f, indent + 1)?;
         writeln!(
             f,
