@@ -59,9 +59,9 @@ rust_test(
 )
 
 rust_test(
-    name = "test_profile",
-    crate_root = "profile.rs",
-    srcs = ["profile.rs"],
+    name = "test_query_profile",
+    crate_root = "query_profile.rs",
+    srcs = ["query_profile.rs"],
     deps = deps,
 )
 
@@ -72,7 +72,7 @@ rustfmt_test(
         ":test_fetch",
         ":test_unimplemented",
         ":test_pipeline_stages_limit",
-        ":test_profile",
+        ":test_query_profile",
     ],
     size = "small",
 )
