@@ -6,15 +6,11 @@
 
 use std::sync::Arc;
 
-use concept::type_::{
-    KindAPI, TypeAPI, annotation, attribute_type::AttributeTypeAnnotation, constraint::Constraint,
-    entity_type::EntityTypeAnnotation, object_type::ObjectType, relation_type::RelationTypeAnnotation,
-};
+use concept::type_::{KindAPI, TypeAPI, annotation::Annotation, constraint::Constraint, object_type::ObjectType};
 use cucumber::gherkin::Step;
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use itertools::Itertools;
 use macro_rules_attribute::apply;
-use params;
 use resource::profile::StorageCounters;
 
 use crate::{
@@ -261,7 +257,7 @@ pub async fn type_unset_annotation(
             let res = type_.unset_annotation(
                 Arc::get_mut(&mut tx.snapshot).unwrap(),
                 &tx.type_manager,
-                annotation_category.into_typedb(),
+                &annotation_category.into_typedb(),
             );
             may_error.check_concept_write_without_read_errors(&res);
         });
@@ -372,9 +368,7 @@ pub async fn type_declared_annotation_categories_contain(
                     .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
                     .unwrap()
                     .iter()
-                    .map(|annotation| {
-                        <AttributeTypeAnnotation as Into<annotation::Annotation>>::into(annotation.clone()).category()
-                    })
+                    .map(|annotation| Annotation::from(annotation.clone()).category())
                     .contains(&annotation_category.into_typedb());
                 assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
             }
@@ -385,9 +379,7 @@ pub async fn type_declared_annotation_categories_contain(
                     .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
                     .unwrap()
                     .iter()
-                    .map(|annotation| {
-                        <EntityTypeAnnotation as Into<annotation::Annotation>>::into(*annotation).category()
-                    })
+                    .map(|annotation| Annotation::from(annotation.clone()).category())
                     .contains(&annotation_category.into_typedb());
                 assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
             }
@@ -401,9 +393,7 @@ pub async fn type_declared_annotation_categories_contain(
                     .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
                     .unwrap()
                     .iter()
-                    .map(|annotation| {
-                        <RelationTypeAnnotation as Into<annotation::Annotation>>::into(*annotation).category()
-                    })
+                    .map(|annotation| Annotation::from(annotation.clone()).category())
                     .contains(&annotation_category.into_typedb());
                 assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
             }

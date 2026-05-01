@@ -17,7 +17,7 @@ async fn test_entity_type() {
     let path = "../typedb_behaviour+/concept/type/entitytype.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/concept/type/entitytype.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/concept/type/entitytype.feature";
 
     assert!(Context::test(path, true).await);
 }

@@ -104,6 +104,7 @@ macro_rules! concept_iterator {
             snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator>,
         }
 
+        #[allow(unexpected_cfgs, reason = "unimplemented function is left as a marker for future implementation")]
         #[allow(unused)]
         impl $name {
             pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator) -> Self {

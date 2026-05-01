@@ -899,7 +899,7 @@ dependencies = [
  "encoding",
  "error",
  "ir",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "resource",
  "serde",
  "storage",
@@ -924,7 +924,7 @@ dependencies = [
  "encoding",
  "error",
  "iterator",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "lending_iterator",
  "logger",
  "paste",
@@ -1237,7 +1237,7 @@ dependencies = [
  "fail_point",
  "function",
  "ir",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "logger",
  "options",
  "query",
@@ -1369,7 +1369,7 @@ dependencies = [
  "durability_test_common",
  "error",
  "fail_point",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "logger",
  "lz4",
  "rand 0.8.6",
@@ -1416,7 +1416,7 @@ dependencies = [
  "criterion",
  "durability",
  "error",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "lending_iterator",
  "logger",
  "primitive",
@@ -1519,7 +1519,7 @@ dependencies = [
  "function",
  "ir",
  "iterator",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "lending_iterator",
  "logger",
  "paste",
@@ -1542,7 +1542,7 @@ dependencies = [
 name = "fail_point"
 version = "0.0.0"
 dependencies = [
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "rand 0.8.6",
  "tracing",
 ]
@@ -1635,7 +1635,7 @@ dependencies = [
  "encoding",
  "error",
  "ir",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "logger",
  "primitive",
  "rand 0.8.6",
@@ -2136,7 +2136,7 @@ dependencies = [
  "futures",
  "hyper 0.14.32",
  "hyper-rustls 0.25.0",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "macro_rules_attribute",
  "options",
  "params",
@@ -2535,7 +2535,7 @@ dependencies = [
  "durability",
  "encoding",
  "error",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "primitive",
  "regex",
  "resource",
@@ -3268,7 +3268,7 @@ dependencies = [
  "cucumber",
  "encoding",
  "ir",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "regex",
  "storage",
  "test_utils",
@@ -3725,7 +3725,7 @@ dependencies = [
  "executor",
  "function",
  "ir",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "lending_iterator",
  "moka",
  "pprof",
@@ -4086,7 +4086,7 @@ dependencies = [
 name = "resource"
 version = "0.0.0"
 dependencies = [
- "itertools 0.10.5",
+ "itertools 0.14.0",
 ]
 
 [[package]]
@@ -4640,7 +4640,7 @@ dependencies = [
  "http 1.4.0",
  "hyper 0.14.32",
  "ir",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "jsonwebtoken",
  "lending_iterator",
  "logger",
@@ -4872,7 +4872,7 @@ dependencies = [
  "function",
  "futures",
  "ir",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "lending_iterator",
  "logger",
  "macro_rules_attribute",
@@ -4901,7 +4901,7 @@ dependencies = [
  "durability",
  "error",
  "fail_point",
- "itertools 0.10.5",
+ "itertools 0.14.0",
  "lending_iterator",
  "logger",
  "pprof",
@@ -4932,7 +4932,7 @@ dependencies = [
  "bincode",
  "durability",
  "durability_test_common",
- "itertools 0.10.5",
+ "itertools 0.14.0",
 ]
 
 [[package]]
@@ -5668,10 +5668,10 @@ checksum = "40ce102ab67701b8526c123c1bab5cbe42d7040ccfd0f64af1a385808d2f43de"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?rev=7029e9f036540ad75d9bdc3afb1207409741d42a#7029e9f036540ad75d9bdc3afb1207409741d42a"
+source = "git+https://github.com/typedb/typeql?rev=fc420c4f1f035211e46291bb0ae2e32626a5f12c#fc420c4f1f035211e46291bb0ae2e32626a5f12c"
 dependencies = [
  "chrono",
- "itertools 0.14.0",
+ "itertools 0.10.5",
  "pest",
  "pest_derive",
  "regex",

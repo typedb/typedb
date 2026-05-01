@@ -38,7 +38,8 @@ use crate::{
         Capability, Independent, KindAPI, Ordering, TypeAPI,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationDistinct,
-            AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
+            AnnotationDoc, AnnotationIndependent, AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex,
+            AnnotationUnique, AnnotationValues,
         },
         attribute_type::AttributeType,
         constraint::{
@@ -574,6 +575,12 @@ impl TypeReader {
                     Infix::PropertyAnnotationValues => {
                         Annotation::Values(<AnnotationValues as TypeVertexPropertyEncoding>::from_value_bytes(value))
                     }
+                    Infix::PropertyAnnotationDoc => {
+                        Annotation::Doc(<AnnotationDoc as TypeVertexPropertyEncoding>::from_value_bytes(value))
+                    }
+                    Infix::PropertyAnnotationMeta => {
+                        Annotation::Meta(<AnnotationMeta as TypeVertexPropertyEncoding>::from_value_bytes(value))
+                    }
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationUnique
                     | Infix::PropertyAnnotationKey
@@ -666,6 +673,12 @@ impl TypeReader {
                     }
                     Infix::PropertyAnnotationAbstract => {
                         Annotation::Abstract(<AnnotationAbstract as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                    }
+                    Infix::PropertyAnnotationDoc => {
+                        Annotation::Doc(<AnnotationDoc as TypeEdgePropertyEncoding>::from_value_bytes(value))
+                    }
+                    Infix::PropertyAnnotationMeta => {
+                        Annotation::Meta(<AnnotationMeta as TypeEdgePropertyEncoding>::from_value_bytes(value))
                     }
                     | Infix::_PropertyAnnotationLast
                     | Infix::PropertyAnnotationCascade

@@ -19,7 +19,10 @@ use crate::{
     thing::thing_manager::ThingManager,
     type_::{
         Capability,
-        annotation::{Annotation, AnnotationCardinality, AnnotationCategory, AnnotationError, DefaultFrom},
+        annotation::{
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
+            DefaultFrom,
+        },
         constraint::CapabilityConstraint,
         object_type::ObjectType,
         role_type::RoleType,
@@ -59,6 +62,8 @@ impl Plays {
             PlaysAnnotation::Cardinality(cardinality) => {
                 type_manager.set_plays_annotation_cardinality(snapshot, thing_manager, *self, cardinality)?
             }
+            PlaysAnnotation::Doc(doc) => type_manager.set_plays_annotation_doc(snapshot, *self, doc)?,
+            PlaysAnnotation::Meta(meta) => type_manager.set_plays_annotation_meta(snapshot, *self, meta)?,
         }
         Ok(())
     }
@@ -68,7 +73,7 @@ impl Plays {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        annotation_category: AnnotationCategory,
+        annotation_category: &AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
         let plays_annotation = PlaysAnnotation::try_getting_default(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
@@ -76,6 +81,8 @@ impl Plays {
             PlaysAnnotation::Cardinality(_) => {
                 type_manager.unset_plays_annotation_cardinality(snapshot, thing_manager, *self)?
             }
+            PlaysAnnotation::Doc(_) => type_manager.unset_plays_annotation_doc(snapshot, *self)?,
+            PlaysAnnotation::Meta(meta) => type_manager.unset_plays_annotation_meta(snapshot, *self, meta)?,
         }
         Ok(())
     }
@@ -176,6 +183,8 @@ impl Capability for Plays {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum PlaysAnnotation {
     Cardinality(AnnotationCardinality),
+    Doc(AnnotationDoc),
+    Meta(AnnotationMeta),
 }
 
 impl TryFrom<Annotation> for PlaysAnnotation {
@@ -183,6 +192,8 @@ impl TryFrom<Annotation> for PlaysAnnotation {
     fn try_from(annotation: Annotation) -> Result<PlaysAnnotation, AnnotationError> {
         match annotation {
             Annotation::Cardinality(annotation) => Ok(PlaysAnnotation::Cardinality(annotation)),
+            Annotation::Doc(annotation) => Ok(PlaysAnnotation::Doc(annotation)),
+            Annotation::Meta(annotation) => Ok(PlaysAnnotation::Meta(annotation)),
 
             | Annotation::Abstract(_)
             | Annotation::Independent(_)
@@ -203,6 +214,8 @@ impl From<PlaysAnnotation> for Annotation {
     fn from(val: PlaysAnnotation) -> Self {
         match val {
             PlaysAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
+            PlaysAnnotation::Doc(annotation) => Annotation::Doc(annotation),
+            PlaysAnnotation::Meta(annotation) => Annotation::Meta(annotation),
         }
     }
 }
@@ -210,11 +223,23 @@ impl From<PlaysAnnotation> for Annotation {
 impl PartialEq<Annotation> for PlaysAnnotation {
     fn eq(&self, annotation: &Annotation) -> bool {
         match annotation {
-            Annotation::Cardinality(other_cardinality) =>
-            {
-                #[allow(irrefutable_let_patterns, reason = "for consistency & extensibility")]
+            Annotation::Cardinality(other_cardinality) => {
                 if let Self::Cardinality(cardinality) = self {
                     cardinality == other_cardinality
+                } else {
+                    false
+                }
+            }
+            Annotation::Doc(other_doc) => {
+                if let Self::Doc(doc) = self {
+                    doc == other_doc
+                } else {
+                    false
+                }
+            }
+            Annotation::Meta(other_meta) => {
+                if let Self::Meta(meta) = self {
+                    meta == other_meta
                 } else {
                     false
                 }

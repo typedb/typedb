@@ -17,7 +17,7 @@ async fn test_write_delete() {
     let path = "../typedb_behaviour+/query/language/delete.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/language/delete.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/language/delete.feature";
 
     assert!(Context::test(path, true).await);
 }

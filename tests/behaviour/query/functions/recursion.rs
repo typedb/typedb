@@ -17,7 +17,7 @@ async fn test_functions_recursion() {
     let path = "../typedb_behaviour+/query/functions/recursion.feature";
 
     #[cfg(not(feature = "bazel"))]
-    let path = "bazel-typedb/external/typedb_behaviour/query/functions/recursion.feature";
+    let path = "bazel-typedb/external/typedb_behaviour+/query/functions/recursion.feature";
 
     assert!(Context::test(path, true).await);
 }
