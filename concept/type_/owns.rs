@@ -11,6 +11,7 @@ use encoding::{
     layout::prefix::Prefix,
 };
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -22,7 +23,7 @@ use crate::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationDoc, AnnotationError,
             AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
-            DefaultFrom,
+            DefaultFrom, HasAnnotationCategory, has_annotation_category,
         },
         attribute_type::AttributeType,
         constraint::CapabilityConstraint,
@@ -284,7 +285,7 @@ impl Capability for Owns {
     }
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, has_annotation_category!)]
 pub enum OwnsAnnotation {
     Distinct(AnnotationDistinct),
     Unique(AnnotationUnique),

@@ -10,7 +10,7 @@ use concept::{
     thing::thing_manager::ThingManager,
     type_::{
         KindAPI, Ordering, TypeAPI,
-        annotation::{Annotation, AnnotationError},
+        annotation::{Annotation, AnnotationError, HasAnnotationCategory},
         attribute_type::AttributeType,
         owns::Owns,
         plays::Plays,
@@ -996,7 +996,7 @@ fn type_convert_and_validate_annotation_redefinition_need<T: KindAPI>(
     })?;
 
     let definition_status =
-        get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
+        get_type_annotation_status(snapshot, type_manager, type_, &converted, &annotation.category())
             .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Err(RedefineError::TypeAnnotationNotDefined {

@@ -6,8 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    fmt,
-    fmt::Write,
+    fmt::{self, Write},
     sync::Arc,
 };
 
@@ -25,6 +24,7 @@ use encoding::{
     value::label::Label,
 };
 use lending_iterator::higher_order::Hkt;
+use macro_rules_attribute::derive;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -32,14 +32,13 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
-use super::{Capability, Ordering};
 use crate::{
     ConceptAPI, concept_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
     type_::{
-        KindAPI, TypeAPI,
-        annotation::{Annotation, AnnotationError},
+        Capability, KindAPI, Ordering, TypeAPI,
+        annotation::{Annotation, AnnotationCategory, AnnotationError, HasAnnotationCategory},
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
         plays::Plays,
@@ -312,8 +311,18 @@ impl fmt::Display for RoleType {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum RoleTypeAnnotation {}
+
+impl HasAnnotationCategory for RoleTypeAnnotation {
+    fn has_category(&self, _category: &AnnotationCategory) -> bool {
+        match *self {}
+    }
+
+    fn category(&self) -> AnnotationCategory {
+        match *self {}
+    }
+}
 
 impl TryFrom<Annotation> for RoleTypeAnnotation {
     type Error = AnnotationError;

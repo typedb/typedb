@@ -7,7 +7,10 @@
 use std::sync::Arc;
 
 use concept::type_::{
-    Capability, KindAPI, Ordering, TypeAPI, annotation::Annotation, constraint::Constraint, object_type::ObjectType,
+    Capability, KindAPI, Ordering, TypeAPI,
+    annotation::{Annotation, HasAnnotationCategory},
+    constraint::Constraint,
+    object_type::ObjectType,
 };
 use cucumber::gherkin::Step;
 use itertools::Itertools;
@@ -894,8 +897,7 @@ pub async fn relation_role_declared_annotation_categories_contain(
             .get_annotations_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
-            .map(|annotation| Annotation::from(annotation.clone()).category())
-            .contains(&parsed_annotation_category);
+            .any(|annotation| annotation.has_category(&parsed_annotation_category));
         assert_eq!(contains_or_doesnt.expected_contains(), actual_contains);
     });
 }
