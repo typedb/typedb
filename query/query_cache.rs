@@ -6,7 +6,7 @@
 
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
-    sync::Arc,
+    sync::{Arc, RwLock},
 };
 
 use answer::Type;
@@ -17,18 +17,24 @@ use ir::{
     translation::pipeline::TranslatedStage,
 };
 use moka::sync::{Cache, CacheBuilder};
-use resource::constants::database::{QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE};
+use resource::{
+    constants::database::{QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE},
+    perf_counters::QUERY_CACHE_FLUSH,
+};
 use structural_equality::StructuralEquality;
 
 #[derive(Debug)]
 pub struct QueryCache {
-    cache: Cache<IRQuery, ExecutablePipeline>,
+    cache: RwLock<Cache<IRQuery, ExecutablePipeline>>,
 }
 
 impl QueryCache {
     pub fn new() -> Self {
-        let cache = CacheBuilder::new(QUERY_PLAN_CACHE_SIZE).support_invalidation_closures().build();
-        QueryCache { cache }
+        QueryCache { cache: RwLock::new(Self::build_new_cache()) }
+    }
+
+    fn build_new_cache() -> Cache<IRQuery, ExecutablePipeline> {
+        CacheBuilder::new(QUERY_PLAN_CACHE_SIZE).support_invalidation_closures().build()
     }
 
     pub(crate) fn get(
@@ -38,7 +44,7 @@ impl QueryCache {
         fetch: Arc<Option<FetchObject>>,
     ) -> Option<ExecutablePipeline> {
         let key = IRQuery::new(preamble.clone(), stages, fetch);
-        self.cache.get(&key).map(|mut found| {
+        self.cache.read().unwrap().get(&key).map(|mut found| {
             let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();
             found.executable_functions.replace_preamble_parameters(replacement);
             found
@@ -53,13 +59,15 @@ impl QueryCache {
         pipeline: ExecutablePipeline,
     ) {
         let key = IRQuery::new(preamble, stages, fetch);
-        self.cache.insert(key, pipeline);
+        self.cache.read().unwrap().insert(key, pipeline);
     }
 
     pub fn may_evict(&self, new_statistics: &Statistics) {
         let new_statistics = new_statistics.clone(); // it's either this or clone the entire cache
         let _predicate_id = self
             .cache
+            .read()
+            .unwrap()
             .invalidate_entries_if(move |_, pipeline| {
                 let mut total_increase = 1.0;
                 let mut total_decrease = 1.0;
@@ -80,6 +88,12 @@ impl QueryCache {
                     || total_decrease >= QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION
             })
             .unwrap();
+    }
+
+    pub fn force_reset(&self, _statistics: &Statistics) {
+        let new_cache = Self::build_new_cache();
+        *self.cache.write().unwrap() = new_cache;
+        QUERY_CACHE_FLUSH.increment();
     }
 }
 

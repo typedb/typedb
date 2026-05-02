@@ -515,7 +515,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
         commit_profile.schema_update_statistics_keys_updated();
         schema.thing_statistics = Arc::new(thing_statistics);
 
-        database.force_reset_query_cache();
+        database.query_cache.force_reset(&schema.thing_statistics);
 
         *schema_commit_guard = schema;
         Ok(())
