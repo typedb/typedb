@@ -524,6 +524,6 @@ pub fn infer_types_for_test_only(
     block: &Block,
     is_write_stage: bool,
 ) -> Result<BlockAnnotations, TypeInferenceError> {
-    let empty_annotations = RunningVariableAnnotations { concepts: BTreeMap::new(), values: BTreeMap::new() };
+    let empty_annotations = RunningVariableAnnotations::empty();
     infer_types_for_block(ctx, &empty_annotations, block, is_write_stage)
 }

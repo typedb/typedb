@@ -26,7 +26,7 @@ use typeql::common::Span;
 use crate::annotation::{
     AnnotationError,
     function::{AnnotatedFunction, annotate_anonymous_function},
-    pipeline::{AnnotatedStage, RunningVariableAnnotations, annotate_stages_and_fetch},
+    pipeline::{AnnotatedStage, RunningVariableAnnotations, annotate_pipeline_stages},
     utils::{AnnotationContext, PipelineAnnotationContext},
 };
 
@@ -261,12 +261,15 @@ fn annotate_sub_fetch(
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
     let FetchListSubFetch { context, input_variables, stages, fetch } = sub_fetch;
     let PipelineTranslationContext { mut variable_registry, .. } = context;
-    let (annotated_stages, annotated_fetch) =
-        annotate_stages_and_fetch(ctx, stages, Some(fetch), input_annotations.clone())?;
+    let (plain_context, _old_registry, parameters) = ctx.to_plain_mut();
+    let mut local_pipeline_context = plain_context.for_pipeline(&mut variable_registry, parameters);
+    let (annotated_stages, output_annotations) =
+        annotate_pipeline_stages(&mut local_pipeline_context, stages, input_annotations.clone())?;
+    let annotated_fetch = annotate_fetch(ctx, fetch, &output_annotations)?;
     Ok(AnnotatedFetchListSubFetch {
         variable_registry,
         input_variables,
         stages: annotated_stages,
-        fetch: annotated_fetch.unwrap(),
+        fetch: annotated_fetch,
     })
 }

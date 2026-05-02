@@ -6,7 +6,7 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::{BTreeSet, HashMap},
     iter::zip,
     sync::Arc,
 };
@@ -37,7 +37,6 @@ use typeql::{
 use crate::{
     annotation::{
         FunctionAnnotationError, TypeInferenceError,
-        expression::compiled_expression::ExpressionValueType,
         pipeline::{
             AnnotatedStage, RunningVariableAnnotations, annotate_pipeline_stages, resolve_reducer_by_value_type,
         },
@@ -237,7 +236,7 @@ pub(crate) fn annotate_anonymous_function(
     debug_assert!(argument_labels.is_none());
     let argument_types_iter = arguments.iter().map(|var| {
         let arg_type = input_annotations
-            .get_param(var)
+            .get_as_parameter(var)
             .expect("The type annotations for the argument in the function call should be known by now");
         (*var, arg_type)
     });
@@ -273,7 +272,6 @@ fn annotate_function_impl(
         &mut ctx,
         stages.clone(),
         argument_annotations_from_declaration.clone(),
-        Some(return_operation.variables().as_ref()),
     )
     .map_err(|err| {
         Box::new(FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) })
@@ -360,7 +358,7 @@ fn annotate_signature_based_on_labels(
 fn resolve_return_operators(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     return_operation: &ReturnOperation,
-    output_annotations: &RunningVariableAnnotations,
+    last_stage_annotations: &RunningVariableAnnotations,
 ) -> Result<AnnotatedFunctionReturn, Box<FunctionAnnotationError>> {
     let return_ = match return_operation {
         ReturnOperation::Stream(variables, _) => AnnotatedFunctionReturn::Stream { variables: variables.clone() },
@@ -371,7 +369,7 @@ fn resolve_return_operators(
         ReturnOperation::ReduceReducer(reducers, source_span) => {
             let mut instructions = Vec::with_capacity(reducers.len());
             for &reducer in reducers {
-                let instruction = resolve_reducer_by_value_type(ctx, reducer, output_annotations, *source_span)
+                let instruction = resolve_reducer_by_value_type(ctx, reducer, last_stage_annotations, *source_span)
                     .map_err(|err| Box::new(FunctionAnnotationError::ReturnReduce { typedb_source: Box::new(err) }))?;
                 instructions.push(instruction);
             }
@@ -422,37 +420,17 @@ fn annotate_return(
     match return_operation {
         AnnotatedFunctionReturn::Stream { variables } | AnnotatedFunctionReturn::Single { variables, .. } => variables
             .iter()
-            .map(|&var| {
-                if let Some(arced_types) = final_stage_annotations.concepts.get(&var) {
-                    let types: &BTreeSet<Type> = arced_types;
-                    FunctionParameterAnnotation::Concept(types.clone())
-                } else if let Some(expression_value_type) = final_stage_annotations.values.get(&var) {
-                    FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())
-                } else {
-                    unreachable!("Could not find annotations for a function argument or return variable.")
-                }
+            .map(|var| {
+                final_stage_annotations.get_as_parameter(var).expect("Expected annotations for a return variable.")
             })
             .collect(),
         AnnotatedFunctionReturn::ReduceReducer { instructions } => instructions
             .iter()
             .map(|instruction| FunctionParameterAnnotation::Value(instruction.output_type()))
             .collect(),
-        AnnotatedFunctionReturn::ReduceCheck {} => vec![FunctionParameterAnnotation::Value(ValueType::Boolean)],
-    }
-}
-
-fn get_function_parameter<V: From<Variable> + Ord>(
-    variable: Variable,
-    body_variable_annotations: &BTreeMap<V, Arc<BTreeSet<Type>>>,
-    body_variable_value_types: &BTreeMap<Variable, ExpressionValueType>,
-) -> FunctionParameterAnnotation {
-    if let Some(arced_types) = body_variable_annotations.get(&variable.into()) {
-        let types: &BTreeSet<Type> = arced_types;
-        FunctionParameterAnnotation::Concept(types.clone())
-    } else if let Some(expression_value_type) = body_variable_value_types.get(&variable) {
-        FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())
-    } else {
-        unreachable!("Could not find annotations for a function argument or return variable.")
+        AnnotatedFunctionReturn::ReduceCheck {} => {
+            vec![FunctionParameterAnnotation::Value(ValueType::Boolean)]
+        }
     }
 }
 

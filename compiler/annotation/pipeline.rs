@@ -45,8 +45,8 @@ use crate::{
         },
         fetch::{AnnotatedFetch, annotate_fetch},
         function::{
-            AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions,
-            AnnotatedSchemaFunctions, FunctionParameterAnnotation, annotate_preamble_functions,
+            AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions, AnnotatedSchemaFunctions,
+            FunctionParameterAnnotation, annotate_preamble_functions,
         },
         match_inference::infer_types_for_block,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
@@ -126,35 +126,18 @@ pub fn annotate_preamble_and_pipeline(
         variable_registry,
         parameters,
     );
-    let input_annotations = RunningVariableAnnotations::from_iterator(zip([].into_iter(), [].into_iter()));
-    let (annotated_stages, annotated_fetch) =
-        annotate_stages_and_fetch(&mut ctx, translated_stages, translated_fetch, input_annotations)?;
-    Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
-}
-
-pub(crate) fn annotate_stages_and_fetch(
-    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
-    translated_stages: Vec<TranslatedStage>,
-    translated_fetch: Option<FetchObject>,
-    input_annotations: RunningVariableAnnotations,
-) -> Result<(Vec<AnnotatedStage>, Option<AnnotatedFetch>), AnnotationError> {
+    let input_annotations = RunningVariableAnnotations::empty();
     let (annotated_stages, output_annotations) =
-        annotate_pipeline_stages(ctx, translated_stages, input_annotations, None)?;
-    let annotated_fetch = match translated_fetch {
-        None => None,
-        Some(fetch) => {
-            let annotated = annotate_fetch(ctx, fetch, &output_annotations);
-            Some(annotated?)
-        }
-    };
-    Ok((annotated_stages, annotated_fetch))
+        annotate_pipeline_stages(&mut ctx, translated_stages, input_annotations)?;
+    let annotated_fetch =
+        translated_fetch.map(|fetch| annotate_fetch(&mut ctx, fetch, &output_annotations)).transpose()?;
+    Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
 }
 
 pub(crate) fn annotate_pipeline_stages(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     translated_stages: Vec<TranslatedStage>,
     input_annotations: RunningVariableAnnotations,
-    return_variables: Option<&[Variable]>, // Remove if anonymous vars can't cross stage boundaries
 ) -> Result<(Vec<AnnotatedStage>, RunningVariableAnnotations), AnnotationError> {
     let mut running_annotations = input_annotations;
     let mut annotated_stages = Vec::with_capacity(translated_stages.len());
@@ -172,9 +155,7 @@ pub(crate) fn annotate_pipeline_stages(
             .unwrap_or(&empty_constraint_annotations);
         let annotated_stage = annotate_stage(ctx, &mut running_annotations, running_constraint_annotations, stage)?;
 
-        let retain_running_var_fn =
-            |var: &Variable| var.is_named() || return_variables.map(|vars| vars.contains(var)).unwrap_or(false);
-        running_annotations.retain(retain_running_var_fn);
+        running_annotations.retain(|var| var.is_named());
         if let AnnotatedStage::Match { .. } = annotated_stage {
             latest_match_index = Some(annotated_stages.len());
         }
@@ -302,8 +283,9 @@ fn annotate_stage(
                 &delete_annotations,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-            let deleted_vars_set: HashSet<Variable> = deleted_variables.iter().copied().collect();
-            running_annotations.retain(|var| deleted_vars_set.contains(var));
+            deleted_variables.iter().for_each(|var| {
+                running_annotations.values.remove(var);
+            });
             Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations, source_span })
         }
         TranslatedStage::Sort(sort) => {
@@ -716,7 +698,7 @@ impl RunningVariableAnnotations {
         self.values.retain(|var, _| predicate(var));
     }
 
-    pub(crate) fn get_param(&self, variable: &Variable) -> Option<FunctionParameterAnnotation> {
+    pub(crate) fn get_as_parameter(&self, variable: &Variable) -> Option<FunctionParameterAnnotation> {
         needs_update_when_feature_is_implemented!(Lists);
         if let Some(types) = self.concepts.get(&variable) {
             Some(FunctionParameterAnnotation::Concept((**types).clone()))

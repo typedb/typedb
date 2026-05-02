@@ -132,19 +132,13 @@ fn validate_links_updatable(
 
     let input_relation_types = input_annotations_variables.get(&links.relation().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: ctx
-                .variable_registry
-                .get_variable_name_or_unnamed(links.relation().as_variable().unwrap())
-                .to_owned(),
+            variable: ctx.name_for_error(links.relation().as_variable().unwrap()),
             source_span: links.source_span(),
         },
     )?;
     let input_role_types = input_annotations_variables.get(&links.role_type().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: ctx
-                .variable_registry
-                .get_variable_name_or_unnamed(links.role_type().as_variable().unwrap())
-                .to_owned(),
+            variable: ctx.name_for_error(links.role_type().as_variable().unwrap()),
             source_span: links.source_span(),
         },
     )?;
