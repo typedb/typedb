@@ -14,7 +14,7 @@ use answer::variable_value::VariableValue;
 use compiler::{
     self, VariablePosition,
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_in_block,
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
         utils::PipelineAnnotationContext,
     },
 };
@@ -187,7 +187,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let insert_plan = compiler::executable::insert::executable::compile(
         &block,
@@ -269,7 +269,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
             &mut translation_context.variable_registry,
             &value_parameters,
         );
-        infer_types_in_block(&mut ctx, &block, false).unwrap()
+        infer_types_for_test_only(&mut ctx, &block, false).unwrap()
     };
 
     let typeql_delete =

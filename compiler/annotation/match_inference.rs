@@ -104,7 +104,7 @@ where
     }
 }
 
-pub(crate) fn infer_types_for_block(
+pub fn infer_types_for_block(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     previous_stage_annotations: &RunningVariableAnnotations,
     block: &Block,

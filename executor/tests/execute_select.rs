@@ -14,7 +14,7 @@ use answer::variable::Variable;
 use compiler::{
     ExecutorVariable, VariablePosition,
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_in_block,
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
         utils::PipelineAnnotationContext,
     },
     executable::{
@@ -223,7 +223,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
             &mut translation_context.variable_registry,
             &value_parameters,
         );
-        infer_types_in_block(&mut ctx, &entry, false).unwrap()
+        infer_types_for_test_only(&mut ctx, &entry, false).unwrap()
     };
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
@@ -314,7 +314,7 @@ fn unselected_named_vars_counted() {
             &mut translation_context.variable_registry,
             &value_parameters,
         );
-        infer_types_in_block(&mut ctx, &entry, false).unwrap()
+        infer_types_for_test_only(&mut ctx, &entry, false).unwrap()
     };
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
@@ -418,7 +418,7 @@ fn cartesian_named_counted_checked() {
             &mut translation_context.variable_registry,
             &value_parameters,
         );
-        infer_types_in_block(&mut ctx, &entry, false).unwrap()
+        infer_types_for_test_only(&mut ctx, &entry, false).unwrap()
     };
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 

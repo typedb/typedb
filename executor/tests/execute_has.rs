@@ -14,7 +14,7 @@ use answer::variable::Variable;
 use compiler::{
     ExecutorVariable, VariablePosition,
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_in_block,
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
         utils::PipelineAnnotationContext,
     },
     executable::{
@@ -196,7 +196,7 @@ fn traverse_has_unbounded_sorted_from() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -288,7 +288,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person_1, var_person_2, var_name], [var_person_type, var_name_type]);
@@ -393,7 +393,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -476,7 +476,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -580,7 +580,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =

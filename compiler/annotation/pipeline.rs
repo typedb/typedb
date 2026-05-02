@@ -689,7 +689,7 @@ pub struct RunningVariableAnnotations {
 }
 
 impl RunningVariableAnnotations {
-    pub(crate) fn empty() -> Self {
+    pub fn empty() -> Self {
         Self { concepts: BTreeMap::new(), values: BTreeMap::new() }
     }
 

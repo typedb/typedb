@@ -16,7 +16,7 @@ use compiler::{
     ExecutorVariable, VariablePosition,
     annotation::{
         function::EmptyAnnotatedFunctionSignatures,
-        match_inference::infer_types_in_block,
+        match_inference::infer_types_for_test_only,
         type_annotations::TypeAnnotations,
         utils::PipelineAnnotationContext,
     },
@@ -436,7 +436,7 @@ fn get_type_annotations(
         &mut translation_context.variable_registry,
         value_parameters,
     );
-    infer_types_in_block(&mut ctx, entry, false)
+    infer_types_for_test_only(&mut ctx, entry, false)
         .unwrap()
         .type_annotations_of(entry.conjunction())
         .unwrap()

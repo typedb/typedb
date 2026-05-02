@@ -13,7 +13,7 @@ use answer::variable::Variable;
 use compiler::{
     self, ExecutorVariable, VariablePosition,
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_in_block,
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
         utils::PipelineAnnotationContext,
     },
     executable::{
@@ -130,7 +130,7 @@ fn traverse_isa_unbounded_sorted_thing() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_dog, var_dog_type], []);
@@ -204,7 +204,7 @@ fn traverse_isa_unbounded_sorted_type() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_dog, var_dog_type], []);
@@ -282,7 +282,7 @@ fn traverse_isa_bounded_thing() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -374,7 +374,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_dog, var_dog_type], []);
@@ -448,7 +448,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_dog, var_dog_type], []);
@@ -526,7 +526,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -620,7 +620,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
@@ -714,7 +714,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_thing], []);
@@ -789,7 +789,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_thing], []);

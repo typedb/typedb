@@ -13,7 +13,7 @@ use answer::variable::Variable;
 use compiler::{
     ExecutorVariable, VariablePosition,
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_in_block,
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
         utils::PipelineAnnotationContext,
     },
     executable::{
@@ -346,7 +346,7 @@ fn traverse_index_from_unbound() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
     let value_parameters = Arc::new(value_parameters);
 
@@ -598,7 +598,7 @@ fn traverse_index_from_bound() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
@@ -760,7 +760,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let block_annotations = infer_types_in_block(&mut ctx, &entry, false).unwrap();
+    let block_annotations = infer_types_for_test_only(&mut ctx, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(

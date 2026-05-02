@@ -12,7 +12,7 @@ use std::{
 use compiler::{
     annotation::{
         expression::block_compiler::compile_expressions, function::EmptyAnnotatedFunctionSignatures,
-        match_inference::infer_types_in_block, utils::PipelineAnnotationContext,
+        match_inference::infer_types_for_test_only, utils::PipelineAnnotationContext,
     },
     executable::{
         function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
@@ -135,7 +135,7 @@ fn test_has_planning_traversal() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let entry_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -223,7 +223,7 @@ fn test_expression_planning_traversal() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let entry_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let compiled_expressions = compile_expressions(
         &*snapshot,
@@ -321,7 +321,7 @@ fn test_links_planning_traversal() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let entry_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -415,7 +415,7 @@ fn test_links_intersection() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let entry_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -500,7 +500,7 @@ fn test_negation_planning_traversal() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let entry_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -606,7 +606,7 @@ fn test_forall_planning_traversal() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let entry_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -699,7 +699,7 @@ fn test_named_var_select() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let entry_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -791,7 +791,7 @@ fn test_disjunction_planning_traversal() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let entry_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -887,7 +887,7 @@ fn test_disjunction_planning_nested_negations() {
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let entry_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -1048,7 +1048,7 @@ fn compile_query(
         &mut translation_context.variable_registry,
         &value_parameters,
     );
-    let entry_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     compiler::executable::match_::planner::compile(
         &block,
