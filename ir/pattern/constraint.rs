@@ -76,6 +76,111 @@ impl Constraints {
             acc
         })
     }
+
+    pub(super) fn make_variables_unique(
+        &mut self,
+        variable_registry: &mut VariableRegistry,
+    ) -> Result<
+        (Vec<Constraint<Variable>>, HashMap<Constraint<Variable>, Constraint<Variable>>, HashMap<Variable, Variable>),
+        Box<RepresentationError>,
+    > {
+        let mut check_collector: Vec<Constraint<Variable>> = Vec::new();
+        let mut constraint_mapping = HashMap::new();
+        let mut variable_mapping = HashMap::new();
+        let mut replace_with_anonymous_var = |vertex: &mut Vertex<Variable>| {
+            debug_assert!(vertex.is_variable());
+            if let Vertex::Variable(var) = vertex {
+                let old_var = *var;
+                *var = variable_registry.create_anonymous_variable_copying(old_var)?;
+                let category = variable_registry.get_variable_category(old_var).expect("Expected category");
+                let check = if matches!(category, VariableCategory::Value | VariableCategory::ValueList) {
+                    debug_assert!(false, "Unreachable due to earlier checks");
+                    Comparison::new(Vertex::Variable(old_var), Vertex::Variable(*var), Comparator::Equal, None).into()
+                } else {
+                    Is::new(old_var, *var, None).into()
+                };
+                variable_mapping.insert(*var, old_var);
+                check_collector.push(check);
+            }
+            Ok::<(), Box<RepresentationError>>(())
+        };
+
+        for constraint in &mut self.constraints {
+            match constraint {
+                Constraint::Sub(sub) => {
+                    if sub.subtype == sub.supertype && sub.supertype.is_variable() {
+                        let old_sub = sub.clone();
+                        replace_with_anonymous_var(&mut sub.supertype)?;
+                        constraint_mapping.insert(sub.clone().into(), old_sub.into());
+                    }
+                }
+                Constraint::Links(links) => {
+                    if links.player == links.relation {
+                        let old_links = links.clone();
+                        replace_with_anonymous_var(&mut links.relation)?;
+                        constraint_mapping.insert(links.clone().into(), old_links.into());
+                    }
+                }
+                Constraint::IndexedRelation(indexed) => {
+                    let mut old_indexed: Option<IndexedRelation<Variable>> = None;
+                    if indexed.player_1 == indexed.player_2 {
+                        old_indexed.get_or_insert_with(|| indexed.clone());
+                        replace_with_anonymous_var(&mut indexed.player_2)?;
+                    }
+                    if indexed.player_1 == indexed.relation {
+                        old_indexed.get_or_insert_with(|| indexed.clone());
+                        replace_with_anonymous_var(&mut indexed.relation)?;
+                    }
+                    if indexed.player_2 == indexed.relation {
+                        old_indexed.get_or_insert_with(|| indexed.clone());
+                        replace_with_anonymous_var(&mut indexed.relation)?;
+                    }
+                    if indexed.role_type_1 == indexed.role_type_2 {
+                        old_indexed.get_or_insert_with(|| indexed.clone());
+                        replace_with_anonymous_var(&mut indexed.role_type_2)?;
+                    }
+                    if let Some(old_indexed) = old_indexed {
+                        constraint_mapping.insert(indexed.clone().into(), old_indexed.into());
+                    }
+                }
+                Constraint::FunctionCallBinding(func_call) => {
+                    let mut old_call: Option<FunctionCallBinding<Variable>> = None;
+                    for i in 0..func_call.assigned.len() {
+                        for j in i + 1..func_call.assigned.len() {
+                            if func_call.assigned[i] == func_call.assigned[j] {
+                                old_call.get_or_insert_with(|| func_call.clone().into());
+                                replace_with_anonymous_var(&mut func_call.assigned[j])?;
+                            }
+                        }
+                    }
+                    if let Some(old_call) = old_call {
+                        debug_assert!(false, "unreachable/add a test since this was banned upstream.");
+                        constraint_mapping.insert(func_call.clone().into(), old_call.into());
+                    }
+                }
+                Constraint::ExpressionBinding(binding) => {
+                    debug_assert!(binding.ids_assigned().count() == 1);
+                }
+                Constraint::Is(_)
+                | Constraint::Has(_)
+                | Constraint::Kind(_)
+                | Constraint::Label(_)
+                | Constraint::RoleName(_)
+                | Constraint::Isa(_)
+                | Constraint::Iid(_)
+                | Constraint::Owns(_)
+                | Constraint::Relates(_)
+                | Constraint::Plays(_)
+                | Constraint::Value(_)
+                | Constraint::Comparison(_)
+                | Constraint::LinksDeduplication(_)
+                | Constraint::Unsatisfiable(_) => {}
+            }
+        }
+        self.constraints.extend_from_slice(&check_collector);
+
+        Ok((check_collector, constraint_mapping, variable_mapping))
+    }
 }
 
 impl StructuralEquality for Constraints {
