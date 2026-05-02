@@ -17,16 +17,18 @@ use resource::{
 use crate::{
     MVCCStorage, StorageCommitError,
     durability_client::DurabilityClient,
-    isolation_manager::{CommitRecord, CommitType, ReaderDropGuard},
+    isolation_manager::ReaderDropGuard,
     iterator::MVCCReadError,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
+    record::{CommitRecord, CommitType},
     sequence_number::SequenceNumber,
     snapshot::{
         buffer::{BufferRangeIterator, OperationsBuffer},
         iterator::SnapshotRangeIterator,
         lock::LockType,
+        snapshot_id::SnapshotId,
         write::Write,
     },
 };
@@ -49,6 +51,8 @@ pub trait ReadableSnapshot {
     const IMMUTABLE_SCHEMA: bool;
 
     fn open_sequence_number(&self) -> SequenceNumber;
+
+    fn id(&self) -> SnapshotId;
 
     fn get<const INLINE_BYTES: usize>(
         &self,
@@ -205,10 +209,15 @@ where
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
 
     fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord);
+
+    fn has_changes(&self) -> bool {
+        !self.operations().is_writes_empty() || !self.operations().locks_empty()
+    }
 }
 
 pub struct ReadSnapshot<D> {
     open_sequence_number: SequenceNumber,
+    id: SnapshotId,
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
 }
@@ -222,10 +231,8 @@ impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
 impl<D> ReadSnapshot<D> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
-        ReadSnapshot { storage, open_sequence_number, iterator_pool: IteratorPool::new() }
+        ReadSnapshot { open_sequence_number, id: SnapshotId::new(), iterator_pool: IteratorPool::new(), storage }
     }
-
-    pub fn close_resources(self) {}
 }
 
 impl<D> ReadableSnapshot for ReadSnapshot<D> {
@@ -233,6 +240,10 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
 
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
+    }
+
+    fn id(&self) -> SnapshotId {
+        self.id
     }
 
     fn get<const INLINE_BYTES: usize>(
@@ -300,8 +311,9 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
 }
 
 pub struct WriteSnapshot<D> {
-    operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
+    id: SnapshotId,
+    operations: OperationsBuffer,
     iterator_pool: IteratorPool, // Pool must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
     reader_guard: ReaderDropGuard,
@@ -309,30 +321,42 @@ pub struct WriteSnapshot<D> {
 
 impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct(type_name::<Self>()).field("open_sequence_number", &self.open_sequence_number).finish()
+        f.debug_struct(type_name::<Self>())
+            .field("open_sequence_number", &self.open_sequence_number)
+            .field("id", &self.id)
+            .finish()
     }
 }
 
 impl<D> WriteSnapshot<D> {
-    pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
+    pub(crate) fn new_with_open_sequence_number(
+        storage: Arc<MVCCStorage<D>>,
+        open_sequence_number: SequenceNumber,
+    ) -> Self {
+        Self::new(storage, OperationsBuffer::new(), open_sequence_number, None)
+    }
+
+    pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
+        let open_sequence_number = commit_record.open_sequence_number();
+        let id = Some(commit_record.snapshot_id());
+        Self::new(storage, commit_record.into_operations(), open_sequence_number, id)
+    }
+
+    fn new(
+        storage: Arc<MVCCStorage<D>>,
+        operations: OperationsBuffer,
+        open_sequence_number: SequenceNumber,
+        id: Option<SnapshotId>,
+    ) -> Self {
         let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
         WriteSnapshot {
             storage,
-            operations: OperationsBuffer::new(),
+            operations,
             open_sequence_number,
+            id: id.unwrap_or_else(|| SnapshotId::new()),
             iterator_pool: IteratorPool::new(),
             reader_guard,
         }
-    }
-
-    pub fn new_with_operations(
-        storage: Arc<MVCCStorage<D>>,
-        open_sequence_number: SequenceNumber,
-        operations: OperationsBuffer,
-    ) -> impl ReadableSnapshot {
-        // TODO: do we need this in cluster?
-        let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
-        WriteSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new(), reader_guard }
     }
 }
 
@@ -341,6 +365,10 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
 
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
+    }
+
+    fn id(&self) -> SnapshotId {
+        self.id
     }
 
     /// Get the Value for the key, returning an empty Option if it does not exist
@@ -444,25 +472,27 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
-        if self.operations.is_writes_empty() && self.operations.locks_empty() {
-            Ok(None)
+        if self.has_changes() {
+            self.storage
+                .clone()
+                .snapshot_commit(self, commit_profile)
+                .map(Some)
+                .map_err(|typedb_source| SnapshotError::Commit { typedb_source })
         } else {
-            match self.storage.clone().snapshot_commit(self, commit_profile) {
-                Ok(sequence_number) => Ok(Some(sequence_number)),
-                Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
-            }
+            Ok(None)
         }
     }
 
     fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
-        let Self { operations, open_sequence_number, reader_guard, iterator_pool: _, storage: _ } = self;
-        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Data))
+        let Self { operations, open_sequence_number, id, reader_guard, iterator_pool: _, storage: _ } = self;
+        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Data, id))
     }
 }
 
 pub struct SchemaSnapshot<D> {
-    operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
+    id: SnapshotId,
+    operations: OperationsBuffer,
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
     reader_guard: ReaderDropGuard,
@@ -470,30 +500,42 @@ pub struct SchemaSnapshot<D> {
 
 impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct(type_name::<Self>()).field("open_sequence_number", &self.open_sequence_number).finish()
+        f.debug_struct(type_name::<Self>())
+            .field("open_sequence_number", &self.open_sequence_number)
+            .field("id", &self.id)
+            .finish()
     }
 }
 
 impl<D> SchemaSnapshot<D> {
-    pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
+    pub(crate) fn new_with_open_sequence_number(
+        storage: Arc<MVCCStorage<D>>,
+        open_sequence_number: SequenceNumber,
+    ) -> Self {
+        Self::new(storage, OperationsBuffer::new(), open_sequence_number, None)
+    }
+
+    pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
+        let open_sequence_number = commit_record.open_sequence_number();
+        let id = Some(commit_record.snapshot_id());
+        Self::new(storage, commit_record.into_operations(), open_sequence_number, id)
+    }
+
+    fn new(
+        storage: Arc<MVCCStorage<D>>,
+        operations: OperationsBuffer,
+        open_sequence_number: SequenceNumber,
+        id: Option<SnapshotId>,
+    ) -> Self {
         let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
         SchemaSnapshot {
             storage,
-            operations: OperationsBuffer::new(),
+            operations,
             open_sequence_number,
+            id: id.unwrap_or_else(|| SnapshotId::new()),
             iterator_pool: IteratorPool::new(),
             reader_guard,
         }
-    }
-
-    pub fn new_with_operations(
-        storage: Arc<MVCCStorage<D>>,
-        open_sequence_number: SequenceNumber,
-        operations: OperationsBuffer,
-    ) -> impl ReadableSnapshot {
-        // TODO: does cluster need this?
-        let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
-        SchemaSnapshot { storage, operations, open_sequence_number, iterator_pool: IteratorPool::new(), reader_guard }
     }
 }
 
@@ -502,6 +544,10 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
 
     fn open_sequence_number(&self) -> SequenceNumber {
         self.open_sequence_number
+    }
+
+    fn id(&self) -> SnapshotId {
+        self.id
     }
 
     /// Get the Value for the key, returning an empty Option if it does not exist
@@ -604,21 +650,21 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
 }
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
-    // TODO: extract these two methods into separate trait
     fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
-        if self.operations.is_writes_empty() && self.operations.locks_empty() {
-            Ok(None)
+        if self.has_changes() {
+            self.storage
+                .clone()
+                .snapshot_commit(self, commit_profile)
+                .map(Some)
+                .map_err(|typedb_source| SnapshotError::Commit { typedb_source })
         } else {
-            match self.storage.clone().snapshot_commit(self, commit_profile) {
-                Ok(sequence_number) => Ok(Some(sequence_number)),
-                Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
-            }
+            Ok(None)
         }
     }
 
     fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
-        let Self { operations, open_sequence_number, reader_guard, iterator_pool: _, storage: _ } = self;
-        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Schema))
+        let Self { operations, open_sequence_number, reader_guard, id, iterator_pool: _, storage: _ } = self;
+        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Schema, id))
     }
 }
 

@@ -33,14 +33,17 @@ use typedb_protocol::{
     },
 };
 
-use crate::service::{
-    grpc::{
-        diagnostics::run_with_diagnostics_async,
-        error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
-        migration::item::{decode_checksums, decode_migration_value},
-        response_builders::database_manager::database_import_res_done,
+use crate::{
+    error::LocalServerStateError,
+    service::{
+        grpc::{
+            diagnostics::run_with_diagnostics_async,
+            error::{IntoGrpcStatus, ProtocolError},
+            migration::item::{decode_checksums, decode_migration_value},
+            response_builders::database_manager::database_import_res_done,
+        },
+        import_service::DatabaseImportServiceError,
     },
-    import_service::DatabaseImportServiceError,
 };
 
 pub(crate) const IMPORT_RESPONSE_BUFFER_SIZE: usize = 1;
@@ -49,7 +52,7 @@ const ITEMS_LOG_INTERVAL: u64 = 1_000_000;
 type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 
 #[derive(Debug)]
-pub(crate) struct DatabaseImportService {
+pub struct DatabaseImportService {
     database_manager: Arc<DatabaseManager>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     request_stream: Streaming<ProtocolClient>,
@@ -122,21 +125,17 @@ impl DatabaseImportService {
                 Ok(Break(()))
             }
             Some(Ok(message)) => match message.client {
-                None => {
-                    return Err(ProtocolError::MissingField {
-                        name: "client",
-                        description: "Database import message must contain a client request.",
-                    }
-                    .into_status());
+                None => Err(ProtocolError::MissingField {
+                    name: "client",
+                    description: "Database import message must contain a client request.",
                 }
+                .into_status()),
                 Some(client) => match client.client {
-                    None => {
-                        return Err(ProtocolError::MissingField {
-                            name: "client",
-                            description: "Database import message must contain a request.",
-                        }
-                        .into_status());
+                    None => Err(ProtocolError::MissingField {
+                        name: "client",
+                        description: "Database import message must contain a request.",
                     }
+                    .into_status()),
                     Some(client) => self.handle_request(client).await,
                 },
             },
@@ -155,19 +154,21 @@ impl DatabaseImportService {
                     Some(name.clone()),
                     ActionKind::DatabasesImport,
                     || async {
-                        self.handle_database_schema(name, schema)
-                            .await
-                            .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+                        self.handle_database_schema(name, schema).await.map_err(|typedb_source| {
+                            LocalServerStateError::DatabaseImport { typedb_source }.into_status()
+                        })
                     },
                 )
                 .await
             }
-            Client::ReqPart(ReqPart { items }) => {
-                self.handle_items(items).await.map_err(|typedb_source| typedb_source.into_error_message().into_status())
-            }
-            Client::Done(Done {}) => {
-                self.handle_done().await.map_err(|typedb_source| typedb_source.into_error_message().into_status())
-            }
+            Client::ReqPart(ReqPart { items }) => self
+                .handle_items(items)
+                .await
+                .map_err(|typedb_source| LocalServerStateError::DatabaseImport { typedb_source }.into_status()),
+            Client::Done(Done {}) => self
+                .handle_done()
+                .await
+                .map_err(|typedb_source| LocalServerStateError::DatabaseImport { typedb_source }.into_status()),
         }
     }
 
@@ -203,7 +204,9 @@ impl DatabaseImportService {
     ) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         let database_importer = match self.database_importer.as_mut() {
             Some(database_importer) => database_importer,
-            None => return Err(DatabaseImportServiceError::DatabaseNotFoundForItems {}),
+            None => {
+                return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "data loading".to_string() });
+            }
         };
 
         for item in items {
@@ -222,7 +225,9 @@ impl DatabaseImportService {
     async fn handle_done(&mut self) -> Result<ControlFlow<(), ()>, DatabaseImportServiceError> {
         let database_importer = match &mut self.database_importer {
             Some(database_importer) => database_importer,
-            None => return Err(DatabaseImportServiceError::DatabaseNotFoundForDone {}),
+            None => {
+                return Err(DatabaseImportServiceError::ImportDatabaseNotFound { phase: "finalisation".to_string() });
+            }
         };
 
         event!(Level::DEBUG, "Finalising the imported database...");
@@ -268,7 +273,7 @@ impl DatabaseImportService {
         use typedb_protocol::migration::item;
         let MigrationItemProto { item } = item_proto;
         let Some(item) = item else {
-            return Err(DatabaseImportServiceError::EmptyItem {});
+            return Err(DatabaseImportServiceError::ImportEmptyItem {});
         };
 
         match item {

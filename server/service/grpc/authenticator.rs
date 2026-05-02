@@ -13,20 +13,18 @@ use tower::{Layer, Service};
 
 use crate::{
     authentication::authenticate,
-    service::grpc::{
-        diagnostics::run_with_diagnostics_async,
-        error::{IntoGrpcStatus, IntoProtocolErrorMessage},
-    },
-    state::BoxServerState,
+    error::LocalServerStateError,
+    service::grpc::{diagnostics::run_with_diagnostics_async, error::IntoGrpcStatus},
+    state::ServerState,
 };
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
-    server_state: Arc<BoxServerState>,
+    server_state: Arc<ServerState>,
 }
 
 impl Authenticator {
-    pub(crate) fn new(server_state: Arc<BoxServerState>) -> Self {
+    pub(crate) fn new(server_state: Arc<ServerState>) -> Self {
         Self { server_state }
     }
 }
@@ -40,7 +38,7 @@ impl Authenticator {
             || async {
                 authenticate(self.server_state.clone(), request)
                     .await
-                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+                    .map_err(|typedb_source| LocalServerStateError::AuthenticationError { typedb_source }.into_status())
             },
         )
         .await

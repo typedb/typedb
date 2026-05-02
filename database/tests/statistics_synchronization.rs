@@ -16,12 +16,12 @@ use database::{
     Database,
     database_manager::DatabaseManager,
     query::{execute_schema_query, execute_write_query_in_write},
-    transaction::{TransactionSchema, TransactionWrite},
+    transaction::{CommitIntent, TransactionSchema, TransactionWrite},
 };
 use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions};
 use storage::durability_client::WALClient;
-use test_utils::{create_tmp_dir, init_logging};
+use test_utils::{create_tmp_storage_dir, init_logging};
 
 const DB_NAME: &str = "stats-recovery";
 const SCHEMA: &str = r#"define
@@ -37,7 +37,7 @@ const OPS_PER_BATCH: usize = 10;
 #[test]
 fn statistics_synchronization_under_concurrent_load() {
     init_logging();
-    let tmp_dir = create_tmp_dir();
+    let tmp_dir = create_tmp_storage_dir();
     let total_batches = NUM_THREADS * BATCHES_PER_THREAD;
     let total_persons = total_batches * OPS_PER_BATCH;
     // Each person is given a unique name and a unique age, so attributes never
@@ -54,7 +54,8 @@ fn statistics_synchronization_under_concurrent_load() {
         let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
         let (tx, result) = execute_schema_query(tx, schema_query, SCHEMA.to_string());
         result.unwrap();
-        tx.commit().1.unwrap();
+        let (mut profile, intent) = tx.finalise();
+        intent.unwrap().commit(profile.commit_profile()).unwrap();
 
         let mut handles = Vec::with_capacity(NUM_THREADS);
         for thread_id in 0..NUM_THREADS {
@@ -100,5 +101,6 @@ fn run_insert_batch(database: &Arc<Database<WALClient>>, batch_id: usize) {
         result.unwrap();
         tx = returned_tx;
     }
-    tx.commit().1.unwrap();
+    let (mut profile, intent) = tx.finalise();
+    intent.unwrap().commit(profile.commit_profile()).unwrap();
 }

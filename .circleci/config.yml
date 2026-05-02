@@ -391,49 +391,48 @@ jobs:
           apt install -y git
           git push --delete https://$REPO_GITHUB_TOKEN@github.com/typedb/typedb.git $CIRCLE_BRANCH
 
-
 workflows:
   typedb-snapshot:
     jobs:
       - test-deploy-snapshot-linux-x86_64:
           filters:
             branches:
-              only: [ master, bazel-8-upgrade, bazel-8-upgrade-v2 ]
+              only: [ master ]
 
       - test-deploy-snapshot-linux-arm64:
           filters:
             branches:
-              only: [ master, bazel-8-upgrade, bazel-8-upgrade-v2 ]
+              only: [ master ]
 
       - test-deploy-snapshot-mac-x86_64:
           filters:
             branches:
-              only: [ master, bazel-8-upgrade, bazel-8-upgrade-v2 ]
+              only: [ master ]
 
       - test-deploy-snapshot-mac-arm64:
           filters:
             branches:
-              only: [ master, bazel-8-upgrade, bazel-8-upgrade-v2 ]
+              only: [ master ]
 
       - test-deploy-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [ master, bazel-8-upgrade, bazel-8-upgrade-v2 ]
+              only: [ master ]
 
       - deploy-docker-snapshot-x86_64:
           filters:
             branches:
-              only: [ master, bazel-8-upgrade, bazel-8-upgrade-v2 ]
+              only: [ master ]
 
       - deploy-docker-snapshot-arm64:
           filters:
             branches:
-              only: [ master, bazel-8-upgrade, bazel-8-upgrade-v2 ]
+              only: [ master ]
 
       - deploy-docker-snapshot-multiarch:
           filters:
             branches:
-              only: [ master, bazel-8-upgrade, bazel-8-upgrade-v2 ]
+              only: [ master ]
           requires:
             - deploy-docker-snapshot-x86_64
             - deploy-docker-snapshot-arm64

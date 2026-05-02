@@ -37,10 +37,10 @@ use serde::{Deserialize, Serialize};
 use storage::{
     MVCCStorage,
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
-    isolation_manager::CommitType,
     iterator::MVCCReadError,
     key_value::{StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
+    record::CommitType,
     recovery::commit_recovery::{RecoveryCommitStatus, StorageRecoveryError, load_commit_data_from_with_context},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},

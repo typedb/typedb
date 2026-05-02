@@ -35,7 +35,7 @@ impl UserManager {
         self.transaction_util.read_transaction(|tx| {
             user_repository::get(tx, username).map_err(|query_error| match query_error {
                 SystemDBError::IllegalQueryInput { .. } => UserGetError::IllegalUsername {},
-                SystemDBError::EmptyUpdate { .. } => UserGetError::Unexpected {},
+                SystemDBError::EmptyUpdate { .. } | SystemDBError::QueryFailed { .. } => UserGetError::Unexpected {},
             })
         })
     }
@@ -60,14 +60,14 @@ impl UserManager {
         }
         let create_result = self
             .transaction_util
-            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::create(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, user, credential)
             })
             .1;
         match create_result {
             Ok(Ok(())) => Ok(()),
-            Ok(Err(_query_error)) => Err(UserCreateError::IllegalUsername {}),
-            Err(_commit_error) => Err(UserCreateError::Unexpected {}),
+            Ok(Err(_)) => Err(UserCreateError::IllegalUsername {}),
+            Err(_) => Err(UserCreateError::Unexpected {}),
         }
     }
 
@@ -94,8 +94,8 @@ impl UserManager {
             .1;
         match update_result {
             Ok(Ok(())) => Ok(()),
-            Ok(Err(_query_error)) => Err(UserUpdateError::IllegalUsername {}),
-            Err(_commit_error) => Err(UserUpdateError::Unexpected {}),
+            Ok(Err(_)) => Err(UserUpdateError::IllegalUsername {}),
+            Err(_) => Err(UserUpdateError::Unexpected {}),
         }
     }
 
@@ -106,7 +106,7 @@ impl UserManager {
         match self.contains(username) {
             Ok(contains) => {
                 if !contains {
-                    return Err(UserDeleteError::UserDoesNotExist {});
+                    return Err(UserDeleteError::UserNotFound {});
                 }
             }
             Err(user_get_err) => {
@@ -116,6 +116,7 @@ impl UserManager {
                 };
             }
         }
+
         let delete_result = self
             .transaction_util
             .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
@@ -124,8 +125,8 @@ impl UserManager {
             .1;
         match delete_result {
             Ok(Ok(())) => Ok(()),
-            Ok(Err(_query_error)) => Err(UserDeleteError::IllegalUsername {}),
-            Err(_commit_error) => Err(UserDeleteError::Unexpected {}),
+            Ok(Err(_)) => Err(UserDeleteError::IllegalUsername {}),
+            Err(_) => Err(UserDeleteError::Unexpected {}),
         }
     }
 }

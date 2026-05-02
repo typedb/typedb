@@ -22,7 +22,7 @@
 //! Check out [`log_panic`]'s documentation for more information.
 use std::{
     backtrace::{Backtrace, BacktraceStatus},
-    panic::PanicInfo,
+    panic::PanicHookInfo,
 };
 
 /// A panic hook that emits an error-level `tracing` event when a panic occurs.
@@ -76,7 +76,7 @@ use std::{
 ///     }));
 /// }
 /// ```
-pub fn log_panic(panic_info: &PanicInfo) {
+pub fn log_panic(panic_info: &PanicHookInfo) {
     let payload = panic_info.payload();
 
     #[allow(clippy::manual_map)]

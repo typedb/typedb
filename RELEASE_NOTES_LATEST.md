@@ -6,7 +6,6 @@
 
 ```docker pull typedb/typedb:3.10.4```
 
-
 ## New Features
 
 
@@ -57,5 +56,3 @@
 - **Remove parallelism and memory options from .bazelrc**
 
 - **Bazel java runtime is hermitic (remote) - used for notes creation**
-
-    

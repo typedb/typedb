@@ -5,8 +5,14 @@
  */
 
 #[derive(Clone, Copy, Debug)]
-pub struct ServerInfo {
+pub struct DistributionInfo {
     pub logo: &'static str,
     pub distribution: &'static str,
     pub version: &'static str,
+}
+
+impl DistributionInfo {
+    pub fn is_default_distribution(&self) -> bool {
+        self.distribution == crate::constants::server::DISTRIBUTION
+    }
 }
