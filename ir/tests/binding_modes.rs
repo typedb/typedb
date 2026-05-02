@@ -464,6 +464,28 @@ fn test_nested_optional() {
 }
 
 #[test]
+fn test_unmarked_optional_return_errors() {
+    let query = r#"
+    with fun first_is_opt() -> {integer?, integer}:
+    match try { let $x = 6; }; let $y = 5;
+    return { $x, $y };
+
+    match let $x, $y in first_is_opt();
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let preamble_signatures = HashMapFunctionSignatureIndex::build(
+        parsed.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
+    );
+    let translation_error = translate_pipeline(&preamble_signatures, &parsed).unwrap_err();
+    assert!(match *translation_error {
+        RepresentationError::UnmarkedOptionalAssignment { variable, .. } => {
+            variable == "x"
+        }
+        _ => false,
+    });
+}
+
+#[test]
 fn test_optional_return() {
     let query = r#"
     with fun first_is_opt() -> {integer?, integer}:
@@ -483,4 +505,88 @@ fn test_optional_return() {
     let conjunction = block.conjunction();
     assert_vars!(&translated_pipeline.variable_registry, conjunction, Required[], Bound["x", "y"]);
     assert_optionals!(&translated_pipeline.variable_registry, ["x"]);
+}
+
+#[test]
+fn test_optional_return_must_be_declared() {
+    let query = r#"
+    with fun first_is_opt() -> {integer, integer}:
+    match try { let $x = 6; }; let $y = 5;
+    return { $x, $y };
+
+    match let $x, $y in first_is_opt();
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let preamble_signatures = HashMapFunctionSignatureIndex::build(
+        parsed.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
+    );
+    let translation_error = translate_pipeline(&preamble_signatures, &parsed).unwrap_err();
+    assert!(match *translation_error {
+        RepresentationError::FunctionRepresentation {
+            typedb_source: FunctionRepresentationError::InconsistentReturnOptionality { mismatch_index, .. },
+        } => {
+            mismatch_index == 0
+        }
+        _ => false,
+    });
+}
+
+#[test]
+fn test_optional_return_reuse_errors() {
+    let query = r#"
+    with fun age_opt() -> age?:
+    match try { $age isa age; };
+    return first $age;
+
+    match
+        let $age? in age_opt();
+        $person has $age;
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let preamble_signatures = HashMapFunctionSignatureIndex::build(
+        parsed.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
+    );
+    let translation_error = translate_pipeline(&preamble_signatures, &parsed).unwrap_err();
+    assert!(match *translation_error {
+        RepresentationError::OptionalFunctionReturnReferenced { variable, .. } => {
+            variable == "age"
+        }
+        _ => false,
+    });
+}
+
+#[test]
+fn test_optional_return_reuse_errors_with_disjunctions() {
+    // Just a convoluted case.
+    let query = r#"
+    with fun age_opt() -> age?:
+    match try { $age isa age; };
+    return first $age;
+
+    match
+        $cat isa cat; $dog isa dog;
+        {
+
+            $dog has $name;
+            {
+                let $age? in age_opt();
+            } or {
+                { $cat has $age; } or { $dog has $age; };
+                $cat has name $name;
+            };
+        } or {
+            $dog has $name; $dog has $other_age;
+        };
+    "#;
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
+    let preamble_signatures = HashMapFunctionSignatureIndex::build(
+        parsed.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
+    );
+    let translation_error = translate_pipeline(&preamble_signatures, &parsed).unwrap_err();
+    assert!(match *translation_error {
+        RepresentationError::OptionalFunctionReturnReferenced { variable, .. } => {
+            variable == "age"
+        }
+        _ => false,
+    });
 }
