@@ -41,7 +41,10 @@ use error::typedb_error;
 use fail_point::{UNFINISHED_CHECKPOINT, fail_point};
 use function::{FunctionError, function_cache::FunctionCache};
 use query::query_cache::QueryCache;
-use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
+use resource::{
+    constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL},
+    perf_counters::QUERY_CACHE_FLUSH,
+};
 use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
@@ -496,10 +499,15 @@ impl Database<WALClient> {
         let thing_statistics = Arc::get_mut(&mut locked_schema.thing_statistics).unwrap();
         thing_statistics.reset(self.storage.snapshot_watermark());
 
-        self.query_cache.force_reset(&Statistics::new(SequenceNumber::MIN));
+        self.force_reset_query_cache();
 
         self.release_schema_transaction();
         Ok(())
+    }
+
+    pub(crate) fn force_reset_query_cache(&mut self) {
+        self.query_cache = Arc::new(QueryCache::new());
+        QUERY_CACHE_FLUSH.increment();
     }
 
     pub fn get_metrics(&self) -> DatabaseMetrics {

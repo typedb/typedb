@@ -17,10 +17,7 @@ use ir::{
     translation::pipeline::TranslatedStage,
 };
 use moka::sync::{Cache, CacheBuilder};
-use resource::{
-    constants::database::{QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE},
-    perf_counters::QUERY_CACHE_FLUSH,
-};
+use resource::constants::database::{QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE};
 use structural_equality::StructuralEquality;
 
 #[derive(Debug)]
@@ -83,11 +80,6 @@ impl QueryCache {
                     || total_decrease >= QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION
             })
             .unwrap();
-    }
-
-    pub fn force_reset(&self, _statistics: &Statistics) {
-        self.cache.invalidate_all();
-        QUERY_CACHE_FLUSH.increment();
     }
 }
 
