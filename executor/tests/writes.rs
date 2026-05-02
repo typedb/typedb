@@ -4,11 +4,7 @@
 * file, You can obtain one at https://mozilla.org/MPL/2.0/.
 */
 
-use std::{
-    collections::HashMap,
-    sync::Arc,
-    vec,
-};
+use std::{collections::HashMap, sync::Arc, vec};
 
 use answer::variable_value::VariableValue;
 use compiler::{

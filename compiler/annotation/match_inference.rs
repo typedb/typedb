@@ -25,14 +25,14 @@ use ir::{
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::annotation::pipeline::RunningVariableAnnotations;
-use crate::annotation::utils::PipelineAnnotationContext;
 use crate::annotation::{
     TypeInferenceError,
+    pipeline::RunningVariableAnnotations,
     type_annotations::{
         BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
     },
     type_seeder::TypeGraphSeedingContext,
+    utils::PipelineAnnotationContext,
 };
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]

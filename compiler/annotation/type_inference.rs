@@ -86,9 +86,9 @@ pub mod tests {
         },
         match_inference::{
             NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
-            compute_type_inference_graph, prune_types,
+            compute_type_inference_graph, infer_types_for_block, prune_types,
         },
-        pipeline::AnnotatedStage,
+        pipeline::{AnnotatedStage, RunningVariableAnnotations},
         tests::{
             managers,
             schema_consts::{
@@ -98,10 +98,8 @@ pub mod tests {
             setup_storage,
         },
         type_seeder::TypeGraphSeedingContext,
+        utils::AnnotationContext,
     };
-    use crate::annotation::match_inference::infer_types_for_block;
-    use crate::annotation::pipeline::RunningVariableAnnotations;
-    use crate::annotation::utils::AnnotationContext;
 
     #[test]
     fn test_functions() {
@@ -179,7 +177,8 @@ pub mod tests {
         .unwrap();
 
         let snapshot = storage.open_snapshot_read();
-        let empty_annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+        let empty_annotation_context =
+            AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
         {
             // Local inference only
             // match $animal = fn_test();
@@ -212,9 +211,7 @@ pub mod tests {
             // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
             let (entry, mut entry_context, mut f_ir) = with_local_cache;
 
-            let f_annotations =
-                annotate_named_function(&mut f_ir, &empty_annotation_context)
-                    .unwrap();
+            let f_annotations = annotate_named_function(&mut f_ir, &empty_annotation_context).unwrap();
             let f_var_animal =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
             let f_var_animal_type =
@@ -368,7 +365,8 @@ pub mod tests {
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
 
-            let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
@@ -435,7 +433,8 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
-                        let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
@@ -497,7 +496,8 @@ pub mod tests {
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
-            let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
@@ -540,7 +540,8 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-                        let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
@@ -641,7 +642,6 @@ pub mod tests {
             false,
         )
         .unwrap();
-
 
         let conjunction = block.conjunction();
         let disj = conjunction.nested_patterns()[0].as_disjunction().unwrap();
@@ -938,7 +938,8 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-            let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
@@ -1007,7 +1008,8 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
-                        let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
@@ -1127,7 +1129,8 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-                        let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
@@ -1205,7 +1208,8 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-                        let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
@@ -1271,7 +1275,8 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
-                        let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
@@ -1332,7 +1337,8 @@ pub mod tests {
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
-            let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
@@ -1372,7 +1378,8 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
-                        let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
             let parameters = ParameterRegistry::new();
             let mut pipeline_annotation_context =
                 annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
