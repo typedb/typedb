@@ -104,15 +104,6 @@ where
     }
 }
 
-pub fn infer_types_in_block(
-    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
-    block: &Block,
-    is_write_stage: bool,
-) -> Result<BlockAnnotations, TypeInferenceError> {
-    let empty_annotations = RunningVariableAnnotations { concepts: BTreeMap::new(), values: BTreeMap::new() };
-    infer_types_for_block(ctx, &empty_annotations, block, is_write_stage)
-}
-
 pub(crate) fn infer_types_for_block(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     previous_stage_annotations: &RunningVariableAnnotations,
@@ -525,4 +516,14 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
         }
         is_modified
     }
+}
+
+#[cfg(debug_assertions)]
+pub fn infer_types_for_test_only(
+    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    block: &Block,
+    is_write_stage: bool,
+) -> Result<BlockAnnotations, TypeInferenceError> {
+    let empty_annotations = RunningVariableAnnotations { concepts: BTreeMap::new(), values: BTreeMap::new() };
+    infer_types_for_block(ctx, &empty_annotations, block, is_write_stage)
 }

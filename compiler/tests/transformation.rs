@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use compiler::{
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_in_block,
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
         type_annotations::BlockAnnotations, utils::PipelineAnnotationContext,
     },
     transformation::{
@@ -112,7 +112,7 @@ fn translate_and_annotate(
         &mut context.variable_registry,
         &parameters,
     );
-    let type_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let type_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
     (block, type_annotations)
 }
 
@@ -178,7 +178,7 @@ fn run_test_relation_index_transformation_single(
         &mut context.variable_registry,
         &parameters,
     );
-    let mut type_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let mut type_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction = block.conjunction_mut();
 
@@ -266,7 +266,7 @@ fn run_test_relation_index_transformation_dual(
         &mut context.variable_registry,
         &parameters,
     );
-    let mut type_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let mut type_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction = block.conjunction_mut();
 
@@ -367,7 +367,7 @@ fn run_test_relation_index_transformation_not_applied_ternary(
         &mut context.variable_registry,
         &parameters,
     );
-    let mut type_annotations = infer_types_in_block(&mut ctx, &block, false).unwrap();
+    let mut type_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction = block.conjunction_mut();
 

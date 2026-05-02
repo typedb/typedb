@@ -683,12 +683,16 @@ fn collect_value_types_of_function_call_assignments(
 }
 
 #[derive(Debug, Clone)]
-pub(super) struct RunningVariableAnnotations {
+pub struct RunningVariableAnnotations {
     pub(crate) concepts: BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     pub(crate) values: BTreeMap<Variable, ExpressionValueType>,
 }
 
 impl RunningVariableAnnotations {
+    pub(crate) fn empty() -> Self {
+        Self { concepts: BTreeMap::new(), values: BTreeMap::new() }
+    }
+
     pub(crate) fn from_iterator(
         iter: impl Iterator<Item = (Variable, FunctionParameterAnnotation)>,
     ) -> RunningVariableAnnotations {
