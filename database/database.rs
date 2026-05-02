@@ -562,8 +562,9 @@ fn make_update_statistics_fn(
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             debug!("Starting updating statistics for database {database_name}");
             new_statistics.may_synchronise(&storage).expect("Statistics sync failed");
-            query_cache.may_evict(&new_statistics);
-            schema.write().unwrap().thing_statistics = Arc::new(new_statistics);
+            let new_statistics = Arc::new(new_statistics);
+            query_cache.set_statistics_and_invalidate_outdated(new_statistics.clone());
+            schema.write().unwrap().thing_statistics = new_statistics;
             debug!("Finished updating statistics for database {database_name}");
         }
     }
