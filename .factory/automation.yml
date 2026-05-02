@@ -176,19 +176,18 @@ build:
 release:
   filter:
     owner: typedb
-    branch: [master, cluster-support-feature-branch]
-# TODO: Return before merging into master
-#  validation:
-#    validate-dependencies:
-#      image: typedb-ubuntu-22.04
-#      command: |
-#        bazel test --config=ci //:release-validate-deps --test_output=streamed
-#
-#    validate-release-notes:
-#      image: typedb-ubuntu-22.04
-#      command: |
-#        export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
-#        bazel run --config=ci @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
+    branch: [master]
+  validation:
+    validate-dependencies:
+      image: typedb-ubuntu-22.04
+      command: |
+        bazel test --config=ci //:release-validate-deps --test_output=streamed
+
+    validate-release-notes:
+      image: typedb-ubuntu-22.04
+      command: |
+        export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
+        bazel run --config=ci @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
 
   deployment:
     trigger-release-circleci:
