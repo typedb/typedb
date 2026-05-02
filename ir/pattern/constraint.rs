@@ -154,6 +154,7 @@ impl Constraints {
                         }
                     }
                     if let Some(old_call) = old_call {
+                        debug_assert!(false, "unreachable/add a test since this was banned upstream.");
                         constraint_mapping.insert(func_call.clone().into(), old_call.into());
                     }
                 }
