@@ -70,7 +70,7 @@ impl QueryCache {
         let read_lock = self.validity_requirements.read().unwrap();
         let ValidityRequirements { latest_schema_commit, latest_statistics } = &*read_lock;
         let may_insert = latest_schema_commit
-            .map_or(true, |min_sequence_number| statistics_sequence_number >= min_sequence_number)
+            .map_or(true, |latest_schema_commit_number| statistics_sequence_number >= latest_schema_commit_number)
             && latest_statistics
                 .as_ref()
                 .map_or(true, |stats| !is_pipeline_type_populations_outdated(&stats, &pipeline));
