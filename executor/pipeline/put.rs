@@ -145,7 +145,10 @@ fn perform_inserts<Snapshot: WritableSnapshot>(
     must_insert: &[bool],
 ) -> Result<(), Box<PipelineExecutionError>> {
     let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
-    let stage_profile = context.profile.profile_stage(|| String::from("PutInsert"), executable.executable_id as _);
+    let stage_profile = context.profile.profile_stage(|| String::from("Put"), executable.executable_id as _);
+    let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Put pattern"));
+    let (concept_profiles, connection_profiles, optional_concept_profiles, optional_connection_profiles) =
+        crate::pipeline::insert::build_insert_step_profiles(&executable.insert, &pattern_profile);
     for index in 0..output_batch.len() {
         // TODO: parallelise -- though this requires our snapshots support parallel writes!
         if must_insert[index] {
@@ -156,7 +159,10 @@ fn perform_inserts<Snapshot: WritableSnapshot>(
                 &context.thing_manager,
                 &context.parameters,
                 &mut row,
-                &stage_profile,
+                &concept_profiles,
+                &connection_profiles,
+                &optional_concept_profiles,
+                &optional_connection_profiles,
             )
             .map_err(|typedb_source| Box::new(PipelineExecutionError::WriteError { typedb_source }))?;
         }

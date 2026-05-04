@@ -54,6 +54,7 @@ impl GroupedReducer {
         &mut self,
         row: &MaybeOwnedRow<'_>,
         context: &ExecutionContext<Snapshot>,
+        storage_counters: &StorageCounters,
     ) -> Result<(), Box<PipelineExecutionError>> {
         self.reused_group.clear();
         for &pos in &self.rows_executable.input_group_positions {
@@ -64,7 +65,7 @@ impl GroupedReducer {
         }
         let reducers = self.grouped_reductions.get_mut(&self.reused_group).unwrap();
         for reducer in reducers {
-            reducer.accept(row, context);
+            reducer.accept(row, context, storage_counters);
         }
         Ok(())
     }
@@ -136,14 +137,15 @@ macro_rules! reducer_executor {
             }
 
             impl ReducerExecutor {
-                fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-                    let profile = context.profile.profile_stage(|| String::from("Reduce"), 0); // TODO executable id
-                    let pattern_profile = profile.create_or_get_pattern(|| String::from("Reduce pattern"));
-                    let step_profile = pattern_profile.extend_or_get_step(0, || String::from("Reduce execution"));
-                    let storage_counters = step_profile.storage_counters();
+                fn accept<Snapshot: ReadableSnapshot>(
+                    &mut self,
+                    row: &MaybeOwnedRow<'_>,
+                    context: &ExecutionContext<Snapshot>,
+                    storage_counters: &StorageCounters,
+                ) {
                     match self {
-                        Self::$count(reducer) => reducer.accept(row, context, storage_counters),
-                        $(Self::$variant(reducer) => reducer.accept(row, context, storage_counters)),*
+                        Self::$count(reducer) => reducer.accept(row, context, storage_counters.clone()),
+                        $(Self::$variant(reducer) => reducer.accept(row, context, storage_counters.clone())),*
                     }
                 }
 

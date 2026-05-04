@@ -9,7 +9,7 @@ use std::{fmt, iter::Peekable, sync::Arc};
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
-use resource::constants::traversal::BATCH_DEFAULT_CAPACITY;
+use resource::{constants::traversal::BATCH_DEFAULT_CAPACITY, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -138,6 +138,7 @@ pub(super) trait CollectedStageIteratorTrait {
 pub(super) struct ReduceCollector {
     active_reducer: GroupedReducer,
     output_width: u32,
+    storage_counters: Option<StorageCounters>,
 }
 
 impl fmt::Debug for ReduceCollector {
@@ -149,14 +150,20 @@ impl fmt::Debug for ReduceCollector {
 impl ReduceCollector {
     fn new(reduce_executable: Arc<ReduceRowsExecutable>) -> Self {
         let output_width = (reduce_executable.input_group_positions.len() + reduce_executable.reductions.len()) as u32;
-        Self { active_reducer: GroupedReducer::new(reduce_executable), output_width }
+        Self { active_reducer: GroupedReducer::new(reduce_executable), output_width, storage_counters: None }
     }
 }
 
 impl CollectorTrait for ReduceCollector {
     fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
+        let storage_counters = self.storage_counters.get_or_insert_with(|| {
+            let profile = context.profile.profile_stage(|| String::from("Reduce"), 0); // TODO executable id
+            let pattern = profile.create_or_get_pattern(|| String::from("Reduce pattern"));
+            let step = pattern.extend_or_get_step(0, || String::from("Reduce execution"));
+            step.storage_counters()
+        });
         for row in batch {
-            self.active_reducer.accept(&row, context).unwrap(); // TODO: potentially unsafe unwrap
+            self.active_reducer.accept(&row, context, storage_counters).unwrap(); // TODO: potentially unsafe unwrap
         }
     }
 
