@@ -30,7 +30,7 @@ impl<'a, Snapshot: ReadableSnapshot> PipelineAnnotationContext<'a, Snapshot> {
         Self { snapshot, type_manager, annotated_function_signatures, variable_registry, parameters }
     }
 
-    pub(crate) fn to_plain_mut(
+    pub(crate) fn to_parts_mut(
         &mut self,
     ) -> (AnnotationContext<'a, Snapshot>, &mut VariableRegistry, &ParameterRegistry) {
         let Self { snapshot, type_manager, annotated_function_signatures, variable_registry, parameters } = self;

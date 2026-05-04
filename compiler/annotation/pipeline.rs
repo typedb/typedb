@@ -128,7 +128,7 @@ pub fn annotate_preamble_and_pipeline(
     );
     let input_annotations = RunningVariableAnnotations::empty();
     let (annotated_stages, output_annotations) =
-        annotate_pipeline_stages(&mut ctx, translated_stages, input_annotations)?;
+        annotate_pipeline_stages(&mut ctx, translated_stages, input_annotations, None)?;
     let annotated_fetch =
         translated_fetch.map(|fetch| annotate_fetch(&mut ctx, fetch, &output_annotations)).transpose()?;
     Ok(AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble })
@@ -138,6 +138,7 @@ pub(crate) fn annotate_pipeline_stages(
     ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
     translated_stages: Vec<TranslatedStage>,
     input_annotations: RunningVariableAnnotations,
+    return_variables: Option<&[Variable]>,
 ) -> Result<(Vec<AnnotatedStage>, RunningVariableAnnotations), AnnotationError> {
     let mut running_annotations = input_annotations;
     let mut annotated_stages = Vec::with_capacity(translated_stages.len());
@@ -155,7 +156,10 @@ pub(crate) fn annotate_pipeline_stages(
             .unwrap_or(&empty_constraint_annotations);
         let annotated_stage = annotate_stage(ctx, &mut running_annotations, running_constraint_annotations, stage)?;
 
-        running_annotations.retain(|var| var.is_named());
+        // running_annotations.retain(|var| var.is_named());
+        let retain_running_var_fn =
+            |var: &Variable| var.is_named() || return_variables.as_ref().map_or(false, |vars| vars.contains(var));
+        running_annotations.retain(retain_running_var_fn);
         if let AnnotatedStage::Match { .. } = annotated_stage {
             latest_match_index = Some(annotated_stages.len());
         }

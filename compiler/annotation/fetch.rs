@@ -12,7 +12,7 @@ use encoding::graph::type_::Kind;
 use ir::{
     pattern::ParameterID,
     pipeline::{
-        VariableRegistry,
+        ParameterRegistry, VariableRegistry,
         fetch::{
             FetchListAttributeAsList, FetchListAttributeFromList, FetchListSubFetch, FetchObject, FetchSingleAttribute,
             FetchSome,
@@ -114,7 +114,7 @@ fn annotate_some(
     match some {
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
         FetchSome::SingleAttribute(FetchSingleAttribute { variable, attribute }) => {
-            let (ctx, variable_registry, _params) = ctx.to_plain_mut();
+            let (ctx, variable_registry, _params) = ctx.to_parts_mut();
             let variable_name = variable_registry
                 .get_variable_name(variable)
                 .expect("Expected fetched variable names to be validated during translation");
@@ -133,7 +133,7 @@ fn annotate_some(
         }
         FetchSome::SingleFunction(mut function) => {
             let annotated_function =
-                annotate_anonymous_function(&mut function, &ctx.to_plain_mut().0, input_annotations, source_span)
+                annotate_anonymous_function(&mut function, &ctx.to_parts_mut().0, input_annotations, source_span)
                     .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::SingleFunction(annotated_function))
         }
@@ -143,16 +143,17 @@ fn annotate_some(
         }
         FetchSome::ListFunction(mut function) => {
             let annotated_function =
-                annotate_anonymous_function(&mut function, &ctx.to_plain_mut().0, input_annotations, source_span)
+                annotate_anonymous_function(&mut function, &ctx.to_parts_mut().0, input_annotations, source_span)
                     .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::ListFunction(annotated_function))
         }
         FetchSome::ListSubFetch(sub_fetch) => {
-            let annotated_sub_fetch = annotate_sub_fetch(ctx, sub_fetch, input_annotations);
+            let (plain_ctx, _variable_registry, parameters) = ctx.to_parts_mut();
+            let annotated_sub_fetch = annotate_sub_fetch(&plain_ctx, parameters, sub_fetch, input_annotations.clone());
             Ok(AnnotatedFetchSome::ListSubFetch(annotated_sub_fetch?))
         }
         FetchSome::ListAttributesAsList(FetchListAttributeAsList { variable, attribute }) => {
-            let (ctx, variable_registry, _params) = ctx.to_plain_mut();
+            let (ctx, variable_registry, _params) = ctx.to_parts_mut();
             let variable_name = variable_registry
                 .get_variable_name(variable)
                 .expect("Expected fetched variable names to be validated during translation");
@@ -255,17 +256,17 @@ fn validate_attribute_owned_and_streamable(
 }
 
 fn annotate_sub_fetch(
-    ctx: &mut PipelineAnnotationContext<'_, impl ReadableSnapshot>,
+    ctx: &AnnotationContext<'_, impl ReadableSnapshot>,
+    parameters: &ParameterRegistry,
     sub_fetch: FetchListSubFetch,
-    input_annotations: &RunningVariableAnnotations,
+    input_annotations: RunningVariableAnnotations,
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
-    let FetchListSubFetch { context, input_variables, stages, fetch } = sub_fetch;
+    let FetchListSubFetch { mut context, input_variables, stages, fetch } = sub_fetch;
     let PipelineTranslationContext { mut variable_registry, .. } = context;
-    let (plain_context, _old_registry, parameters) = ctx.to_plain_mut();
-    let mut local_pipeline_context = plain_context.for_pipeline(&mut variable_registry, parameters);
+    let mut local_pipeline_context = ctx.for_pipeline(&mut variable_registry, parameters);
     let (annotated_stages, output_annotations) =
-        annotate_pipeline_stages(&mut local_pipeline_context, stages, input_annotations.clone())?;
-    let annotated_fetch = annotate_fetch(ctx, fetch, &output_annotations)?;
+        annotate_pipeline_stages(&mut local_pipeline_context, stages, input_annotations, None)?;
+    let annotated_fetch = annotate_fetch(&mut local_pipeline_context, fetch, &output_annotations)?;
     Ok(AnnotatedFetchListSubFetch {
         variable_registry,
         input_variables,

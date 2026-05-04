@@ -272,6 +272,7 @@ fn annotate_function_impl(
         &mut ctx,
         stages.clone(),
         argument_annotations_from_declaration.clone(),
+        Some(return_operation.variables().as_ref()),
     )
     .map_err(|err| {
         Box::new(FunctionAnnotationError::TypeInference { name: name.to_string(), typedb_source: Box::new(err) })
@@ -421,7 +422,9 @@ fn annotate_return(
         AnnotatedFunctionReturn::Stream { variables } | AnnotatedFunctionReturn::Single { variables, .. } => variables
             .iter()
             .map(|var| {
-                final_stage_annotations.get_as_parameter(var).expect("Expected annotations for a return variable.")
+                final_stage_annotations.get_as_parameter(var).expect(
+                    format!("Expected annotations for return variable '{var}' in {return_operation:?}.").as_str(),
+                )
             })
             .collect(),
         AnnotatedFunctionReturn::ReduceReducer { instructions } => instructions
