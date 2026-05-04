@@ -655,6 +655,13 @@ impl StageProfile {
             })
             .clone()
     }
+
+    /// Returns the pattern profile that has been attached to this stage, or `None` if
+    /// the stage's pattern has never been initialised. Inspection-only — does not call
+    /// `create_or_get_pattern` and so will not allocate a disabled placeholder.
+    pub fn pattern_profile(&self) -> Option<Arc<PatternProfile>> {
+        self.pattern_profile.get().cloned()
+    }
 }
 
 impl IndentDisplay for StageProfile {
@@ -728,6 +735,13 @@ impl PatternProfile {
 
     fn new_disabled() -> Self {
         Self { substeps: RwLock::new(Vec::new()), enabled: false, description: None }
+    }
+
+    /// Read access to the substep vector for inspection. Mirrors the shape of
+    /// [`QueryProfile::stage_profiles`]; callers should `.read()` and iterate without
+    /// retaining the guard across allocator boundaries.
+    pub fn substeps(&self) -> &RwLock<Vec<SubstepProfile>> {
+        &self.substeps
     }
 
     pub fn extend_or_get_subquery(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<QueryProfile> {
