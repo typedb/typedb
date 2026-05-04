@@ -8,8 +8,8 @@ use std::sync::Arc;
 
 use compiler::{
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
-        type_annotations::BlockAnnotations, utils::PipelineAnnotationContext,
+        PipelineAnnotationContext, function::EmptyAnnotatedFunctionSignatures,
+        match_inference::infer_types_for_test_only, type_annotations::BlockAnnotations,
     },
     transformation::{
         redundant_constraints::optimize_away_statically_unsatisfiable_conjunctions,

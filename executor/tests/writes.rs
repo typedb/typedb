@@ -10,8 +10,8 @@ use answer::variable_value::VariableValue;
 use compiler::{
     self, VariablePosition,
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
-        utils::PipelineAnnotationContext,
+        PipelineAnnotationContext, function::EmptyAnnotatedFunctionSignatures,
+        match_inference::infer_types_for_test_only,
     },
 };
 use concept::{

@@ -11,8 +11,8 @@ use std::{
 
 use compiler::{
     annotation::{
-        expression::block_compiler::compile_expressions, function::EmptyAnnotatedFunctionSignatures,
-        match_inference::infer_types_for_test_only, utils::PipelineAnnotationContext,
+        PipelineAnnotationContext, expression::block_compiler::compile_expressions,
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
     },
     executable::{
         function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,

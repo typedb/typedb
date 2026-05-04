@@ -23,9 +23,8 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
 use crate::annotation::{
-    TypeInferenceError,
+    PipelineAnnotationContext, TypeInferenceError,
     type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
-    utils::PipelineAnnotationContext,
 };
 
 pub fn check_type_combinations_for_write(

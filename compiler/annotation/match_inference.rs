@@ -26,13 +26,12 @@ use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
-    TypeInferenceError,
+    PipelineAnnotationContext, TypeInferenceError,
     pipeline::RunningVariableAnnotations,
     type_annotations::{
         BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
     },
     type_seeder::TypeGraphSeedingContext,
-    utils::PipelineAnnotationContext,
 };
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]

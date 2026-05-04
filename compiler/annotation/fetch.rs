@@ -24,10 +24,9 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
 use crate::annotation::{
-    AnnotationError,
+    AnnotationContext, AnnotationError, PipelineAnnotationContext,
     function::{AnnotatedFunction, annotate_anonymous_function},
     pipeline::{AnnotatedStage, RunningVariableAnnotations, annotate_pipeline_stages},
-    utils::{AnnotationContext, PipelineAnnotationContext},
 };
 
 #[derive(Debug, Clone)]

@@ -14,8 +14,8 @@ use answer::variable::Variable;
 use compiler::{
     ExecutorVariable, VariablePosition,
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
-        utils::PipelineAnnotationContext,
+        PipelineAnnotationContext, function::EmptyAnnotatedFunctionSignatures,
+        match_inference::infer_types_for_test_only,
     },
     executable::{
         function::ExecutableFunctionRegistry,

@@ -37,7 +37,7 @@ use typeql::common::Span;
 
 use crate::{
     annotation::{
-        AnnotationError,
+        AnnotationError, PipelineAnnotationContext,
         expression::{
             ExpressionCompileError,
             block_compiler::compile_expressions,
@@ -51,7 +51,6 @@ use crate::{
         match_inference::infer_types_for_block,
         type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
-        utils::PipelineAnnotationContext,
         write_type_check::check_type_combinations_for_write,
     },
     executable::{reduce::ReduceInstruction, update},

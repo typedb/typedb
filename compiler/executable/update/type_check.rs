@@ -18,9 +18,8 @@ use ir::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
-    TypeInferenceError,
+    PipelineAnnotationContext, TypeInferenceError,
     type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations},
-    utils::PipelineAnnotationContext,
     write_type_check::{validate_has_type_combinations_for_write, validate_links_type_combinations_for_write},
 };
 
