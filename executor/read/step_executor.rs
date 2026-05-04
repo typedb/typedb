@@ -211,6 +211,8 @@ pub(crate) fn create_executors_for_conjunction(
                 } else {
                     let function = function_registry.get(&function_call.function_id).unwrap();
                     if let FunctionTablingType::Tabled(_) = function.tabling_type {
+                        // Reserve the index in the parent pattern profile so subsequent steps stay aligned.
+                        let _ = pattern_profile.extend_or_get_step(index, || format!("{}", function_call));
                         let executor = TabledCallExecutor::new(
                             function_call.function_id.clone(),
                             function_call.arguments.clone(),
