@@ -6,7 +6,7 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     ops::Bound,
     sync::Arc,
 };
@@ -15,7 +15,8 @@ use answer::variable::Variable;
 use compiler::{
     ExecutorVariable, VariablePosition,
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types, type_annotations::TypeAnnotations,
+        PipelineAnnotationContext, function::EmptyAnnotatedFunctionSignatures,
+        match_inference::infer_types_for_test_only, type_annotations::TypeAnnotations,
     },
     executable::{
         function::ExecutableFunctionRegistry,
@@ -420,25 +421,20 @@ fn position_mapping<const N: usize, const M: usize>(
 }
 
 fn get_type_annotations(
-    translation_context: &PipelineTranslationContext,
+    translation_context: &mut PipelineTranslationContext,
     entry: &Block,
     snapshot: &impl ReadableSnapshot,
     type_manager: &Arc<TypeManager>,
+    value_parameters: &ParameterRegistry,
 ) -> TypeAnnotations {
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         snapshot,
-        entry,
-        &translation_context.variable_registry,
         type_manager,
-        previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap()
-    .type_annotations_of(entry.conjunction())
-    .unwrap()
-    .clone()
+        &mut translation_context.variable_registry,
+        value_parameters,
+    );
+    infer_types_for_test_only(&mut ctx, entry, false).unwrap().type_annotations_of(entry.conjunction()).unwrap().clone()
 }
 
 fn execute_steps(
@@ -510,7 +506,8 @@ fn value_int_equality_isa_reads() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let type_annotations = get_type_annotations(&translation_context, &entry, &snapshot, &type_manager);
+    let type_annotations =
+        get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager, value_parameters.as_ref());
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_id_type, var_attr], []);
 
@@ -619,7 +616,8 @@ fn value_int_equality_has_reverse_reads() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let type_annotations = get_type_annotations(&translation_context, &entry, &snapshot, &type_manager);
+    let type_annotations =
+        get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager, value_parameters.as_ref());
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_person, var_gov_id], []);
 
@@ -712,7 +710,8 @@ fn value_int_equality_has_bound_owner() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let type_annotations = get_type_annotations(&translation_context, &entry, &snapshot, &type_manager);
+    let type_annotations =
+        get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager, value_parameters.as_ref());
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_person_type, var_gov_id], []);
@@ -822,7 +821,8 @@ fn value_int_inequality_has_bound_owner() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
+    let type_annotations =
+        get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager, value_parameters.as_ref());
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_person_type, var_gov_id], []);
@@ -932,7 +932,8 @@ fn value_inline_string_equality_has_bound_owner() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let entry_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
+    let entry_annotations =
+        get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager, value_parameters.as_ref());
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_person_type, var_name], []);
@@ -1037,7 +1038,8 @@ fn value_hashed_string_equality_has_bound_owner() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
+    let type_annotations =
+        get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager, value_parameters.as_ref());
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_person_type, var_name], []);
@@ -1152,7 +1154,8 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
+    let type_annotations =
+        get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager, value_parameters.as_ref());
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_person_type, var_name], []);
@@ -1269,7 +1272,8 @@ fn intersection_seeks() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
+    let type_annotations =
+        get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager, value_parameters.as_ref());
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_age, var_age_type, var_person, var_gov_id], []);
@@ -1455,7 +1459,8 @@ fn intersections_seeks_with_extra_values() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
+    let type_annotations =
+        get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager, value_parameters.as_ref());
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_age, var_age_type, var_person, var_gov_id], []);

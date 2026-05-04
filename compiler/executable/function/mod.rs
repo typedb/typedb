@@ -60,10 +60,6 @@ impl ExecutableFunctionRegistry {
         }
     }
 
-    pub(crate) fn schema_functions(&self) -> Arc<HashMap<DefinitionKey, ExecutableFunction>> {
-        self.schema_functions.clone()
-    }
-
     pub fn replace_preamble_parameters(
         &mut self,
         preamble_parameters: impl Iterator<Item = (usize, Arc<ParameterRegistry>)>,

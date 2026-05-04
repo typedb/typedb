@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeSet, HashSet};
+use std::{
+    collections::{BTreeSet, HashSet},
+    sync::Arc,
+};
 
 use answer::Type;
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
@@ -76,16 +79,16 @@ pub mod tests {
     use itertools::Itertools;
 
     use crate::annotation::{
-        TypeInferenceError,
+        AnnotationContext, TypeInferenceError,
         function::{
             AnnotatedFunctionSignature, AnnotatedFunctionSignaturesImpl, EmptyAnnotatedFunctionSignatures,
             annotate_named_function,
         },
         match_inference::{
             NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
-            compute_type_inference_graph, infer_types, prune_types,
+            compute_type_inference_graph, infer_types_for_block, prune_types,
         },
-        pipeline::AnnotatedStage,
+        pipeline::{AnnotatedStage, RunningVariableAnnotations},
         tests::{
             managers,
             schema_consts::{
@@ -173,19 +176,21 @@ pub mod tests {
         .unwrap();
 
         let snapshot = storage.open_snapshot_read();
-
+        let empty_annotation_context =
+            AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
         {
             // Local inference only
             // match $animal = fn_test();
-            let (entry, entry_context, _) = with_no_cache;
+            let (entry, mut entry_context, _) = with_no_cache;
             let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
-            let annotations_without_schema_cache = infer_types(
-                &snapshot,
+
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                empty_annotation_context.for_pipeline(&mut entry_context.variable_registry, &parameters);
+            let annotations_without_schema_cache = infer_types_for_block(
+                &mut pipeline_annotation_context,
+                &RunningVariableAnnotations::empty(),
                 &entry,
-                &entry_context.variable_registry,
-                &type_manager,
-                &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap()
@@ -203,11 +208,9 @@ pub mod tests {
         {
             // Inference for preamble function
             // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
-            let (entry, entry_context, mut f_ir) = with_local_cache;
+            let (entry, mut entry_context, mut f_ir) = with_local_cache;
 
-            let f_annotations =
-                annotate_named_function(&mut f_ir, &snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures)
-                    .unwrap();
+            let f_annotations = annotate_named_function(&mut f_ir, &empty_annotation_context).unwrap();
             let f_var_animal =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
             let f_var_animal_type =
@@ -230,19 +233,21 @@ pub mod tests {
             // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
             // match $animal = fn_test();
             let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
-            let variable_registry = &entry_context.variable_registry;
-            let previous_stage_variable_annotations = &BTreeMap::new();
+            let previous_stage_variable_annotations = &RunningVariableAnnotations::empty();
             let empty_schema_functions = HashMap::<DefinitionKey, AnnotatedFunctionSignature>::new();
             let preamble_functions = vec![f_annotations];
             let function_annotations =
                 AnnotatedFunctionSignaturesImpl::new(&empty_schema_functions, &preamble_functions);
-            let entry_annotations = infer_types(
-                &snapshot,
-                &entry,
-                variable_registry,
-                &type_manager,
+
+            let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &function_annotations);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut entry_context.variable_registry, &parameters);
+
+            let entry_annotations = infer_types_for_block(
+                &mut pipeline_annotation_context,
                 previous_stage_variable_annotations,
-                &function_annotations,
+                &entry,
                 false,
             )
             .unwrap();
@@ -358,13 +363,16 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
+
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
             let graph = compute_type_inference_graph(
-                &snapshot,
+                &mut pipeline_annotation_context,
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap();
@@ -424,13 +432,15 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
             let graph = compute_type_inference_graph(
-                &snapshot,
+                &mut pipeline_annotation_context,
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap();
@@ -485,13 +495,15 @@ pub mod tests {
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
             let err = compute_type_inference_graph(
-                &snapshot,
+                &mut pipeline_annotation_context,
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap_err();
@@ -527,13 +539,15 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
             let graph = compute_type_inference_graph(
-                &snapshot,
+                &mut pipeline_annotation_context,
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap();
@@ -616,13 +630,14 @@ pub mod tests {
         let block = builder.finish().unwrap();
 
         let snapshot = storage.clone().open_snapshot_write();
+        let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+        let parameters = ParameterRegistry::new();
+        let mut pipeline_annotation_context =
+            annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
         let graph = compute_type_inference_graph(
-            &snapshot,
+            &mut pipeline_annotation_context,
             block.conjunction(),
-            &translation_context.variable_registry,
-            &type_manager,
             &BTreeMap::new(),
-            &EmptyAnnotatedFunctionSignatures,
             false,
         )
         .unwrap();
@@ -722,13 +737,14 @@ pub mod tests {
         let block = builder.finish().unwrap();
         let conjunction = block.conjunction();
         let constraints = conjunction.constraints();
+        let parameters = ParameterRegistry::new();
+        let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+        let mut pipeline_annotation_context =
+            annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
         let graph = compute_type_inference_graph(
-            &snapshot,
+            &mut pipeline_annotation_context,
             block.conjunction(),
-            &translation_context.variable_registry,
-            &type_manager,
             &BTreeMap::new(),
-            &EmptyAnnotatedFunctionSignatures,
             false,
         )
         .unwrap();
@@ -808,14 +824,14 @@ pub mod tests {
         let block = builder.finish().unwrap();
 
         let conjunction = block.conjunction();
-
+        let parameters = ParameterRegistry::new();
+        let annotation_context = AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+        let mut pipeline_annotation_context =
+            annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
         let graph = compute_type_inference_graph(
-            &snapshot,
+            &mut pipeline_annotation_context,
             block.conjunction(),
-            &translation_context.variable_registry,
-            &type_manager,
             &BTreeMap::new(),
-            &EmptyAnnotatedFunctionSignatures,
             false,
         )
         .unwrap();
@@ -921,13 +937,15 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
             let graph = compute_type_inference_graph(
-                &snapshot,
+                &mut pipeline_annotation_context,
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap();
@@ -989,13 +1007,15 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
             let graph = compute_type_inference_graph(
-                &snapshot,
+                &mut pipeline_annotation_context,
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap();
@@ -1108,13 +1128,15 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
             let graph = compute_type_inference_graph(
-                &snapshot,
+                &mut pipeline_annotation_context,
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap();
@@ -1185,13 +1207,15 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
             let graph = compute_type_inference_graph(
-                &snapshot,
+                &mut pipeline_annotation_context,
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap();
@@ -1250,13 +1274,15 @@ pub mod tests {
             let block = builder.finish().unwrap();
 
             let constraints = block.conjunction().constraints();
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
             let graph = compute_type_inference_graph(
-                &snapshot,
+                &mut pipeline_annotation_context,
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap();
@@ -1310,13 +1336,15 @@ pub mod tests {
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
             let err = compute_type_inference_graph(
-                &snapshot,
+                &mut pipeline_annotation_context,
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap_err();
@@ -1349,13 +1377,15 @@ pub mod tests {
 
             let block = builder.finish().unwrap();
             let constraints = block.conjunction().constraints();
+            let annotation_context =
+                AnnotationContext::new(&snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures);
+            let parameters = ParameterRegistry::new();
+            let mut pipeline_annotation_context =
+                annotation_context.for_pipeline(&mut translation_context.variable_registry, &parameters);
             let graph = compute_type_inference_graph(
-                &snapshot,
+                &mut pipeline_annotation_context,
                 block.conjunction(),
-                &translation_context.variable_registry,
-                &type_manager,
                 &BTreeMap::new(),
-                &EmptyAnnotatedFunctionSignatures,
                 false,
             )
             .unwrap();
@@ -1470,4 +1500,17 @@ pub fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
     } else {
         Ok(None)
     }
+}
+
+pub fn get_all_concept_types(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+) -> Result<Arc<BTreeSet<Type>>, Box<ConceptReadError>> {
+    // TODO: Use for FunctionParameterAnnotation::AnyConcept
+    let object_types = type_manager.get_object_types(snapshot)?;
+    let attribute_types = type_manager.get_attribute_types(snapshot)?;
+    let concept_types =
+        Iterator::chain(object_types.into_iter().map(Type::from), attribute_types.into_iter().map(Type::from))
+            .collect();
+    Ok(Arc::new(concept_types))
 }

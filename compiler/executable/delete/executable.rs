@@ -63,11 +63,7 @@ pub fn compile(
         .find(|var| variable_registry.is_variable_optional(*var));
 
     if let Some(var) = unsafely_used_optional_variable {
-        let variable = variable_registry
-            .variable_names()
-            .get(&var)
-            .cloned()
-            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+        let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
         return Err(Box::new(WriteCompilationError::OptionalVariableUsedOutsideTry { source_span, variable }));
     }
 
@@ -83,11 +79,7 @@ pub fn compile(
     for &variable in deleted_concepts {
         let Some(input_position) = input_variables.get(&variable) else {
             return Err(Box::new(WriteCompilationError::DeletedThingWasNotInInput {
-                variable: variable_registry
-                    .variable_names()
-                    .get(&variable)
-                    .cloned()
-                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
                 source_span,
             }));
         };
@@ -103,11 +95,7 @@ pub fn compile(
                 .is_some_and(|anno| anno.iter().any(|type_| type_.kind() == Kind::Role))
         }) {
             return Err(Box::new(WriteCompilationError::DeleteIllegalRoleVariable {
-                variable: variable_registry
-                    .variable_names()
-                    .get(&variable)
-                    .cloned()
-                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                variable: variable_registry.get_variable_name_or_unnamed(variable).to_owned(),
                 source_span,
             }));
         } else {

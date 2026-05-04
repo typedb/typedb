@@ -19,7 +19,7 @@ use concept::{
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::{
     pattern::{
-        Pattern, Scope, Vertex,
+        Pattern, Vertex,
         conjunction::Conjunction,
         constraint::{
             Comparison, Constraint, FunctionCallBinding, Has, Is, Isa, IsaKind, Kind, Label, Links, Owns, Plays,
@@ -29,7 +29,7 @@ use ir::{
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
     },
-    pipeline::{VariableRegistry, block::BlockContext},
+    pipeline::VariableRegistry,
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;

@@ -398,11 +398,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
         if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(var.variable)) {
-            let variable = self
-                .context
-                .get_variable_name(variable.variable)
-                .cloned()
-                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            let variable = self.context.get_variable_name_or_unnamed(variable.variable).to_owned();
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
         }
 
@@ -413,11 +409,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             },
         );
         if let Some(variable) = mismatched_optionality_in_assignment {
-            let variable = self
-                .context
-                .get_variable_name(variable)
-                .cloned()
-                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            let variable = self.context.get_variable_name_or_unnamed(variable).to_owned();
             use error::TypeDBError;
             tracing::warn!(
                 "Function call assigns to unmarked optional variable. This will fail in the next version:\n{}",
@@ -457,11 +449,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
         if let Some(variable) = assigned.iter().find(|var| self.context.is_block_input_variable(var.variable)) {
-            let variable = self
-                .context
-                .get_variable_name(variable.variable)
-                .cloned()
-                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            let variable = self.context.get_variable_name_or_unnamed(variable.variable).to_owned();
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
         }
         let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).find_map(
@@ -470,11 +458,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             },
         );
         if let Some(variable) = mismatched_optionality_in_assignment {
-            let variable = self
-                .context
-                .get_variable_name(variable)
-                .cloned()
-                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            let variable = self.context.get_variable_name_or_unnamed(variable).to_owned();
             use error::TypeDBError;
             tracing::warn!(
                 "Function call assigns to unmarked optional variable. This will fail in the next version:\n{}",
@@ -536,11 +520,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         source_span: Option<Span>,
     ) -> Result<&ExpressionBinding<Variable>, Box<RepresentationError>> {
         if self.context.is_block_input_variable(variable) {
-            let variable = self
-                .context
-                .get_variable_name(variable)
-                .cloned()
-                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            let variable = self.context.get_variable_name_or_unnamed(variable).to_owned();
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
         }
         let binding = ExpressionBinding::new(variable, expression, source_span);

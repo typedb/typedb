@@ -11,8 +11,8 @@ use std::{
 
 use compiler::{
     annotation::{
-        expression::block_compiler::compile_expressions, function::EmptyAnnotatedFunctionSignatures,
-        match_inference::infer_types,
+        PipelineAnnotationContext, expression::block_compiler::compile_expressions,
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_test_only,
     },
     executable::{
         function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
@@ -128,16 +128,14 @@ fn test_has_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &*snapshot,
-        &block,
-        &translation_context.variable_registry,
         &type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -218,16 +216,14 @@ fn test_expression_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &*snapshot,
-        &block,
-        &translation_context.variable_registry,
         &type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let compiled_expressions = compile_expressions(
         &*snapshot,
@@ -318,16 +314,14 @@ fn test_links_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &*snapshot,
-        &block,
-        &translation_context.variable_registry,
         &type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -414,16 +408,14 @@ fn test_links_intersection() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &*snapshot,
-        &block,
-        &translation_context.variable_registry,
         &type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -501,16 +493,14 @@ fn test_negation_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &*snapshot,
-        &block,
-        &translation_context.variable_registry,
         &type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -609,16 +599,14 @@ fn test_forall_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &*snapshot,
-        &block,
-        &translation_context.variable_registry,
         &type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -704,16 +692,14 @@ fn test_named_var_select() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &*snapshot,
-        &block,
-        &translation_context.variable_registry,
         &type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -798,16 +784,14 @@ fn test_disjunction_planning_traversal() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &*snapshot,
-        &block,
-        &translation_context.variable_registry,
         &type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -896,16 +880,14 @@ fn test_disjunction_planning_nested_negations() {
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let entry_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         &*snapshot,
-        &block,
-        &translation_context.variable_registry,
         &type_manager,
-        &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     let conjunction_executable = compiler::executable::match_::planner::compile(
         &block,
@@ -1059,16 +1041,14 @@ fn compile_query(
     let block = builder.finish().unwrap();
 
     // Executor
-    let entry_annotations = infer_types(
+    let mut ctx = PipelineAnnotationContext::new(
         snapshot,
-        &block,
-        &translation_context.variable_registry,
-        &type_manager,
-        &BTreeMap::new(),
+        type_manager,
         &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let entry_annotations = infer_types_for_test_only(&mut ctx, &block, false).unwrap();
 
     compiler::executable::match_::planner::compile(
         &block,

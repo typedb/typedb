@@ -6,14 +6,17 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     sync::Arc,
 };
 
 use answer::variable::Variable;
 use compiler::{
     ExecutorVariable, VariablePosition,
-    annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
+    annotation::{
+        PipelineAnnotationContext, function::EmptyAnnotatedFunctionSignatures,
+        match_inference::infer_types_for_test_only,
+    },
     executable::{
         function::ExecutableFunctionRegistry,
         match_::{
@@ -213,18 +216,14 @@ fn anonymous_vars_not_enumerated_or_counted() {
     let block_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        let variable_registry = &translation_context.variable_registry;
-        let previous_stage_variable_annotations = &BTreeMap::new();
-        infer_types(
+        let mut ctx = PipelineAnnotationContext::new(
             &snapshot,
-            &entry,
-            variable_registry,
             &type_manager,
-            previous_stage_variable_annotations,
             &EmptyAnnotatedFunctionSignatures,
-            false,
-        )
-        .unwrap()
+            &mut translation_context.variable_registry,
+            &value_parameters,
+        );
+        infer_types_for_test_only(&mut ctx, &entry, false).unwrap()
     };
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
@@ -308,18 +307,14 @@ fn unselected_named_vars_counted() {
     let block_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        let variable_registry = &translation_context.variable_registry;
-        let previous_stage_variable_annotations = &BTreeMap::new();
-        infer_types(
+        let mut ctx = PipelineAnnotationContext::new(
             &snapshot,
-            &entry,
-            variable_registry,
             &type_manager,
-            previous_stage_variable_annotations,
             &EmptyAnnotatedFunctionSignatures,
-            false,
-        )
-        .unwrap()
+            &mut translation_context.variable_registry,
+            &value_parameters,
+        );
+        infer_types_for_test_only(&mut ctx, &entry, false).unwrap()
     };
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
@@ -416,18 +411,14 @@ fn cartesian_named_counted_checked() {
     let block_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
-        let variable_registry = &translation_context.variable_registry;
-        let previous_stage_variable_annotations = &BTreeMap::new();
-        infer_types(
+        let mut ctx = PipelineAnnotationContext::new(
             &snapshot,
-            &entry,
-            variable_registry,
             &type_manager,
-            previous_stage_variable_annotations,
             &EmptyAnnotatedFunctionSignatures,
-            false,
-        )
-        .unwrap()
+            &mut translation_context.variable_registry,
+            &value_parameters,
+        );
+        infer_types_for_test_only(&mut ctx, &entry, false).unwrap()
     };
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 

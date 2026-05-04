@@ -51,11 +51,7 @@ struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
 
 impl<'block, Snapshot: ReadableSnapshot> BlockExpressionsCompilationContext<'block, Snapshot> {
     pub(crate) fn variable_name(&self, variable: &Variable) -> String {
-        self.variable_registry
-            .variable_names()
-            .get(variable)
-            .cloned()
-            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string())
+        self.variable_registry.get_variable_name_or_unnamed(*variable).to_owned()
     }
 }
 

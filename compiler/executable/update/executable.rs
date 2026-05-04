@@ -81,11 +81,7 @@ pub fn compile(
         .find(|var| variable_registry.is_variable_optional(*var));
 
     if let Some(var) = unsafely_used_optional_variable {
-        let variable = variable_registry
-            .variable_names()
-            .get(&var)
-            .cloned()
-            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+        let variable = variable_registry.get_variable_name_or_unnamed(var).to_owned();
         return Err(Box::new(WriteCompilationError::OptionalVariableUsedOutsideTry { source_span, variable }));
     }
 
