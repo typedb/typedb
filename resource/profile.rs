@@ -737,9 +737,6 @@ impl PatternProfile {
         Self { substeps: RwLock::new(Vec::new()), enabled: false, description: None }
     }
 
-    /// Read access to the substep vector for inspection. Mirrors the shape of
-    /// [`QueryProfile::stage_profiles`]; callers should `.read()` and iterate without
-    /// retaining the guard across allocator boundaries.
     pub fn substeps(&self) -> &RwLock<Vec<SubstepProfile>> {
         &self.substeps
     }
@@ -887,8 +884,6 @@ impl IndentDisplay for StepProfileData {
         let rows = self.rows.load(Ordering::Relaxed);
         let micros = Duration::from_nanos(self.nanos.load(Ordering::Relaxed)).as_micros();
         let micros_per_row: f64 = micros as f64 / rows as f64;
-        // TODO: print storage ops
-        // write_indent(f, indent + 1)?;
         let descriptions = self.description.split("\n").collect_vec();
         writeln!(f, "{}", descriptions[0])?;
         for description in &descriptions[1..] {
