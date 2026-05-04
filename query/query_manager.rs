@@ -162,7 +162,8 @@ impl QueryManager {
                     arced_fetch.clone(),
                 )?;
                 if let Some(cache) = self.cache.as_ref() {
-                    cache.insert(arced_preamble, arced_stages, arced_fetch, executable_pipeline.clone())
+                    let seq = thing_manager.statistics().sequence_number;
+                    cache.may_insert(seq, arced_preamble, arced_stages, arced_fetch, executable_pipeline.clone())
                 }
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
@@ -247,7 +248,13 @@ impl QueryManager {
                 match executable_pipeline_result {
                     Ok(executable_pipeline) => {
                         if let Some(cache) = self.cache.as_ref() {
-                            cache.insert(arced_preamble, arced_stages, arced_fetch, executable_pipeline.clone())
+                            cache.may_insert(
+                                thing_manager.statistics().sequence_number,
+                                arced_preamble,
+                                arced_stages,
+                                arced_fetch,
+                                executable_pipeline.clone(),
+                            )
                         }
                         QUERY_CACHE_MISSES.increment();
                         executable_pipeline
