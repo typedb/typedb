@@ -79,7 +79,7 @@ pub mod tests {
     use itertools::Itertools;
 
     use crate::annotation::{
-        TypeInferenceError,
+        AnnotationContext, TypeInferenceError,
         function::{
             AnnotatedFunctionSignature, AnnotatedFunctionSignaturesImpl, EmptyAnnotatedFunctionSignatures,
             annotate_named_function,
@@ -98,7 +98,6 @@ pub mod tests {
             setup_storage,
         },
         type_seeder::TypeGraphSeedingContext,
-        utils::AnnotationContext,
     };
 
     #[test]
