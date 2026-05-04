@@ -365,10 +365,7 @@ impl TransactionService {
     // the client would be discarded anyway.
     async fn drain_request_stream(&mut self) {
         const DRAIN_TIMEOUT: Duration = Duration::from_millis(500);
-        let _ = timeout(DRAIN_TIMEOUT, async {
-            while self.request_stream.next().await.is_some() {}
-        })
-        .await;
+        let _ = timeout(DRAIN_TIMEOUT, async { while self.request_stream.next().await.is_some() {} }).await;
     }
 
     // TODO: any method using `Result<ControlFlow<(), ()>, Status>` should really be `ControlFlow<Result<(), Status>, ()>`
