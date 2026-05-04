@@ -288,7 +288,7 @@ fn annotate_stage(
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             deleted_variables.iter().for_each(|var| {
-                running_annotations.values.remove(var);
+                running_annotations.concepts.remove(var);
             });
             Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations, source_span })
         }
