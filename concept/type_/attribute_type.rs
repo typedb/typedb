@@ -38,8 +38,8 @@ use crate::{
         KindAPI, ThingTypeAPI, TypeAPI, TypeQLSyntax,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationIndependent,
-            AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, DefaultFrom, HasAnnotationCategory,
-            has_annotation_category,
+            AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, DefaultFrom, FromAnnotation,
+            HasAnnotationCategory, has_annotation_category,
         },
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
@@ -484,7 +484,7 @@ impl AttributeType {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, has_annotation_category!)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, has_annotation_category!)]
 pub enum AttributeTypeAnnotation {
     Abstract(AnnotationAbstract),
     Independent(AnnotationIndependent),
@@ -516,44 +516,6 @@ impl AttributeTypeAnnotation {
             | AnnotationCategory::Cascade
             | AnnotationCategory::Doc
             | AnnotationCategory::Meta(_) => false,
-        }
-    }
-}
-
-impl TryFrom<Annotation> for AttributeTypeAnnotation {
-    type Error = AnnotationError;
-
-    fn try_from(annotation: Annotation) -> Result<AttributeTypeAnnotation, AnnotationError> {
-        match annotation {
-            Annotation::Abstract(annotation) => Ok(AttributeTypeAnnotation::Abstract(annotation)),
-            Annotation::Independent(annotation) => Ok(AttributeTypeAnnotation::Independent(annotation)),
-            Annotation::Regex(annotation) => Ok(AttributeTypeAnnotation::Regex(annotation)),
-            Annotation::Range(annotation) => Ok(AttributeTypeAnnotation::Range(annotation)),
-            Annotation::Values(annotation) => Ok(AttributeTypeAnnotation::Values(annotation)),
-            Annotation::Doc(annotation) => Ok(AttributeTypeAnnotation::Doc(annotation)),
-            Annotation::Meta(annotation) => Ok(AttributeTypeAnnotation::Meta(annotation)),
-
-            | Annotation::Distinct(_)
-            | Annotation::Unique(_)
-            | Annotation::Key(_)
-            | Annotation::Cardinality(_)
-            | Annotation::Cascade(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForAttributeType { category: annotation.category() })
-            }
-        }
-    }
-}
-
-impl From<AttributeTypeAnnotation> for Annotation {
-    fn from(val: AttributeTypeAnnotation) -> Self {
-        match val {
-            AttributeTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
-            AttributeTypeAnnotation::Independent(annotation) => Annotation::Independent(annotation),
-            AttributeTypeAnnotation::Regex(annotation) => Annotation::Regex(annotation),
-            AttributeTypeAnnotation::Range(annotation) => Annotation::Range(annotation),
-            AttributeTypeAnnotation::Values(annotation) => Annotation::Values(annotation),
-            AttributeTypeAnnotation::Doc(annotation) => Annotation::Doc(annotation),
-            AttributeTypeAnnotation::Meta(annotation) => Annotation::Meta(annotation),
         }
     }
 }

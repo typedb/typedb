@@ -37,7 +37,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationDoc, AnnotationError,
-            AnnotationMeta, DefaultFrom, HasAnnotationCategory, has_annotation_category,
+            AnnotationMeta, DefaultFrom, FromAnnotation, HasAnnotationCategory, has_annotation_category,
         },
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, Constraint, TypeConstraint},
@@ -881,46 +881,12 @@ impl PlayerAPI for RelationType {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, has_annotation_category!)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, has_annotation_category!)]
 pub enum RelationTypeAnnotation {
     Abstract(AnnotationAbstract),
     Cascade(AnnotationCascade),
     Doc(AnnotationDoc),
     Meta(AnnotationMeta),
-}
-
-impl TryFrom<Annotation> for RelationTypeAnnotation {
-    type Error = AnnotationError;
-    fn try_from(annotation: Annotation) -> Result<RelationTypeAnnotation, AnnotationError> {
-        match annotation {
-            Annotation::Abstract(annotation) => Ok(RelationTypeAnnotation::Abstract(annotation)),
-            Annotation::Cascade(annotation) => Ok(RelationTypeAnnotation::Cascade(annotation)),
-            Annotation::Doc(annotation) => Ok(RelationTypeAnnotation::Doc(annotation)),
-            Annotation::Meta(annotation) => Ok(RelationTypeAnnotation::Meta(annotation)),
-
-            | Annotation::Distinct(_)
-            | Annotation::Independent(_)
-            | Annotation::Unique(_)
-            | Annotation::Key(_)
-            | Annotation::Cardinality(_)
-            | Annotation::Regex(_)
-            | Annotation::Range(_)
-            | Annotation::Values(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRelationType { category: annotation.category() })
-            }
-        }
-    }
-}
-
-impl From<RelationTypeAnnotation> for Annotation {
-    fn from(anno: RelationTypeAnnotation) -> Self {
-        match anno {
-            RelationTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
-            RelationTypeAnnotation::Cascade(annotation) => Annotation::Cascade(annotation),
-            RelationTypeAnnotation::Doc(annotation) => Annotation::Doc(annotation),
-            RelationTypeAnnotation::Meta(annotation) => Annotation::Meta(annotation),
-        }
-    }
 }
 
 // TODO: can we inline this into the macro invocation?

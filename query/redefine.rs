@@ -302,7 +302,7 @@ fn redefine_type_annotations(
                             type_: label.to_owned(),
                             annotation: annotation.clone(),
                             source_span: type_declaration.span(),
-                            typedb_source: AnnotationError::UnsupportedAnnotationForAttributeType {
+                            typedb_source: AnnotationError::UnsupportedAttributeTypeAnnotation {
                                 category: annotation.category(),
                             },
                         });
@@ -404,7 +404,7 @@ fn redefine_sub(
 }
 
 fn redefine_sub_annotations(typeql_capability: &Capability) -> Result<(), RedefineError> {
-    verify_no_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub, category)
+    verify_no_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedSubAnnotation, category)
 }
 
 fn redefine_value_type(
@@ -503,9 +503,7 @@ fn redefine_value_type_annotations(
             if !converted.is_value_type_annotation() {
                 return Err(RedefineError::IllegalCapabilityAnnotation {
                     source_span: typeql_capability.span(),
-                    typedb_source: AnnotationError::UnsupportedAnnotationForValueType {
-                        category: annotation.category(),
-                    },
+                    typedb_source: AnnotationError::UnsupportedValueTypeAnnotation { category: annotation.category() },
                     annotation,
                 });
             }

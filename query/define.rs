@@ -364,7 +364,7 @@ fn define_type_annotations(
                     if converted.is_value_type_annotation() {
                         return Err(DefineError::IllegalAnnotation {
                             source_span: typeql_annotation.span(),
-                            typedb_source: AnnotationError::UnsupportedAnnotationForAttributeType {
+                            typedb_source: AnnotationError::UnsupportedAttributeTypeAnnotation {
                                 category: annotation.category(),
                             },
                         });
@@ -401,11 +401,7 @@ fn define_alias(
 }
 
 fn define_alias_annotations(typeql_capability: &TypeQLCapability) -> Result<(), DefineError> {
-    verify_empty_annotations_for_capability!(
-        typeql_capability,
-        AnnotationError::UnsupportedAnnotationForAlias,
-        category
-    )
+    verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAliasAnnotation, category)
 }
 
 fn define_sub(
@@ -475,7 +471,7 @@ fn define_sub(
 }
 
 fn define_sub_annotations(typeql_capability: &TypeQLCapability) -> Result<(), DefineError> {
-    verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub, category)
+    verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedSubAnnotation, category)
 }
 
 fn define_value_type(
@@ -570,9 +566,7 @@ fn define_value_type_annotations(
             if !converted.is_value_type_annotation() {
                 return Err(DefineError::IllegalAnnotation {
                     source_span: typeql_annotation.span(),
-                    typedb_source: AnnotationError::UnsupportedAnnotationForValueType {
-                        category: annotation.category(),
-                    },
+                    typedb_source: AnnotationError::UnsupportedValueTypeAnnotation { category: annotation.category() },
                 });
             }
             attribute_type

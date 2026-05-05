@@ -597,6 +597,34 @@ impl Annotation {
     }
 }
 
+macro_rules! FromAnnotation {
+    (
+       $(#[$meta:meta])*
+       $vis:vis enum $Enum:ident {
+           $($Variant:ident($Inner:ty)),* $(,)?
+       }
+    ) => {
+        impl TryFrom<$crate::type_::annotation::Annotation> for $Enum {
+            type Error = $crate::type_::annotation::AnnotationError;
+            fn try_from(annotation: $crate::type_::annotation::Annotation) -> Result<Self, AnnotationError> {
+                match annotation {
+                    $($crate::type_::annotation::Annotation::$Variant(annotation) => Ok(Self::$Variant(annotation)),)*
+                    _ => paste::paste!(Err(AnnotationError::[< Unsupported $Enum >] { category: annotation.category() })),
+                }
+            }
+        }
+
+        impl From<$Enum> for Annotation {
+            fn from(value: $Enum) -> Self {
+                match value {
+                    $($Enum::$Variant(annotation) => Self::$Variant(annotation),)*
+                }
+            }
+        }
+    }
+}
+pub(crate) use FromAnnotation;
+
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum AnnotationCategory {
     Abstract,
@@ -987,16 +1015,16 @@ impl TypeEdgePropertyEncoding for AnnotationMeta {
 
 typedb_error! {
     pub AnnotationError(component = "Annotation", prefix = "ANN") {
-        UnsupportedAnnotationForEntityType(1, "Annotation '{category}' is not supported for entity types.", category: AnnotationCategory),
-        UnsupportedAnnotationForRelationType(2, "Annotation '{category}' is not supported for relation types.", category: AnnotationCategory),
-        UnsupportedAnnotationForAttributeType(3, "Annotation '{category}' is not supported for attribute types.", category: AnnotationCategory),
-        UnsupportedAnnotationForRoleType(4, "Annotation '{category}' is not supported for role types.", category: AnnotationCategory),
-        UnsupportedAnnotationForRelates(5, "Annotation '{category}' is not supported for relates.", category: AnnotationCategory),
-        UnsupportedAnnotationForPlays(6, "Annotation '{category}' is not supported for plays.", category: AnnotationCategory),
-        UnsupportedAnnotationForOwns(7, "Annotation '{category}' is not supported for owns.", category: AnnotationCategory),
-        UnsupportedAnnotationForAlias(8, "Annotation '{category}' is not supported for alias.", category: AnnotationCategory),
-        UnsupportedAnnotationForSub(9, "Annotation '{category}' is not supported for sub.", category: AnnotationCategory),
-        UnsupportedAnnotationForValueType(10, "Annotation '{category}' is not supported for value types.", category: AnnotationCategory),
+        UnsupportedEntityTypeAnnotation(1, "Annotation '{category}' is not supported for entity types.", category: AnnotationCategory),
+        UnsupportedRelationTypeAnnotation(2, "Annotation '{category}' is not supported for relation types.", category: AnnotationCategory),
+        UnsupportedAttributeTypeAnnotation(3, "Annotation '{category}' is not supported for attribute types.", category: AnnotationCategory),
+        UnsupportedRoleTypeAnnotation(4, "Annotation '{category}' is not supported for role types.", category: AnnotationCategory),
+        UnsupportedRelatesAnnotation(5, "Annotation '{category}' is not supported for relates.", category: AnnotationCategory),
+        UnsupportedPlaysAnnotation(6, "Annotation '{category}' is not supported for plays.", category: AnnotationCategory),
+        UnsupportedOwnsAnnotation(7, "Annotation '{category}' is not supported for owns.", category: AnnotationCategory),
+        UnsupportedAliasAnnotation(8, "Annotation '{category}' is not supported for alias.", category: AnnotationCategory),
+        UnsupportedSubAnnotation(9, "Annotation '{category}' is not supported for sub.", category: AnnotationCategory),
+        UnsupportedValueTypeAnnotation(10, "Annotation '{category}' is not supported for value types.", category: AnnotationCategory),
     }
 }
 
