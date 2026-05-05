@@ -4,6 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod byte_size;
+
+pub use byte_size::ByteSize;
+
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_GRPC, DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES,
     DEFAULT_INCLUDE_STRUCTURE_GRPC, DEFAULT_INCLUDE_STRUCTURE_HTTP, DEFAULT_PREFETCH_SIZE,
