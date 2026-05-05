@@ -23,7 +23,7 @@ use crate::{
     pattern::{Pattern, variable_category::VariableCategory},
     pipeline::{
         ParameterRegistry, VariableRegistry,
-        block::{Block, BlockBuilder},
+        block::Block,
         fetch::FetchObject,
         function::Function,
         function_signature::FunctionSignatureIndex,

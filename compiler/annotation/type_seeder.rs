@@ -267,7 +267,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         // If any variables remain that aren't in any producing constraint, seed them with all types
         //  TODO: This isn't very uncommon - when all disjunction branches produce a variable.
         //   Ideally, we'd use annotations from the disjunction.
-        let unannotated_var = self.variables_in_constraints(&graph.conjunction).find(|&var| {
+        let unannotated_var = self.variables_in_constraints(graph.conjunction).find(|&var| {
             let vertex = Vertex::Variable(var);
             self.variable_registry.get_variable_category(var).unwrap_or(VariableCategory::Value)
                 != VariableCategory::Value
@@ -567,7 +567,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             let (Vertex::Variable(id), annotations) = annotated_vertex else {
                 continue;
             };
-            if self.variable_registry.get_variable_category(*id).map_or(false, |cat| cat.is_category_thing()) {
+            if self.variable_registry.get_variable_category(*id).is_some_and(|cat| cat.is_category_thing()) {
                 TypeAnnotation::try_retain(annotations, |type_| self.is_not_abstract(type_))
                     .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
             }
@@ -826,10 +826,10 @@ trait BinaryConstraint {
 
     fn check_for_thing_vars(&self, context: &TypeGraphSeedingContext<'_, impl ReadableSnapshot>) -> (bool, bool) {
         let left_is_thing = matches!(self.left(), Vertex::Variable(var) if {
-            context.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
+            context.variable_registry.get_variable_category(*var).is_some_and(|cat| cat.is_category_thing())
         });
         let right_is_thing = matches!(self.right(), Vertex::Variable(var) if {
-            context.variable_registry.get_variable_category(*var).map_or(false, |cat| cat.is_category_thing())
+            context.variable_registry.get_variable_category(*var).is_some_and(|cat| cat.is_category_thing())
         });
         (left_is_thing, right_is_thing)
     }
@@ -944,8 +944,8 @@ impl BinaryConstraint for Has<Variable> {
             _ => return Ok(()), // It can't be another type => Do nothing and let type-inference clean it up
         };
         collector.extend(
-            (attribute.get_owner_types(context.snapshot, context.type_manager)?.iter())
-                .map(|(owner, _)| TypeAnnotation::from(*owner)),
+            (attribute.get_owner_types(context.snapshot, context.type_manager)?.keys())
+                .map(|owner| TypeAnnotation::from(*owner)),
         );
         Ok(())
     }
@@ -996,8 +996,8 @@ impl BinaryConstraint for Owns<Variable> {
         };
         attribute
             .get_owner_types(context.snapshot, context.type_manager)?
-            .iter()
-            .map(|(owner, _)| match owner {
+            .keys()
+            .map(|owner| match owner {
                 ObjectType::Entity(entity) => TypeAnnotation::Entity(*entity),
                 ObjectType::Relation(relation) => TypeAnnotation::Relation(*relation),
             })
@@ -1598,7 +1598,7 @@ impl BinaryConstraint for RelationRoleEdge<'_> {
         };
         for (relation, _) in role.get_relation_types(context.snapshot, context.type_manager)?.iter() {
             let is_write_stage_and_relates_is_abstract = context.is_write_stage
-                && relation.is_related_role_type_abstract(context.snapshot, context.type_manager, role.clone())?;
+                && relation.is_related_role_type_abstract(context.snapshot, context.type_manager, *role)?;
             if !is_write_stage_and_relates_is_abstract {
                 collector.insert(TypeAnnotation::Relation(*relation));
             }

@@ -56,7 +56,9 @@ use tracing::{Level, event};
 use typeql::query::SchemaQuery;
 
 use crate::{
-    analyse::{self, AnalysedQuery, FunctionStructureAnnotations, QueryStructureAnnotations},
+    analyse::{
+        AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
+    },
     define,
     error::QueryError,
     given_rows::{GivenRowDecodeError, GivenRows},
