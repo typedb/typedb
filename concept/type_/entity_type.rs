@@ -36,7 +36,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
-            DefaultFrom, HasAnnotationCategory, has_annotation_category,
+            DefaultFrom, FromAnnotation, HasAnnotationCategory, has_annotation_category,
         },
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, TypeConstraint},
@@ -502,44 +502,11 @@ impl fmt::Display for EntityType {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, has_annotation_category!)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, has_annotation_category!)]
 pub enum EntityTypeAnnotation {
     Abstract(AnnotationAbstract),
     Doc(AnnotationDoc),
     Meta(AnnotationMeta),
-}
-
-impl TryFrom<Annotation> for EntityTypeAnnotation {
-    type Error = AnnotationError;
-    fn try_from(annotation: Annotation) -> Result<EntityTypeAnnotation, AnnotationError> {
-        match annotation {
-            Annotation::Abstract(annotation) => Ok(EntityTypeAnnotation::Abstract(annotation)),
-            Annotation::Doc(annotation) => Ok(EntityTypeAnnotation::Doc(annotation)),
-            Annotation::Meta(annotation) => Ok(EntityTypeAnnotation::Meta(annotation)),
-
-            | Annotation::Distinct(_)
-            | Annotation::Independent(_)
-            | Annotation::Unique(_)
-            | Annotation::Key(_)
-            | Annotation::Cardinality(_)
-            | Annotation::Regex(_)
-            | Annotation::Cascade(_)
-            | Annotation::Range(_)
-            | Annotation::Values(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForEntityType { category: annotation.category() })
-            }
-        }
-    }
-}
-
-impl From<EntityTypeAnnotation> for Annotation {
-    fn from(val: EntityTypeAnnotation) -> Self {
-        match val {
-            EntityTypeAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
-            EntityTypeAnnotation::Doc(annotation) => Annotation::Doc(annotation),
-            EntityTypeAnnotation::Meta(annotation) => Annotation::Meta(annotation),
-        }
-    }
 }
 
 // TODO: can we inline this into the macro invocation?

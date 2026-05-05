@@ -38,7 +38,7 @@ use crate::{
     thing::thing_manager::ThingManager,
     type_::{
         Capability, KindAPI, Ordering, TypeAPI,
-        annotation::{Annotation, AnnotationCategory, AnnotationError, HasAnnotationCategory},
+        annotation::{Annotation, AnnotationCategory, AnnotationError, FromAnnotation, HasAnnotationCategory},
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
         plays::Plays,
@@ -311,7 +311,7 @@ impl fmt::Display for RoleType {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!)]
 pub enum RoleTypeAnnotation {}
 
 impl HasAnnotationCategory for RoleTypeAnnotation {
@@ -321,34 +321,6 @@ impl HasAnnotationCategory for RoleTypeAnnotation {
 
     fn category(&self) -> AnnotationCategory {
         match *self {}
-    }
-}
-
-impl TryFrom<Annotation> for RoleTypeAnnotation {
-    type Error = AnnotationError;
-    fn try_from(annotation: Annotation) -> Result<RoleTypeAnnotation, AnnotationError> {
-        match annotation {
-            | Annotation::Abstract(_)
-            | Annotation::Independent(_)
-            | Annotation::Distinct(_)
-            | Annotation::Cardinality(_)
-            | Annotation::Unique(_)
-            | Annotation::Key(_)
-            | Annotation::Regex(_)
-            | Annotation::Cascade(_)
-            | Annotation::Range(_)
-            | Annotation::Values(_)
-            | Annotation::Doc(_)
-            | Annotation::Meta(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRoleType { category: annotation.category() })
-            }
-        }
-    }
-}
-
-impl From<RoleTypeAnnotation> for Annotation {
-    fn from(_anno: RoleTypeAnnotation) -> Self {
-        unreachable!("RoleTypes do not have annotations!")
     }
 }
 

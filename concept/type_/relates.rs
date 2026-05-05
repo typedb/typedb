@@ -23,7 +23,8 @@ use crate::{
         Capability, Ordering,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
-            AnnotationDoc, AnnotationError, AnnotationMeta, DefaultFrom, HasAnnotationCategory, has_annotation_category,
+            AnnotationDoc, AnnotationError, AnnotationMeta, DefaultFrom, FromAnnotation, HasAnnotationCategory,
+            has_annotation_category,
         },
         constraint::CapabilityConstraint,
         relation_type::RelationType,
@@ -243,47 +244,11 @@ impl Capability for Relates {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, has_annotation_category!)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, has_annotation_category!)]
 pub enum RelatesAnnotation {
     Abstract(AnnotationAbstract),
     Distinct(AnnotationDistinct),
     Cardinality(AnnotationCardinality),
     Doc(AnnotationDoc),
     Meta(AnnotationMeta),
-}
-
-impl TryFrom<Annotation> for RelatesAnnotation {
-    type Error = AnnotationError;
-
-    fn try_from(annotation: Annotation) -> Result<RelatesAnnotation, AnnotationError> {
-        match annotation {
-            Annotation::Abstract(annotation) => Ok(RelatesAnnotation::Abstract(annotation)),
-            Annotation::Distinct(annotation) => Ok(RelatesAnnotation::Distinct(annotation)),
-            Annotation::Cardinality(annotation) => Ok(RelatesAnnotation::Cardinality(annotation)),
-            Annotation::Doc(annotation) => Ok(RelatesAnnotation::Doc(annotation)),
-            Annotation::Meta(annotation) => Ok(RelatesAnnotation::Meta(annotation)),
-
-            | Annotation::Independent(_)
-            | Annotation::Unique(_)
-            | Annotation::Key(_)
-            | Annotation::Regex(_)
-            | Annotation::Cascade(_)
-            | Annotation::Range(_)
-            | Annotation::Values(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRelates { category: annotation.category() })
-            }
-        }
-    }
-}
-
-impl From<RelatesAnnotation> for Annotation {
-    fn from(anno: RelatesAnnotation) -> Self {
-        match anno {
-            RelatesAnnotation::Abstract(annotation) => Annotation::Abstract(annotation),
-            RelatesAnnotation::Distinct(annotation) => Annotation::Distinct(annotation),
-            RelatesAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
-            RelatesAnnotation::Doc(annotation) => Annotation::Doc(annotation),
-            RelatesAnnotation::Meta(annotation) => Annotation::Meta(annotation),
-        }
-    }
 }

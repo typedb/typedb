@@ -23,7 +23,7 @@ use crate::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationDoc, AnnotationError,
             AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
-            DefaultFrom, HasAnnotationCategory, has_annotation_category,
+            DefaultFrom, FromAnnotation, HasAnnotationCategory, has_annotation_category,
         },
         attribute_type::AttributeType,
         constraint::CapabilityConstraint,
@@ -285,7 +285,7 @@ impl Capability for Owns {
     }
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, has_annotation_category!)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, FromAnnotation!, has_annotation_category!)]
 pub enum OwnsAnnotation {
     Distinct(AnnotationDistinct),
     Unique(AnnotationUnique),
@@ -296,44 +296,6 @@ pub enum OwnsAnnotation {
     Values(AnnotationValues),
     Doc(AnnotationDoc),
     Meta(AnnotationMeta),
-}
-
-impl TryFrom<Annotation> for OwnsAnnotation {
-    type Error = AnnotationError;
-
-    fn try_from(annotation: Annotation) -> Result<OwnsAnnotation, AnnotationError> {
-        match annotation {
-            Annotation::Distinct(annotation) => Ok(OwnsAnnotation::Distinct(annotation)),
-            Annotation::Unique(annotation) => Ok(OwnsAnnotation::Unique(annotation)),
-            Annotation::Key(annotation) => Ok(OwnsAnnotation::Key(annotation)),
-            Annotation::Cardinality(annotation) => Ok(OwnsAnnotation::Cardinality(annotation)),
-            Annotation::Regex(annotation) => Ok(OwnsAnnotation::Regex(annotation)),
-            Annotation::Range(annotation) => Ok(OwnsAnnotation::Range(annotation)),
-            Annotation::Values(annotation) => Ok(OwnsAnnotation::Values(annotation)),
-            Annotation::Doc(annotation) => Ok(OwnsAnnotation::Doc(annotation)),
-            Annotation::Meta(annotation) => Ok(OwnsAnnotation::Meta(annotation)),
-
-            | Annotation::Abstract(_) | Annotation::Independent(_) | Annotation::Cascade(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForOwns { category: annotation.category() })
-            }
-        }
-    }
-}
-
-impl From<OwnsAnnotation> for Annotation {
-    fn from(anno: OwnsAnnotation) -> Self {
-        match anno {
-            OwnsAnnotation::Distinct(annotation) => Annotation::Distinct(annotation),
-            OwnsAnnotation::Unique(annotation) => Annotation::Unique(annotation),
-            OwnsAnnotation::Key(annotation) => Annotation::Key(annotation),
-            OwnsAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
-            OwnsAnnotation::Regex(annotation) => Annotation::Regex(annotation),
-            OwnsAnnotation::Range(annotation) => Annotation::Range(annotation),
-            OwnsAnnotation::Values(annotation) => Annotation::Values(annotation),
-            OwnsAnnotation::Doc(annotation) => Annotation::Doc(annotation),
-            OwnsAnnotation::Meta(annotation) => Annotation::Meta(annotation),
-        }
-    }
 }
 
 impl PartialEq<Annotation> for OwnsAnnotation {

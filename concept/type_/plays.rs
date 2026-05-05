@@ -22,7 +22,7 @@ use crate::{
         Capability,
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
-            DefaultFrom, HasAnnotationCategory, has_annotation_category,
+            DefaultFrom, FromAnnotation, HasAnnotationCategory, has_annotation_category,
         },
         constraint::CapabilityConstraint,
         object_type::ObjectType,
@@ -181,44 +181,11 @@ impl Capability for Plays {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, has_annotation_category!)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, has_annotation_category!)]
 pub enum PlaysAnnotation {
     Cardinality(AnnotationCardinality),
     Doc(AnnotationDoc),
     Meta(AnnotationMeta),
-}
-
-impl TryFrom<Annotation> for PlaysAnnotation {
-    type Error = AnnotationError;
-    fn try_from(annotation: Annotation) -> Result<PlaysAnnotation, AnnotationError> {
-        match annotation {
-            Annotation::Cardinality(annotation) => Ok(PlaysAnnotation::Cardinality(annotation)),
-            Annotation::Doc(annotation) => Ok(PlaysAnnotation::Doc(annotation)),
-            Annotation::Meta(annotation) => Ok(PlaysAnnotation::Meta(annotation)),
-
-            | Annotation::Abstract(_)
-            | Annotation::Independent(_)
-            | Annotation::Distinct(_)
-            | Annotation::Unique(_)
-            | Annotation::Key(_)
-            | Annotation::Regex(_)
-            | Annotation::Cascade(_)
-            | Annotation::Range(_)
-            | Annotation::Values(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForPlays { category: annotation.category() })
-            }
-        }
-    }
-}
-
-impl From<PlaysAnnotation> for Annotation {
-    fn from(val: PlaysAnnotation) -> Self {
-        match val {
-            PlaysAnnotation::Cardinality(annotation) => Annotation::Cardinality(annotation),
-            PlaysAnnotation::Doc(annotation) => Annotation::Doc(annotation),
-            PlaysAnnotation::Meta(annotation) => Annotation::Meta(annotation),
-        }
-    }
 }
 
 impl PartialEq<Annotation> for PlaysAnnotation {
