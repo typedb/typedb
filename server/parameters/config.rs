@@ -11,6 +11,7 @@ use std::{
     time::Duration,
 };
 
+use options::ByteSize;
 use resource::constants::server::{DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT};
 use serde::Deserialize;
 use serde_with::{DurationSeconds, serde_as};
@@ -122,6 +123,31 @@ impl AdminConfig {
 #[serde(rename_all = "kebab-case")]
 pub struct StorageConfig {
     pub data_directory: PathBuf,
+    #[serde(default)]
+    pub rocksdb: RocksDbConfig,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct RocksDbConfig {
+    #[serde(default = "default_rocksdb_cache_size")]
+    pub cache_size: ByteSize,
+    #[serde(default = "default_rocksdb_write_buffers_limit")]
+    pub write_buffers_limit: ByteSize,
+}
+
+fn default_rocksdb_cache_size() -> ByteSize {
+    ByteSize::gibibytes(1)
+}
+
+fn default_rocksdb_write_buffers_limit() -> ByteSize {
+    ByteSize::mebibytes(512)
+}
+
+impl Default for RocksDbConfig {
+    fn default() -> Self {
+        Self { cache_size: default_rocksdb_cache_size(), write_buffers_limit: default_rocksdb_write_buffers_limit() }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -263,7 +289,9 @@ impl ConfigBuilder {
         serde_yaml2::from_str::<T>(self.raw_yaml.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
     }
 
-    pub fn override_with_cliargs(&mut self, cliargs: CLIArgs) {
+    pub fn override_with_cliargs(&mut self, cliargs: CLIArgs) -> Result<(), ConfigError> {
+        use std::str::FromStr;
+
         let CLIArgs {
             config_file_override: _,
             server_listen_address,
@@ -279,6 +307,8 @@ impl ConfigBuilder {
             server_encryption_certificate_key,
             server_encryption_ca_certificate,
             storage_data_directory,
+            storage_rocksdb_cache_size,
+            storage_rocksdb_write_buffers_limit,
             logging_directory,
             diagnostics_reporting_metrics,
             diagnostics_reporting_errors,
@@ -314,6 +344,20 @@ impl ConfigBuilder {
             config.server.advertise_address => server_advertise_address;
             config.server.http.advertise_address => server_http_advertise_address;
         }
+
+        if let Some(raw) = storage_rocksdb_cache_size {
+            config.storage.rocksdb.cache_size =
+                ByteSize::from_str(&raw).map_err(|_| ConfigError::ValidationError {
+                    message: "Could not parse --storage.rocksdb.cache-size as a byte-size value (e.g. `1gb`).",
+                })?;
+        }
+        if let Some(raw) = storage_rocksdb_write_buffers_limit {
+            config.storage.rocksdb.write_buffers_limit =
+                ByteSize::from_str(&raw).map_err(|_| ConfigError::ValidationError {
+                    message: "Could not parse --storage.rocksdb.write-buffers-limit as a byte-size value (e.g. `512mb`).",
+                })?;
+        }
+        Ok(())
     }
 
     pub fn build(self) -> Result<Config, ConfigError> {
@@ -433,7 +477,7 @@ pub mod tests {
         args_with_binary_infront.extend(args);
         let mut config = ConfigBuilder::from_file(yaml)?;
         let cli_args: CLIArgs = CLIArgs::parse_from(args_with_binary_infront);
-        config.override_with_cliargs(cli_args);
+        config.override_with_cliargs(cli_args)?;
         config.build()
     }
 
