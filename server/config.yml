@@ -24,6 +24,9 @@ server:
 
 storage:
     data-directory: "data"
+    rocksdb:
+        cache-size: 1gb
+        write-buffers-limit: 512mb
 
 logging:
     directory: "logs"
