@@ -46,7 +46,7 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet,
+        iterator::KeyspaceRangeIterator, storage_resources::RocksResources, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet,
         Keyspaces,
     },
     record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
@@ -90,6 +90,7 @@ impl<Durability> MVCCStorage<Durability> {
         name: impl AsRef<str>,
         path: &Path,
         mut durability_client: Durability,
+        rocks_resources: &RocksResources,
     ) -> Result<Self, StorageOpenError>
     where
         Durability: DurabilityClient,
@@ -105,7 +106,7 @@ impl<Durability> MVCCStorage<Durability> {
         })?;
         fail_point!(STORAGE_EMPTY_STORAGE_DIR);
         Self::register_durability_record_types(&mut durability_client);
-        let keyspaces = Self::create_keyspaces::<KS>(name.as_ref(), &storage_dir)?;
+        let keyspaces = Self::create_keyspaces::<KS>(name.as_ref(), &storage_dir, rocks_resources)?;
 
         let next_sequence_number = durability_client.current();
         let isolation_manager = IsolationManager::new(next_sequence_number);
@@ -122,8 +123,9 @@ impl<Durability> MVCCStorage<Durability> {
     fn create_keyspaces<KS: KeyspaceSet>(
         name: impl AsRef<str>,
         storage_dir: &Path,
+        rocks_resources: &RocksResources,
     ) -> Result<Keyspaces, StorageOpenError> {
-        let keyspaces = Keyspaces::open::<KS>(&storage_dir)
+        let keyspaces = Keyspaces::open::<KS>(&storage_dir, rocks_resources)
             .map_err(|err| StorageOpenError::KeyspaceOpen { name: name.as_ref().to_owned(), source: err })?;
         Ok(keyspaces)
     }
@@ -133,6 +135,7 @@ impl<Durability> MVCCStorage<Durability> {
         path: &Path,
         mut durability_client: Durability,
         checkpoint: &Option<CheckpointReader>,
+        rocks_resources: &RocksResources,
     ) -> Result<Self, StorageOpenError>
     where
         Durability: DurabilityClient,
@@ -145,7 +148,7 @@ impl<Durability> MVCCStorage<Durability> {
         Self::register_durability_record_types(&mut durability_client);
         let (keyspaces, next_sequence_number) = if let Some(checkpoint) = checkpoint {
             checkpoint
-                .recover_storage::<KS, _>(name, &storage_dir, &durability_client)
+                .recover_storage::<KS, _>(name, &storage_dir, &durability_client, rocks_resources)
                 .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
         } else {
             match fs::remove_dir_all(&storage_dir) {
@@ -158,7 +161,7 @@ impl<Durability> MVCCStorage<Durability> {
             fs::create_dir_all(&storage_dir)
                 .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
             fail_point!(STORAGE_EMPTY_STORAGE_DIR);
-            let keyspaces = Self::create_keyspaces::<KS>(name, &storage_dir)?;
+            let keyspaces = Self::create_keyspaces::<KS>(name, &storage_dir, rocks_resources)?;
             trace!("No checkpoint found, loading from WAL");
             let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
@@ -738,7 +741,7 @@ mod tests {
     use test_utils::{create_tmp_storage_dir, init_logging};
 
     use crate::{
-        durability_client::{DurabilityClient, WALClient}, key_value::StorageKeyArray, keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
+        durability_client::{DurabilityClient, WALClient}, key_value::StorageKeyArray, keyspace::{storage_resources::RocksResources, IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
         record::{CommitRecord, CommitType, LegacyCommitRecordV1, StatusRecord},
         sequence_number::SequenceNumber,
         snapshot::{buffer::OperationsBuffer, WriteSnapshot},
@@ -747,6 +750,11 @@ mod tests {
         MVCCStorage,
         SnapshotId,
     };
+
+    fn test_rocks_resources() -> RocksResources {
+        // Small but non-zero limits sufficient for unit tests.
+        RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024)
+    }
 
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
@@ -802,9 +810,12 @@ mod tests {
                 .unwrap();
 
             let partial_commit = WriteBatches::from_operations(seq, &partial_operations);
-            let keyspaces =
-                Keyspaces::open::<TestKeyspaceSet>(storage_path.join(MVCCStorage::<WALClient>::STORAGE_DIR_NAME))
-                    .unwrap();
+            let resources = test_rocks_resources();
+            let keyspaces = Keyspaces::open::<TestKeyspaceSet>(
+                storage_path.join(MVCCStorage::<WALClient>::STORAGE_DIR_NAME),
+                &resources,
+            )
+            .unwrap();
             keyspaces.write(partial_commit).unwrap();
 
             /* CRASH */
@@ -815,9 +826,15 @@ mod tests {
         let mut durability_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
         durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
-        let storage =
-            MVCCStorage::<WALClient>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
-                .unwrap();
+        let resources = test_rocks_resources();
+        let storage = MVCCStorage::<WALClient>::load::<TestKeyspaceSet>(
+            "storage",
+            &storage_path,
+            durability_client,
+            &None,
+            &resources,
+        )
+        .unwrap();
         assert_eq!(
             storage.get::<0>(&IteratorPool::new(), &key_2, seq, StorageCounters::DISABLED).unwrap().unwrap(),
             ByteArray::empty()
@@ -838,8 +855,15 @@ mod tests {
         let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
         durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
+        let resources = test_rocks_resources();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::create::<TestKeyspaceSet>("storage", &storage_path, durability_client).unwrap(),
+            MVCCStorage::<WALClient>::create::<TestKeyspaceSet>(
+                "storage",
+                &storage_path,
+                durability_client,
+                &resources,
+            )
+            .unwrap(),
         );
 
         // Parallel snapshot commits with the same open seqnum

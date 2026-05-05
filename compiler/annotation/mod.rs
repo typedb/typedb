@@ -316,7 +316,7 @@ pub mod tests {
             thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
         },
     };
-    use storage::{MVCCStorage, durability_client::WALClient};
+    use storage::{MVCCStorage, durability_client::WALClient, keyspace::storage_resources::RocksResources};
     use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
 
     use crate::annotation::match_inference::{
@@ -357,9 +357,15 @@ pub mod tests {
         init_logging();
         let storage_path = create_tmp_storage_dir();
         let wal = WAL::create(&storage_path).unwrap();
+        let resources = RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024);
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
-                .unwrap(),
+            MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
+                "storage",
+                &storage_path,
+                WALClient::new(wal),
+                &resources,
+            )
+            .unwrap(),
         );
         (storage_path, storage)
     }

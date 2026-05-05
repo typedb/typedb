@@ -21,7 +21,7 @@ use storage::{
     durability_client::WALClient,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{KeyspaceId, KeyspaceSet},
+    keyspace::{storage_resources::RocksResources, KeyspaceId, KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
 use test_utils::{create_tmp_storage_dir, init_logging};
@@ -117,11 +117,13 @@ fn bench_snapshot_write_put(storage: Arc<MVCCStorage<WALClient>>, keyspace: Test
 }
 
 fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WALClient>> {
+    let resources = RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024);
     let storage = Arc::new(
         MVCCStorage::create::<TestKeyspaceSet>(
             "storage_bench",
             storage_path,
             WALClient::new(WAL::create(storage_path).unwrap()),
+            &resources,
         )
         .unwrap(),
     );
