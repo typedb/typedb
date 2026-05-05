@@ -220,6 +220,14 @@ mod tests {
     }
 
     #[test]
+    fn parses_units_iec_all_caps() {
+        assert_eq!(ByteSize::from_str("4KIB").unwrap(), ByteSize::bytes(4 * KIB));
+        assert_eq!(ByteSize::from_str("512MIB").unwrap(), ByteSize::bytes(512 * MIB));
+        assert_eq!(ByteSize::from_str("1GIB").unwrap(), ByteSize::bytes(GIB));
+        assert_eq!(ByteSize::from_str("2TIB").unwrap(), ByteSize::bytes(2 * TIB));
+    }
+
+    #[test]
     fn parses_with_internal_space() {
         assert_eq!(ByteSize::from_str("500 mb").unwrap(), ByteSize::bytes(500 * MIB));
         assert_eq!(ByteSize::from_str("1   GB").unwrap(), ByteSize::bytes(GIB));
