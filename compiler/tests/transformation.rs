@@ -19,7 +19,7 @@ use compiler::{
 use concept::type_::{Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager};
 use encoding::value::label::Label;
 use ir::{
-    pattern::{Vertex, conjunction::Conjunction, constraint::Constraint},
+    pattern::{Vertex, constraint::Constraint},
     pipeline::{ParameterRegistry, block::Block, function_signature::HashMapFunctionSignatureIndex},
     translation::{PipelineTranslationContext, match_::translate_match},
 };

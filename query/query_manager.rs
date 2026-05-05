@@ -37,9 +37,7 @@ use tracing::{Level, event};
 use typeql::query::SchemaQuery;
 
 use crate::{
-    analyse::{
-        self, AnalysedQuery, FetchStructureAnnotationsFields, FunctionStructureAnnotations, QueryStructureAnnotations,
-    },
+    analyse::{AnalysedQuery, QueryStructureAnnotations},
     define,
     error::QueryError,
     query_cache::QueryCache,
