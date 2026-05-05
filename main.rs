@@ -38,7 +38,7 @@ fn main() {
         Some(path) => CLIArgs::resolve_path_from_pwd(Path::new(path)),
     };
     let mut config_builder = ConfigBuilder::from_file(config_file).expect("Error reading from config file");
-    config_builder.override_with_cliargs(cli_args);
+    config_builder.override_with_cliargs(cli_args).expect("Error applying CLI overrides");
     let config = config_builder.build().expect("Error validating config file overridden with cli args");
     initialise_logging_global(&config.logging.directory);
 
