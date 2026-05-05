@@ -18,3 +18,11 @@ features = {}
 	[dependencies.resource]
 		workspace = true
 
+	[dependencies.serde]
+		workspace = true
+
+[dev-dependencies]
+
+	[dev-dependencies.serde_yaml2]
+		workspace = true
+
