@@ -13,19 +13,19 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     sync::{
-        Arc,
         atomic::{AtomicU64, Ordering},
+        Arc,
     },
     thread::sleep,
     time::Duration,
 };
 
 use ::error::typedb_error;
-use bytes::{Bytes, byte_array::ByteArray};
+use bytes::{byte_array::ByteArray, Bytes};
 use durability::DurabilitySequenceNumber;
 use fail_point::{
-    COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS, COMMIT_DATA_UNSYNC_IN_WAL, COMMIT_REJECTED_WITHOUT_PERSISTING_STATUS,
-    STORAGE_DELETED_KEYSPACES_BUT_NOT_WAL, STORAGE_EMPTY_STORAGE_DIR, STORAGE_MISSING_STORAGE_DIR, fail_point,
+    fail_point, COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS, COMMIT_DATA_UNSYNC_IN_WAL,
+    COMMIT_REJECTED_WITHOUT_PERSISTING_STATUS, STORAGE_DELETED_KEYSPACES_BUT_NOT_WAL, STORAGE_EMPTY_STORAGE_DIR, STORAGE_MISSING_STORAGE_DIR,
 };
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
@@ -46,17 +46,17 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
-        iterator::KeyspaceRangeIterator,
+        iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet,
+        Keyspaces,
     },
     record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
     recovery::{
         checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
-        commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
+        commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
     snapshot::{
-        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot, snapshot_id::SnapshotId, write::Write,
+        snapshot_id::SnapshotId, write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot,
     },
 };
 
@@ -738,14 +738,14 @@ mod tests {
     use test_utils::{create_tmp_storage_dir, init_logging};
 
     use crate::{
-        Arc, MVCCStorage, SnapshotId,
-        durability_client::{DurabilityClient, WALClient},
-        key_value::StorageKeyArray,
-        keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
+        durability_client::{DurabilityClient, WALClient}, key_value::StorageKeyArray, keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
         record::{CommitRecord, CommitType, LegacyCommitRecordV1, StatusRecord},
         sequence_number::SequenceNumber,
-        snapshot::{WriteSnapshot, buffer::OperationsBuffer},
+        snapshot::{buffer::OperationsBuffer, WriteSnapshot},
         write_batches::WriteBatches,
+        Arc,
+        MVCCStorage,
+        SnapshotId,
     };
 
     macro_rules! test_keyspace_set {

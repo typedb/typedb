@@ -15,6 +15,7 @@ use cache::CACHE_DB_NAME_PREFIX;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
 use tracing::{Level, debug, event, warn};
+use storage::keyspace::storage_resources::RocksResources;
 
 use crate::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError, database::DatabaseCreateError};
 
@@ -27,6 +28,7 @@ pub struct DatabaseManager {
     data_directory: PathBuf,
     import_directory: PathBuf,
     databases: Databases,
+    rocks_resources: RocksResources,
 }
 
 impl DatabaseManager {
@@ -38,6 +40,8 @@ impl DatabaseManager {
 
         let databases = RwLock::new(Self::initialise_databases(&data_directory, &import_directory)?);
         Self::cleanup_import_directory(&import_directory)?;
+
+        // TODO: take in storage_config
 
         Ok(Arc::new(Self { data_directory, import_directory, databases }))
     }

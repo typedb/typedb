@@ -7,6 +7,8 @@
 #![deny(elided_lifetimes_in_paths)]
 #![deny(unused_must_use)]
 
+use std::ffi::c_int;
+use std::num::NonZero;
 use bytes::Bytes;
 use resource::constants::common::MB;
 use rocksdb::{BlockBasedIndexType, BlockBasedOptions, DBCompressionType, SliceTransform};
@@ -97,7 +99,9 @@ impl KeyspaceSet for EncodingKeyspace {
 
         options.create_if_missing(true);
         options.create_missing_column_families(true);
-        options.set_max_background_jobs(10);
+        if let Ok(parallelism) = std::thread::available_parallelism() {
+            options.set_max_background_jobs(parallelism.get() as c_int);
+        };
         options.set_target_file_size_base(64 * MB);
         options.set_write_buffer_size(64 * MB as usize);
         options.set_max_write_buffer_size_to_maintain(0);
