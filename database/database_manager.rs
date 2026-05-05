@@ -16,6 +16,7 @@ use diagnostics::diagnostics_manager::DiagnosticsManager;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
 use tracing::{Level, debug, event, warn};
+use storage::keyspace::storage_resources::RocksResources;
 
 use crate::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError, database::DatabaseCreateError};
 
@@ -29,6 +30,7 @@ pub struct DatabaseManager {
     import_directory: PathBuf,
     databases: Databases,
     diagnostics_manager: Arc<DiagnosticsManager>,
+    rocks_resources: RocksResources,
 }
 
 impl DatabaseManager {
@@ -44,6 +46,8 @@ impl DatabaseManager {
         let databases =
             RwLock::new(Self::initialise_databases(&data_directory, &import_directory, &diagnostics_manager)?);
         Self::cleanup_import_directory(&import_directory)?;
+
+        // TODO: take in storage_config
 
         Ok(Arc::new(Self { data_directory, import_directory, databases, diagnostics_manager }))
     }

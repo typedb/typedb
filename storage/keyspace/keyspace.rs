@@ -15,7 +15,7 @@ use bytes::Bytes;
 use fail_point::{KEYSPACE_CHECKPOINT_FAIL, KEYSPACE_DELETE_FAIL, KEYSPACE_OPEN_FAIL, fail_point};
 use itertools::Itertools;
 use resource::{constants::storage::ROCKSDB_CACHE_SIZE, profile::StorageCounters};
-use rocksdb::{DB, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, checkpoint::Checkpoint};
+use rocksdb::{DB, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, checkpoint::Checkpoint, WriteBufferManager};
 use serde::{Deserialize, Serialize};
 
 use super::{IteratorPool, constants, iterator};
