@@ -210,11 +210,17 @@ impl PatternExecutor {
                     )?;
                 }
                 ControlInstruction::CollectingStage(CollectingStage { index, mut collector }) => {
-                    let inner = executors[*index].unwrap_collecting_stage().pattern_mut();
+                    let collecting_stage = executors[*index].unwrap_collecting_stage();
+                    // Single step profile per collecting stage; doubles as the
+                    // storage-counter source for accept and the timing target
+                    // for into_iterator (Sort uses it; Reduce ignores).
+                    let step_profile = collecting_stage.profile_step(&context.profile);
+                    let storage_counters = step_profile.storage_counters();
+                    let inner = collecting_stage.pattern_mut();
                     while let Some(batch) = inner.compute_next_batch(context, interrupt, tabled_functions)? {
-                        collector.accept(context, batch);
+                        collector.accept(context, batch, &storage_counters);
                     }
-                    let iterator = collector.into_iterator(context);
+                    let iterator = collector.into_iterator(context, &step_profile);
                     self.control_stack.push(StreamCollected { index, iterator }.into());
                 }
                 ControlInstruction::StreamCollected(StreamCollected { index, mut iterator }) => {
