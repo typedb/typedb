@@ -11,11 +11,16 @@ use durability::wal::WAL;
 use storage::{
     MVCCStorage, StorageOpenError,
     durability_client::WALClient,
-    keyspace::KeyspaceSet,
+    keyspace::{storage_resources::RocksResources, KeyspaceSet},
     recovery::checkpoint::{CheckpointReader, CheckpointWriter},
 };
 
 pub mod mock_snapshot;
+
+pub fn test_rocks_resources() -> RocksResources {
+    // Small but non-zero limits sufficient for unit tests.
+    RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024)
+}
 
 #[macro_export]
 macro_rules! test_keyspace_set {
@@ -39,7 +44,8 @@ macro_rules! test_keyspace_set {
 
 pub fn create_storage<KS: KeyspaceSet>(path: &Path) -> Result<Arc<MVCCStorage<WALClient>>, StorageOpenError> {
     let wal = WAL::create(path, FsyncMetrics::disabled()).unwrap();
-    let storage = MVCCStorage::create::<KS>("storage", path, WALClient::new(wal))?;
+    let resources = test_rocks_resources();
+    let storage = MVCCStorage::create::<KS>("storage", path, WALClient::new(wal), &resources)?;
     Ok(Arc::new(storage))
 }
 
@@ -54,6 +60,7 @@ pub fn load_storage<KS: KeyspaceSet>(
     wal: WAL,
     checkpoint: Option<CheckpointReader>,
 ) -> Result<Arc<MVCCStorage<WALClient>>, StorageOpenError> {
-    let storage = MVCCStorage::load::<KS>("storage", path, WALClient::new(wal), &checkpoint)?;
+    let resources = test_rocks_resources();
+    let storage = MVCCStorage::load::<KS>("storage", path, WALClient::new(wal), &checkpoint, &resources)?;
     Ok(Arc::new(storage))
 }

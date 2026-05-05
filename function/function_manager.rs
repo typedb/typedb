@@ -610,7 +610,10 @@ pub mod tests {
         },
     };
     use resource::profile::CommitProfile;
-    use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
+    use storage::{
+        MVCCStorage, durability_client::WALClient, keyspace::storage_resources::RocksResources,
+        snapshot::CommittableSnapshot,
+    };
     use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
 
     use crate::{
@@ -622,9 +625,15 @@ pub mod tests {
         init_logging();
         let storage_path = create_tmp_storage_dir();
         let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
+        let resources = RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024);
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
-                .unwrap(),
+            MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
+                "storage",
+                &storage_path,
+                WALClient::new(wal),
+                &resources,
+            )
+            .unwrap(),
         );
         (storage_path, storage)
     }
