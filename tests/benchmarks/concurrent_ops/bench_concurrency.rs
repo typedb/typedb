@@ -28,7 +28,7 @@ use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use options::{QueryOptions, TransactionOptions};
 use query::given_rows::GivenRowsSimple;
 use rand_core::RngCore;
-use storage::durability_client::WALClient;
+use storage::{durability_client::WALClient, keyspace::storage_resources::RocksResources};
 use test_utils::{TempDir, create_tmp_storage_dir};
 use xoshiro::Xoshiro256Plus;
 
@@ -141,7 +141,8 @@ impl TimingAnalysis {
 
 fn create_database(schema: &str) -> (TempDir, Arc<Database<WALClient>>) {
     let tmp_dir = create_tmp_storage_dir();
-    let dbm = DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled())).unwrap();
+    let resources = Arc::new(RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024));
+    let dbm = DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled()), resources).unwrap();
     dbm.put_database(DB_NAME).unwrap();
     let database = dbm.database(DB_NAME).unwrap();
 
