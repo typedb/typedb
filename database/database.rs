@@ -45,6 +45,7 @@ use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTER
 use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
+    keyspace::storage_resources::RocksResources,
     recovery::checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
     sequence_number::SequenceNumber,
     snapshot::snapshot_id::SnapshotId,
@@ -240,16 +241,20 @@ impl<D: DurabilityClient> Database<D> {
 }
 
 impl Database<WALClient> {
-    pub fn open(path: &Path) -> Result<Database<WALClient>, DatabaseOpenError> {
+    pub fn open(path: &Path, rocks_resources: &RocksResources) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::InvalidUnicodeName;
 
         let file_name = path.file_name().unwrap();
         let name = file_name.to_str().ok_or_else(|| InvalidUnicodeName { name: file_name.to_owned() })?;
 
-        if path.exists() { Self::load(path, name) } else { Self::create(path, name) }
+        if path.exists() { Self::load(path, name, rocks_resources) } else { Self::create(path, name, rocks_resources) }
     }
 
-    fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
+    fn create(
+        path: &Path,
+        name: impl AsRef<str>,
+        rocks_resources: &RocksResources,
+    ) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
             DirectoryCreate, Encoding, FunctionCacheInitialise, StorageOpen, TypeCacheInitialise, WALOpen,
         };
@@ -263,7 +268,7 @@ impl Database<WALClient> {
         wal_client.register_record_type::<Statistics>();
 
         let storage = Arc::new(
-            MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client)
+            MVCCStorage::create::<EncodingKeyspace>(name, path, wal_client, rocks_resources)
                 .map_err(|error| StorageOpen { typedb_source: error })?,
         );
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());
@@ -314,7 +319,11 @@ impl Database<WALClient> {
         })
     }
 
-    fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
+    fn load(
+        path: &Path,
+        name: impl AsRef<str>,
+        rocks_resources: &RocksResources,
+    ) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
             CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, NotADatabase, StatisticsInitialise,
             StorageOpen, TypeCacheInitialise, WALOpen,
@@ -346,7 +355,7 @@ impl Database<WALClient> {
         let checkpoint = CheckpointReader::open_latest::<EncodingKeyspace>(path)
             .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
         let storage = Arc::new(
-            MVCCStorage::load::<EncodingKeyspace>(&name, path, wal_client, &checkpoint)
+            MVCCStorage::load::<EncodingKeyspace>(&name, path, wal_client, &checkpoint, rocks_resources)
                 .map_err(|error| StorageOpen { typedb_source: error })?,
         );
         let definition_key_generator = Arc::new(DefinitionKeyGenerator::new());

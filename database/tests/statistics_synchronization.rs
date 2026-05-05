@@ -20,8 +20,12 @@ use database::{
 };
 use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions};
-use storage::durability_client::WALClient;
+use storage::{durability_client::WALClient, keyspace::storage_resources::RocksResources};
 use test_utils::{create_tmp_storage_dir, init_logging};
+
+fn test_rocks_resources() -> Arc<RocksResources> {
+    Arc::new(RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024))
+}
 
 const DB_NAME: &str = "stats-recovery";
 const SCHEMA: &str = r#"define
@@ -46,7 +50,7 @@ fn statistics_synchronization_under_concurrent_load() {
     let total_has = 2 * total_persons;
 
     {
-        let dbm = DatabaseManager::new(&tmp_dir).unwrap();
+        let dbm = DatabaseManager::new(&tmp_dir, test_rocks_resources()).unwrap();
         dbm.put_database(DB_NAME).unwrap();
         let database = dbm.database(DB_NAME).unwrap();
 
@@ -75,7 +79,7 @@ fn statistics_synchronization_under_concurrent_load() {
 
     // dbm and database dropped here; IntervalRunner threads shut down synchronously on drop.
 
-    let dbm = DatabaseManager::new(&tmp_dir).unwrap();
+    let dbm = DatabaseManager::new(&tmp_dir, test_rocks_resources()).unwrap();
     let database = dbm.database(DB_NAME).unwrap();
     let metrics = database.get_metrics();
 
