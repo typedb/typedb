@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{marker::PhantomData, sync::Arc};
+use std::{fmt::Display, marker::PhantomData, sync::Arc};
 
 use compiler::{
     VariablePosition,
@@ -72,7 +72,7 @@ where
         let profile = context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
         let pattern_profile = profile.create_or_get_pattern(|| String::from("Update pattern"));
         let (concept_profiles, connection_profiles, optional_concept_profiles, optional_connection_profiles) =
-            build_update_step_profiles(&executable, &pattern_profile);
+            build_step_profiles(&executable, &pattern_profile);
 
         let input_output_mapping = executable
             .output_row_schema
@@ -119,57 +119,50 @@ where
     }
 }
 
+/// Build the step-profile vecs once at stage start. Each section (concept,
+/// connection, and per-optional concept/connection) gets its own subpattern
+/// under the stage's pattern profile, with step indices restarted at 0 inside
+/// it — so the profile output groups instructions by section in the tree.
 #[allow(clippy::type_complexity)]
-fn build_update_step_profiles(
+fn build_step_profiles(
     executable: &UpdateExecutable,
     pattern_profile: &PatternProfile,
 ) -> (Vec<Arc<StepProfile>>, Vec<Arc<StepProfile>>, Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
-    let mut next_index = 0;
-    let concept_profiles =
-        reserve_concept_step_profiles(pattern_profile, &executable.concept_instructions, &mut next_index);
-    let connection_profiles =
-        reserve_connection_step_profiles(pattern_profile, &executable.connection_instructions, &mut next_index);
+    let mut next_subpattern: usize = 0;
+
+    let concept_subpattern =
+        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Concept updates"));
+    next_subpattern += 1;
+    let concept_profiles = reserve_step_profiles(&concept_subpattern, &executable.concept_instructions);
+
+    let connection_subpattern =
+        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Connection updates"));
+    next_subpattern += 1;
+    let connection_profiles = reserve_step_profiles(&connection_subpattern, &executable.connection_instructions);
+
     let mut optional_concept_profiles = Vec::with_capacity(executable.optional_updates.len());
     let mut optional_connection_profiles = Vec::with_capacity(executable.optional_updates.len());
-    for optional in &executable.optional_updates {
-        optional_concept_profiles.push(reserve_concept_step_profiles(
-            pattern_profile,
-            &optional.concept_instructions,
-            &mut next_index,
-        ));
-        optional_connection_profiles.push(reserve_connection_step_profiles(
-            pattern_profile,
-            &optional.connection_instructions,
-            &mut next_index,
-        ));
+    for (i, optional) in executable.optional_updates.iter().enumerate() {
+        let opt_concept_sub =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Optional {i} concept updates"));
+        next_subpattern += 1;
+        optional_concept_profiles.push(reserve_step_profiles(&opt_concept_sub, &optional.concept_instructions));
+
+        let opt_connection_sub =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Optional {i} connection updates"));
+        next_subpattern += 1;
+        optional_connection_profiles
+            .push(reserve_step_profiles(&opt_connection_sub, &optional.connection_instructions));
     }
     (concept_profiles, connection_profiles, optional_concept_profiles, optional_connection_profiles)
 }
 
-fn reserve_concept_step_profiles(
-    pattern_profile: &PatternProfile,
-    instructions: &[ConceptInstruction],
-    next_index: &mut usize,
-) -> Vec<Arc<StepProfile>> {
-    let mut profiles = Vec::with_capacity(instructions.len());
-    for instruction in instructions {
-        profiles.push(pattern_profile.extend_or_get_step(*next_index, || format!("{}", instruction)));
-        *next_index += 1;
-    }
-    profiles
-}
-
-fn reserve_connection_step_profiles(
-    pattern_profile: &PatternProfile,
-    instructions: &[ConnectionInstruction],
-    next_index: &mut usize,
-) -> Vec<Arc<StepProfile>> {
-    let mut profiles = Vec::with_capacity(instructions.len());
-    for instruction in instructions {
-        profiles.push(pattern_profile.extend_or_get_step(*next_index, || format!("{}", instruction)));
-        *next_index += 1;
-    }
-    profiles
+fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions: &[I]) -> Vec<Arc<StepProfile>> {
+    instructions
+        .iter()
+        .enumerate()
+        .map(|(i, instruction)| sub_pattern.extend_or_get_step(i, || format!("{}", instruction)))
+        .collect()
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -186,6 +179,10 @@ fn execute_update(
 ) -> Result<(), Box<WriteError>> {
     debug_assert!(row.get_multiplicity() == 1);
     debug_assert!(row.len() == executable.output_row_schema.len());
+    debug_assert_eq!(executable.concept_instructions.len(), concept_profiles.len());
+    debug_assert_eq!(executable.connection_instructions.len(), connection_profiles.len());
+    debug_assert_eq!(executable.optional_updates.len(), optional_concept_profiles.len());
+    debug_assert_eq!(executable.optional_updates.len(), optional_connection_profiles.len());
     execute_concept_instructions(
         &executable.concept_instructions,
         concept_profiles,
@@ -225,6 +222,8 @@ fn execute_optional_update(
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
+    debug_assert_eq!(optional.concept_instructions.len(), concept_profiles.len());
+    debug_assert_eq!(optional.connection_instructions.len(), connection_profiles.len());
     for &input in &optional.required_input_variables {
         if row.len() <= input.as_usize() || row.get(input).is_none() {
             return Ok(());

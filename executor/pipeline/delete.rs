@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{marker::PhantomData, sync::Arc};
+use std::{fmt::Display, marker::PhantomData, sync::Arc};
 
 use compiler::executable::delete::{
     executable::{DeleteExecutable, OptionalDelete},
@@ -65,7 +65,7 @@ where
         let profile = context.profile.profile_stage(|| String::from("Delete"), self.executable.executable_id);
         let pattern_profile = profile.create_or_get_pattern(|| String::from("Delete"));
         let (connection_profiles, optional_connection_profiles, concept_profiles) =
-            build_delete_step_profiles(&self.executable, &pattern_profile);
+            build_step_profiles(&self.executable, &pattern_profile);
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot = Arc::get_mut(&mut context.snapshot).unwrap();
@@ -129,45 +129,44 @@ where
     }
 }
 
+/// Build the step-profile vecs once at stage start. Each section (connection
+/// deletes, per-optional connection deletes, concept deletes) gets its own
+/// subpattern under the stage's pattern profile, with step indices restarted
+/// at 0 inside it.
 #[allow(clippy::type_complexity)]
-fn build_delete_step_profiles(
+fn build_step_profiles(
     executable: &DeleteExecutable,
     pattern_profile: &PatternProfile,
 ) -> (Vec<Arc<StepProfile>>, Vec<Vec<Arc<StepProfile>>>, Vec<Arc<StepProfile>>) {
-    let mut next_index = 0;
-    let connection_profiles =
-        reserve_connection_step_profiles(pattern_profile, &executable.connection_instructions, &mut next_index);
+    let mut next_subpattern: usize = 0;
+
+    let connection_subpattern =
+        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Connection deletes"));
+    next_subpattern += 1;
+    let connection_profiles = reserve_step_profiles(&connection_subpattern, &executable.connection_instructions);
+
     let mut optional_connection_profiles = Vec::with_capacity(executable.optional_deletes.len());
-    for optional in &executable.optional_deletes {
-        optional_connection_profiles.push(reserve_connection_step_profiles(
-            pattern_profile,
-            &optional.connection_instructions,
-            &mut next_index,
-        ));
+    for (i, optional) in executable.optional_deletes.iter().enumerate() {
+        let opt_connection_sub =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Optional {i} connection deletes"));
+        next_subpattern += 1;
+        optional_connection_profiles
+            .push(reserve_step_profiles(&opt_connection_sub, &optional.connection_instructions));
     }
-    // Concept-deletion step profiles share slot indices with the connection profiles
-    // (existing behaviour: `execute_delete_concepts` enumerates from 0). Allocating from
-    // index 0 reuses the slots already populated above.
-    let mut concept_index = 0;
-    let mut concept_profiles = Vec::with_capacity(executable.concept_instructions.len());
-    for instruction in &executable.concept_instructions {
-        concept_profiles.push(pattern_profile.extend_or_get_step(concept_index, || format!("{}", instruction)));
-        concept_index += 1;
-    }
+
+    let concept_subpattern =
+        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Concept deletes"));
+    let concept_profiles = reserve_step_profiles(&concept_subpattern, &executable.concept_instructions);
+
     (connection_profiles, optional_connection_profiles, concept_profiles)
 }
 
-fn reserve_connection_step_profiles(
-    pattern_profile: &PatternProfile,
-    instructions: &[ConnectionInstruction],
-    next_index: &mut usize,
-) -> Vec<Arc<StepProfile>> {
-    let mut profiles = Vec::with_capacity(instructions.len());
-    for instruction in instructions {
-        profiles.push(pattern_profile.extend_or_get_step(*next_index, || format!("{}", instruction)));
-        *next_index += 1;
-    }
-    profiles
+fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions: &[I]) -> Vec<Arc<StepProfile>> {
+    instructions
+        .iter()
+        .enumerate()
+        .map(|(i, instruction)| sub_pattern.extend_or_get_step(i, || format!("{}", instruction)))
+        .collect()
 }
 
 fn execute_optional_delete(
@@ -178,6 +177,7 @@ fn execute_optional_delete(
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
 ) -> Result<(), Box<WriteError>> {
+    debug_assert_eq!(optional.connection_instructions.len(), connection_profiles.len());
     for &input in &optional.required_input_variables {
         if row.len() <= input.as_usize() || row.get(input).is_none() {
             return Ok(());
