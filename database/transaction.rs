@@ -180,7 +180,6 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 
     pub fn finalise(self) -> (TransactionProfile, Result<DataCommitIntent<D>, DataCommitError>) {
-        println!("HELLO - finalising write txn");
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
         commit_profile.start();

@@ -1809,7 +1809,6 @@ impl ThingManager {
         self.cleanup_relations(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
         self.cleanup_attributes(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
 
-        println!("Creating commit locks next");
         match self.create_commit_locks(snapshot, storage_counters) {
             Ok(_) => Ok(()),
             Err(error) => Err(vec![ConceptWriteError::ConceptRead { typedb_source: error }]),
@@ -1823,7 +1822,6 @@ impl ThingManager {
     ) -> Result<(), Box<ConceptReadError>> {
         // TODO: Should not collect here (iterate_writes() already copies)
         for (key, _write) in snapshot.iterate_writes().collect_vec() {
-            println!("Creating locks");
             if ThingEdgeHas::is_has(&key) {
                 let has = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
                 let object = Object::new(has.from());
@@ -1858,7 +1856,6 @@ impl ThingManager {
             self.type_manager(),
             attribute.type_(),
         )?;
-        dbg!("Unique constraint", &unique_constraint_opt);
         if let Some(unique_constraint) = unique_constraint_opt {
             let attribute_key = attribute.vertex();
             // let attribute_value = snapshot

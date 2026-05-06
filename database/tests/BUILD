@@ -58,12 +58,29 @@ rust_test(
     ]
 )
 
+rust_test(
+    name = "test_transaction_isolation",
+    srcs = glob([
+        "test_transaction_isolation.rs",
+    ]),
+    deps = [
+        "//common/options",
+        "//database",
+        "//executor",
+        "//storage",
+        "//util/test:test_utils",
+
+        "@typeql//rust:typeql",
+    ]
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [
         ":test_database",
         ":test_transaction",
         ":test_statistics_synchronization",
+        ":test_transaction_isolation",
     ],
     size = "small",
 )
