@@ -89,8 +89,6 @@ impl CollectingStageExecutor {
         }
     }
 
-    /// Single step profile per stage that doubles as the storage-counters
-    /// source for `accept` and the timing target for `into_iterator`.
     pub(super) fn step_profile(&self, profile: &QueryProfile) -> Arc<StepProfile> {
         match self {
             CollectingStageExecutor::Reduce { .. } => {

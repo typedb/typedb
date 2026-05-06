@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use compiler::VariablePosition;
-use resource::profile::{StageProfile, StepProfile};
+use resource::profile::StepProfile;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},

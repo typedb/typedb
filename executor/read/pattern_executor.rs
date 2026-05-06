@@ -10,24 +10,24 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    ExecutionInterrupt, Provenance,
-    batch::{FixedBatch, FixedBatchRowIterator},
-    error::ReadExecutionError,
+    batch::{FixedBatch, FixedBatchRowIterator}, error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     read::{
-        BranchIndex, ExecutorIndex,
         control_instruction::{
             CollectingStage, ControlInstruction, ExecuteDisjunctionBranch, ExecuteImmediate, ExecuteInlinedFunction,
             ExecuteNegation, ExecuteOptional, ExecuteStreamModifier, ExecuteTabledCall, MapBatchToRowsForNested,
             PatternStart, ReshapeForReturn, RestoreSuspension, StreamCollected, Yield,
-        },
-        nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor, OptionalExecutor},
+        }, nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor, OptionalExecutor},
         step_executor::StepExecutors,
         suspension::{NestedPatternSuspension, PatternSuspension, QueryPatternSuspensions, TabledCallSuspension},
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
+        BranchIndex,
+        ExecutorIndex,
     },
     row::MaybeOwnedRow,
+    ExecutionInterrupt,
+    Provenance,
 };
 
 #[derive(Debug)]
@@ -224,7 +224,7 @@ impl PatternExecutor {
                         batches += 1;
                     }
                     let iterator = collector.into_iterator(context, step_profile.storage_counters());
-                    measurement.end(&step_profile, batches, 1); // may not be 1
+                    measurement.end(&step_profile, batches, iterator.initial_len() as u64);
                     self.control_stack.push(StreamCollected { index, iterator }.into());
                 }
                 ControlInstruction::StreamCollected(StreamCollected { index, mut iterator }) => {

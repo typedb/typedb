@@ -10,7 +10,7 @@ use compiler::executable::{
     function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use resource::profile::{QueryProfile, StageProfile};
+use resource::profile::StageProfile;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::read::pattern_executor::PatternExecutor;
