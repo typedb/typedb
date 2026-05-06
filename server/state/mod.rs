@@ -15,9 +15,7 @@ use concurrency::{IntervalRunner, TokioTaskSpawner};
 use database::database_manager::DatabaseManager;
 use diagnostics::{Diagnostics, diagnostics_manager::DiagnosticsManager};
 use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo};
-use storage::keyspace::storage_resources::RocksResources;
 use tokio::{net::lookup_host, sync::watch::Receiver};
-use tracing::debug;
 
 pub use self::{
     database_operator::{
@@ -88,16 +86,8 @@ impl ServerState {
             )
             .await,
         );
-        let rocks_resources = Arc::new(RocksResources::new(
-            config.storage.rocksdb.cache_size.as_usize(),
-            config.storage.rocksdb.write_buffers_limit.as_usize(),
-        ));
-        debug!(
-            "Storage configured: rocksdb cache={}, write-buffers-limit={}",
-            config.storage.rocksdb.cache_size, config.storage.rocksdb.write_buffers_limit,
-        );
         let database_manager =
-            DatabaseManager::new(&config.storage.data_directory, diagnostics_manager.clone(), rocks_resources)
+            DatabaseManager::new(&config.storage.data_directory, diagnostics_manager.clone(), &config.storage.rocksdb)
                 .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
         let database_diagnostics_updater = IntervalRunner::new(
             {
