@@ -121,11 +121,11 @@ pub struct RocksDbConfig {
 }
 
 fn default_rocksdb_cache_size() -> ByteSize {
-    ByteSize::gibibytes(1)
+    ByteSize::gb(1)
 }
 
 fn default_rocksdb_write_buffers_limit() -> ByteSize {
-    ByteSize::mebibytes(512)
+    ByteSize::mb(512)
 }
 
 impl Default for RocksDbConfig {
