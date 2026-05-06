@@ -341,28 +341,6 @@ impl TransactionService {
         }
     }
 
-    // Drain the gRPC request stream until END_STREAM (or a short bound).
-    //
-    // Why: the transaction RPC is a bidirectional stream. If the service drops
-    // its end of the request stream while the client is still streaming (the
-    // typical case after we handle a CloseReq), the stream goes to
-    // `Closed(ScheduledLibraryReset)` and h2 emits a RST_STREAM(NO_ERROR) frame
-    // for that stream. Once the reset expires the stream is forgotten; if the
-    // client then sends any DATA/HEADERS that race the close on the same
-    // stream id, h2 hits `may_have_forgotten_stream` and returns
-    // `Err(Error::Reset(_, STREAM_CLOSED, Library))`, which `Connection::poll`
-    // dispatches to `Actions::send_reset` — and that is what increments
-    // `num_local_error_reset_streams`. Once the counter crosses the per-conn
-    // limit (1024 by default in h2 0.4.x), h2 returns GOAWAY ENHANCE_YOUR_CALM
-    // and the entire client connection is poisoned. Reading the request body
-    // to its END_STREAM lets the stream transition cleanly through
-    // `Closed(EndStream)`, so neither the implicit RST_STREAM nor the
-    // forgotten-stream race ever happens.
-    //
-    // The 500 ms upper bound is a safety net for misbehaving clients that
-    // never half-close: by the time we reach this we've already done
-    // `do_close`, so the transaction state is gone and any further bytes from
-    // the client would be discarded anyway.
     async fn drain_request_stream(&mut self) {
         const DRAIN_TIMEOUT: Duration = Duration::from_millis(500);
         let _ = timeout(DRAIN_TIMEOUT, async { while self.request_stream.next().await.is_some() {} }).await;
