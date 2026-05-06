@@ -500,7 +500,7 @@ pub mod tests {
             FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
     };
-    use resource::profile::CommitProfile;
+    use resource::{constants::common::MB, profile::CommitProfile};
     use storage::{
         MVCCStorage, durability_client::WALClient, keyspace::storage_resources::RocksResources,
         snapshot::CommittableSnapshot,
@@ -516,7 +516,7 @@ pub mod tests {
         init_logging();
         let storage_path = create_tmp_storage_dir();
         let wal = WAL::create(&storage_path).unwrap();
-        let resources = RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024);
+        let resources = RocksResources::new(64 * MB as usize, 64 * MB as usize);
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
                 "storage",

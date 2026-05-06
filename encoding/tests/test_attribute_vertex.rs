@@ -22,14 +22,17 @@ use encoding::{
     },
     value::{string_bytes::StringBytes, struct_bytes::StructBytes},
 };
-use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::CommitProfile};
+use resource::{
+    constants::{common::MB, snapshot::BUFFER_KEY_INLINE},
+    profile::CommitProfile,
+};
 use storage::{
     MVCCStorage, durability_client::WALClient, keyspace::storage_resources::RocksResources,
     snapshot::CommittableSnapshot,
 };
 
 fn test_resources() -> RocksResources {
-    RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024)
+    RocksResources::new(64 * MB as usize, 64 * MB as usize)
 }
 use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;

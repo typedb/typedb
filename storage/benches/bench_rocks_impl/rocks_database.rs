@@ -94,7 +94,7 @@ mod typedb_database {
 
     use bytes::byte_array::ByteArray;
     use durability::wal::WAL;
-    use resource::profile::CommitProfile;
+    use resource::{constants::common::MB, profile::CommitProfile};
     use storage::{
         MVCCStorage, StorageOpenError,
         durability_client::WALClient,
@@ -116,7 +116,7 @@ mod typedb_database {
             let name = "bench_rocks__typedb";
             let path = create_tmp_storage_dir();
             let wal = WAL::create(&path).unwrap();
-            let resources = RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024);
+            let resources = RocksResources::new(64 * MB as usize, 64 * MB as usize);
             let storage = Arc::new(MVCCStorage::<WALClient>::create::<BenchKeySpace>(
                 name,
                 &path,

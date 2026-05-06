@@ -7,6 +7,7 @@
 use std::{path::Path, sync::Arc};
 
 use durability::wal::WAL;
+use resource::constants::common::MB;
 use storage::{
     MVCCStorage, StorageOpenError,
     durability_client::WALClient,
@@ -18,7 +19,7 @@ pub mod mock_snapshot;
 
 pub fn test_rocks_resources() -> RocksResources {
     // Small but non-zero limits sufficient for unit tests.
-    RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024)
+    RocksResources::new(64 * MB as usize, 64 * MB as usize)
 }
 
 #[macro_export]

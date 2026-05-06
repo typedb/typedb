@@ -13,7 +13,10 @@ use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler};
 use durability::wal::WAL;
 use pprof::ProfilerGuard;
 use resource::{
-    constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    constants::{
+        common::MB,
+        snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    },
     profile::{CommitProfile, StorageCounters},
 };
 use storage::{
@@ -117,7 +120,7 @@ fn bench_snapshot_write_put(storage: Arc<MVCCStorage<WALClient>>, keyspace: Test
 }
 
 fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WALClient>> {
-    let resources = RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024);
+    let resources = RocksResources::new(64 * MB as usize, 64 * MB as usize);
     let storage = Arc::new(
         MVCCStorage::create::<TestKeyspaceSet>(
             "storage_bench",

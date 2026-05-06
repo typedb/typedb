@@ -19,7 +19,7 @@ use encoding::{
     },
     layout::prefix::Prefix,
 };
-use resource::profile::CommitProfile;
+use resource::{constants::common::MB, profile::CommitProfile};
 use storage::{
     MVCCStorage,
     durability_client::WALClient,
@@ -30,7 +30,7 @@ use storage::{
 };
 
 fn test_resources() -> RocksResources {
-    RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024)
+    RocksResources::new(64 * MB as usize, 64 * MB as usize)
 }
 use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;
