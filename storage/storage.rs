@@ -738,7 +738,10 @@ mod tests {
     use bytes::byte_array::ByteArray;
     use diagnostics::metrics::FsyncMetrics;
     use durability::wal::WAL;
-    use resource::profile::{CommitProfile, StorageCounters};
+    use resource::{
+        constants::common::MB,
+        profile::{CommitProfile, StorageCounters},
+    };
     use test_utils::{create_tmp_storage_dir, init_logging};
 
     use crate::{
@@ -754,7 +757,7 @@ mod tests {
 
     fn test_rocks_resources() -> RocksResources {
         // Small but non-zero limits sufficient for unit tests.
-        RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024)
+        RocksResources::new(64 * MB as usize, 64 * MB as usize)
     }
 
     macro_rules! test_keyspace_set {
