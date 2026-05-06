@@ -329,6 +329,45 @@ impl AttributeID {
         }
     }
 
+    pub fn deterministic_bytes(&self) -> &[u8] {
+        match self {
+            AttributeID::Boolean(boolean_id) => {
+                debug_assert!(BooleanAttributeID::is_inlineable());
+                boolean_id.bytes_ref()
+            }
+            AttributeID::Integer(integer_id) => {
+                debug_assert!(IntegerAttributeID::is_inlineable());
+                integer_id.bytes_ref()
+            }
+            AttributeID::Double(double_id) => {
+                debug_assert!(DoubleAttributeID::is_inlineable());
+                double_id.bytes_ref()
+            },
+            AttributeID::Decimal(decimal_id) => {
+                debug_assert!(DecimalAttributeID::is_inlineable());
+                decimal_id.bytes_ref()
+            },
+            AttributeID::Date(date_id) => {
+                debug_assert!(DateAttributeID::is_inlineable());
+                date_id.bytes_ref()
+            },
+            AttributeID::DateTime(date_time_id) => {
+                debug_assert!(DateTimeAttributeID::is_inlineable());
+                date_time_id.bytes_ref()
+            },
+            AttributeID::DateTimeTZ(date_time_tz_id) => {
+                debug_assert!(DateTimeTZAttributeID::is_inlineable());
+                date_time_tz_id.bytes_ref()
+            },
+            AttributeID::Duration(duration_id) => {
+                debug_assert!(DurationAttributeID::is_inlineable());
+                duration_id.bytes_ref()
+            },
+            AttributeID::String(string_id) => string_id.deterministic_bytes_ref(),
+            AttributeID::Struct(struct_id) => struct_id.deterministic_bytes_ref(),
+        }
+    }
+
     pub fn value_type_encoding_length(value_type_category: ValueTypeCategory) -> usize {
         match value_type_category {
             ValueTypeCategory::Boolean => BooleanAttributeID::LENGTH,
@@ -582,14 +621,9 @@ impl StringAttributeID {
         Self::HASHED_PREFIX_RANGE.end..Self::HASHED_PREFIX_RANGE.end + Self::HASHED_HASH_LENGTH;
     pub const HASHED_DISAMBIGUATED_HASH_RANGE: Range<usize> =
         Self::HASHED_HASH_RANGE.start..Self::HASHED_HASH_RANGE.end + 1;
-    // const HASHED_PREFIX_HASH_RANGE: Range<usize> =
-    //     Self::VALUE_TYPE_LENGTH..Self::VALUE_TYPE_LENGTH + Self::HASHED_ENCODING_LENGTH;
 
     const TAIL_IS_HASH_MASK: u8 = 0b1000_0000;
     const TAIL_INDEX: usize = Self::LENGTH - 1;
-
-    // pub const HASHED_ID_STRING_PREFIX_LENGTH: usize =
-    //     { StringAttributeID::INLINE_OR_PREFIXED_HASH_LENGTH - StringAttributeID::HASH_LENGTH };
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
@@ -776,6 +810,14 @@ impl StringAttributeID {
     pub fn bytes_ref(&self) -> &[u8] {
         &self.bytes
     }
+
+    pub fn deterministic_bytes_ref(&self) -> &[u8] {
+        if self.is_inline() {
+            self.bytes_ref()
+        } else {
+            &self.bytes_ref()[0..Self::HASHED_HASH_RANGE.end]
+        }
+    }
 }
 
 impl HashedID<{ StringAttributeID::HASHED_HASH_LENGTH + 1 }> for StringAttributeID {
@@ -795,14 +837,6 @@ impl StructAttributeID {
 
     pub fn new(bytes: [u8; Self::LENGTH]) -> Self {
         Self { bytes }
-    }
-
-    pub fn bytes(&self) -> [u8; Self::LENGTH] {
-        self.bytes
-    }
-
-    pub fn bytes_ref(&self) -> &[u8] {
-        &self.bytes
     }
 
     pub(crate) fn build_hashed_id<const INLINE_LENGTH: usize, Snapshot>(
@@ -894,6 +928,18 @@ impl StructAttributeID {
 
     pub(crate) const fn is_inlineable() -> bool {
         false
+    }
+
+    pub fn bytes(&self) -> [u8; Self::LENGTH] {
+        self.bytes
+    }
+
+    pub fn bytes_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub fn deterministic_bytes_ref(&self) -> &[u8] {
+        &self.bytes[0..Self::TAIL_INDEX]
     }
 }
 

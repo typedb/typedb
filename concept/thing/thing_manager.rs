@@ -1809,6 +1809,7 @@ impl ThingManager {
         self.cleanup_relations(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
         self.cleanup_attributes(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
 
+        println!("Creating commit locks next");
         match self.create_commit_locks(snapshot, storage_counters) {
             Ok(_) => Ok(()),
             Err(error) => Err(vec![ConceptWriteError::ConceptRead { typedb_source: error }]),
@@ -1822,6 +1823,7 @@ impl ThingManager {
     ) -> Result<(), Box<ConceptReadError>> {
         // TODO: Should not collect here (iterate_writes() already copies)
         for (key, _write) in snapshot.iterate_writes().collect_vec() {
+            println!("Creating locks");
             if ThingEdgeHas::is_has(&key) {
                 let has = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
                 let object = Object::new(has.from());
@@ -1849,30 +1851,31 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         owner: &Object,
         attribute: Attribute,
-        storage_counters: StorageCounters,
+        _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let unique_constraint_opt = owner.type_().get_owned_attribute_type_constraint_unique(
             snapshot,
             self.type_manager(),
             attribute.type_(),
         )?;
+        dbg!("Unique constraint", &unique_constraint_opt);
         if let Some(unique_constraint) = unique_constraint_opt {
             let attribute_key = attribute.vertex();
-            let attribute_value = snapshot
-                .get_last_existing::<BUFFER_VALUE_INLINE>(
-                    attribute_key.into_storage_key().as_reference(),
-                    storage_counters,
-                )
-                .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
-                .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
+            // let attribute_value = snapshot
+            //     .get_last_existing::<BUFFER_VALUE_INLINE>(
+            //         attribute_key.into_storage_key().as_reference(),
+            //         storage_counters,
+            //     )
+            //     .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
+            //     .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
 
+            // Note: trade much smaller locks (eg. not entire string) for rare concurrent lock conflicts when
+            //       two different values has to the same hash
             let lock_key = create_custom_lock_key(
                 [
                     &Infix::PropertyAnnotationUnique.infix_id().bytes(),
                     &*unique_constraint.source().attribute().vertex().to_bytes(),
-                    attribute_key.attribute_id().bytes(),
-                    &attribute_value,
-                    &*owner.vertex().to_bytes(),
+                    attribute_key.attribute_id().deterministic_bytes(),
                     &*unique_constraint.source().owner().vertex().to_bytes(),
                 ]
                 .into_iter(),
