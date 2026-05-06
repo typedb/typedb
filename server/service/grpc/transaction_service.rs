@@ -180,6 +180,7 @@ impl TransactionService {
                     _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
                         self.do_close().await;
+                        self.drain_request_stream().await;
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
@@ -193,6 +194,7 @@ impl TransactionService {
                     _ = tokio::time::sleep_until(self.timeout_at) => {
                         event!(Level::TRACE, "Transaction timeout met, closing transaction service.");
                         self.do_close().await;
+                        self.drain_request_stream().await;
                         return;
                     }
                     write_query_result = write_query_worker => {
@@ -216,6 +218,7 @@ impl TransactionService {
                     _ = global_shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
                         self.do_close().await;
+                        self.drain_request_stream().await;
                         return;
                     }
                     recv_message = self.close_receiver.recv() => {
@@ -229,6 +232,7 @@ impl TransactionService {
                     _ = tokio::time::sleep_until(self.timeout_at) => {
                         event!(Level::TRACE, "Transaction timeout met, closing transaction service.");
                         self.do_close().await;
+                        self.drain_request_stream().await;
                         return;
                     }
                     next = self.request_stream.next() => {
@@ -242,6 +246,7 @@ impl TransactionService {
                 Ok(Break(())) => {
                     event!(Level::TRACE, "Stream ended, closing transaction service.");
                     self.do_close().await;
+                    self.drain_request_stream().await;
                     return;
                 }
                 Err(status) => {
@@ -251,10 +256,16 @@ impl TransactionService {
                         event!(Level::DEBUG, ?send_error, "Failed to send error to client");
                     }
                     self.do_close().await;
+                    self.drain_request_stream().await;
                     return;
                 }
             }
         }
+    }
+
+    async fn drain_request_stream(&mut self) {
+        const DRAIN_TIMEOUT: Duration = Duration::from_millis(500);
+        let _ = timeout(DRAIN_TIMEOUT, async { while self.request_stream.next().await.is_some() {} }).await;
     }
 
     // TODO: any method using `Result<ControlFlow<(), ()>, Status>` should really be `ControlFlow<Result<(), Status>, ()>`
