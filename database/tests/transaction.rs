@@ -13,8 +13,8 @@ use database::{
     database_manager::DatabaseManager,
     transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
-use options::TransactionOptions;
-use storage::{durability_client::WALClient, keyspace::storage_resources::RocksResources};
+use options::{RocksDbConfig, TransactionOptions};
+use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
 use tokio::{
     runtime::Runtime,
@@ -38,9 +38,8 @@ macro_rules! assert_transaction_timeout {
 }
 
 fn create_database(databases_path: &TempDir) -> Arc<Database<WALClient>> {
-    let rocks_resources = Arc::new(RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024));
-    let database_manager =
-        DatabaseManager::new(databases_path, rocks_resources).expect("Expected database manager");
+    let database_manager = DatabaseManager::new(databases_path, &RocksDbConfig::default())
+        .expect("Expected database manager");
     database_manager.put_database(DB_NAME).expect("Expected database creation");
     database_manager.database(DB_NAME).expect("Expected database retrieval")
 }

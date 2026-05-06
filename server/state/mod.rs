@@ -15,9 +15,7 @@ use concurrency::{IntervalRunner, TokioTaskSpawner};
 use database::database_manager::DatabaseManager;
 use diagnostics::{Diagnostics, diagnostics_manager::DiagnosticsManager};
 use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo};
-use storage::keyspace::storage_resources::RocksResources;
 use tokio::{net::lookup_host, sync::watch::Receiver};
-use tracing::debug;
 
 pub use self::{
     database_operator::{
@@ -61,15 +59,7 @@ impl ServerState {
         shutdown_receiver: Receiver<()>,
         background_task_spawner: TokioTaskSpawner,
     ) -> Result<ServerStateBuilder, ServerOpenError> {
-        let rocks_resources = Arc::new(RocksResources::new(
-            config.storage.rocksdb.cache_size.as_usize(),
-            config.storage.rocksdb.write_buffers_limit.as_usize(),
-        ));
-        debug!(
-            "Storage configured: rocksdb cache={}, write-buffers-limit={}",
-            config.storage.rocksdb.cache_size, config.storage.rocksdb.write_buffers_limit,
-        );
-        let database_manager = DatabaseManager::new(&config.storage.data_directory, rocks_resources)
+        let database_manager = DatabaseManager::new(&config.storage.data_directory, &config.storage.rocksdb)
             .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
         let token_manager = Arc::new(
             TokenManager::new(config.server.authentication.token_expiration, background_task_spawner.clone())
