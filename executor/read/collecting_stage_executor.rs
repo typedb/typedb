@@ -91,7 +91,7 @@ impl CollectingStageExecutor {
 
     /// Single step profile per stage that doubles as the storage-counters
     /// source for `accept` and the timing target for `into_iterator`.
-    pub(super) fn profile_step(&self, profile: &QueryProfile) -> Arc<StepProfile> {
+    pub(super) fn step_profile(&self, profile: &QueryProfile) -> Arc<StepProfile> {
         match self {
             CollectingStageExecutor::Reduce { .. } => {
                 let stage = profile.profile_stage(|| String::from("Reduce"), 0); // TODO executable id
@@ -129,11 +129,11 @@ impl CollectorEnum {
     pub(crate) fn into_iterator(
         self,
         context: &ExecutionContext<impl ReadableSnapshot>,
-        step_profile: &StepProfile,
+        storage_counters: StorageCounters,
     ) -> CollectedStageIterator {
         match self {
-            CollectorEnum::Reduce(collector) => collector.into_iterator(context, step_profile),
-            CollectorEnum::Sort(collector) => collector.into_iterator(context, step_profile),
+            CollectorEnum::Reduce(collector) => collector.into_iterator(context, storage_counters),
+            CollectorEnum::Sort(collector) => collector.into_iterator(context, storage_counters),
         }
     }
 }
@@ -151,6 +151,13 @@ impl CollectedStageIterator {
             CollectedStageIterator::Sort(iterator) => iterator.batch_continue(),
         }
     }
+
+    pub(crate) fn initial_len(&self) -> usize {
+        match self {
+            CollectedStageIterator::Reduce(iter) => iter.initial_len(),
+            CollectedStageIterator::Sort(iter) => iter.initial_len(),
+        }
+    }
 }
 
 // Actual implementations
@@ -161,10 +168,11 @@ pub(super) trait CollectorTrait {
         batch: FixedBatch,
         storage_counters: &StorageCounters,
     );
+
     fn into_iterator(
         self,
         context: &ExecutionContext<impl ReadableSnapshot>,
-        step_profile: &StepProfile,
+        storage_counters: StorageCounters,
     ) -> CollectedStageIterator;
 }
 
@@ -206,7 +214,7 @@ impl CollectorTrait for ReduceCollector {
     fn into_iterator(
         self,
         _context: &ExecutionContext<impl ReadableSnapshot>,
-        _step_profile: &StepProfile,
+        _storage_counters: StorageCounters,
     ) -> CollectedStageIterator {
         CollectedStageIterator::Reduce(ReduceStageIterator::new(
             self.active_reducer.finalise().into_iterator(),
@@ -224,6 +232,10 @@ pub(super) struct ReduceStageIterator {
 impl ReduceStageIterator {
     fn new(batch: BatchRowIterator, output_width: u32) -> Self {
         Self { batch_row_iterator: batch, output_width }
+    }
+
+    pub(crate) fn initial_len(&self) -> usize {
+        self.batch_row_iterator.initial_len()
     }
 }
 
@@ -273,17 +285,14 @@ impl CollectorTrait for SortCollector {
     fn into_iterator(
         self,
         context: &ExecutionContext<impl ReadableSnapshot>,
-        step_profile: &StepProfile,
+        storage_counters: StorageCounters,
     ) -> CollectedStageIterator {
         let Self { sort_on, collector } = self;
         // The actual sort happens here. Time it as one batch with the input
         // row count as the row total — accept calls upstream are pure
         // appends and not separately measured.
         let row_count = collector.len() as u64;
-        let measurement = step_profile.start_measurement();
-        let sorted_indices =
-            collector.indices_sorted_by(context, &sort_on, step_profile.storage_counters()).into_iter().peekable();
-        measurement.end(step_profile, 1, row_count);
+        let sorted_indices = collector.indices_sorted_by(context, &sort_on, storage_counters).into_iter().peekable();
         CollectedStageIterator::Sort(SortStageIterator { unsorted: collector, sorted_indices })
     }
 }
@@ -292,6 +301,12 @@ impl CollectorTrait for SortCollector {
 pub struct SortStageIterator {
     unsorted: Batch,
     sorted_indices: Peekable<std::vec::IntoIter<usize>>,
+}
+
+impl SortStageIterator {
+    pub(crate) fn initial_len(&self) -> usize {
+        self.unsorted.len()
+    }
 }
 
 impl CollectedStageIteratorTrait for SortStageIterator {

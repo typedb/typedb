@@ -310,6 +310,10 @@ impl BatchRowIterator {
     pub(crate) fn new(batch: Batch) -> Self {
         Self { batch, index: 0 }
     }
+
+    pub(crate) fn initial_len(&self) -> usize {
+        self.batch.len()
+    }
 }
 
 impl LendingIterator for BatchRowIterator {

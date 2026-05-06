@@ -209,18 +209,22 @@ impl PatternExecutor {
                         last_seen_table_size,
                     )?;
                 }
-                ControlInstruction::CollectingStage(CollectingStage { index, mut collector }) => {
+                ControlInstruction::CollectingStage(CollectingStage {
+                    index,
+                    mut collector,
+                    profile: step_profile,
+                }) => {
                     let collecting_stage = executors[*index].unwrap_collecting_stage();
-                    // Single step profile per collecting stage; doubles as the
-                    // storage-counter source for accept and the timing target
-                    // for into_iterator (Sort uses it; Reduce ignores).
-                    let step_profile = collecting_stage.profile_step(&context.profile);
+                    let measurement = step_profile.start_measurement();
                     let storage_counters = step_profile.storage_counters();
                     let inner = collecting_stage.pattern_mut();
+                    let mut batches = 0;
                     while let Some(batch) = inner.compute_next_batch(context, interrupt, tabled_functions)? {
                         collector.accept(context, batch, &storage_counters);
+                        batches += 1;
                     }
-                    let iterator = collector.into_iterator(context, &step_profile);
+                    let iterator = collector.into_iterator(context, step_profile.storage_counters());
+                    measurement.end(&step_profile, batches, 1); // may not be 1
                     self.control_stack.push(StreamCollected { index, iterator }.into());
                 }
                 ControlInstruction::StreamCollected(StreamCollected { index, mut iterator }) => {
@@ -271,7 +275,8 @@ impl PatternExecutor {
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
                     let collector = collecting_stage.create_collector();
-                    self.control_stack.push(CollectingStage { index: next_index, collector }.into());
+                    let profile = collecting_stage.step_profile(&context.profile);
+                    self.control_stack.push(CollectingStage { index: next_index, collector, profile }.into());
                 }
                 StepExecutors::ReshapeForReturn(_) => {
                     self.control_stack.push(ReshapeForReturn { index: next_index, to_reshape: batch }.into());

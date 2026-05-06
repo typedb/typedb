@@ -116,6 +116,10 @@ features = {}
 	name = "test_unimplemented"
 
 [[test]]
+	path = "tests/query_profile.rs"
+	name = "test_query_profile"
+
+[[test]]
 	path = "tests/define.rs"
 	name = "test_define"
 
