@@ -9,13 +9,28 @@ use std::{
     fmt,
     fmt::{Display, Formatter},
     sync::{
-        Arc, RwLock,
+        Arc, OnceLock, RwLock,
         atomic::{AtomicU64, Ordering},
     },
     time::{Duration, Instant},
 };
 
 use itertools::Itertools;
+
+const INDENT_STEP: usize = 2;
+
+/// Indented variant of [`Display`] for nested profile output.
+///
+/// Each implementation writes its content starting at the given indent level,
+/// terminating with a newline. Each child is emitted via `indent_fmt(f, indent + 1)`,
+/// which adds two more leading spaces per nesting depth.
+pub trait IndentDisplay {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result;
+}
+
+fn write_indent(f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
+    write!(f, "{:width$}", "", width = indent * INDENT_STEP)
+}
 
 #[derive(Debug)]
 pub struct TransactionProfile {
@@ -438,52 +453,54 @@ impl QueryProfile {
     }
 
     pub fn profile_stage(&self, description_fn: impl Fn() -> String, id: u64) -> Arc<StageProfile> {
-        if self.enabled {
-            let profiles = self.stage_profiles.read().unwrap();
-            if let Some(profile) = profiles.get(&id) {
-                profile.clone()
-            } else {
-                drop(profiles);
-                let profile = Arc::new(StageProfile::new(description_fn(), true));
-                self.stage_profiles.write().unwrap().insert(id, profile.clone());
-                profile
-            }
-        } else {
-            Arc::new(StageProfile::new(String::new(), false))
+        if !self.enabled {
+            return Arc::new(StageProfile::new_disabled());
         }
+        let profiles = self.stage_profiles.read().unwrap();
+        if let Some(profile) = profiles.get(&id) {
+            return profile.clone();
+        }
+        drop(profiles);
+        let profile = Arc::new(StageProfile::new_enabled(description_fn));
+        self.stage_profiles.write().unwrap().insert(id, profile.clone());
+        profile
     }
 
     pub fn stage_profiles(&self) -> &RwLock<HashMap<u64, Arc<StageProfile>>> {
         &self.stage_profiles
     }
+
+    fn total_nanos(&self) -> u64 {
+        let stage_nanos: u64 = self
+            .stage_profiles
+            .read()
+            .unwrap()
+            .values()
+            .map(|stage_profile| stage_profile.pattern_profile.get().map_or(0, |profile| profile.total_nanos()))
+            .sum();
+        self.compile_profile.total_nanos() + stage_nanos
+    }
 }
 
-impl fmt::Display for QueryProfile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let compile_micros = self.compile_profile.total_micros();
-        let stage_profiles = self.stage_profiles.read().unwrap();
-        let total_micros = compile_micros
-            + stage_profiles
-                .iter()
-                .map(|(_, stage_profile)| {
-                    stage_profile
-                        .step_profiles
-                        .read()
-                        .unwrap()
-                        .iter()
-                        .map(|step_profile| {
-                            step_profile.data.as_ref().map(|data| data.nanos.load(Ordering::SeqCst)).unwrap_or(0)
-                        })
-                        .sum::<u64>()
-                })
-                .sum::<u64>() as f64
-                / 1000.0;
+impl Display for QueryProfile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.indent_fmt(f, 0)
+    }
+}
+
+impl IndentDisplay for QueryProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
+        let total_micros = self.total_nanos() as f64 / 1000.0;
+        write_indent(f, indent)?;
         writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
-        writeln!(f, "{}", self.compile_profile)?;
-        for (id, pattern_profile) in stage_profiles.iter().sorted_by_key(|(id, _)| *id) {
-            writeln!(f, "  -----")?;
-            writeln!(f, "  Stage or Pattern [id={}] - {}", id, &pattern_profile.description)?;
-            write!(f, "{}", pattern_profile)?;
+        self.compile_profile.indent_fmt(f, indent + 1)?;
+        let stage_profiles = self.stage_profiles.read().unwrap();
+        for (id, stage_profile) in stage_profiles.iter().sorted_by_key(|(id, _)| *id) {
+            write_indent(f, indent + 1)?;
+            writeln!(f, "-----")?;
+            write_indent(f, indent + 1)?;
+            writeln!(f, "Stage[root pattern id={}]", id)?;
+            stage_profile.indent_fmt(f, indent + 2)?;
         }
         Ok(())
     }
@@ -545,26 +562,29 @@ impl CompileProfile {
         }
     }
 
-    fn total_micros(&self) -> f64 {
+    fn total_nanos(&self) -> u64 {
         match &self.data {
-            None => 0.0,
-            Some(data) => {
-                (data.translation + data.validation + data.annotation + data.compilation).as_nanos() as f64 / 1000.0
-            }
+            None => 0,
+            Some(data) => (data.translation + data.validation + data.annotation + data.compilation).as_nanos() as u64,
         }
     }
 }
 
-impl Display for CompileProfile {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl IndentDisplay for CompileProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
+        write_indent(f, indent)?;
         match &self.data {
-            None => writeln!(f, "  Compile[enabled=false]"),
+            None => writeln!(f, "Compile[enabled=false]"),
             Some(data) => {
-                writeln!(f, "  Compile[enabled=true, total micros={}]", self.total_micros())?;
-                writeln!(f, "    translation micros: {}", data.translation.as_nanos() as f64 / 1000.0)?;
-                writeln!(f, "    validation micros: {}", data.validation.as_nanos() as f64 / 1000.0)?;
-                writeln!(f, "    annotation micros: {}", data.annotation.as_nanos() as f64 / 1000.0)?;
-                writeln!(f, "    compilation micros: {}", data.compilation.as_nanos() as f64 / 1000.0)
+                writeln!(f, "Compile[enabled=true, total micros={}]", self.total_nanos() as f64 / 1000.0)?;
+                write_indent(f, indent + 1)?;
+                writeln!(f, "translation micros: {}", data.translation.as_nanos() as f64 / 1000.0)?;
+                write_indent(f, indent + 1)?;
+                writeln!(f, "validation micros: {}", data.validation.as_nanos() as f64 / 1000.0)?;
+                write_indent(f, indent + 1)?;
+                writeln!(f, "annotation micros: {}", data.annotation.as_nanos() as f64 / 1000.0)?;
+                write_indent(f, indent + 1)?;
+                writeln!(f, "compilation micros: {}", data.compilation.as_nanos() as f64 / 1000.0)
             }
         }
     }
@@ -610,42 +630,193 @@ impl Display for EncodingProfile {
 
 #[derive(Debug)]
 pub struct StageProfile {
-    description: String,
-    step_profiles: RwLock<Vec<Arc<StepProfile>>>,
+    description: Option<String>,
+    pattern_profile: OnceLock<Arc<PatternProfile>>,
     enabled: bool,
 }
 
 impl StageProfile {
-    fn new(description: String, enabled: bool) -> Self {
-        Self { description, step_profiles: RwLock::new(Vec::new()), enabled }
+    fn new_enabled(description_fn: impl Fn() -> String) -> Self {
+        Self { description: Some(description_fn()), pattern_profile: OnceLock::new(), enabled: true }
     }
 
-    pub fn extend_or_get(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<StepProfile> {
-        if self.enabled {
-            let profiles = self.step_profiles.read().unwrap();
-            if index < profiles.len() {
-                profiles[index].clone()
-            } else {
-                debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
-                let profile = Arc::new(StepProfile::new_enabled(description_getter()));
-                drop(profiles);
-                let mut profiles_mut = self.step_profiles.write().unwrap();
-                profiles_mut.push(profile.clone());
-                profile
+    fn new_disabled() -> Self {
+        Self { description: None, pattern_profile: OnceLock::new(), enabled: false }
+    }
+
+    pub fn create_or_get_pattern(&self, pattern_description: impl Fn() -> String) -> Arc<PatternProfile> {
+        self.pattern_profile
+            .get_or_init(|| {
+                if self.enabled {
+                    Arc::new(PatternProfile::new_enabled(pattern_description))
+                } else {
+                    Arc::new(PatternProfile::new_disabled())
+                }
+            })
+            .clone()
+    }
+
+    /// Returns the pattern profile that has been attached to this stage, or `None` if
+    /// the stage's pattern has never been initialised. Inspection-only — does not call
+    /// `create_or_get_pattern` and so will not allocate a disabled placeholder.
+    pub fn pattern_profile(&self) -> Option<Arc<PatternProfile>> {
+        self.pattern_profile.get().cloned()
+    }
+}
+
+impl IndentDisplay for StageProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
+        match self.pattern_profile.get() {
+            None => {
+                if let Some(description) = self.description.as_deref() {
+                    write_indent(f, indent)?;
+                    writeln!(f, "{}", description)?;
+                }
+                write_indent(f, indent)?;
+                writeln!(f, "Disabled")
             }
-        } else {
-            Arc::new(StepProfile::new_disabled())
+            Some(profile) => {
+                if let Some(description) = self.description.as_deref() {
+                    write_indent(f, indent)?;
+                    writeln!(f, "{} ~~ {} us", description, profile.total_nanos() as f64 / 1000.0)?;
+                }
+                write_indent(f, indent)?;
+                profile.indent_fmt(f, indent)
+            }
         }
     }
 }
 
-impl fmt::Display for StageProfile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (i, step_profile) in self.step_profiles.read().unwrap().iter().enumerate() {
-            match step_profile.data.as_ref() {
-                None => writeln!(f, "    {}.\n", i)?,
-                Some(data) => writeln!(f, "    {}. {}\n", i, data)?,
+#[derive(Debug)]
+pub enum SubstepProfile {
+    QueryProfile { description: String, profile: Arc<QueryProfile> }, // function call
+    PatternProfile(Arc<PatternProfile>),
+    StepProfile(Arc<StepProfile>),
+}
+
+impl SubstepProfile {
+    fn total_nanos(&self) -> u64 {
+        match self {
+            Self::QueryProfile { profile, .. } => profile.total_nanos(),
+            Self::PatternProfile(profile) => profile.total_nanos(),
+            Self::StepProfile(profile) => profile.total_nanos(),
+        }
+    }
+}
+
+impl IndentDisplay for SubstepProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
+        match self {
+            Self::QueryProfile { description, profile } => {
+                write_indent(f, indent)?;
+                writeln!(f, "Function call: {}", description)?;
+                profile.indent_fmt(f, indent + 1)
             }
+            Self::PatternProfile(profile) => profile.indent_fmt(f, indent),
+            Self::StepProfile(profile) => profile.indent_fmt(f, indent),
+        }
+    }
+}
+
+const MISMATCHED_SUBSTEP_PROFILE_TYPE: &str =
+    "Found unexpected sub-profile - indices must always be used with the same type of profile.";
+
+#[derive(Debug)]
+pub struct PatternProfile {
+    substeps: RwLock<Vec<SubstepProfile>>,
+    enabled: bool,
+    description: Option<String>,
+}
+
+impl PatternProfile {
+    fn new_enabled(description_getter: impl Fn() -> String) -> Self {
+        Self { substeps: RwLock::new(Vec::new()), enabled: true, description: Some(description_getter()) }
+    }
+
+    fn new_disabled() -> Self {
+        Self { substeps: RwLock::new(Vec::new()), enabled: false, description: None }
+    }
+
+    pub fn substeps(&self) -> &RwLock<Vec<SubstepProfile>> {
+        &self.substeps
+    }
+
+    pub fn extend_or_get_subquery(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<QueryProfile> {
+        if !self.enabled {
+            return Arc::new(QueryProfile::new(false));
+        }
+        let profiles = self.substeps.read().unwrap();
+        if let Some(substep) = profiles.get(index) {
+            return match substep {
+                SubstepProfile::QueryProfile { profile, .. } => profile.clone(),
+                _ => panic!("{}", MISMATCHED_SUBSTEP_PROFILE_TYPE),
+            };
+        }
+        debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
+        drop(profiles);
+        let query_profile = Arc::new(QueryProfile::new(true));
+        self.substeps
+            .write()
+            .unwrap()
+            .push(SubstepProfile::QueryProfile { description: description_getter(), profile: query_profile.clone() });
+        query_profile
+    }
+
+    pub fn extend_or_get_subpattern(
+        &self,
+        index: usize,
+        description_getter: impl Fn() -> String,
+    ) -> Arc<PatternProfile> {
+        if !self.enabled {
+            return Arc::new(PatternProfile::new_disabled());
+        }
+        let profiles = self.substeps.read().unwrap();
+        if let Some(substep) = profiles.get(index) {
+            return match substep {
+                SubstepProfile::PatternProfile(profile) => profile.clone(),
+                _ => panic!("{}", MISMATCHED_SUBSTEP_PROFILE_TYPE),
+            };
+        }
+        debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
+        drop(profiles);
+        let pattern_profile = Arc::new(PatternProfile::new_enabled(description_getter));
+        self.substeps.write().unwrap().push(SubstepProfile::PatternProfile(pattern_profile.clone()));
+        pattern_profile
+    }
+
+    pub fn extend_or_get_step(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<StepProfile> {
+        if !self.enabled {
+            return Arc::new(StepProfile::new_disabled());
+        }
+        let profiles = self.substeps.read().unwrap();
+        if let Some(substep) = profiles.get(index) {
+            return match substep {
+                SubstepProfile::StepProfile(profile) => profile.clone(),
+                _ => panic!("{}", MISMATCHED_SUBSTEP_PROFILE_TYPE),
+            };
+        }
+        debug_assert!(index == profiles.len(), "Can only extend step profiles sequentially");
+        drop(profiles);
+        let step_profile = Arc::new(StepProfile::new_enabled(description_getter()));
+        self.substeps.write().unwrap().push(SubstepProfile::StepProfile(step_profile.clone()));
+        step_profile
+    }
+
+    fn total_nanos(&self) -> u64 {
+        self.substeps.read().unwrap().iter().map(SubstepProfile::total_nanos).sum()
+    }
+}
+
+impl IndentDisplay for PatternProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
+        if let Some(description) = self.description.as_deref() {
+            // write_indent(f, indent)?;
+            writeln!(f, "{}", description)?;
+        }
+        for (i, substep) in self.substeps.read().unwrap().iter().enumerate() {
+            write_indent(f, indent)?;
+            write!(f, "[{}] ", i)?;
+            substep.indent_fmt(f, indent + 1)?;
         }
         Ok(())
     }
@@ -693,18 +864,36 @@ impl StepProfile {
     pub fn storage_counters(&self) -> StorageCounters {
         if let Some(data) = self.data.as_ref() { data.storage.clone() } else { StorageCounters::DISABLED }
     }
+
+    pub fn total_nanos(&self) -> u64 {
+        self.data.as_ref().map_or(0, |data| data.nanos.load(Ordering::SeqCst))
+    }
 }
 
-impl fmt::Display for StepProfileData {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl IndentDisplay for StepProfile {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
+        match self.data.as_ref() {
+            None => Ok(()),
+            Some(data) => data.indent_fmt(f, indent),
+        }
+    }
+}
+
+impl IndentDisplay for StepProfileData {
+    fn indent_fmt(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
         let rows = self.rows.load(Ordering::Relaxed);
         let micros = Duration::from_nanos(self.nanos.load(Ordering::Relaxed)).as_micros();
         let micros_per_row: f64 = micros as f64 / rows as f64;
-        // TODO: print storage ops
-        write!(
+        let descriptions = self.description.split("\n").collect_vec();
+        writeln!(f, "{}", descriptions[0])?;
+        for description in &descriptions[1..] {
+            write_indent(f, indent)?;
+            writeln!(f, "{}", description)?;
+        }
+        write_indent(f, indent + 1)?;
+        writeln!(
             f,
-            "{}\n    ==> batches: {}, rows: {}, micros: {}, micros/row: {:.1} ({})",
-            &self.description,
+            "==> batches: {}, rows: {}, micros: {}, micros/row: {:.1} ({})",
             self.batches.load(Ordering::Relaxed),
             rows,
             micros,

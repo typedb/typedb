@@ -50,7 +50,7 @@ impl TabledFunctions {
                 &context.snapshot,
                 &context.thing_manager,
                 &self.function_registry,
-                &context.profile,
+                context.profile.clone(),
                 function,
             )
             .map_err(|source| ReadExecutionError::ConceptRead { typedb_source: source })?;

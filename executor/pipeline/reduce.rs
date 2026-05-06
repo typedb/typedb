@@ -6,6 +6,7 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use compiler::executable::reduce::ReduceExecutable;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -48,14 +49,20 @@ where
     > {
         let Self { executable, .. } = self;
 
-        let profile = context.profile.profile_stage(|| String::from("Reduce (not timed)"), executable.executable_id);
-        let step_profile = profile.extend_or_get(0, || String::from("Reduction (not timed)"));
-        let rows = match reduce_iterator(&context, executable, input_iterator) {
-            Ok(rows) => rows,
+        let stage_profile = context.profile.profile_stage(|| String::from("Reduce"), executable.executable_id);
+        let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Reduce pattern"));
+        let step_profile = pattern_profile.extend_or_get_step(0, || String::from("Reduce execution"));
+        let storage_counters = step_profile.storage_counters();
+
+        // The reduce stage produces a single output batch from streaming input,
+        // so we time the whole iterator drain as one batch and report the
+        // count of input rows consumed.
+        let measurement = step_profile.start_measurement();
+        let (rows, input_row_count) = match reduce_iterator(&context, executable, input_iterator, &storage_counters) {
+            Ok(out) => out,
             Err(err) => return Err((err, context)),
         };
-        let measurement = step_profile.start_measurement();
-        measurement.end(&step_profile, 1, rows.len() as u64);
+        measurement.end(&step_profile, 1, input_row_count);
         Ok((WrittenRowsIterator::new(rows), context))
     }
 }
@@ -64,11 +71,14 @@ fn reduce_iterator<Snapshot: ReadableSnapshot>(
     context: &ExecutionContext<Snapshot>,
     executable: Arc<ReduceExecutable>,
     iterator: impl StageIterator,
-) -> Result<Batch, Box<PipelineExecutionError>> {
+    storage_counters: &StorageCounters,
+) -> Result<(Batch, u64), Box<PipelineExecutionError>> {
     let mut iterator = iterator;
     let mut grouped_reducer = GroupedReducer::new(executable.reduce_rows_executable.clone());
+    let mut input_row_count: u64 = 0;
     while let Some(result) = iterator.next() {
-        grouped_reducer.accept(&result?, context)?;
+        grouped_reducer.accept(&result?, context, storage_counters)?;
+        input_row_count += 1;
     }
-    Ok(grouped_reducer.finalise())
+    Ok((grouped_reducer.finalise(), input_row_count))
 }

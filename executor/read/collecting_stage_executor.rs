@@ -9,7 +9,10 @@ use std::{fmt, iter::Peekable, sync::Arc};
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
-use resource::constants::traversal::BATCH_DEFAULT_CAPACITY;
+use resource::{
+    constants::traversal::BATCH_DEFAULT_CAPACITY,
+    profile::{QueryProfile, StepProfile, StorageCounters},
+};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -85,6 +88,21 @@ impl CollectingStageExecutor {
             }
         }
     }
+
+    pub(super) fn step_profile(&self, profile: &QueryProfile) -> Arc<StepProfile> {
+        match self {
+            CollectingStageExecutor::Reduce { .. } => {
+                let stage = profile.profile_stage(|| String::from("Reduce"), 0); // TODO executable id
+                let pattern = stage.create_or_get_pattern(|| String::from("Reduce pattern"));
+                pattern.extend_or_get_step(0, || String::from("Reduce execution"))
+            }
+            CollectingStageExecutor::Sort { .. } => {
+                let stage = profile.profile_stage(|| String::from("Sort"), 0); // TODO executable id
+                let pattern = stage.create_or_get_pattern(|| String::from("Sort pattern"));
+                pattern.extend_or_get_step(0, || String::from("Sort execution"))
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -94,17 +112,26 @@ pub(super) enum CollectorEnum {
 }
 
 impl CollectorEnum {
-    pub(crate) fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
+    pub(crate) fn accept(
+        &mut self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        batch: FixedBatch,
+        storage_counters: &StorageCounters,
+    ) {
         match self {
-            CollectorEnum::Reduce(collector) => collector.accept(context, batch),
-            CollectorEnum::Sort(collector) => collector.accept(context, batch),
+            CollectorEnum::Reduce(collector) => collector.accept(context, batch, storage_counters),
+            CollectorEnum::Sort(collector) => collector.accept(context, batch, storage_counters),
         }
     }
 
-    pub(crate) fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
+    pub(crate) fn into_iterator(
+        self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        storage_counters: StorageCounters,
+    ) -> CollectedStageIterator {
         match self {
-            CollectorEnum::Reduce(collector) => collector.into_iterator(context),
-            CollectorEnum::Sort(collector) => collector.into_iterator(context),
+            CollectorEnum::Reduce(collector) => collector.into_iterator(context, storage_counters),
+            CollectorEnum::Sort(collector) => collector.into_iterator(context, storage_counters),
         }
     }
 }
@@ -122,12 +149,29 @@ impl CollectedStageIterator {
             CollectedStageIterator::Sort(iterator) => iterator.batch_continue(),
         }
     }
+
+    pub(crate) fn initial_len(&self) -> usize {
+        match self {
+            CollectedStageIterator::Reduce(iter) => iter.initial_len(),
+            CollectedStageIterator::Sort(iter) => iter.initial_len(),
+        }
+    }
 }
 
 // Actual implementations
 pub(super) trait CollectorTrait {
-    fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch);
-    fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator;
+    fn accept(
+        &mut self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        batch: FixedBatch,
+        storage_counters: &StorageCounters,
+    );
+
+    fn into_iterator(
+        self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        storage_counters: StorageCounters,
+    ) -> CollectedStageIterator;
 }
 
 pub(super) trait CollectedStageIteratorTrait {
@@ -154,13 +198,22 @@ impl ReduceCollector {
 }
 
 impl CollectorTrait for ReduceCollector {
-    fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
+    fn accept(
+        &mut self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        batch: FixedBatch,
+        storage_counters: &StorageCounters,
+    ) {
         for row in batch {
-            self.active_reducer.accept(&row, context).unwrap(); // TODO: potentially unsafe unwrap
+            self.active_reducer.accept(&row, context, storage_counters).unwrap(); // TODO: potentially unsafe unwrap
         }
     }
 
-    fn into_iterator(self, _context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
+    fn into_iterator(
+        self,
+        _context: &ExecutionContext<impl ReadableSnapshot>,
+        _storage_counters: StorageCounters,
+    ) -> CollectedStageIterator {
         CollectedStageIterator::Reduce(ReduceStageIterator::new(
             self.active_reducer.finalise().into_iterator(),
             self.output_width,
@@ -177,6 +230,10 @@ pub(super) struct ReduceStageIterator {
 impl ReduceStageIterator {
     fn new(batch: BatchRowIterator, output_width: u32) -> Self {
         Self { batch_row_iterator: batch, output_width }
+    }
+
+    pub(crate) fn initial_len(&self) -> usize {
+        self.batch_row_iterator.initial_len()
     }
 }
 
@@ -209,18 +266,25 @@ impl SortCollector {
 }
 
 impl CollectorTrait for SortCollector {
-    fn accept(&mut self, _context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
+    fn accept(
+        &mut self,
+        _context: &ExecutionContext<impl ReadableSnapshot>,
+        batch: FixedBatch,
+        _storage_counters: &StorageCounters,
+    ) {
         for row in batch {
             self.collector.append_row(row);
         }
     }
 
-    fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
+    fn into_iterator(
+        self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        storage_counters: StorageCounters,
+    ) -> CollectedStageIterator {
         let Self { sort_on, collector } = self;
-        let profile = context.profile.profile_stage(|| String::from("Sort"), 0); // TODO executable id
-        let step_profile = profile.extend_or_get(0, || String::from("Sort execution"));
-        let sorted_indices =
-            collector.indices_sorted_by(context, &sort_on, step_profile.storage_counters()).into_iter().peekable();
+        let row_count = collector.len() as u64;
+        let sorted_indices = collector.indices_sorted_by(context, &sort_on, storage_counters).into_iter().peekable();
         CollectedStageIterator::Sort(SortStageIterator { unsorted: collector, sorted_indices })
     }
 }
@@ -229,6 +293,12 @@ impl CollectorTrait for SortCollector {
 pub struct SortStageIterator {
     unsorted: Batch,
     sorted_indices: Peekable<std::vec::IntoIter<usize>>,
+}
+
+impl SortStageIterator {
+    pub(crate) fn initial_len(&self) -> usize {
+        self.unsorted.len()
+    }
 }
 
 impl CollectedStageIteratorTrait for SortStageIterator {

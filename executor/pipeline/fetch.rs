@@ -26,7 +26,7 @@ use encoding::value::label::Label;
 use error::{typedb_error, unimplemented_feature};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use lending_iterator::LendingIterator;
-use resource::profile::{QueryProfile, StageProfile, StorageCounters};
+use resource::profile::{QueryProfile, StepProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -77,6 +77,8 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
         let executable = self.executable;
         let functions = self.functions;
         let stage_profile = profile.profile_stage(|| String::from("Fetch"), executable.executable_id);
+        let pattern_profile = stage_profile.create_or_get_pattern(|| String::from("Fetch pattern"));
+        let step = pattern_profile.extend_or_get_step(0, || String::from("Root fetch"));
         let documents_iterator = previous_iterator
             .map_static(move |row_result| match row_result {
                 Ok(row) => execute_fetch(
@@ -86,7 +88,7 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
                     parameters.clone(),
                     functions.clone(),
                     profile.clone(),
-                    stage_profile.clone(),
+                    &step,
                     row.as_reference(),
                     interrupt.clone(),
                 )
@@ -105,11 +107,10 @@ fn execute_fetch(
     parameters: Arc<ParameterRegistry>,
     functions: Arc<ExecutableFunctionRegistry>,
     query_profile: Arc<QueryProfile>,
-    stage_profile: Arc<StageProfile>,
+    step: &StepProfile,
     row: MaybeOwnedRow<'_>,
     interrupt: ExecutionInterrupt,
 ) -> Result<ConceptDocument, FetchExecutionError> {
-    let step = stage_profile.extend_or_get(0, || String::from("Root fetch"));
     let measurement = step.start_measurement();
     let node = execute_object(
         &fetch.object_instruction,
@@ -121,7 +122,7 @@ fn execute_fetch(
         row,
         interrupt,
     )?;
-    measurement.end(&step, 1, 1);
+    measurement.end(step, 1, 1);
     Ok(ConceptDocument { root: node })
 }
 
@@ -565,7 +566,7 @@ fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
     let args = MaybeOwnedRow::new_owned(args, row.multiplicity(), Provenance::INITIAL);
 
     let step_executors =
-        create_executors_for_function(&snapshot, &thing_manager, &functions_registry, &query_profile, function)
+        create_executors_for_function(&snapshot, &thing_manager, &functions_registry, query_profile, function)
             .map_err(|err| FetchExecutionError::ConceptRead { typedb_source: err })?;
     let mut pattern_executor = PatternExecutor::new(next_executable_id(), step_executors);
     pattern_executor.prepare(FixedBatch::from(args));

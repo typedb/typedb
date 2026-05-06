@@ -559,7 +559,8 @@ fn value_int_equality_isa_reads() {
 
     let stage_profiles = query_profile.stage_profiles().read().unwrap();
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
-    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let pattern_profile = match_profile.create_or_get_pattern(|| String::new());
+    let intersection_step_profile = pattern_profile.extend_or_get_step(1, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
     // 2 seeks: one for the attribute instance iterator, and one for the attribute-has-owner check
     assert_eq!(storage_counters.get_raw_seek().unwrap(), 2);
@@ -653,7 +654,8 @@ fn value_int_equality_has_reverse_reads() {
 
     let stage_profiles = query_profile.stage_profiles().read().unwrap();
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
-    let intersection_step_profile = match_profile.extend_or_get(0, || String::new());
+    let pattern_profile = match_profile.create_or_get_pattern(|| String::new());
+    let intersection_step_profile = pattern_profile.extend_or_get_step(0, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
     // 1 seek: skip directly to the correct attribute value, and find the only owner
     assert_eq!(storage_counters.get_raw_seek().unwrap(), 1);
@@ -759,7 +761,8 @@ fn value_int_equality_has_bound_owner() {
 
     let stage_profiles = query_profile.stage_profiles().read().unwrap();
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
-    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let pattern_profile = match_profile.create_or_get_pattern(|| String::new());
+    let intersection_step_profile = pattern_profile.extend_or_get_step(1, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
     // 6 seeks: for each person, we should skip directly to the person + owned ID
     assert_eq!(storage_counters.get_raw_seek().unwrap(), 6);
@@ -877,7 +880,8 @@ fn value_int_inequality_has_bound_owner() {
 
     let stage_profiles = query_profile.stage_profiles().read().unwrap();
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
-    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let pattern_profile = match_profile.create_or_get_pattern(|| String::new());
+    let intersection_step_profile = pattern_profile.extend_or_get_step(1, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
     // 6 seeks: for each person, we should skip directly to the person + owned ID
     assert_eq!(storage_counters.get_raw_seek().unwrap(), 6);
@@ -981,7 +985,8 @@ fn value_inline_string_equality_has_bound_owner() {
 
     let stage_profiles = query_profile.stage_profiles().read().unwrap();
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
-    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let pattern_profile = match_profile.create_or_get_pattern(|| String::new());
+    let intersection_step_profile = pattern_profile.extend_or_get_step(1, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
     // 6 seeks: for each person, we should skip directly to the person + owned name
     assert_eq!(storage_counters.get_raw_seek().unwrap(), 6);
@@ -1087,7 +1092,8 @@ fn value_hashed_string_equality_has_bound_owner() {
 
     let stage_profiles = query_profile.stage_profiles().read().unwrap();
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
-    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let pattern_profile = match_profile.create_or_get_pattern(|| String::new());
+    let intersection_step_profile = pattern_profile.extend_or_get_step(1, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
     // 6 seeks: for each person, we should skip directly to the person + owned name
     // 1 seek: for the unlined name, we have to get the value in order to filter it out
@@ -1209,7 +1215,8 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
 
     let stage_profiles = query_profile.stage_profiles().read().unwrap();
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
-    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let pattern_profile = match_profile.create_or_get_pattern(|| String::new());
+    let intersection_step_profile = pattern_profile.extend_or_get_step(1, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
     // 6 seeks: for each person, we should skip directly to the person + owned name.
     // 2 seeks: each of the 2 comparison check filters get the value of the Attribute repeatedly...
@@ -1342,7 +1349,8 @@ fn intersection_seeks() {
 
     let stage_profiles = query_profile.stage_profiles().read().unwrap();
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
-    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let pattern_profile = match_profile.create_or_get_pattern(|| String::new());
+    let intersection_step_profile = pattern_profile.extend_or_get_step(1, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
 
     // expected evaluation
@@ -1533,7 +1541,8 @@ fn intersections_seeks_with_extra_values() {
 
     let stage_profiles = query_profile.stage_profiles().read().unwrap();
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
-    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let pattern_profile = match_profile.create_or_get_pattern(|| String::new());
+    let intersection_step_profile = pattern_profile.extend_or_get_step(1, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
 
     // expected evaluation

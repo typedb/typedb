@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{marker::PhantomData, sync::Arc};
+use std::{fmt::Display, marker::PhantomData, sync::Arc};
 
 use compiler::{
     VariablePosition,
@@ -18,7 +18,7 @@ use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
 use resource::{
     constants::traversal::{BATCH_DEFAULT_CAPACITY, CHECK_INTERRUPT_FREQUENCY_ROWS},
-    profile::StageProfile,
+    profile::{PatternProfile, StepProfile},
 };
 use storage::snapshot::WritableSnapshot;
 
@@ -68,6 +68,9 @@ where
         let Self { executable, .. } = self;
 
         let profile = context.profile.profile_stage(|| String::from("Insert"), executable.executable_id);
+        let pattern_profile = profile.create_or_get_pattern(|| String::from("Insert pattern"));
+        let (concept_profiles, connection_profiles, optional_concept_profiles, optional_connection_profiles) =
+            build_step_profiles(&executable, &pattern_profile);
 
         // prepare_output_rows copies unmapped
         let input_output_mapping = executable
@@ -97,7 +100,10 @@ where
                 &context.thing_manager,
                 &context.parameters,
                 &mut row,
-                &profile,
+                &concept_profiles,
+                &connection_profiles,
+                &optional_concept_profiles,
+                &optional_connection_profiles,
             ) {
                 return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
             }
@@ -144,50 +150,111 @@ pub(crate) fn append_row_for_insert_mapped(
     }
 }
 
+/// Build the step-profile vecs once at stage start. Each section (concept,
+/// connection, and per-optional concept/connection) gets its own subpattern
+/// under the stage's pattern profile, with step indices restarted at 0 inside
+/// it — so the profile output groups instructions by section in the tree.
+#[allow(clippy::type_complexity)]
+pub(crate) fn build_step_profiles(
+    executable: &InsertExecutable,
+    pattern_profile: &PatternProfile,
+) -> (Vec<Arc<StepProfile>>, Vec<Arc<StepProfile>>, Vec<Vec<Arc<StepProfile>>>, Vec<Vec<Arc<StepProfile>>>) {
+    let mut next_subpattern: usize = 0;
+
+    let concept_subpattern =
+        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Concept inserts"));
+    next_subpattern += 1;
+    let concept_profiles = reserve_step_profiles(&concept_subpattern, &executable.concept_instructions);
+
+    let connection_subpattern =
+        pattern_profile.extend_or_get_subpattern(next_subpattern, || String::from("Connection inserts"));
+    next_subpattern += 1;
+    let connection_profiles = reserve_step_profiles(&connection_subpattern, &executable.connection_instructions);
+
+    let mut optional_concept_profiles = Vec::with_capacity(executable.optional_inserts.len());
+    let mut optional_connection_profiles = Vec::with_capacity(executable.optional_inserts.len());
+    for (i, optional) in executable.optional_inserts.iter().enumerate() {
+        let opt_concept_sub =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Optional {i} concept inserts"));
+        next_subpattern += 1;
+        optional_concept_profiles.push(reserve_step_profiles(&opt_concept_sub, &optional.concept_instructions));
+
+        let opt_connection_sub =
+            pattern_profile.extend_or_get_subpattern(next_subpattern, || format!("Optional {i} connection inserts"));
+        next_subpattern += 1;
+        optional_connection_profiles
+            .push(reserve_step_profiles(&opt_connection_sub, &optional.connection_instructions));
+    }
+    (concept_profiles, connection_profiles, optional_concept_profiles, optional_connection_profiles)
+}
+
+fn reserve_step_profiles<I: Display>(sub_pattern: &PatternProfile, instructions: &[I]) -> Vec<Arc<StepProfile>> {
+    instructions
+        .iter()
+        .enumerate()
+        .map(|(i, instruction)| sub_pattern.extend_or_get_step(i, || format!("{}", instruction)))
+        .collect()
+}
+
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn execute_insert(
     executable: &InsertExecutable,
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
-    stage_profile: &StageProfile,
+    concept_profiles: &[Arc<StepProfile>],
+    connection_profiles: &[Arc<StepProfile>],
+    optional_concept_profiles: &[Vec<Arc<StepProfile>>],
+    optional_connection_profiles: &[Vec<Arc<StepProfile>>],
 ) -> Result<(), Box<WriteError>> {
     debug_assert!(row.get_multiplicity() == 1);
     debug_assert!(row.len() == executable.output_row_schema.len());
-    let mut profile_index = 0;
+    debug_assert_eq!(executable.concept_instructions.len(), concept_profiles.len());
+    debug_assert_eq!(executable.connection_instructions.len(), connection_profiles.len());
+    debug_assert_eq!(executable.optional_inserts.len(), optional_concept_profiles.len());
+    debug_assert_eq!(executable.optional_inserts.len(), optional_connection_profiles.len());
     execute_concept_instructions(
         &executable.concept_instructions,
+        concept_profiles,
         snapshot,
         thing_manager,
         parameters,
         row,
-        stage_profile,
-        &mut profile_index,
     )?;
     execute_connection_instructions(
         &executable.connection_instructions,
+        connection_profiles,
         snapshot,
         thing_manager,
         parameters,
         row,
-        stage_profile,
-        &mut profile_index,
     )?;
-    for optional in &executable.optional_inserts {
-        execute_optional_insert(optional, snapshot, thing_manager, parameters, row, stage_profile, &mut profile_index)?;
+    for (i, optional) in executable.optional_inserts.iter().enumerate() {
+        execute_optional_insert(
+            optional,
+            &optional_concept_profiles[i],
+            &optional_connection_profiles[i],
+            snapshot,
+            thing_manager,
+            parameters,
+            row,
+        )?;
     }
     Ok(())
 }
 
 fn execute_optional_insert(
     optional: &OptionalInsert,
+    concept_profiles: &[Arc<StepProfile>],
+    connection_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
-    stage_profile: &StageProfile,
-    profile_index: &mut usize,
 ) -> Result<(), Box<WriteError>> {
+    debug_assert_eq!(optional.concept_instructions.len(), concept_profiles.len());
+    debug_assert_eq!(optional.connection_instructions.len(), connection_profiles.len());
     for &input in &optional.required_input_variables {
         if row.len() <= input.as_usize() || row.get(input).is_none() {
             return Ok(());
@@ -195,35 +262,33 @@ fn execute_optional_insert(
     }
     execute_concept_instructions(
         &optional.concept_instructions,
+        concept_profiles,
         snapshot,
         thing_manager,
         parameters,
         row,
-        stage_profile,
-        profile_index,
     )?;
     execute_connection_instructions(
         &optional.connection_instructions,
+        connection_profiles,
         snapshot,
         thing_manager,
         parameters,
         row,
-        stage_profile,
-        profile_index,
     )?;
     Ok(())
 }
+
 fn execute_concept_instructions(
     concept_instructions: &[ConceptInstruction],
+    step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
-    stage_profile: &StageProfile,
-    profile_index: &mut usize,
 ) -> Result<(), Box<WriteError>> {
-    for instruction in concept_instructions {
-        let step_profile = stage_profile.extend_or_get(*profile_index, || format!("{}", instruction));
+    debug_assert_eq!(concept_instructions.len(), step_profiles.len());
+    for (instruction, step_profile) in concept_instructions.iter().zip(step_profiles) {
         let measurement = step_profile.start_measurement();
         match instruction {
             ConceptInstruction::PutAttribute(isa_attr) => {
@@ -233,23 +298,21 @@ fn execute_concept_instructions(
                 isa_object.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
         }
-        measurement.end(&step_profile, 1, 1);
-        *profile_index += 1;
+        measurement.end(step_profile, 1, 1);
     }
     Ok(())
 }
 
 fn execute_connection_instructions(
     connection_instructions: &[ConnectionInstruction],
+    step_profiles: &[Arc<StepProfile>],
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
     row: &mut Row<'_>,
-    stage_profile: &StageProfile,
-    profile_index: &mut usize,
 ) -> Result<(), Box<WriteError>> {
-    for instruction in connection_instructions {
-        let step_profile = stage_profile.extend_or_get(*profile_index, || format!("{}", instruction));
+    debug_assert_eq!(connection_instructions.len(), step_profiles.len());
+    for (instruction, step_profile) in connection_instructions.iter().zip(step_profiles) {
         let measurement = step_profile.start_measurement();
         match instruction {
             ConnectionInstruction::Has(has) => {
@@ -259,8 +322,7 @@ fn execute_connection_instructions(
                 role_player.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
         };
-        measurement.end(&step_profile, 1, 1);
-        *profile_index += 1;
+        measurement.end(step_profile, 1, 1);
     }
     Ok(())
 }

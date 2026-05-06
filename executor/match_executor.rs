@@ -40,13 +40,14 @@ impl MatchExecutor {
         function_registry: Arc<ExecutableFunctionRegistry>,
         profile: &QueryProfile,
     ) -> Result<Self, Box<ConceptReadError>> {
+        let stage_profile = profile.profile_stage(|| String::from("Match"), conjunction_executable.executable_id());
         Ok(Self {
             entry: create_pattern_executor_for_conjunction(
                 snapshot,
                 thing_manager,
                 &function_registry,
                 conjunction_executable,
-                profile,
+                stage_profile,
             )?,
             tabled_functions: TabledFunctions::new(function_registry),
             input: Some(input.into_owned()),
