@@ -46,7 +46,8 @@ impl Debug for RocksResources {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Rocks LRU Cache size: {}. Rocks write buffers size limit: {}",
+            "Rocks LRU Cache size (shared by all databases): {}. \
+             Rocks write buffers size limit (shared by all databases): {}",
             self.cache_limit_bytes, self.write_buffers_limit_bytes
         )
     }
