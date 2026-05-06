@@ -20,13 +20,9 @@ use database::{
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::ExecutionInterrupt;
-use options::{QueryOptions, TransactionOptions};
-use storage::{durability_client::WALClient, keyspace::storage_resources::RocksResources};
+use options::{QueryOptions, RocksDbConfig, TransactionOptions};
+use storage::durability_client::WALClient;
 use test_utils::{create_tmp_storage_dir, init_logging};
-
-fn test_rocks_resources() -> Arc<RocksResources> {
-    Arc::new(RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024))
-}
 
 const DB_NAME: &str = "stats-recovery";
 const SCHEMA: &str = r#"define
@@ -52,7 +48,7 @@ fn statistics_synchronization_under_concurrent_load() {
 
     {
         let dbm =
-            DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled()), test_rocks_resources())
+            DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled()), &RocksDbConfig::default())
                 .unwrap();
         dbm.put_database(DB_NAME).unwrap();
         let database = dbm.database(DB_NAME).unwrap();
@@ -82,7 +78,7 @@ fn statistics_synchronization_under_concurrent_load() {
 
     // dbm and database dropped here; IntervalRunner threads shut down synchronously on drop.
 
-    let dbm = DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled()), test_rocks_resources())
+    let dbm = DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled()), &RocksDbConfig::default())
         .unwrap();
     let database = dbm.database(DB_NAME).unwrap();
     let metrics = database.get_metrics();

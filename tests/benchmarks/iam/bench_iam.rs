@@ -13,13 +13,9 @@ use database::{
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
-use options::TransactionOptions;
-use storage::{durability_client::WALClient, keyspace::storage_resources::RocksResources};
+use options::{RocksDbConfig, TransactionOptions};
+use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;
-
-fn test_rocks_resources() -> Arc<RocksResources> {
-    Arc::new(RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024))
-}
 
 const DB_NAME: &str = "benchmark-iam";
 const RESOURCE_PATH: &str = "tests/benchmarks/iam";
@@ -116,7 +112,7 @@ fn setup() -> Arc<Database<WALClient>> {
     let tmp_dir = create_tmp_storage_dir();
     {
         let dbm =
-            DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled()), test_rocks_resources())
+            DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled()), &RocksDbConfig::default())
                 .unwrap();
         dbm.put_database(DB_NAME).unwrap();
         let database = dbm.database(DB_NAME).unwrap();
@@ -128,7 +124,7 @@ fn setup() -> Arc<Database<WALClient>> {
         load_schema_tql(database.clone(), &functions_path);
         load_data_tql(database.clone(), &data_path);
     }
-    let dbm = DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled()), test_rocks_resources())
+    let dbm = DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled()), &RocksDbConfig::default())
         .unwrap();
     dbm.put_database(DB_NAME).unwrap();
 
