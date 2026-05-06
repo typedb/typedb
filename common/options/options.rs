@@ -6,7 +6,7 @@
 
 pub mod byte_size;
 
-pub use byte_size::ByteSize;
+pub use byte_size::{ByteSize, ParseByteSizeError};
 
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_GRPC, DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES,

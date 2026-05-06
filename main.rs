@@ -37,9 +37,18 @@ fn main() {
         None => ConfigBuilder::resolve_path_from_executable(Path::new(DEFAULT_CONFIG_PATH)),
         Some(path) => CLIArgs::resolve_path_from_pwd(Path::new(path)),
     };
-    let mut config_builder = ConfigBuilder::from_file(config_file).expect("Error reading from config file");
-    config_builder.override_with_cliargs(cli_args).expect("Error applying CLI overrides");
-    let config = config_builder.build().expect("Error validating config file overridden with cli args");
+    let mut config_builder = ConfigBuilder::from_file(config_file).unwrap_or_else(|err| {
+        eprintln!("Error reading from config file: {}", err);
+        std::process::exit(1);
+    });
+    config_builder.override_with_cliargs(cli_args).unwrap_or_else(|err| {
+        eprintln!("Error applying CLI overrides: {}", err);
+        std::process::exit(1);
+    });
+    let config = config_builder.build().unwrap_or_else(|err| {
+        eprintln!("Error validating config file overridden with cli args: {}", err);
+        std::process::exit(1);
+    });
     initialise_logging_global(&config.logging.directory);
 
     ServerApplication::new(config).run();
