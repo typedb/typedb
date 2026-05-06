@@ -9,16 +9,16 @@ use std::sync::Arc;
 use database::{Database, database_manager::DatabaseManager};
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use options::ByteSize;
-use resource::constants::common::MB;
-use storage::{durability_client::WALClient, keyspace::storage_resources::RocksResources};
+use storage::durability_client::WALClient;
 use test_utils::{create_tmp_dir, create_tmp_storage_dir, init_logging};
+use test_utils_storage::create_rocks_resources;
 
 #[test]
 fn create_delete_database() {
     init_logging();
     let database_path = create_tmp_storage_dir();
     let diagnostics_manager = Arc::new(DiagnosticsManager::new_disabled());
-    let resources = RocksResources::new(64 * MB as usize, 64 * MB as usize);
+    let resources = create_rocks_resources();
     let db_result =
         Database::<WALClient>::open(&database_path.join("create_delete"), &diagnostics_manager, &resources);
     assert!(db_result.is_ok(), "{:?}", db_result.unwrap_err());

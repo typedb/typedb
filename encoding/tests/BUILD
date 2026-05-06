@@ -14,6 +14,7 @@ rust_library(
         "//diagnostics",
         "//encoding",
         "//storage",
+        "//storage/tests:test_utils_storage",
         "//durability",
         "//util/test:test_utils",
 
@@ -27,6 +28,7 @@ test_deps = [
     "//diagnostics",
     "//encoding",
     "//storage",
+    "//storage/tests:test_utils_storage",
     "//durability",
     "//resource",
     ":test_utils_encoding",

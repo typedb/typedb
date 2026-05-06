@@ -17,8 +17,8 @@ rust_test(
         "//diagnostics",
         "//durability",
         "//encoding",
-        "//resource",
         "//storage",
+        "//storage/tests:test_utils_storage",
         "//util/test:test_utils",
 
         "@crates//:rocksdb",
