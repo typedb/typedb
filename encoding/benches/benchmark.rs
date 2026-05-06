@@ -18,7 +18,7 @@ use encoding::{
         type_::vertex::TypeID,
     },
 };
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::constants::{common::MB, snapshot::BUFFER_KEY_INLINE};
 use storage::{
     MVCCStorage, durability_client::WALClient, key_value::StorageKey,
     keyspace::storage_resources::RocksResources, snapshot::WriteSnapshot,
@@ -45,7 +45,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
     let storage_path = create_tmp_storage_dir();
     let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
-    let resources = RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024);
+    let resources = RocksResources::new(64 * MB as usize, 64 * MB as usize);
     let storage = Arc::new(
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
             "storage",
