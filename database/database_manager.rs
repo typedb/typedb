@@ -47,10 +47,6 @@ impl DatabaseManager {
             rocksdb_cache_size.as_usize(),
             rocksdb_write_buffers_limit.as_usize(),
         ));
-        debug!(
-            "Storage configured: rocksdb cache={}, write-buffers-limit={}",
-            rocksdb_cache_size, rocksdb_write_buffers_limit,
-        );
 
         let databases =
             RwLock::new(Self::initialise_databases(&data_directory, &import_directory, &rocks_resources)?);
