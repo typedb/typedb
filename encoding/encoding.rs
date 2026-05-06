@@ -106,9 +106,6 @@ impl KeyspaceSet for EncodingKeyspace {
         options.set_write_buffer_size(64 * MB as usize);
         options.set_max_write_buffer_size_to_maintain(0);
         options.set_max_write_buffer_number(2);
-        // Share a single WriteBufferManager across all keyspaces and databases on
-        // this server, so the per-DB write-buffer count above is bounded *globally*
-        // by the configured budget rather than growing linearly with #databases.
         options.set_write_buffer_manager(&resources.write_buffer_manager());
         options.set_memtable_whole_key_filtering(false);
         options.set_optimize_filters_for_hits(false); // true => don't build bloom filters for the last level

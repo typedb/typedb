@@ -17,7 +17,7 @@ use diagnostics::{Diagnostics, diagnostics_manager::DiagnosticsManager};
 use resource::{constants::server::DATABASE_METRICS_UPDATE_INTERVAL, distribution_info::DistributionInfo};
 use storage::keyspace::storage_resources::RocksResources;
 use tokio::{net::lookup_host, sync::watch::Receiver};
-use tracing::info;
+use tracing::debug;
 
 pub use self::{
     database_operator::{
@@ -65,7 +65,7 @@ impl ServerState {
             config.storage.rocksdb.cache_size.as_usize(),
             config.storage.rocksdb.write_buffers_limit.as_usize(),
         ));
-        info!(
+        debug!(
             "Storage configured: rocksdb cache={}, write-buffers-limit={}",
             config.storage.rocksdb.cache_size, config.storage.rocksdb.write_buffers_limit,
         );
