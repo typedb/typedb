@@ -59,8 +59,12 @@ impl ServerState {
         shutdown_receiver: Receiver<()>,
         background_task_spawner: TokioTaskSpawner,
     ) -> Result<ServerStateBuilder, ServerOpenError> {
-        let database_manager = DatabaseManager::new(&config.storage.data_directory, &config.storage.rocksdb)
-            .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
+        let database_manager = DatabaseManager::new(
+            &config.storage.data_directory,
+            config.storage.rocksdb.cache_size,
+            config.storage.rocksdb.write_buffers_limit,
+        )
+        .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
         let token_manager = Arc::new(
             TokenManager::new(config.server.authentication.token_expiration, background_task_spawner.clone())
                 .map_err(|typedb_source| ServerOpenError::TokenConfiguration { typedb_source })?,

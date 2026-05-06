@@ -15,6 +15,7 @@ rust_test(
         "//common/logger",
         "//database",
         "//encoding",
+        "//resource",
         "//storage",
         "//util/test:test_utils",
 

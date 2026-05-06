@@ -11,7 +11,7 @@ use std::{
     time::Duration,
 };
 
-use options::{ByteSize, RocksDbConfig};
+use options::ByteSize;
 use resource::constants::server::{
     ADMIN_DEFAULT_PORT, DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT,
 };
@@ -109,6 +109,29 @@ pub struct StorageConfig {
     pub data_directory: PathBuf,
     #[serde(default)]
     pub rocksdb: RocksDbConfig,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct RocksDbConfig {
+    #[serde(default = "default_rocksdb_cache_size")]
+    pub cache_size: ByteSize,
+    #[serde(default = "default_rocksdb_write_buffers_limit")]
+    pub write_buffers_limit: ByteSize,
+}
+
+impl Default for RocksDbConfig {
+    fn default() -> Self {
+        Self { cache_size: default_rocksdb_cache_size(), write_buffers_limit: default_rocksdb_write_buffers_limit() }
+    }
+}
+
+const fn default_rocksdb_cache_size() -> ByteSize {
+    ByteSize::gb(1)
+}
+
+const fn default_rocksdb_write_buffers_limit() -> ByteSize {
+    ByteSize::mb(512)
 }
 
 #[derive(Clone, Debug, Deserialize)]

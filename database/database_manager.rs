@@ -12,7 +12,7 @@ use std::{
 };
 
 use cache::CACHE_DB_NAME_PREFIX;
-use options::RocksDbConfig;
+use options::ByteSize;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
 use storage::keyspace::storage_resources::RocksResources;
@@ -37,18 +37,19 @@ impl DatabaseManager {
 
     pub fn new(
         data_directory: impl AsRef<Path>,
-        rocksdb_config: &RocksDbConfig,
+        rocksdb_cache_size: ByteSize,
+        rocksdb_write_buffers_limit: ByteSize,
     ) -> Result<Arc<Self>, DatabaseOpenError> {
         let data_directory = data_directory.as_ref().to_owned();
         let import_directory = data_directory.join(Self::IMPORT_DIRECTORY_NAME);
 
         let rocks_resources = Arc::new(RocksResources::new(
-            rocksdb_config.cache_size.as_usize(),
-            rocksdb_config.write_buffers_limit.as_usize(),
+            rocksdb_cache_size.as_usize(),
+            rocksdb_write_buffers_limit.as_usize(),
         ));
         debug!(
             "Storage configured: rocksdb cache={}, write-buffers-limit={}",
-            rocksdb_config.cache_size, rocksdb_config.write_buffers_limit,
+            rocksdb_cache_size, rocksdb_write_buffers_limit,
         );
 
         let databases =
