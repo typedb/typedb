@@ -55,8 +55,9 @@ impl QueryCache {
         fetch: Arc<Option<FetchObject>>,
         pipeline: ExecutablePipeline,
     ) {
-        let key = IRQuery::new(preamble, stages, fetch);
-        self.cache.insert(key, pipeline);
+        eprintln!("NOPE. THIS BUILD DOES NOT INSERT TO THE QUERY CACHE");
+        // let key = IRQuery::new(preamble, stages, fetch);
+        // self.cache.insert(key, pipeline);
     }
 
     pub fn may_evict(&self, new_statistics: &Statistics) {

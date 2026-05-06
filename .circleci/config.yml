@@ -428,7 +428,7 @@ workflows:
       - deploy-docker-snapshot-arm64:
           filters:
             branches:
-              only: [ master, bazel-8-upgrade, bazel-8-upgrade-v2 ]
+              only: [ master, bazel-8-upgrade, bazel-8-upgrade-v2, no-query-cache--deploy-arm64-linux-docker-snapshot ]
 
       - deploy-docker-snapshot-multiarch:
           filters:
