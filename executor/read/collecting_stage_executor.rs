@@ -272,9 +272,6 @@ impl CollectorTrait for SortCollector {
         batch: FixedBatch,
         _storage_counters: &StorageCounters,
     ) {
-        // Sort accept just buffers the rows; attribute reads (and therefore
-        // storage-counter increments) happen in `into_iterator` when the
-        // actual comparator runs.
         for row in batch {
             self.collector.append_row(row);
         }
@@ -286,9 +283,6 @@ impl CollectorTrait for SortCollector {
         storage_counters: StorageCounters,
     ) -> CollectedStageIterator {
         let Self { sort_on, collector } = self;
-        // The actual sort happens here. Time it as one batch with the input
-        // row count as the row total — accept calls upstream are pure
-        // appends and not separately measured.
         let row_count = collector.len() as u64;
         let sorted_indices = collector.indices_sorted_by(context, &sort_on, storage_counters).into_iter().peekable();
         CollectedStageIterator::Sort(SortStageIterator { unsorted: collector, sorted_indices })

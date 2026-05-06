@@ -10,24 +10,24 @@ use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    batch::{FixedBatch, FixedBatchRowIterator}, error::ReadExecutionError,
+    ExecutionInterrupt, Provenance,
+    batch::{FixedBatch, FixedBatchRowIterator},
+    error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     read::{
+        BranchIndex, ExecutorIndex,
         control_instruction::{
             CollectingStage, ControlInstruction, ExecuteDisjunctionBranch, ExecuteImmediate, ExecuteInlinedFunction,
             ExecuteNegation, ExecuteOptional, ExecuteStreamModifier, ExecuteTabledCall, MapBatchToRowsForNested,
             PatternStart, ReshapeForReturn, RestoreSuspension, StreamCollected, Yield,
-        }, nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor, OptionalExecutor},
+        },
+        nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor, OptionalExecutor},
         step_executor::StepExecutors,
         suspension::{NestedPatternSuspension, PatternSuspension, QueryPatternSuspensions, TabledCallSuspension},
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
-        BranchIndex,
-        ExecutorIndex,
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
-    Provenance,
 };
 
 #[derive(Debug)]
