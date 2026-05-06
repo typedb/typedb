@@ -684,7 +684,7 @@ pub async fn relation_role_unset_annotation(
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
-            &parsed_annotation_category,
+            parsed_annotation_category,
         );
         may_error.check_concept_write_without_read_errors(&res);
     });

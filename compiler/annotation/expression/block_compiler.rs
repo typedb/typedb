@@ -149,7 +149,7 @@ fn index_expressions_disjunction<'block, Snapshot: ReadableSnapshot>(
         .into_iter()
         .flat_map(|branch_index| branch_index.into_iter())
         .for_each(|(var, expressions)| combined_indices.entry(var).or_default().extend(expressions));
-    combined_indices.into_iter().try_for_each(|(var, expressions)| match index.insert(var.clone(), expressions) {
+    combined_indices.into_iter().try_for_each(|(var, expressions)| match index.insert(var, expressions) {
         Some(_) => {
             debug_assert!(!index.get(&var).unwrap().is_empty());
             Err(ExpressionCompileError::MultipleAssignmentsForVariable {

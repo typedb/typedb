@@ -36,7 +36,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
-            DefaultFrom, FromAnnotation, HasAnnotationCategory, has_annotation_category,
+            FromAnnotation, HasAnnotationCategory, has_annotation_category,
         },
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, TypeConstraint},
@@ -269,14 +269,16 @@ impl EntityType {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        annotation_category: &AnnotationCategory,
+        annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let entity_annotation = EntityTypeAnnotation::try_getting_default(annotation_category)
+        let entity_annotation = EntityTypeAnnotationCategory::try_from(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match entity_annotation {
-            EntityTypeAnnotation::Abstract(_) => type_manager.unset_entity_type_annotation_abstract(snapshot, *self)?,
-            EntityTypeAnnotation::Doc(_) => type_manager.unset_entity_type_annotation_doc(snapshot, *self)?,
-            EntityTypeAnnotation::Meta(meta) => {
+            EntityTypeAnnotationCategory::Abstract => {
+                type_manager.unset_entity_type_annotation_abstract(snapshot, *self)?
+            }
+            EntityTypeAnnotationCategory::Doc => type_manager.unset_entity_type_annotation_doc(snapshot, *self)?,
+            EntityTypeAnnotationCategory::Meta(meta) => {
                 type_manager.unset_entity_type_annotation_meta(snapshot, *self, meta)?
             }
         }

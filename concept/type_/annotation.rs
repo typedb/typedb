@@ -16,14 +16,18 @@ use std::{
 
 use bytes::{Bytes, byte_array::ByteArray};
 use encoding::{
-    graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
+    graph::type_::{
+        edge::TypeEdgeEncoding,
+        property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
+        vertex::TypeVertexEncoding,
+    },
     layout::infix::Infix,
     value::{ValueEncodable, value::Value, value_type::ValueType},
 };
 use error::typedb_error;
 use macro_rules_attribute::derive;
 use regex::Regex;
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use serde::{Deserialize, Serialize};
 
 use crate::type_::{
@@ -565,6 +569,10 @@ impl AnnotationMeta {
     pub fn key(&self) -> &str {
         &self.key
     }
+
+    pub fn value(&self) -> &str {
+        &self.value
+    }
 }
 
 impl fmt::Display for AnnotationMeta {
@@ -609,7 +617,7 @@ macro_rules! FromAnnotation {
             fn try_from(annotation: $crate::type_::annotation::Annotation) -> Result<Self, AnnotationError> {
                 match annotation {
                     $($crate::type_::annotation::Annotation::$Variant(annotation) => Ok(Self::$Variant(annotation)),)*
-                    _ => paste::paste!(Err(AnnotationError::[< Unsupported $Enum >] { category: annotation.category() })),
+                    _ => ::paste::paste!(Err(Self::Error::[< Unsupported $Enum >] { category: annotation.category() })),
                 }
             }
         }
@@ -621,7 +629,38 @@ macro_rules! FromAnnotation {
                 }
             }
         }
-    }
+
+        FromAnnotation! { @cat $vis $Enum {} $($Variant)* }
+
+        impl TryFrom<$crate::type_::annotation::AnnotationCategory> for ::paste::paste!([<$Enum Category>]) {
+            type Error = $crate::type_::annotation::AnnotationError;
+            fn try_from(category: $crate::type_::annotation::AnnotationCategory) -> Result<Self, AnnotationError> {
+                #[allow(unused_imports, reason = "uninhabited annotation enums")]
+                use $crate::type_::annotation::AnnotationCategory;
+                match category {
+                    $(FromAnnotation!(@match-cat $Variant inner) => Ok(FromAnnotation!(@make-cat $Variant inner)),)*
+                    _ => ::paste::paste!(Err(Self::Error::[< Unsupported $Enum >] { category })),
+                }
+            }
+        }
+    };
+
+    (@cat $vis:vis $Enum:ident { $($inner:tt)* } Meta $($tail:tt)*) => { FromAnnotation! { @cat $vis $Enum { $($inner)* Meta(String), } $($tail)* } };
+    (@cat $vis:vis $Enum:ident { $($inner:tt)* } $V:ident $($tail:tt)*) => { FromAnnotation! { @cat $vis $Enum { $($inner)* $V, } $($tail)* } };
+    (@cat $vis:vis $Enum:ident { $($inner:tt)* }) => {
+        ::paste::paste! {
+            #[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]
+            $vis enum [<$Enum Category>] {
+                $($inner)*
+            }
+        }
+    };
+
+    (@match-cat Meta $key:ident) => { AnnotationCategory::Meta($key) };
+    (@match-cat $Variant:ident $_:ident) => { AnnotationCategory::$Variant };
+
+    (@make-cat Meta $key:ident) => { Self::Meta($key) };
+    (@make-cat $Variant:ident $_:ident) => { Self::$Variant };
 }
 pub(crate) use FromAnnotation;
 
@@ -722,7 +761,11 @@ impl fmt::Display for AnnotationCategory {
 
 impl fmt::Debug for AnnotationCategory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "@{}", self.name())
+        write!(f, "@{}", self.name())?;
+        if let Self::Meta(key) = self {
+            write!(f, "({:?})", key)?;
+        }
+        Ok(())
     }
 }
 
@@ -770,28 +813,13 @@ macro_rules! has_annotation_category {
 }
 pub(crate) use has_annotation_category;
 
-pub trait DefaultFrom<FromType, ErrorType> {
-    fn try_getting_default(from: &FromType) -> Result<Self, ErrorType>
-    where
-        Self: Sized;
-}
-
-impl<T> DefaultFrom<AnnotationCategory, AnnotationError> for T
-where
-    T: TryFrom<Annotation, Error = AnnotationError>,
-{
-    // Note: creating default annotation from category is a workaround for creating new category types per Attribute/Entity/Relation/etc
-    fn try_getting_default(from: &AnnotationCategory) -> Result<Self, AnnotationError> {
-        from.to_default().try_into()
-    }
-}
-
 macro_rules! empty_type_vertex_property_encoding {
     ($property:ident, $infix:ident) => {
         impl TypeVertexPropertyEncoding for $property {
             const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes(value: &[u8]) -> $property {
+            fn from_key_value_bytes(key: &[u8], value: &[u8]) -> $property {
+                debug_assert!(key.is_empty());
                 debug_assert!(value.is_empty());
                 $property
             }
@@ -810,12 +838,12 @@ macro_rules! unreachable_type_vertex_property_encoding {
         impl TypeVertexPropertyEncoding for $property {
             const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes(_: &[u8]) -> $property {
-                unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
+            fn from_key_value_bytes(_: &[u8], _: &[u8]) -> $property {
+                unreachable!("TypeVertexPropertyEncoding is not to be implemented for {}", stringify!($property))
             }
 
             fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
-                unreachable!("TypeVertexPropertyEncoding is not be implemented for {}", stringify!($property))
+                unreachable!("TypeVertexPropertyEncoding is not to be implemented for {}", stringify!($property))
             }
         }
     };
@@ -830,13 +858,19 @@ empty_type_vertex_property_encoding!(AnnotationAbstract, PropertyAnnotationAbstr
 empty_type_vertex_property_encoding!(AnnotationIndependent, PropertyAnnotationIndependent);
 empty_type_vertex_property_encoding!(AnnotationCascade, PropertyAnnotationCascade);
 
+#[track_caller]
+fn decode_to_string(value: &[u8]) -> String {
+    std::str::from_utf8(value).unwrap().to_owned()
+}
+
 impl TypeVertexPropertyEncoding for AnnotationRegex {
     const INFIX: Infix = Infix::PropertyAnnotationRegex;
 
-    fn from_value_bytes(value: &[u8]) -> AnnotationRegex {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
-        AnnotationRegex::new(std::str::from_utf8(value).unwrap().to_owned())
+        AnnotationRegex::new(decode_to_string(value))
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
@@ -846,7 +880,8 @@ impl TypeVertexPropertyEncoding for AnnotationRegex {
 
 impl TypeVertexPropertyEncoding for AnnotationRange {
     const INFIX: Infix = Infix::PropertyAnnotationRange;
-    fn from_value_bytes(value: &[u8]) -> Self {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         bincode::deserialize(value).unwrap()
@@ -859,7 +894,8 @@ impl TypeVertexPropertyEncoding for AnnotationRange {
 
 impl TypeVertexPropertyEncoding for AnnotationValues {
     const INFIX: Infix = Infix::PropertyAnnotationValues;
-    fn from_value_bytes(value: &[u8]) -> Self {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         bincode::deserialize(value).unwrap()
@@ -873,8 +909,9 @@ impl TypeVertexPropertyEncoding for AnnotationValues {
 impl TypeVertexPropertyEncoding for AnnotationDoc {
     const INFIX: Infix = Infix::PropertyAnnotationDoc;
 
-    fn from_value_bytes(value: &[u8]) -> Self {
-        AnnotationDoc::new(std::str::from_utf8(value).unwrap().to_owned())
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
+        AnnotationDoc::new(decode_to_string(value))
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
@@ -883,14 +920,18 @@ impl TypeVertexPropertyEncoding for AnnotationDoc {
 }
 
 impl TypeVertexPropertyEncoding for AnnotationMeta {
-    const INFIX: Infix = Infix::PropertyAnnotationDoc;
+    const INFIX: Infix = Infix::PropertyAnnotationMeta;
 
-    fn from_value_bytes(value: &[u8]) -> Self {
-        todo!("meta TypeVertexPropertyEncoding::from_value_bytes")
+    fn to_key(&self, vertex: impl TypeVertexEncoding) -> TypeVertexProperty {
+        <Self as TypeVertexPropertyEncoding>::build_key(vertex, self.key().as_bytes())
+    }
+
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        Self::new(decode_to_string(key), decode_to_string(value))
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
-        todo!("meta TypeVertexPropertyEncoding::to_value_bytes")
+        Some(Bytes::Array(ByteArray::copy(self.value().as_bytes())))
     }
 }
 
@@ -899,7 +940,8 @@ macro_rules! empty_type_edge_property_encoder {
         impl TypeEdgePropertyEncoding for $property {
             const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes(value: &[u8]) -> $property {
+            fn from_key_value_bytes(key: &[u8], value: &[u8]) -> $property {
+                debug_assert!(key.is_empty());
                 debug_assert!(value.is_empty());
                 $property
             }
@@ -918,7 +960,7 @@ macro_rules! unreachable_type_edge_property_encoder {
         impl TypeEdgePropertyEncoding for $property {
             const INFIX: Infix = Infix::$infix;
 
-            fn from_value_bytes(_value: &[u8]) -> $property {
+            fn from_key_value_bytes(_key: &[u8], _value: &[u8]) -> $property {
                 unreachable!("TypeEdgePropertyEncoding is not be implemented for {}", stringify!($property))
             }
 
@@ -939,7 +981,8 @@ empty_type_edge_property_encoder!(AnnotationKey, PropertyAnnotationKey);
 
 impl TypeEdgePropertyEncoding for AnnotationCardinality {
     const INFIX: Infix = Infix::PropertyAnnotationCardinality;
-    fn from_value_bytes(value: &[u8]) -> Self {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         bincode::deserialize(value).unwrap()
@@ -952,7 +995,8 @@ impl TypeEdgePropertyEncoding for AnnotationCardinality {
 
 impl TypeEdgePropertyEncoding for AnnotationRegex {
     const INFIX: Infix = Infix::PropertyAnnotationRegex;
-    fn from_value_bytes(value: &[u8]) -> Self {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         AnnotationRegex::new(std::str::from_utf8(value).unwrap().to_owned())
@@ -965,7 +1009,8 @@ impl TypeEdgePropertyEncoding for AnnotationRegex {
 
 impl TypeEdgePropertyEncoding for AnnotationRange {
     const INFIX: Infix = Infix::PropertyAnnotationRange;
-    fn from_value_bytes(value: &[u8]) -> Self {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         bincode::deserialize(value).unwrap()
@@ -978,7 +1023,8 @@ impl TypeEdgePropertyEncoding for AnnotationRange {
 
 impl TypeEdgePropertyEncoding for AnnotationValues {
     const INFIX: Infix = Infix::PropertyAnnotationValues;
-    fn from_value_bytes(value: &[u8]) -> Self {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         // TODO this .unwrap() should be handled as an error
         // although it does indicate data corruption
         bincode::deserialize(value).unwrap()
@@ -992,7 +1038,8 @@ impl TypeEdgePropertyEncoding for AnnotationValues {
 impl TypeEdgePropertyEncoding for AnnotationDoc {
     const INFIX: Infix = Infix::PropertyAnnotationDoc;
 
-    fn from_value_bytes(value: &[u8]) -> Self {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         AnnotationDoc::new(std::str::from_utf8(value).unwrap().to_owned())
     }
 
@@ -1004,12 +1051,21 @@ impl TypeEdgePropertyEncoding for AnnotationDoc {
 impl TypeEdgePropertyEncoding for AnnotationMeta {
     const INFIX: Infix = Infix::PropertyAnnotationMeta;
 
-    fn from_value_bytes(value: &[u8]) -> Self {
-        todo!("meta TypeEdgePropertyEncoding::from_value_bytes")
+    fn to_key(&self, edge: impl TypeEdgeEncoding) -> TypeEdgeProperty {
+        <Self as TypeEdgePropertyEncoding>::build_key(edge, self.key().as_bytes())
+    }
+
+    fn is_decodable_from(key_bytes: Bytes<'static, BUFFER_KEY_INLINE>) -> bool {
+        key_bytes.length() > TypeEdgeProperty::LENGTH_NO_SUFFIX
+            && TypeEdgeProperty::decode(key_bytes).infix() == <Self as TypeVertexPropertyEncoding>::INFIX
+    }
+
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        Self::new(decode_to_string(key), decode_to_string(value))
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
-        todo!("meta TypeEdgePropertyEncoding::to_value_bytes")
+        Some(Bytes::Array(ByteArray::copy(self.value().as_bytes())))
     }
 }
 

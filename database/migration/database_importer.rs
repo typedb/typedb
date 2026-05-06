@@ -697,7 +697,7 @@ impl DatabaseImporter {
                                 schema_info.original_cardinalities_owns.insert(*owns, Some(*cardinality));
                             }
                             OwnsAnnotation::Key(_) => {
-                                owns.unset_annotation(snapshot, type_manager, thing_manager, &AnnotationCategory::Key)
+                                owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Key)
                                     .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
                                 schema_info.original_keys.insert(*owns);
                             }
@@ -831,7 +831,7 @@ impl DatabaseImporter {
     ) -> Result<(), DatabaseImportError> {
         for attribute_type in &self.schema_info.temporarily_independent_attribute_types {
             attribute_type
-                .unset_annotation(snapshot, type_manager, &AnnotationCategory::Independent)
+                .unset_annotation(snapshot, type_manager, AnnotationCategory::Independent)
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
         }
         Ok(())
@@ -887,13 +887,13 @@ impl DatabaseImporter {
                     thing_manager,
                     OwnsAnnotation::Cardinality(cardinality.clone()),
                 ),
-                None => owns.unset_annotation(snapshot, type_manager, thing_manager, &AnnotationCategory::Cardinality),
+                None => owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Cardinality),
             }
             .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
         }
 
         for owns in &schema_info.original_keys {
-            owns.unset_annotation(snapshot, type_manager, thing_manager, &AnnotationCategory::Cardinality)
+            owns.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Cardinality)
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
             owns.set_annotation(snapshot, type_manager, thing_manager, OwnsAnnotation::Key(AnnotationKey))
                 .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
@@ -907,7 +907,7 @@ impl DatabaseImporter {
                     thing_manager,
                     PlaysAnnotation::Cardinality(cardinality.clone()),
                 ),
-                None => plays.unset_annotation(snapshot, type_manager, thing_manager, &AnnotationCategory::Cardinality),
+                None => plays.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Cardinality),
             }
             .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
         }
@@ -921,7 +921,7 @@ impl DatabaseImporter {
                     RelatesAnnotation::Cardinality(cardinality.clone()),
                 ),
                 None => {
-                    relates.unset_annotation(snapshot, type_manager, thing_manager, &AnnotationCategory::Cardinality)
+                    relates.unset_annotation(snapshot, type_manager, thing_manager, AnnotationCategory::Cardinality)
                 }
             }
             .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;

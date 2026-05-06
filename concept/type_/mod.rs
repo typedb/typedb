@@ -759,7 +759,8 @@ impl fmt::Display for Ordering {
 impl TypeVertexPropertyEncoding for Ordering {
     const INFIX: Infix = Infix::PropertyOrdering;
 
-    fn from_value_bytes(value: &[u8]) -> Ordering {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         bincode::deserialize(value).unwrap()
     }
 
@@ -771,7 +772,8 @@ impl TypeVertexPropertyEncoding for Ordering {
 impl TypeEdgePropertyEncoding for Ordering {
     const INFIX: Infix = Infix::PropertyOrdering;
 
-    fn from_value_bytes(value: &[u8]) -> Ordering {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Ordering {
+        debug_assert!(key.is_empty());
         bincode::deserialize(value).unwrap()
     }
 
@@ -792,7 +794,8 @@ impl fmt::Display for Independent {
 impl TypeVertexPropertyEncoding for Independent {
     const INFIX: Infix = Infix::PropertyRelationTypeIndependent;
 
-    fn from_value_bytes(value: &[u8]) -> Independent {
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
         bincode::deserialize(value).unwrap()
     }
 

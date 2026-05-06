@@ -38,8 +38,8 @@ use crate::{
         KindAPI, ThingTypeAPI, TypeAPI, TypeQLSyntax,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationIndependent,
-            AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, DefaultFrom, FromAnnotation,
-            HasAnnotationCategory, has_annotation_category,
+            AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationValues, FromAnnotation, HasAnnotationCategory,
+            has_annotation_category,
         },
         constraint::{CapabilityConstraint, TypeConstraint},
         object_type::ObjectType,
@@ -422,20 +422,24 @@ impl AttributeType {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        annotation_category: &AnnotationCategory,
+        annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let attribute_type_annotation = AttributeTypeAnnotation::try_getting_default(annotation_category)
+        let attribute_type_annotation = AttributeTypeAnnotationCategory::try_from(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match attribute_type_annotation {
-            AttributeTypeAnnotation::Abstract(_) => {
+            AttributeTypeAnnotationCategory::Abstract => {
                 type_manager.unset_attribute_type_annotation_abstract(snapshot, *self)?
             }
-            AttributeTypeAnnotation::Independent(_) => type_manager.unset_annotation_independent(snapshot, *self)?,
-            AttributeTypeAnnotation::Regex(_) => type_manager.unset_annotation_regex(snapshot, *self)?,
-            AttributeTypeAnnotation::Range(_) => type_manager.unset_annotation_range(snapshot, *self)?,
-            AttributeTypeAnnotation::Values(_) => type_manager.unset_annotation_values(snapshot, *self)?,
-            AttributeTypeAnnotation::Doc(_) => type_manager.unset_attribute_type_annotation_doc(snapshot, *self)?,
-            AttributeTypeAnnotation::Meta(meta) => {
+            AttributeTypeAnnotationCategory::Independent => {
+                type_manager.unset_annotation_independent(snapshot, *self)?
+            }
+            AttributeTypeAnnotationCategory::Regex => type_manager.unset_annotation_regex(snapshot, *self)?,
+            AttributeTypeAnnotationCategory::Range => type_manager.unset_annotation_range(snapshot, *self)?,
+            AttributeTypeAnnotationCategory::Values => type_manager.unset_annotation_values(snapshot, *self)?,
+            AttributeTypeAnnotationCategory::Doc => {
+                type_manager.unset_attribute_type_annotation_doc(snapshot, *self)?
+            }
+            AttributeTypeAnnotationCategory::Meta(meta) => {
                 type_manager.unset_attribute_type_annotation_meta(snapshot, *self, meta)?
             }
         }

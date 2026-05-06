@@ -37,7 +37,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, ThingTypeAPI, TypeAPI,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCascade, AnnotationCategory, AnnotationDoc, AnnotationError,
-            AnnotationMeta, DefaultFrom, FromAnnotation, HasAnnotationCategory, has_annotation_category,
+            AnnotationMeta, FromAnnotation, HasAnnotationCategory, has_annotation_category,
         },
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, Constraint, TypeConstraint},
@@ -276,18 +276,18 @@ impl RelationType {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        annotation_category: &AnnotationCategory,
+        annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let relation_type_annotation = RelationTypeAnnotation::try_getting_default(annotation_category)
+        let relation_type_annotation = RelationTypeAnnotationCategory::try_from(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match relation_type_annotation {
-            RelationTypeAnnotation::Abstract(_) => {
+            RelationTypeAnnotationCategory::Abstract => {
                 type_manager.unset_relation_type_annotation_abstract(snapshot, *self)?
             }
-            RelationTypeAnnotation::Cascade(_) => type_manager.unset_annotation_cascade(snapshot, *self)?,
-            RelationTypeAnnotation::Doc(_) => type_manager.unset_relation_type_annotation_doc(snapshot, *self)?,
-            RelationTypeAnnotation::Meta(meta) => {
-                type_manager.unset_relation_type_annotation_meta(snapshot, *self, meta)?
+            RelationTypeAnnotationCategory::Cascade => type_manager.unset_annotation_cascade(snapshot, *self)?,
+            RelationTypeAnnotationCategory::Doc => type_manager.unset_relation_type_annotation_doc(snapshot, *self)?,
+            RelationTypeAnnotationCategory::Meta(key) => {
+                type_manager.unset_relation_type_annotation_meta(snapshot, *self, key)?
             }
         }
         Ok(())

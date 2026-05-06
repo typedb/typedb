@@ -6,8 +6,8 @@
 
 use concept::type_::annotation::{
     Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory, AnnotationDistinct,
-    AnnotationDoc, AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique,
-    AnnotationValues,
+    AnnotationDoc, AnnotationIndependent, AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex,
+    AnnotationUnique, AnnotationValues,
 };
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use typeql::{
@@ -59,7 +59,10 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
         typeql::Annotation::Doc(doc) => {
             Annotation::Doc(AnnotationDoc::new(String::from_typeql_literal(&doc.doc, doc.span())?))
         }
-        typeql::Annotation::Meta(meta) => todo!("anno meta"),
+        typeql::Annotation::Meta(meta) => Annotation::Meta(AnnotationMeta::new(
+            String::from_typeql_literal(&meta.key, meta.span())?,
+            String::from_typeql_literal(&meta.value, meta.span())?,
+        )),
     })
 }
 
