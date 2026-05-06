@@ -609,12 +609,10 @@ pub mod tests {
             FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
     };
-    use resource::{constants::common::MB, profile::CommitProfile};
-    use storage::{
-        MVCCStorage, durability_client::WALClient, keyspace::storage_resources::RocksResources,
-        snapshot::CommittableSnapshot,
-    };
+    use resource::profile::CommitProfile;
+    use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
     use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
+    use test_utils_storage::create_rocks_resources;
 
     use crate::{
         function_cache::FunctionCache,
@@ -625,7 +623,7 @@ pub mod tests {
         init_logging();
         let storage_path = create_tmp_storage_dir();
         let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
-        let resources = RocksResources::new(64 * MB as usize, 64 * MB as usize);
+        let resources = create_rocks_resources();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
                 "storage",

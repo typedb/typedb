@@ -39,8 +39,8 @@ rust_test(
     deps = [
         "//diagnostics",
         "//durability",
+        "//storage/tests:test_utils_storage",
         "//util/test:test_utils",
-        "//resource",
     ]
 )
 

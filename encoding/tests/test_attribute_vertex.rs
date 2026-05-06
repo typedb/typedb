@@ -23,23 +23,15 @@ use encoding::{
     },
     value::{string_bytes::StringBytes, struct_bytes::StructBytes, value::Value},
 };
-use resource::{
-    constants::{common::MB, snapshot::BUFFER_KEY_INLINE},
-    profile::CommitProfile,
-};
+use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::CommitProfile};
 use storage::{
     MVCCStorage, StorageCommitError,
     durability_client::WALClient,
     isolation_manager::IsolationConflict,
-    keyspace::storage_resources::RocksResources,
     snapshot::{CommittableSnapshot, SnapshotError},
 };
-
-fn test_resources() -> RocksResources {
-    RocksResources::new(64 * MB as usize, 64 * MB as usize)
-}
-
 use test_utils::{create_tmp_storage_dir, init_logging};
+use test_utils_storage::create_rocks_resources;
 use test_utils_encoding::create_core_storage;
 
 #[test]
@@ -436,7 +428,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     let type_id = TypeID::new(0);
     {
         let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
-        let resources = test_resources();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
                 "storage",
@@ -460,7 +452,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
 
     for i in 0..5 {
         let wal = WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap();
-        let resources = test_resources();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
                 "storage",
@@ -481,7 +473,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
 
     for i in 0..5 {
         let wal = WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap();
-        let resources = test_resources();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
                 "storage",
