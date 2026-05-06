@@ -119,7 +119,7 @@ fn test_function_non_equivalence() {
 #[test]
 fn test_pipeline_equivalence() {
     let pipeline = "
-with fun avg_salary($x: person) -> double:
+with fun avg_salary($x: person) -> double?:
   match $x has salary $salary;
         let $salary_plus_1 = $salary + 1;
   return mean($salary_plus_1);
@@ -151,7 +151,7 @@ fetch {
     assert!(translated_fetch.equals(&translated_fetch));
 
     let structurally_equivalent_pipeline = "\
-with fun avg_salary($DIFF: person) -> double:
+with fun avg_salary($DIFF: person) -> double?:
   match $DIFF has salary $salary;
         let $salary_plus_2 = $salary + 2;
   return mean($salary_plus_2);
@@ -196,7 +196,7 @@ fetch {
 #[test]
 fn test_pipeline_non_equivalence() {
     let pipeline = "
-with fun avg_salary($x: person) -> double:
+with fun avg_salary($x: person) -> double?:
   match $x has avg_salary $salary;
   return mean($salary);
 match
@@ -227,7 +227,7 @@ fetch {
     assert!(translated_fetch.equals(&translated_fetch));
 
     let different = "\
-with fun avg_age($x: person) -> double:
+with fun avg_age($x: person) -> double?:
   match $x has age $age;
   return mean($age);
 match

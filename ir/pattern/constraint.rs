@@ -392,7 +392,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
     pub(crate) fn add_builtin_function_binding(
         &mut self,
-        mut assigned: Vec<AssignedVariable>,
+        assigned: Vec<AssignedVariable>,
         builtin_id: super::expression::BuiltinConceptFunctionID,
         arguments: Vec<Variable>,
         source_span: Option<Span>,
@@ -409,18 +409,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             },
         );
         if let Some(variable) = mismatched_optionality_in_assignment {
-            let variable = self.context.get_variable_name_or_unnamed(variable).to_owned();
-            use error::TypeDBError;
-            tracing::warn!(
-                "Function call assigns to unmarked optional variable. This will fail in the next version:\n{}",
-                RepresentationError::UnmarkedOptionalAssignment { variable, source_span }.format_description()
-            );
-            // Fix for now:
-            assigned.iter_mut().zip(callee_signature.returns.iter()).for_each(
-                |(assigned_var, (_, declared_optionality))| {
-                    assigned_var.optionality = *declared_optionality;
-                },
-            );
+            let variable = self
+                .context
+                .get_variable_name(variable)
+                .cloned()
+                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            return Err(Box::new(RepresentationError::UnmarkedOptionalAssignment { variable, source_span }));
         }
         let function_call =
             self.create_function_call(&assigned, &callee_signature, arguments, builtin_id.name(), source_span)?;
@@ -458,12 +452,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             },
         );
         if let Some(variable) = mismatched_optionality_in_assignment {
-            let variable = self.context.get_variable_name_or_unnamed(variable).to_owned();
-            use error::TypeDBError;
-            tracing::warn!(
-                "Function call assigns to unmarked optional variable. This will fail in the next version:\n{}",
-                RepresentationError::UnmarkedOptionalAssignment { variable, source_span }.format_description()
-            );
+            let variable = self
+                .context
+                .get_variable_name(variable)
+                .cloned()
+                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            return Err(Box::new(RepresentationError::UnmarkedOptionalAssignment { variable, source_span }));
         }
         let function_call =
             self.create_function_call(&assigned, callee_signature, arguments, function_name, source_span)?;

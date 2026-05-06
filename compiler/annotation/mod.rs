@@ -145,7 +145,7 @@ typedb_error!(
         ),
         SignatureReturnMismatch(
             4,
-            "The types inferred for the return statement of function '{function_name}' did not match those declared in the signature. Mismatching index: {mismatching_index}",
+            "The types inferred for the return statement of function '{function_name}' does not match those declared in the signature. Mismatching index: {mismatching_index}",
             function_name: String,
             mismatching_index: usize,
             source_span: Option<Span>,
