@@ -17,6 +17,7 @@ rust_test(
         "//diagnostics",
         "//durability",
         "//encoding",
+        "//resource",
         "//storage",
         "//util/test:test_utils",
 

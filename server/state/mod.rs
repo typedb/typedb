@@ -77,9 +77,13 @@ impl ServerState {
             )
             .await,
         );
-        let database_manager =
-            DatabaseManager::new(&config.storage.data_directory, diagnostics_manager.clone(), &config.storage.rocksdb)
-                .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
+        let database_manager = DatabaseManager::new(
+            &config.storage.data_directory,
+            diagnostics_manager.clone(),
+            config.storage.rocksdb.cache_size,
+            config.storage.rocksdb.write_buffers_limit,
+        )
+        .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
         let database_diagnostics_updater = IntervalRunner::new(
             {
                 let diagnostics_manager = diagnostics_manager.clone();

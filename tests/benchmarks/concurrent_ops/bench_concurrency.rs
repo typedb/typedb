@@ -25,7 +25,7 @@ use database::{
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
-use options::{QueryOptions, RocksDbConfig, TransactionOptions};
+use options::{ByteSize, QueryOptions, TransactionOptions};
 use rand_core::RngCore;
 use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_storage_dir};
@@ -140,9 +140,13 @@ impl TimingAnalysis {
 
 fn create_database(schema: &str) -> (TempDir, Arc<Database<WALClient>>) {
     let tmp_dir = create_tmp_storage_dir();
-    let dbm =
-        DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled()), &RocksDbConfig::default())
-            .unwrap();
+    let dbm = DatabaseManager::new(
+        &tmp_dir,
+        Arc::new(DiagnosticsManager::new_disabled()),
+        ByteSize::mb(64),
+        ByteSize::mb(64),
+    )
+    .unwrap();
     dbm.put_database(DB_NAME).unwrap();
     let database = dbm.database(DB_NAME).unwrap();
 

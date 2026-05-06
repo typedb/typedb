@@ -8,6 +8,8 @@ use std::sync::Arc;
 
 use database::{Database, database_manager::DatabaseManager};
 use diagnostics::diagnostics_manager::DiagnosticsManager;
+use options::ByteSize;
+use resource::constants::common::MB;
 use storage::{durability_client::WALClient, keyspace::storage_resources::RocksResources};
 use test_utils::{create_tmp_dir, create_tmp_storage_dir, init_logging};
 
@@ -16,7 +18,7 @@ fn create_delete_database() {
     init_logging();
     let database_path = create_tmp_storage_dir();
     let diagnostics_manager = Arc::new(DiagnosticsManager::new_disabled());
-    let resources = RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024);
+    let resources = RocksResources::new(64 * MB as usize, 64 * MB as usize);
     let db_result =
         Database::<WALClient>::open(&database_path.join("create_delete"), &diagnostics_manager, &resources);
     assert!(db_result.is_ok(), "{:?}", db_result.unwrap_err());
@@ -29,9 +31,13 @@ fn create_delete_database() {
 fn prepare_for_writes_iterates_every_loaded_database() {
     init_logging();
     let data_dir = create_tmp_dir("prepare_for_writes");
-    let resources = Arc::new(RocksResources::new(64 * 1024 * 1024, 64 * 1024 * 1024));
-    let dbm = DatabaseManager::new(&data_dir, Arc::new(DiagnosticsManager::new_disabled()), resources)
-        .expect("DatabaseManager::new");
+    let dbm = DatabaseManager::new(
+        &data_dir,
+        Arc::new(DiagnosticsManager::new_disabled()),
+        ByteSize::mb(64),
+        ByteSize::mb(64),
+    )
+    .expect("DatabaseManager::new");
     for name in ["alpha", "beta", "gamma"] {
         dbm.put_database_unrestricted(name).expect("put_database");
     }
