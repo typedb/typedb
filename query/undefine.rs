@@ -324,7 +324,7 @@ fn undefine_capability_annotation(
                 annotation_undefinable,
             )?;
 
-            owns.unset_annotation(snapshot, type_manager, thing_manager, &annotation_category)
+            owns.unset_annotation(snapshot, type_manager, thing_manager, annotation_category.clone())
         }
         CapabilityBase::Plays(typeql_plays) => {
             let object_type = resolve_object_type(snapshot, type_manager, &label)
@@ -348,7 +348,7 @@ fn undefine_capability_annotation(
                 annotation_undefinable,
             )?;
 
-            plays.unset_annotation(snapshot, type_manager, thing_manager, &annotation_category)
+            plays.unset_annotation(snapshot, type_manager, thing_manager, annotation_category.clone())
         }
         CapabilityBase::Relates(typeql_relates) => {
             let relation_type = resolve_relation_type(snapshot, type_manager, &label)
@@ -396,7 +396,7 @@ fn undefine_capability_annotation(
                 annotation_undefinable,
             )?;
 
-            relates.unset_annotation(snapshot, type_manager, thing_manager, &annotation_category)
+            relates.unset_annotation(snapshot, type_manager, thing_manager, annotation_category.clone())
         }
         CapabilityBase::ValueType(_) => {
             if !AttributeTypeAnnotation::is_value_type_annotation_category(&annotation_category) {
@@ -412,7 +412,7 @@ fn undefine_capability_annotation(
                     .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
             match definition_status {
                 DefinableStatus::ExistsSame(_) => {
-                    attribute_type.unset_annotation(snapshot, type_manager, &annotation_category)
+                    attribute_type.unset_annotation(snapshot, type_manager, annotation_category.clone())
                 }
                 DefinableStatus::ExistsDifferent(_) => unreachable!("Annotation categories cannot differ"),
                 DefinableStatus::DoesNotExist => {
@@ -795,7 +795,7 @@ fn undefine_type_annotation(
                 &annotation_category,
                 annotation_undefinable,
             )?;
-            entity_type.unset_annotation(snapshot, type_manager, &annotation_category)
+            entity_type.unset_annotation(snapshot, type_manager, annotation_category.clone())
         }
         TypeEnum::Relation(relation_type) => {
             check_can_and_need_undefine_type_annotation(
@@ -806,7 +806,7 @@ fn undefine_type_annotation(
                 &annotation_category,
                 annotation_undefinable,
             )?;
-            relation_type.unset_annotation(snapshot, type_manager, &annotation_category)
+            relation_type.unset_annotation(snapshot, type_manager, annotation_category.clone())
         }
         TypeEnum::Attribute(attribute_type) => {
             if AttributeTypeAnnotation::is_value_type_annotation_category(&annotation_category) {
@@ -824,7 +824,7 @@ fn undefine_type_annotation(
                 &annotation_category,
                 annotation_undefinable,
             )?;
-            attribute_type.unset_annotation(snapshot, type_manager, &annotation_category)
+            attribute_type.unset_annotation(snapshot, type_manager, annotation_category.clone())
         }
         TypeEnum::RoleType(_) => unreachable!("Role annotations are syntactically on relates"),
     }

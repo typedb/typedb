@@ -2956,7 +2956,7 @@ impl ThingManager {
                 role_type.vertex().type_id_(),
                 rp_role_type.vertex().type_id_(),
             );
-            let index_edge_reverse = index_edge.clone().into_reverse();
+            let index_edge_reverse = index_edge.into_reverse();
 
             let index = index_edge.into_storage_key();
             let snapshot_index_value_opt = Self::get_snapshot_put_value(snapshot, index.as_reference());

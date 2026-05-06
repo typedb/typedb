@@ -5,7 +5,6 @@
  */
 
 pub mod transaction_util {
-    #[allow(E0412)]
     use std::sync::Arc;
 
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};

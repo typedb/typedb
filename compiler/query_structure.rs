@@ -126,7 +126,7 @@ pub fn extract_pipeline_structure_from(
 ) -> ParametrisedPipelineStructure {
     let branch_ids_allocated = variable_registry.branch_ids_allocated();
     let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
-    annotated_stages.into_iter().enumerate().for_each(|(index, stage)| builder.add_stage(stage, StageIndex(index)));
+    annotated_stages.iter().enumerate().for_each(|(index, stage)| builder.add_stage(stage, StageIndex(index)));
     let output_variables = annotated_stages
         .iter()
         .rev()
@@ -221,7 +221,7 @@ impl ParametrisedPipelineStructure {
     }
 
     pub fn resolve_conjunction_id(&self, stage_index: StageIndex, scope_id: ScopeId) -> QueryStructureConjunctionID {
-        self.scope_to_conjunction_id.get(&(stage_index, scope_id)).unwrap().clone()
+        *self.scope_to_conjunction_id.get(&(stage_index, scope_id)).unwrap()
     }
 }
 
@@ -426,7 +426,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             self.pipeline_structure.conjunctions.push(QueryStructureConjunction { constraints, nested });
             QueryStructureConjunctionID(self.pipeline_structure.conjunctions.len() as u16 - 1)
         };
-        self.pipeline_structure.scope_to_conjunction_id.insert((stage_index, scope_id), conj_id.clone());
+        self.pipeline_structure.scope_to_conjunction_id.insert((stage_index, scope_id), conj_id);
         conj_id
     }
 
@@ -447,7 +447,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
     fn extend_labels_from(&mut self, type_annotations: &TypeAnnotations) {
         self.pipeline_structure.resolved_labels.extend(type_annotations.vertex_annotations().iter().filter_map(
             |(vertex, type_)| match (vertex.as_label(), type_.iter().exactly_one()) {
-                (Some(label), Ok(type_)) => Some((label.clone(), type_.clone())),
+                (Some(label), Ok(&type_)) => Some((label.clone(), type_)),
                 _ => None,
             },
         ));

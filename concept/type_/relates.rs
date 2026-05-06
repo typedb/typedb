@@ -23,7 +23,7 @@ use crate::{
         Capability, Ordering,
         annotation::{
             Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCategory, AnnotationDistinct,
-            AnnotationDoc, AnnotationError, AnnotationMeta, DefaultFrom, FromAnnotation, HasAnnotationCategory,
+            AnnotationDoc, AnnotationError, AnnotationMeta, FromAnnotation, HasAnnotationCategory,
             has_annotation_category,
         },
         constraint::CapabilityConstraint,
@@ -135,18 +135,20 @@ impl Relates {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        annotation_category: &AnnotationCategory,
+        annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let relates_annotation = RelatesAnnotation::try_getting_default(annotation_category)
+        let relates_annotation = RelatesAnnotationCategory::try_from(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match relates_annotation {
-            RelatesAnnotation::Abstract(_) => type_manager.unset_relates_annotation_abstract(snapshot, *self)?,
-            RelatesAnnotation::Distinct(_) => type_manager.unset_relates_annotation_distinct(snapshot, *self)?,
-            RelatesAnnotation::Cardinality(_) => {
+            RelatesAnnotationCategory::Abstract => type_manager.unset_relates_annotation_abstract(snapshot, *self)?,
+            RelatesAnnotationCategory::Distinct => type_manager.unset_relates_annotation_distinct(snapshot, *self)?,
+            RelatesAnnotationCategory::Cardinality => {
                 type_manager.unset_relates_annotation_cardinality(snapshot, thing_manager, *self)?
             }
-            RelatesAnnotation::Doc(_) => type_manager.unset_relates_annotation_doc(snapshot, *self)?,
-            RelatesAnnotation::Meta(meta) => type_manager.unset_relates_annotation_meta(snapshot, *self, meta)?,
+            RelatesAnnotationCategory::Doc => type_manager.unset_relates_annotation_doc(snapshot, *self)?,
+            RelatesAnnotationCategory::Meta(meta) => {
+                type_manager.unset_relates_annotation_meta(snapshot, *self, meta)?
+            }
         }
         Ok(())
     }

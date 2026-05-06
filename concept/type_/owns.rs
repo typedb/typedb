@@ -23,7 +23,7 @@ use crate::{
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDistinct, AnnotationDoc, AnnotationError,
             AnnotationKey, AnnotationMeta, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
-            DefaultFrom, FromAnnotation, HasAnnotationCategory, has_annotation_category,
+            FromAnnotation, HasAnnotationCategory, has_annotation_category,
         },
         attribute_type::AttributeType,
         constraint::CapabilityConstraint,
@@ -152,22 +152,22 @@ impl Owns {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        annotation_category: &AnnotationCategory,
+        annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let owns_annotation = OwnsAnnotation::try_getting_default(annotation_category)
+        let owns_annotation = OwnsAnnotationCategory::try_from(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match owns_annotation {
-            OwnsAnnotation::Distinct(_) => type_manager.unset_owns_annotation_distinct(snapshot, *self)?,
-            OwnsAnnotation::Key(_) => type_manager.unset_owns_annotation_key(snapshot, thing_manager, *self)?,
-            OwnsAnnotation::Cardinality(_) => {
+            OwnsAnnotationCategory::Distinct => type_manager.unset_owns_annotation_distinct(snapshot, *self)?,
+            OwnsAnnotationCategory::Key => type_manager.unset_owns_annotation_key(snapshot, thing_manager, *self)?,
+            OwnsAnnotationCategory::Cardinality => {
                 type_manager.unset_owns_annotation_cardinality(snapshot, thing_manager, *self)?
             }
-            OwnsAnnotation::Unique(_) => type_manager.unset_owns_annotation_unique(snapshot, *self)?,
-            OwnsAnnotation::Regex(_) => type_manager.unset_owns_annotation_regex(snapshot, *self)?,
-            OwnsAnnotation::Range(_) => type_manager.unset_owns_annotation_range(snapshot, *self)?,
-            OwnsAnnotation::Values(_) => type_manager.unset_owns_annotation_values(snapshot, *self)?,
-            OwnsAnnotation::Doc(_) => type_manager.unset_owns_annotation_doc(snapshot, *self)?,
-            OwnsAnnotation::Meta(meta) => type_manager.unset_owns_annotation_meta(snapshot, *self, meta)?,
+            OwnsAnnotationCategory::Unique => type_manager.unset_owns_annotation_unique(snapshot, *self)?,
+            OwnsAnnotationCategory::Regex => type_manager.unset_owns_annotation_regex(snapshot, *self)?,
+            OwnsAnnotationCategory::Range => type_manager.unset_owns_annotation_range(snapshot, *self)?,
+            OwnsAnnotationCategory::Values => type_manager.unset_owns_annotation_values(snapshot, *self)?,
+            OwnsAnnotationCategory::Doc => type_manager.unset_owns_annotation_doc(snapshot, *self)?,
+            OwnsAnnotationCategory::Meta(meta) => type_manager.unset_owns_annotation_meta(snapshot, *self, meta)?,
         }
         Ok(())
     }

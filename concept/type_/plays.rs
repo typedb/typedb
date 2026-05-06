@@ -22,7 +22,7 @@ use crate::{
         Capability,
         annotation::{
             Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
-            DefaultFrom, FromAnnotation, HasAnnotationCategory, has_annotation_category,
+            FromAnnotation, HasAnnotationCategory, has_annotation_category,
         },
         constraint::CapabilityConstraint,
         object_type::ObjectType,
@@ -74,16 +74,16 @@ impl Plays {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        annotation_category: &AnnotationCategory,
+        annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let plays_annotation = PlaysAnnotation::try_getting_default(annotation_category)
+        let plays_annotation = PlaysAnnotationCategory::try_from(annotation_category)
             .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match plays_annotation {
-            PlaysAnnotation::Cardinality(_) => {
+            PlaysAnnotationCategory::Cardinality => {
                 type_manager.unset_plays_annotation_cardinality(snapshot, thing_manager, *self)?
             }
-            PlaysAnnotation::Doc(_) => type_manager.unset_plays_annotation_doc(snapshot, *self)?,
-            PlaysAnnotation::Meta(meta) => type_manager.unset_plays_annotation_meta(snapshot, *self, meta)?,
+            PlaysAnnotationCategory::Doc => type_manager.unset_plays_annotation_doc(snapshot, *self)?,
+            PlaysAnnotationCategory::Meta(meta) => type_manager.unset_plays_annotation_meta(snapshot, *self, meta)?,
         }
         Ok(())
     }
