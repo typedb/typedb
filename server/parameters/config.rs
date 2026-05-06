@@ -329,16 +329,13 @@ impl ConfigBuilder {
         }
 
         if let Some(raw) = storage_rocksdb_cache_size {
-            config.storage.rocksdb.cache_size =
-                ByteSize::from_str(&raw).map_err(|_| ConfigError::ValidationError {
-                    message: "Could not parse --storage.rocksdb.cache-size as a byte-size value (e.g. `1gb`).",
-                })?;
+            config.storage.rocksdb.cache_size = ByteSize::from_str(&raw)
+                .map_err(|source| ConfigError::InvalidByteSize { flag: "--storage.rocksdb.cache-size", source })?;
         }
         if let Some(raw) = storage_rocksdb_write_buffers_limit {
-            config.storage.rocksdb.write_buffers_limit =
-                ByteSize::from_str(&raw).map_err(|_| ConfigError::ValidationError {
-                    message: "Could not parse --storage.rocksdb.write-buffers-limit as a byte-size value (e.g. `512mb`).",
-                })?;
+            config.storage.rocksdb.write_buffers_limit = ByteSize::from_str(&raw).map_err(|source| {
+                ConfigError::InvalidByteSize { flag: "--storage.rocksdb.write-buffers-limit", source }
+            })?;
         }
         Ok(())
     }
