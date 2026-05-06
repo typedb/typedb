@@ -754,7 +754,7 @@ mod tests {
         SnapshotId,
     };
 
-    fn test_rocks_resources() -> RocksResources {
+    fn create_rocks_resources() -> RocksResources {
         // Small but non-zero limits sufficient for unit tests.
         RocksResources::new(64 * MB as usize, 64 * MB as usize)
     }
@@ -813,7 +813,7 @@ mod tests {
                 .unwrap();
 
             let partial_commit = WriteBatches::from_operations(seq, &partial_operations);
-            let resources = test_rocks_resources();
+            let resources = create_rocks_resources();
             let keyspaces = Keyspaces::open::<TestKeyspaceSet>(
                 storage_path.join(MVCCStorage::<WALClient>::STORAGE_DIR_NAME),
                 &resources,
@@ -829,7 +829,7 @@ mod tests {
         let mut durability_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
         durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
-        let resources = test_rocks_resources();
+        let resources = create_rocks_resources();
         let storage = MVCCStorage::<WALClient>::load::<TestKeyspaceSet>(
             "storage",
             &storage_path,
@@ -858,7 +858,7 @@ mod tests {
         let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
         durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
-        let resources = test_rocks_resources();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<TestKeyspaceSet>(
                 "storage",

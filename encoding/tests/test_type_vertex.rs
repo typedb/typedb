@@ -19,19 +19,15 @@ use encoding::{
     },
     layout::prefix::Prefix,
 };
-use resource::{constants::common::MB, profile::CommitProfile};
+use resource::profile::CommitProfile;
 use storage::{
     MVCCStorage,
     durability_client::WALClient,
     key_value::StorageKeyReference,
-    keyspace::storage_resources::RocksResources,
     recovery::checkpoint::CheckpointWriter,
     snapshot::{CommittableSnapshot, WritableSnapshot},
 };
-
-fn test_resources() -> RocksResources {
-    RocksResources::new(64 * MB as usize, 64 * MB as usize)
-}
+use test_utils_storage::create_rocks_resources;
 use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;
 
@@ -138,7 +134,7 @@ fn loading_storage_assigns_next_vertex() {
     let storage_path = create_tmp_storage_dir();
     {
         let wal = WAL::create(&storage_path).unwrap();
-        let resources = test_resources();
+        let resources = create_rocks_resources();
         let _ = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
                 "storage",
@@ -153,7 +149,7 @@ fn loading_storage_assigns_next_vertex() {
 
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
-        let resources = test_resources();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
                 "storage",
@@ -174,7 +170,7 @@ fn loading_storage_assigns_next_vertex() {
 
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
-        let resources = test_resources();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
                 "storage",
@@ -197,7 +193,7 @@ fn loading_storage_assigns_next_vertex() {
     let mut checkpoint = None;
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
-        let resources = test_resources();
+        let resources = create_rocks_resources();
         let storage = match checkpoint {
             None => Arc::new(
                 MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
@@ -235,7 +231,7 @@ fn loading_storage_assigns_next_vertex() {
 
     for i in 0..create_till {
         let wal = WAL::load(&storage_path).unwrap();
-        let resources = test_resources();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
                 "storage",

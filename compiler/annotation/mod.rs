@@ -316,9 +316,9 @@ pub mod tests {
             thing::vertex_generator::ThingVertexGenerator, type_::vertex_generator::TypeVertexGenerator,
         },
     };
-    use resource::constants::common::MB;
-    use storage::{MVCCStorage, durability_client::WALClient, keyspace::storage_resources::RocksResources};
+    use storage::{MVCCStorage, durability_client::WALClient};
     use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
+    use test_utils_storage::create_rocks_resources;
 
     use crate::annotation::match_inference::{
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
@@ -358,7 +358,7 @@ pub mod tests {
         init_logging();
         let storage_path = create_tmp_storage_dir();
         let wal = WAL::create(&storage_path).unwrap();
-        let resources = RocksResources::new(64 * MB as usize, 64 * MB as usize);
+        let resources = create_rocks_resources();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
                 "storage",

@@ -13,10 +13,7 @@ use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler};
 use durability::wal::WAL;
 use pprof::ProfilerGuard;
 use resource::{
-    constants::{
-        common::MB,
-        snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
-    },
+    constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::{CommitProfile, StorageCounters},
 };
 use storage::{
@@ -24,10 +21,11 @@ use storage::{
     durability_client::WALClient,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{storage_resources::RocksResources, KeyspaceId, KeyspaceSet},
+    keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
 use test_utils::{create_tmp_storage_dir, init_logging};
+use test_utils_storage::create_rocks_resources;
 
 use self::TestKeyspaceSet::Keyspace;
 
@@ -120,7 +118,7 @@ fn bench_snapshot_write_put(storage: Arc<MVCCStorage<WALClient>>, keyspace: Test
 }
 
 fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WALClient>> {
-    let resources = RocksResources::new(64 * MB as usize, 64 * MB as usize);
+    let resources = create_rocks_resources();
     let storage = Arc::new(
         MVCCStorage::create::<TestKeyspaceSet>(
             "storage_bench",

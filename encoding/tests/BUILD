@@ -13,6 +13,7 @@ rust_library(
         "//common/logger",
         "//encoding",
         "//storage",
+        "//storage/tests:test_utils_storage",
         "//durability",
         "//util/test:test_utils",
 
@@ -25,6 +26,7 @@ test_deps = [
     "//common/logger",
     "//encoding",
     "//storage",
+    "//storage/tests:test_utils_storage",
     "//durability",
     "//resource",
     ":test_utils_encoding",

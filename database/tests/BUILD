@@ -15,8 +15,8 @@ rust_test(
         "//common/logger",
         "//database",
         "//encoding",
-        "//resource",
         "//storage",
+        "//storage/tests:test_utils_storage",
         "//util/test:test_utils",
 
         "@crates//:rocksdb",

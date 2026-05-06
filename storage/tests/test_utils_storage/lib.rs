@@ -17,7 +17,7 @@ use storage::{
 
 pub mod mock_snapshot;
 
-pub fn test_rocks_resources() -> RocksResources {
+pub fn create_rocks_resources() -> RocksResources {
     // Small but non-zero limits sufficient for unit tests.
     RocksResources::new(64 * MB as usize, 64 * MB as usize)
 }
@@ -44,7 +44,7 @@ macro_rules! test_keyspace_set {
 
 pub fn create_storage<KS: KeyspaceSet>(path: &Path) -> Result<Arc<MVCCStorage<WALClient>>, StorageOpenError> {
     let wal = WAL::create(path).unwrap();
-    let resources = test_rocks_resources();
+    let resources = create_rocks_resources();
     let storage = MVCCStorage::create::<KS>("storage", path, WALClient::new(wal), &resources)?;
     Ok(Arc::new(storage))
 }
@@ -60,7 +60,7 @@ pub fn load_storage<KS: KeyspaceSet>(
     wal: WAL,
     checkpoint: Option<CheckpointReader>,
 ) -> Result<Arc<MVCCStorage<WALClient>>, StorageOpenError> {
-    let resources = test_rocks_resources();
+    let resources = create_rocks_resources();
     let storage = MVCCStorage::load::<KS>("storage", path, WALClient::new(wal), &checkpoint, &resources)?;
     Ok(Arc::new(storage))
 }
