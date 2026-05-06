@@ -35,15 +35,15 @@ impl ByteSize {
         Self(value)
     }
 
-    pub const fn kibibytes(value: u64) -> Self {
+    pub const fn kb(value: u64) -> Self {
         Self(value * KIB)
     }
 
-    pub const fn mebibytes(value: u64) -> Self {
+    pub const fn mb(value: u64) -> Self {
         Self(value * MIB)
     }
 
-    pub const fn gibibytes(value: u64) -> Self {
+    pub const fn gb(value: u64) -> Self {
         Self(value * GIB)
     }
 
@@ -293,9 +293,9 @@ mod tests {
         let cases = [
             (ByteSize::bytes(0), "0 B"),
             (ByteSize::bytes(512), "512 B"),
-            (ByteSize::kibibytes(1), "1 KiB"),
-            (ByteSize::mebibytes(512), "512 MiB"),
-            (ByteSize::gibibytes(1), "1 GiB"),
+            (ByteSize::kb(1), "1 KiB"),
+            (ByteSize::mb(512), "512 MiB"),
+            (ByteSize::gb(1), "1 GiB"),
             (ByteSize::bytes(1536), "1.5 KiB"),
         ];
         for (size, expected) in cases {
@@ -305,9 +305,9 @@ mod tests {
         for size in [
             ByteSize::bytes(0),
             ByteSize::bytes(512),
-            ByteSize::kibibytes(1),
-            ByteSize::mebibytes(512),
-            ByteSize::gibibytes(1),
+            ByteSize::kb(1),
+            ByteSize::mb(512),
+            ByteSize::gb(1),
         ] {
             let rendered = size.to_string();
             // Display emits e.g. "512 MiB" — FromStr needs to accept this.
@@ -319,7 +319,7 @@ mod tests {
     #[test]
     fn deserialize_from_string() {
         let parsed: ByteSize = serde_yaml2::from_str("\"1gb\"").unwrap();
-        assert_eq!(parsed, ByteSize::gibibytes(1));
+        assert_eq!(parsed, ByteSize::gb(1));
     }
 
     #[test]
@@ -333,7 +333,7 @@ mod tests {
         // YAML treats `1gb` as a string when not enclosed in quotes —
         // verify our Deserialize impl handles it.
         let parsed: ByteSize = serde_yaml2::from_str("1gb").unwrap();
-        assert_eq!(parsed, ByteSize::gibibytes(1));
+        assert_eq!(parsed, ByteSize::gb(1));
     }
 
     #[test]
