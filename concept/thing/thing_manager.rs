@@ -1857,7 +1857,7 @@ impl ThingManager {
         )?;
         if let Some(unique_constraint) = unique_constraint_opt {
             let attribute_key = attribute.vertex();
-            // Note: trade much smaller locks (eg. not entire string) for rare concurrent lock conflicts when
+            // Note: trade much smaller locks (eg. hashed large values) for rare concurrent lock conflicts when
             //       two different values has to the same hash
             let lock_key = concat_bytes(
                 [

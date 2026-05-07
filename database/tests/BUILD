@@ -66,6 +66,7 @@ rust_test(
     deps = [
         "//common/options",
         "//database",
+        "//encoding",
         "//executor",
         "//storage",
         "//util/test:test_utils",

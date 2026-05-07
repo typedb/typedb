@@ -302,7 +302,7 @@ pub(crate) enum CommitDependency {
     Conflict(IsolationConflict),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum IsolationConflict {
     DeletingRequiredKey,
     RequireDeletedKey,

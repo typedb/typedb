@@ -4,14 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-//! Concurrency / isolation regression tests.
-//!
-//! Each test opens two write transactions whose snapshots were taken before either commits, runs
-//! conflicting (or deliberately non-conflicting) writes in each, then commits both and asserts on
-//! the outcomes. This is the canonical pattern for exercising commit-time isolation locks: lock-key
-//! contention surfaces only when both transactions reach commit with overlapping write sets, so the
-//! ordering of `open / write / write / commit / commit` matters.
-
 use std::sync::Arc;
 
 use database::{
@@ -133,7 +125,7 @@ fn concurrent_deletes_of_identical_entity_one_fails() {
     tx2 = run_write(tx2, r#"match $p isa person, has id 1; delete $p;"#);
 
     let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 #[test]
@@ -163,7 +155,7 @@ fn concurrent_deletes_of_identical_relation_one_fails() {
     tx2 = run_write(tx2, r#"match $f isa friendship, has rid 100; delete $f;"#);
 
     let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 /////////////////////////////////
@@ -190,6 +182,7 @@ fn concurrent_has_writes_with_owns_cardinality_one_fails() {
 
     let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
     get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 #[test]
@@ -198,7 +191,7 @@ fn concurrent_has_deletes_violating_owns_cardinality_lower_bound_one_fails() {
     // with two names. Two concurrent has-deletes from different snapshots, each removing one of
     // them, would drop the owner to 0 names if both committed - falling below the lower bound.
     // The cardinality commit lock must serialise them and reject one.
-    let (_tmp, database) = fresh_database();
+    let (_tmp, database) = create_reset_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -214,8 +207,8 @@ fn concurrent_has_deletes_violating_owns_cardinality_lower_bound_one_fails() {
     tx1 = run_write(tx1, r#"match $p isa person, has id 1; $n isa name "alice"; delete has $n of $p;"#);
     tx2 = run_write(tx2, r#"match $p isa person, has id 1; $n isa name "bob"; delete has $n of $p;"#);
 
-    let err = assert_exactly_one_failed(try_commit(tx1), try_commit(tx2));
-    assert_isolation_conflict(&err);
+    let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 #[test]
@@ -243,7 +236,7 @@ fn concurrent_has_writes_with_bounded_owns_cardinality_always_contend_even_when_
     tx2 = run_write(tx2, r#"match $p isa person, has id 1; insert $p has name "bob";"#);
 
     let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 #[test]
@@ -280,7 +273,7 @@ fn concurrent_has_writes_violating_inherited_owns_cardinality_one_fails() {
     // type's instance must still serialise on the (instance, owns) commit lock - the constraint
     // is sourced from the parent owns and the lock-key composition uses the constraint's source
     // attribute type, so subtypes inherit both the constraint and the lock identity.
-    let (_tmp, database) = fresh_database();
+    let (_tmp, database) = create_reset_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -297,8 +290,8 @@ fn concurrent_has_writes_violating_inherited_owns_cardinality_one_fails() {
     tx1 = run_write(tx1, r#"match $s isa student, has id 1; insert $s has name "alice";"#);
     tx2 = run_write(tx2, r#"match $s isa student, has id 1; insert $s has name "bob";"#);
 
-    let err = assert_exactly_one_failed(try_commit(tx1), try_commit(tx2));
-    assert_isolation_conflict(&err);
+    let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 #[test]
@@ -352,7 +345,7 @@ fn concurrent_has_writes_violating_unique_one_fails() {
     tx2 = run_write(tx2, r#"match $p isa person, has id 2; insert $p has email "shared@example.com";"#);
 
     let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 #[test]
@@ -362,7 +355,7 @@ fn concurrent_has_writes_violating_inherited_unique_across_subtypes_one_fails() 
     // The unique commit lock is keyed by `unique_constraint.source().owner().vertex()` and
     // `source().attribute().vertex()` - both resolve to the parent's owns - so the lock key is
     // identical regardless of which subtype the runtime instance has. One transaction must fail.
-    let (_tmp, database) = fresh_database();
+    let (_tmp, database) = create_reset_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -386,8 +379,8 @@ fn concurrent_has_writes_violating_inherited_unique_across_subtypes_one_fails() 
     tx1 = run_write(tx1, r#"match $s isa student, has id 1; insert $s has email "shared@example.com";"#);
     tx2 = run_write(tx2, r#"match $t isa teacher, has id 2; insert $t has email "shared@example.com";"#);
 
-    let err = assert_exactly_one_failed(try_commit(tx1), try_commit(tx2));
-    assert_isolation_conflict(&err);
+    let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 ////////////////////////////
@@ -411,7 +404,7 @@ fn concurrent_has_writes_violating_inline_key_one_fails() {
     tx2 = run_write(tx2, r#"insert $p isa person, has ref 1;"#);
 
     let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 #[test]
@@ -439,7 +432,7 @@ fn concurrent_has_writes_violating_hashed_string_key_one_fails() {
     tx2 = run_write(tx2, &query);
 
     let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 #[test]
@@ -448,7 +441,7 @@ fn concurrent_has_writes_violating_inherited_key_across_subtypes_one_fails() {
     // Two concurrent inserts each create a different subtype (student, teacher) but with the
     // same key value. The conflict is on the parent type's interpretation of (type + key value):
     // the unique commit lock keyed by the source Owns serialises them and rejects one.
-    let (_tmp, database) = fresh_database();
+    let (_tmp, database) = create_reset_database();
     commit_schema(
         database.clone(),
         r#"define
@@ -464,8 +457,8 @@ fn concurrent_has_writes_violating_inherited_key_across_subtypes_one_fails() {
     tx1 = run_write(tx1, r#"insert $s isa student, has ref 1;"#);
     tx2 = run_write(tx2, r#"insert $t isa teacher, has ref 1;"#);
 
-    let err = assert_exactly_one_failed(try_commit(tx1), try_commit(tx2));
-    assert_isolation_conflict(&err);
+    let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 ////////////////////////////////////////
@@ -508,7 +501,7 @@ fn concurrent_player_links_with_bounded_relates_cardinality_one_fails() {
     );
 
     let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 #[test]
@@ -546,7 +539,7 @@ fn concurrent_player_links_with_bounded_plays_cardinality_one_fails() {
     );
 
     let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
 ////////////////////////////////////////////////
@@ -572,12 +565,13 @@ fn concurrent_has_write_and_owner_delete_one_fails() {
     tx_write = run_write(tx_write, r#"match $p isa person, has id 1; insert $p has name "alice";"#);
 
     let err = get_only_commit_error(try_commit(tx_delete), try_commit(tx_write));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::RequireDeletedKey);
 }
 
+// TODO: ideally, this wouldn't fail. In fact, if we were to insert the attribute rather than match-insert it,
+//       this should always succeed as we always create the attribtue
 #[test]
 fn concurrent_has_write_and_attribute_delete_one_fails() {
-    // TODO: verify this should fail?
     let (_tmp, database) = create_reset_database();
     commit_schema(
         database.clone(),
@@ -601,7 +595,7 @@ fn concurrent_has_write_and_attribute_delete_one_fails() {
     tx_write = run_write(tx_write, r#"match $p isa person, has id 1; $n isa name "alice"; insert $p has $n;"#);
 
     let err = get_only_commit_error(try_commit(tx_delete), try_commit(tx_write));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::RequireDeletedKey);
 }
 
 #[test]
@@ -634,7 +628,7 @@ fn concurrent_player_link_and_relation_delete_one_fails() {
     );
 
     let err = get_only_commit_error(try_commit(tx_delete), try_commit(tx_write));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::RequireDeletedKey);
 }
 
 #[test]
@@ -667,5 +661,5 @@ fn concurrent_player_link_and_player_delete_one_fails() {
     );
 
     let err = get_only_commit_error(try_commit(tx_delete), try_commit(tx_write));
-    get_isolation_conflict(&err);
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::RequireDeletedKey);
 }
