@@ -14,18 +14,3 @@ pub enum LockType {
     // Lock a new key to be written exclusively by one snapshot
     Exclusive,
 }
-
-pub fn create_custom_lock_key<'a, I, const SIZE: usize>(key_items: I) -> ByteArray<SIZE>
-where
-    I: Iterator<Item = &'a [u8]> + Clone,
-{
-    let total_len = key_items.clone().map(|item| item.len()).sum();
-    let mut bytes = ByteArray::zeros(total_len);
-    let mut start = 0;
-    for item in key_items {
-        let end = start + item.len();
-        bytes[start..end].copy_from_slice(item);
-        start = end;
-    }
-    bytes
-}
