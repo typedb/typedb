@@ -292,6 +292,33 @@ fn concurrent_has_writes_to_different_owners_with_bounded_cardinality_both_succe
 }
 
 #[test]
+fn concurrent_has_writes_violating_inherited_owns_cardinality_one_fails() {
+    // Cardinality constraint is declared on the parent's owns. Two concurrent writes on a child
+    // type's instance must still serialise on the (instance, owns) commit lock - the constraint
+    // is sourced from the parent owns and the lock-key composition uses the constraint's source
+    // attribute type, so subtypes inherit both the constraint and the lock identity.
+    let (_tmp, database) = fresh_database();
+    commit_schema(
+        database.clone(),
+        r#"define
+            entity person, owns id @key, owns name @card(0..1);
+            entity student sub person;
+            attribute id, value integer;
+            attribute name, value string;
+        "#,
+    );
+    commit_write_query(database.clone(), r#"insert $s isa student, has id 1;"#);
+
+    let mut tx1 = open_write(database.clone());
+    let mut tx2 = open_write(database.clone());
+    tx1 = run_write(tx1, r#"match $s isa student, has id 1; insert $s has name "alice";"#);
+    tx2 = run_write(tx2, r#"match $s isa student, has id 1; insert $s has name "bob";"#);
+
+    let err = assert_exactly_one_failed(try_commit(tx1), try_commit(tx2));
+    assert_isolation_conflict(&err);
+}
+
+#[test]
 fn concurrent_has_writes_without_owns_cardinality_both_succeed() {
     // `@card(0..)` is treated as unchecked - no validation is required and no commit lock is
     // taken. Concurrent has-writes against the same owner and attribute type therefore never
@@ -352,6 +379,41 @@ fn concurrent_has_writes_violating_unique_one_fails() {
     assert_isolation_conflict(&err);
 }
 
+#[test]
+fn concurrent_has_writes_violating_inherited_unique_across_subtypes_one_fails() {
+    // @unique is declared on the parent (`person owns email @unique`). Two concurrent writes
+    // each insert the same email value but on *different* subtype instances (student, teacher).
+    // The unique commit lock is keyed by `unique_constraint.source().owner().vertex()` and
+    // `source().attribute().vertex()` - both resolve to the parent's owns - so the lock key is
+    // identical regardless of which subtype the runtime instance has. One transaction must fail.
+    let (_tmp, database) = fresh_database();
+    commit_schema(
+        database.clone(),
+        r#"define
+            entity person, owns id @key, owns email @unique;
+            entity student sub person;
+            entity teacher sub person;
+            attribute id, value integer;
+            attribute email, value string;
+        "#,
+    );
+    commit_write_query(
+        database.clone(),
+        r#"insert
+            $s isa student, has id 1;
+            $t isa teacher, has id 2;
+        "#,
+    );
+
+    let mut tx1 = open_write(database.clone());
+    let mut tx2 = open_write(database.clone());
+    tx1 = run_write(tx1, r#"match $s isa student, has id 1; insert $s has email "shared@example.com";"#);
+    tx2 = run_write(tx2, r#"match $t isa teacher, has id 2; insert $t has email "shared@example.com";"#);
+
+    let err = assert_exactly_one_failed(try_commit(tx1), try_commit(tx2));
+    assert_isolation_conflict(&err);
+}
+
 ////////////////////////////
 // Concurrent @key on has //
 ////////////////////////////
@@ -402,6 +464,32 @@ fn concurrent_has_writes_violating_hashed_string_key_one_fails() {
     let mut tx2 = open_write(database.clone());
     tx1 = run_write(tx1, &query);
     tx2 = run_write(tx2, &query);
+
+    let err = assert_exactly_one_failed(try_commit(tx1), try_commit(tx2));
+    assert_isolation_conflict(&err);
+}
+
+#[test]
+fn concurrent_has_writes_violating_inherited_key_across_subtypes_one_fails() {
+    // @key is declared on the parent (`person owns ref @key`) and inherited by both subtypes.
+    // Two concurrent inserts each create a different subtype (student, teacher) but with the
+    // same key value. The conflict is on the parent type's interpretation of (type + key value):
+    // the unique commit lock keyed by the source Owns serialises them and rejects one.
+    let (_tmp, database) = fresh_database();
+    commit_schema(
+        database.clone(),
+        r#"define
+            entity person, owns ref @key;
+            entity student sub person;
+            entity teacher sub person;
+            attribute ref, value integer;
+        "#,
+    );
+
+    let mut tx1 = open_write(database.clone());
+    let mut tx2 = open_write(database.clone());
+    tx1 = run_write(tx1, r#"insert $s isa student, has ref 1;"#);
+    tx2 = run_write(tx2, r#"insert $t isa teacher, has ref 1;"#);
 
     let err = assert_exactly_one_failed(try_commit(tx1), try_commit(tx2));
     assert_isolation_conflict(&err);
