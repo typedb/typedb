@@ -38,8 +38,8 @@ macro_rules! assert_transaction_timeout {
 }
 
 fn create_database(databases_path: &TempDir) -> Arc<Database<WALClient>> {
-    let database_manager = DatabaseManager::new(databases_path, ByteSize::mb(64), ByteSize::mb(64))
-        .expect("Expected database manager");
+    let database_manager =
+        DatabaseManager::new(databases_path, ByteSize::mb(64), ByteSize::mb(64)).expect("Expected database manager");
     database_manager.put_database(DB_NAME).expect("Expected database creation");
     database_manager.database(DB_NAME).expect("Expected database retrieval")
 }

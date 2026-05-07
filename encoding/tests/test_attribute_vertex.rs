@@ -24,9 +24,9 @@ use encoding::{
 };
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::CommitProfile};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
-use test_utils_storage::create_rocks_resources;
 use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;
+use test_utils_storage::create_rocks_resources;
 
 #[test]
 fn generate_string_attribute_vertex() {

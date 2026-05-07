@@ -102,16 +102,16 @@ features = {}
 	name = "test_isolation"
 
 [[test]]
-	path = "tests/test_recovery.rs"
-	name = "test_recovery"
-
-[[test]]
 	path = "tests/test_snapshot.rs"
 	name = "test_snapshot"
 
 [[test]]
 	path = "tests/test_mvcc.rs"
 	name = "test_mvcc"
+
+[[test]]
+	path = "tests/test_recovery.rs"
+	name = "test_recovery"
 
 [[test]]
 	path = "tests/test_storage.rs"

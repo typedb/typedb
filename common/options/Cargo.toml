@@ -13,16 +13,16 @@ features = {}
 	path = "options.rs"
 	crate-type = ["lib"]
 
+[dev-dependencies]
+
+	[dev-dependencies.serde_yaml2]
+		workspace = true
+
 [dependencies]
 
 	[dependencies.resource]
 		workspace = true
 
 	[dependencies.serde]
-		workspace = true
-
-[dev-dependencies]
-
-	[dev-dependencies.serde_yaml2]
 		workspace = true
 

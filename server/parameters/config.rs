@@ -8,6 +8,7 @@ use std::{
     fs::File,
     io::Read,
     path::{Path, PathBuf},
+    sync::Arc,
     time::Duration,
 };
 
@@ -223,11 +224,14 @@ impl ConfigBuilder {
         let mut raw_yaml = String::new();
         let resolved_path = Self::resolve_path_from_executable(&path);
         File::open(resolved_path.clone())
-            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path: resolved_path.clone() })?
+            .map_err(|source| ConfigError::ErrorReadingConfigFile {
+                source: Arc::new(source),
+                path: resolved_path.clone(),
+            })?
             .read_to_string(&mut raw_yaml)
-            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?;
+            .map_err(|source| ConfigError::ErrorReadingConfigFile { source: Arc::new(source), path })?;
         serde_yaml2::from_str::<Config>(raw_yaml.as_str())
-            .map_err(|source| ConfigError::ErrorParsingYaml { source })
+            .map_err(|source| ConfigError::ErrorParsingYaml { source: Arc::new(source) })
             .map(|config| Self { config, raw_yaml })
     }
 
@@ -269,7 +273,8 @@ impl ConfigBuilder {
     /// let clustering = ext.server.clustering;
     /// ```
     pub fn parse_extension<T: serde::de::DeserializeOwned>(&self) -> Result<T, ConfigError> {
-        serde_yaml2::from_str::<T>(self.raw_yaml.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
+        serde_yaml2::from_str::<T>(self.raw_yaml.as_str())
+            .map_err(|source| ConfigError::ErrorParsingYaml { source: Arc::new(source) })
     }
 
     pub fn override_with_cliargs(&mut self, cliargs: CLIArgs) -> Result<(), ConfigError> {

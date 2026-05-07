@@ -38,15 +38,15 @@ fn main() {
         Some(path) => CLIArgs::resolve_path_from_pwd(Path::new(path)),
     };
     let mut config_builder = ConfigBuilder::from_file(config_file).unwrap_or_else(|err| {
-        eprintln!("Error reading from config file: {}", err);
+        eprintln!("Error reading from config file: {:?}", err);
         std::process::exit(1);
     });
     config_builder.override_with_cliargs(cli_args).unwrap_or_else(|err| {
-        eprintln!("Error applying CLI overrides: {}", err);
+        eprintln!("Error applying CLI overrides: {:?}", err);
         std::process::exit(1);
     });
     let config = config_builder.build().unwrap_or_else(|err| {
-        eprintln!("Error validating config file overridden with cli args: {}", err);
+        eprintln!("Error validating config file overridden with cli args: {:?}", err);
         std::process::exit(1);
     });
     initialise_logging_global(&config.logging.directory);

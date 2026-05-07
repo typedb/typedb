@@ -27,9 +27,9 @@ use storage::{
     recovery::checkpoint::CheckpointWriter,
     snapshot::{CommittableSnapshot, WritableSnapshot},
 };
-use test_utils_storage::create_rocks_resources;
 use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;
+use test_utils_storage::create_rocks_resources;
 
 pub struct MockEntityType {
     vertex: TypeVertex,

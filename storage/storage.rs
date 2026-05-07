@@ -13,19 +13,19 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicU64, Ordering},
     },
     thread::sleep,
     time::Duration,
 };
 
 use ::error::typedb_error;
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{Bytes, byte_array::ByteArray};
 use durability::DurabilitySequenceNumber;
 use fail_point::{
-    fail_point, COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS, COMMIT_DATA_UNSYNC_IN_WAL,
-    COMMIT_REJECTED_WITHOUT_PERSISTING_STATUS, STORAGE_DELETED_KEYSPACES_BUT_NOT_WAL, STORAGE_EMPTY_STORAGE_DIR, STORAGE_MISSING_STORAGE_DIR,
+    COMMIT_APPLIED_WITHOUT_PERSISTING_STATUS, COMMIT_DATA_UNSYNC_IN_WAL, COMMIT_REJECTED_WITHOUT_PERSISTING_STATUS,
+    STORAGE_DELETED_KEYSPACES_BUT_NOT_WAL, STORAGE_EMPTY_STORAGE_DIR, STORAGE_MISSING_STORAGE_DIR, fail_point,
 };
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
@@ -46,17 +46,17 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        iterator::KeyspaceRangeIterator, storage_resources::RocksResources, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet,
-        Keyspaces,
+        IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
+        iterator::KeyspaceRangeIterator, storage_resources::RocksResources,
     },
     record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
     recovery::{
         checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
-        commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
+        commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
     },
     sequence_number::SequenceNumber,
     snapshot::{
-        snapshot_id::SnapshotId, write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot,
+        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot, snapshot_id::SnapshotId, write::Write,
     },
 };
 
@@ -744,14 +744,14 @@ mod tests {
     use test_utils::{create_tmp_storage_dir, init_logging};
 
     use crate::{
-        durability_client::{DurabilityClient, WALClient}, key_value::StorageKeyArray, keyspace::{storage_resources::RocksResources, IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
+        Arc, MVCCStorage, SnapshotId,
+        durability_client::{DurabilityClient, WALClient},
+        key_value::StorageKeyArray,
+        keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces, storage_resources::RocksResources},
         record::{CommitRecord, CommitType, LegacyCommitRecordV1, StatusRecord},
         sequence_number::SequenceNumber,
-        snapshot::{buffer::OperationsBuffer, WriteSnapshot},
+        snapshot::{WriteSnapshot, buffer::OperationsBuffer},
         write_batches::WriteBatches,
-        Arc,
-        MVCCStorage,
-        SnapshotId,
     };
 
     fn create_rocks_resources() -> RocksResources {

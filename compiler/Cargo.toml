@@ -21,6 +21,9 @@ features = {}
 	[dev-dependencies.test_utils_encoding]
 		workspace = true
 
+	[dev-dependencies.test_utils_storage]
+		workspace = true
+
 	[dev-dependencies.durability]
 		workspace = true
 

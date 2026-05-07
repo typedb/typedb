@@ -25,7 +25,7 @@ use tracing::{debug, trace};
 
 use crate::{
     durability_client::DurabilityClient,
-    keyspace::{storage_resources::RocksResources, KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces},
+    keyspace::{KeyspaceCheckpointError, KeyspaceOpenError, KeyspaceSet, Keyspaces, storage_resources::RocksResources},
     recovery::commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
     sequence_number::SequenceNumber,
 };
@@ -89,7 +89,8 @@ impl CheckpointReader {
                 .map_err(|error| CheckpointRestore { dir: self.directory.clone(), source: Arc::new(error) })?;
         }
 
-        let keyspaces = Keyspaces::open::<KS>(&keyspaces_dir, rocks_resources).map_err(|error| KeyspaceOpen { source: error })?;
+        let keyspaces =
+            Keyspaces::open::<KS>(&keyspaces_dir, rocks_resources).map_err(|error| KeyspaceOpen { source: error })?;
 
         trace!("Finished recovering keyspaces, recovering missing commits");
 

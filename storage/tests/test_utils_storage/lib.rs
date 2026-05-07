@@ -11,7 +11,7 @@ use resource::constants::common::MB;
 use storage::{
     MVCCStorage, StorageOpenError,
     durability_client::WALClient,
-    keyspace::{storage_resources::RocksResources, KeyspaceSet},
+    keyspace::{KeyspaceSet, storage_resources::RocksResources},
     recovery::checkpoint::{CheckpointReader, CheckpointWriter},
 };
 
