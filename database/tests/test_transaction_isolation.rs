@@ -568,8 +568,6 @@ fn concurrent_has_write_and_owner_delete_one_fails() {
     assert_eq!(get_isolation_conflict(&err), &IsolationConflict::RequireDeletedKey);
 }
 
-// TODO: ideally, this wouldn't fail. In fact, if we were to insert the attribute rather than match-insert it,
-//       this should always succeed as we always create the attribtue
 #[test]
 fn concurrent_has_write_and_attribute_delete_one_fails() {
     let (_tmp, database) = create_reset_database();
@@ -598,14 +596,9 @@ fn concurrent_has_write_and_attribute_delete_one_fails() {
     assert_eq!(get_isolation_conflict(&err), &IsolationConflict::RequireDeletedKey);
 }
 
-// Companion of the test above for the alternative (no-match) write formulation called out in the
-// TODO: tx_write uses `insert $p has name "alice"` without first `match`-ing the existing
-// attribute. Each insert independently materialises (or finds) the attribute by its value-encoded
-// vertex, so the write does not "require" the existing key. Pinning the actual behaviour here -
-// if a future change makes pure-insert succeed (the noted ideal), this test will fail and prompt
-// updating the assertion.
+// TODO: We in the past used to have this be allowed? Slightly more lax - not a large difference
 #[test]
-fn concurrent_has_insert_without_match_and_attribute_delete_one_fails() {
+fn concurrent_has_insert_new_attribute_deleting_attribute() {
     let (_tmp, database) = create_reset_database();
     commit_schema(
         database.clone(),
