@@ -598,6 +598,40 @@ fn concurrent_has_write_and_attribute_delete_one_fails() {
     assert_eq!(get_isolation_conflict(&err), &IsolationConflict::RequireDeletedKey);
 }
 
+// Companion of the test above for the alternative (no-match) write formulation called out in the
+// TODO: tx_write uses `insert $p has name "alice"` without first `match`-ing the existing
+// attribute. Each insert independently materialises (or finds) the attribute by its value-encoded
+// vertex, so the write does not "require" the existing key. Pinning the actual behaviour here -
+// if a future change makes pure-insert succeed (the noted ideal), this test will fail and prompt
+// updating the assertion.
+#[test]
+fn concurrent_has_insert_without_match_and_attribute_delete_one_fails() {
+    let (_tmp, database) = create_reset_database();
+    commit_schema(
+        database.clone(),
+        r#"define
+            entity person, owns id @key, owns name @card(0..);
+            attribute id, value integer;
+            attribute name @independent, value string;
+        "#,
+    );
+    commit_write_query(
+        database.clone(),
+        r#"insert
+            $p isa person, has id 1;
+            $n isa name "alice";
+        "#,
+    );
+
+    let mut tx_delete = open_write(database.clone());
+    let mut tx_write = open_write(database.clone());
+    tx_delete = run_write(tx_delete, r#"match $n isa name "alice"; delete $n;"#);
+    tx_write = run_write(tx_write, r#"match $p isa person, has id 1; insert $p has name "alice";"#);
+
+    let err = get_only_commit_error(try_commit(tx_delete), try_commit(tx_write));
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::RequireDeletedKey);
+}
+
 #[test]
 fn concurrent_player_link_and_relation_delete_one_fails() {
     let (_tmp, database) = create_reset_database();
