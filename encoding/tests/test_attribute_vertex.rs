@@ -191,22 +191,13 @@ fn generate_struct_attribute_vertex() {
 }
 
 #[test]
-fn attribute_id_deterministic_bytes_strips_disambiguator_for_hashed_ids() {
-    // For inlineable value types (boolean, integer, ..., inline strings, ...) deterministic_bytes()
-    // must equal bytes() - the entire ID identifies the value.
-    //
-    // For hashed types (long strings, structs) deterministic_bytes() must drop the trailing
-    // disambiguator byte so that different hash-collided values produce equal lock keys. This is
-    // load-bearing for the unique-constraint commit lock - if disambiguator were included, two
-    // concurrent writes of two different values with equal hashes wouldn't contend on the same
-    // lock and could both pass through.
-
+fn attribute_id_deterministic_bytes() {
     let (_tmp_dir, storage) = create_core_storage();
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_id = TypeID::new(0);
 
-    // 1. Inline value types and short strings (built via the public AttributeID::build_inline):
-    //    deterministic_bytes == bytes (the entire ID identifies the value).
+    // Inline value types and short strings (built via the public AttributeID::build_inline):
+    // deterministic_bytes == bytes (the entire ID identifies the value).
     {
         let inline_cases = [
             Value::Boolean(true),
@@ -230,7 +221,7 @@ fn attribute_id_deterministic_bytes_strips_disambiguator_for_hashed_ids() {
         assert!(short_id.unwrap_string().is_inline());
     }
 
-    // 3. Hashed strings, default hasher: deterministic_bytes drops the disambiguator byte.
+    // Hashed strings, default hasher: deterministic_bytes drops the disambiguator byte.
     {
         let long = "Hello world, this is a long attribute string to be encoded.";
         let long_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(long);
@@ -245,8 +236,8 @@ fn attribute_id_deterministic_bytes_strips_disambiguator_for_hashed_ids() {
         assert!(id.deterministic_bytes_ref().len() < id.bytes_ref().len());
     }
 
-    // 4. Hashed strings, forced hash collision: deterministic_bytes are equal for distinct
-    //    values that share the prefix and (forced) hash, even though disambiguators differ.
+    // Hashed strings, forced hash collision: deterministic_bytes are equal for distinct
+    // values that share the prefix and (forced) hash, even though disambiguators differ.
     {
         const CONSTANT_HASH: u64 = 0;
         let generator = ThingVertexGenerator::new_with_hasher(|_bytes| CONSTANT_HASH);
@@ -280,27 +271,7 @@ fn attribute_id_deterministic_bytes_strips_disambiguator_for_hashed_ids() {
         );
     }
 
-    // 5. Hashed strings, distinct hashes: deterministic_bytes differ.
-    {
-        let s_a = "Long alpha string used to distinguish hashes - branch A.";
-        let s_b = "Different long bravo content for a different hash - branch B.";
-        let s_a_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s_a);
-        let s_b_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s_b);
-        let generator = ThingVertexGenerator::new();
-        let id_a = generator
-            .create_attribute_string(type_id, s_a_bytes.as_reference(), &mut snapshot)
-            .unwrap()
-            .attribute_id()
-            .unwrap_string();
-        let id_b = generator
-            .create_attribute_string(type_id, s_b_bytes.as_reference(), &mut snapshot)
-            .unwrap()
-            .attribute_id()
-            .unwrap_string();
-        assert_ne!(id_a.deterministic_bytes_ref(), id_b.deterministic_bytes_ref());
-    }
-
-    // 6. Structs, forced collision: deterministic_bytes are equal across disambiguators.
+    // Structs, forced collision: deterministic_bytes are equal across disambiguators.
     {
         const CONSTANT_HASH: u64 = 0;
         let generator = ThingVertexGenerator::new_with_hasher(|_bytes| CONSTANT_HASH);

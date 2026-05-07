@@ -342,27 +342,27 @@ impl AttributeID {
             AttributeID::Double(double_id) => {
                 debug_assert!(DoubleAttributeID::is_inlineable());
                 double_id.bytes_ref()
-            },
+            }
             AttributeID::Decimal(decimal_id) => {
                 debug_assert!(DecimalAttributeID::is_inlineable());
                 decimal_id.bytes_ref()
-            },
+            }
             AttributeID::Date(date_id) => {
                 debug_assert!(DateAttributeID::is_inlineable());
                 date_id.bytes_ref()
-            },
+            }
             AttributeID::DateTime(date_time_id) => {
                 debug_assert!(DateTimeAttributeID::is_inlineable());
                 date_time_id.bytes_ref()
-            },
+            }
             AttributeID::DateTimeTZ(date_time_tz_id) => {
                 debug_assert!(DateTimeTZAttributeID::is_inlineable());
                 date_time_tz_id.bytes_ref()
-            },
+            }
             AttributeID::Duration(duration_id) => {
                 debug_assert!(DurationAttributeID::is_inlineable());
                 duration_id.bytes_ref()
-            },
+            }
             AttributeID::String(string_id) => string_id.deterministic_bytes_ref(),
             AttributeID::Struct(struct_id) => struct_id.deterministic_bytes_ref(),
         }
@@ -610,7 +610,7 @@ impl StringAttributeID {
     const VALUE_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Long;
     const LENGTH: usize = Self::VALUE_TYPE_LENGTH + Self::VALUE_LENGTH_ID.length();
 
-    const INLINE_OR_PREFIXED_HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - 1;
+    pub const INLINE_OR_PREFIXED_HASH_LENGTH: usize = Self::VALUE_LENGTH_ID.length() - 1;
 
     pub const HASHED_PREFIX_LENGTH: usize = Self::INLINE_OR_PREFIXED_HASH_LENGTH - Self::HASHED_HASH_LENGTH;
     pub const HASHED_HASH_LENGTH: usize = 8;
@@ -812,11 +812,7 @@ impl StringAttributeID {
     }
 
     pub fn deterministic_bytes_ref(&self) -> &[u8] {
-        if self.is_inline() {
-            self.bytes_ref()
-        } else {
-            &self.bytes_ref()[0..Self::HASHED_HASH_RANGE.end]
-        }
+        if self.is_inline() { self.bytes_ref() } else { &self.bytes_ref()[0..Self::HASHED_HASH_RANGE.end] }
     }
 }
 
