@@ -4,45 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt::{self, Display, Formatter},
-    path::PathBuf,
-};
+use std::{path::PathBuf, sync::Arc};
 
+use error::typedb_error;
 use options::ParseByteSizeError;
 
 pub mod cli;
 pub mod config;
 
-#[derive(Debug)]
-pub enum ConfigError {
-    ErrorReadingConfigFile { source: std::io::Error, path: PathBuf },
-    ErrorParsingYaml { source: serde::de::value::Error },
-    ValidationError { message: &'static str },
-    InvalidByteSize { flag: &'static str, source: ParseByteSizeError },
-}
-
-impl Display for ConfigError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            ConfigError::ErrorReadingConfigFile { path, source } => {
-                write!(f, "Error reading config file '{}': {}", path.display(), source)
-            }
-            ConfigError::ErrorParsingYaml { source } => write!(f, "Error parsing YAML config: {}", source),
-            ConfigError::ValidationError { message } => f.write_str(message),
-            ConfigError::InvalidByteSize { flag, source } => write!(f, "Invalid value for `{}`: {}", flag, source),
-        }
-    }
-}
-
-impl Error for ConfigError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            ConfigError::ErrorReadingConfigFile { source, .. } => Some(source),
-            ConfigError::ErrorParsingYaml { source } => Some(source),
-            ConfigError::ValidationError { .. } => None,
-            ConfigError::InvalidByteSize { source, .. } => Some(source),
-        }
+typedb_error! {
+    pub ConfigError(component = "Config", prefix = "CFG") {
+        ErrorReadingConfigFile(1, "Error reading config file '{path:?}'.", path: PathBuf, source: Arc<std::io::Error>),
+        ErrorParsingYaml(2, "Error parsing YAML config.", source: Arc<serde::de::value::Error>),
+        ValidationError(3, "{message}", message: &'static str),
+        InvalidByteSize(4, "Invalid value for `{flag}`.", flag: &'static str, source: ParseByteSizeError),
     }
 }

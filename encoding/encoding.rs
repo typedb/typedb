@@ -7,14 +7,14 @@
 #![deny(elided_lifetimes_in_paths)]
 #![deny(unused_must_use)]
 
-use std::ffi::c_int;
-use std::num::NonZero;
+use std::{ffi::c_int, num::NonZero};
+
 use bytes::Bytes;
 use resource::constants::common::MB;
 use rocksdb::{BlockBasedIndexType, BlockBasedOptions, DBCompressionType, SliceTransform};
 use storage::{
     key_value::StorageKey,
-    keyspace::{storage_resources::RocksResources, KeyspaceId, KeyspaceSet},
+    keyspace::{KeyspaceId, KeyspaceSet, storage_resources::RocksResources},
 };
 
 use crate::layout::prefix::{Prefix, PrefixID};

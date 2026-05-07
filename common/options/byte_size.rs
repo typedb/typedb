@@ -84,10 +84,7 @@ impl FromStr for ByteSize {
         let split_at = trimmed.find(|c: char| !c.is_ascii_digit()).unwrap_or(trimmed.len());
         let (number_part, unit_part) = trimmed.split_at(split_at);
         if number_part.is_empty() {
-            return Err(ParseByteSizeError {
-                input: input.to_owned(),
-                reason: "missing numeric portion",
-            });
+            return Err(ParseByteSizeError { input: input.to_owned(), reason: "missing numeric portion" });
         }
         let number: u64 = number_part.parse().map_err(|_| ParseByteSizeError {
             input: input.to_owned(),
@@ -109,10 +106,9 @@ impl FromStr for ByteSize {
             }
         };
 
-        let bytes = number.checked_mul(multiplier).ok_or_else(|| ParseByteSizeError {
-            input: input.to_owned(),
-            reason: "value overflows u64",
-        })?;
+        let bytes = number
+            .checked_mul(multiplier)
+            .ok_or_else(|| ParseByteSizeError { input: input.to_owned(), reason: "value overflows u64" })?;
         Ok(Self(bytes))
     }
 }
@@ -152,9 +148,7 @@ impl<'de> Deserialize<'de> for ByteSize {
             type Value = ByteSize;
 
             fn expecting(&self, f: &mut Formatter<'_>) -> fmt::Result {
-                f.write_str(
-                    "a byte-size value, e.g. `1gb`, `500 mb`, `512MiB`, or a non-negative integer of bytes",
-                )
+                f.write_str("a byte-size value, e.g. `1gb`, `500 mb`, `512MiB`, or a non-negative integer of bytes")
             }
 
             fn visit_str<E>(self, value: &str) -> Result<ByteSize, E>
@@ -302,13 +296,7 @@ mod tests {
             assert_eq!(size.to_string(), expected, "Display for {:?}", size);
         }
         // Round-trip the integral cases through FromStr.
-        for size in [
-            ByteSize::bytes(0),
-            ByteSize::bytes(512),
-            ByteSize::kb(1),
-            ByteSize::mb(512),
-            ByteSize::gb(1),
-        ] {
+        for size in [ByteSize::bytes(0), ByteSize::bytes(512), ByteSize::kb(1), ByteSize::mb(512), ByteSize::gb(1)] {
             let rendered = size.to_string();
             // Display emits e.g. "512 MiB" — FromStr needs to accept this.
             let parsed = ByteSize::from_str(&rendered).expect("display output must round-trip");
