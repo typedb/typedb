@@ -303,6 +303,92 @@ fn attribute_id_deterministic_bytes() {
 }
 
 #[test]
+fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() {
+    // The unique/key commit-lock keys are derived from `AttributeID::deterministic_bytes()`. For
+    // two concurrent transactions writing `has X "shared"` to land on the same lock, the
+    // AttributeID computed independently by each snapshot for the same string value must produce
+    // equal `deterministic_bytes`. This test pins that property at the encoding layer:
+    // independently-opened snapshots, sharing only the underlying storage, must agree on the
+    // deterministic prefix - both for the easy case (no prior collisions) and for the
+    // forced-collision case where the disambiguator could otherwise diverge.
+    let (_tmp_dir, storage) = create_core_storage();
+    let type_id = TypeID::new(0);
+
+    // Inline string: trivially equal (the entire ID is the value bytes).
+    {
+        let mut snapshot_a = storage.clone().open_snapshot_write();
+        let mut snapshot_b = storage.clone().open_snapshot_write();
+        let generator = ThingVertexGenerator::new();
+        let s = "hi";
+        let s_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s);
+        let id_a = generator
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_a)
+            .unwrap()
+            .attribute_id()
+            .unwrap_string();
+        let id_b = generator
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_b)
+            .unwrap()
+            .attribute_id()
+            .unwrap_string();
+        assert_eq!(id_a.deterministic_bytes_ref(), id_b.deterministic_bytes_ref());
+    }
+
+    // Hashed string, default hasher, no prior collisions: each snapshot independently arrives at
+    // disambiguator=0 and prefix+hash bytes are deterministic from the input alone. Full IDs are
+    // also equal here, but the property the lock relies on is the deterministic-bytes equality.
+    {
+        let mut snapshot_a = storage.clone().open_snapshot_write();
+        let mut snapshot_b = storage.clone().open_snapshot_write();
+        let generator = ThingVertexGenerator::new();
+        let s = "Hello world, this is a long attribute string to be encoded.";
+        let s_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s);
+        let id_a = generator
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_a)
+            .unwrap()
+            .attribute_id()
+            .unwrap_string();
+        let id_b = generator
+            .create_attribute_string(type_id, s_bytes.as_reference(), &mut snapshot_b)
+            .unwrap()
+            .attribute_id()
+            .unwrap_string();
+        assert!(!id_a.is_inline() && !id_b.is_inline());
+        assert_eq!(id_a.deterministic_bytes_ref(), id_b.deterministic_bytes_ref());
+    }
+
+    // Forced hash collision: two snapshots, each independently inserts a different long string
+    // sharing the same hash prefix. Each snapshot allocates disambiguator=0 (since neither sees
+    // the other's pending writes). The full IDs may differ in disambiguator across runs, but
+    // `deterministic_bytes_ref` strips that byte and must be equal.
+    {
+        const CONSTANT_HASH: u64 = 0;
+        let generator = ThingVertexGenerator::new_with_hasher(|_bytes| CONSTANT_HASH);
+        let mut snapshot_a = storage.clone().open_snapshot_write();
+        let mut snapshot_b = storage.clone().open_snapshot_write();
+        let s_a = "Hello world, this is using the same prefix - alpha branch.";
+        let s_b = "Hello world, this is using the same prefix - bravo branch.";
+        let s_a_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s_a);
+        let s_b_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(s_b);
+        let id_a = generator
+            .create_attribute_string(type_id, s_a_bytes.as_reference(), &mut snapshot_a)
+            .unwrap()
+            .attribute_id()
+            .unwrap_string();
+        let id_b = generator
+            .create_attribute_string(type_id, s_b_bytes.as_reference(), &mut snapshot_b)
+            .unwrap()
+            .attribute_id()
+            .unwrap_string();
+        assert_eq!(
+            id_a.deterministic_bytes_ref(),
+            id_b.deterministic_bytes_ref(),
+            "hash-collided strings encoded in independent snapshots must agree on deterministic_bytes"
+        );
+    }
+}
+
+#[test]
 fn next_entity_and_relation_ids_are_determined_from_storage() {
     init_logging();
     let storage_path = create_tmp_storage_dir();
