@@ -203,6 +203,32 @@ fn concurrent_has_writes_violating_owns_cardinality_one_fails() {
 }
 
 #[test]
+fn concurrent_has_deletes_violating_owns_cardinality_lower_bound_one_fails() {
+    // Mirror of the upper-bound test: owner cardinality is 1..2 for `name`. The owner starts
+    // with two names. Two concurrent has-deletes from different snapshots, each removing one of
+    // them, would drop the owner to 0 names if both committed - falling below the lower bound.
+    // The cardinality commit lock must serialise them and reject one.
+    let (_tmp, database) = fresh_database();
+    commit_schema(
+        database.clone(),
+        r#"define
+            entity person, owns id @key, owns name @card(1..2);
+            attribute id, value integer;
+            attribute name @independent, value string;
+        "#,
+    );
+    commit_write_query(database.clone(), r#"insert $p isa person, has id 1, has name "alice", has name "bob";"#);
+
+    let mut tx1 = open_write(database.clone());
+    let mut tx2 = open_write(database.clone());
+    tx1 = run_write(tx1, r#"match $p isa person, has id 1; $n isa name "alice"; delete has $n of $p;"#);
+    tx2 = run_write(tx2, r#"match $p isa person, has id 1; $n isa name "bob"; delete has $n of $p;"#);
+
+    let err = assert_exactly_one_failed(try_commit(tx1), try_commit(tx2));
+    assert_isolation_conflict(&err);
+}
+
+#[test]
 fn concurrent_has_writes_with_bounded_owns_cardinality_always_contend_even_when_within_bound() {
     // Owner cardinality is 0..2: combined writes would stay within the bound, so the constraint
     // is not actually violated. But the cardinality commit lock is intentionally coarse - it is
