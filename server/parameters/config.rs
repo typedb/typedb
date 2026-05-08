@@ -12,7 +12,7 @@ use std::{
     time::Duration,
 };
 
-use options::ByteSize;
+use options::byte_size::ByteSize;
 use resource::constants::server::{
     ADMIN_DEFAULT_PORT, DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT,
 };
