@@ -555,7 +555,7 @@ fn concurrent_player_links_via_super_and_specialised_sub_role_one_fails() {
             attribute id, value integer;
         "#,
     );
-    commit_write_query(database.clone(), r#"insert $t isa tsub, has id 1;"#);
+    commit_write_query(database.clone(), r#"insert $t isa t, has id 1;"#);
 
     let mut tx1 = open_write(database.clone());
     let mut tx2 = open_write(database.clone());
