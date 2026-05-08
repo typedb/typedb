@@ -238,6 +238,7 @@ impl IntersectionExecutor {
     ) -> Result<(), ReadExecutionError> {
         let measurement = self.profile.start_measurement();
         debug_assert!(self.input.is_none() || self.input.as_mut().unwrap().peek().is_none());
+        self.reset();
         self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
         self.may_create_intersection_iterators(context)?;
@@ -280,6 +281,8 @@ impl IntersectionExecutor {
             }
             Some(batch)
         } else {
+            self.input_exhausted = true;
+            self.input = None;
             None
         };
         measurement.end(&self.profile, 1, output.as_ref().map(|batch| batch.len()).unwrap_or(0) as u64);
