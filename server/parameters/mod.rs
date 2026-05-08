@@ -4,14 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
+
+use error::typedb_error;
+use options::byte_size::ParseByteSizeError;
 
 pub mod cli;
 pub mod config;
 
-#[derive(Debug)]
-pub enum ConfigError {
-    ErrorReadingConfigFile { source: std::io::Error, path: PathBuf },
-    ErrorParsingYaml { source: serde::de::value::Error },
-    ValidationError { message: &'static str },
+typedb_error! {
+    pub ConfigError(component = "Config", prefix = "CFG") {
+        ErrorReadingConfigFile(1, "Error reading config file '{path:?}'.", path: PathBuf, source: Arc<std::io::Error>),
+        ErrorParsingYaml(2, "Error parsing YAML config.", source: Arc<serde::de::value::Error>),
+        ValidationError(3, "{message}", message: &'static str),
+        InvalidByteSize(4, "Invalid value for `{flag}`.", flag: &'static str, source: ParseByteSizeError),
+    }
 }

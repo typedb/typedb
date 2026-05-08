@@ -103,6 +103,7 @@ mod typedb_database {
         snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
     };
     use test_utils::{TempDir, create_tmp_storage_dir};
+    use test_utils_storage::create_rocks_resources;
 
     use crate::{KEY_SIZE, RocksDatabase, RocksWriteBatch};
 
@@ -116,8 +117,13 @@ mod typedb_database {
             let name = "bench_rocks__typedb";
             let path = create_tmp_storage_dir();
             let wal = WAL::create(&path).unwrap();
-            let storage =
-                Arc::new(MVCCStorage::<WALClient>::create::<BenchKeySpace>(name, &path, WALClient::new(wal))?);
+            let resources = create_rocks_resources();
+            let storage = Arc::new(MVCCStorage::<WALClient>::create::<BenchKeySpace>(
+                name,
+                &path,
+                WALClient::new(wal),
+                &resources,
+            )?);
             Ok(Self { path, storage })
         }
     }

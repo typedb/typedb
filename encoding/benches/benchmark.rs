@@ -20,6 +20,7 @@ use encoding::{
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{MVCCStorage, durability_client::WALClient, key_value::StorageKey, snapshot::WriteSnapshot};
 use test_utils::{create_tmp_storage_dir, init_logging};
+use test_utils_storage::create_rocks_resources;
 
 fn vertex_generation<D>(
     thing_vertex_generator: Arc<ThingVertexGenerator>,
@@ -41,8 +42,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
     let storage_path = create_tmp_storage_dir();
     let wal = WAL::create(&storage_path).unwrap();
+    let resources = create_rocks_resources();
     let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &resources)
+            .unwrap(),
     );
 
     let type_id = TypeID::new(0);

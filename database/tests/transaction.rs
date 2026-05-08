@@ -13,7 +13,7 @@ use database::{
     database_manager::DatabaseManager,
     transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
-use options::TransactionOptions;
+use options::{TransactionOptions, byte_size::ByteSize};
 use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
 use tokio::{
@@ -38,7 +38,8 @@ macro_rules! assert_transaction_timeout {
 }
 
 fn create_database(databases_path: &TempDir) -> Arc<Database<WALClient>> {
-    let database_manager = DatabaseManager::new(databases_path).expect("Expected database manager");
+    let database_manager =
+        DatabaseManager::new(databases_path, ByteSize::mb(64), ByteSize::mb(64)).expect("Expected database manager");
     database_manager.put_database(DB_NAME).expect("Expected database creation");
     database_manager.database(DB_NAME).expect("Expected database retrieval")
 }

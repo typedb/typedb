@@ -24,6 +24,9 @@ features = {}
 	[dependencies.logger]
 		workspace = true
 
+	[dependencies.test_utils_storage]
+		workspace = true
+
 	[dependencies.durability]
 		workspace = true
 

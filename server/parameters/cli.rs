@@ -79,6 +79,14 @@ pub struct CLIArgs {
     #[arg(long = "storage.data-directory", value_name = "DIR")]
     pub storage_data_directory: Option<String>,
 
+    /// RocksDB shared block-cache size (e.g., `1gb`, `512mb`, `1024MiB`)
+    #[arg(long = "storage.rocksdb.cache-size", value_name = "SIZE")]
+    pub storage_rocksdb_cache_size: Option<String>,
+
+    /// RocksDB shared write-buffer manager budget (e.g., `512mb`, `1gb`)
+    #[arg(long = "storage.rocksdb.write-buffers-limit", value_name = "SIZE")]
+    pub storage_rocksdb_write_buffers_limit: Option<String>,
+
     /// Path to the log directory
     #[arg(long = "logging.directory")]
     pub logging_directory: Option<String>,

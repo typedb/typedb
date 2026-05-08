@@ -24,10 +24,10 @@ features = {}
 	[dev-dependencies.query]
 		workspace = true
 
-	[dev-dependencies.function]
+	[dev-dependencies.durability]
 		workspace = true
 
-	[dev-dependencies.durability]
+	[dev-dependencies.function]
 		workspace = true
 
 	[dev-dependencies.test_utils_concept]
@@ -102,16 +102,20 @@ features = {}
 		workspace = true
 
 [[test]]
-	path = "tests/execute_function.rs"
-	name = "test_functions"
+	path = "tests/writes.rs"
+	name = "test_writes"
+
+[[test]]
+	path = "tests/execute_isa.rs"
+	name = "test_execute_isa"
 
 [[test]]
 	path = "tests/execute_expression.rs"
 	name = "test_execute_expression"
 
 [[test]]
-	path = "tests/efficiency.rs"
-	name = "test_efficiency"
+	path = "tests/compile_execute.rs"
+	name = "test_compile_execute"
 
 [[test]]
 	path = "tests/execute_has.rs"
@@ -122,26 +126,22 @@ features = {}
 	name = "test_pipelines"
 
 [[test]]
-	path = "tests/execute_select.rs"
-	name = "test_select"
+	path = "tests/execute_links.rs"
+	name = "test_execute_links"
+
+[[test]]
+	path = "tests/efficiency.rs"
+	name = "test_efficiency"
+
+[[test]]
+	path = "tests/execute_function.rs"
+	name = "test_functions"
 
 [[test]]
 	path = "tests/execute_relation_index.rs"
 	name = "test_execute_relation_index"
 
 [[test]]
-	path = "tests/writes.rs"
-	name = "test_writes"
-
-[[test]]
-	path = "tests/compile_execute.rs"
-	name = "test_compile_execute"
-
-[[test]]
-	path = "tests/execute_isa.rs"
-	name = "test_execute_isa"
-
-[[test]]
-	path = "tests/execute_links.rs"
-	name = "test_execute_links"
+	path = "tests/execute_select.rs"
+	name = "test_select"
 

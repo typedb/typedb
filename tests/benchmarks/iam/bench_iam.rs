@@ -12,7 +12,7 @@ use database::{
     transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
-use options::TransactionOptions;
+use options::{TransactionOptions, byte_size::ByteSize};
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;
 
@@ -110,7 +110,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
 fn setup() -> Arc<Database<WALClient>> {
     let tmp_dir = create_tmp_storage_dir();
     {
-        let dbm = DatabaseManager::new(&tmp_dir).unwrap();
+        let dbm = DatabaseManager::new(&tmp_dir, ByteSize::mb(64), ByteSize::mb(64)).unwrap();
         dbm.put_database(DB_NAME).unwrap();
         let database = dbm.database(DB_NAME).unwrap();
         let schema_path = Path::new(RESOURCE_PATH).join(Path::new(SCHEMA_FILENAME));
@@ -121,7 +121,7 @@ fn setup() -> Arc<Database<WALClient>> {
         load_schema_tql(database.clone(), &functions_path);
         load_data_tql(database.clone(), &data_path);
     }
-    let dbm = DatabaseManager::new(&tmp_dir).unwrap();
+    let dbm = DatabaseManager::new(&tmp_dir, ByteSize::mb(64), ByteSize::mb(64)).unwrap();
     dbm.put_database(DB_NAME).unwrap();
 
     dbm.database(DB_NAME).unwrap()

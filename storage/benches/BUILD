@@ -19,6 +19,7 @@ rust_test(
         "//common/primitive",
         "//resource",
         "//storage",
+        "//storage/tests:test_utils_storage",
         "//durability",
         "//util/test:test_utils",
 
@@ -53,6 +54,7 @@ rust_test(
         "//durability",
         "//resource",
         "//storage:storage",
+        "//storage/tests:test_utils_storage",
         "//util/test:test_utils",
     ],
     tags = ["manual"],  # in order for bazel test //... to not fail

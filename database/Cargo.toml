@@ -18,6 +18,9 @@ features = {}
 	[dev-dependencies.test_utils]
 		workspace = true
 
+	[dev-dependencies.test_utils_storage]
+		workspace = true
+
 [dependencies]
 
 	[dependencies.tokio]
@@ -94,10 +97,10 @@ features = {}
 	name = "test_database"
 
 [[test]]
-	path = "tests/transaction.rs"
-	name = "test_transaction"
-
-[[test]]
 	path = "tests/statistics_synchronization.rs"
 	name = "test_statistics_synchronization"
+
+[[test]]
+	path = "tests/transaction.rs"
+	name = "test_transaction"
 

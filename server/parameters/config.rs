@@ -8,9 +8,11 @@ use std::{
     fs::File,
     io::Read,
     path::{Path, PathBuf},
+    sync::Arc,
     time::Duration,
 };
 
+use options::byte_size::ByteSize;
 use resource::constants::server::{
     ADMIN_DEFAULT_PORT, DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT,
 };
@@ -106,6 +108,31 @@ impl Default for AdminConfig {
 #[serde(rename_all = "kebab-case")]
 pub struct StorageConfig {
     pub data_directory: PathBuf,
+    #[serde(default)]
+    pub rocksdb: RocksDbConfig,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct RocksDbConfig {
+    #[serde(default = "default_rocksdb_cache_size")]
+    pub cache_size: ByteSize,
+    #[serde(default = "default_rocksdb_write_buffers_limit")]
+    pub write_buffers_limit: ByteSize,
+}
+
+impl Default for RocksDbConfig {
+    fn default() -> Self {
+        Self { cache_size: default_rocksdb_cache_size(), write_buffers_limit: default_rocksdb_write_buffers_limit() }
+    }
+}
+
+const fn default_rocksdb_cache_size() -> ByteSize {
+    ByteSize::gb(1)
+}
+
+const fn default_rocksdb_write_buffers_limit() -> ByteSize {
+    ByteSize::mb(512)
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -197,11 +224,14 @@ impl ConfigBuilder {
         let mut raw_yaml = String::new();
         let resolved_path = Self::resolve_path_from_executable(&path);
         File::open(resolved_path.clone())
-            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path: resolved_path.clone() })?
+            .map_err(|source| ConfigError::ErrorReadingConfigFile {
+                source: Arc::new(source),
+                path: resolved_path.clone(),
+            })?
             .read_to_string(&mut raw_yaml)
-            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?;
+            .map_err(|source| ConfigError::ErrorReadingConfigFile { source: Arc::new(source), path })?;
         serde_yaml2::from_str::<Config>(raw_yaml.as_str())
-            .map_err(|source| ConfigError::ErrorParsingYaml { source })
+            .map_err(|source| ConfigError::ErrorParsingYaml { source: Arc::new(source) })
             .map(|config| Self { config, raw_yaml })
     }
 
@@ -243,10 +273,13 @@ impl ConfigBuilder {
     /// let clustering = ext.server.clustering;
     /// ```
     pub fn parse_extension<T: serde::de::DeserializeOwned>(&self) -> Result<T, ConfigError> {
-        serde_yaml2::from_str::<T>(self.raw_yaml.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
+        serde_yaml2::from_str::<T>(self.raw_yaml.as_str())
+            .map_err(|source| ConfigError::ErrorParsingYaml { source: Arc::new(source) })
     }
 
-    pub fn override_with_cliargs(&mut self, cliargs: CLIArgs) {
+    pub fn override_with_cliargs(&mut self, cliargs: CLIArgs) -> Result<(), ConfigError> {
+        use std::str::FromStr;
+
         let CLIArgs {
             config_file_override: _,
             server_listen_address,
@@ -262,6 +295,8 @@ impl ConfigBuilder {
             server_encryption_certificate_key,
             server_encryption_ca_certificate,
             storage_data_directory,
+            storage_rocksdb_cache_size,
+            storage_rocksdb_write_buffers_limit,
             logging_directory,
             diagnostics_reporting_metrics,
             diagnostics_reporting_errors,
@@ -297,6 +332,17 @@ impl ConfigBuilder {
             config.server.advertise_address => server_advertise_address;
             config.server.http.advertise_address => server_http_advertise_address;
         }
+
+        if let Some(raw) = storage_rocksdb_cache_size {
+            config.storage.rocksdb.cache_size = ByteSize::from_str(&raw)
+                .map_err(|source| ConfigError::InvalidByteSize { flag: "--storage.rocksdb.cache-size", source })?;
+        }
+        if let Some(raw) = storage_rocksdb_write_buffers_limit {
+            config.storage.rocksdb.write_buffers_limit = ByteSize::from_str(&raw).map_err(|source| {
+                ConfigError::InvalidByteSize { flag: "--storage.rocksdb.write-buffers-limit", source }
+            })?;
+        }
+        Ok(())
     }
 
     pub fn build(self) -> Result<Config, ConfigError> {
@@ -416,7 +462,7 @@ pub mod tests {
         args_with_binary_infront.extend(args);
         let mut config = ConfigBuilder::from_file(yaml)?;
         let cli_args: CLIArgs = CLIArgs::parse_from(args_with_binary_infront);
-        config.override_with_cliargs(cli_args);
+        config.override_with_cliargs(cli_args)?;
         config.build()
     }
 

@@ -27,6 +27,9 @@ features = {}
 	[dev-dependencies.criterion]
 		workspace = true
 
+	[dev-dependencies.test_utils_storage]
+		workspace = true
+
 [dependencies]
 
 	[dependencies.tracing]

@@ -26,6 +26,7 @@ use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::CommitProfile};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;
+use test_utils_storage::create_rocks_resources;
 
 #[test]
 fn generate_string_attribute_vertex() {
@@ -197,9 +198,15 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     let type_id = TypeID::new(0);
     {
         let wal = WAL::create(&storage_path).unwrap();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
-                .unwrap(),
+            MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
+                "storage",
+                &storage_path,
+                WALClient::new(wal),
+                &resources,
+            )
+            .unwrap(),
         );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = TypeVertexGenerator::new();
@@ -215,9 +222,16 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
 
     for i in 0..5 {
         let wal = WAL::load(&storage_path).unwrap();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
-                .unwrap(),
+            MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
+                "storage",
+                &storage_path,
+                WALClient::new(wal),
+                &None,
+                &resources,
+            )
+            .unwrap(),
         );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
@@ -229,9 +243,16 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
 
     for i in 0..5 {
         let wal = WAL::load(&storage_path).unwrap();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
-                .unwrap(),
+            MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
+                "storage",
+                &storage_path,
+                WALClient::new(wal),
+                &None,
+                &resources,
+            )
+            .unwrap(),
         );
         let mut snapshot = storage.clone().open_snapshot_write();
         let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
