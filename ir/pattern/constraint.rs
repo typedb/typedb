@@ -423,11 +423,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             },
         );
         if let Err(err) = mismatched_optionality_in_assignment {
-            use error::TypeDBError;
-            tracing::warn!(
-                "The declared optionality of a variable assigned to by a function call did not match the optionality of the function return. This will fail in the next version:\n{}",
-                err.format_description()
-            );
+            // TODO: This has to wait till we finalize the spec
+            // use error::TypeDBError;
+            // tracing::warn!(
+            //     "The declared optionality of a variable assigned to by a function call did not match the optionality of the function return. This will fail in the next version:\n{}",
+            //     err.format_description()
+            // );
         }
 
         let function_call =
@@ -477,11 +478,12 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             },
         );
         if let Err(err) = mismatched_optionality_in_assignment {
-            use error::TypeDBError;
-            tracing::warn!(
-                "The declared optionality of a variable assigned to by a function call did not match the optionality of the function return. This will fail in the next version:\n{}",
-                err.format_description()
-            );
+            // TODO: This has to wait till we finalize the spec
+            // use error::TypeDBError;
+            // tracing::warn!(
+            //     "The declared optionality of a variable assigned to by a function call did not match the optionality of the function return. This will fail in the next version:\n{}",
+            //     err.format_description()
+            // );
         }
         let function_call =
             self.create_function_call(&assigned, callee_signature, arguments, function_name, source_span)?;

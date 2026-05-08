@@ -52,11 +52,12 @@ pub fn translate_reduce(
             }),
         };
         if let Err(err) = optionality_mismatch_check {
-            use error::TypeDBError;
-            tracing::warn!(
-                "The declared optionality of a variable assigned in a reduce stage did not match the optionality of the reducer result. This will fail in the next version:\n{}",
-                err.format_description()
-            );
+            // TODO: This has to wait till we finalize the spec
+            // use error::TypeDBError;
+            // tracing::warn!(
+            //     "The declared optionality of a variable assigned in a reduce stage did not match the optionality of the reducer result. This will fail in the next version:\n{}",
+            //     err.format_description()
+            // );
         }
         let assigned_var = context.register_reduced_variable(
             var_name,
