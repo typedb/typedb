@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use database::{Database, database_manager::DatabaseManager};
 use diagnostics::diagnostics_manager::DiagnosticsManager;
-use options::ByteSize;
+use options::byte_size::ByteSize;
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_dir, create_tmp_storage_dir, init_logging};
 use test_utils_storage::create_rocks_resources;

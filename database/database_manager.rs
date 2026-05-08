@@ -13,7 +13,7 @@ use std::{
 
 use cache::CACHE_DB_NAME_PREFIX;
 use diagnostics::diagnostics_manager::DiagnosticsManager;
-use options::ByteSize;
+use options::byte_size::ByteSize;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::{durability_client::WALClient, keyspace::storage_resources::RocksResources};
 use tracing::{Level, debug, event, warn};
@@ -57,10 +57,6 @@ impl DatabaseManager {
         Self::cleanup_import_directory(&import_directory)?;
 
         Ok(Arc::new(Self { data_directory, import_directory, databases, diagnostics_manager, rocks_resources }))
-    }
-
-    pub fn rocks_resources(&self) -> &Arc<RocksResources> {
-        &self.rocks_resources
     }
 
     fn initialise_databases(
@@ -294,6 +290,10 @@ impl DatabaseManager {
             }
         };
         Ok(())
+    }
+
+    pub fn rocks_resources(&self) -> &Arc<RocksResources> {
+        &self.rocks_resources
     }
 
     pub fn database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {

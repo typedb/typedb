@@ -25,7 +25,7 @@ use database::{
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
-use options::{ByteSize, QueryOptions, TransactionOptions};
+use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
 use query::given_rows::GivenRowsSimple;
 use rand_core::RngCore;
 use storage::durability_client::WALClient;

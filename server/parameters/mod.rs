@@ -7,7 +7,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use error::typedb_error;
-use options::ParseByteSizeError;
+use options::byte_size::ParseByteSizeError;
 
 pub mod cli;
 pub mod config;

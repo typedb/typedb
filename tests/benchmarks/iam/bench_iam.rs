@@ -13,7 +13,7 @@ use database::{
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
 use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
-use options::{ByteSize, TransactionOptions};
+use options::{TransactionOptions, byte_size::ByteSize};
 use query::given_rows::GivenRowsSimple;
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;

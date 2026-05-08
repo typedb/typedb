@@ -14,7 +14,7 @@ use database::{
     transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::diagnostics_manager::DiagnosticsManager;
-use options::{ByteSize, TransactionOptions};
+use options::{TransactionOptions, byte_size::ByteSize};
 use storage::durability_client::WALClient;
 use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
 use tokio::{
