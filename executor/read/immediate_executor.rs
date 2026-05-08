@@ -175,6 +175,7 @@ pub(crate) struct IntersectionExecutor {
     iterators: Vec<TupleIterator>,
     cartesian_iterator: CartesianIterator,
     input: Option<Peekable<FixedBatchRowIterator>>,
+    input_exhausted: bool,
 
     intersection_value: VariableValue<'static>,
     intersection_row: Vec<VariableValue<'static>>,
@@ -215,6 +216,7 @@ impl IntersectionExecutor {
             iterators: Vec::with_capacity(instruction_count),
             cartesian_iterator: CartesianIterator::new(output_width as usize, instruction_count, profile.clone()),
             input: None,
+            input_exhausted: false,
             intersection_value: VariableValue::None,
             intersection_row: vec![VariableValue::None; output_width as usize],
             intersection_multiplicity: 1,
@@ -225,6 +227,7 @@ impl IntersectionExecutor {
 
     fn reset(&mut self) {
         self.input = None;
+        self.input_exhausted = false;
         self.iterators.clear();
     }
 
@@ -235,6 +238,7 @@ impl IntersectionExecutor {
     ) -> Result<(), ReadExecutionError> {
         let measurement = self.profile.start_measurement();
         debug_assert!(self.input.is_none() || self.input.as_mut().unwrap().peek().is_none());
+        self.reset();
         self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
         self.may_create_intersection_iterators(context)?;
@@ -254,16 +258,31 @@ impl IntersectionExecutor {
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
+        if self.input_exhausted {
+            return Ok(None);
+        }
         let measurement = self.profile.start_measurement();
         let output = if self.compute_next_row(context)? {
             // don't allocate batch until 1 answer is confirmed
             let mut batch = FixedBatch::new(self.output_width);
             batch.append(|mut row| self.write_next_row_into(&mut row));
-            while !batch.is_full() && self.compute_next_row(context)? {
-                batch.append(|mut row| self.write_next_row_into(&mut row));
+            loop {
+                // TODO: Revert when we have a more elegant solution for executor memory pressure
+                if batch.is_full() {
+                    break;
+                }
+                if self.compute_next_row(context)? {
+                    batch.append(|mut row| self.write_next_row_into(&mut row));
+                } else {
+                    self.input_exhausted = true;
+                    self.input = None;
+                    break;
+                }
             }
             Some(batch)
         } else {
+            self.input_exhausted = true;
+            self.input = None;
             None
         };
         measurement.end(&self.profile, 1, output.as_ref().map(|batch| batch.len()).unwrap_or(0) as u64);
