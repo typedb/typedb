@@ -542,6 +542,52 @@ fn concurrent_player_links_with_bounded_plays_cardinality_one_fails() {
     assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
 }
 
+#[test]
+fn concurrent_player_links_via_super_and_specialised_sub_role_one_fails() {
+    // tsub inherits `plays r_base:super_role @card(0..2)` from tbase and additionally declares
+    // `plays r:sub_role @card(0..1)`, where `r:sub_role` specialises `r_base:super_role`
+    // (via `r sub r_base` and `relates sub_role as super_role`). Playing the sub role
+    // specialises playing super, so the inherited super-cardinality constraint applies on
+    // either insert path.
+    //
+    // The plays-cardinality commit-lock loop in `add_exclusive_lock_for_plays_cardinality_constraint`
+    // emits one lock per applicable cardinality constraint - keyed by source role type - rather
+    // than a single lock per (player, role_type). So TX1 (linking via the specialised sub role)
+    // emits both the (tsub, sub_role) and the inherited (tbase, super_role) locks; TX2 (linking
+    // via the super role on the parent relation) emits the (tbase, super_role) lock. They
+    // overlap on the inherited constraint and one transaction is rejected.
+    //
+    // Pinned because the conflict relies entirely on that loop. A future "single lock per
+    // (player, role_type)" shortcut would silently let both transactions through, since
+    // `sub_role` and `super_role` are different role types - even though playing them on the
+    // same player can together violate the inherited super bound.
+    //
+    // Note: TX2 inserts via `r_base` (not `r`) because role specialization replaces the parent
+    // role on the child relation - `r` only exposes `sub_role`, while `super_role` remains
+    // available on `r_base`. The lock identity is determined by the source role type, not the
+    // relation type the link is created on.
+    let (_tmp, database) = create_reset_database();
+    commit_schema(
+        database.clone(),
+        r#"define
+            relation r_base, relates super_role @card(0..);
+            relation r sub r_base, relates sub_role as super_role @card(0..);
+            entity tbase, owns id @key, plays r_base:super_role @card(0..2);
+            entity tsub sub tbase, plays r:sub_role @card(0..1);
+            attribute id, value integer;
+        "#,
+    );
+    commit_write_query(database.clone(), r#"insert $t isa tsub, has id 1;"#);
+
+    let mut tx1 = open_write(database.clone());
+    let mut tx2 = open_write(database.clone());
+    tx1 = run_write(tx1, r#"match $t isa tsub, has id 1; insert $_ isa r, links (sub_role: $t);"#);
+    tx2 = run_write(tx2, r#"match $t isa tsub, has id 1; insert $_ isa r_base, links (super_role: $t);"#);
+
+    let err = get_only_commit_error(try_commit(tx1), try_commit(tx2));
+    assert_eq!(get_isolation_conflict(&err), &IsolationConflict::ExclusiveLock);
+}
+
 ////////////////////////////////////////////////
 // Concurrent write/delete crossover          //
 ////////////////////////////////////////////////
