@@ -25,7 +25,10 @@ use crate::{
         conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
-        variable_category::{VariableCategory, VariableOptionality},
+        variable_category::{
+            VariableCategory, VariableOptionality,
+            VariableOptionality::{Optional, Required},
+        },
     },
     pipeline::{
         ParameterRegistry, VariableRegistry, block::BlockBuilderContext, function_signature::FunctionSignature,
@@ -403,25 +406,31 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         }
 
         let callee_signature = builtin_id.signature();
-        let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).find_map(
-            |(assigned_var, (_, declared_optionality))| {
-                (assigned_var.optionality != *declared_optionality).then_some(assigned_var.variable)
+        let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).try_for_each(
+            |(assigned_var, (_, returned_optionality))| {
+                use crate::pattern::variable_category::VariableOptionality::{Optional, Required};
+                match (assigned_var.optionality, returned_optionality) {
+                    (Optional, Optional) | (Required, Required) => Ok(()),
+                    (Optional, Required) => Err(RepresentationError::WronglyMarkedOptionalAssignment {
+                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
+                        source_span,
+                    }),
+                    (Required, Optional) => Err(RepresentationError::UnmarkedOptionalAssignment {
+                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
+                        source_span,
+                    }),
+                }
             },
         );
-        if let Some(variable) = mismatched_optionality_in_assignment {
-            let variable = self.context.get_variable_name_or_unnamed(variable).to_owned();
-            use error::TypeDBError;
-            tracing::warn!(
-                "Function call assigns to unmarked optional variable. This will fail in the next version:\n{}",
-                RepresentationError::UnmarkedOptionalAssignment { variable, source_span }.format_description()
-            );
-            // Fix for now:
-            assigned.iter_mut().zip(callee_signature.returns.iter()).for_each(
-                |(assigned_var, (_, declared_optionality))| {
-                    assigned_var.optionality = *declared_optionality;
-                },
-            );
+        if let Err(err) = mismatched_optionality_in_assignment {
+            // TODO: This has to wait till we finalize the spec
+            // use error::TypeDBError;
+            // tracing::warn!(
+            //     "The declared optionality of a variable assigned to by a function call did not match the optionality of the function return. This will fail in the next version:\n{}",
+            //     err.format_description()
+            // );
         }
+
         let function_call =
             self.create_function_call(&assigned, &callee_signature, arguments, builtin_id.name(), source_span)?;
         let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream, source_span);
@@ -452,18 +461,29 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             let variable = self.context.get_variable_name_or_unnamed(variable.variable).to_owned();
             return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
         }
-        let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).find_map(
-            |(assigned_var, (_, declared_optionality))| {
-                (assigned_var.optionality != *declared_optionality).then_some(assigned_var.variable)
+        let mismatched_optionality_in_assignment = assigned.iter().zip(callee_signature.returns.iter()).try_for_each(
+            |(assigned_var, (_, returned_optionality))| {
+                use crate::pattern::variable_category::VariableOptionality::{Optional, Required};
+                match (assigned_var.optionality, returned_optionality) {
+                    (Optional, Optional) | (Required, Required) => Ok(()),
+                    (Optional, Required) => Err(RepresentationError::WronglyMarkedOptionalAssignment {
+                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
+                        source_span,
+                    }),
+                    (Required, Optional) => Err(RepresentationError::UnmarkedOptionalAssignment {
+                        variable: self.context.get_variable_name_or_unnamed(assigned_var.variable).to_owned(),
+                        source_span,
+                    }),
+                }
             },
         );
-        if let Some(variable) = mismatched_optionality_in_assignment {
-            let variable = self.context.get_variable_name_or_unnamed(variable).to_owned();
-            use error::TypeDBError;
-            tracing::warn!(
-                "Function call assigns to unmarked optional variable. This will fail in the next version:\n{}",
-                RepresentationError::UnmarkedOptionalAssignment { variable, source_span }.format_description()
-            );
+        if let Err(err) = mismatched_optionality_in_assignment {
+            // TODO: This has to wait till we finalize the spec
+            // use error::TypeDBError;
+            // tracing::warn!(
+            //     "The declared optionality of a variable assigned to by a function call did not match the optionality of the function return. This will fail in the next version:\n{}",
+            //     err.format_description()
+            // );
         }
         let function_call =
             self.create_function_call(&assigned, callee_signature, arguments, function_name, source_span)?;

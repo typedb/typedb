@@ -5,6 +5,7 @@
  */
 
 use typeql::{
+    Variable,
     common::Spanned,
     query::stage::reduce::Reducer as TypeQLReducer,
     token::{ReduceOperatorCollect as TypeQLReduceOperatorCollect, ReduceOperatorStat as TypeQLReduceOperatorStat},
@@ -13,10 +14,7 @@ use typeql::{
 use crate::{
     RepresentationError,
     pattern::variable_category::VariableCategory,
-    pipeline::{
-        VariableRegistry,
-        reduce::{AssignedReduction, Reduce, Reducer},
-    },
+    pipeline::reduce::{AssignedReduction, Reduce, Reducer},
     translation::{PipelineTranslationContext, verify_variable_available},
 };
 
@@ -35,15 +33,36 @@ pub fn translate_reduce(
     let mut reductions = Vec::with_capacity(typeql_reduce.reduce_assignments.len());
     for reduce_assign in &typeql_reduce.reduce_assignments {
         let reducer = build_reducer(context, &reduce_assign.reducer)?;
-        let (category, is_optional) = resolve_category_optionality(&reducer);
-        let var_name =
-            reduce_assign.variable.name().ok_or(Box::new(RepresentationError::NonAnonymousVariableExpected {
+        let (category, returned_is_optional) = resolve_category_optionality(&reducer);
+        let var_name = reduce_assign.variable.name().ok_or_else(|| {
+            Box::new(RepresentationError::NonAnonymousVariableExpected { source_span: reduce_assign.variable.span() })
+        })?;
+        let assigned_is_optional = match &reduce_assign.variable {
+            Variable::Anonymous { optional, .. } | Variable::Named { optional, .. } => optional.is_some(),
+        };
+        let optionality_mismatch_check = match (assigned_is_optional, returned_is_optional) {
+            (true, true) | (false, false) => Ok(()),
+            (true, false) => Err(RepresentationError::WronglyMarkedOptionalAssignment {
+                variable: var_name.to_owned(),
                 source_span: reduce_assign.variable.span(),
-            }))?;
+            }),
+            (false, true) => Err(RepresentationError::UnmarkedOptionalAssignment {
+                variable: var_name.to_owned(),
+                source_span: reduce_assign.variable.span(),
+            }),
+        };
+        if let Err(err) = optionality_mismatch_check {
+            // TODO: This has to wait till we finalize the spec
+            // use error::TypeDBError;
+            // tracing::warn!(
+            //     "The declared optionality of a variable assigned in a reduce stage did not match the optionality of the reducer result. This will fail in the next version:\n{}",
+            //     err.format_description()
+            // );
+        }
         let assigned_var = context.register_reduced_variable(
             var_name,
             category,
-            is_optional,
+            returned_is_optional,
             reduce_assign.variable.span(),
             reducer,
         )?;
