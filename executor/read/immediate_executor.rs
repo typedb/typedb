@@ -265,16 +265,18 @@ impl IntersectionExecutor {
             // don't allocate batch until 1 answer is confirmed
             let mut batch = FixedBatch::new(self.output_width);
             batch.append(|mut row| self.write_next_row_into(&mut row));
-            debug_assert!(!batch.is_full());
-            while self.compute_next_row(context)? {
-                batch.append(|mut row| self.write_next_row_into(&mut row));
+            loop {
+                // TODO: Revert when we have a more elegant solution for executor memory pressure
                 if batch.is_full() {
                     break;
                 }
-            }
-            if !batch.is_full() {
-                self.input_exhausted = true;
-                self.input = None;
+                if self.compute_next_row(context)? {
+                    batch.append(|mut row| self.write_next_row_into(&mut row));
+                } else {
+                    self.input_exhausted = true;
+                    self.input = None;
+                    break;
+                }
             }
             Some(batch)
         } else {
