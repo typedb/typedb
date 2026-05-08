@@ -4,7 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use error::TypeDBError;
 use typeql::{
+    Variable,
     common::Spanned,
     query::stage::reduce::Reducer as TypeQLReducer,
     token::{ReduceOperatorCollect as TypeQLReduceOperatorCollect, ReduceOperatorStat as TypeQLReduceOperatorStat},
@@ -13,10 +15,7 @@ use typeql::{
 use crate::{
     RepresentationError,
     pattern::variable_category::VariableCategory,
-    pipeline::{
-        VariableRegistry,
-        reduce::{AssignedReduction, Reduce, Reducer},
-    },
+    pipeline::reduce::{AssignedReduction, Reduce, Reducer},
     translation::{PipelineTranslationContext, verify_variable_available},
 };
 
@@ -36,10 +35,22 @@ pub fn translate_reduce(
     for reduce_assign in &typeql_reduce.reduce_assignments {
         let reducer = build_reducer(context, &reduce_assign.reducer)?;
         let (category, is_optional) = resolve_category_optionality(&reducer);
-        let var_name =
-            reduce_assign.variable.name().ok_or(Box::new(RepresentationError::NonAnonymousVariableExpected {
-                source_span: reduce_assign.variable.span(),
-            }))?;
+        let var_name = reduce_assign.variable.name().ok_or_else(|| {
+            Box::new(RepresentationError::NonAnonymousVariableExpected { source_span: reduce_assign.variable.span() })
+        })?;
+        let optionality_matches = match &reduce_assign.variable {
+            Variable::Anonymous { optional, .. } | Variable::Named { optional, .. } => {
+                optional.is_some() == is_optional
+            }
+        };
+        if !optionality_matches {
+            let source_span = reduce_assign.variable.span();
+            let variable = var_name.to_owned();
+            tracing::warn!(
+                "Reduce result is optional, but assigned a variable not marked with a '?'. This will fail in the next version:\n{}",
+                RepresentationError::UnmarkedOptionalAssignment { variable, source_span }.format_description()
+            );
+        }
         let assigned_var = context.register_reduced_variable(
             var_name,
             category,
