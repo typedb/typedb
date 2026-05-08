@@ -216,8 +216,14 @@ typedb_error! {
             variable: String,
             source_span: Option<Span>,
         ),
-        OptionalFunctionReturnReferenced(
+        WronglyMarkedOptionalAssignment(
             33,
+            "The variable '{variable}' was marked with a '?' but the assigned value is not optional",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        OptionalFunctionReturnReferenced(
+            34,
             "The variable '{variable}' is optionally assigned by a function return, and may not be referenced elsewhere in the same stage.",
             variable: String,
             source_span: Option<Span>,
