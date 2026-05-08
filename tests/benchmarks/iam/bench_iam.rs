@@ -12,7 +12,7 @@ use database::{
     transaction::{CommitIntent, TransactionRead, TransactionSchema, TransactionWrite},
 };
 use executor::{ExecutionInterrupt, batch::Batch, pipeline::stage::StageIterator};
-use options::{ByteSize, TransactionOptions};
+use options::{TransactionOptions, byte_size::ByteSize};
 use storage::durability_client::WALClient;
 use test_utils::create_tmp_storage_dir;
 

@@ -19,7 +19,7 @@ use database::{
     transaction::{CommitIntent, TransactionSchema, TransactionWrite},
 };
 use executor::ExecutionInterrupt;
-use options::{ByteSize, QueryOptions, TransactionOptions};
+use options::{QueryOptions, TransactionOptions, byte_size::ByteSize};
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_storage_dir, init_logging};
 

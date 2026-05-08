@@ -116,6 +116,10 @@ features = {}
 	name = "test_pipeline_stages_limit"
 
 [[test]]
+	path = "tests/query_profile.rs"
+	name = "test_query_profile"
+
+[[test]]
 	path = "tests/unimplemented.rs"
 	name = "test_unimplemented"
 
