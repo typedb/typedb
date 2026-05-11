@@ -119,7 +119,7 @@ native_artifact_files.artifact(
     name = "typedb_console_artifact",
     group_name = "typedb-console-{platform}",
     artifact_name = "typedb-console-{platform}-{version}.{ext}",
-    tag = "3.10.0-alpha-1",
+    commit = "e8e5a70125f86250268e30cd22d25312ca89e46b",
 )
 use_repo(
     native_artifact_files,
