@@ -12,7 +12,11 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{Bytes, byte_array::ByteArray, util::increment};
+use bytes::{
+    Bytes,
+    byte_array::ByteArray,
+    util::{concat_bytes, increment},
+};
 use encoding::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
     graph::{
@@ -62,7 +66,7 @@ use resource::{
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    snapshot::{ReadableSnapshot, WritableSnapshot, lock::create_custom_lock_key, write::Write},
+    snapshot::{ReadableSnapshot, WritableSnapshot, write::Write},
 };
 
 use crate::{
@@ -1809,17 +1813,13 @@ impl ThingManager {
         self.cleanup_relations(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
         self.cleanup_attributes(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
 
-        match self.create_commit_locks(snapshot, storage_counters) {
+        match self.create_commit_locks(snapshot) {
             Ok(_) => Ok(()),
             Err(error) => Err(vec![ConceptWriteError::ConceptRead { typedb_source: error }]),
         }
     }
 
-    fn create_commit_locks(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        storage_counters: StorageCounters,
-    ) -> Result<(), Box<ConceptReadError>> {
+    fn create_commit_locks(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Box<ConceptReadError>> {
         // TODO: Should not collect here (iterate_writes() already copies)
         for (key, _write) in snapshot.iterate_writes().collect_vec() {
             if ThingEdgeHas::is_has(&key) {
@@ -1828,7 +1828,7 @@ impl ThingManager {
                 let attribute = Attribute::new(has.to());
                 let attribute_type = attribute.type_();
 
-                self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute, storage_counters.clone())?;
+                self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute)?;
                 self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, attribute_type)?;
             } else if ThingEdgeLinks::is_links(&key) {
                 let role_player = ThingEdgeLinks::decode(Bytes::Reference(key.bytes()));
@@ -1849,7 +1849,6 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         owner: &Object,
         attribute: Attribute,
-        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let unique_constraint_opt = owner.type_().get_owned_attribute_type_constraint_unique(
             snapshot,
@@ -1858,21 +1857,13 @@ impl ThingManager {
         )?;
         if let Some(unique_constraint) = unique_constraint_opt {
             let attribute_key = attribute.vertex();
-            let attribute_value = snapshot
-                .get_last_existing::<BUFFER_VALUE_INLINE>(
-                    attribute_key.into_storage_key().as_reference(),
-                    storage_counters,
-                )
-                .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
-                .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
-
-            let lock_key = create_custom_lock_key(
+            // Note: trade much smaller locks (eg. hashed large values) for rare concurrent lock conflicts when
+            //       two different values has to the same hash
+            let lock_key = concat_bytes(
                 [
                     &Infix::PropertyAnnotationUnique.infix_id().bytes(),
                     &*unique_constraint.source().attribute().vertex().to_bytes(),
-                    attribute_key.attribute_id().bytes(),
-                    &attribute_value,
-                    &*owner.vertex().to_bytes(),
+                    attribute_key.attribute_id().deterministic_bytes(),
                     &*unique_constraint.source().owner().vertex().to_bytes(),
                 ]
                 .into_iter(),
@@ -1899,7 +1890,7 @@ impl ThingManager {
         }
 
         for constraint in cardinality_constraints {
-            let lock_key = create_custom_lock_key(
+            let lock_key = concat_bytes(
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
                     &*owner.vertex().to_bytes(),
@@ -1927,7 +1918,7 @@ impl ThingManager {
         }
 
         for constraint in cardinality_constraints {
-            let lock_key = create_custom_lock_key(
+            let lock_key = concat_bytes(
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
                     &*player.vertex().to_bytes(),
@@ -1955,7 +1946,7 @@ impl ThingManager {
         }
 
         for constraint in cardinality_constraints {
-            let lock_key = create_custom_lock_key(
+            let lock_key = concat_bytes(
                 [
                     &Infix::PropertyAnnotationCardinality.infix_id().bytes(),
                     &*relation.vertex().to_bytes(),

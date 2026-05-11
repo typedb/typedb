@@ -182,6 +182,7 @@ pub enum ValueTypeCategory {
 
 impl ValueTypeCategory {
     pub const fn to_bytes(&self) -> [u8; ValueTypeBytes::CATEGORY_LENGTH] {
+        // WARNING: Order here must align with AttributeID enum ordering!!
         match self {
             Self::Boolean => [0],
             Self::Integer => [1],
