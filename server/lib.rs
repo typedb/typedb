@@ -491,7 +491,9 @@ impl Server {
         if encryption_config.enabled {
             if let Some(cert_path) = encryption_config.ca_certificate.as_ref() {
                 let cert_path = cert_path.as_path().display();
-                format!("typedb console --address https://{grpc_advertise_address} --username admin --tls-root-ca={cert_path}")
+                format!(
+                    "typedb console --address https://{grpc_advertise_address} --username admin --tls-root-ca={cert_path}"
+                )
             } else {
                 format!("typedb console --address https://{grpc_advertise_address} --username admin")
             }
