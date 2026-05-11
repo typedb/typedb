@@ -226,7 +226,8 @@ impl ServerState {
 
     fn default_advertise_address(listen: SocketAddr) -> String {
         if listen.ip().is_unspecified() {
-            let loopback = if listen.is_ipv4() { IpAddr::V4(Ipv4Addr::LOCALHOST) } else { IpAddr::V6(Ipv6Addr::LOCALHOST) };
+            let loopback =
+                if listen.is_ipv4() { IpAddr::V4(Ipv4Addr::LOCALHOST) } else { IpAddr::V6(Ipv6Addr::LOCALHOST) };
             SocketAddr::new(loopback, listen.port()).to_string()
         } else {
             listen.to_string()
@@ -237,10 +238,8 @@ impl ServerState {
         config: &crate::parameters::config::ServerConfig,
     ) -> Result<(SocketAddr, Option<SocketAddr>, LocalServerStatus), ServerOpenError> {
         let grpc_listen_address = Self::resolve_address(&config.listen_address).await?;
-        let grpc_advertise_address = config
-            .advertise_address
-            .clone()
-            .unwrap_or_else(|| Self::default_advertise_address(grpc_listen_address));
+        let grpc_advertise_address =
+            config.advertise_address.clone().unwrap_or_else(|| Self::default_advertise_address(grpc_listen_address));
 
         let http_listen_address =
             if config.http.enabled { Some(Self::resolve_address(&config.http.listen_address).await?) } else { None };
