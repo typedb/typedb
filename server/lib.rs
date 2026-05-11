@@ -484,30 +484,19 @@ impl Server {
 
     fn studio_connect_link(http_advertise_address: &str, encryption_config: &EncryptionConfig) -> String {
         let scheme = if encryption_config.enabled { "https" } else { "http" };
-        let address = format!("{scheme}://{}", Self::reachable_address(http_advertise_address));
-        format!("https://studio.typedb.com/connect?address={address}&username=admin")
-    }
-
-    fn reachable_address(advertise_address: &str) -> String {
-        if let Ok(socket_addr) = advertise_address.parse::<SocketAddr>() {
-            if socket_addr.ip().is_unspecified() {
-                return format!("localhost:{}", socket_addr.port());
-            }
-        }
-        advertise_address.to_string()
+        format!("https://studio.typedb.com/connect?address={scheme}://{http_advertise_address}&username=admin")
     }
 
     fn console_connect_command(grpc_advertise_address: &str, encryption_config: &EncryptionConfig) -> String {
-        let address = Self::reachable_address(grpc_advertise_address);
         if encryption_config.enabled {
             if let Some(cert_path) = encryption_config.ca_certificate.as_ref() {
                 let cert_path = cert_path.as_path().display();
-                format!("typedb console --address https://{address} --username admin --tls-root-ca={cert_path}")
+                format!("typedb console --address https://{grpc_advertise_address} --username admin --tls-root-ca={cert_path}")
             } else {
-                format!("typedb console --address https://{address} --username admin")
+                format!("typedb console --address https://{grpc_advertise_address} --username admin")
             }
         } else {
-            format!("typedb console --address {address} --tls-disabled --username admin")
+            format!("typedb console --address {grpc_advertise_address} --tls-disabled --username admin")
         }
     }
 
