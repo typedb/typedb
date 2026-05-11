@@ -8,22 +8,24 @@
 
 use std::sync::Arc;
 
-use bytes::{Bytes, byte_array::ByteArray};
+use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use encoding::{
-    EncodingKeyspace,
     graph::{
-        Typed,
         thing::{
             vertex_attribute::{AttributeID, StringAttributeID, StructAttributeID},
             vertex_generator::ThingVertexGenerator,
         },
         type_::{vertex::TypeID, vertex_generator::TypeVertexGenerator},
+        Typed,
     },
     value::{string_bytes::StringBytes, struct_bytes::StructBytes, value::Value},
+    EncodingKeyspace,
 };
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::CommitProfile};
-use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
+use storage::isolation_manager::IsolationConflict;
+use storage::snapshot::SnapshotError;
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage, StorageCommitError};
 use test_utils::{create_tmp_storage_dir, init_logging};
 use test_utils_encoding::create_core_storage;
 
@@ -334,6 +336,7 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
         assert_eq!(id_a.deterministic_bytes_ref(), id_b.deterministic_bytes_ref());
     }
 
+
     // Hashed string, default hasher, no prior collisions: each snapshot independently arrives at
     // disambiguator=0 and prefix+hash bytes are deterministic from the input alone. Full IDs are
     // also equal here, but the property the lock relies on is the deterministic-bytes equality.
@@ -385,6 +388,19 @@ fn same_string_in_two_concurrent_snapshots_produces_equal_deterministic_bytes() 
             id_b.deterministic_bytes_ref(),
             "hash-collided strings encoded in independent snapshots must agree on deterministic_bytes"
         );
+
+        snapshot_a.commit(&mut CommitProfile::DISABLED).expect("First commit should succeed");
+        match snapshot_b.commit(&mut CommitProfile::DISABLED) {
+            Ok(_) => panic!("Expected hash collision to cause isolation error"),
+            Err(err) => {
+                assert!(
+                    matches!(
+                        err,
+                        SnapshotError::Commit { typedb_source: StorageCommitError::Isolation { conflict: IsolationConflict::ExclusiveLock, .. } }
+                    )
+                );
+            }
+        }
     }
 }
 
