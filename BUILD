@@ -289,6 +289,7 @@ pkg_tar(
     name = "docker-layer-x86_64",
     deps = [":assemble-server-linux-x86_64-targz"],
     package_dir = "/opt",
+    extension = "tar.gz",
 )
 
 oci_image(
@@ -312,6 +313,7 @@ pkg_tar(
     name = "docker-layer-arm64",
     deps = [":assemble-server-linux-arm64-targz"],
     package_dir = "/opt",
+    extension = "tar.gz",
 )
 
 oci_image(
