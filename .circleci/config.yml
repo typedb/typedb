@@ -422,17 +422,17 @@ workflows:
       - deploy-docker-snapshot-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, docker-calf ]
 
       - deploy-docker-snapshot-arm64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, docker-calf ]
 
       - deploy-docker-snapshot-multiarch:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, docker-calf ]
           requires:
             - deploy-docker-snapshot-x86_64
             - deploy-docker-snapshot-arm64
