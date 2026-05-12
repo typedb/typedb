@@ -525,7 +525,7 @@ pub struct AnnotationDoc {
     // ##########################################################################
     // ###### WARNING: any changes here may break backwards compatibility! ######
     // ##########################################################################
-    doc: String,
+    pub doc: String,
 }
 
 impl AnnotationDoc {
@@ -553,8 +553,8 @@ pub struct AnnotationMeta {
     // ##########################################################################
     // ###### WARNING: any changes here may break backwards compatibility! ######
     // ##########################################################################
-    key: String,
-    value: String,
+    pub key: String,
+    pub value: String,
 }
 
 impl AnnotationMeta {

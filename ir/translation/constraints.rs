@@ -29,7 +29,7 @@ use crate::{
     },
     pipeline::function_signature::FunctionSignatureIndex,
     translation::{
-        expression::{add_typeql_expression, add_user_defined_function_call, build_expression},
+        expression::{add_function_call, add_typeql_expression, build_expression},
         literal::translate_literal,
         parse_iid,
         tokens::{checked_identifier, translate_value_type},
@@ -67,14 +67,7 @@ pub(super) fn add_statement(
         typeql::Statement::Assignment(Assignment { lhs, rhs, span }) => {
             let assigned = assignment_pattern_to_variables(constraints, lhs)?;
             if let typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(id), args, span }) = rhs {
-                add_user_defined_function_call(
-                    function_index,
-                    constraints,
-                    id.as_str_unchecked(),
-                    assigned,
-                    args,
-                    *span,
-                )?;
+                add_function_call(function_index, constraints, id.as_str_unchecked(), assigned, args, *span)?;
             } else {
                 let [assigned] = *assigned else {
                     return Err(Box::new(RepresentationError::ExpressionAssignmentMustOneVariable {
@@ -254,7 +247,7 @@ fn register_typeql_role_type(
     }
 }
 
-fn register_type_scoped_label(
+pub(crate) fn register_type_scoped_label(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     scoped_label: &ScopedLabel,
 ) -> Result<Label, Box<RepresentationError>> {
@@ -263,7 +256,7 @@ fn register_type_scoped_label(
     Ok(Label::build_scoped(checked_name, checked_scope, scoped_label.span()))
 }
 
-fn register_type_label(
+pub(crate) fn register_type_label(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     label: &typeql::Label,
 ) -> Result<Label, Box<RepresentationError>> {
@@ -541,14 +534,7 @@ fn add_typeql_iterable_binding(
 ) -> Result<(), Box<RepresentationError>> {
     match rhs {
         typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(identifier), args, span }) => {
-            add_user_defined_function_call(
-                function_index,
-                constraints,
-                checked_identifier(identifier)?,
-                assigned,
-                args,
-                *span,
-            )
+            add_function_call(function_index, constraints, checked_identifier(identifier)?, assigned, args, *span)
         }
         typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
             Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
@@ -634,10 +620,21 @@ pub(super) fn split_out_inline_expressions(
 ) -> Result<Vec<Variable>, Box<RepresentationError>> {
     expressions
         .iter()
-        .map(|expr| {
-            if let typeql::Expression::Variable(typeql_variable) = expr {
-                Ok(register_typeql_var(constraints, typeql_variable)?)
-            } else {
+        .map(|expr| match expr {
+            typeql::Expression::Variable(typeql_variable) => Ok(register_typeql_var(constraints, typeql_variable)?),
+            typeql::Expression::Label(label) => {
+                let type_variable = constraints.create_anonymous_variable(label.span())?;
+                let as_label = register_type_label(constraints, label)?;
+                constraints.add_label(type_variable, as_label)?;
+                Ok(type_variable)
+            }
+            typeql::Expression::ScopedLabel(scoped_label) => {
+                let type_variable = constraints.create_anonymous_variable(scoped_label.span())?;
+                let as_label = register_type_scoped_label(constraints, scoped_label)?;
+                constraints.add_label(type_variable, as_label)?;
+                Ok(type_variable)
+            }
+            expr => {
                 let variable = constraints.create_anonymous_variable(expr.span())?;
                 let expression = build_expression(function_index, constraints, expr)?;
                 constraints.add_assignment(variable, expression, expr.span())?;

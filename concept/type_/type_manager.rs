@@ -243,7 +243,7 @@ macro_rules! get_annotation_declared_by_category_methods {
     )*) => {
         $(
             $(#[$meta])*
-            pub(crate) fn $method_name(
+            pub fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_, annotation_category: &AnnotationCategory,
             ) -> Result<Option<$annotation_type>, Box<ConceptReadError>> {
                 Ok(type_.get_annotations_declared(snapshot, self)?.into_iter().find(|&type_annotation| {
@@ -940,7 +940,6 @@ impl TypeManager {
         fn get_entity_type_annotation_declared_by_category(EntityType) -> EntityTypeAnnotation;
         fn get_relation_type_annotation_declared_by_category(RelationType) -> RelationTypeAnnotation;
         fn get_attribute_type_annotation_declared_by_category(AttributeType) -> AttributeTypeAnnotation;
-        #[expect(unreachable_code, reason = "RoleTypeAnnotation is uninhabited")]
         fn get_role_type_annotation_declared_by_category(RoleType) -> RoleTypeAnnotation;
         fn get_owns_annotation_declared_by_category(Owns) -> OwnsAnnotation;
         fn get_plays_annotation_declared_by_category(Plays) -> PlaysAnnotation;

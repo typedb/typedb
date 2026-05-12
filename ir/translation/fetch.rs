@@ -41,7 +41,7 @@ use crate::{
     },
     translation::{
         PipelineTranslationContext,
-        expression::{add_user_defined_function_call, build_expression},
+        expression::{add_function_call, build_expression},
         fetch::FetchRepresentationError::{
             AnonymousVariableEncountered, InvalidAttributeLabelEncountered, NamedVariableEncountered,
             VariableNotAvailable,
@@ -407,7 +407,7 @@ fn translate_inline_user_function_call<'a>(
         );
     }
 
-    add_user_defined_function_call(
+    add_function_call(
         function_index,
         &mut conjunction.constraints_mut(),
         function_name,

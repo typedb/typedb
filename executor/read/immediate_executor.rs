@@ -6,7 +6,7 @@
 
 use std::{borrow::Cow, cmp::Ordering, collections::HashMap, fmt, sync::Arc};
 
-use answer::variable_value::VariableValue;
+use answer::{Type, variable_value::VariableValue};
 use compiler::{
     ExecutorVariable, VariablePosition,
     annotation::expression::compiled_expression::ExecutableExpression,
@@ -15,7 +15,14 @@ use compiler::{
         planner::conjunction_executable::{AssignmentStep, CheckStep, IntersectionStep, UnsortedJoinStep},
     },
 };
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use concept::{
+    error::ConceptReadError,
+    thing::thing_manager::ThingManager,
+    type_::{
+        OwnerAPI, PlayerAPI,
+        annotation::{Annotation, AnnotationCategory},
+    },
+};
 use encoding::value::value::Value;
 use error::{UnimplementedFeature, unimplemented_feature};
 use ir::pattern::expression::BuiltinConceptFunctionID;
@@ -1035,6 +1042,113 @@ impl BuiltinCallExecutor {
                 let label = ty.get_label(&**context.snapshot(), context.type_manager())?;
                 VariableValue::Value(Value::String(Cow::Owned(label.to_string())))
             }
+
+            BuiltinConceptFunctionID::GetDoc => get_type_doc(context, &row, self.argument_positions[0].as_usize())?,
+
+            BuiltinConceptFunctionID::GetOwnsDoc => {
+                let snapshot = &**context.snapshot();
+                let owner = row[self.argument_positions[0].as_usize()].as_type();
+                let Type::Attribute(owned) = row[self.argument_positions[1].as_usize()].as_type() else {
+                    todo!("Error")
+                };
+                let owns = match owner {
+                    Type::Entity(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned)?,
+                    Type::Relation(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned)?,
+                    Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
+                };
+                unwrap_doc(context.type_manager().get_owns_annotation_declared_by_category(
+                    snapshot,
+                    owns,
+                    &AnnotationCategory::Doc,
+                )?)?
+            }
+
+            BuiltinConceptFunctionID::GetPlaysDoc => {
+                let snapshot = &**context.snapshot();
+                let player = row[self.argument_positions[0].as_usize()].as_type();
+                let Type::RoleType(role) = row[self.argument_positions[1].as_usize()].as_type() else { todo!("Error") };
+                let plays = match player {
+                    Type::Entity(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
+                    Type::Relation(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
+                    Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
+                };
+                unwrap_doc(context.type_manager().get_plays_annotation_declared_by_category(
+                    snapshot,
+                    plays,
+                    &AnnotationCategory::Doc,
+                )?)?
+            }
+
+            BuiltinConceptFunctionID::GetRelatesDoc => {
+                let snapshot = &**context.snapshot();
+                let Type::Relation(relation) = row[self.argument_positions[0].as_usize()].as_type() else {
+                    todo!("Error")
+                };
+                let Type::RoleType(role) = row[self.argument_positions[1].as_usize()].as_type() else { todo!("Error") };
+                let relates = relation.try_get_relates_role(snapshot, context.type_manager(), role)?;
+                unwrap_doc(context.type_manager().get_relates_annotation_declared_by_category(
+                    snapshot,
+                    relates,
+                    &AnnotationCategory::Doc,
+                )?)?
+            }
+
+            BuiltinConceptFunctionID::GetMeta => get_type_meta(
+                context,
+                &row,
+                self.argument_positions[0].as_usize(),
+                self.argument_positions[1].as_usize(),
+            )?,
+
+            BuiltinConceptFunctionID::GetOwnsMeta => {
+                let snapshot = &**context.snapshot();
+                let key = row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
+                let cat = &AnnotationCategory::Meta(key);
+                let owner = row[self.argument_positions[1].as_usize()].as_type();
+                let Type::Attribute(owned) = row[self.argument_positions[2].as_usize()].as_type() else {
+                    todo!("Error")
+                };
+                let owns = match owner {
+                    Type::Entity(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned)?,
+                    Type::Relation(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned)?,
+                    Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
+                };
+                unwrap_meta_value(
+                    context.type_manager().get_owns_annotation_declared_by_category(snapshot, owns, cat)?,
+                )?
+            }
+
+            BuiltinConceptFunctionID::GetPlaysMeta => {
+                let snapshot = &**context.snapshot();
+                let key = row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
+                let cat = &AnnotationCategory::Meta(key);
+                let player = row[self.argument_positions[1].as_usize()].as_type();
+                let Type::RoleType(role) = row[self.argument_positions[2].as_usize()].as_type() else { todo!("Error") };
+                let plays = match player {
+                    Type::Entity(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
+                    Type::Relation(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
+                    Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
+                };
+                unwrap_meta_value(
+                    context.type_manager().get_plays_annotation_declared_by_category(snapshot, plays, cat)?,
+                )?
+            }
+
+            BuiltinConceptFunctionID::GetRelatesMeta => {
+                let snapshot = &**context.snapshot();
+                let key = row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
+                let cat = &AnnotationCategory::Meta(key);
+                let Type::Relation(relation) = row[self.argument_positions[1].as_usize()].as_type() else {
+                    todo!("Error")
+                };
+                let Type::RoleType(role) = row[self.argument_positions[2].as_usize()].as_type() else { todo!("Error") };
+                let relates = relation.try_get_relates_role(snapshot, context.type_manager(), role)?;
+                unwrap_meta_value(
+                    context.type_manager().get_relates_annotation_declared_by_category(snapshot, relates, cat)?,
+                )?
+            }
+
+            id => todo!("{id}"),
         };
 
         Ok(MaybeOwnedRow::new_owned(row, multiplicity, provenance))
@@ -1042,5 +1156,82 @@ impl BuiltinCallExecutor {
 
     pub(crate) fn reset(&mut self) {
         self.input = None;
+    }
+}
+
+fn get_type_doc(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    row: &[VariableValue<'_>],
+    arg0: usize,
+) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+    let snapshot = &**context.snapshot();
+    match row[arg0].as_type() {
+        Type::Entity(ty) => unwrap_doc(context.type_manager().get_entity_type_annotation_declared_by_category(
+            snapshot,
+            ty,
+            &AnnotationCategory::Doc,
+        )?),
+        Type::Relation(ty) => unwrap_doc(context.type_manager().get_relation_type_annotation_declared_by_category(
+            snapshot,
+            ty,
+            &AnnotationCategory::Doc,
+        )?),
+        Type::Attribute(ty) => unwrap_doc(context.type_manager().get_attribute_type_annotation_declared_by_category(
+            snapshot,
+            ty,
+            &AnnotationCategory::Doc,
+        )?),
+        Type::RoleType(ty) => {
+            let relates = ty.get_relates_explicit(snapshot, context.type_manager())?;
+            unwrap_doc(context.type_manager().get_relates_annotation_declared_by_category(
+                snapshot,
+                relates,
+                &AnnotationCategory::Doc,
+            )?)
+        }
+    }
+}
+
+fn unwrap_doc(doc: Option<impl Into<Annotation>>) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+    match doc.map(Into::into) {
+        Some(Annotation::Doc(doc)) => Ok(VariableValue::Value(Value::String(Cow::Owned(doc.doc)))),
+        None => Ok(VariableValue::None),
+        Some(_) => todo!("Error"),
+    }
+}
+
+fn get_type_meta(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    row: &[VariableValue<'_>],
+    arg0: usize,
+    arg1: usize,
+) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+    let snapshot = &**context.snapshot();
+    let key = row[arg0].as_value().unwrap_string_ref().to_owned();
+    let cat = &AnnotationCategory::Meta(key);
+    match row[arg1].as_type() {
+        Type::Entity(ty) => unwrap_meta_value(
+            context.type_manager().get_entity_type_annotation_declared_by_category(snapshot, ty, cat)?,
+        ),
+        Type::Relation(ty) => unwrap_meta_value(
+            context.type_manager().get_relation_type_annotation_declared_by_category(snapshot, ty, cat)?,
+        ),
+        Type::Attribute(ty) => unwrap_meta_value(
+            context.type_manager().get_attribute_type_annotation_declared_by_category(snapshot, ty, cat)?,
+        ),
+        Type::RoleType(ty) => {
+            let relates = ty.get_relates_explicit(snapshot, context.type_manager())?;
+            unwrap_meta_value(
+                context.type_manager().get_relates_annotation_declared_by_category(snapshot, relates, cat)?,
+            )
+        }
+    }
+}
+
+fn unwrap_meta_value(meta: Option<impl Into<Annotation>>) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+    match meta.map(Into::into) {
+        Some(Annotation::Meta(meta)) => Ok(VariableValue::Value(Value::String(Cow::Owned(meta.value)))),
+        None => Ok(VariableValue::None),
+        Some(_) => todo!("Error"),
     }
 }
