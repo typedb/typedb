@@ -248,17 +248,23 @@ impl VariableRegistry {
             Some((existing_category, existing_source)) => {
                 let narrowest = existing_category.narrowest(category);
                 match narrowest {
-                    None => Err(Box::new(RepresentationError::VariableCategoryMismatch {
-                        variable_name: self
-                            .variable_names
-                            .get(&variable)
-                            .cloned()
-                            .unwrap_or_else(|| "$<INTERNAL>".to_owned()),
-                        category_1: category,
-                        // category_1_source: source,
-                        category_2: *existing_category,
-                        // category_2_source: existing_source.clone(),
-                    })),
+                    None => {
+                        dbg!(category);
+                        dbg!(source);
+                        dbg!(&existing_category);
+                        dbg!(existing_source);
+                        Err(Box::new(RepresentationError::VariableCategoryMismatch {
+                            variable_name: self
+                                .variable_names
+                                .get(&variable)
+                                .cloned()
+                                .unwrap_or_else(|| variable.to_string()),
+                            category_1: category,
+                            // category_1_source: source,
+                            category_2: *existing_category,
+                            // category_2_source: existing_source.clone(),
+                        }))
+                    },
                     Some(narrowed) => {
                         if narrowed == *existing_category {
                             Ok(())
