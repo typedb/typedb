@@ -94,6 +94,10 @@ features = {}
 	name = "test_database"
 
 [[test]]
+	path = "tests/test_transaction_isolation.rs"
+	name = "test_transaction_isolation"
+
+[[test]]
 	path = "tests/transaction.rs"
 	name = "test_transaction"
 
