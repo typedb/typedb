@@ -80,6 +80,7 @@ impl ImmediateExecutor {
         Ok(Self::SortedJoin(executor))
     }
 
+    #[expect(unused, reason = "unsorted joins aren't implemented")]
     pub(crate) fn new_unsorted_join(
         step: &UnsortedJoinStep,
         step_profile: Arc<StepProfile>,
@@ -762,6 +763,7 @@ impl CartesianIterator {
     }
 }
 
+#[expect(unused, reason = "unsorted joins aren't implemented")]
 #[derive(Debug)]
 pub(crate) struct UnsortedJoinExecutor {
     iterate: ConstraintInstruction<ExecutorVariable>,
@@ -1046,32 +1048,21 @@ impl BuiltinCallExecutor {
             BuiltinConceptFunctionID::GetDoc => get_type_doc(context, &row, self.argument_positions[0].as_usize())?,
 
             BuiltinConceptFunctionID::GetOwnsDoc => {
-                let snapshot = &**context.snapshot();
-                let owner = row[self.argument_positions[0].as_usize()].as_type();
-                let Type::Attribute(owned) = row[self.argument_positions[1].as_usize()].as_type() else {
-                    todo!("Error")
-                };
-                let owns = match owner {
-                    Type::Entity(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned)?,
-                    Type::Relation(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned)?,
-                    Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
-                };
+                let owner = &row[self.argument_positions[0].as_usize()];
+                let attribute = &row[self.argument_positions[1].as_usize()];
+                let owns = get_owns(context, owner, attribute)?;
                 unwrap_doc(context.type_manager().get_owns_annotation_declared_by_category(
-                    snapshot,
+                    &**context.snapshot(),
                     owns,
                     &AnnotationCategory::Doc,
                 )?)?
             }
 
             BuiltinConceptFunctionID::GetPlaysDoc => {
+                let player = &row[self.argument_positions[0].as_usize()];
+                let role = &row[self.argument_positions[1].as_usize()];
+                let plays = get_plays(context, player, role)?;
                 let snapshot = &**context.snapshot();
-                let player = row[self.argument_positions[0].as_usize()].as_type();
-                let Type::RoleType(role) = row[self.argument_positions[1].as_usize()].as_type() else { todo!("Error") };
-                let plays = match player {
-                    Type::Entity(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
-                    Type::Relation(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
-                    Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
-                };
                 unwrap_doc(context.type_manager().get_plays_annotation_declared_by_category(
                     snapshot,
                     plays,
@@ -1081,11 +1072,9 @@ impl BuiltinCallExecutor {
 
             BuiltinConceptFunctionID::GetRelatesDoc => {
                 let snapshot = &**context.snapshot();
-                let Type::Relation(relation) = row[self.argument_positions[0].as_usize()].as_type() else {
-                    todo!("Error")
-                };
-                let Type::RoleType(role) = row[self.argument_positions[1].as_usize()].as_type() else { todo!("Error") };
-                let relates = relation.try_get_relates_role(snapshot, context.type_manager(), role)?;
+                let relation = &row[self.argument_positions[0].as_usize()];
+                let role = &row[self.argument_positions[1].as_usize()];
+                let relates = get_relates(context, relation, role)?;
                 unwrap_doc(context.type_manager().get_relates_annotation_declared_by_category(
                     snapshot,
                     relates,
@@ -1101,54 +1090,66 @@ impl BuiltinCallExecutor {
             )?,
 
             BuiltinConceptFunctionID::GetOwnsMeta => {
-                let snapshot = &**context.snapshot();
                 let key = row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
                 let cat = &AnnotationCategory::Meta(key);
-                let owner = row[self.argument_positions[1].as_usize()].as_type();
-                let Type::Attribute(owned) = row[self.argument_positions[2].as_usize()].as_type() else {
-                    todo!("Error")
-                };
-                let owns = match owner {
-                    Type::Entity(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned)?,
-                    Type::Relation(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned)?,
-                    Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
-                };
-                unwrap_meta_value(
-                    context.type_manager().get_owns_annotation_declared_by_category(snapshot, owns, cat)?,
-                )?
+                let owner = &row[self.argument_positions[1].as_usize()];
+                let attribute = &row[self.argument_positions[2].as_usize()];
+                let owns = get_owns(context, owner, attribute)?;
+                unwrap_meta_value(context.type_manager().get_owns_annotation_declared_by_category(
+                    &**context.snapshot(),
+                    owns,
+                    cat,
+                )?)?
             }
 
             BuiltinConceptFunctionID::GetPlaysMeta => {
-                let snapshot = &**context.snapshot();
                 let key = row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
                 let cat = &AnnotationCategory::Meta(key);
-                let player = row[self.argument_positions[1].as_usize()].as_type();
-                let Type::RoleType(role) = row[self.argument_positions[2].as_usize()].as_type() else { todo!("Error") };
-                let plays = match player {
-                    Type::Entity(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
-                    Type::Relation(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
-                    Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
-                };
-                unwrap_meta_value(
-                    context.type_manager().get_plays_annotation_declared_by_category(snapshot, plays, cat)?,
-                )?
+                let player = &row[self.argument_positions[1].as_usize()];
+                let role = &row[self.argument_positions[2].as_usize()];
+                let plays = get_plays(context, player, role)?;
+                unwrap_meta_value(context.type_manager().get_plays_annotation_declared_by_category(
+                    &**context.snapshot(),
+                    plays,
+                    cat,
+                )?)?
             }
 
             BuiltinConceptFunctionID::GetRelatesMeta => {
-                let snapshot = &**context.snapshot();
                 let key = row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
                 let cat = &AnnotationCategory::Meta(key);
-                let Type::Relation(relation) = row[self.argument_positions[1].as_usize()].as_type() else {
-                    todo!("Error")
-                };
-                let Type::RoleType(role) = row[self.argument_positions[2].as_usize()].as_type() else { todo!("Error") };
-                let relates = relation.try_get_relates_role(snapshot, context.type_manager(), role)?;
-                unwrap_meta_value(
-                    context.type_manager().get_relates_annotation_declared_by_category(snapshot, relates, cat)?,
-                )?
+                let relation = &row[self.argument_positions[1].as_usize()];
+                let role = &row[self.argument_positions[2].as_usize()];
+                let relates = get_relates(context, relation, role)?;
+                unwrap_meta_value(context.type_manager().get_relates_annotation_declared_by_category(
+                    &**context.snapshot(),
+                    relates,
+                    cat,
+                )?)?
             }
 
-            id => todo!("{id}"),
+            BuiltinConceptFunctionID::GetFunDoc => todo!(),
+            BuiltinConceptFunctionID::GetFunMeta => todo!(),
+            BuiltinConceptFunctionID::GetFunAllMeta => todo!(),
+
+            | BuiltinConceptFunctionID::GetStructDoc
+            | BuiltinConceptFunctionID::GetStructMeta
+            | BuiltinConceptFunctionID::GetStructAllMeta
+            | BuiltinConceptFunctionID::GetStructFieldDoc
+            | BuiltinConceptFunctionID::GetStructFieldMeta
+            | BuiltinConceptFunctionID::GetStructFieldAllMeta => {
+                return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+                    functionality: UnimplementedFeature::Structs,
+                }));
+            }
+
+            id @ (BuiltinConceptFunctionID::GetAllMeta
+            | BuiltinConceptFunctionID::GetSubDoc
+            | BuiltinConceptFunctionID::GetSubMeta
+            | BuiltinConceptFunctionID::GetSubAllMeta
+            | BuiltinConceptFunctionID::GetOwnsAllMeta
+            | BuiltinConceptFunctionID::GetPlaysAllMeta
+            | BuiltinConceptFunctionID::GetRelatesAllMeta) => todo!("{id}"),
         };
 
         Ok(MaybeOwnedRow::new_owned(row, multiplicity, provenance))
@@ -1157,6 +1158,48 @@ impl BuiltinCallExecutor {
     pub(crate) fn reset(&mut self) {
         self.input = None;
     }
+}
+
+fn get_owns(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    owner: &VariableValue<'_>,
+    attribute: &VariableValue<'_>,
+) -> Result<concept::type_::owns::Owns, Box<ConceptReadError>> {
+    let snapshot = &**context.snapshot();
+    let owner = owner.as_type();
+    let Type::Attribute(owned) = attribute.as_type() else { todo!("Error") };
+    match owner {
+        Type::Entity(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned),
+        Type::Relation(ty) => ty.try_get_owns_attribute(snapshot, context.type_manager(), owned),
+        Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
+    }
+}
+
+fn get_plays(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    player: &VariableValue<'_>,
+    role: &VariableValue<'_>,
+) -> Result<concept::type_::plays::Plays, Box<ConceptReadError>> {
+    let snapshot = &**context.snapshot();
+    let player = player.as_type();
+    let Type::RoleType(role) = role.as_type() else { todo!("Error") };
+    let plays = match player {
+        Type::Entity(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
+        Type::Relation(ty) => ty.try_get_plays_role(snapshot, context.type_manager(), role)?,
+        Type::Attribute(_) | Type::RoleType(_) => todo!("Error"),
+    };
+    Ok(plays)
+}
+
+fn get_relates(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    relation: &VariableValue<'_>,
+    role: &VariableValue<'_>,
+) -> Result<concept::type_::relates::Relates, Box<ConceptReadError>> {
+    let Type::Relation(relation) = relation.as_type() else { todo!("Error") };
+    let Type::RoleType(role) = role.as_type() else { todo!("Error") };
+    let relates = relation.try_get_relates_role(&**context.snapshot(), context.type_manager(), role)?;
+    Ok(relates)
 }
 
 fn get_type_doc(
