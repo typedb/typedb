@@ -477,7 +477,10 @@ impl TypeCache {
         &RelationType::get_cache(self, sub.subtype()).common_type_cache.sub_annotations_declared
     }
 
-    pub(crate) fn get_sub_attribute_type_annotations_declared(&self, sub: Sub<AttributeType>) -> &HashSet<SubAnnotation> {
+    pub(crate) fn get_sub_attribute_type_annotations_declared(
+        &self,
+        sub: Sub<AttributeType>,
+    ) -> &HashSet<SubAnnotation> {
         &AttributeType::get_cache(self, sub.subtype()).common_type_cache.sub_annotations_declared
     }
 
