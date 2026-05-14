@@ -16,10 +16,16 @@ use std::{
 
 use bytes::{Bytes, byte_array::ByteArray};
 use encoding::{
-    graph::type_::{
-        edge::TypeEdgeEncoding,
-        property::{TypeEdgeProperty, TypeEdgePropertyEncoding, TypeVertexProperty, TypeVertexPropertyEncoding},
-        vertex::TypeVertexEncoding,
+    graph::{
+        definition::definition_key::DefinitionKey,
+        type_::{
+            edge::TypeEdgeEncoding,
+            property::{
+                FunctionProperty, FunctionPropertyEncoding, TypeEdgeProperty, TypeEdgePropertyEncoding,
+                TypeVertexProperty, TypeVertexPropertyEncoding,
+            },
+            vertex::TypeVertexEncoding,
+        },
     },
     layout::infix::Infix,
     value::{ValueEncodable, value::Value, value_type::ValueType},
@@ -683,23 +689,6 @@ pub enum AnnotationCategory {
 }
 
 impl AnnotationCategory {
-    fn to_default(&self) -> Annotation {
-        match self {
-            AnnotationCategory::Abstract => Annotation::Abstract(AnnotationAbstract),
-            AnnotationCategory::Distinct => Annotation::Distinct(AnnotationDistinct),
-            AnnotationCategory::Independent => Annotation::Independent(AnnotationIndependent),
-            AnnotationCategory::Unique => Annotation::Unique(AnnotationUnique),
-            AnnotationCategory::Key => Annotation::Key(AnnotationKey),
-            AnnotationCategory::Cardinality => Annotation::Cardinality(AnnotationCardinality::default()),
-            AnnotationCategory::Regex => Annotation::Regex(AnnotationRegex::default()),
-            AnnotationCategory::Cascade => Annotation::Cascade(AnnotationCascade),
-            AnnotationCategory::Range => Annotation::Range(AnnotationRange::default()),
-            AnnotationCategory::Values => Annotation::Values(AnnotationValues::default()),
-            AnnotationCategory::Doc => Annotation::Doc(AnnotationDoc::default()),
-            AnnotationCategory::Meta(key) => Annotation::Meta(AnnotationMeta::default(key.clone())),
-        }
-    }
-
     pub fn declarable_alongside(&self, other: &AnnotationCategory) -> bool {
         match self {
             AnnotationCategory::Unique => !matches!(other, AnnotationCategory::Key),
@@ -1058,6 +1047,40 @@ impl TypeEdgePropertyEncoding for AnnotationMeta {
     fn is_decodable_from(key_bytes: Bytes<'static, BUFFER_KEY_INLINE>) -> bool {
         key_bytes.length() > TypeEdgeProperty::LENGTH_NO_SUFFIX
             && TypeEdgeProperty::decode(key_bytes).infix() == <Self as TypeVertexPropertyEncoding>::INFIX
+    }
+
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        Self::new(decode_to_string(key), decode_to_string(value))
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Array(ByteArray::copy(self.value().as_bytes())))
+    }
+}
+
+impl FunctionPropertyEncoding for AnnotationDoc {
+    const INFIX: Infix = Infix::PropertyAnnotationDoc;
+
+    fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {
+        debug_assert!(key.is_empty());
+        AnnotationDoc::new(std::str::from_utf8(value).unwrap().to_owned())
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::Array(ByteArray::copy(self.doc().as_bytes())))
+    }
+}
+
+impl FunctionPropertyEncoding for AnnotationMeta {
+    const INFIX: Infix = Infix::PropertyAnnotationMeta;
+
+    fn to_key(&self, function_id: DefinitionKey) -> FunctionProperty {
+        <Self as FunctionPropertyEncoding>::build_key(function_id, self.key().as_bytes())
+    }
+
+    fn is_decodable_from(key_bytes: Bytes<'static, BUFFER_KEY_INLINE>) -> bool {
+        key_bytes.length() > FunctionProperty::LENGTH_NO_SUFFIX
+            && FunctionProperty::decode(key_bytes).infix() == <Self as TypeVertexPropertyEncoding>::INFIX
     }
 
     fn from_key_value_bytes(key: &[u8], value: &[u8]) -> Self {

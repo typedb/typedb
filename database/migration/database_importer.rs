@@ -747,7 +747,6 @@ impl DatabaseImporter {
                             PlaysAnnotation::Cardinality(cardinality) => {
                                 schema_info.original_cardinalities_plays.insert(*plays, Some(*cardinality));
                             }
-                            #[expect(unreachable_patterns)]
                             _ => unreachable!("Expected a cardinality annotation"),
                         },
                         None => {

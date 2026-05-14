@@ -405,7 +405,7 @@ fn test_insert_match_insert() {
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &query,
             None::<GivenRowsSimple>,
             query_str,

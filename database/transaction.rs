@@ -308,8 +308,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         drop(self.thing_manager);
 
         let function_manager = Arc::into_inner(self.function_manager).expect("Failed to unwrap Arc<FunctionManager>");
-        if let Err(typedb_source) = function_manager.finalise(&snapshot, &self.type_manager) {
-            return (profile, Err(FunctionError { typedb_source }));
+        if let Err(err) = function_manager.finalise(&snapshot, &self.type_manager) {
+            return (profile, Err(FunctionError { typedb_source: *err }));
         }
         commit_profile.functions_finalised();
 
@@ -502,7 +502,7 @@ impl<D: DurabilityClient> CommitIntent for SchemaCommitIntent<D> {
             );
             let function_cache = match FunctionCache::new(database.storage.clone(), &type_manager, sequence_number) {
                 Ok(function_cache) => function_cache,
-                Err(typedb_source) => return Err(SchemaCommitError::FunctionError { typedb_source }),
+                Err(err) => return Err(SchemaCommitError::FunctionError { typedb_source: *err }),
             };
             schema.function_cache = Arc::new(function_cache);
             commit_profile.schema_update_caches_updated();

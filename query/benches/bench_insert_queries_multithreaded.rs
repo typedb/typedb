@@ -10,8 +10,7 @@ use std::{
     array,
     collections::HashMap,
     sync::{Arc, OnceLock, RwLock},
-    thread,
-    thread::{JoinHandle, sleep},
+    thread::{self, JoinHandle, sleep},
     time::{Duration, Instant},
 };
 
@@ -120,14 +119,13 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     query_str: &str,
 ) -> Result<(Vec<HashMap<String, VariableValue<'static>>>, Snapshot), (Box<QueryError>, Snapshot)> {
     let typeql_insert = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
-    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
             type_manager,
             thing_manager,
-            &function_manager,
+            Arc::default(),
             &typeql_insert,
             None::<GivenRowsSimple>,
             query_str,

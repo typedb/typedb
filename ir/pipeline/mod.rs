@@ -21,7 +21,7 @@ use typeql::{
 };
 
 use crate::{
-    RepresentationError,
+    LiteralParseError, RepresentationError,
     pattern::{
         BranchID, ParameterID, ValueType,
         constraint::Constraint,
@@ -46,9 +46,9 @@ typedb_error! {
     }
 }
 
-impl Into<FunctionReadError> for fmt::Error {
-    fn into(self) -> FunctionReadError {
-        FunctionReadError::FormatError { source: self }
+impl From<fmt::Error> for FunctionReadError {
+    fn from(source: fmt::Error) -> Self {
+        FunctionReadError::FormatError { source }
     }
 }
 
@@ -129,6 +129,21 @@ typedb_error! {
             signature: Signature,
             return_: ReturnStatement,
             mismatch_index: usize,
+        ),
+        IllegalAnnotation(
+            14,
+            "TODO",
+            signature: Signature,
+            return_: ReturnStatement,
+            mismatch_index: usize,
+        ),
+        LiteralParseError(
+            15,
+            "Error parsing annotation '{annotation}' of function '{function}'.",
+            annotation: String,
+            function: String,
+            source_span: Option<Span>,
+            typedb_source: LiteralParseError,
         ),
     }
 }
@@ -264,7 +279,7 @@ impl VariableRegistry {
                             category_2: *existing_category,
                             // category_2_source: existing_source.clone(),
                         }))
-                    },
+                    }
                     Some(narrowed) => {
                         if narrowed == *existing_category {
                             Ok(())

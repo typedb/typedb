@@ -39,25 +39,25 @@ macro_rules! verify_variable_available {
                 .ok_or(FunctionRepresentationError::NonAnonymousVariableExpected { source_span: $var.span() })?,
         ) {
             Some(translated) => Ok(translated),
-            None => Err(FunctionRepresentationError::$error {
+            None => Err(Box::new(FunctionRepresentationError::$error {
                 variable: $var.name().unwrap().to_owned(),
                 source_span: $var.span(),
-            }),
+            })),
         }
     };
 }
+
 pub fn translate_typeql_function(
     function_index: &impl FunctionSignatureIndex,
     function: &typeql::Function,
 ) -> Result<Function, Box<FunctionRepresentationError>> {
-    translate_function_from(function_index, &function.signature, &function.block, Some(function))
+    translate_function_from(function_index, &function.signature, &function.block)
 }
 
-pub fn translate_function_from(
+fn translate_function_from(
     function_index: &impl FunctionSignatureIndex,
     signature: &typeql::schema::definable::function::Signature,
     block: &FunctionBlock,
-    declaration: Option<&typeql::Function>,
 ) -> Result<Function, Box<FunctionRepresentationError>> {
     let checked_name = &signature.ident.as_str_unreserved().map_err(|_source| {
         FunctionRepresentationError::IllegalKeywordAsIdentifier {
@@ -101,40 +101,40 @@ pub fn translate_function_from(
         }
     }
     // Check return declaration aligns with definition
-    let returns_consistent = match (&signature.output, &body.return_operation) {
+    match (&signature.output, &body.return_operation) {
         (Output::Stream(declared_vars), ReturnOperation::Stream(defined_vars, _)) => {
-            check_consistent_return(signature, block, &declared_vars.types, &defined_vars, |v| {
+            check_consistent_return(signature, block, &declared_vars.types, defined_vars, |v| {
                 context.variable_registry.is_variable_optional(*v)
-            })
+            })?
         }
         (Output::Single(declared_vars), ReturnOperation::Single(_, defined_vars, _)) => {
-            check_consistent_return(signature, block, &declared_vars.types, &defined_vars, |v| {
+            check_consistent_return(signature, block, &declared_vars.types, defined_vars, |v| {
                 context.variable_registry.is_variable_optional(*v)
-            })
+            })?
         }
         (Output::Single(declared_vars), ReturnOperation::ReduceReducer(reducers, _)) => {
-            check_consistent_return(signature, block, &declared_vars.types, &reducers, |reducer| {
+            check_consistent_return(signature, block, &declared_vars.types, reducers, |reducer| {
                 resolve_category_optionality(reducer).1
-            })
+            })?
         }
         (Output::Single(declared_vars), ReturnOperation::ReduceCheck(_)) => {
-            check_consistent_return(signature, block, &declared_vars.types, &[false], |x| *x)
+            check_consistent_return(signature, block, &declared_vars.types, &[false], |x| *x)?
         }
         (Output::Single(declared_vars), ReturnOperation::Stream(..)) => {
             Err(Box::new(FunctionRepresentationError::DeclaresSingleReturnsStream {
                 signature: signature.clone(),
                 return_: block.return_stmt.clone(),
-            }))
+            }))?
         }
         (Output::Stream(_), ReturnOperation::Single(..))
         | (Output::Stream(_), ReturnOperation::ReduceCheck(..))
         | (Output::Stream(_), ReturnOperation::ReduceReducer(..)) => {
-            Err(Box::new(FunctionRepresentationError::DeclaresStreamReturnsSingle {
+            return Err(Box::new(FunctionRepresentationError::DeclaresStreamReturnsSingle {
                 signature: signature.clone(),
                 return_: block.return_stmt.clone(),
-            }))
+            }));
         }
-    }?;
+    }
 
     Ok(Function::new(
         checked_name,
@@ -247,24 +247,24 @@ fn named_type_any_to_category_and_optionality(
 fn build_return_stream(
     context: &PipelineTranslationContext,
     stream: &ReturnStream,
-) -> Result<ReturnOperation, FunctionRepresentationError> {
+) -> Result<ReturnOperation, Box<FunctionRepresentationError>> {
     let variables = stream
         .vars
         .iter()
         .map(|typeql_var| verify_variable_available!(context, typeql_var => StreamReturnVariableUnavailable))
-        .collect::<Result<Vec<Variable>, FunctionRepresentationError>>()?;
+        .collect::<Result<Vec<Variable>, Box<FunctionRepresentationError>>>()?;
     Ok(ReturnOperation::Stream(variables, stream.span()))
 }
 
 fn build_return_single(
     context: &PipelineTranslationContext,
     single: &ReturnSingle,
-) -> Result<ReturnOperation, FunctionRepresentationError> {
+) -> Result<ReturnOperation, Box<FunctionRepresentationError>> {
     let variables = single
         .vars
         .iter()
         .map(|typeql_var| verify_variable_available!(context, typeql_var => SingleReturnVariableUnavailable))
-        .collect::<Result<Vec<Variable>, FunctionRepresentationError>>()?;
+        .collect::<Result<Vec<Variable>, Box<FunctionRepresentationError>>>()?;
     let selector = single.selector.clone();
     Ok(ReturnOperation::Single(selector, variables, single.span()))
 }
@@ -272,7 +272,7 @@ fn build_return_single(
 fn build_return_reduce(
     context: &PipelineTranslationContext,
     reduction: &ReturnReduction,
-) -> Result<ReturnOperation, FunctionRepresentationError> {
+) -> Result<ReturnOperation, Box<FunctionRepresentationError>> {
     match reduction {
         ReturnReduction::Check(_) => Ok(ReturnOperation::ReduceCheck(reduction.span())),
         ReturnReduction::Value(typeql_reducers, _) => {

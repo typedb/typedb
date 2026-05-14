@@ -1128,8 +1128,36 @@ impl BuiltinCallExecutor {
                 )?)?
             }
 
-            BuiltinConceptFunctionID::GetFunDoc => todo!(),
-            BuiltinConceptFunctionID::GetFunMeta => todo!(),
+            BuiltinConceptFunctionID::GetFunDoc => {
+                let function_name = &row[self.argument_positions[0].as_usize()];
+                let function = context
+                    .function_manager()
+                    .get_function_key(&**context.snapshot(), function_name.as_value().unwrap_string_ref())
+                    .unwrap()
+                    .unwrap();
+                unwrap_doc(context.function_manager().get_function_annotation_by_category(
+                    &**context.snapshot(),
+                    function,
+                    &AnnotationCategory::Doc,
+                )?)?
+            }
+
+            BuiltinConceptFunctionID::GetFunMeta => {
+                let key = row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
+                let cat = &AnnotationCategory::Meta(key);
+                let function_name = &row[self.argument_positions[1].as_usize()];
+                let function = context
+                    .function_manager()
+                    .get_function_key(&**context.snapshot(), function_name.as_value().unwrap_string_ref())
+                    .unwrap()
+                    .unwrap();
+                unwrap_meta_value(context.function_manager().get_function_annotation_by_category(
+                    &**context.snapshot(),
+                    function,
+                    &cat,
+                )?)?
+            }
+
             BuiltinConceptFunctionID::GetFunAllMeta => todo!(),
 
             | BuiltinConceptFunctionID::GetStructDoc
