@@ -470,15 +470,15 @@ impl TypeCache {
     }
 
     pub(crate) fn get_sub_entity_type_annotations_declared(&self, sub: Sub<EntityType>) -> &HashSet<SubAnnotation> {
-        todo!()
+        &EntityType::get_cache(self, sub.subtype()).common_type_cache.sub_annotations_declared
     }
 
     pub(crate) fn get_sub_relation_type_annotations_declared(&self, sub: Sub<RelationType>) -> &HashSet<SubAnnotation> {
-        todo!()
+        &RelationType::get_cache(self, sub.subtype()).common_type_cache.sub_annotations_declared
     }
 
     pub(crate) fn get_sub_attribute_type_annotations_declared(&self, sub: Sub<AttributeType>) -> &HashSet<SubAnnotation> {
-        todo!()
+        &AttributeType::get_cache(self, sub.subtype()).common_type_cache.sub_annotations_declared
     }
 
     pub(crate) fn get_owns_annotations_declared(&self, owns: Owns) -> &HashSet<OwnsAnnotation> {
