@@ -24,6 +24,8 @@ pub mod common {
 
     pub const ERROR_QUERY_POINTER_LINES_BEFORE: usize = 2;
     pub const ERROR_QUERY_POINTER_LINES_AFTER: usize = 2;
+
+    pub const STUDIO_URL: &str = "https://studio.typedb.com";
 }
 
 pub mod server {

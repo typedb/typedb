@@ -22,9 +22,12 @@ use database::database_manager::DatabaseManager;
 use futures::future::try_join_all;
 use rand::prelude::SliceRandom;
 use resource::{
-    constants::server::{
-        DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, GRPC_MAX_MESSAGE_SIZE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
-        SERVER_ID_LENGTH,
+    constants::{
+        common::STUDIO_URL,
+        server::{
+            DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, GRPC_MAX_MESSAGE_SIZE, SERVER_ID_ALPHABET,
+            SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
+        },
     },
     distribution_info::DistributionInfo,
 };
@@ -484,7 +487,7 @@ impl Server {
 
     fn studio_connect_link(http_advertise_address: &str, encryption_config: &EncryptionConfig) -> String {
         let scheme = if encryption_config.enabled { "https" } else { "http" };
-        format!("https://studio.typedb.com/connect?address={scheme}://{http_advertise_address}&username=admin")
+        format!("{STUDIO_URL}/connect?address={scheme}://{http_advertise_address}&username=admin")
     }
 
     fn console_connect_command(grpc_advertise_address: &str, encryption_config: &EncryptionConfig) -> String {
