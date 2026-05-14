@@ -817,7 +817,7 @@ pub trait Capability:
     type InterfaceType: KindAPI;
     const KIND: CapabilityKind;
 
-    fn new(object_type: Self::ObjectType, attribute_type: Self::InterfaceType) -> Self;
+    fn new(object_type: Self::ObjectType, interface_type: Self::InterfaceType) -> Self;
 
     fn object(&self) -> Self::ObjectType;
 

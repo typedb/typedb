@@ -11,7 +11,10 @@ use concept::{
     type_::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{AnnotationCategory, AnnotationError},
-        attribute_type::AttributeTypeAnnotation,
+        attribute_type::{AttributeType, AttributeTypeAnnotation},
+        entity_type::EntityType,
+        relation_type::RelationType,
+        sub::Sub,
         type_manager::TypeManager,
     },
 };
@@ -45,8 +48,8 @@ use crate::{
     definable_resolution::{
         SymbolResolutionError, filter_variants, resolve_attribute_type, resolve_object_type, resolve_owns_declared,
         resolve_plays_declared, resolve_relates, resolve_relates_declared, resolve_relation_type, resolve_role_type,
-        resolve_struct_definition_key, resolve_typeql_type, resolve_value_type, type_ref_to_label_and_ordering,
-        type_to_object_type,
+        resolve_struct_definition_key, resolve_type, resolve_typeql_type, resolve_value_type,
+        type_ref_to_label_and_ordering, type_to_object_type,
     },
     definable_status::{
         DefinableStatus, DefinableStatusMode, get_capability_annotation_category_status, get_owns_status,
@@ -271,10 +274,70 @@ fn undefine_capability_annotation(
         .map_err(|typedb_source| UndefineError::LiteralParseError { typedb_source })?;
 
     match &annotation_undefinable.capability {
-        CapabilityBase::Sub(_) => {
-            return Err(UndefineError::IllegalAnnotation {
-                typedb_source: AnnotationError::UnsupportedSubAnnotation { category: annotation_category },
-            });
+        CapabilityBase::Sub(typeql_sub) => {
+            let supertype_label = Label::parse_from(
+                checked_identifier(&typeql_sub.supertype_label.ident)?,
+                typeql_sub.supertype_label.span(),
+            );
+
+            let subtype = resolve_type(snapshot, type_manager, &label)
+                .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
+            let supertype = resolve_type(snapshot, type_manager, &supertype_label)
+                .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
+
+            let resolution_error = UndefineError::DefinitionResolution {
+                typedb_source: Box::new(SymbolResolutionError::SubNotFound {
+                    subtype_label: subtype.get_label(snapshot, type_manager).unwrap().to_owned(),
+                    supertype_label: supertype.get_label(snapshot, type_manager).unwrap().to_owned(),
+                    source_span: supertype_label.source_span(),
+                }),
+            };
+
+            match (subtype, supertype) {
+                (TypeEnum::Entity(subtype), TypeEnum::Entity(supertype)) => {
+                    let declared_super = subtype
+                        .get_supertype(snapshot, type_manager)
+                        .map_err(|typedb_source| UndefineError::UnexpectedConceptRead { typedb_source })?;
+                    if declared_super != Some(supertype) {
+                        return Err(resolution_error);
+                    }
+                    Sub::<EntityType>::new(subtype, supertype).unset_annotation(
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        annotation_category.clone(),
+                    )
+                }
+                (TypeEnum::Relation(subtype), TypeEnum::Relation(supertype)) => {
+                    let declared_super = subtype
+                        .get_supertype(snapshot, type_manager)
+                        .map_err(|typedb_source| UndefineError::UnexpectedConceptRead { typedb_source })?;
+                    if declared_super != Some(supertype) {
+                        return Err(resolution_error);
+                    }
+                    Sub::<RelationType>::new(subtype, supertype).unset_annotation(
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        annotation_category.clone(),
+                    )
+                }
+                (TypeEnum::Attribute(subtype), TypeEnum::Attribute(supertype)) => {
+                    let declared_super = subtype
+                        .get_supertype(snapshot, type_manager)
+                        .map_err(|typedb_source| UndefineError::UnexpectedConceptRead { typedb_source })?;
+                    if declared_super != Some(supertype) {
+                        return Err(resolution_error);
+                    }
+                    Sub::<AttributeType>::new(subtype, supertype).unset_annotation(
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        annotation_category.clone(),
+                    )
+                }
+                _ => return Err(resolution_error),
+            }
         }
         CapabilityBase::Alias(_) => {
             return Err(UndefineError::IllegalAnnotation {
