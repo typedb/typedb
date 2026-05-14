@@ -143,6 +143,7 @@ impl<T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> AnnotatedFunctionSign
 }
 
 fn get_builtin_function_annotated_signature(builtin_id: BuiltinConceptFunctionID) -> AnnotatedFunctionSignature {
+    #[rustfmt::skip]
     macro_rules! param {
         (Thing) => { FunctionParameterAnnotation::AnyConcept };
         (Type) => { FunctionParameterAnnotation::AnyConcept };
