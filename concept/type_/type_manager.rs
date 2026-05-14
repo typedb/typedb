@@ -55,6 +55,7 @@ use crate::{
         relates::{Relates, RelatesAnnotation},
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
+        sub::{Sub, SubAnnotation},
         type_manager::type_reader::TypeReader,
     },
 };
@@ -220,7 +221,7 @@ macro_rules! get_type_label_arc_methods {
 
 macro_rules! get_annotations_declared_methods {
     ($(
-        fn $method_name:ident($type_:ident) -> $annotation_type:ident = $reader_method:ident | $cache_method:ident;
+        fn $method_name:ident($type_:ty) -> $annotation_type:ident = $reader_method:ident | $cache_method:ident;
     )*) => {
         $(
             pub(crate) fn $method_name(
@@ -931,6 +932,12 @@ impl TypeManager {
         fn get_relation_type_annotations_declared(RelationType) -> RelationTypeAnnotation = get_type_annotations_declared | get_annotations_declared;
         fn get_role_type_annotations_declared(RoleType) -> RoleTypeAnnotation = get_type_annotations_declared | get_annotations_declared;
         fn get_attribute_type_annotations_declared(AttributeType) -> AttributeTypeAnnotation = get_type_annotations_declared | get_annotations_declared;
+        fn get_sub_entity_type_annotations_declared(Sub<EntityType>) -> SubAnnotation =
+            get_capability_annotations_declared | get_sub_entity_type_annotations_declared;
+        fn get_sub_relation_type_annotations_declared(Sub<RelationType>) -> SubAnnotation =
+            get_capability_annotations_declared | get_sub_relation_type_annotations_declared;
+        fn get_sub_attribute_type_annotations_declared(Sub<AttributeType>) -> SubAnnotation =
+            get_capability_annotations_declared | get_sub_attribute_type_annotations_declared;
         fn get_owns_annotations_declared(Owns) -> OwnsAnnotation = get_capability_annotations_declared | get_owns_annotations_declared;
         fn get_plays_annotations_declared(Plays) -> PlaysAnnotation = get_capability_annotations_declared | get_plays_annotations_declared;
         fn get_relates_annotations_declared(Relates) -> RelatesAnnotation = get_capability_annotations_declared | get_relates_annotations_declared;
@@ -3540,6 +3547,33 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, relates, Annotation::Doc(doc))
     }
 
+    pub(crate) fn set_sub_entity_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<EntityType>,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Doc(doc))
+    }
+
+    pub(crate) fn set_sub_relation_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RelationType>,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Doc(doc))
+    }
+
+    pub(crate) fn set_sub_attribute_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<AttributeType>,
+        doc: AnnotationDoc,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Doc(doc))
+    }
+
     pub(crate) fn unset_owns_annotation_doc(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -3562,6 +3596,30 @@ impl TypeManager {
         relates: Relates,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.unset_capability_annotation(snapshot, relates, AnnotationCategory::Doc)
+    }
+
+    pub(crate) fn unset_sub_entity_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<EntityType>,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.unset_capability_annotation(snapshot, sub, AnnotationCategory::Doc)
+    }
+
+    pub(crate) fn unset_sub_relation_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RelationType>,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.unset_capability_annotation(snapshot, sub, AnnotationCategory::Doc)
+    }
+
+    pub(crate) fn unset_sub_attribute_type_annotation_doc(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<AttributeType>,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.unset_capability_annotation(snapshot, sub, AnnotationCategory::Doc)
     }
 
     pub(crate) fn set_entity_type_annotation_meta(
@@ -3654,6 +3712,33 @@ impl TypeManager {
         self.set_capability_annotation(snapshot, relates, Annotation::Meta(annotation))
     }
 
+    pub(crate) fn set_sub_entity_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<EntityType>,
+        meta: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Meta(meta))
+    }
+
+    pub(crate) fn set_sub_relation_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RelationType>,
+        meta: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Meta(meta))
+    }
+
+    pub(crate) fn set_sub_attribute_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<AttributeType>,
+        meta: AnnotationMeta,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        self.set_capability_annotation(snapshot, sub, Annotation::Meta(meta))
+    }
+
     pub(crate) fn unset_owns_annotation_meta(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -3682,6 +3767,36 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let annotation_category = AnnotationCategory::Meta(key);
         self.unset_capability_annotation(snapshot, relates, annotation_category)
+    }
+
+    pub(crate) fn unset_sub_entity_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<EntityType>,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_capability_annotation(snapshot, sub, annotation_category)
+    }
+
+    pub(crate) fn unset_sub_relation_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<RelationType>,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_capability_annotation(snapshot, sub, annotation_category)
+    }
+
+    pub(crate) fn unset_sub_attribute_type_annotation_meta(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        sub: Sub<AttributeType>,
+        key: String,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let annotation_category = AnnotationCategory::Meta(key);
+        self.unset_capability_annotation(snapshot, sub, annotation_category)
     }
 
     fn set_type_annotation(

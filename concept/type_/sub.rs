@@ -4,19 +4,30 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::hash::Hash;
+use std::{collections::HashSet, hash::Hash};
 
 use encoding::{
     graph::type_::{CapabilityKind, edge::TypeEdgeEncoding},
     layout::prefix::Prefix,
 };
 use macro_rules_attribute::derive;
+use primitive::maybe_owns::MaybeOwns;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
-use crate::type_::{
-    Capability, KindAPI, TypeAPI,
-    annotation::{
-        Annotation, AnnotationDoc, AnnotationError, AnnotationMeta, FromAnnotation,
-        HasAnnotationCategory, has_annotation_category,
+use crate::{
+    error::{ConceptReadError, ConceptWriteError},
+    thing::thing_manager::ThingManager,
+    type_::{
+        Capability, TypeAPI,
+        annotation::{
+            Annotation, AnnotationCardinality, AnnotationCategory, AnnotationDoc, AnnotationError, AnnotationMeta,
+            FromAnnotation, HasAnnotationCategory, has_annotation_category,
+        },
+        attribute_type::AttributeType,
+        constraint::CapabilityConstraint,
+        entity_type::EntityType,
+        relation_type::RelationType,
+        type_manager::TypeManager,
     },
 };
 
@@ -36,76 +47,105 @@ impl<T: TypeAPI> Sub<T> {
     }
 }
 
-impl<T: TypeAPI + KindAPI + Eq + Hash> Capability for Sub<T> {
-    type AnnotationType = SubAnnotation;
+macro_rules! impl_capability_for_sub {
+    ($t:ident) => {
+        impl Sub<$t> {
+            pub fn set_annotation(
+                &self,
+                snapshot: &mut impl WritableSnapshot,
+                type_manager: &TypeManager,
+                thing_manager: &ThingManager,
+                annotation: SubAnnotation,
+            ) -> Result<(), Box<ConceptWriteError>> {
+                match annotation {
+                    SubAnnotation::Doc(doc) => paste::paste!(type_manager.[<set_sub_ $t:snake _annotation_doc>](snapshot, *self, doc)),
+                    SubAnnotation::Meta(meta) => paste::paste!(type_manager.[<set_sub_ $t:snake _annotation_meta>](snapshot, *self, meta)),
+                }
+            }
 
-    type ObjectType = T;
+            pub fn unset_annotation(
+                &self,
+                snapshot: &mut impl WritableSnapshot,
+                type_manager: &TypeManager,
+                thing_manager: &ThingManager,
+                annotation_category: AnnotationCategory,
+            ) -> Result<(), Box<ConceptWriteError>> {
+                let sub_annotation = SubAnnotationCategory::try_from(annotation_category)
+                    .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
+                match sub_annotation {
+                    SubAnnotationCategory::Doc => paste::paste!(type_manager.[<unset_sub_ $t:snake _annotation_doc>](snapshot, *self)),
+                    SubAnnotationCategory::Meta(meta) => paste::paste!(type_manager.[<unset_sub_ $t:snake _annotation_meta>](snapshot, *self, meta)),
+                }
+            }
+        }
 
-    type InterfaceType = T;
+        impl Capability for Sub<$t> {
+            type AnnotationType = SubAnnotation;
 
-    const KIND: CapabilityKind = CapabilityKind::Sub;
+            type ObjectType = $t;
 
-    fn new(object_type: Self::ObjectType, attribute_type: Self::InterfaceType) -> Self {
-        todo!()
-    }
+            type InterfaceType = $t;
 
-    fn object(&self) -> Self::ObjectType {
-        todo!()
-    }
+            const KIND: CapabilityKind = CapabilityKind::Sub;
 
-    fn interface(&self) -> Self::InterfaceType {
-        todo!()
-    }
+            fn new(subtype: Self::ObjectType, supertype: Self::InterfaceType) -> Self {
+                Self { subtype, supertype }
+            }
 
-    fn is_abstract(
-        &self,
-        snapshot: &impl storage::snapshot::ReadableSnapshot,
-        type_manager: &super::type_manager::TypeManager,
-    ) -> Result<bool, Box<crate::error::ConceptReadError>> {
-        todo!()
-    }
+            fn object(&self) -> Self::ObjectType {
+                self.subtype()
+            }
 
-    fn get_annotations_declared<'this>(
-        &'this self,
-        snapshot: &impl storage::snapshot::ReadableSnapshot,
-        type_manager: &'this super::type_manager::TypeManager,
-    ) -> Result<
-        primitive::maybe_owns::MaybeOwns<'this, std::collections::HashSet<Self::AnnotationType>>,
-        Box<crate::error::ConceptReadError>,
-    > {
-        todo!()
-    }
+            fn interface(&self) -> Self::InterfaceType {
+                self.supertype()
+            }
 
-    fn get_constraints<'a>(
-        self,
-        snapshot: &impl storage::snapshot::ReadableSnapshot,
-        type_manager: &'a super::type_manager::TypeManager,
-    ) -> Result<
-        primitive::maybe_owns::MaybeOwns<'a, std::collections::HashSet<super::constraint::CapabilityConstraint<Self>>>,
-        Box<crate::error::ConceptReadError>,
-    > {
-        todo!()
-    }
+            fn is_abstract(
+                &self,
+                _snapshot: &impl ReadableSnapshot,
+                _type_manager: &TypeManager,
+            ) -> Result<bool, Box<ConceptReadError>> {
+                Ok(false)
+            }
 
-    fn get_cardinality_constraints(
-        &self,
-        snapshot: &impl storage::snapshot::ReadableSnapshot,
-        type_manager: &super::type_manager::TypeManager,
-    ) -> Result<
-        std::collections::HashSet<super::constraint::CapabilityConstraint<Self>>,
-        Box<crate::error::ConceptReadError>,
-    > {
-        todo!()
-    }
+            fn get_annotations_declared<'this>(
+                &'this self,
+                snapshot: &impl ReadableSnapshot,
+                type_manager: &'this TypeManager,
+            ) -> Result<MaybeOwns<'this, HashSet<Self::AnnotationType>>, Box<ConceptReadError>> {
+                paste::paste!(type_manager.[<get_sub_ $t:snake _annotations_declared>](snapshot, *self))
+            }
 
-    fn get_cardinality(
-        &self,
-        snapshot: &impl storage::snapshot::ReadableSnapshot,
-        type_manager: &super::type_manager::TypeManager,
-    ) -> Result<super::annotation::AnnotationCardinality, Box<crate::error::ConceptReadError>> {
-        todo!()
-    }
+            fn get_constraints<'a>(
+                self,
+                _snapshot: &impl ReadableSnapshot,
+                _type_manager: &'a TypeManager,
+            ) -> Result<MaybeOwns<'a, HashSet<CapabilityConstraint<Self>>>, Box<ConceptReadError>> {
+                Ok(MaybeOwns::Owned(HashSet::new()))
+            }
+
+            fn get_cardinality_constraints(
+                &self,
+                _snapshot: &impl ReadableSnapshot,
+                _type_manager: &TypeManager,
+            ) -> Result<HashSet<CapabilityConstraint<Self>>, Box<ConceptReadError>> {
+                Ok(HashSet::new())
+            }
+
+            fn get_cardinality(
+                &self,
+                _snapshot: &impl ReadableSnapshot,
+                _type_manager: &TypeManager,
+            ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
+                Ok(AnnotationCardinality::unchecked())
+            }
+        }
+    };
 }
+
+impl_capability_for_sub!(EntityType);
+impl_capability_for_sub!(RelationType);
+impl_capability_for_sub!(AttributeType);
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash, FromAnnotation!, has_annotation_category!)]
 pub enum SubAnnotation {
