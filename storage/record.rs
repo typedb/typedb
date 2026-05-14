@@ -8,6 +8,7 @@ use std::{fmt, io::Read};
 
 use durability::DurabilityRecordType;
 use logger::result::ResultExt;
+use resource::state_counter::CounterId;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -42,6 +43,7 @@ impl From<LegacyCommitRecordV1> for CommitRecord {
             open_sequence_number: legacy.open_sequence_number,
             commit_type: legacy.commit_type,
             snapshot_id: SnapshotId::UNSET,
+            counter_advances: Vec::new(),
         }
     }
 }
@@ -64,11 +66,60 @@ impl DurabilityRecord for LegacyCommitRecordV1 {
 impl SequencedDurabilityRecord for LegacyCommitRecordV1 {}
 
 #[derive(Serialize, Deserialize)]
+pub struct LegacyCommitRecordV2 {
+    operations: OperationsBuffer,
+    open_sequence_number: SequenceNumber,
+    commit_type: CommitType,
+    snapshot_id: SnapshotId,
+}
+
+impl LegacyCommitRecordV2 {
+    pub(crate) fn new(
+        operations: OperationsBuffer,
+        open_sequence_number: SequenceNumber,
+        commit_type: CommitType,
+        snapshot_id: SnapshotId,
+    ) -> Self {
+        Self { operations, open_sequence_number, commit_type, snapshot_id }
+    }
+}
+
+impl From<LegacyCommitRecordV2> for CommitRecord {
+    fn from(legacy: LegacyCommitRecordV2) -> Self {
+        CommitRecord {
+            operations: legacy.operations,
+            open_sequence_number: legacy.open_sequence_number,
+            commit_type: legacy.commit_type,
+            snapshot_id: legacy.snapshot_id,
+            counter_advances: Vec::new(),
+        }
+    }
+}
+
+impl DurabilityRecord for LegacyCommitRecordV2 {
+    const RECORD_TYPE: DurabilityRecordType = 2;
+    const RECORD_NAME: &'static str = "legacy_commit_record_v2";
+
+    fn serialise_into(&self, writer: &mut impl std::io::Write) -> bincode::Result<()> {
+        bincode::serialize_into(writer, &self)
+    }
+
+    fn deserialise_from(reader: &mut impl Read) -> bincode::Result<Self> {
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf).map_err(|e| bincode::ErrorKind::Io(e))?;
+        bincode::deserialize(&buf)
+    }
+}
+
+impl SequencedDurabilityRecord for LegacyCommitRecordV2 {}
+
+#[derive(Serialize, Deserialize)]
 pub struct CommitRecord {
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
     commit_type: CommitType,
     snapshot_id: SnapshotId,
+    counter_advances: Vec<(CounterId, u64)>,
 }
 
 impl fmt::Debug for CommitRecord {
@@ -78,6 +129,7 @@ impl fmt::Debug for CommitRecord {
             .field("snapshot_id", &self.snapshot_id)
             .field("commit_type", &self.commit_type)
             .field("operations", &self.operations)
+            .field("counter_advances", &self.counter_advances)
             .finish()
     }
 }
@@ -101,7 +153,7 @@ impl CommitRecord {
         commit_type: CommitType,
         snapshot_id: SnapshotId,
     ) -> CommitRecord {
-        CommitRecord { operations, open_sequence_number, commit_type, snapshot_id }
+        CommitRecord { operations, open_sequence_number, commit_type, snapshot_id, counter_advances: Vec::new() }
     }
 
     pub fn operations(&self) -> &OperationsBuffer {
@@ -122,6 +174,14 @@ impl CommitRecord {
 
     pub fn snapshot_id(&self) -> SnapshotId {
         self.snapshot_id
+    }
+
+    pub fn counter_advances(&self) -> &[(CounterId, u64)] {
+        &self.counter_advances
+    }
+
+    pub fn set_counter_advances(&mut self, advances: Vec<(CounterId, u64)>) {
+        self.counter_advances = advances;
     }
 
     fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)
@@ -198,7 +258,7 @@ impl CommitRecord {
 }
 
 impl DurabilityRecord for CommitRecord {
-    const RECORD_TYPE: DurabilityRecordType = 2;
+    const RECORD_TYPE: DurabilityRecordType = 3;
 
     const RECORD_NAME: &'static str = "commit_record";
 

@@ -15,6 +15,12 @@ features = {}
 
 [dependencies]
 
+	[dependencies.tracing]
+		workspace = true
+
+	[dependencies.serde]
+		workspace = true
+
 	[dependencies.itertools]
 		workspace = true
 

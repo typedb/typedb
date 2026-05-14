@@ -742,7 +742,7 @@ mod tests {
         durability_client::{DurabilityClient, WALClient},
         key_value::StorageKeyArray,
         keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
-        record::{CommitRecord, CommitType, LegacyCommitRecordV1, StatusRecord},
+        record::{CommitRecord, CommitType, LegacyCommitRecordV1, LegacyCommitRecordV2, StatusRecord},
         sequence_number::SequenceNumber,
         snapshot::{WriteSnapshot, buffer::OperationsBuffer},
         write_batches::WriteBatches,
@@ -996,5 +996,73 @@ mod tests {
         // Legacy records convert to CommitRecord with UNSET snapshot_id
         let converted = CommitRecord::from(legacy_records.into_iter().next().unwrap().1);
         assert_eq!(converted.snapshot_id(), SnapshotId::UNSET);
+    }
+
+    #[test]
+    fn test_mixed_v2_and_v3_commit_records() {
+        test_keyspace_set! { TestKeyspace => 0: "test", }
+
+        init_logging();
+        let storage_path = create_tmp_storage_dir();
+
+        let mut wal_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        wal_client.register_record_type::<LegacyCommitRecordV2>();
+        wal_client.register_record_type::<CommitRecord>();
+        wal_client.register_record_type::<StatusRecord>();
+
+        // Write a V2 record directly to WAL (pre-StateCounter shape).
+        let key_v2 = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"v2"));
+        let mut v2_ops = OperationsBuffer::new();
+        v2_ops.writes_in_mut(key_v2.keyspace_id()).insert(key_v2.byte_array().clone(), ByteArray::empty());
+        let v2_snapshot_id = SnapshotId::new();
+        let v2_record =
+            LegacyCommitRecordV2::new(v2_ops, wal_client.previous(), CommitType::Data, v2_snapshot_id);
+        wal_client.sequenced_write(&v2_record).unwrap();
+
+        // Write a V3 record carrying counter_advances.
+        let key_v3 = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"v3"));
+        let mut v3_ops = OperationsBuffer::new();
+        v3_ops.writes_in_mut(key_v3.keyspace_id()).insert(key_v3.byte_array().clone(), ByteArray::empty());
+        let mut v3_record = CommitRecord::new(v3_ops, wal_client.previous(), CommitType::Data, SnapshotId::new());
+        v3_record.set_counter_advances(vec![
+            (resource::state_counter::CounterId::EntityVertex { type_id: 7 }, 123),
+            (resource::state_counter::CounterId::RelationVertex { type_id: 12 }, 456),
+        ]);
+        wal_client.sequenced_write(&v3_record).unwrap();
+
+        // Reload and read both back.
+        drop(wal_client);
+        let mut wal_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        wal_client.register_record_type::<LegacyCommitRecordV2>();
+        wal_client.register_record_type::<CommitRecord>();
+        wal_client.register_record_type::<StatusRecord>();
+
+        let v2_records: Vec<_> = wal_client
+            .iter_sequenced_type_from::<LegacyCommitRecordV2>(SequenceNumber::MIN)
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert_eq!(v2_records.len(), 1);
+        let v3_records: Vec<_> = wal_client
+            .iter_sequenced_type_from::<CommitRecord>(SequenceNumber::MIN)
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert_eq!(v3_records.len(), 1);
+
+        // V2 converts cleanly, preserving the snapshot_id, with empty advances.
+        let converted = CommitRecord::from(v2_records.into_iter().next().unwrap().1);
+        assert_eq!(converted.snapshot_id(), v2_snapshot_id);
+        assert!(converted.counter_advances().is_empty());
+
+        // V3 round-trips advances faithfully.
+        let v3_back = &v3_records[0].1;
+        assert_eq!(v3_back.counter_advances().len(), 2);
+        assert!(v3_back
+            .counter_advances()
+            .contains(&(resource::state_counter::CounterId::EntityVertex { type_id: 7 }, 123)));
+        assert!(v3_back
+            .counter_advances()
+            .contains(&(resource::state_counter::CounterId::RelationVertex { type_id: 12 }, 456)));
     }
 }

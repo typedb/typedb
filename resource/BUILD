@@ -14,6 +14,8 @@ rust_library(
     ]),
     deps = [
         "@crates//:itertools",
+        "@crates//:serde",
+        "@crates//:tracing",
     ],
     compile_data = [
         "typedb-ascii.txt",
