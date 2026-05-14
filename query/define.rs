@@ -143,7 +143,7 @@ fn process_function_definitions(
     if functions.clone().next().is_some() {
         function_manager
             .define_functions(snapshot, functions)
-            .map_err(|typedb_source| DefineError::FunctionDefinition { typedb_source })?;
+            .map_err(|err| DefineError::FunctionDefinition { typedb_source: *err })?;
     }
     Ok(())
 }

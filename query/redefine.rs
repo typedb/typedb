@@ -929,11 +929,11 @@ fn redefine_function(
     anything_redefined: &mut bool,
     function_declaration: &Function,
 ) -> Result<SchemaFunction, RedefineError> {
-    let function = function_manager.redefine_function(snapshot, function_declaration).map_err(|source| {
+    let function = function_manager.redefine_function(snapshot, function_declaration).map_err(|typedb_source| {
         RedefineError::FunctionRedefinition {
             name: function_declaration.signature.ident.as_str_unchecked().to_owned(),
             source_span: function_declaration.span(),
-            typedb_source: Box::new(source),
+            typedb_source,
         }
     })?;
     *anything_redefined = true;

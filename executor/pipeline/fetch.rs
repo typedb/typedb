@@ -24,6 +24,7 @@ use concept::{
 };
 use encoding::value::label::Label;
 use error::{typedb_error, unimplemented_feature};
+use function::function_manager::FunctionManager;
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use lending_iterator::LendingIterator;
 use resource::profile::{QueryProfile, StepProfile, StorageCounters};
@@ -73,7 +74,7 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
         context: ExecutionContext<Snapshot>,
         interrupt: ExecutionInterrupt,
     ) -> (impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>, ExecutionContext<Snapshot>) {
-        let ExecutionContext { snapshot, thing_manager, parameters, profile } = context.clone();
+        let ExecutionContext { snapshot, thing_manager, function_manager, parameters, profile } = context.clone();
         let executable = self.executable;
         let functions = self.functions;
         let stage_profile = profile.profile_stage(|| String::from("Fetch"), executable.executable_id);
@@ -85,6 +86,7 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
                     &executable,
                     snapshot.clone(),
                     thing_manager.clone(),
+                    function_manager.clone(),
                     parameters.clone(),
                     functions.clone(),
                     profile.clone(),
@@ -104,6 +106,7 @@ fn execute_fetch(
     fetch: &ExecutableFetch,
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
+    function_manager: Arc<FunctionManager>,
     parameters: Arc<ParameterRegistry>,
     functions: Arc<ExecutableFunctionRegistry>,
     query_profile: Arc<QueryProfile>,
@@ -116,6 +119,7 @@ fn execute_fetch(
         &fetch.object_instruction,
         snapshot,
         thing_manager,
+        function_manager,
         parameters,
         functions,
         query_profile,
@@ -130,6 +134,7 @@ fn execute_fetch_some(
     fetch_some: &FetchSomeInstruction,
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
+    function_manager: Arc<FunctionManager>,
     parameters: Arc<ParameterRegistry>,
     functions_registry: Arc<ExecutableFunctionRegistry>,
     query_profile: Arc<QueryProfile>,
@@ -144,6 +149,7 @@ fn execute_fetch_some(
         FetchSomeInstruction::SingleFunction(function, variable_positions) => execute_single_function(
             snapshot,
             thing_manager,
+            function_manager,
             parameters,
             functions_registry,
             query_profile,
@@ -156,15 +162,17 @@ fn execute_fetch_some(
             object,
             snapshot,
             thing_manager,
+            function_manager,
             parameters,
             functions_registry,
-            query_profile.clone(),
+            query_profile,
             row,
             interrupt,
         ),
         FetchSomeInstruction::ListFunction(function, variable_positions) => execute_list_function(
             snapshot,
             thing_manager,
+            function_manager,
             parameters,
             functions_registry,
             query_profile,
@@ -176,6 +184,7 @@ fn execute_fetch_some(
         FetchSomeInstruction::ListSubFetch(subfetch) => execute_list_subfetch(
             snapshot,
             thing_manager,
+            function_manager,
             parameters,
             functions_registry,
             query_profile,
@@ -218,6 +227,7 @@ fn execute_single_attribute(
 fn execute_single_function(
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
+    function_manager: Arc<FunctionManager>,
     parameters: Arc<ParameterRegistry>,
     functions_registry: Arc<ExecutableFunctionRegistry>,
     query_profile: Arc<QueryProfile>,
@@ -229,6 +239,7 @@ fn execute_single_function(
     let (mut pattern_executor, context) = prepare_single_function_execution(
         snapshot,
         thing_manager,
+        function_manager,
         parameters,
         functions_registry.clone(),
         query_profile,
@@ -277,6 +288,7 @@ fn execute_object(
     fetch_object: &FetchObjectInstruction,
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
+    function_manager: Arc<FunctionManager>,
     parameters: Arc<ParameterRegistry>,
     functions: Arc<ExecutableFunctionRegistry>,
     query_profile: Arc<QueryProfile>,
@@ -289,6 +301,7 @@ fn execute_object(
                 entries,
                 snapshot,
                 thing_manager,
+                function_manager,
                 parameters,
                 functions,
                 query_profile,
@@ -306,6 +319,7 @@ fn execute_object(
 fn execute_list_function(
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
+    function_manager: Arc<FunctionManager>,
     parameters: Arc<ParameterRegistry>,
     functions_registry: Arc<ExecutableFunctionRegistry>,
     query_profile: Arc<QueryProfile>,
@@ -317,6 +331,7 @@ fn execute_list_function(
     let (mut pattern_executor, context) = prepare_single_function_execution(
         snapshot,
         thing_manager,
+        function_manager,
         parameters,
         functions_registry.clone(),
         query_profile,
@@ -345,6 +360,7 @@ fn execute_list_function(
 fn execute_list_subfetch(
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
+    function_manager: Arc<FunctionManager>,
     parameters: Arc<ParameterRegistry>,
     functions_registry: Arc<ExecutableFunctionRegistry>,
     query_profile: Arc<QueryProfile>,
@@ -358,6 +374,7 @@ fn execute_list_subfetch(
         Pipeline::build_read_pipeline(
             snapshot,
             thing_manager,
+            function_manager,
             variable_registry.variable_names(),
             None,
             functions_registry,
@@ -378,6 +395,7 @@ fn execute_list_subfetch(
         Pipeline::build_read_pipeline(
             snapshot,
             thing_manager,
+            function_manager,
             variable_registry.variable_names(),
             None,
             functions_registry,
@@ -551,6 +569,7 @@ fn prepare_attribute_type_has_iterator<'a>(
 fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
     snapshot: Arc<Snapshot>,
     thing_manager: Arc<ThingManager>,
+    function_manager: Arc<FunctionManager>,
     parameters: Arc<ParameterRegistry>,
     functions_registry: Arc<ExecutableFunctionRegistry>,
     query_profile: Arc<QueryProfile>,
@@ -570,13 +589,14 @@ fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
             .map_err(|err| FetchExecutionError::ConceptRead { typedb_source: err })?;
     let mut pattern_executor = PatternExecutor::new(next_executable_id(), step_executors);
     pattern_executor.prepare(FixedBatch::from(args));
-    Ok((pattern_executor, Arc::new(ExecutionContext::new(snapshot, thing_manager, parameters))))
+    Ok((pattern_executor, Arc::new(ExecutionContext::new(snapshot, thing_manager, function_manager, parameters))))
 }
 
 fn execute_object_entries(
     entries: &HashMap<ParameterID, FetchSomeInstruction>,
     snapshot: Arc<impl ReadableSnapshot + 'static>,
     thing_manager: Arc<ThingManager>,
+    function_manager: Arc<FunctionManager>,
     parameters: Arc<ParameterRegistry>,
     functions: Arc<ExecutableFunctionRegistry>,
     query_profile: Arc<QueryProfile>,
@@ -591,6 +611,7 @@ fn execute_object_entries(
                 fetch_some,
                 snapshot.clone(),
                 thing_manager.clone(),
+                function_manager.clone(),
                 parameters.clone(),
                 functions.clone(),
                 query_profile.clone(),

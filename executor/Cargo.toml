@@ -24,9 +24,6 @@ features = {}
 	[dev-dependencies.query]
 		workspace = true
 
-	[dev-dependencies.function]
-		workspace = true
-
 	[dev-dependencies.durability]
 		workspace = true
 
@@ -34,6 +31,9 @@ features = {}
 		workspace = true
 
 [dependencies]
+
+	[dependencies.function]
+		workspace = true
 
 	[dependencies.tokio]
 		workspace = true

@@ -14,6 +14,7 @@ use compiler::{
 };
 use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
+use function::function_manager::FunctionManager;
 use ir::pipeline::ParameterRegistry;
 use resource::profile::QueryProfile;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
@@ -93,6 +94,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
     pub fn build_read_pipeline(
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
+        function_manager: Arc<FunctionManager>,
         variable_names: &HashMap<Variable, String>,
         pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
@@ -103,7 +105,13 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         query_profile: Arc<QueryProfile>,
     ) -> Result<Self, Box<PipelineError>> {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context = ExecutionContext::new_with_profile(snapshot, thing_manager, parameters.clone(), query_profile);
+        let context = ExecutionContext::new_with_profile(
+            snapshot,
+            thing_manager,
+            function_manager,
+            parameters.clone(),
+            query_profile,
+        );
 
         let initial_iterator =
             input.map(|row| InitialStage::new_with(row)).unwrap_or_else(|| InitialStage::new_empty());
@@ -233,6 +241,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         variable_names: &HashMap<Variable, String>,
         pipeline_structure: Option<Arc<ParametrisedPipelineStructure>>,
         thing_manager: Arc<ThingManager>,
+        function_manager: Arc<FunctionManager>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_stages: Vec<ExecutableStage>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
@@ -240,8 +249,13 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         query_profile: Arc<QueryProfile>,
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context =
-            ExecutionContext::new_with_profile(Arc::new(snapshot), thing_manager, parameters.clone(), query_profile);
+        let context = ExecutionContext::new_with_profile(
+            Arc::new(snapshot),
+            thing_manager,
+            function_manager,
+            parameters.clone(),
+            query_profile,
+        );
 
         let initial_iterator =
             WriteStageIterator::Initial(Box::new(InitialIterator::new(crate::batch::FixedBatch::SINGLE_EMPTY_ROW)));

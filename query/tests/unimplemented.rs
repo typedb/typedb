@@ -30,7 +30,7 @@ struct Context {
     storage: Arc<MVCCStorage<WALClient>>,
     type_manager: Arc<TypeManager>,
     thing_manager: Arc<ThingManager>,
-    function_manager: FunctionManager,
+    function_manager: Arc<FunctionManager>,
     query_manager: QueryManager,
     _tmp_dir: TempDir,
 }
@@ -71,7 +71,7 @@ fn run_read_query(
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &match_,
             query,
         )
@@ -97,7 +97,7 @@ fn run_write_query(
             snapshot,
             &context.type_manager,
             context.thing_manager.clone(),
-            &context.function_manager,
+            context.function_manager.clone(),
             &query_as_pipeline,
             query,
         )

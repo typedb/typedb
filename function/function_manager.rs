@@ -13,7 +13,13 @@ use std::{
 
 use bytes::{Bytes, byte_array::ByteArray};
 use compiler::annotation::function::{AnnotatedSchemaFunctions, annotate_stored_functions};
-use concept::type_::type_manager::TypeManager;
+use concept::{
+    error::ConceptReadError,
+    type_::{
+        annotation::{Annotation, AnnotationCategory, HasAnnotationCategory},
+        type_manager::TypeManager,
+    },
+};
 use encoding::{
     Keyable,
     graph::{
@@ -21,13 +27,17 @@ use encoding::{
             definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator,
             function::FunctionDefinition,
         },
-        type_::index::NameToFunctionDefinitionIndex,
+        type_::{
+            index::NameToFunctionDefinitionIndex,
+            property::{FunctionProperty, FunctionPropertyEncoding},
+        },
     },
+    layout::infix::Infix,
 };
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{
-        FunctionReadError,
+        FunctionReadError, FunctionRepresentationError,
         function::ReturnOperation,
         function_signature::{
             FunctionID, FunctionIDAPI, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
@@ -36,13 +46,14 @@ use ir::{
     translation::{
         function::{build_signature, translate_typeql_function},
         pipeline::TranslatedStage,
+        tokens::translate_annotation,
     },
 };
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
 use storage::{
-    key_range::KeyRange,
+    key_range::{KeyRange, RangeEnd, RangeStart},
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 use typeql::common::Spanned;
@@ -74,14 +85,18 @@ impl FunctionManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<AnnotatedSchemaFunctions>, FunctionError> {
+    ) -> Result<Arc<AnnotatedSchemaFunctions>, Box<FunctionError>> {
         match self.function_cache.as_ref() {
             None => FunctionCache::build_cache(snapshot, type_manager).map(|cache| cache.get_annotated_functions()),
             Some(cache) => Ok(cache.get_annotated_functions()),
         }
     }
 
-    pub fn finalise(self, snapshot: &impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), FunctionError> {
+    pub fn finalise(
+        self,
+        snapshot: &impl WritableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(), Box<FunctionError>> {
         let functions = FunctionReader::get_functions_all(snapshot)
             .map_err(|typedb_source| FunctionError::FunctionRetrieval { typedb_source })?;
         // TODO: Optimise: We recompile & redo type-inference on all functions here.
@@ -102,7 +117,7 @@ impl FunctionManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         definitions: impl Iterator<Item = &'a typeql::Function> + Clone,
-    ) -> Result<Vec<SchemaFunction>, FunctionError> {
+    ) -> Result<Vec<SchemaFunction>, Box<FunctionError>> {
         let mut functions: Vec<SchemaFunction> = Vec::new();
         for definition in definitions.clone() {
             let definition_key = self
@@ -129,7 +144,7 @@ impl FunctionManager {
         let function_index = ReadThroughFunctionSignatureIndex::new(snapshot, self, buffered);
         // Translate to ensure the function calls are valid references. Type-inference is done at commit-time.
         Self::translate_functions(&functions, &function_index)?;
-        for (function, definition) in zip(functions.iter(), definitions.clone()) {
+        for (function, definition) in zip(functions.iter(), definitions) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let definition_key = &function.function_id;
             snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes()));
@@ -137,6 +152,43 @@ impl FunctionManager {
                 definition_key.clone().into_storage_key().into_owned_array(),
                 FunctionDefinition::build_ref(definition.unparsed.as_str()).into_bytes().into_array(),
             );
+            for annotation in &function.parsed.annotations {
+                let annotation =
+                    translate_annotation(annotation).map_err(|typedb_source| FunctionError::FunctionTranslation {
+                        typedb_source: FunctionRepresentationError::LiteralParseError {
+                            annotation: annotation.to_string(),
+                            function: function.name().clone(),
+                            source_span: annotation.span(),
+                            typedb_source,
+                        },
+                    })?;
+
+                match annotation {
+                    Annotation::Doc(annotation_doc) => {
+                        snapshot.put_val(
+                            annotation_doc.to_key(definition_key.clone()).into_storage_key().into_owned_array(),
+                            annotation_doc.to_value_bytes().unwrap().into_array(),
+                        );
+                    }
+                    Annotation::Meta(annotation_meta) => {
+                        snapshot.put_val(
+                            annotation_meta.to_key(definition_key.clone()).into_storage_key().into_owned_array(),
+                            annotation_meta.to_value_bytes().unwrap().into_array(),
+                        );
+                    }
+
+                    Annotation::Abstract(_)
+                    | Annotation::Distinct(_)
+                    | Annotation::Independent(_)
+                    | Annotation::Unique(_)
+                    | Annotation::Key(_)
+                    | Annotation::Cardinality(_)
+                    | Annotation::Regex(_)
+                    | Annotation::Cascade(_)
+                    | Annotation::Range(_)
+                    | Annotation::Values(_) => todo!(),
+                }
+            }
         }
         Ok(functions)
     }
@@ -158,7 +210,7 @@ impl FunctionManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         definition: &typeql::Function,
-    ) -> Result<SchemaFunction, FunctionError> {
+    ) -> Result<SchemaFunction, Box<FunctionError>> {
         // TODO: Better query time checking. Maybe redefine all functions at once.
         let definition_key = match self.get_function_key(snapshot, definition.signature.ident.as_str_unchecked()) {
             Err(typedb_source) => Err(FunctionError::FunctionRetrieval { typedb_source }),
@@ -188,14 +240,14 @@ impl FunctionManager {
     pub(crate) fn translate_functions(
         functions: &[SchemaFunction],
         function_index: &impl FunctionSignatureIndex,
-    ) -> Result<HashMap<DefinitionKey, ir::pipeline::function::Function>, FunctionError> {
+    ) -> Result<HashMap<DefinitionKey, ir::pipeline::function::Function>, Box<FunctionError>> {
         functions
             .iter()
             .map(|function| {
                 Ok((function.function_id.clone(), translate_typeql_function(function_index, &function.parsed)?))
             })
             .try_collect()
-            .map_err(|err: Box<_>| FunctionError::FunctionTranslation { typedb_source: *err })
+            .map_err(|err: Box<_>| Box::new(FunctionError::FunctionTranslation { typedb_source: *err }))
     }
 
     pub fn get_function_key(
@@ -215,7 +267,7 @@ impl FunctionManager {
         snapshot: &impl ReadableSnapshot,
         definition_key: DefinitionKey,
         name: &str,
-    ) -> Result<MaybeOwns<SchemaFunction>, FunctionReadError> {
+    ) -> Result<MaybeOwns<'_, SchemaFunction>, FunctionReadError> {
         if let Some(cache) = &self.function_cache {
             Ok(MaybeOwns::Borrowed(cache.get_function(definition_key).unwrap()))
         } else {
@@ -226,9 +278,64 @@ impl FunctionManager {
     pub fn get_functions_syntax(&self, snapshot: &impl ReadableSnapshot) -> Result<String, FunctionReadError> {
         let mut syntax = String::new();
         for function in FunctionReader::get_functions_all(snapshot)? {
-            write!(&mut syntax, "\n{}", function.parsed.unparsed).map_err(|err| err.into())?;
+            write!(&mut syntax, "\n{}", function.parsed.unparsed)?;
         }
         Ok(syntax)
+    }
+
+    pub fn get_function_annotation_by_category(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        function: DefinitionKey,
+        category: &AnnotationCategory,
+    ) -> Result<Option<Annotation>, Box<ConceptReadError>> {
+        Ok(snapshot
+            .iterate_range(
+                &KeyRange::new_variable_width(
+                    RangeStart::Inclusive(
+                        FunctionProperty::new(function.clone(), Infix::ANNOTATION_MIN).into_storage_key(),
+                    ),
+                    RangeEnd::EndPrefixInclusive(
+                        FunctionProperty::new(function, Infix::ANNOTATION_MAX).into_storage_key(),
+                    ),
+                ),
+                StorageCounters::DISABLED,
+            )
+            .collect_cloned_hashset(|key, value| {
+                let annotation_key = FunctionProperty::decode(Bytes::Reference(key.bytes()));
+                let suffix = annotation_key.suffix();
+                match annotation_key.infix() {
+                    Infix::PropertyAnnotationDoc => {
+                        Annotation::Doc(FunctionPropertyEncoding::from_key_value_bytes(suffix, value))
+                    }
+                    Infix::PropertyAnnotationMeta => {
+                        Annotation::Meta(FunctionPropertyEncoding::from_key_value_bytes(suffix, value))
+                    }
+
+                    | Infix::PropertyAnnotationAbstract
+                    | Infix::PropertyAnnotationDistinct
+                    | Infix::PropertyAnnotationIndependent
+                    | Infix::PropertyAnnotationCardinality
+                    | Infix::PropertyAnnotationRegex
+                    | Infix::PropertyAnnotationCascade
+                    | Infix::PropertyAnnotationRange
+                    | Infix::PropertyAnnotationValues
+                    | Infix::_PropertyAnnotationLast
+                    | Infix::PropertyAnnotationUnique
+                    | Infix::PropertyAnnotationKey
+                    | Infix::PropertyLabel
+                    | Infix::PropertyValueType
+                    | Infix::PropertyOrdering
+                    | Infix::PropertyRelationTypeIndependent
+                    | Infix::PropertyHasOrder
+                    | Infix::PropertyLinksOrder => {
+                        unreachable!("Retrieved unexpected infixes while reading annotations.")
+                    }
+                }
+            })
+            .map_err(|err| Box::new(ConceptReadError::SnapshotIterate { source: err.clone() }))?
+            .into_iter()
+            .find(|anno| anno.has_category(category)))
     }
 }
 
@@ -471,6 +578,8 @@ impl<Snapshot: ReadableSnapshot> FunctionSignatureIndex for ReadThroughFunctionS
 
 #[cfg(test)]
 pub mod tests {
+    #![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
+
     use std::{collections::BTreeSet, sync::Arc};
 
     use compiler::annotation::pipeline::AnnotatedStage;
