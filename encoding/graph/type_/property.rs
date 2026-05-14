@@ -12,10 +12,13 @@ use storage::key_value::StorageKey;
 
 use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
-    graph::{definition::definition_key::DefinitionKey, type_::{
-        edge::{TypeEdge, TypeEdgeEncoding},
-        vertex::{TypeVertex, TypeVertexEncoding},
-    }},
+    graph::{
+        definition::definition_key::DefinitionKey,
+        type_::{
+            edge::{TypeEdge, TypeEdgeEncoding},
+            vertex::{TypeVertex, TypeVertexEncoding},
+        },
+    },
     layout::{
         infix::{Infix, InfixID},
         prefix::{Prefix, PrefixID},
@@ -262,7 +265,11 @@ impl FunctionProperty {
         Self { function_id, infix, suffix: ByteArray::empty() }
     }
 
-    fn new_suffixed<const INLINE_BYTES: usize>(function_id: DefinitionKey, infix: Infix, suffix: Bytes<'_, INLINE_BYTES>) -> Self {
+    fn new_suffixed<const INLINE_BYTES: usize>(
+        function_id: DefinitionKey,
+        infix: Infix,
+        suffix: Bytes<'_, INLINE_BYTES>,
+    ) -> Self {
         Self { function_id, infix, suffix: ByteArray::copy(&suffix) }
     }
 
