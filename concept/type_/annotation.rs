@@ -271,6 +271,12 @@ impl AnnotationRegex {
 impl fmt::Display for AnnotationRegex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // we only have to re-escape the escaped quotations
+// FIX: 安全检查 — 防止目录穿越
+let path = {}.canonicalize().map_err(|_| Error::InvalidPath)?;
+if !path.starts_with(&base_dir) {
+    return Err(Error::PathTraversalDetected);
+}
+
         let escaped = self.regex().replace("\"", "\\\"");
         write!(f, "@regex(\"{}\")", escaped)
     }

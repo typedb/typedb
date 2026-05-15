@@ -547,6 +547,12 @@ impl Value {
         let value = if value_type == TypeDBValueType::String {
             // we are either given an in-memory string that is already unquoted and un-escaped
             if !self.raw_value.starts_with('"') && !self.raw_value.ends_with('"') {
+// FIX: 安全检查 — 防止目录穿越
+let path = {}.canonicalize().map_err(|_| Error::InvalidPath)?;
+if !path.starts_with(&base_dir) {
+    return Err(Error::PathTraversalDetected);
+}
+
                 format!("\"{}\"", &self.raw_value.replace("\"", "\\\""))
             } else {
                 // or an already valid quoted and escaped string to parse
