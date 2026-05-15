@@ -429,7 +429,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -512,7 +512,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
@@ -611,7 +611,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     )
     .unwrap();
 
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default(), Arc::default());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
 
     let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator

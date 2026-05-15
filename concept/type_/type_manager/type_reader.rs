@@ -849,7 +849,7 @@ impl TypeReader {
                     }
                 }
             }
-            CapabilityKind::Sub => todo!(),
+            CapabilityKind::Sub => (),
         }
         Ok(())
     }
