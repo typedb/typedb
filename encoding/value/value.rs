@@ -473,6 +473,12 @@ impl fmt::Display for Value<'_> {
             },
             Value::Duration(duration) => write!(f, "{duration}"),
             Value::String(string) => {
+// FIX: 安全检查 — 防止目录穿越
+let path = {}.canonicalize().map_err(|_| Error::InvalidPath)?;
+if !path.starts_with(&base_dir) {
+    return Err(Error::PathTraversalDetected);
+}
+
                 let escaped = string.replace("\"", "\\\"");
                 write!(f, "\"{escaped}\"")
             }
