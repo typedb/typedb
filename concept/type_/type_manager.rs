@@ -240,7 +240,7 @@ macro_rules! get_annotations_declared_methods {
 
 macro_rules! get_annotation_declared_by_category_methods {
     ($(
-        $(#[$meta:meta])* fn $method_name:ident($type_:ident) -> $annotation_type:ty;
+        $(#[$meta:meta])* fn $method_name:ident($type_:ty) -> $annotation_type:ty;
     )*) => {
         $(
             $(#[$meta])*
@@ -948,6 +948,9 @@ impl TypeManager {
         fn get_relation_type_annotation_declared_by_category(RelationType) -> RelationTypeAnnotation;
         fn get_attribute_type_annotation_declared_by_category(AttributeType) -> AttributeTypeAnnotation;
         fn get_role_type_annotation_declared_by_category(RoleType) -> RoleTypeAnnotation;
+        fn get_sub_entity_type_annotations_declared_by_category(Sub<EntityType>) -> SubAnnotation;
+        fn get_sub_relation_type_annotations_declared_by_category(Sub<RelationType>) -> SubAnnotation;
+        fn get_sub_attribute_type_annotations_declared_by_category(Sub<AttributeType>) -> SubAnnotation;
         fn get_owns_annotation_declared_by_category(Owns) -> OwnsAnnotation;
         fn get_plays_annotation_declared_by_category(Plays) -> PlaysAnnotation;
         fn get_relates_annotation_declared_by_category(Relates) -> RelatesAnnotation;
@@ -964,11 +967,16 @@ impl TypeManager {
     }
 
     get_type_capability_constraints_methods! {
-        fn get_entity_type_owned_attribute_type_constraints(EntityType => |type_| { type_.into_object_type() }) -> Owns = get_type_capability_constraints | get_owned_attribute_type_constraints;
-        fn get_relation_type_owned_attribute_type_constraints(RelationType => |type_| { type_.into_object_type() }) -> Owns = get_type_capability_constraints | get_owned_attribute_type_constraints;
-        fn get_entity_type_played_role_type_constraints(EntityType => |type_| { type_.into_object_type() }) -> Plays = get_type_capability_constraints | get_played_role_type_constraints;
-        fn get_relation_type_played_role_type_constraints(RelationType => |type_| { type_.into_object_type() }) -> Plays = get_type_capability_constraints | get_played_role_type_constraints;
-        fn get_relation_type_related_role_type_constraints(RelationType => |type_| { type_ }) -> Relates = get_type_capability_constraints | get_relation_type_related_role_type_constraints;
+        fn get_entity_type_owned_attribute_type_constraints(EntityType => |type_| { type_.into_object_type() }) -> Owns =
+            get_type_capability_constraints | get_owned_attribute_type_constraints;
+        fn get_relation_type_owned_attribute_type_constraints(RelationType => |type_| { type_.into_object_type() }) -> Owns =
+            get_type_capability_constraints | get_owned_attribute_type_constraints;
+        fn get_entity_type_played_role_type_constraints(EntityType => |type_| { type_.into_object_type() }) -> Plays =
+            get_type_capability_constraints | get_played_role_type_constraints;
+        fn get_relation_type_played_role_type_constraints(RelationType => |type_| { type_.into_object_type() }) -> Plays =
+            get_type_capability_constraints | get_played_role_type_constraints;
+        fn get_relation_type_related_role_type_constraints(RelationType => |type_| { type_ }) -> Relates =
+            get_type_capability_constraints | get_relation_type_related_role_type_constraints;
     }
 
     get_filtered_constraints_methods! {

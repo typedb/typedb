@@ -44,7 +44,7 @@ use ir::{
         },
     },
     translation::{
-        function::{build_signature, translate_typeql_function},
+        function::{FunctionAnnotation, build_signature, translate_typeql_function},
         pipeline::TranslatedStage,
         tokens::translate_annotation,
     },
@@ -143,7 +143,7 @@ impl FunctionManager {
             HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
         let function_index = ReadThroughFunctionSignatureIndex::new(snapshot, self, buffered);
         // Translate to ensure the function calls are valid references. Type-inference is done at commit-time.
-        Self::translate_functions(&functions, &function_index)?;
+        let translated = Self::translate_functions(&functions, &function_index)?;
         for (function, definition) in zip(functions.iter(), definitions) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let definition_key = &function.function_id;
@@ -152,41 +152,20 @@ impl FunctionManager {
                 definition_key.clone().into_storage_key().into_owned_array(),
                 FunctionDefinition::build_ref(definition.unparsed.as_str()).into_bytes().into_array(),
             );
-            for annotation in &function.parsed.annotations {
-                let annotation =
-                    translate_annotation(annotation).map_err(|typedb_source| FunctionError::FunctionTranslation {
-                        typedb_source: FunctionRepresentationError::LiteralParseError {
-                            annotation: annotation.to_string(),
-                            function: function.name().clone(),
-                            source_span: annotation.span(),
-                            typedb_source,
-                        },
-                    })?;
-
+            for annotation in &translated[definition_key].annotations {
                 match annotation {
-                    Annotation::Doc(annotation_doc) => {
+                    FunctionAnnotation::Doc(annotation_doc) => {
                         snapshot.put_val(
                             annotation_doc.to_key(definition_key.clone()).into_storage_key().into_owned_array(),
                             annotation_doc.to_value_bytes().unwrap().into_array(),
                         );
                     }
-                    Annotation::Meta(annotation_meta) => {
+                    FunctionAnnotation::Meta(annotation_meta) => {
                         snapshot.put_val(
                             annotation_meta.to_key(definition_key.clone()).into_storage_key().into_owned_array(),
                             annotation_meta.to_value_bytes().unwrap().into_array(),
                         );
                     }
-
-                    Annotation::Abstract(_)
-                    | Annotation::Distinct(_)
-                    | Annotation::Independent(_)
-                    | Annotation::Unique(_)
-                    | Annotation::Key(_)
-                    | Annotation::Cardinality(_)
-                    | Annotation::Regex(_)
-                    | Annotation::Cascade(_)
-                    | Annotation::Range(_)
-                    | Annotation::Values(_) => todo!(),
                 }
             }
         }
@@ -199,6 +178,21 @@ impl FunctionManager {
             Ok(None) => Err(FunctionError::FunctionNotFound {}),
             Ok(Some(key)) => Ok(key),
         }?;
+
+        for annotation in self
+            .get_function_annotations(snapshot, definition_key.clone())
+            .map_err(|typedb_source| FunctionError::ConceptRead { typedb_source })?
+        {
+            match annotation {
+                FunctionAnnotation::Doc(annotation) => {
+                    snapshot.delete(annotation.to_key(definition_key.clone()).into_storage_key().into_owned_array())
+                }
+                FunctionAnnotation::Meta(annotation) => {
+                    snapshot.delete(annotation.to_key(definition_key.clone()).into_storage_key().into_owned_array())
+                }
+            }
+        }
+
         snapshot.delete(definition_key.into_storage_key().into_owned_array());
         let index_key = NameToFunctionDefinitionIndex::build(name);
         snapshot.delete(index_key.into_storage_key().into_owned_array());
@@ -283,13 +277,12 @@ impl FunctionManager {
         Ok(syntax)
     }
 
-    pub fn get_function_annotation_by_category(
+    fn get_function_annotations(
         &self,
         snapshot: &impl ReadableSnapshot,
         function: DefinitionKey,
-        category: &AnnotationCategory,
-    ) -> Result<Option<Annotation>, Box<ConceptReadError>> {
-        Ok(snapshot
+    ) -> Result<HashSet<FunctionAnnotation>, Box<ConceptReadError>> {
+        snapshot
             .iterate_range(
                 &KeyRange::new_variable_width(
                     RangeStart::Inclusive(
@@ -306,10 +299,10 @@ impl FunctionManager {
                 let suffix = annotation_key.suffix();
                 match annotation_key.infix() {
                     Infix::PropertyAnnotationDoc => {
-                        Annotation::Doc(FunctionPropertyEncoding::from_key_value_bytes(suffix, value))
+                        FunctionAnnotation::Doc(FunctionPropertyEncoding::from_key_value_bytes(suffix, value))
                     }
                     Infix::PropertyAnnotationMeta => {
-                        Annotation::Meta(FunctionPropertyEncoding::from_key_value_bytes(suffix, value))
+                        FunctionAnnotation::Meta(FunctionPropertyEncoding::from_key_value_bytes(suffix, value))
                     }
 
                     | Infix::PropertyAnnotationAbstract
@@ -333,9 +326,16 @@ impl FunctionManager {
                     }
                 }
             })
-            .map_err(|err| Box::new(ConceptReadError::SnapshotIterate { source: err.clone() }))?
-            .into_iter()
-            .find(|anno| anno.has_category(category)))
+            .map_err(|err| Box::new(ConceptReadError::SnapshotIterate { source: err.clone() }))
+    }
+
+    pub fn get_function_annotation_by_category(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        function: DefinitionKey,
+        category: &AnnotationCategory,
+    ) -> Result<Option<FunctionAnnotation>, Box<ConceptReadError>> {
+        Ok(self.get_function_annotations(snapshot, function)?.into_iter().find(|anno| anno.has_category(category)))
     }
 }
 

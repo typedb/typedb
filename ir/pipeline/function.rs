@@ -20,7 +20,7 @@ use typeql::{
 
 use crate::{
     pipeline::{ParameterRegistry, reduce::Reducer},
-    translation::{PipelineTranslationContext, pipeline::TranslatedStage},
+    translation::{PipelineTranslationContext, function::FunctionAnnotation, pipeline::TranslatedStage},
 };
 
 #[derive(Debug, Clone)]
@@ -30,6 +30,7 @@ pub struct Function {
     pub name: String,
     pub function_body: FunctionBody,
     pub output: Option<Output>,
+    pub annotations: Vec<FunctionAnnotation>,
     // Variable categories for args & return can be read from the block's context.
     pub arguments: Vec<Variable>,
     pub argument_labels: Option<Vec<NamedTypeAny>>,
@@ -44,8 +45,18 @@ impl Function {
         argument_labels: Option<Vec<NamedTypeAny>>,
         output: Option<Output>,
         function_body: FunctionBody,
+        annotations: Vec<FunctionAnnotation>,
     ) -> Self {
-        Self { name: name.to_string(), context, parameters, function_body, output, arguments, argument_labels }
+        Self {
+            name: name.to_string(),
+            context,
+            parameters,
+            function_body,
+            output,
+            annotations,
+            arguments,
+            argument_labels,
+        }
     }
 
     pub fn name(&self) -> &str {

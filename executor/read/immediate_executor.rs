@@ -19,8 +19,9 @@ use concept::{
     error::ConceptReadError,
     thing::thing_manager::ThingManager,
     type_::{
-        OwnerAPI, PlayerAPI,
+        Capability, OwnerAPI, PlayerAPI, TypeAPI,
         annotation::{Annotation, AnnotationCategory},
+        sub::Sub,
     },
 };
 use encoding::value::value::Value;
@@ -1045,7 +1046,7 @@ impl BuiltinCallExecutor {
                 VariableValue::Value(Value::String(Cow::Owned(label.to_string())))
             }
 
-            BuiltinConceptFunctionID::GetDoc => get_type_doc(context, &row, self.argument_positions[0].as_usize())?,
+            BuiltinConceptFunctionID::GetDoc => get_type_doc(context, &row[self.argument_positions[0].as_usize()])?,
 
             BuiltinConceptFunctionID::GetOwnsDoc => {
                 let owner = &row[self.argument_positions[0].as_usize()];
@@ -1062,70 +1063,80 @@ impl BuiltinCallExecutor {
                 let player = &row[self.argument_positions[0].as_usize()];
                 let role = &row[self.argument_positions[1].as_usize()];
                 let plays = get_plays(context, player, role)?;
-                let snapshot = &**context.snapshot();
                 unwrap_doc(context.type_manager().get_plays_annotation_declared_by_category(
-                    snapshot,
+                    &**context.snapshot(),
                     plays,
                     &AnnotationCategory::Doc,
                 )?)?
             }
 
             BuiltinConceptFunctionID::GetRelatesDoc => {
-                let snapshot = &**context.snapshot();
                 let relation = &row[self.argument_positions[0].as_usize()];
                 let role = &row[self.argument_positions[1].as_usize()];
                 let relates = get_relates(context, relation, role)?;
                 unwrap_doc(context.type_manager().get_relates_annotation_declared_by_category(
-                    snapshot,
+                    &**context.snapshot(),
                     relates,
                     &AnnotationCategory::Doc,
                 )?)?
             }
 
+            BuiltinConceptFunctionID::GetSubDoc => {
+                let subtype = &row[self.argument_positions[0].as_usize()];
+                let supertype = &row[self.argument_positions[1].as_usize()];
+                get_subtype_doc(context, subtype, supertype)?
+            }
+
             BuiltinConceptFunctionID::GetMeta => get_type_meta(
                 context,
-                &row,
-                self.argument_positions[0].as_usize(),
-                self.argument_positions[1].as_usize(),
+                &row[self.argument_positions[0].as_usize()],
+                &row[self.argument_positions[1].as_usize()],
             )?,
 
             BuiltinConceptFunctionID::GetOwnsMeta => {
                 let key = row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
-                let cat = &AnnotationCategory::Meta(key);
+                let category = &AnnotationCategory::Meta(key);
                 let owner = &row[self.argument_positions[1].as_usize()];
                 let attribute = &row[self.argument_positions[2].as_usize()];
                 let owns = get_owns(context, owner, attribute)?;
                 unwrap_meta_value(context.type_manager().get_owns_annotation_declared_by_category(
                     &**context.snapshot(),
                     owns,
-                    cat,
+                    category,
                 )?)?
             }
 
             BuiltinConceptFunctionID::GetPlaysMeta => {
                 let key = row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
-                let cat = &AnnotationCategory::Meta(key);
+                let category = &AnnotationCategory::Meta(key);
                 let player = &row[self.argument_positions[1].as_usize()];
                 let role = &row[self.argument_positions[2].as_usize()];
                 let plays = get_plays(context, player, role)?;
                 unwrap_meta_value(context.type_manager().get_plays_annotation_declared_by_category(
                     &**context.snapshot(),
                     plays,
-                    cat,
+                    category,
                 )?)?
             }
 
             BuiltinConceptFunctionID::GetRelatesMeta => {
                 let key = row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
-                let cat = &AnnotationCategory::Meta(key);
+                let category = &AnnotationCategory::Meta(key);
                 let relation = &row[self.argument_positions[1].as_usize()];
                 let role = &row[self.argument_positions[2].as_usize()];
                 let relates = get_relates(context, relation, role)?;
                 unwrap_meta_value(context.type_manager().get_relates_annotation_declared_by_category(
                     &**context.snapshot(),
                     relates,
-                    cat,
+                    category,
                 )?)?
+            }
+
+            BuiltinConceptFunctionID::GetSubMeta => {
+                let key = &row[self.argument_positions[0].as_usize()];
+                let subtype = &row[self.argument_positions[1].as_usize()];
+                let supertype = &row[self.argument_positions[2].as_usize()];
+                get_subtype_meta(context, key, subtype, supertype)?
             }
 
             BuiltinConceptFunctionID::GetFunDoc => {
@@ -1133,8 +1144,8 @@ impl BuiltinCallExecutor {
                 let function = context
                     .function_manager()
                     .get_function_key(&**context.snapshot(), function_name.as_value().unwrap_string_ref())
-                    .unwrap()
                     .unwrap();
+                let Some(function) = function else { todo!("Error") };
                 unwrap_doc(context.function_manager().get_function_annotation_by_category(
                     &**context.snapshot(),
                     function,
@@ -1144,7 +1155,7 @@ impl BuiltinCallExecutor {
 
             BuiltinConceptFunctionID::GetFunMeta => {
                 let key = row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
-                let cat = &AnnotationCategory::Meta(key);
+                let category = &AnnotationCategory::Meta(key);
                 let function_name = &row[self.argument_positions[1].as_usize()];
                 let function = context
                     .function_manager()
@@ -1154,7 +1165,7 @@ impl BuiltinCallExecutor {
                 unwrap_meta_value(context.function_manager().get_function_annotation_by_category(
                     &**context.snapshot(),
                     function,
-                    &cat,
+                    category,
                 )?)?
             }
 
@@ -1172,8 +1183,6 @@ impl BuiltinCallExecutor {
             }
 
             id @ (BuiltinConceptFunctionID::GetAllMeta
-            | BuiltinConceptFunctionID::GetSubDoc
-            | BuiltinConceptFunctionID::GetSubMeta
             | BuiltinConceptFunctionID::GetSubAllMeta
             | BuiltinConceptFunctionID::GetOwnsAllMeta
             | BuiltinConceptFunctionID::GetPlaysAllMeta
@@ -1232,11 +1241,10 @@ fn get_relates(
 
 fn get_type_doc(
     context: &ExecutionContext<impl ReadableSnapshot>,
-    row: &[VariableValue<'_>],
-    arg0: usize,
+    ty: &VariableValue<'_>,
 ) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
-    match row[arg0].as_type() {
+    match ty.as_type() {
         Type::Entity(ty) => unwrap_doc(context.type_manager().get_entity_type_annotation_declared_by_category(
             snapshot,
             ty,
@@ -1263,46 +1271,136 @@ fn get_type_doc(
     }
 }
 
+fn get_subtype_doc(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    subtype: &VariableValue<'_>,
+    supertype: &VariableValue<'_>,
+) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+    let snapshot = &**context.snapshot();
+    match subtype.as_type() {
+        Type::Entity(subtype) => {
+            let Type::Entity(supertype) = supertype.as_type() else { todo!("Error") };
+            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
+                return Ok(VariableValue::None);
+            }
+            unwrap_doc(context.type_manager().get_sub_entity_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                &AnnotationCategory::Doc,
+            )?)
+        }
+        Type::Relation(subtype) => {
+            let Type::Relation(supertype) = supertype.as_type() else { todo!("Error") };
+            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
+                return Ok(VariableValue::None);
+            }
+            unwrap_doc(context.type_manager().get_sub_relation_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                &AnnotationCategory::Doc,
+            )?)
+        }
+        Type::Attribute(subtype) => {
+            let Type::Attribute(supertype) = supertype.as_type() else { todo!("Error") };
+            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
+                return Ok(VariableValue::None);
+            }
+            unwrap_doc(context.type_manager().get_sub_attribute_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                &AnnotationCategory::Doc,
+            )?)
+        }
+        Type::RoleType(_) => todo!(),
+    }
+}
+
 fn unwrap_doc(doc: Option<impl Into<Annotation>>) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
     match doc.map(Into::into) {
         Some(Annotation::Doc(doc)) => Ok(VariableValue::Value(Value::String(Cow::Owned(doc.doc)))),
-        None => Ok(VariableValue::None),
+        None => Ok(VariableValue::Value(Value::String(Cow::default()))),
         Some(_) => todo!("Error"),
     }
 }
 
 fn get_type_meta(
     context: &ExecutionContext<impl ReadableSnapshot>,
-    row: &[VariableValue<'_>],
-    arg0: usize,
-    arg1: usize,
+    key: &VariableValue<'_>,
+    ty: &VariableValue<'_>,
 ) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
-    let key = row[arg0].as_value().unwrap_string_ref().to_owned();
-    let cat = &AnnotationCategory::Meta(key);
-    match row[arg1].as_type() {
+    let key = key.as_value().unwrap_string_ref().to_owned();
+    let category = &AnnotationCategory::Meta(key);
+    match ty.as_type() {
         Type::Entity(ty) => unwrap_meta_value(
-            context.type_manager().get_entity_type_annotation_declared_by_category(snapshot, ty, cat)?,
+            context.type_manager().get_entity_type_annotation_declared_by_category(snapshot, ty, category)?,
         ),
         Type::Relation(ty) => unwrap_meta_value(
-            context.type_manager().get_relation_type_annotation_declared_by_category(snapshot, ty, cat)?,
+            context.type_manager().get_relation_type_annotation_declared_by_category(snapshot, ty, category)?,
         ),
         Type::Attribute(ty) => unwrap_meta_value(
-            context.type_manager().get_attribute_type_annotation_declared_by_category(snapshot, ty, cat)?,
+            context.type_manager().get_attribute_type_annotation_declared_by_category(snapshot, ty, category)?,
         ),
         Type::RoleType(ty) => {
             let relates = ty.get_relates_explicit(snapshot, context.type_manager())?;
             unwrap_meta_value(
-                context.type_manager().get_relates_annotation_declared_by_category(snapshot, relates, cat)?,
+                context.type_manager().get_relates_annotation_declared_by_category(snapshot, relates, category)?,
             )
         }
+    }
+}
+
+fn get_subtype_meta(
+    context: &ExecutionContext<impl ReadableSnapshot>,
+    key: &VariableValue<'_>,
+    subtype: &VariableValue<'_>,
+    supertype: &VariableValue<'_>,
+) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
+    let snapshot = &**context.snapshot();
+    let key = key.as_value().unwrap_string_ref().to_owned();
+    let category = &AnnotationCategory::Meta(key);
+    match subtype.as_type() {
+        Type::Entity(subtype) => {
+            let Type::Entity(supertype) = supertype.as_type() else { todo!("Error") };
+            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
+                return Ok(VariableValue::None);
+            }
+            unwrap_meta_value(context.type_manager().get_sub_entity_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                category,
+            )?)
+        }
+        Type::Relation(subtype) => {
+            let Type::Relation(supertype) = supertype.as_type() else { todo!("Error") };
+            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
+                return Ok(VariableValue::None);
+            }
+            unwrap_meta_value(context.type_manager().get_sub_relation_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                category,
+            )?)
+        }
+        Type::Attribute(subtype) => {
+            let Type::Attribute(supertype) = supertype.as_type() else { todo!("Error") };
+            if subtype.get_supertype(snapshot, context.type_manager())? != Some(supertype) {
+                return Ok(VariableValue::None);
+            }
+            unwrap_meta_value(context.type_manager().get_sub_attribute_type_annotations_declared_by_category(
+                snapshot,
+                Sub::new(subtype, supertype),
+                category,
+            )?)
+        }
+        Type::RoleType(_) => todo!(),
     }
 }
 
 fn unwrap_meta_value(meta: Option<impl Into<Annotation>>) -> Result<VariableValue<'static>, Box<ConceptReadError>> {
     match meta.map(Into::into) {
         Some(Annotation::Meta(meta)) => Ok(VariableValue::Value(Value::String(Cow::Owned(meta.value)))),
-        None => Ok(VariableValue::None),
+        None => Ok(VariableValue::Value(Value::String(Cow::default()))),
         Some(_) => todo!("Error"),
     }
 }

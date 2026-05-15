@@ -73,14 +73,7 @@ fn setup(
     let snapshot = storage.clone().open_snapshot_write();
     let query = typeql::parse_query(data).unwrap().into_structure().into_pipeline();
     let pipeline = query_manager
-        .prepare_write_pipeline(
-            snapshot,
-            &type_manager,
-            thing_manager.clone(),
-            Arc::default(),
-            &query,
-            data,
-        )
+        .prepare_write_pipeline(snapshot, &type_manager, thing_manager.clone(), Arc::default(), &query, data)
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
