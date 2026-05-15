@@ -88,7 +88,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
             Arc::try_unwrap(snapshot).unwrap_or_else(|_| panic!("Expected unique ownership of snapshot")),
             &type_manager,
             thing_manager.clone(),
-            &function_manager,
+            function_manager.clone(),
             &data_query,
             &data_str,
         )
@@ -137,7 +137,7 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
             snapshot.clone(),
             type_manager,
             thing_manager.clone(),
-            function_manager,
+            function_manager.clone(),
             &query,
             query_str,
         )
