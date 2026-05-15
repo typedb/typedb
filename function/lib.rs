@@ -5,6 +5,7 @@
  */
 
 use compiler::annotation::FunctionAnnotationError;
+use concept::error::ConceptReadError;
 use encoding::error::EncodingError;
 use error::typedb_error;
 use ir::pipeline::{FunctionReadError, FunctionRepresentationError};
@@ -30,5 +31,6 @@ typedb_error! {
         FunctionRetrieval(7, "Error retrieving function.", typedb_source: FunctionReadError),
         CommittedFunctionParseError(8, "Error while parsing committed function.", typedb_source: typeql::Error),
         StratificationViolation(9, "Detected a recursive cycle through a negation, reduction or single return: [{cycle_names}]", cycle_names: String),
+        ConceptRead(10, "Concept read failed.", typedb_source: Box<ConceptReadError>),
     }
 }

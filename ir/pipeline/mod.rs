@@ -8,6 +8,7 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use answer::variable::Variable;
 use bytes::byte_array::ByteArray;
+use concept::type_::annotation::{Annotation, AnnotationCategory};
 use encoding::{
     graph::thing::THING_VERTEX_MAX_LENGTH,
     value::{ValueEncodable, value::Value},
@@ -140,11 +141,25 @@ typedb_error! {
         LiteralParseError(
             15,
             "Error parsing annotation '{annotation}' of function '{function}'.",
-            annotation: String,
+            annotation: typeql::Annotation,
             function: String,
             source_span: Option<Span>,
             typedb_source: LiteralParseError,
         ),
+        AnnotationNotSupported(
+            16,
+            "Annotation '{annotation}' is not supported on functions.",
+            annotation: Annotation,
+            source_span: Option<Span>,
+        ),
+        DuplicateAnnotationCategory(
+            17,
+            "Annotation category '{category}' is specified multiple times in function '{function}'.",
+            category: AnnotationCategory,
+            function: String,
+            source_span: Option<Span>,
+        ),
+
     }
 }
 

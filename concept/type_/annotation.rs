@@ -670,7 +670,7 @@ macro_rules! FromAnnotation {
 }
 pub(crate) use FromAnnotation;
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum AnnotationCategory {
     Abstract,
     Distinct,

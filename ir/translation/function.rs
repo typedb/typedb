@@ -4,7 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::collections::HashSet;
+
 use answer::variable::Variable;
+use concept::type_::annotation::{
+    Annotation, AnnotationCategory, AnnotationDoc, AnnotationMeta, HasAnnotationCategory,
+};
 use error::needs_update_when_feature_is_implemented;
 use itertools::Itertools;
 use typeql::{
@@ -29,6 +34,7 @@ use crate::{
         PipelineTranslationContext,
         pipeline::{TranslatedStage, translate_pipeline_stages},
         reduce::{build_reducer, resolve_category_optionality},
+        tokens::translate_annotation,
     },
 };
 
@@ -51,15 +57,16 @@ pub fn translate_typeql_function(
     function_index: &impl FunctionSignatureIndex,
     function: &typeql::Function,
 ) -> Result<Function, Box<FunctionRepresentationError>> {
-    translate_function_from(function_index, &function.signature, &function.block)
+    translate_function_from(function_index, &function.signature, &function.block, &function.annotations)
 }
 
 fn translate_function_from(
     function_index: &impl FunctionSignatureIndex,
     signature: &typeql::schema::definable::function::Signature,
     block: &FunctionBlock,
+    annotations: &[typeql::Annotation],
 ) -> Result<Function, Box<FunctionRepresentationError>> {
-    let checked_name = &signature.ident.as_str_unreserved().map_err(|_source| {
+    let checked_name = signature.ident.as_str_unreserved().map_err(|_source| {
         FunctionRepresentationError::IllegalKeywordAsIdentifier {
             identifier: signature.ident.as_str_unchecked().to_owned(),
             source_span: signature.ident.span(),
@@ -136,6 +143,8 @@ fn translate_function_from(
         }
     }
 
+    let annotations = translate_function_annotations(annotations, checked_name)?;
+
     Ok(Function::new(
         checked_name,
         context,
@@ -144,6 +153,7 @@ fn translate_function_from(
         Some(argument_labels),
         Some(signature.output.clone()),
         body,
+        annotations,
     ))
 }
 
@@ -323,4 +333,74 @@ fn check_consistent_return<T>(
     }
 
     Ok(())
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum FunctionAnnotation {
+    Doc(AnnotationDoc),
+    Meta(AnnotationMeta),
+}
+
+fn translate_function_annotations(
+    typeql_annotations: &[typeql::Annotation],
+    function_name: &str,
+) -> Result<Vec<FunctionAnnotation>, Box<FunctionRepresentationError>> {
+    let mut seen_categories = HashSet::new();
+    typeql_annotations
+        .iter()
+        .map(|typeql_annotation| {
+            let annotation = translate_annotation(typeql_annotation).map_err(|typedb_source| {
+                FunctionRepresentationError::LiteralParseError {
+                    annotation: typeql_annotation.clone(),
+                    function: function_name.to_owned(),
+                    typedb_source,
+                    source_span: typeql_annotation.span(),
+                }
+            })?;
+
+            if !seen_categories.insert(annotation.category()) {
+                return Err(Box::new(FunctionRepresentationError::DuplicateAnnotationCategory {
+                    category: annotation.category(),
+                    function: function_name.to_owned(),
+                    source_span: typeql_annotation.span(),
+                }));
+            }
+
+            match annotation {
+                Annotation::Doc(annotation) => Ok(FunctionAnnotation::Doc(annotation)),
+                Annotation::Meta(annotation) => Ok(FunctionAnnotation::Meta(annotation)),
+                _ => Err(Box::new(FunctionRepresentationError::AnnotationNotSupported {
+                    annotation,
+                    source_span: typeql_annotation.span(),
+                })),
+            }
+        })
+        .try_collect()
+}
+
+impl HasAnnotationCategory for FunctionAnnotation {
+    fn has_category(&self, category: &AnnotationCategory) -> bool {
+        match self {
+            FunctionAnnotation::Doc(annotation_doc) => matches!(category, AnnotationCategory::Doc),
+            FunctionAnnotation::Meta(annotation_meta) => {
+                matches!(category, AnnotationCategory::Meta(key) if key == annotation_meta.key())
+            }
+        }
+    }
+
+    fn category(&self) -> AnnotationCategory {
+        match self {
+            FunctionAnnotation::Doc(annotation_doc) => AnnotationCategory::Doc,
+            FunctionAnnotation::Meta(annotation_meta) => AnnotationCategory::Meta(annotation_meta.key().to_owned()),
+        }
+    }
+}
+
+impl From<FunctionAnnotation> for Annotation {
+    fn from(annotation: FunctionAnnotation) -> Self {
+        match annotation {
+            FunctionAnnotation::Doc(annotation_doc) => Annotation::Doc(annotation_doc),
+            FunctionAnnotation::Meta(annotation_meta) => Annotation::Meta(annotation_meta),
+        }
+    }
 }
