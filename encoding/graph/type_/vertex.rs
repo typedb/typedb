@@ -7,7 +7,7 @@
 use std::{fmt, hash::Hash};
 
 use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
-use resource::constants::encoding::TypeIDUInt;
+pub use resource::constants::encoding::TypeIDUInt;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyArray},
