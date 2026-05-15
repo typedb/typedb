@@ -4,13 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::{
-    Arc,
-    atomic::{AtomicU64, Ordering},
-};
+use std::sync::Arc;
 
 use bytes::{Bytes, byte_array::ByteArray};
-use resource::profile::StorageCounters;
+use resource::{
+    profile::StorageCounters,
+    state_counter::{CounterId, StateCounters},
+};
 use storage::{
     MVCCStorage,
     key_range::KeyRange,
@@ -32,7 +32,7 @@ use crate::{
             vertex_attribute::{AttributeID, AttributeVertex, IntegerAttributeID, StringAttributeID},
             vertex_object::{ObjectID, ObjectVertex},
         },
-        type_::vertex::{TypeID, TypeIDUInt, TypeVertex, build_type_vertex_prefix_key},
+        type_::vertex::{TypeID, TypeVertex, build_type_vertex_prefix_key},
     },
     layout::prefix::Prefix,
     value::{
@@ -45,8 +45,6 @@ use crate::{
 
 #[derive(Debug)]
 pub struct ThingVertexGenerator {
-    entity_ids: Box<[AtomicU64]>,
-    relation_ids: Box<[AtomicU64]>,
     large_value_hasher: fn(&[u8]) -> u64,
 }
 
@@ -58,19 +56,11 @@ impl Default for ThingVertexGenerator {
 
 impl ThingVertexGenerator {
     pub fn new() -> Self {
-        // TODO: we should create a resizable Vector linked to the id of types/highest id of each type
-        //       this will speed up booting time on load (loading this will require MAX types * 3 iterator searches) and reduce memory footprint
         Self::new_with_hasher(seahash::hash)
     }
 
     pub fn new_with_hasher(large_value_hasher: fn(&[u8]) -> u64) -> Self {
-        // TODO: we should create a resizable Vector linked to the id of types/highest id of each type
-        //       this will speed up booting time on load (loading this will require MAX types * 3 iterator searches) and reduce memory footprint
-        ThingVertexGenerator {
-            entity_ids: Self::allocate_empty_ids(),
-            relation_ids: Self::allocate_empty_ids(),
-            large_value_hasher,
-        }
+        ThingVertexGenerator { large_value_hasher }
     }
 
     pub fn load<D>(storage: Arc<MVCCStorage<D>>) -> Result<Self, EncodingError> {
@@ -81,6 +71,12 @@ impl ThingVertexGenerator {
         storage: Arc<MVCCStorage<D>>,
         large_value_hasher: fn(&[u8]) -> u64,
     ) -> Result<Self, EncodingError> {
+        Self::seed_state_counters_from_storage(storage)?;
+        Ok(ThingVertexGenerator { large_value_hasher })
+    }
+
+    fn seed_state_counters_from_storage<D>(storage: Arc<MVCCStorage<D>>) -> Result<(), EncodingError> {
+        let counters = storage.state_counters().clone();
         let read_snapshot = storage.clone().open_snapshot_read();
         let entity_types = read_snapshot
             .iterate_range(
@@ -102,9 +98,6 @@ impl ThingVertexGenerator {
             )
             .collect_cloned_vec(|k, _v| TypeVertex::decode(Bytes::Reference(k.bytes())).type_id_().as_u16())
             .map_err(|err| EncodingError::ExistingTypesRead { source: err })?;
-
-        let entity_ids = Self::allocate_empty_ids();
-        let relation_ids = Self::allocate_empty_ids();
         for type_id in entity_types {
             let mut max_object_id =
                 ObjectVertex::build_entity(TypeID::new(type_id), ObjectID::new(u64::MAX)).to_bytes().into_array();
@@ -117,7 +110,10 @@ impl ThingVertexGenerator {
                 if ObjectVertex::is_entity_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);
                     if object_vertex.type_id_() == TypeID::new(type_id) {
-                        entity_ids[type_id as usize].store(object_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+                        counters.update_to_at_least(
+                            CounterId::EntityVertex { type_id },
+                            object_vertex.object_id().as_u64() + 1,
+                        );
                     }
                 }
             }
@@ -134,17 +130,15 @@ impl ThingVertexGenerator {
                 if ObjectVertex::is_relation_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);
                     if object_vertex.type_id_() == TypeID::new(type_id) {
-                        relation_ids[type_id as usize].store(object_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+                        counters.update_to_at_least(
+                            CounterId::RelationVertex { type_id },
+                            object_vertex.object_id().as_u64() + 1,
+                        );
                     }
                 }
             }
         }
-
-        Ok(ThingVertexGenerator { entity_ids, relation_ids, large_value_hasher })
-    }
-
-    fn allocate_empty_ids() -> Box<[AtomicU64]> {
-        (0..=TypeIDUInt::MAX).map(|_| AtomicU64::new(0)).collect::<Vec<AtomicU64>>().into_boxed_slice()
+        Ok(())
     }
 
     pub fn hasher(&self) -> &impl Fn(&[u8]) -> u64 {
@@ -155,7 +149,7 @@ impl ThingVertexGenerator {
     where
         Snapshot: WritableSnapshot,
     {
-        let entity_id = self.entity_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
+        let entity_id = snapshot.allocate_counter(CounterId::EntityVertex { type_id: type_id.as_u16() });
         let vertex = ObjectVertex::build_entity(type_id, ObjectID::new(entity_id));
         snapshot.insert(vertex.into_storage_key().into_owned_array());
         vertex
@@ -165,7 +159,7 @@ impl ThingVertexGenerator {
     where
         Snapshot: WritableSnapshot,
     {
-        let relation_id = self.relation_ids[type_id.as_u16() as usize].fetch_add(1, Ordering::Relaxed);
+        let relation_id = snapshot.allocate_counter(CounterId::RelationVertex { type_id: type_id.as_u16() });
         let vertex = ObjectVertex::build_relation(type_id, ObjectID::new(relation_id));
         snapshot.insert(vertex.into_storage_key().into_owned_array());
         vertex
@@ -425,10 +419,5 @@ impl ThingVertexGenerator {
         Snapshot: ReadableSnapshot,
     {
         StructAttributeID::find_hashed_id(type_id, struct_bytes, snapshot, &self.large_value_hasher)
-    }
-
-    pub fn reset(&mut self) {
-        self.entity_ids.iter().for_each(|id| id.store(0, Ordering::SeqCst));
-        self.relation_ids.iter().for_each(|id| id.store(0, Ordering::SeqCst));
     }
 }

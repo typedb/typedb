@@ -13,6 +13,11 @@ features = {}
 	path = "resource.rs"
 	crate-type = ["lib"]
 
+[dev-dependencies]
+
+	[dev-dependencies.bincode]
+		workspace = true
+
 [dependencies]
 
 	[dependencies.tracing]

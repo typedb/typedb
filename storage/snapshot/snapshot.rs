@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{any::type_name, error::Error, fmt, iter::empty, sync::Arc};
+use std::{any::type_name, collections::HashSet, error::Error, fmt, iter::empty, sync::Arc};
 
 use bytes::byte_array::ByteArray;
 use error::typedb_error;
@@ -12,6 +12,7 @@ use lending_iterator::LendingIterator;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::{CommitProfile, StorageCounters},
+    state_counter::{CounterId, StateCounters},
 };
 
 use crate::{
@@ -106,6 +107,8 @@ pub trait WritableSnapshot: ReadableSnapshot {
     fn operations(&self) -> &OperationsBuffer;
 
     fn operations_mut(&mut self) -> &mut OperationsBuffer;
+
+    fn allocate_counter(&mut self, id: CounterId) -> u64;
 
     /// Insert a key with a new version
     fn insert(&mut self, key: StorageKeyArray<BUFFER_KEY_INLINE>) {
@@ -231,7 +234,8 @@ impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
 impl<D> ReadSnapshot<D> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
         // Note: for serialisability, we would need to register the open transaction to the IsolationManager
-        ReadSnapshot { open_sequence_number, id: SnapshotId::new(), iterator_pool: IteratorPool::new(), storage }
+        let id = SnapshotId::from_number(storage.state_counters().allocate(CounterId::SnapshotId));
+        ReadSnapshot { open_sequence_number, id, iterator_pool: IteratorPool::new(), storage }
     }
 }
 
@@ -317,6 +321,10 @@ pub struct WriteSnapshot<D> {
     iterator_pool: IteratorPool, // Pool must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
     reader_guard: ReaderDropGuard,
+    // TODO: Compress?
+    counters: Arc<StateCounters>,
+    touched_counters: HashSet<CounterId>,
+    preset_counter_advances: Vec<(CounterId, u64)>,
 }
 
 impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
@@ -339,7 +347,11 @@ impl<D> WriteSnapshot<D> {
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
         let id = Some(commit_record.snapshot_id());
-        Self::new(storage, commit_record.into_operations(), open_sequence_number, id)
+        let preset = commit_record.counter_advances().to_vec();
+        let operations = commit_record.into_operations();
+        let mut snapshot = Self::new(storage, operations, open_sequence_number, id);
+        snapshot.preset_counter_advances = preset;
+        snapshot
     }
 
     fn new(
@@ -349,13 +361,18 @@ impl<D> WriteSnapshot<D> {
         id: Option<SnapshotId>,
     ) -> Self {
         let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
+        let counters = storage.state_counters().clone();
+        let (id, touched_counters) = allocate_or_reuse_snapshot_id(&counters, id);
         WriteSnapshot {
             storage,
             operations,
             open_sequence_number,
-            id: id.unwrap_or_else(|| SnapshotId::new()),
+            id,
             iterator_pool: IteratorPool::new(),
             reader_guard,
+            counters,
+            touched_counters,
+            preset_counter_advances: Vec::new(),
         }
     }
 }
@@ -468,6 +485,11 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
     fn operations_mut(&mut self) -> &mut OperationsBuffer {
         &mut self.operations
     }
+
+    fn allocate_counter(&mut self, id: CounterId) -> u64 {
+        self.touched_counters.insert(id);
+        self.counters.allocate(id)
+    }
 }
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
@@ -484,8 +506,21 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
     }
 
     fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
-        let Self { operations, open_sequence_number, id, reader_guard, iterator_pool: _, storage: _ } = self;
-        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Data, id))
+        let Self {
+            operations,
+            open_sequence_number,
+            id,
+            reader_guard,
+            counters,
+            touched_counters,
+            preset_counter_advances,
+            iterator_pool: _,
+            storage: _,
+        } = self;
+        let advances = resolve_counter_advances(&counters, touched_counters, preset_counter_advances);
+        let mut record = CommitRecord::new(operations, open_sequence_number, CommitType::Data, id);
+        record.set_counter_advances(advances);
+        (reader_guard, record)
     }
 }
 
@@ -496,6 +531,9 @@ pub struct SchemaSnapshot<D> {
     iterator_pool: IteratorPool, // Must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
     reader_guard: ReaderDropGuard,
+    counters: Arc<StateCounters>,
+    touched_counters: HashSet<CounterId>,
+    preset_counter_advances: Vec<(CounterId, u64)>,
 }
 
 impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
@@ -518,7 +556,11 @@ impl<D> SchemaSnapshot<D> {
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
         let id = Some(commit_record.snapshot_id());
-        Self::new(storage, commit_record.into_operations(), open_sequence_number, id)
+        let preset = commit_record.counter_advances().to_vec();
+        let operations = commit_record.into_operations();
+        let mut snapshot = Self::new(storage, operations, open_sequence_number, id);
+        snapshot.preset_counter_advances = preset;
+        snapshot
     }
 
     fn new(
@@ -528,13 +570,18 @@ impl<D> SchemaSnapshot<D> {
         id: Option<SnapshotId>,
     ) -> Self {
         let reader_guard = storage.isolation_manager.opened_for_read(open_sequence_number);
+        let counters = storage.state_counters().clone();
+        let (id, touched_counters) = allocate_or_reuse_snapshot_id(&counters, id);
         SchemaSnapshot {
             storage,
             operations,
             open_sequence_number,
-            id: id.unwrap_or_else(|| SnapshotId::new()),
+            id,
             iterator_pool: IteratorPool::new(),
             reader_guard,
+            counters,
+            touched_counters,
+            preset_counter_advances: Vec::new(),
         }
     }
 }
@@ -647,6 +694,11 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
     fn operations_mut(&mut self) -> &mut OperationsBuffer {
         &mut self.operations
     }
+
+    fn allocate_counter(&mut self, id: CounterId) -> u64 {
+        self.touched_counters.insert(id);
+        self.counters.allocate(id)
+    }
 }
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
@@ -663,9 +715,49 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     }
 
     fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
-        let Self { operations, open_sequence_number, reader_guard, id, iterator_pool: _, storage: _ } = self;
-        (reader_guard, CommitRecord::new(operations, open_sequence_number, CommitType::Schema, id))
+        let Self {
+            operations,
+            open_sequence_number,
+            reader_guard,
+            id,
+            counters,
+            touched_counters,
+            preset_counter_advances,
+            iterator_pool: _,
+            storage: _,
+        } = self;
+        let advances = resolve_counter_advances(&counters, touched_counters, preset_counter_advances);
+        let mut record = CommitRecord::new(operations, open_sequence_number, CommitType::Schema, id);
+        record.set_counter_advances(advances);
+        (reader_guard, record)
     }
+}
+
+fn allocate_or_reuse_snapshot_id(
+    counters: &StateCounters,
+    id: Option<SnapshotId>,
+) -> (SnapshotId, HashSet<CounterId>) {
+    match id {
+        Some(id) => (id, HashSet::new()),
+        None => {
+            let value = counters.allocate(CounterId::SnapshotId);
+            let mut touched = HashSet::new();
+            touched.insert(CounterId::SnapshotId);
+            (SnapshotId::from_number(value), touched)
+        }
+    }
+}
+
+fn resolve_counter_advances(
+    counters: &StateCounters,
+    touched: HashSet<CounterId>,
+    preset: Vec<(CounterId, u64)>,
+) -> Vec<(CounterId, u64)> {
+    debug_assert!(touched.is_empty() || preset.is_empty());
+    if !preset.is_empty() {
+        return preset;
+    }
+    touched.into_iter().map(|id| (id, counters.next_value(id))).collect()
 }
 
 typedb_error! {

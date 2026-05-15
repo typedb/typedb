@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::iter::empty;
+use std::{
+    iter::empty,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 use bytes::byte_array::ByteArray;
 use resource::profile::StorageCounters;
@@ -26,7 +29,9 @@ pub struct MockSnapshot {
 
 impl MockSnapshot {
     pub fn new() -> Self {
-        Self { id: SnapshotId::new(), iterator_pool: IteratorPool::default() }
+        static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+        let id = SnapshotId::from_number(NEXT_ID.fetch_add(1, Ordering::Relaxed));
+        Self { id, iterator_pool: IteratorPool::default() }
     }
 }
 

@@ -167,6 +167,8 @@ pub mod encoding {
     pub type DefinitionIDAtomicUInt = AtomicU16;
 
     pub type StructFieldIDUInt = u16;
+
+    pub type TypeIDUInt = u16;
 }
 
 pub mod diagnostics {

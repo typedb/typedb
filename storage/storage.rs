@@ -35,6 +35,7 @@ use logger::{error, result::ResultExt};
 use resource::{
     constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
     profile::{CommitProfile, StorageCounters},
+    state_counter::StateCounters,
 };
 use tracing::trace;
 
@@ -81,6 +82,7 @@ pub struct MVCCStorage<Durability> {
     durability_client: Durability,
     isolation_manager: IsolationManager,
     highest_committed_snapshot: AtomicU64,
+    state_counters: Arc<StateCounters>,
 }
 
 impl<Durability> MVCCStorage<Durability> {
@@ -116,6 +118,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
+            state_counters: Arc::new(StateCounters::new()),
         })
     }
 
@@ -177,6 +180,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
+            state_counters: Arc::new(StateCounters::new()),
         })
     }
 
@@ -196,6 +200,10 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn durability(&self) -> &Durability {
         &self.durability_client
+    }
+
+    pub fn state_counters(&self) -> &Arc<StateCounters> {
+        &self.state_counters
     }
 
     pub fn durability_mut(&mut self) -> &mut Durability {
@@ -574,6 +582,7 @@ impl<Durability> MVCCStorage<Durability> {
         self.durability_client
             .reset()
             .map_err(|err| StorageResetError::Durability { name: self.name.clone(), typedb_source: err })?;
+        self.state_counters.reset();
         Ok(())
     }
 
@@ -797,7 +806,7 @@ mod tests {
                     full_operations,
                     durability_client.previous(),
                     CommitType::Data,
-                    SnapshotId::new(),
+                    SnapshotId::from_number(1),
                 ))
                 .unwrap();
 
@@ -851,7 +860,7 @@ mod tests {
             snapshot1_operations,
             storage.durability_client.previous(),
             CommitType::Data,
-            SnapshotId::new(),
+            SnapshotId::from_number(1),
         );
         let snapshot_id1 = commit_record1.snapshot_id();
         let seqnum1 = commit_record1.open_sequence_number();
@@ -863,7 +872,7 @@ mod tests {
             snapshot2_operations,
             storage.durability_client.previous(),
             CommitType::Data,
-            SnapshotId::new(),
+            SnapshotId::from_number(2),
         );
         let snapshot_id2 = commit_record2.snapshot_id();
         let seqnum2 = commit_record2.open_sequence_number();
@@ -892,7 +901,7 @@ mod tests {
             snapshot3_operations,
             storage.durability_client.previous(),
             CommitType::Schema,
-            SnapshotId::new(),
+            SnapshotId::from_number(3),
         );
         let snapshot_id3 = commit_record3.snapshot_id();
         let seqnum3 = commit_record3.open_sequence_number();
@@ -969,7 +978,7 @@ mod tests {
         let key_new = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"new"));
         let mut new_ops = OperationsBuffer::new();
         new_ops.writes_in_mut(key_new.keyspace_id()).insert(key_new.byte_array().clone(), ByteArray::empty());
-        let new_snapshot_id = SnapshotId::new();
+        let new_snapshot_id = SnapshotId::from_number(1);
         let new_record = CommitRecord::new(new_ops, wal_client.previous(), CommitType::Data, new_snapshot_id);
         let new_seqnum = wal_client.sequenced_write(&new_record).unwrap();
 
@@ -999,6 +1008,82 @@ mod tests {
     }
 
     #[test]
+    fn snapshot_into_commit_record_resolves_touched_counters_at_commit_time() {
+        use resource::state_counter::CounterId;
+
+        use crate::snapshot::{CommittableSnapshot, WritableSnapshot};
+
+        test_keyspace_set! { TestKeyspace => 0: "test", }
+        init_logging();
+
+        let storage_path = create_tmp_storage_dir();
+        let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        durability_client.register_record_type::<LegacyCommitRecordV1>();
+        durability_client.register_record_type::<CommitRecord>();
+        durability_client.register_record_type::<StatusRecord>();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::create::<TestKeyspaceSet>("storage", &storage_path, durability_client).unwrap(),
+        );
+
+        let mut s1 = storage.clone().open_snapshot_write();
+        let mut s2 = storage.clone().open_snapshot_write();
+
+        let a1 = s1.allocate_counter(CounterId::EntityVertex { type_id: 7 });
+        let a2 = s2.allocate_counter(CounterId::EntityVertex { type_id: 7 });
+        let r1 = s1.allocate_counter(CounterId::RelationVertex { type_id: 9 });
+        assert_ne!(a1, a2);
+
+        let (_g2, rec2) = CommittableSnapshot::<WALClient>::into_commit_record(s2);
+        let (_g1, rec1) = CommittableSnapshot::<WALClient>::into_commit_record(s1);
+
+        let find_advance = |rec: &CommitRecord, id: CounterId| -> u64 {
+            rec.counter_advances().iter().find(|(c, _)| *c == id).expect("counter is touched").1
+        };
+        // Both snapshots observe the post-allocation watermark (>=2) at commit time.
+        assert!(find_advance(&rec1, CounterId::EntityVertex { type_id: 7 }) >= 2);
+        assert!(find_advance(&rec2, CounterId::EntityVertex { type_id: 7 }) >= 2);
+        assert_eq!(find_advance(&rec1, CounterId::RelationVertex { type_id: 9 }), r1 + 1);
+        assert!(!rec2.counter_advances().iter().any(|(id, _)| matches!(id, CounterId::RelationVertex { type_id: 9 })));
+    }
+
+    #[test]
+    fn snapshot_from_commit_record_preserves_advances() {
+        use resource::state_counter::CounterId;
+        use crate::snapshot::CommittableSnapshot;
+
+        test_keyspace_set! { TestKeyspace => 0: "test", }
+        init_logging();
+
+        let storage_path = create_tmp_storage_dir();
+        let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        durability_client.register_record_type::<LegacyCommitRecordV1>();
+        durability_client.register_record_type::<CommitRecord>();
+        durability_client.register_record_type::<StatusRecord>();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::create::<TestKeyspaceSet>("storage", &storage_path, durability_client).unwrap(),
+        );
+
+        let mut incoming = CommitRecord::new(
+            OperationsBuffer::new(),
+            storage.durability_client.previous(),
+            CommitType::Data,
+            SnapshotId::from_number(42),
+        );
+        let preset = vec![
+            (CounterId::EntityVertex { type_id: 3 }, 100),
+            (CounterId::RelationVertex { type_id: 4 }, 200),
+        ];
+        incoming.set_counter_advances(preset.clone());
+
+        let snapshot = WriteSnapshot::new_with_commit_record(storage.clone(), incoming);
+        let (_g, rebuilt) = CommittableSnapshot::<WALClient>::into_commit_record(snapshot);
+        for entry in &preset {
+            assert!(rebuilt.counter_advances().contains(entry));
+        }
+        assert_eq!(rebuilt.counter_advances().len(), preset.len());
+    }
+
+    #[test]
     fn test_mixed_v2_and_v3_commit_records() {
         test_keyspace_set! { TestKeyspace => 0: "test", }
 
@@ -1014,7 +1099,7 @@ mod tests {
         let key_v2 = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"v2"));
         let mut v2_ops = OperationsBuffer::new();
         v2_ops.writes_in_mut(key_v2.keyspace_id()).insert(key_v2.byte_array().clone(), ByteArray::empty());
-        let v2_snapshot_id = SnapshotId::new();
+        let v2_snapshot_id = SnapshotId::from_number(11);
         let v2_record =
             LegacyCommitRecordV2::new(v2_ops, wal_client.previous(), CommitType::Data, v2_snapshot_id);
         wal_client.sequenced_write(&v2_record).unwrap();
@@ -1023,7 +1108,7 @@ mod tests {
         let key_v3 = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"v3"));
         let mut v3_ops = OperationsBuffer::new();
         v3_ops.writes_in_mut(key_v3.keyspace_id()).insert(key_v3.byte_array().clone(), ByteArray::empty());
-        let mut v3_record = CommitRecord::new(v3_ops, wal_client.previous(), CommitType::Data, SnapshotId::new());
+        let mut v3_record = CommitRecord::new(v3_ops, wal_client.previous(), CommitType::Data, SnapshotId::from_number(12));
         v3_record.set_counter_advances(vec![
             (resource::state_counter::CounterId::EntityVertex { type_id: 7 }, 123),
             (resource::state_counter::CounterId::RelationVertex { type_id: 12 }, 456),

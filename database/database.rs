@@ -41,7 +41,10 @@ use error::typedb_error;
 use fail_point::{UNFINISHED_CHECKPOINT, fail_point};
 use function::{FunctionError, function_cache::FunctionCache};
 use query::query_cache::QueryCache;
-use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
+use resource::{
+    constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL},
+    state_counter::CounterId,
+};
 use storage::{
     MVCCStorage, StorageDeleteError, StorageOpenError, StorageResetError,
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
@@ -100,6 +103,10 @@ impl<D> Database<D> {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn apply_counter_advances(&self, advances: &[(CounterId, u64)]) {
+        self.storage.state_counters().apply_advances(advances);
     }
 
     pub(super) fn reserve_write_transaction(&self, timeout_millis: u64) -> Result<(), TransactionError> {
@@ -487,10 +494,6 @@ impl Database<WALClient> {
         match Arc::get_mut(&mut self.type_vertex_generator) {
             None => return Err(CorruptionPartialResetTypeVertexGeneratorInUse {}),
             Some(type_vertex_generator) => type_vertex_generator.reset(),
-        }
-        match Arc::get_mut(&mut self.thing_vertex_generator) {
-            None => return Err(CorruptionPartialResetThingVertexGeneratorInUse {}),
-            Some(thing_vertex_generator) => thing_vertex_generator.reset(),
         }
 
         let thing_statistics = Arc::get_mut(&mut locked_schema.thing_statistics).unwrap();

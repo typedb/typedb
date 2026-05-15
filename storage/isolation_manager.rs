@@ -731,7 +731,7 @@ mod tests {
     }
 
     fn _record(read_sequence_number: SequenceNumber) -> CommitRecord {
-        CommitRecord::new(OperationsBuffer::new(), read_sequence_number, CommitType::Data, SnapshotId::new())
+        CommitRecord::new(OperationsBuffer::new(), read_sequence_number, CommitType::Data, SnapshotId::from_number(1))
     }
 
     #[test]

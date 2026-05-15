@@ -7,6 +7,7 @@
 use std::{fmt, hash::Hash};
 
 use bytes::{Bytes, byte_array::ByteArray, util::HexBytesFormatter};
+use resource::constants::encoding::TypeIDUInt;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     key_value::{StorageKey, StorageKeyArray},
@@ -101,9 +102,6 @@ impl fmt::Debug for TypeID {
         write!(f, "{:04X}", self.value)
     }
 }
-
-// TODO: this type should move into constants.rs, similarly to DefinitionIDUInt
-pub type TypeIDUInt = u16;
 
 impl TypeID {
     pub const MIN: Self = Self::new(TypeIDUInt::MIN);

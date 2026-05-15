@@ -4171,6 +4171,7 @@ dependencies = [
 name = "resource"
 version = "0.0.0"
 dependencies = [
+ "bincode",
  "itertools 0.14.0",
  "serde",
  "tracing",
