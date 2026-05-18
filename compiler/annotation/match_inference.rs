@@ -116,16 +116,6 @@ pub fn infer_types_for_block(
         .map(|(var, annotations)| (Vertex::Variable(*var), (**annotations).clone()))
         .collect();
     infer_types_impl(ctx, block.conjunction(), &input_annotations, is_write_stage, &mut type_annotations_by_scope)?;
-    // Copy over any input variables that haven't been included (and refined)
-    let root_annotations =
-        type_annotations_by_scope.get_mut(&block.conjunction().scope_id()).unwrap().vertex_annotations_mut();
-    let annotations_passing_through = previous_stage_annotations
-        .concepts
-        .iter()
-        .filter(|(k, _)| !root_annotations.contains_key(&Vertex::Variable(**k)))
-        .map(|(k, v)| (Vertex::Variable(*k), v.clone()))
-        .collect::<Vec<_>>();
-    root_annotations.extend(annotations_passing_through);
 
     debug_assert!(all_vertex_annotations_available(
         block.block_context(),
