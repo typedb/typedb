@@ -31,7 +31,9 @@ use ir::{
     pattern::{ParameterID, Scope, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern},
     pipeline::{ParameterRegistry, VariableRegistry},
 };
-use itertools::chain;
+use itertools::{chain, Either};
+use answer::Type;
+use compiler::annotation::expression::compiled_expression::ExpressionValueType;
 use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug)]
@@ -61,7 +63,7 @@ impl QueryStructureAnnotations {
         let AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble } = &annotated_pipeline;
         let pipeline =
             build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), &query_structure.query);
-        let last_stage_annotations = get_last_stage_annotations(annotated_stages.as_slice());
+        let last_stage_annotations = LastStageAnnotations(annotated_stages.as_slice());
         let fetch = annotated_fetch
             .as_ref()
             .map(|fetch| {
@@ -70,7 +72,7 @@ impl QueryStructureAnnotations {
                     type_manager,
                     parameters.clone(),
                     source_query,
-                    last_stage_annotations,
+                    &last_stage_annotations,
                     &fetch.object,
                 )
             })
@@ -226,7 +228,7 @@ pub fn build_fetch_annotations(
     type_manager: &TypeManager,
     parameters: Arc<ParameterRegistry>,
     source_query: &str,
-    last_stage_annotations: &TypeAnnotations,
+    last_stage_annotations: &LastStageAnnotations<'_>,
     object: &AnnotatedFetchObject,
 ) -> Result<FetchStructureAnnotationsFields, Box<ConceptReadError>> {
     match object {
@@ -247,13 +249,13 @@ pub fn build_fetch_annotations(
 fn build_fetch_attributes_annotations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    last_stage_annotations: &TypeAnnotations,
+    last_stage_annotations: &LastStageAnnotations<'_>,
     variable: Variable,
 ) -> Result<FetchStructureAnnotationsFields, Box<ConceptReadError>> {
     let mut fetch_value_types = HashMap::new();
-    let owner_types = last_stage_annotations
-        .vertex_annotations_of(&Vertex::Variable(variable))
-        .expect("Expected annotations to be available");
+    let owner_types = last_stage_annotations.get(&Vertex::Variable(variable))
+        .expect("Expected annotations to be available")
+        .expect_left("Expected concept annotations");
     owner_types.iter().filter(|owner_type| owner_type.is_entity_type() || owner_type.is_relation_type()).try_for_each(
         |owner_type| {
             let attribute_types = owner_type.as_object_type().get_owned_attribute_types(snapshot, type_manager)?;
@@ -276,7 +278,7 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
     type_manager: &TypeManager,
     parameters: Arc<ParameterRegistry>,
     source_query: &str,
-    last_stage_annotations: &TypeAnnotations,
+    last_stage_annotations: &LastStageAnnotations<'_>,
     entries: &HashMap<ParameterID, AnnotatedFetchSome>,
 ) -> Result<FetchStructureAnnotationsFields, Box<ConceptReadError>> {
     entries.iter().map(|(parameter_id, fetch_object)| {
@@ -284,14 +286,17 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
         let fetch_object_annotations_maybe_list = match fetch_object {
             AnnotatedFetchSome::SingleVar(var) => {
                 let as_vertex = Vertex::Variable(*var);
-                if let Some(annotations) = last_stage_annotations.vertex_annotations_of(&as_vertex) {
-                    let attribute_types = annotations.iter().filter(|&attribute_type| attribute_type.is_attribute_type()).map(|attribute_type| attribute_type.as_attribute_type());
-                    let leaf_annotations = build_leaf_annotations(snapshot, type_manager, attribute_types)?;
-                    FetchStructureAnnotations::Leaf(leaf_annotations)
-                } else if let Some(value_type) = last_stage_annotations.value_type_annotations_of(&as_vertex) {
-                    FetchStructureAnnotations::Leaf(BTreeSet::from([value_type.value_type().clone()]))
-                } else {
-                    unreachable!("Expected either type annotations or value annotations to be present");
+                let latest_annotations = last_stage_annotations.get(&as_vertex)
+                    .expect("Expected either type annotations or value annotations to be present");
+                match latest_annotations {
+                    Either::Left(annotations) => {
+                        let attribute_types = annotations.iter().filter(|&attribute_type| attribute_type.is_attribute_type()).map(|attribute_type| attribute_type.as_attribute_type());
+                        let leaf_annotations = build_leaf_annotations(snapshot, type_manager, attribute_types)?;
+                        FetchStructureAnnotations::Leaf(leaf_annotations)
+                    }
+                    Either::Right(value_type) => {
+                        FetchStructureAnnotations::Leaf(BTreeSet::from([value_type.value_type().clone()]))
+                    }
                 }
             }
             AnnotatedFetchSome::ListAttributesAsList(_var, attribute_type) // TODO: Verify these can use the same code as SingleAttribute
@@ -306,8 +311,8 @@ fn build_fetch_entries_annotations<Snapshot: ReadableSnapshot>(
                 FetchStructureAnnotations::Object(build_fetch_annotations(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, inner)?)
             }
             AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
-                let last_stage_annotations = get_last_stage_annotations(sub_fetch.stages.as_slice());
-                let fetch = build_fetch_annotations(snapshot, type_manager, parameters.clone(), source_query, last_stage_annotations, &sub_fetch.fetch.object)?;
+                let last_stage_annotations = LastStageAnnotations(sub_fetch.stages.as_slice());
+                let fetch = build_fetch_annotations(snapshot, type_manager, parameters.clone(), source_query, &last_stage_annotations, &sub_fetch.fetch.object)?;
                 FetchStructureAnnotations::Object(fetch)
             }
             AnnotatedFetchSome::ListFunction(function)
@@ -370,25 +375,34 @@ fn build_leaf_annotations(
         .collect::<Result<BTreeSet<_>, _>>()
 }
 
-pub fn get_last_stage_annotations(stages: &[AnnotatedStage]) -> &TypeAnnotations {
-    stages
-        .iter()
-        .filter_map(|stage| match stage {
-            | AnnotatedStage::Match { block_annotations, block, .. }
-            | AnnotatedStage::Put { match_annotations: block_annotations, block, .. }
-            | AnnotatedStage::Insert { annotations: block_annotations, block, .. }
-            | AnnotatedStage::Update { annotations: block_annotations, block, .. } => {
-                Some(block_annotations.type_annotations_of(block.conjunction()).unwrap())
-            }
-            | AnnotatedStage::Delete { .. }
-            | AnnotatedStage::Select(_)
-            | AnnotatedStage::Sort(_)
-            | AnnotatedStage::Offset(_)
-            | AnnotatedStage::Limit(_)
-            | AnnotatedStage::Require(_)
-            | AnnotatedStage::Distinct(_)
-            | AnnotatedStage::Reduce(_, _) => None,
-        })
-        .last()
-        .expect("Expected pipeline to have a last stage")
+struct LastStageAnnotations<'a>(&'a [AnnotatedStage]);
+impl<'a> LastStageAnnotations<'a> {
+    pub fn get(&self, vertex: &Vertex<Variable>) -> Option<Either<Arc<BTreeSet<Type>>, ExpressionValueType>> {
+        self.0
+            .iter()
+            .rev()
+            .find_map(|stage| match stage {
+                | AnnotatedStage::Match { block_annotations, block, .. }
+                | AnnotatedStage::Put { match_annotations: block_annotations, block, .. }
+                | AnnotatedStage::Insert { annotations: block_annotations, block, .. }
+                | AnnotatedStage::Update { annotations: block_annotations, block, .. } => {
+                    let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
+                    if let Some(annotations) = root_annotations.vertex_annotations_of(vertex) {
+                        Some(Either::Left(annotations.clone()))
+                    } else if let Some(value_type) = root_annotations.value_type_annotations_of(vertex) {
+                        Some(Either::Right(value_type.clone()))
+                    } else {
+                        None
+                    }
+                }
+                | AnnotatedStage::Delete { .. }
+                | AnnotatedStage::Select(_)
+                | AnnotatedStage::Sort(_)
+                | AnnotatedStage::Offset(_)
+                | AnnotatedStage::Limit(_)
+                | AnnotatedStage::Require(_)
+                | AnnotatedStage::Distinct(_)
+                | AnnotatedStage::Reduce(_, _) => None,
+            })
+    }
 }
