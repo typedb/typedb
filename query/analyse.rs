@@ -9,9 +9,10 @@ use std::{
     sync::Arc,
 };
 
-use answer::variable::Variable;
+use answer::{Type, variable::Variable};
 use compiler::{
     annotation::{
+        expression::compiled_expression::ExpressionValueType,
         fetch::{AnnotatedFetchObject, AnnotatedFetchSome},
         function::{AnnotatedFunctionSignature, FunctionParameterAnnotation},
         pipeline::{AnnotatedPipeline, AnnotatedStage},
@@ -31,9 +32,7 @@ use ir::{
     pattern::{ParameterID, Scope, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern},
     pipeline::{ParameterRegistry, VariableRegistry},
 };
-use itertools::{chain, Either};
-use answer::Type;
-use compiler::annotation::expression::compiled_expression::ExpressionValueType;
+use itertools::{Either, chain};
 use storage::snapshot::ReadableSnapshot;
 
 #[derive(Debug)]
@@ -253,7 +252,8 @@ fn build_fetch_attributes_annotations(
     variable: Variable,
 ) -> Result<FetchStructureAnnotationsFields, Box<ConceptReadError>> {
     let mut fetch_value_types = HashMap::new();
-    let owner_types = last_stage_annotations.get(&Vertex::Variable(variable))
+    let owner_types = last_stage_annotations
+        .get(&Vertex::Variable(variable))
         .expect("Expected annotations to be available")
         .expect_left("Expected concept annotations");
     owner_types.iter().filter(|owner_type| owner_type.is_entity_type() || owner_type.is_relation_type()).try_for_each(
@@ -378,31 +378,28 @@ fn build_leaf_annotations(
 struct LastStageAnnotations<'a>(&'a [AnnotatedStage]);
 impl<'a> LastStageAnnotations<'a> {
     pub fn get(&self, vertex: &Vertex<Variable>) -> Option<Either<Arc<BTreeSet<Type>>, ExpressionValueType>> {
-        self.0
-            .iter()
-            .rev()
-            .find_map(|stage| match stage {
-                | AnnotatedStage::Match { block_annotations, block, .. }
-                | AnnotatedStage::Put { match_annotations: block_annotations, block, .. }
-                | AnnotatedStage::Insert { annotations: block_annotations, block, .. }
-                | AnnotatedStage::Update { annotations: block_annotations, block, .. } => {
-                    let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
-                    if let Some(annotations) = root_annotations.vertex_annotations_of(vertex) {
-                        Some(Either::Left(annotations.clone()))
-                    } else if let Some(value_type) = root_annotations.value_type_annotations_of(vertex) {
-                        Some(Either::Right(value_type.clone()))
-                    } else {
-                        None
-                    }
+        self.0.iter().rev().find_map(|stage| match stage {
+            | AnnotatedStage::Match { block_annotations, block, .. }
+            | AnnotatedStage::Put { match_annotations: block_annotations, block, .. }
+            | AnnotatedStage::Insert { annotations: block_annotations, block, .. }
+            | AnnotatedStage::Update { annotations: block_annotations, block, .. } => {
+                let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
+                if let Some(annotations) = root_annotations.vertex_annotations_of(vertex) {
+                    Some(Either::Left(annotations.clone()))
+                } else if let Some(value_type) = root_annotations.value_type_annotations_of(vertex) {
+                    Some(Either::Right(value_type.clone()))
+                } else {
+                    None
                 }
-                | AnnotatedStage::Delete { .. }
-                | AnnotatedStage::Select(_)
-                | AnnotatedStage::Sort(_)
-                | AnnotatedStage::Offset(_)
-                | AnnotatedStage::Limit(_)
-                | AnnotatedStage::Require(_)
-                | AnnotatedStage::Distinct(_)
-                | AnnotatedStage::Reduce(_, _) => None,
-            })
+            }
+            | AnnotatedStage::Delete { .. }
+            | AnnotatedStage::Select(_)
+            | AnnotatedStage::Sort(_)
+            | AnnotatedStage::Offset(_)
+            | AnnotatedStage::Limit(_)
+            | AnnotatedStage::Require(_)
+            | AnnotatedStage::Distinct(_)
+            | AnnotatedStage::Reduce(_, _) => None,
+        })
     }
 }
