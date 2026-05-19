@@ -152,8 +152,9 @@ impl CommitRecord {
         open_sequence_number: SequenceNumber,
         commit_type: CommitType,
         snapshot_id: SnapshotId,
+        counter_advances: Vec<(CounterId, u64)>,
     ) -> CommitRecord {
-        CommitRecord { operations, open_sequence_number, commit_type, snapshot_id, counter_advances: Vec::new() }
+        CommitRecord { operations, open_sequence_number, commit_type, snapshot_id, counter_advances }
     }
 
     pub fn operations(&self) -> &OperationsBuffer {
@@ -178,10 +179,6 @@ impl CommitRecord {
 
     pub fn counter_advances(&self) -> &[(CounterId, u64)] {
         &self.counter_advances
-    }
-
-    pub fn set_counter_advances(&mut self, advances: Vec<(CounterId, u64)>) {
-        self.counter_advances = advances;
     }
 
     fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)

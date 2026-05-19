@@ -344,10 +344,10 @@ impl<D> WriteSnapshot<D> {
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
         let id = Some(commit_record.snapshot_id());
-        let preset = commit_record.counter_advances().to_vec();
+        let counter_advances = commit_record.counter_advances().to_vec();
         let operations = commit_record.into_operations();
         let mut snapshot = Self::new(storage, operations, open_sequence_number, id);
-        snapshot.counters.set_preset_advances(preset);
+        snapshot.counters.set_preset_advances(counter_advances);
         snapshot
     }
 
@@ -501,8 +501,8 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
 
     fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
         let Self { operations, open_sequence_number, id, reader_guard, counters, iterator_pool: _, storage: _ } = self;
-        let mut record = CommitRecord::new(operations, open_sequence_number, CommitType::Data, id);
-        record.set_counter_advances(counters.into_advances());
+        let record =
+            CommitRecord::new(operations, open_sequence_number, CommitType::Data, id, counters.into_advances());
         (reader_guard, record)
     }
 }
@@ -537,10 +537,10 @@ impl<D> SchemaSnapshot<D> {
     pub fn new_with_commit_record(storage: Arc<MVCCStorage<D>>, commit_record: CommitRecord) -> Self {
         let open_sequence_number = commit_record.open_sequence_number();
         let id = Some(commit_record.snapshot_id());
-        let preset = commit_record.counter_advances().to_vec();
+        let counter_advances = commit_record.counter_advances().to_vec();
         let operations = commit_record.into_operations();
         let mut snapshot = Self::new(storage, operations, open_sequence_number, id);
-        snapshot.counters.set_preset_advances(preset);
+        snapshot.counters.set_preset_advances(counter_advances);
         snapshot
     }
 
@@ -694,8 +694,8 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
 
     fn into_commit_record(self) -> (ReaderDropGuard, CommitRecord) {
         let Self { operations, open_sequence_number, reader_guard, id, counters, iterator_pool: _, storage: _ } = self;
-        let mut record = CommitRecord::new(operations, open_sequence_number, CommitType::Schema, id);
-        record.set_counter_advances(counters.into_advances());
+        let record =
+            CommitRecord::new(operations, open_sequence_number, CommitType::Schema, id, counters.into_advances());
         (reader_guard, record)
     }
 }

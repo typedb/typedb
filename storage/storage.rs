@@ -807,6 +807,7 @@ mod tests {
                     durability_client.previous(),
                     CommitType::Data,
                     SnapshotId::from_number(1),
+                    Vec::new(),
                 ))
                 .unwrap();
 
@@ -861,6 +862,7 @@ mod tests {
             storage.durability_client.previous(),
             CommitType::Data,
             SnapshotId::from_number(1),
+            Vec::new(),
         );
         let snapshot_id1 = commit_record1.snapshot_id();
         let seqnum1 = commit_record1.open_sequence_number();
@@ -873,6 +875,7 @@ mod tests {
             storage.durability_client.previous(),
             CommitType::Data,
             SnapshotId::from_number(2),
+            Vec::new(),
         );
         let snapshot_id2 = commit_record2.snapshot_id();
         let seqnum2 = commit_record2.open_sequence_number();
@@ -902,6 +905,7 @@ mod tests {
             storage.durability_client.previous(),
             CommitType::Schema,
             SnapshotId::from_number(3),
+            Vec::new(),
         );
         let snapshot_id3 = commit_record3.snapshot_id();
         let seqnum3 = commit_record3.open_sequence_number();
@@ -927,6 +931,7 @@ mod tests {
             storage.durability_client.previous(),
             CommitType::Schema,
             snapshot_id2,
+            Vec::new(),
         );
         let snapshot_id4 = commit_record4.snapshot_id();
         let seqnum4 = commit_record4.open_sequence_number();
@@ -979,7 +984,8 @@ mod tests {
         let mut new_ops = OperationsBuffer::new();
         new_ops.writes_in_mut(key_new.keyspace_id()).insert(key_new.byte_array().clone(), ByteArray::empty());
         let new_snapshot_id = SnapshotId::from_number(1);
-        let new_record = CommitRecord::new(new_ops, wal_client.previous(), CommitType::Data, new_snapshot_id);
+        let new_record =
+            CommitRecord::new(new_ops, wal_client.previous(), CommitType::Data, new_snapshot_id, Vec::new());
         let new_seqnum = wal_client.sequenced_write(&new_record).unwrap();
 
         assert_ne!(legacy_seqnum, new_seqnum);
@@ -1064,15 +1070,15 @@ mod tests {
             MVCCStorage::<WALClient>::create::<TestKeyspaceSet>("storage", &storage_path, durability_client).unwrap(),
         );
 
-        let mut incoming = CommitRecord::new(
+        let preset =
+            vec![(CounterId::EntityVertex { type_id: 3 }, 100), (CounterId::RelationVertex { type_id: 4 }, 200)];
+        let incoming = CommitRecord::new(
             OperationsBuffer::new(),
             storage.durability_client.previous(),
             CommitType::Data,
             SnapshotId::from_number(42),
+            preset.clone(),
         );
-        let preset =
-            vec![(CounterId::EntityVertex { type_id: 3 }, 100), (CounterId::RelationVertex { type_id: 4 }, 200)];
-        incoming.set_counter_advances(preset.clone());
 
         let snapshot = WriteSnapshot::new_with_commit_record(storage.clone(), incoming);
         let (_g, rebuilt) = CommittableSnapshot::<WALClient>::into_commit_record(snapshot);
@@ -1146,12 +1152,16 @@ mod tests {
         let key_v3 = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"v3"));
         let mut v3_ops = OperationsBuffer::new();
         v3_ops.writes_in_mut(key_v3.keyspace_id()).insert(key_v3.byte_array().clone(), ByteArray::empty());
-        let mut v3_record =
-            CommitRecord::new(v3_ops, wal_client.previous(), CommitType::Data, SnapshotId::from_number(12));
-        v3_record.set_counter_advances(vec![
-            (resource::state_counter::CounterId::EntityVertex { type_id: 7 }, 123),
-            (resource::state_counter::CounterId::RelationVertex { type_id: 12 }, 456),
-        ]);
+        let v3_record = CommitRecord::new(
+            v3_ops,
+            wal_client.previous(),
+            CommitType::Data,
+            SnapshotId::from_number(12),
+            vec![
+                (resource::state_counter::CounterId::EntityVertex { type_id: 7 }, 123),
+                (resource::state_counter::CounterId::RelationVertex { type_id: 12 }, 456),
+            ],
+        );
         wal_client.sequenced_write(&v3_record).unwrap();
 
         // Reload and read both back.
