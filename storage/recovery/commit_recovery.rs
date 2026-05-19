@@ -16,7 +16,7 @@ use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
     isolation_manager::{IsolationManager, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
-    record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
+    record::{CommitRecord, LegacyCommitRecordV1, LegacyCommitRecordV2, StatusRecord},
     sequence_number::SequenceNumber,
     write_batches::WriteBatches,
 };
@@ -70,6 +70,20 @@ pub fn load_commit_data_from_with_context(
                 bytes_read += bytes.len();
                 trace!(
                     "Read legacy commit V1 @ {} with size {}; {} total",
+                    sequence_number,
+                    format_size(bytes.len()),
+                    format_size(bytes_read),
+                );
+            }
+            LegacyCommitRecordV2::RECORD_TYPE => {
+                let legacy = LegacyCommitRecordV2::deserialise_from(&mut &*bytes)
+                    .map_err(|error| DurabilityRecordDeserialize { source: Arc::new(error) })?;
+                let commit_record = CommitRecord::from(legacy);
+                recovered_commits.insert(sequence_number, RecoveryCommitStatus::Pending(commit_record));
+                recovered_commit_sizes.insert(sequence_number, bytes.len());
+                bytes_read += bytes.len();
+                trace!(
+                    "Read legacy commit V2 @ {} with size {}; {} total",
                     sequence_number,
                     format_size(bytes.len()),
                     format_size(bytes_read),

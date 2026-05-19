@@ -11,7 +11,7 @@ use concept::thing::statistics::Statistics;
 use durability::{DurabilitySequenceNumber, RawRecord, wal::WAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityRecord, WALClient},
-    record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
+    record::{CommitRecord, LegacyCommitRecordV1, LegacyCommitRecordV2, StatusRecord},
 };
 
 #[derive(Parser)]
@@ -67,6 +67,10 @@ fn print_record(record: RawRecord<'_>) {
             let legacy: LegacyCommitRecordV1 = deserialise_record(&record.bytes);
             print_commit(record.sequence_number, CommitRecord::from(legacy));
         }
+        LegacyCommitRecordV2::RECORD_TYPE => {
+            let legacy: LegacyCommitRecordV2 = deserialise_record(&record.bytes);
+            print_commit(record.sequence_number, CommitRecord::from(legacy));
+        }
         CommitRecord::RECORD_TYPE => print_commit(record.sequence_number, deserialise_record(&record.bytes)),
         StatusRecord::RECORD_TYPE => print_status(record.sequence_number, deserialise_record(&record.bytes)),
         Statistics::RECORD_TYPE => print_statistics(record.sequence_number, deserialise_record(&record.bytes)),
@@ -112,6 +116,7 @@ fn print_range(path: PathBuf, from: u64, to: Option<u64>) {
     let mut wal = WALClient::new(wal);
     wal.register_record_type::<Statistics>();
     wal.register_record_type::<LegacyCommitRecordV1>();
+    wal.register_record_type::<LegacyCommitRecordV2>();
     wal.register_record_type::<CommitRecord>();
     wal.register_record_type::<StatusRecord>();
 
@@ -132,6 +137,7 @@ fn print_at(path: PathBuf, sequence_number: Option<u64>) {
     let mut wal = WALClient::new(wal);
     wal.register_record_type::<Statistics>();
     wal.register_record_type::<LegacyCommitRecordV1>();
+    wal.register_record_type::<LegacyCommitRecordV2>();
     wal.register_record_type::<CommitRecord>();
     wal.register_record_type::<StatusRecord>();
 

@@ -82,6 +82,10 @@ impl LegacyCommitRecordV2 {
     ) -> Self {
         Self { operations, open_sequence_number, commit_type, snapshot_id }
     }
+
+    pub fn snapshot_id(&self) -> SnapshotId {
+        self.snapshot_id
+    }
 }
 
 impl From<LegacyCommitRecordV2> for CommitRecord {

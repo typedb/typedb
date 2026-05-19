@@ -50,7 +50,7 @@ use crate::{
         IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
         iterator::KeyspaceRangeIterator,
     },
-    record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
+    record::{CommitRecord, LegacyCommitRecordV1, LegacyCommitRecordV2, StatusRecord},
     recovery::{
         checkpoint::{CheckpointCreateError, CheckpointLoadError, CheckpointReader, CheckpointWriter},
         commit_recovery::{StorageRecoveryError, apply_recovered, load_commit_data_from},
@@ -186,6 +186,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     fn register_durability_record_types(durability_client: &mut impl DurabilityClient) {
         durability_client.register_record_type::<LegacyCommitRecordV1>();
+        durability_client.register_record_type::<LegacyCommitRecordV2>();
         durability_client.register_record_type::<CommitRecord>();
         durability_client.register_record_type::<StatusRecord>();
     }
@@ -799,7 +800,6 @@ mod tests {
                 .insert(key_1.byte_array().clone(), ByteArray::empty());
 
             let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
-            durability_client.register_record_type::<LegacyCommitRecordV1>();
             durability_client.register_record_type::<CommitRecord>();
             let seq = durability_client
                 .sequenced_write(&CommitRecord::new(
@@ -823,7 +823,6 @@ mod tests {
         };
 
         let mut durability_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
-        durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         let storage =
             MVCCStorage::<WALClient>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
@@ -846,7 +845,6 @@ mod tests {
 
         let storage_path = create_tmp_storage_dir();
         let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
-        durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<TestKeyspaceSet>("storage", &storage_path, durability_client).unwrap(),
@@ -962,6 +960,7 @@ mod tests {
 
         let mut wal_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
         wal_client.register_record_type::<LegacyCommitRecordV1>();
+        wal_client.register_record_type::<LegacyCommitRecordV2>();
         wal_client.register_record_type::<CommitRecord>();
         wal_client.register_record_type::<StatusRecord>();
 
@@ -972,10 +971,21 @@ mod tests {
         let legacy_record = LegacyCommitRecordV1::new(legacy_ops, wal_client.previous(), CommitType::Data);
         let legacy_seqnum = wal_client.sequenced_write(&legacy_record).unwrap();
 
+        let key_legacy_2 = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"legacy_v2"));
+        let mut legacy_ops_2 = OperationsBuffer::new();
+        legacy_ops_2
+            .writes_in_mut(key_legacy_2.keyspace_id())
+            .insert(key_legacy_2.byte_array().clone(), ByteArray::empty());
+        let legacy_snapshot_id = SnapshotId::from_number(1);
+        let legacy_record_2 =
+            LegacyCommitRecordV2::new(legacy_ops_2, wal_client.previous(), CommitType::Data, legacy_snapshot_id);
+        let legacy_seqnum_2 = wal_client.sequenced_write(&legacy_record_2).unwrap();
+
         // Load WAL back
         drop(wal_client);
         let mut wal_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
         wal_client.register_record_type::<LegacyCommitRecordV1>();
+        wal_client.register_record_type::<LegacyCommitRecordV2>();
         wal_client.register_record_type::<CommitRecord>();
         wal_client.register_record_type::<StatusRecord>();
 
@@ -983,7 +993,7 @@ mod tests {
         let key_new = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"new"));
         let mut new_ops = OperationsBuffer::new();
         new_ops.writes_in_mut(key_new.keyspace_id()).insert(key_new.byte_array().clone(), ByteArray::empty());
-        let new_snapshot_id = SnapshotId::from_number(1);
+        let new_snapshot_id = SnapshotId::from_number(2);
         let new_record =
             CommitRecord::new(new_ops, wal_client.previous(), CommitType::Data, new_snapshot_id, Vec::new());
         let new_seqnum = wal_client.sequenced_write(&new_record).unwrap();
@@ -992,12 +1002,23 @@ mod tests {
 
         // Read both record types back from WAL
         // Legacy records are read as LegacyCommitRecordV1 and can be converted
-        let legacy_records: Vec<_> = wal_client
+        let legacy_records_v1: Vec<_> = wal_client
             .iter_sequenced_type_from::<LegacyCommitRecordV1>(SequenceNumber::MIN)
             .unwrap()
             .collect::<Result<Vec<_>, _>>()
             .unwrap();
-        assert_eq!(legacy_records.len(), 1, "Expected exactly one legacy record");
+        assert_eq!(legacy_records_v1.len(), 1, "Expected exactly one legacy record v1");
+        // Legacy records convert to CommitRecord with UNSET snapshot_id
+        let converted = CommitRecord::from(legacy_records_v1.into_iter().next().unwrap().1);
+        assert_eq!(converted.snapshot_id(), SnapshotId::UNSET);
+
+        let legacy_records_v2: Vec<_> = wal_client
+            .iter_sequenced_type_from::<LegacyCommitRecordV2>(SequenceNumber::MIN)
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert_eq!(legacy_records_v2.len(), 1, "Expected exactly one legacy record v2");
+        assert_eq!(legacy_records_v2[0].1.snapshot_id(), legacy_snapshot_id);
 
         // New records are read as CommitRecord
         let new_records: Vec<_> = wal_client
@@ -1007,10 +1028,6 @@ mod tests {
             .unwrap();
         assert_eq!(new_records.len(), 1, "Expected exactly one new-format record");
         assert_eq!(new_records[0].1.snapshot_id(), new_snapshot_id);
-
-        // Legacy records convert to CommitRecord with UNSET snapshot_id
-        let converted = CommitRecord::from(legacy_records.into_iter().next().unwrap().1);
-        assert_eq!(converted.snapshot_id(), SnapshotId::UNSET);
     }
 
     #[test]
@@ -1024,7 +1041,6 @@ mod tests {
 
         let storage_path = create_tmp_storage_dir();
         let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
-        durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         durability_client.register_record_type::<StatusRecord>();
         let storage = Arc::new(
@@ -1063,7 +1079,6 @@ mod tests {
 
         let storage_path = create_tmp_storage_dir();
         let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
-        durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         durability_client.register_record_type::<StatusRecord>();
         let storage = Arc::new(
@@ -1100,7 +1115,6 @@ mod tests {
 
         let storage_path = create_tmp_storage_dir();
         let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
-        durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         durability_client.register_record_type::<StatusRecord>();
         let storage = Arc::new(
