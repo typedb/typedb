@@ -1084,6 +1084,46 @@ mod tests {
     }
 
     #[test]
+    fn concurrent_commits_in_reverse_order_do_not_roll_back_the_counter() {
+        use resource::state_counter::CounterId;
+
+        use crate::snapshot::{CommittableSnapshot, WritableSnapshot};
+
+        test_keyspace_set! { TestKeyspace => 0: "test", }
+        init_logging();
+        let mut profile = CommitProfile::DISABLED;
+
+        let storage_path = create_tmp_storage_dir();
+        let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        durability_client.register_record_type::<LegacyCommitRecordV1>();
+        durability_client.register_record_type::<CommitRecord>();
+        durability_client.register_record_type::<StatusRecord>();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::create::<TestKeyspaceSet>("storage", &storage_path, durability_client).unwrap(),
+        );
+
+        let counter = CounterId::EntityVertex { type_id: 11 };
+        let mut s1 = storage.clone().open_snapshot_write();
+        let mut s2 = storage.clone().open_snapshot_write();
+        let a1 = s1.allocate_counter(counter);
+        let a2 = s2.allocate_counter(counter);
+        assert_ne!(a1, a2, "concurrent allocations must be distinct");
+
+        // Real writes so the snapshots are committable (no-op snapshots short-circuit `has_changes`).
+        s1.put(StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"a")));
+        s2.put(StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"b")));
+
+        // Commit in reverse allocation order: s2 first (later allocator), then s1.
+        s2.commit(&mut profile).expect("s2 commit").expect("s2 had changes");
+        s1.commit(&mut profile).expect("s1 commit").expect("s1 had changes");
+
+        let mut s3 = storage.clone().open_snapshot_write();
+        let a3 = s3.allocate_counter(counter);
+        assert!(a3 > a1, "post-commit allocation {a3} must exceed earlier {a1}");
+        assert!(a3 > a2, "post-commit allocation {a3} must exceed earlier {a2}");
+    }
+
+    #[test]
     fn test_mixed_v2_and_v3_commit_records() {
         test_keyspace_set! { TestKeyspace => 0: "test", }
 

@@ -89,6 +89,8 @@ impl StateCounters {
 
 /// One [`AtomicU64`] per [`TypeIDUInt`].
 struct PerTypeIdCounters {
+    // TODO: we should create a resizable Vector linked to the id of types/highest id of each type
+    //       this will speed up booting time on load (loading this will require MAX types * 3 iterator searches) and reduce memory footprint
     atomics: Box<[AtomicU64]>,
 }
 
