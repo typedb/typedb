@@ -1048,8 +1048,8 @@ mod tests {
 
     #[test]
     fn snapshot_from_commit_record_preserves_advances() {
-        use resource::state_counter::CounterId;
         use crate::snapshot::CommittableSnapshot;
+        use resource::state_counter::CounterId;
 
         test_keyspace_set! { TestKeyspace => 0: "test", }
         init_logging();
@@ -1069,10 +1069,8 @@ mod tests {
             CommitType::Data,
             SnapshotId::from_number(42),
         );
-        let preset = vec![
-            (CounterId::EntityVertex { type_id: 3 }, 100),
-            (CounterId::RelationVertex { type_id: 4 }, 200),
-        ];
+        let preset =
+            vec![(CounterId::EntityVertex { type_id: 3 }, 100), (CounterId::RelationVertex { type_id: 4 }, 200)];
         incoming.set_counter_advances(preset.clone());
 
         let snapshot = WriteSnapshot::new_with_commit_record(storage.clone(), incoming);
@@ -1140,15 +1138,15 @@ mod tests {
         let mut v2_ops = OperationsBuffer::new();
         v2_ops.writes_in_mut(key_v2.keyspace_id()).insert(key_v2.byte_array().clone(), ByteArray::empty());
         let v2_snapshot_id = SnapshotId::from_number(11);
-        let v2_record =
-            LegacyCommitRecordV2::new(v2_ops, wal_client.previous(), CommitType::Data, v2_snapshot_id);
+        let v2_record = LegacyCommitRecordV2::new(v2_ops, wal_client.previous(), CommitType::Data, v2_snapshot_id);
         wal_client.sequenced_write(&v2_record).unwrap();
 
         // Write a V3 record carrying counter_advances.
         let key_v3 = StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"v3"));
         let mut v3_ops = OperationsBuffer::new();
         v3_ops.writes_in_mut(key_v3.keyspace_id()).insert(key_v3.byte_array().clone(), ByteArray::empty());
-        let mut v3_record = CommitRecord::new(v3_ops, wal_client.previous(), CommitType::Data, SnapshotId::from_number(12));
+        let mut v3_record =
+            CommitRecord::new(v3_ops, wal_client.previous(), CommitType::Data, SnapshotId::from_number(12));
         v3_record.set_counter_advances(vec![
             (resource::state_counter::CounterId::EntityVertex { type_id: 7 }, 123),
             (resource::state_counter::CounterId::RelationVertex { type_id: 12 }, 456),
@@ -1183,11 +1181,15 @@ mod tests {
         // V3 round-trips advances faithfully.
         let v3_back = &v3_records[0].1;
         assert_eq!(v3_back.counter_advances().len(), 2);
-        assert!(v3_back
-            .counter_advances()
-            .contains(&(resource::state_counter::CounterId::EntityVertex { type_id: 7 }, 123)));
-        assert!(v3_back
-            .counter_advances()
-            .contains(&(resource::state_counter::CounterId::RelationVertex { type_id: 12 }, 456)));
+        assert!(
+            v3_back
+                .counter_advances()
+                .contains(&(resource::state_counter::CounterId::EntityVertex { type_id: 7 }, 123))
+        );
+        assert!(
+            v3_back
+                .counter_advances()
+                .contains(&(resource::state_counter::CounterId::RelationVertex { type_id: 12 }, 456))
+        );
     }
 }

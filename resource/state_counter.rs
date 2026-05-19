@@ -99,9 +99,7 @@ impl PerTypeIdCounters {
     const COUNT: usize = TypeIDUInt::MAX as usize + 1;
 
     fn new() -> Self {
-        Self {
-            atomics: iter::repeat_with(|| AtomicU64::new(Self::INITIAL)).take(Self::COUNT).collect(),
-        }
+        Self { atomics: iter::repeat_with(|| AtomicU64::new(Self::INITIAL)).take(Self::COUNT).collect() }
     }
 
     fn allocate(&self, key: TypeIDUInt) -> u64 {
@@ -157,7 +155,7 @@ impl SnapshotIdCounter {
 
 #[cfg(test)]
 mod tests {
-    use super::{CounterId, StateCounters, COUNTER_ID_MAX_SIZE};
+    use super::{COUNTER_ID_MAX_SIZE, CounterId, StateCounters};
 
     #[test]
     fn bounded_id_size() {
