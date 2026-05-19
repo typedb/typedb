@@ -1048,8 +1048,9 @@ mod tests {
 
     #[test]
     fn snapshot_from_commit_record_preserves_advances() {
-        use crate::snapshot::CommittableSnapshot;
         use resource::state_counter::CounterId;
+
+        use crate::snapshot::CommittableSnapshot;
 
         test_keyspace_set! { TestKeyspace => 0: "test", }
         init_logging();
