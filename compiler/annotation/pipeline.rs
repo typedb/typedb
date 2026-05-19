@@ -280,9 +280,10 @@ fn annotate_stage(
             let mut delete_annotations = annotate_write_stage(ctx, running_annotations, &block)?;
             let root_annotations = delete_annotations.type_annotations_mut_of(block.conjunction()).unwrap();
             for v in &deleted_variables {
-                root_annotations.vertex_annotations_mut().entry(Vertex::Variable(*v)).or_insert_with(||{
-                    running_annotations.concepts.get(v).unwrap().clone()
-                });
+                root_annotations
+                    .vertex_annotations_mut()
+                    .entry(Vertex::Variable(*v))
+                    .or_insert_with(|| running_annotations.concepts.get(v).unwrap().clone());
             }
             check_type_combinations_for_write(
                 ctx,
