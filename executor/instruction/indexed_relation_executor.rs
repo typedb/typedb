@@ -33,7 +33,7 @@ use encoding::graph::{
     type_::vertex::{TypeID, TypeVertexEncoding},
 };
 use itertools::Itertools;
-use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
+use lending_iterator::{LendingIterator, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -352,13 +352,27 @@ impl IndexedRelationExecutor {
                         }
                     },
                 );
-                let merged_tuples: KMergeBy<IndexedRelationTupleIterator<IndexedRelationsIterator>, TupleOrderingFn> =
-                    KMergeBy::new(iterators, unsafe_compare_result_tuple);
-                Ok(TupleIterator::IndexedRelationsMerged(SortedTupleIterator::new(
-                    merged_tuples,
-                    self.tuple_positions.clone(),
-                    &self.variable_modes,
-                )))
+                // Bypass KMergeBy when only one underlying iterator exists (single start
+                // player × single relation type) — avoids heap pop/push and the PeekWrapper
+                // layer on every call.
+                if iterators.len() == 1 {
+                    let single = iterators.pop().unwrap();
+                    Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
+                        single,
+                        self.tuple_positions.clone(),
+                        &self.variable_modes,
+                    )))
+                } else {
+                    let merged_tuples: KMergeBy<
+                        IndexedRelationTupleIterator<IndexedRelationsIterator>,
+                        TupleOrderingFn,
+                    > = KMergeBy::new(iterators, unsafe_compare_result_tuple);
+                    Ok(TupleIterator::IndexedRelationsMerged(SortedTupleIterator::new(
+                        merged_tuples,
+                        self.tuple_positions.clone(),
+                        &self.variable_modes,
+                    )))
+                }
             }
             IndexedRelationIterateMode::BoundStart => {
                 let start_player = match row.get(self.player_start.as_position().unwrap()) {
@@ -620,7 +634,11 @@ impl FixedIndexedRelationBounds {
 }
 
 pub(super) struct IndexedRelationTupleIterator<Iter: LendingIterator> {
-    inner: Peekable<Iter>,
+    // Direct underlying iterator — no Peekable cache layer. IndexedRelationTupleIterator's
+    // own next() never reads via peek; it always consumes via inner.next() and filters
+    // in-loop. The outer wrapper (`SortedTupleIterator`'s Peekable, or `KMergeBy`'s
+    // PeekWrapper) already provides the one-element lookahead the rest of the executor needs.
+    inner: Iter,
     filter_map: Arc<IndexedRelationFilterMapFn>,
     tuple_positions: TuplePositions,
     component_ordering: [ExecutorVariable; 5],
@@ -639,13 +657,7 @@ where
         component_ordering: [ExecutorVariable; 5],
         fixed_bindings: FixedIndexedRelationBounds,
     ) -> Self {
-        Self {
-            inner: Peekable::new(inner),
-            filter_map: filter,
-            tuple_positions,
-            component_ordering,
-            fixed_bounds: fixed_bindings,
-        }
+        Self { inner, filter_map: filter, tuple_positions, component_ordering, fixed_bounds: fixed_bindings }
     }
 }
 
