@@ -148,10 +148,6 @@ Connections from older drivers will be rejected.
 
 ## Other Improvements
 - **Make studio link a constant**
-
-- **Prepare release 3.11.0-rc1**
-  Bump version & update release notes
-  
   
 - **Escalate concurrent key and unique writes to transaction failure#7800 (#7800)**
 
