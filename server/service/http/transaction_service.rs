@@ -700,7 +700,12 @@ impl TransactionService {
                     return self.run_write_query(responder, query_options, query_pipeline, source_query).await;
                 }
                 (QueueOptions::Query(query_options), false) => {
-                    if let Break(()) = self
+                    // See the inline-dispatch read site in handle_query for the
+                    // rationale: HTTP reads don't stream, so total worker time
+                    // equals time to first batch.
+                    let read_started = Instant::now();
+                    let database_name = self.transaction.as_ref().map(|t| t.database_name().to_owned());
+                    let outcome = self
                         .blocking_read_query_worker(
                             responder,
                             query_options,
@@ -709,8 +714,15 @@ impl TransactionService {
                             StorageCounters::DISABLED,
                         )
                         .await
-                        .expect("Expected read query completion")
-                    {
+                        .expect("Expected read query completion");
+                    if let Some(name) = database_name.as_deref() {
+                        self.server_state.diagnostics_manager().observe_query_duration(
+                            name,
+                            diagnostics::metrics::QueryType::Read,
+                            read_started.elapsed(),
+                        );
+                    }
+                    if let Break(()) = outcome {
                         return Break(());
                     }
                 }
@@ -765,15 +777,30 @@ impl TransactionService {
                         // queued queries are not handled yet so there will be no query response yet
                         Continue(())
                     } else {
-                        self.blocking_read_query_worker(
-                            responder,
-                            query_options,
-                            pipeline,
-                            query,
-                            StorageCounters::DISABLED,
-                        )
-                        .await
-                        .expect("Expected read query completion")
+                        // HTTP read queries don't stream — blocking_read_query_worker
+                        // collects all rows/documents and returns one batched response.
+                        // Total worker time == time to first batch.
+                        let read_started = Instant::now();
+                        let database_name =
+                            self.transaction.as_ref().map(|t| t.database_name().to_owned());
+                        let outcome = self
+                            .blocking_read_query_worker(
+                                responder,
+                                query_options,
+                                pipeline,
+                                query,
+                                StorageCounters::DISABLED,
+                            )
+                            .await
+                            .expect("Expected read query completion");
+                        if let Some(name) = database_name.as_deref() {
+                            self.server_state.diagnostics_manager().observe_query_duration(
+                                name,
+                                diagnostics::metrics::QueryType::Read,
+                                read_started.elapsed(),
+                            );
+                        }
+                        outcome
                     }
                 }
             }
