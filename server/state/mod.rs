@@ -79,6 +79,11 @@ impl ServerState {
             )
             .await,
         );
+        // Take one synchronous sample before spawning the interval runner so the
+        // first /diagnostics scrape is never blank, even if it arrives in the
+        // millisecond between IntervalRunner::new returning and the background
+        // thread executing its first action().
+        ServerState::synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone());
         let database_diagnostics_updater = IntervalRunner::new(
             {
                 let diagnostics_manager = diagnostics_manager.clone();
@@ -187,6 +192,7 @@ impl ServerState {
             diagnostics,
             config.monitoring.port,
             config.monitoring.enabled,
+            config.monitoring.expose_database_names,
             is_development_mode,
             background_tasks,
         );

@@ -23,16 +23,18 @@ use crate::Diagnostics;
 pub struct MonitoringServer {
     diagnostics: Arc<Diagnostics>,
     port: u16,
+    expose_database_names: bool,
 }
 
 impl MonitoringServer {
-    pub fn new(diagnostics: Arc<Diagnostics>, port: u16) -> Self {
-        Self { diagnostics, port }
+    pub fn new(diagnostics: Arc<Diagnostics>, port: u16, expose_database_names: bool) -> Self {
+        Self { diagnostics, port, expose_database_names }
     }
 
     pub async fn start_serving(&self) {
         let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, self.port));
         let diagnostics = self.diagnostics.clone();
+        let expose_database_names = self.expose_database_names;
 
         task::spawn(async move {
             let make_svc = make_service_fn(move |_| {
@@ -40,7 +42,7 @@ impl MonitoringServer {
                 async move {
                     Ok::<_, hyper::Error>(service_fn(move |req| {
                         let diagnostics = diagnostics.clone();
-                        async move { MonitoringServer::handle_request(req, diagnostics).await }
+                        async move { MonitoringServer::handle_request(req, diagnostics, expose_database_names).await }
                     }))
                 }
             });
@@ -61,7 +63,11 @@ impl MonitoringServer {
         });
     }
 
-    async fn handle_request(req: Request<Body>, diagnostics: Arc<Diagnostics>) -> Result<Response<Body>, Infallible> {
+    async fn handle_request(
+        req: Request<Body>,
+        diagnostics: Arc<Diagnostics>,
+        expose_database_names: bool,
+    ) -> Result<Response<Body>, Infallible> {
         if req.uri().path() != "/diagnostics" {
             return Ok(Response::builder()
                 .status(StatusCode::NOT_FOUND)
@@ -76,7 +82,7 @@ impl MonitoringServer {
         let (content_type, body) = if query.contains("format=json") {
             ("application/json", diagnostics.to_monitoring_json().to_string().into_bytes())
         } else {
-            ("text/plain", diagnostics.to_monitoring_prometheus().into_bytes())
+            ("text/plain", diagnostics.to_monitoring_prometheus(expose_database_names).into_bytes())
         };
 
         Ok(Response::builder()

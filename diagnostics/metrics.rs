@@ -9,7 +9,7 @@ use std::{
     fmt,
     path::PathBuf,
     sync::{
-        RwLock, RwLockReadGuard, RwLockWriteGuard,
+        Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
         atomic::{AtomicU64, Ordering},
     },
     time::Instant,
@@ -103,6 +103,13 @@ pub(crate) struct ServerMetrics {
     os_version: String,
     version: String,
     data_directory: PathBuf,
+    // Reused sysinfo handles. Behaviour-preserving: each scrape still refreshes,
+    // but we no longer allocate a fresh System / Disks on every /diagnostics request.
+    // Phase 3 will replace the on-scrape refresh path with a background sampler
+    // that writes cached AtomicU64 values, after which to_full_state_report will
+    // read the atomics directly without taking the Mutex.
+    system: Mutex<System>,
+    disks: Mutex<Disks>,
 }
 
 impl ServerMetrics {
@@ -110,7 +117,18 @@ impl ServerMetrics {
         let os_name = System::name().unwrap_or(UNKNOWN_STR.to_string());
         let os_arch = System::cpu_arch();
         let os_version = System::os_version().unwrap_or(UNKNOWN_STR.to_string());
-        Self { start_instant: Instant::now(), os_name, os_arch, os_version, version, data_directory }
+        let system = System::new_with_specifics(RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()));
+        let disks = Disks::new_with_refreshed_list();
+        Self {
+            start_instant: Instant::now(),
+            os_name,
+            os_arch,
+            os_version,
+            version,
+            data_directory,
+            system: Mutex::new(system),
+            disks: Mutex::new(disks),
+        }
     }
 
     pub fn data_directory(&self) -> &PathBuf {
@@ -142,13 +160,16 @@ impl ServerMetrics {
     }
 
     fn get_memory_info(&self) -> SizeInfo {
-        let system_info =
-            System::new_with_specifics(RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()));
-        SizeInfo { total: system_info.total_memory(), available: system_info.available_memory() }
+        let mut system = self.system.lock().expect("Expected sysinfo System lock acquisition");
+        system.refresh_memory();
+        SizeInfo { total: system.total_memory(), available: system.available_memory() }
     }
 
     fn get_disk_info(&self) -> SizeInfo {
-        let disks = Disks::new_with_refreshed_list();
+        let mut disks = self.disks.lock().expect("Expected sysinfo Disks lock acquisition");
+        // remove_not_listed_disks = true preserves the original Disks::new_with_refreshed_list()
+        // semantics: each scrape sees the disks currently present, not stale entries.
+        disks.refresh(true);
         let disk = match self.data_directory.canonicalize() {
             Ok(path) => disks.iter().find(|disk| path.starts_with(disk.mount_point())),
             Err(_) => None,

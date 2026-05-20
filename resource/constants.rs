@@ -90,7 +90,13 @@ pub mod server {
     pub const DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION: Duration =
         Duration::from_secs(DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION_SECONDS);
 
-    pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10 * SECONDS_IN_MINUTE);
+    // Drives the per-database schema/data sampler that feeds `typedb_schema_data_count`
+    // and the load metrics. Previously 10 minutes, which meant the first scrape on a
+    // fresh server saw zeros for ~10 minutes; lowered to 15 s so monitoring dashboards
+    // see fresh values quickly. Combined with a synchronous one-shot sample at boot
+    // (see ServerState::initialise_diagnostics), this fixes the "schema_data_count
+    // stays at zero" report.
+    pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(15);
 
     pub const DEFAULT_USER_NAME: &str = "admin";
     pub const DEFAULT_USER_PASSWORD: &str = "password";

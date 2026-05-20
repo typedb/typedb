@@ -54,6 +54,13 @@ pub struct Diagnostics {
     action_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ActionMetrics>>>,
     error_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ErrorMetrics>>>,
 
+    // Side-table: DatabaseHash → human database name, populated lazily whenever we
+    // observe a name on a hashing call site. Consumed ONLY by the Prometheus
+    // exposition writer (which renders `database="<name>", database_id="<hash>"`).
+    // Posthog reporting deliberately does not read this — it keeps using the hash
+    // alone, so no PII leaks via reporting.
+    database_names: RwLock<HashMap<DatabaseHash, String>>,
+
     is_full_reporting: bool,
 }
 
@@ -73,7 +80,36 @@ impl Diagnostics {
             action_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
             error_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
 
+            database_names: RwLock::new(HashMap::new()),
+
             is_full_reporting: is_reporting_enabled,
+        }
+    }
+
+    pub(crate) fn server_properties(&self) -> &ServerProperties {
+        &self.server_properties
+    }
+
+    pub(crate) fn server_metrics(&self) -> &ServerMetrics {
+        &self.server_metrics
+    }
+
+    /// Snapshot of the current DatabaseHash → name table. Used by the Prometheus
+    /// exposition to render the human name as the `database` label.
+    pub(crate) fn database_names_snapshot(&self) -> HashMap<DatabaseHash, String> {
+        self.database_names.read().expect("Expected database_names read lock acquisition").clone()
+    }
+
+    /// Records the human name for a database hash on every name-bearing call site
+    /// so the Prometheus writer can resolve hash → name. Idempotent; cheap on the
+    /// hot path because the common case takes only a read lock.
+    fn record_database_name(&self, name: &str, hash: DatabaseHash) {
+        if !self.database_names.read().expect("Expected database_names read lock acquisition").contains_key(&hash) {
+            self.database_names
+                .write()
+                .expect("Expected database_names write lock acquisition")
+                .entry(hash)
+                .or_insert_with(|| name.to_owned());
         }
     }
 
@@ -82,7 +118,8 @@ impl Diagnostics {
         let mut deleted_databases: HashSet<DatabaseHash> = loads.keys().cloned().collect();
 
         for metrics in database_metrics {
-            let database_hash = Self::hash_database(metrics.database_name);
+            let database_hash = Self::hash_database(&metrics.database_name);
+            self.record_database_name(&metrics.database_name, database_hash);
             deleted_databases.remove(&database_hash);
 
             let database_load = loads.entry(database_hash).or_insert(LoadMetrics::new());
@@ -101,7 +138,8 @@ impl Diagnostics {
         database_name: impl AsRef<str> + Hash,
         load_kind: LoadKind,
     ) {
-        let database_hash = Self::hash_database(database_name);
+        let database_hash = Self::hash_database(&database_name);
+        self.record_database_name(database_name.as_ref(), database_hash);
         let loads = self.lock_load_metrics_read_for_database(database_hash);
         loads.get(&database_hash).expect("Expected database in loads").increment_connection_count(client, load_kind);
     }
@@ -112,7 +150,8 @@ impl Diagnostics {
         database_name: impl AsRef<str> + Hash,
         load_kind: LoadKind,
     ) {
-        let database_hash = Self::hash_database(database_name);
+        let database_hash = Self::hash_database(&database_name);
+        // No record_database_name here: increment must have been called first, so the name is already known.
         let loads = self.lock_load_metrics_read_for_database(database_hash);
         loads.get(&database_hash).expect("Expected database in loads").decrement_connection_count(client, load_kind);
     }
@@ -123,7 +162,10 @@ impl Diagnostics {
         database_name: Option<impl AsRef<str> + Hash>,
         action_kind: ActionKind,
     ) {
-        let database_hash = Self::hash_database_opt(database_name);
+        let database_hash = Self::hash_database_opt(database_name.as_ref());
+        if let (Some(name), Some(hash)) = (database_name.as_ref(), database_hash) {
+            self.record_database_name(name.as_ref(), hash);
+        }
         let actions = self.lock_action_metrics_read_for_database(client, database_hash);
         actions.get(&database_hash).expect("Expected database in actions").submit_success(action_kind);
     }
@@ -134,7 +176,10 @@ impl Diagnostics {
         database_name: Option<impl AsRef<str> + Hash>,
         action_kind: ActionKind,
     ) {
-        let database_hash = Self::hash_database_opt(database_name);
+        let database_hash = Self::hash_database_opt(database_name.as_ref());
+        if let (Some(name), Some(hash)) = (database_name.as_ref(), database_hash) {
+            self.record_database_name(name.as_ref(), hash);
+        }
         let actions = self.lock_action_metrics_read_for_database(client, database_hash);
         actions.get(&database_hash).expect("Expected database in actions").submit_fail(action_kind);
     }
@@ -145,7 +190,10 @@ impl Diagnostics {
         database_name: Option<impl AsRef<str> + Hash>,
         error_code: String,
     ) {
-        let database_hash = Self::hash_database_opt(database_name);
+        let database_hash = Self::hash_database_opt(database_name.as_ref());
+        if let (Some(name), Some(hash)) = (database_name.as_ref(), database_hash) {
+            self.record_database_name(name.as_ref(), hash);
+        }
         let errors = self.lock_error_metrics_read_for_database(client, database_hash);
         errors.get(&database_hash).expect("Expected database in errors").submit(error_code);
     }
@@ -170,8 +218,8 @@ impl Diagnostics {
         to_monitoring_json(self)
     }
 
-    pub fn to_monitoring_prometheus(&self) -> String {
-        to_monitoring_prometheus(self)
+    pub fn to_monitoring_prometheus(&self, expose_database_names: bool) -> String {
+        to_monitoring_prometheus(self, expose_database_names)
     }
 
     pub fn to_posthog_reporting_json_against_snapshot(&self, api_key: &str) -> JSONValue {
