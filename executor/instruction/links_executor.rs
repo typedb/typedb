@@ -24,7 +24,7 @@ use concept::{
     type_::{object_type::ObjectType, relation_type::RelationType, role_type::RoleType},
 };
 use itertools::Itertools;
-use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
+use lending_iterator::{LendingIterator, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -337,7 +337,11 @@ pub(super) enum FixedLinksBounds {
 }
 
 pub(super) struct LinksTupleIterator<Iter: LendingIterator> {
-    inner: Peekable<Iter>,
+    // Direct underlying iterator — no Peekable cache layer. LinksTupleIterator's own next()
+    // never reads via peek; it always consumes via inner.next() and filters in-loop. The
+    // outer wrapper (`SortedTupleIterator`'s Peekable, or `KMergeBy`'s PeekWrapper) already
+    // provides the one-element lookahead the rest of the executor needs.
+    inner: Iter,
     filter_map: Arc<LinksFilterMapFn>,
     to_tuple_fn: LinksToTupleFn,
     from_tuple_fn: TupleToLinksFn,
@@ -356,7 +360,7 @@ where
         from_tuple_fn: TupleToLinksFn,
         fixed_bounds: FixedLinksBounds,
     ) -> Self {
-        Self { inner: Peekable::new(inner), filter_map, to_tuple_fn, from_tuple_fn, fixed_bounds }
+        Self { inner, filter_map, to_tuple_fn, from_tuple_fn, fixed_bounds }
     }
 }
 
