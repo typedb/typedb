@@ -146,9 +146,10 @@ impl<Durability> MVCCStorage<Durability> {
         let storage_dir = path.join(Self::STORAGE_DIR_NAME);
 
         Self::register_durability_record_types(&mut durability_client);
+        let state_counters = Arc::new(StateCounters::new());
         let (keyspaces, next_sequence_number) = if let Some(checkpoint) = checkpoint {
             checkpoint
-                .recover_storage::<KS, _>(name, &storage_dir, &durability_client)
+                .recover_storage::<KS, _>(name, &storage_dir, &durability_client, &state_counters)
                 .map_err(|error| RecoverFromCheckpoint { name: name.to_owned(), typedb_source: error })?
         } else {
             match fs::remove_dir_all(&storage_dir) {
@@ -166,7 +167,7 @@ impl<Durability> MVCCStorage<Durability> {
             let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
-            apply_recovered(name, commits, &durability_client, &keyspaces)
+            apply_recovered(name, commits, &durability_client, &keyspaces, &state_counters)
                 .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
             trace!("Finished applying commits from WAL.");
             (keyspaces, next_sequence_number)
@@ -180,7 +181,7 @@ impl<Durability> MVCCStorage<Durability> {
             keyspaces,
             isolation_manager,
             highest_committed_snapshot: AtomicU64::new(next_sequence_number.number() - 1),
-            state_counters: Arc::new(StateCounters::new()),
+            state_counters,
         })
     }
 
@@ -1140,6 +1141,71 @@ mod tests {
         let a3 = s3.allocate_counter(counter);
         assert!(a3 > a1, "post-commit allocation {a3} must exceed earlier {a1}");
         assert!(a3 > a2, "post-commit allocation {a3} must exceed earlier {a2}");
+    }
+
+    #[test]
+    fn state_counters_are_seeded_from_wal_during_recovery() {
+        use resource::state_counter::CounterId;
+
+        use crate::snapshot::{CommittableSnapshot, WritableSnapshot};
+
+        test_keyspace_set! { TestKeyspace => 0: "test", }
+        init_logging();
+        let mut profile = CommitProfile::DISABLED;
+
+        let storage_path = create_tmp_storage_dir();
+        let entity_counter = CounterId::EntityVertex { type_id: 13 };
+
+        // Allocate and commit some IIDs through the normal snapshot path, capturing
+        // both the entity-IID watermark and the SnapshotId watermark observed at commit time.
+        let (entity_watermark, snapshot_id_watermark) = {
+            let mut durability_client = WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+            durability_client.register_record_type::<LegacyCommitRecordV1>();
+            durability_client.register_record_type::<LegacyCommitRecordV2>();
+            durability_client.register_record_type::<CommitRecord>();
+            durability_client.register_record_type::<StatusRecord>();
+            let storage = Arc::new(
+                MVCCStorage::<WALClient>::create::<TestKeyspaceSet>("storage", &storage_path, durability_client)
+                    .unwrap(),
+            );
+            let mut snapshot = storage.clone().open_snapshot_write();
+            for _ in 0..7 {
+                snapshot.allocate_counter(entity_counter);
+            }
+            // Add a real write so the commit isn't a no-op (otherwise has_changes short-circuits).
+            snapshot.put(StorageKeyArray::from((TestKeyspaceSet::TestKeyspace, b"sentinel".as_slice())));
+            let snapshot_id_at_commit = storage.state_counters().next_value(CounterId::SnapshotId);
+            let entity_at_commit = storage.state_counters().next_value(entity_counter);
+            snapshot.commit(&mut profile).expect("commit").expect("had changes");
+            (entity_at_commit, snapshot_id_at_commit)
+        };
+        assert!(entity_watermark >= 7);
+        assert!(snapshot_id_watermark >= 1);
+
+        // Now "restart": load fresh storage from the WAL.
+        let mut durability_client = WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME)).unwrap());
+        durability_client.register_record_type::<LegacyCommitRecordV1>();
+        durability_client.register_record_type::<LegacyCommitRecordV2>();
+        durability_client.register_record_type::<CommitRecord>();
+        durability_client.register_record_type::<StatusRecord>();
+        let reloaded = Arc::new(
+            MVCCStorage::<WALClient>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
+                .unwrap(),
+        );
+
+        // After recovery, state_counters must be >= the watermarks recorded before restart.
+        // (Storage-scan seeding is performed by ThingVertexGenerator on the Database side,
+        // so for raw MVCCStorage we rely solely on WAL counter_advances here)
+        assert_eq!(
+            reloaded.state_counters().next_value(entity_counter),
+            entity_watermark,
+            "entity counter must be restored from WAL counter_advances"
+        );
+        assert_eq!(
+            reloaded.state_counters().next_value(CounterId::SnapshotId),
+            snapshot_id_watermark,
+            "SnapshotId must be restored from WAL counter_advances"
+        );
     }
 
     #[test]

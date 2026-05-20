@@ -9,6 +9,7 @@ use std::{collections::BTreeMap, error::Error, sync::Arc};
 use durability::RawRecord;
 use error::typedb_error;
 use fail_point::{RECOVERY_PARTIAL_WRITE, fail_point};
+use resource::state_counter::StateCounters;
 use tracing::{Level, event, trace};
 
 use crate::{
@@ -163,6 +164,7 @@ pub(crate) fn apply_recovered(
     recovered_commits: BTreeMap<SequenceNumber, RecoveryCommitStatus>,
     durability_client: &impl DurabilityClient,
     keyspaces: &Keyspaces,
+    state_counters: &StateCounters,
 ) -> Result<(), StorageRecoveryError> {
     event!(Level::TRACE, "Applying recovered commits");
     use StorageRecoveryError::{DurabilityClientRead, DurabilityClientWrite, Internal, KeyspaceWrite};
@@ -176,6 +178,7 @@ pub(crate) fn apply_recovered(
     for (commit_sequence_number, commit) in recovered_commits {
         match commit {
             RecoveryCommitStatus::Validated(commit_record) => {
+                let counter_advances = commit_record.counter_advances().to_vec();
                 let write_batches = WriteBatches::from_operations(commit_sequence_number, commit_record.operations());
                 isolation_manager.load_validated(commit_sequence_number, commit_record);
                 keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
@@ -183,9 +186,11 @@ pub(crate) fn apply_recovered(
                 isolation_manager
                     .applied(commit_sequence_number)
                     .map_err(|error| Internal { name: Arc::new(database_name.to_owned()), source: Arc::new(error) })?;
+                state_counters.apply_advances(&counter_advances);
             }
             RecoveryCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),
             RecoveryCommitStatus::Pending(commit_record) => {
+                let counter_advances = commit_record.counter_advances().to_vec();
                 let read_guard = isolation_manager.opened_for_read(commit_record.open_sequence_number());
                 let validated_commit = isolation_manager
                     .validate_commit(commit_sequence_number, commit_record, durability_client)
@@ -201,6 +206,7 @@ pub(crate) fn apply_recovered(
                             name: Arc::new(database_name.to_owned()),
                             source: Arc::new(error),
                         })?;
+                        state_counters.apply_advances(&counter_advances);
                     }
                     ValidatedCommit::Conflict(_) => {
                         MVCCStorage::persist_commit_status(false, commit_sequence_number, durability_client)

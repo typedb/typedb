@@ -71,6 +71,9 @@ impl ThingVertexGenerator {
         storage: Arc<MVCCStorage<D>>,
         large_value_hasher: fn(&[u8]) -> u64,
     ) -> Result<Self, EncodingError> {
+        // All counters are loaded from WAL commit records. However, legacy commit records do not
+        // contain state counters for this generator, so we must check the storage on load
+        // as far as there are legacy records on disk.
         Self::seed_state_counters_from_storage(storage)?;
         Ok(ThingVertexGenerator { large_value_hasher })
     }
