@@ -1,10 +1,10 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.11.0-rc1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.11.0-rc1)
+[Distributions for 3.11.1](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.11.1)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.11.0-rc1```
+```docker pull typedb/typedb:3.11.1```
 
 ## Breaking changes
 This release breaks backwards compatibility.
@@ -147,6 +147,12 @@ Connections from older drivers will be rejected.
   
 
 ## Other Improvements
+- **Make studio link a constant**
+
+- **Prepare release 3.11.0-rc1**
+  Bump version & update release notes
+  
+  
 - **Escalate concurrent key and unique writes to transaction failure#7800 (#7800)**
 
 - **Disable all warnings on optional return mismatches**
