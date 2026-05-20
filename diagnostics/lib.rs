@@ -19,8 +19,9 @@ use xxhash_rust::xxh3::Xxh3;
 
 use crate::{
     metrics::{
-        ALL_CLIENT_ENDPOINTS, ActionKind, ActionMetrics, ClientEndpoint, DatabaseMetrics, ErrorMetrics, LoadKind,
-        LoadMetrics, ServerMetrics, ServerProperties, client_endpoints_map,
+        ALL_CLIENT_ENDPOINTS, ActionKind, ActionMetrics, ClientEndpoint, DatabaseHistograms, DatabaseMetrics,
+        ErrorMetrics, LoadMetrics, QueryType, ServerMetrics, ServerProperties, TransactionType,
+        client_endpoints_map,
     },
     reports::{
         json_monitoring::to_monitoring_json,
@@ -53,6 +54,10 @@ pub struct Diagnostics {
     load_metrics: RwLock<HashMap<DatabaseHash, LoadMetrics>>,
     action_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ActionMetrics>>>,
     error_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ErrorMetrics>>>,
+    // Per-database histograms (query/transaction duration, queries-per-transaction).
+    // Lazy-created on first observation, like action_metrics. Histograms are NOT
+    // wired into Posthog reporting — see §1.3 of the Phase 2 design.
+    histogram_metrics: RwLock<HashMap<DatabaseHash, DatabaseHistograms>>,
 
     // Side-table: DatabaseHash → human database name, populated lazily whenever we
     // observe a name on a hashing call site. Consumed ONLY by the Prometheus
@@ -79,6 +84,7 @@ impl Diagnostics {
             load_metrics: RwLock::new(HashMap::new()),
             action_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
             error_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
+            histogram_metrics: RwLock::new(HashMap::new()),
 
             database_names: RwLock::new(HashMap::new()),
 
@@ -136,24 +142,24 @@ impl Diagnostics {
         &self,
         client: ClientEndpoint,
         database_name: impl AsRef<str> + Hash,
-        load_kind: LoadKind,
+        transaction_type: TransactionType,
     ) {
         let database_hash = Self::hash_database(&database_name);
         self.record_database_name(database_name.as_ref(), database_hash);
         let loads = self.lock_load_metrics_read_for_database(database_hash);
-        loads.get(&database_hash).expect("Expected database in loads").increment_connection_count(client, load_kind);
+        loads.get(&database_hash).expect("Expected database in loads").increment_connection_count(client, transaction_type);
     }
 
     pub fn decrement_load_count(
         &self,
         client: ClientEndpoint,
         database_name: impl AsRef<str> + Hash,
-        load_kind: LoadKind,
+        transaction_type: TransactionType,
     ) {
         let database_hash = Self::hash_database(&database_name);
         // No record_database_name here: increment must have been called first, so the name is already known.
         let loads = self.lock_load_metrics_read_for_database(database_hash);
-        loads.get(&database_hash).expect("Expected database in loads").decrement_connection_count(client, load_kind);
+        loads.get(&database_hash).expect("Expected database in loads").decrement_connection_count(client, transaction_type);
     }
 
     pub fn submit_action_success(
@@ -196,6 +202,72 @@ impl Diagnostics {
         }
         let errors = self.lock_error_metrics_read_for_database(client, database_hash);
         errors.get(&database_hash).expect("Expected database in errors").submit(error_code);
+    }
+
+    pub fn observe_query_duration(
+        &self,
+        database_name: impl AsRef<str> + Hash,
+        kind: QueryType,
+        duration: std::time::Duration,
+    ) {
+        let database_hash = Self::hash_database(&database_name);
+        self.record_database_name(database_name.as_ref(), database_hash);
+        let histograms = self.lock_histogram_metrics_read_for_database(database_hash);
+        histograms
+            .get(&database_hash)
+            .expect("Expected database in histograms")
+            .observe_query_duration(kind, duration);
+    }
+
+    pub fn observe_transaction_duration(
+        &self,
+        database_name: impl AsRef<str> + Hash,
+        kind: TransactionType,
+        duration: std::time::Duration,
+    ) {
+        let database_hash = Self::hash_database(&database_name);
+        self.record_database_name(database_name.as_ref(), database_hash);
+        let histograms = self.lock_histogram_metrics_read_for_database(database_hash);
+        histograms
+            .get(&database_hash)
+            .expect("Expected database in histograms")
+            .observe_transaction_duration(kind, duration);
+    }
+
+    pub fn observe_queries_per_transaction(&self, database_name: impl AsRef<str> + Hash, queries: u64) {
+        let database_hash = Self::hash_database(&database_name);
+        self.record_database_name(database_name.as_ref(), database_hash);
+        let histograms = self.lock_histogram_metrics_read_for_database(database_hash);
+        histograms
+            .get(&database_hash)
+            .expect("Expected database in histograms")
+            .observe_queries_per_transaction(queries);
+    }
+
+    pub fn record_transaction_outcome(
+        &self,
+        database_name: impl AsRef<str> + Hash,
+        kind: TransactionType,
+        outcome: crate::metrics::TransactionOutcome,
+    ) {
+        let database_hash = Self::hash_database(&database_name);
+        self.record_database_name(database_name.as_ref(), database_hash);
+        let histograms = self.lock_histogram_metrics_read_for_database(database_hash);
+        histograms
+            .get(&database_hash)
+            .expect("Expected database in histograms")
+            .record_transaction_outcome(kind, outcome);
+    }
+
+    /// Read-only snapshot of all per-database histograms. Returned as a
+    /// (DatabaseHash, snapshot) list in the iteration order of the lock-held
+    /// HashMap — order is unstable across calls, but exposition sorts deterministically
+    /// before emitting, so dashboard label series stay stable.
+    pub(crate) fn histogram_snapshots(&self) -> Vec<(DatabaseHash, crate::metrics::DatabaseHistogramsSnapshot)> {
+        self.lock_histogram_metrics_read()
+            .iter()
+            .map(|(&hash, db)| (hash, db.snapshot()))
+            .collect()
     }
 
     pub fn take_snapshot(&self) {
@@ -390,6 +462,18 @@ generate_metric_functions!(
     try_lock_error_metrics_read_for_database,
     add_database_to_error_metrics,
     ClientEndpoint
+);
+
+generate_metric_functions!(
+    histogram_metrics,
+    DatabaseHistograms,
+    DatabaseHash,
+    DatabaseHistograms::new,
+    lock_histogram_metrics_read,
+    lock_histogram_metrics_write,
+    lock_histogram_metrics_read_for_database,
+    try_lock_histogram_metrics_read_for_database,
+    add_database_to_histogram_metrics
 );
 
 // Used when the hash has to be consistent over time and restarts (default hasher does not suit)

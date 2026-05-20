@@ -11,7 +11,7 @@ use resource::constants::database::INTERNAL_DATABASE_PREFIX;
 
 use crate::{
     Diagnostics,
-    metrics::{ActionKind, ClientEndpoint, DatabaseMetrics, LoadKind},
+    metrics::{ActionKind, ClientEndpoint, DatabaseMetrics, QueryType, TransactionOutcome, TransactionType},
     monitoring_server::MonitoringServer,
     reporter::Reporter,
 };
@@ -75,8 +75,16 @@ impl DiagnosticsManager {
         pub fn submit_error(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, error_code: String);
         pub fn submit_action_success(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
         pub fn submit_action_fail(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
-        pub fn increment_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, connection_: LoadKind);
-        pub fn decrement_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, connection_: LoadKind);
+        pub fn increment_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, connection_: TransactionType);
+        pub fn decrement_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, connection_: TransactionType);
+
+        // Phase 2 histograms + lifecycle counters. All gated by is_diagnostics_needed
+        // inside the inner methods on Diagnostics; the manager wrapper is a thin
+        // pass-through via the diagnostics_method! macro above.
+        pub fn observe_query_duration(&self, database_name: impl AsRef<str> + Hash, kind: QueryType, duration: std::time::Duration);
+        pub fn observe_transaction_duration(&self, database_name: impl AsRef<str> + Hash, kind: TransactionType, duration: std::time::Duration);
+        pub fn observe_queries_per_transaction(&self, database_name: impl AsRef<str> + Hash, queries: u64);
+        pub fn record_transaction_outcome(&self, database_name: impl AsRef<str> + Hash, kind: TransactionType, outcome: TransactionOutcome);
     }
 
     pub async fn may_start_reporting(&self) {

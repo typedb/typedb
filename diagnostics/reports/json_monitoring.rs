@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 
 use crate::{
     Diagnostics,
-    metrics::{ALL_CLIENT_ENDPOINTS, ActionKind},
+    metrics::{ALL_CLIENT_ENDPOINTS, ActionKind, HistogramSnapshot, HistogramUnit, QueryType, TransactionType},
     reports::{
         ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport, SchemaLoadReport,
         ServerPropertiesReport, ServerReport, ServerReportSensitivePart, serialize_timestamp,
@@ -30,6 +30,16 @@ pub(crate) struct JsonMonitoringReport {
     pub load: Vec<JsonMonitoringLoadReport>,
     pub actions: Vec<JsonMonitoringActionReport>,
     pub errors: Vec<JsonMonitoringErrorReport>,
+
+    // Phase 2 additions. Empty when no Phase 2 data has been observed yet.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub query_duration: Vec<JsonMonitoringHistogramByQueryKind>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub transaction_duration: Vec<JsonMonitoringHistogramByTransactionKind>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub queries_per_transaction: Vec<JsonMonitoringHistogramPerDatabase>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub transaction_lifecycle: Vec<JsonMonitoringTransactionLifecycleEntry>,
 }
 
 #[derive(Debug, Serialize)]
@@ -260,6 +270,103 @@ impl JsonMonitoringErrorReportsBuilder {
     }
 }
 
+// Phase 2 histogram + lifecycle JSON types ===================================
+
+/// One cumulative bucket in a histogram. `le` is the upper bound in display
+/// units (seconds for duration histograms, raw counts for count histograms);
+/// "+Inf" is emitted as the literal string `+Inf`.
+#[derive(Debug, Serialize)]
+pub(crate) struct JsonMonitoringHistogramBucket {
+    pub le: String,
+    pub count: u64,
+}
+
+/// Histogram report in JSON. `sum` is in display units (seconds for duration,
+/// raw counts for count); `count` is total observations.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct JsonMonitoringHistogramReport {
+    pub buckets: Vec<JsonMonitoringHistogramBucket>,
+    pub count: u64,
+    pub sum: f64,
+}
+
+impl From<HistogramSnapshot> for JsonMonitoringHistogramReport {
+    fn from(snap: HistogramSnapshot) -> Self {
+        let scale = match snap.unit {
+            HistogramUnit::Nanoseconds => 1.0 / 1_000_000_000.0,
+            HistogramUnit::Count => 1.0,
+        };
+        let mut buckets = Vec::with_capacity(snap.bucket_bounds.len() + 1);
+        for (i, &bound) in snap.bucket_bounds.iter().enumerate() {
+            buckets.push(JsonMonitoringHistogramBucket {
+                le: format_le(bound as f64 * scale),
+                count: snap.cumulative_counts[i],
+            });
+        }
+        buckets.push(JsonMonitoringHistogramBucket { le: "+Inf".to_owned(), count: snap.plus_inf_count });
+        Self { buckets, count: snap.count, sum: snap.sum as f64 * scale }
+    }
+}
+
+/// Format a histogram bucket upper bound for the `le` label.
+/// `%g`-style: drops trailing zeros, never uses exponential for these magnitudes.
+pub(crate) fn format_le(value: f64) -> String {
+    // Manual formatting because Rust's f64 Display uses scientific notation for
+    // very small numbers (1e-5 instead of 0.00001), which would break Prometheus
+    // parsers that expect fixed-point in `le` labels.
+    if value >= 1.0 {
+        // Integer or sub-integer: format with enough precision.
+        if value.fract() == 0.0 { format!("{}", value as i64) } else { format!("{}", value) }
+    } else {
+        // sub-1: fixed-point with 9 decimal places, trim trailing zeros.
+        let s = format!("{:.9}", value);
+        let trimmed = s.trim_end_matches('0').trim_end_matches('.');
+        if trimmed.is_empty() { "0".to_owned() } else { trimmed.to_owned() }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct JsonMonitoringHistogramByQueryKind {
+    #[serde(flatten)]
+    pub database: DatabaseReport,
+    pub kind: QueryType,
+    pub histogram: JsonMonitoringHistogramReport,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct JsonMonitoringHistogramByTransactionKind {
+    #[serde(flatten)]
+    pub database: DatabaseReport,
+    pub kind: TransactionType,
+    pub histogram: JsonMonitoringHistogramReport,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct JsonMonitoringHistogramPerDatabase {
+    #[serde(flatten)]
+    pub database: DatabaseReport,
+    pub histogram: JsonMonitoringHistogramReport,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct JsonMonitoringTransactionLifecycleEntry {
+    #[serde(flatten)]
+    pub database: DatabaseReport,
+    pub kind: TransactionType,
+    pub started: u64,
+    pub committed: u64,
+    pub rolled_back: u64,
+    pub aborted: u64,
+}
+
+// QueryType + TransactionType need Serialize for the JSON output. We add a
+// lowercased-name implementation via serde derive on the source types.
+
 pub(crate) fn to_monitoring_json(diagnostics: &Diagnostics) -> Value {
     json!(to_monitoring_report(diagnostics))
 }
@@ -295,11 +402,72 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
         }
     }
 
+    // Phase 2 per-database histograms + lifecycle counters. Sorted by hash so
+    // exposition order is stable across scrapes regardless of HashMap iteration.
+    let mut histogram_snapshots = diagnostics.histogram_snapshots();
+    histogram_snapshots.sort_by_key(|(hash, _)| *hash);
+
+    let mut query_duration = Vec::new();
+    let mut transaction_duration = Vec::new();
+    let mut queries_per_transaction = Vec::new();
+    let mut transaction_lifecycle = Vec::new();
+    for (hash, snap) in histogram_snapshots {
+        let db = DatabaseReport(hash);
+        for (kind, hist) in snap.query_duration {
+            if hist.count == 0 {
+                continue;
+            }
+            query_duration.push(JsonMonitoringHistogramByQueryKind {
+                database: db.clone(),
+                kind,
+                histogram: hist.into(),
+            });
+        }
+        for (kind, hist) in snap.transaction_duration {
+            if hist.count == 0 {
+                continue;
+            }
+            transaction_duration.push(JsonMonitoringHistogramByTransactionKind {
+                database: db.clone(),
+                kind,
+                histogram: hist.into(),
+            });
+        }
+        if snap.queries_per_transaction.count != 0 {
+            queries_per_transaction.push(JsonMonitoringHistogramPerDatabase {
+                database: db.clone(),
+                histogram: snap.queries_per_transaction.into(),
+            });
+        }
+        // Lifecycle counters: one row per (database, kind) with non-zero state.
+        let lc = &snap.transaction_lifecycle;
+        for (i, (kind, started)) in lc.started.iter().enumerate() {
+            let committed = lc.committed[i].1;
+            let rolled_back = lc.rolled_back[i].1;
+            let aborted = lc.aborted[i].1;
+            if *started == 0 && committed == 0 && rolled_back == 0 && aborted == 0 {
+                continue;
+            }
+            transaction_lifecycle.push(JsonMonitoringTransactionLifecycleEntry {
+                database: db.clone(),
+                kind: *kind,
+                started: *started,
+                committed,
+                rolled_back,
+                aborted,
+            });
+        }
+    }
+
     JsonMonitoringReport {
         server_properties,
         server,
         load,
         actions: actions_builder.build(),
         errors: errors_builder.build(),
+        query_duration,
+        transaction_duration,
+        queries_per_transaction,
+        transaction_lifecycle,
     }
 }

@@ -10,7 +10,6 @@ use database::{
     Database,
     transaction::{TransactionError, TransactionId, TransactionRead, TransactionSchema, TransactionWrite},
 };
-use diagnostics::metrics::LoadKind;
 use options::TransactionOptions;
 use serde::{Deserialize, Serialize};
 use storage::durability_client::WALClient;
@@ -22,6 +21,20 @@ pub enum TransactionType {
     Read,
     Write,
     Schema,
+}
+
+/// Bridge to the diagnostics crate's parallel enum of the same name. The two are
+/// kept separate because the dependency direction is server → diagnostics (the
+/// diagnostics crate cannot import server types); this `From` impl is the single
+/// edge between them, used at every diagnostics submission call site.
+impl From<TransactionType> for diagnostics::metrics::TransactionType {
+    fn from(value: TransactionType) -> Self {
+        match value {
+            TransactionType::Read => Self::Read,
+            TransactionType::Write => Self::Write,
+            TransactionType::Schema => Self::Schema,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -59,12 +72,12 @@ impl Transaction {
         }
     }
 
-    pub fn load_kind(&self) -> LoadKind {
-        match self {
-            Transaction::Read(_) => LoadKind::ReadTransactions,
-            Transaction::Write(_) => LoadKind::WriteTransactions,
-            Transaction::Schema(_) => LoadKind::SchemaTransactions,
-        }
+    /// Returns the diagnostics-crate transaction kind for this transaction.
+    /// Equivalent to `self.type_().into()`; kept as a separate method to make the
+    /// boundary between the protocol type and the diagnostics type explicit at
+    /// every call site that submits metrics.
+    pub fn load_kind(&self) -> diagnostics::metrics::TransactionType {
+        self.type_().into()
     }
 
     pub fn database_name(&self) -> &str {

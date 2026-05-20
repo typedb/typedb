@@ -3,11 +3,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Write};
 
 use crate::{
     DatabaseHash, Diagnostics,
-    reports::json_monitoring::{JsonMonitoringReport, to_monitoring_report},
+    reports::json_monitoring::{
+        JsonMonitoringHistogramReport, JsonMonitoringReport, to_monitoring_report,
+    },
 };
 
 pub fn to_monitoring_prometheus(diagnostics: &Diagnostics, expose_database_names: bool) -> String {
@@ -146,5 +148,133 @@ pub fn to_prometheus(
         }
     }
 
+    // ----- Phase 2: per-database histograms ---------------------------------
+
+    if !report.query_duration.is_empty() {
+        writeln!(out, "\n# HELP typedb_query_duration_seconds Query execution latency.").unwrap();
+        writeln!(out, "# TYPE typedb_query_duration_seconds histogram").unwrap();
+        for entry in &report.query_duration {
+            let labels = db_labels(&entry.database.0.to_string(), names, expose_database_names);
+            let kind_label = format!("{}, kind=\"{}\"", labels, query_kind_label(&entry.kind));
+            write_histogram_body(&mut out, "typedb_query_duration_seconds", &kind_label, &entry.histogram);
+        }
+    }
+
+    if !report.transaction_duration.is_empty() {
+        writeln!(out, "\n# HELP typedb_transaction_duration_seconds Transaction lifetime (open\u{2192}commit/rollback/abort).").unwrap();
+        writeln!(out, "# TYPE typedb_transaction_duration_seconds histogram").unwrap();
+        for entry in &report.transaction_duration {
+            let labels = db_labels(&entry.database.0.to_string(), names, expose_database_names);
+            let kind_label = format!("{}, kind=\"{}\"", labels, txn_kind_label(&entry.kind));
+            write_histogram_body(&mut out, "typedb_transaction_duration_seconds", &kind_label, &entry.histogram);
+        }
+    }
+
+    if !report.queries_per_transaction.is_empty() {
+        writeln!(out, "\n# HELP typedb_queries_per_transaction Queries executed per transaction.").unwrap();
+        writeln!(out, "# TYPE typedb_queries_per_transaction histogram").unwrap();
+        for entry in &report.queries_per_transaction {
+            let labels = db_labels(&entry.database.0.to_string(), names, expose_database_names);
+            write_histogram_body(&mut out, "typedb_queries_per_transaction", &labels, &entry.histogram);
+        }
+    }
+
+    // ----- Phase 2: transaction lifecycle counters --------------------------
+
+    if !report.transaction_lifecycle.is_empty() {
+        write_lifecycle_counter(
+            &mut out,
+            "typedb_transactions_started_total",
+            "Transactions opened, by transaction kind.",
+            &report,
+            names,
+            expose_database_names,
+            |e| e.started,
+        );
+        write_lifecycle_counter(
+            &mut out,
+            "typedb_transactions_committed_total",
+            "Transactions that committed successfully.",
+            &report,
+            names,
+            expose_database_names,
+            |e| e.committed,
+        );
+        write_lifecycle_counter(
+            &mut out,
+            "typedb_transactions_rolled_back_total",
+            "Transactions explicitly rolled back by the client.",
+            &report,
+            names,
+            expose_database_names,
+            |e| e.rolled_back,
+        );
+        write_lifecycle_counter(
+            &mut out,
+            "typedb_transactions_aborted_total",
+            "Transactions terminated without a clean commit or rollback (timeout, error, drop).",
+            &report,
+            names,
+            expose_database_names,
+            |e| e.aborted,
+        );
+    }
+
     out
+}
+
+/// Emit a Prometheus histogram body: `_bucket{le="X"}`, `_count`, `_sum` lines.
+/// The HELP/TYPE header is the caller's responsibility (so multiple per-database
+/// series share one header). `labels` is the inside of the `{ }` minus the `le`
+/// label, which this function appends per bucket.
+fn write_histogram_body(
+    out: &mut String,
+    metric_name: &str,
+    labels: &str,
+    histogram: &JsonMonitoringHistogramReport,
+) {
+    for bucket in &histogram.buckets {
+        writeln!(out, "{}_bucket{{{}, le=\"{}\"}} {}", metric_name, labels, bucket.le, bucket.count).unwrap();
+    }
+    writeln!(out, "{}_count{{{}}} {}", metric_name, labels, histogram.count).unwrap();
+    writeln!(out, "{}_sum{{{}}} {}", metric_name, labels, histogram.sum).unwrap();
+}
+
+fn write_lifecycle_counter<F>(
+    out: &mut String,
+    metric_name: &str,
+    help_text: &str,
+    report: &JsonMonitoringReport,
+    names: &HashMap<DatabaseHash, String>,
+    expose_database_names: bool,
+    field: F,
+) where
+    F: Fn(&crate::reports::json_monitoring::JsonMonitoringTransactionLifecycleEntry) -> u64,
+{
+    writeln!(out, "\n# HELP {} {}", metric_name, help_text).unwrap();
+    writeln!(out, "# TYPE {} counter", metric_name).unwrap();
+    for entry in &report.transaction_lifecycle {
+        let labels = db_labels(&entry.database.0.to_string(), names, expose_database_names);
+        writeln!(
+            out,
+            "{}{{{}, kind=\"{}\"}} {}",
+            metric_name,
+            labels,
+            txn_kind_label(&entry.kind),
+            field(entry)
+        )
+        .unwrap();
+    }
+}
+
+fn query_kind_label(kind: &crate::metrics::QueryType) -> &'static str {
+    kind.as_label()
+}
+
+fn txn_kind_label(kind: &crate::metrics::TransactionType) -> &'static str {
+    match kind {
+        crate::metrics::TransactionType::Read => "read",
+        crate::metrics::TransactionType::Write => "write",
+        crate::metrics::TransactionType::Schema => "schema",
+    }
 }

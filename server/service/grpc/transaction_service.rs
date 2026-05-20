@@ -20,7 +20,7 @@ use database::query::{
     StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
     execute_write_query_in_schema, execute_write_query_in_write,
 };
-use diagnostics::metrics::{ActionKind, ClientEndpoint, LoadKind};
+use diagnostics::metrics::{ActionKind, ClientEndpoint, TransactionOutcome};
 use executor::{
     ExecutionInterrupt, InterruptType,
     batch::Batch,
@@ -137,6 +137,15 @@ pub(crate) struct TransactionService {
 
     close_sender: Sender<()>,
     close_receiver: Receiver<()>,
+
+    // Phase 2 diagnostics state. `opened_at` is captured once at handle_open and
+    // consumed at each lifecycle endpoint (commit/rollback/abort) to feed the
+    // typedb_transaction_duration_seconds histogram. `lifecycle_outcome_recorded`
+    // gates do_close's "aborted" increment so a transaction that the client
+    // already committed or rolled back doesn't also count as aborted on stream
+    // teardown.
+    opened_at: Option<Instant>,
+    lifecycle_outcome_recorded: bool,
 }
 
 impl TransactionService {
@@ -169,6 +178,9 @@ impl TransactionService {
 
             close_sender,
             close_receiver,
+
+            opened_at: None,
+            lifecycle_outcome_recorded: false,
         }
     }
 
@@ -453,14 +465,22 @@ impl TransactionService {
             .await
             .map_err(|err| err.into_status())?;
 
+        let load_kind = transaction.load_kind();
         self.server_state.diagnostics_manager().increment_load_count(
             ClientEndpoint::Grpc,
             &database_name,
-            transaction.load_kind(),
+            load_kind,
+        );
+        self.server_state.diagnostics_manager().record_transaction_outcome(
+            &database_name,
+            load_kind,
+            TransactionOutcome::Started,
         );
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
         self.is_open = true;
+        self.opened_at = Some(Instant::now());
+        self.lifecycle_outcome_recorded = false;
 
         let processing_time_millis = Instant::now().duration_since(receive_time).as_millis() as u64;
         send_ok_message!(
@@ -492,7 +512,13 @@ impl TransactionService {
 
         let diagnostics_manager = self.server_state.diagnostics_manager().clone();
         let server_state = self.server_state.clone();
-        match self.transaction.take().expect("Expected existing transaction") {
+        // Snapshot the kind + name BEFORE moving the transaction into the spawn so
+        // we can record the lifecycle outcome on the way back out without holding
+        // a borrow across the await.
+        let txn_kind = self.transaction.as_ref().map(|t| t.load_kind());
+        let txn_database_name = self.transaction.as_ref().map(|t| t.database_name().to_owned());
+        let opened_at = self.opened_at;
+        let commit_result = match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
                 Err(TransactionServiceError::CannotCommitReadTransaction {}.into_proto_error_message().into_status())
@@ -501,7 +527,7 @@ impl TransactionService {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
-                    LoadKind::WriteTransactions,
+                    TransactionType::Write.into(),
                 );
                 let (_profile, commit_result) = commit_write_transaction(server_state, transaction).await;
                 commit_result.map_err(|typedb_source| {
@@ -514,7 +540,7 @@ impl TransactionService {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
-                    LoadKind::SchemaTransactions,
+                    TransactionType::Schema.into(),
                 );
                 let (_profile, commit_result) = commit_schema_transaction(server_state, transaction).await;
                 commit_result.map_err(|typedb_source| {
@@ -525,7 +551,27 @@ impl TransactionService {
             })
             .await
             .expect("Expected schema transaction commit completion"),
-        }?;
+        };
+
+        // Lifecycle outcome + transaction duration. Recorded regardless of
+        // whether commit_result is Ok or Err so the histogram stays calibrated
+        // even when commits fail (the transaction's lifetime is what it is).
+        // Aborted is not counted here; do_close handles that for transactions
+        // that never reach a successful commit. `lifecycle_outcome_recorded`
+        // gates that: set only on a successful commit so the rare double-commit
+        // attempt isn't counted twice.
+        if let (Some(kind), Some(name)) = (txn_kind, &txn_database_name) {
+            let dm = self.server_state.diagnostics_manager();
+            if commit_result.is_ok() {
+                dm.record_transaction_outcome(name, kind, TransactionOutcome::Committed);
+                self.lifecycle_outcome_recorded = true;
+            }
+            if let Some(start) = opened_at {
+                dm.observe_transaction_duration(name, kind, start.elapsed());
+                self.opened_at = None;
+            }
+        }
+        commit_result?;
 
         send_ok_message!(
             self.response_sender,
@@ -550,6 +596,14 @@ impl TransactionService {
             return Ok(Break(()));
         }
 
+        // Snapshot kind + name before the move-and-restore dance below; used to
+        // record the rolled_back lifecycle outcome on success. Rollback is not
+        // a "terminal" outcome for transactions_aborted purposes — the transaction
+        // remains alive and can be committed later; do_close still classifies the
+        // eventual close as aborted unless a successful commit happens first.
+        let txn_kind = self.transaction.as_ref().map(|t| t.load_kind());
+        let txn_database_name = self.transaction.as_ref().map(|t| t.database_name().to_owned());
+
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
@@ -566,6 +620,12 @@ impl TransactionService {
                 self.transaction = Some(Transaction::Schema(transaction));
             }
         };
+
+        if let (Some(kind), Some(name)) = (txn_kind, &txn_database_name) {
+            self.server_state
+                .diagnostics_manager()
+                .record_transaction_outcome(name, kind, TransactionOutcome::RolledBack);
+        }
 
         send_ok_message!(
             self.response_sender,
@@ -585,13 +645,22 @@ impl TransactionService {
         let _ = self.finish_running_write_query_no_transmit(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_write_queries(InterruptType::TransactionClosed).await;
 
+        // If a transaction is still present at this point, the client never reached
+        // a successful commit — count it as aborted and record its duration. A
+        // transaction that did commit successfully had its outcome recorded in
+        // handle_commit and lifecycle_outcome_recorded is true, so we skip here.
+        let aborted_kind_and_name: Option<(diagnostics::metrics::TransactionType, String)> =
+            self.transaction.as_ref().map(|t| (t.load_kind(), t.database_name().to_owned()));
+        let opened_at = self.opened_at.take();
+        let already_terminal = self.lifecycle_outcome_recorded;
+
         match self.transaction.take() {
             None => (),
             Some(Transaction::Read(transaction)) => {
                 self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
-                    LoadKind::ReadTransactions,
+                    TransactionType::Read.into(),
                 );
                 transaction.close()
             }
@@ -599,7 +668,7 @@ impl TransactionService {
                 self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
-                    LoadKind::WriteTransactions,
+                    TransactionType::Write.into(),
                 );
                 transaction.close()
             }
@@ -607,11 +676,21 @@ impl TransactionService {
                 self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
-                    LoadKind::SchemaTransactions,
+                    TransactionType::Schema.into(),
                 );
                 transaction.close()
             }
         };
+
+        if let Some((kind, name)) = aborted_kind_and_name {
+            let dm = self.server_state.diagnostics_manager();
+            if !already_terminal {
+                dm.record_transaction_outcome(&name, kind, TransactionOutcome::Aborted);
+            }
+            if let Some(start) = opened_at {
+                dm.observe_transaction_duration(&name, kind, start.elapsed());
+            }
+        }
     }
 
     async fn interrupt_and_close_responders(&mut self, interrupt: InterruptType) {
