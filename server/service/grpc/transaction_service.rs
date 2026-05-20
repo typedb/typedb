@@ -143,9 +143,16 @@ pub(crate) struct TransactionService {
     // typedb_transaction_duration_seconds histogram. `lifecycle_outcome_recorded`
     // gates do_close's "aborted" increment so a transaction that the client
     // already committed or rolled back doesn't also count as aborted on stream
-    // teardown.
+    // teardown. `query_count` ticks once per handle_query call; observed into
+    // typedb_queries_per_transaction at each lifecycle endpoint.
+    // `write_query_started_at` is set when run_write_query spawns and consumed
+    // by the listen loop's write_query_worker arm to observe Write query
+    // duration. Schema-query duration is bracketed inline in handle_query_schema.
+    // Read-query duration is deferred (multi-completion-site streaming).
     opened_at: Option<Instant>,
     lifecycle_outcome_recorded: bool,
+    query_count: u64,
+    write_query_started_at: Option<Instant>,
 }
 
 impl TransactionService {
@@ -181,6 +188,8 @@ impl TransactionService {
 
             opened_at: None,
             lifecycle_outcome_recorded: false,
+            query_count: 0,
+            write_query_started_at: None,
         }
     }
 
@@ -212,7 +221,17 @@ impl TransactionService {
                     write_query_result = write_query_worker => {
                         let req_id = *req_id;
                         self.running_write_query = None;
+                        let started = self.write_query_started_at.take();
                         let (transaction, result) = write_query_result.expect("Expected write query result");
+                        // Observe write-query duration before re-attaching the transaction
+                        // (database name is reachable either way; here we use it once and move on).
+                        if let Some(start) = started {
+                            self.server_state.diagnostics_manager().observe_query_duration(
+                                transaction.database_name(),
+                                diagnostics::metrics::QueryType::Write,
+                                start.elapsed(),
+                            );
+                        }
                         self.transaction = Some(transaction);
                         if let Err(status) = self.transmit_write_results(req_id, result) {
                             Err(status)
@@ -481,6 +500,7 @@ impl TransactionService {
         self.is_open = true;
         self.opened_at = Some(Instant::now());
         self.lifecycle_outcome_recorded = false;
+        self.query_count = 0;
 
         let processing_time_millis = Instant::now().duration_since(receive_time).as_millis() as u64;
         send_ok_message!(
@@ -570,6 +590,10 @@ impl TransactionService {
                 dm.observe_transaction_duration(name, kind, start.elapsed());
                 self.opened_at = None;
             }
+            // Observe queries-per-transaction once at commit. Snapshot+reset
+            // pattern: do_close won't observe again because the field is 0.
+            dm.observe_queries_per_transaction(name, self.query_count);
+            self.query_count = 0;
         }
         commit_result?;
 
@@ -686,6 +710,10 @@ impl TransactionService {
             let dm = self.server_state.diagnostics_manager();
             if !already_terminal {
                 dm.record_transaction_outcome(&name, kind, TransactionOutcome::Aborted);
+                // Only observe queries-per-transaction here if commit didn't —
+                // a committed transaction already observed.
+                dm.observe_queries_per_transaction(&name, self.query_count);
+                self.query_count = 0;
             }
             if let Some(start) = opened_at {
                 dm.observe_transaction_duration(&name, kind, start.elapsed());
@@ -730,7 +758,15 @@ impl TransactionService {
 
     async fn finish_running_write_query_no_transmit(&mut self, interrupt: InterruptType) -> Result<(), Status> {
         if let Some((req_id, worker)) = self.running_write_query.take() {
+            let started = self.write_query_started_at.take();
             let (transaction, result) = worker.await.expect("Expected current write query to finish");
+            if let Some(start) = started {
+                self.server_state.diagnostics_manager().observe_query_duration(
+                    transaction.database_name(),
+                    diagnostics::metrics::QueryType::Write,
+                    start.elapsed(),
+                );
+            }
             self.transaction = Some(transaction);
 
             if let Err(err) = result {
@@ -870,6 +906,12 @@ impl TransactionService {
             return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
         }
 
+        // Count every query the transaction dispatches (including ones that fail
+        // to parse below) — that matches the "n+1 patterns" the metric is meant
+        // to catch. Observed into typedb_queries_per_transaction at lifecycle
+        // endpoints.
+        self.query_count += 1;
+
         let query = query_req.query;
         let parsed = match parse_query(&query) {
             Ok(parsed) => parsed,
@@ -923,10 +965,18 @@ impl TransactionService {
         if let Some(transaction) = self.transaction.take() {
             match transaction {
                 Transaction::Schema(schema_transaction) => {
+                    let database_name = schema_transaction.database.name().to_owned();
+                    let started = Instant::now();
                     let (transaction, result) =
                         spawn_blocking(move || execute_schema_query(schema_transaction, query, source_query))
                             .await
                             .expect("Expected schema query execution finishing");
+                    let elapsed = started.elapsed();
+                    self.server_state.diagnostics_manager().observe_query_duration(
+                        &database_name,
+                        diagnostics::metrics::QueryType::Schema,
+                        elapsed,
+                    );
                     self.transaction = Some(Transaction::Schema(transaction));
                     let message_ok_done =
                         result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
@@ -1002,6 +1052,10 @@ impl TransactionService {
             }
         };
         self.running_write_query = Some((req_id, tokio::spawn(async move { handle.await.unwrap() })));
+        // Start the clock on the write query — the listen loop's write_query_worker
+        // arm observes when the spawn completes. Set last so an early-return error
+        // path above doesn't leave a stale Instant.
+        self.write_query_started_at = Some(Instant::now());
     }
 
     fn activate_write_transmitter(&mut self, req_id: Uuid, answer: WriteQueryAnswer) {

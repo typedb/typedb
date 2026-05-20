@@ -163,6 +163,8 @@ pub(crate) struct TransactionService {
     // Phase 2: see the gRPC service for the rationale on these fields.
     opened_at: Option<Instant>,
     lifecycle_outcome_recorded: bool,
+    query_count: u64,
+    write_query_started_at: Option<Instant>,
 }
 
 #[derive(Debug)]
@@ -258,6 +260,8 @@ impl TransactionService {
 
             opened_at: None,
             lifecycle_outcome_recorded: false,
+            query_count: 0,
+            write_query_started_at: None,
         }
     }
 
@@ -293,6 +297,7 @@ impl TransactionService {
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
         self.opened_at = Some(Instant::now());
         self.lifecycle_outcome_recorded = false;
+        self.query_count = 0;
 
         let processing_time_millis = Instant::now().duration_since(receive_time).as_millis() as u64;
         Ok(processing_time_millis)
@@ -323,7 +328,15 @@ impl TransactionService {
                     }
                     write_query_result = write_query_worker => {
                         let (responder, _) = self.running_write_query.take().expect("Expected running write query");
+                        let started = self.write_query_started_at.take();
                         let (transaction, result) = write_query_result.expect("Expected write query result");
+                        if let Some(start) = started {
+                            self.server_state.diagnostics_manager().observe_query_duration(
+                                transaction.database_name(),
+                                diagnostics::metrics::QueryType::Write,
+                                start.elapsed(),
+                            );
+                        }
                         self.transaction = Some(transaction);
                         match self.transmit_write_results(responder, result).await {
                             Continue(()) => self.may_accept_from_queue().await,
@@ -468,6 +481,8 @@ impl TransactionService {
             if let Some(start) = opened_at {
                 dm.observe_transaction_duration(name, kind, start.elapsed());
             }
+            dm.observe_queries_per_transaction(name, self.query_count);
+            self.query_count = 0;
         }
 
         Break(())
@@ -568,6 +583,8 @@ impl TransactionService {
             let dm = self.server_state.diagnostics_manager();
             if !already_terminal {
                 dm.record_transaction_outcome(&name, kind, TransactionOutcome::Aborted);
+                dm.observe_queries_per_transaction(&name, self.query_count);
+                self.query_count = 0;
             }
             if let Some(start) = opened_at {
                 dm.observe_transaction_duration(&name, kind, start.elapsed());
@@ -598,7 +615,15 @@ impl TransactionService {
 
     async fn finish_running_write_query_no_transmit(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         if let Some((responder, worker)) = self.running_write_query.take() {
+            let started = self.write_query_started_at.take();
             let (transaction, result) = worker.await.expect("Expected current write query to finish");
+            if let Some(start) = started {
+                self.server_state.diagnostics_manager().observe_query_duration(
+                    transaction.database_name(),
+                    diagnostics::metrics::QueryType::Write,
+                    start.elapsed(),
+                );
+            }
             self.transaction = Some(transaction);
 
             if let Err(typedb_source) = result {
@@ -700,6 +725,9 @@ impl TransactionService {
         query: String,
         responder: TransactionResponder,
     ) -> ControlFlow<(), ()> {
+        // Count every query dispatched (see the gRPC equivalent for rationale).
+        self.query_count += 1;
+
         let parsed = match parse_query(&query) {
             Ok(parsed) => parsed,
             Err(err) => {
@@ -768,10 +796,17 @@ impl TransactionService {
         if let Some(transaction) = self.transaction.take() {
             match transaction {
                 Transaction::Schema(schema_transaction) => {
+                    let database_name = schema_transaction.database.name().to_owned();
+                    let started = Instant::now();
                     let (transaction, result) =
                         spawn_blocking(move || execute_schema_query(schema_transaction, query, source_query))
                             .await
                             .expect("Expected schema query execution finishing");
+                    self.server_state.diagnostics_manager().observe_query_duration(
+                        &database_name,
+                        diagnostics::metrics::QueryType::Schema,
+                        started.elapsed(),
+                    );
                     self.transaction = Some(Transaction::Schema(transaction));
                     match result {
                         Ok(_) => return Ok(TransactionServiceResponse::Query(QueryAnswer::ResOk(QueryType::Schema))),
@@ -802,6 +837,7 @@ impl TransactionService {
             Ok(handle) => {
                 // running write queries have no valid response yet (until they finish) and will respond asynchronously
                 self.running_write_query = Some((responder, tokio::spawn(async move { handle.await.unwrap() })));
+                self.write_query_started_at = Some(Instant::now());
             }
             Err(err) => {
                 // non-fatal errors we will respond immediately
