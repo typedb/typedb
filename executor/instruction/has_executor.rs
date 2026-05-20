@@ -27,7 +27,7 @@ use concept::{
 };
 use encoding::value::{value::Value, value_type::ValueTypeCategory};
 use itertools::Itertools;
-use lending_iterator::{LendingIterator, Peekable, kmerge::KMergeBy};
+use lending_iterator::{LendingIterator, kmerge::KMergeBy};
 use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
@@ -341,7 +341,11 @@ pub(crate) enum FixedHasBounds {
 }
 
 pub(super) struct HasTupleIterator<Iter: LendingIterator> {
-    inner: Peekable<Iter>,
+    // Direct underlying iterator — no Peekable cache layer. HasTupleIterator's own next()
+    // never reads via peek; it always consumes via inner.next() and filters in-loop. The
+    // outer wrapper (`SortedTupleIterator`'s Peekable, or `KMergeBy`'s PeekWrapper) already
+    // provides the one-element lookahead the rest of the executor needs.
+    inner: Iter,
     filter_map: Arc<HasFilterMapFn>,
     to_tuple_fn: HasToTupleFn,
     from_tuple_fn: TupleToHasFn,
@@ -360,7 +364,7 @@ where
         from_tuple_fn: TupleToHasFn,
         fixed_bounds: FixedHasBounds,
     ) -> Self {
-        Self { inner: Peekable::new(inner), filter_map, to_tuple_fn, from_tuple_fn, fixed_bounds }
+        Self { inner, filter_map, to_tuple_fn, from_tuple_fn, fixed_bounds }
     }
 }
 
