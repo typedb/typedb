@@ -72,7 +72,7 @@ impl DatabaseManager {
             }
 
             let database_name = entry_path.file_name().unwrap().to_string_lossy();
-            if Self::validate_user_database_name(&database_name).is_err() {
+            if let Err(_) = Self::validate_database_name(database_name) {
                 continue;
             }
 
@@ -350,6 +350,10 @@ impl DatabaseManager {
         if Self::is_internal_database(name) {
             return Err(DatabaseCreateError::InternalDatabaseCreationProhibited {});
         }
+        Self::validate_database_name(name)
+    }
+
+    fn validate_database_name(name: &str) -> Result<(), DatabaseCreateError> {
         if !typeql::common::identifier::is_valid_label(name) {
             return Err(DatabaseCreateError::InvalidName { name: name.to_string() });
         }

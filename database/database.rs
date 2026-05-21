@@ -102,6 +102,10 @@ impl<D> Database<D> {
         &self.name
     }
 
+    pub fn sync_for_writes(&self) -> Result<(), EncodingError> {
+        self.thing_vertex_generator.re_seed_from_storage(self.storage.clone())
+    }
+
     pub(super) fn reserve_write_transaction(&self, timeout_millis: u64) -> Result<(), TransactionError> {
         let (mut guard, timeout_left) =
             self.try_acquire_schema_write_transaction_lock(Duration::from_millis(timeout_millis))?;
@@ -431,6 +435,8 @@ impl Database<WALClient> {
         if checkpoint_sequence_number < wal_last_sequence_number {
             database.checkpoint().map_err(|err| CheckpointCreate { name: name.to_string(), source: err })?;
         }
+
+        database.sync_for_writes().map_err(|typedb_source| DatabaseOpenError::Encoding { source: typedb_source })?;
         event!(Level::TRACE, "Finished loading database '{}'", &name);
         Ok(database)
     }
