@@ -8,7 +8,7 @@ use std::{fmt::Debug, io, net::SocketAddr, sync::Arc};
 
 use concept::error::ConceptReadError;
 use database::{
-    DatabaseDeleteError, DatabaseOpenError, DatabaseSyncForWritesError,
+    DatabaseDeleteError, DatabaseOpenError,
     database::DatabaseCreateError,
     transaction::{DataCommitError, SchemaCommitError, TransactionError},
 };

@@ -16,10 +16,7 @@ use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_
 use storage::durability_client::WALClient;
 use tracing::{Level, debug, event, warn};
 
-use crate::{
-    Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError, DatabaseSyncForWritesError,
-    database::DatabaseCreateError,
-};
+use crate::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError, database::DatabaseCreateError};
 
 type DatabasesMap = HashMap<String, Arc<Database<WALClient>>>;
 type Databases = RwLock<DatabasesMap>;
