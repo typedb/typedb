@@ -70,6 +70,7 @@ impl DiagnosticsManager {
         Self { diagnostics, reporter, monitoring_server }
     }
 
+    // TODO: rather than implement From<database...::TransactionType> there, implement
     diagnostics_method! {
         pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>);
         pub fn submit_error(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, error_code: String);

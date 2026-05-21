@@ -54,16 +54,7 @@ pub struct Diagnostics {
     load_metrics: RwLock<HashMap<DatabaseHash, LoadMetrics>>,
     action_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ActionMetrics>>>,
     error_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ErrorMetrics>>>,
-    // Per-database histograms (query/transaction duration, queries-per-transaction).
-    // Lazy-created on first observation, like action_metrics. Histograms are NOT
-    // wired into Posthog reporting — see §1.3 of the Phase 2 design.
     histogram_metrics: RwLock<HashMap<DatabaseHash, DatabaseHistograms>>,
-
-    // Side-table: DatabaseHash → human database name, populated lazily whenever we
-    // observe a name on a hashing call site. Consumed ONLY by the Prometheus
-    // exposition writer (which renders `database="<name>", database_id="<hash>"`).
-    // Posthog reporting deliberately does not read this — it keeps using the hash
-    // alone, so no PII leaks via reporting.
     database_names: RwLock<HashMap<DatabaseHash, String>>,
 
     is_full_reporting: bool,

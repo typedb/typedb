@@ -162,6 +162,7 @@ impl ServerMetrics {
     fn get_memory_info(&self) -> SizeInfo {
         let mut system = self.system.lock().expect("Expected sysinfo System lock acquisition");
         system.refresh_memory();
+        // USER QUESTION: can we include RSS of the server process?
         SizeInfo { total: system.total_memory(), available: system.available_memory() }
     }
 
@@ -169,6 +170,8 @@ impl ServerMetrics {
         let mut disks = self.disks.lock().expect("Expected sysinfo Disks lock acquisition");
         // remove_not_listed_disks = true preserves the original Disks::new_with_refreshed_list()
         // semantics: each scrape sees the disks currently present, not stale entries.
+
+        // USER QUESTION: can we record the disk data directory size somehow? Eg. to record databases bytes or something
         disks.refresh(true);
         let disk = match self.data_directory.canonicalize() {
             Ok(path) => disks.iter().find(|disk| path.starts_with(disk.mount_point())),
@@ -229,6 +232,8 @@ impl LoadMetrics {
         self.data = data;
     }
 
+    // USER COMMENT: ok, let's go back to the old established LoadKind apporach instead of TransactionType, and we can refine it later.
+    //               It will make the diff smaller and easier to review!
     pub fn increment_connection_count(&self, client: ClientEndpoint, transaction_type: TransactionType) {
         self.connection.increment_count(client, transaction_type);
     }
@@ -931,11 +936,15 @@ pub const DEFAULT_DURATION_BUCKETS_NANOS: &[u64] = &[
     10_000_000_000, //  10 s
 ];
 
+// USER COMMENT: let's add one more bucket for 10-100s, then 100s+
+
 /// Bucket boundaries for the queries-per-transaction histogram. Counts, not
 /// durations — same storage type, different scale. Mixes powers of ten with
 /// half-decade points to catch both healthy short transactions and the
 /// accidental-n+1 patterns the metric is meant to detect.
 pub const DEFAULT_QUERIES_PER_TRANSACTION_BUCKETS: &[u64] = &[1, 2, 5, 10, 25, 100, 500, 1000];
+
+// USER COMMENT: for queries use buckets, 1, 5, 10, 25, 100, 1000, 10000
 
 /// Whether a histogram's stored u64 values represent nanoseconds (to be emitted
 /// as seconds in Prometheus output) or raw counts (emitted as-is).
@@ -1049,6 +1058,8 @@ impl HistogramMetrics {
         running += self.overflow_count.load(Ordering::Relaxed);
         // `running` is now the total observation count = +Inf bucket = `_count`.
         let plus_inf_count = running;
+
+        // USER QUESTION: why do we have two fields that contain plus_inf_count
         HistogramSnapshot {
             bucket_bounds: self.bucket_bounds.clone(),
             cumulative_counts,
@@ -1086,7 +1097,7 @@ pub enum TransactionOutcome {
     Started,
     Committed,
     RolledBack,
-    Aborted,
+    Aborted, // USER COMMENT: 'closed' not 'aborted'
 }
 
 /// Per-TransactionType atomic counters for each lifecycle outcome. Same pattern

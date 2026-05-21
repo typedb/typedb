@@ -23,10 +23,6 @@ pub enum TransactionType {
     Schema,
 }
 
-/// Bridge to the diagnostics crate's parallel enum of the same name. The two are
-/// kept separate because the dependency direction is server → diagnostics (the
-/// diagnostics crate cannot import server types); this `From` impl is the single
-/// edge between them, used at every diagnostics submission call site.
 impl From<TransactionType> for diagnostics::metrics::TransactionType {
     fn from(value: TransactionType) -> Self {
         match value {
@@ -72,10 +68,7 @@ impl Transaction {
         }
     }
 
-    /// Returns the diagnostics-crate transaction kind for this transaction.
-    /// Equivalent to `self.type_().into()`; kept as a separate method to make the
-    /// boundary between the protocol type and the diagnostics type explicit at
-    /// every call site that submits metrics.
+    // TODO: delete, use type_() or whatever we had before
     pub fn load_kind(&self) -> diagnostics::metrics::TransactionType {
         self.type_().into()
     }

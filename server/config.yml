@@ -32,10 +32,8 @@ diagnostics:
     monitoring:
         enabled: true
         port: 4104
-        # Include human database names in Prometheus output alongside the stable
-        # hash (database_id). Set to false in multi-tenant deployments where
-        # database names may be customer-identifying and the scrape leaves the
-        # operator trust boundary; Posthog reporting is hash-only regardless.
+        # USER COMMENT: call it 'include-database-names'
+        # TODO: discuss with team if this is a good option/flag to have since it's so granular
         expose-database-names: true
     reporting:
         metrics: true

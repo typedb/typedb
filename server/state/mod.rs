@@ -83,6 +83,7 @@ impl ServerState {
         // first /diagnostics scrape is never blank, even if it arrives in the
         // millisecond between IntervalRunner::new returning and the background
         // thread executing its first action().
+        // TODO: verify with georgii we want this?
         ServerState::synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone());
         let database_diagnostics_updater = IntervalRunner::new(
             {

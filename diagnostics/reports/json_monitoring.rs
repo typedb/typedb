@@ -270,7 +270,7 @@ impl JsonMonitoringErrorReportsBuilder {
     }
 }
 
-// Phase 2 histogram + lifecycle JSON types ===================================
+// USER QUESTION: should we have buckets be expressed as a map instead of a json list?
 
 /// One cumulative bucket in a histogram. `le` is the upper bound in display
 /// units (seconds for duration histograms, raw counts for count histograms);
