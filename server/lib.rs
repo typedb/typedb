@@ -437,11 +437,11 @@ impl Server {
         println!("Serving:");
 
         let grpc_listen_address = server_status.grpc_listen_address().unwrap_or(UNKNOWN);
-        let grpc_advertise_address = server_status.grpc_advertise_address().unwrap_or(UNKNOWN);
-        if grpc_advertise_address != grpc_listen_address {
-            println!("  gRPC:  {grpc_listen_address} (connect via {grpc_advertise_address})");
-        } else {
-            println!("  gRPC:  {grpc_listen_address}");
+        match server_status.grpc_advertise_address() {
+            Some(grpc_advertise_address) if grpc_advertise_address != grpc_listen_address => {
+                println!("  gRPC:  {grpc_listen_address} (connect via {grpc_advertise_address})");
+            }
+            _ => println!("  gRPC:  {grpc_listen_address}"),
         }
 
         if let Some(http_listen_address) = server_status.http_listen_address() {

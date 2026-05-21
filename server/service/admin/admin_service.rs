@@ -46,20 +46,13 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
 
         let grpc = admin_proto::EndpointStatus {
             listen_address: status.grpc_listen_address().unwrap_or_default().to_string(),
-            advertise_address: status.grpc_advertise_address().unwrap_or_default().to_string(),
+            advertise_address: status.grpc_advertise_address().map(str::to_string),
         };
 
-        let http = match (status.http_listen_address(), status.http_advertise_address()) {
-            (Some(listen), Some(advertise)) => Some(admin_proto::EndpointStatus {
-                listen_address: listen.to_string(),
-                advertise_address: advertise.to_string(),
-            }),
-            (Some(listen), None) => Some(admin_proto::EndpointStatus {
-                listen_address: listen.to_string(),
-                advertise_address: listen.to_string(),
-            }),
-            _ => None,
-        };
+        let http = status.http_listen_address().map(|listen| admin_proto::EndpointStatus {
+            listen_address: listen.to_string(),
+            advertise_address: status.http_advertise_address().map(str::to_string),
+        });
 
         let admin_address = status.admin_address().map(|a| a.to_string());
 
