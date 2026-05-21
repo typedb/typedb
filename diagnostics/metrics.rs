@@ -946,21 +946,24 @@ pub enum HistogramUnit {
 }
 
 /// Lock-free histogram with fixed bucket boundaries declared at construction.
-/// `observe()` is the hot path: one atomic increment on the chosen bucket plus
-/// two more on `count` and `sum`. Bucket lookup is a linear scan — fine for the
-/// 7-bound default; with more bounds a binary search would be worth it.
+/// `observe()` is the hot path: one atomic fetch_add on the chosen bucket (or
+/// the overflow slot) and one on `sum`. The total observation count is derived
+/// at snapshot time as the sum of all buckets + overflow — avoids a separate
+/// `count` atomic that could disagree with the bucket sum under concurrent
+/// observe (Relaxed loads are not synchronised across atomics). Bucket lookup
+/// is a linear scan — fine for the 7-bound default; with more bounds a binary
+/// search would be worth it.
 ///
 /// Storage uses `u64` throughout. Durations are stored as nanoseconds (~584
-/// years of headroom in `sum_nanos`); counts are stored as themselves. The
-/// `unit` field tells the exposition writer how to render the bounds and the
-/// `_sum` line: `Nanoseconds` divides by 1e9 to emit seconds (Prometheus
-/// convention is seconds for the `_seconds` suffix), `Count` emits as-is.
+/// years of headroom in `sum`); counts are stored as themselves. The `unit`
+/// field tells the exposition writer how to render the bounds and the `_sum`
+/// line: `Nanoseconds` divides by 1e9 to emit seconds (Prometheus convention
+/// is seconds for the `_seconds` suffix), `Count` emits as-is.
 #[derive(Debug)]
 pub struct HistogramMetrics {
     bucket_bounds: Vec<u64>,
     bucket_counts: Vec<AtomicU64>,
     overflow_count: AtomicU64,
-    count: AtomicU64,
     sum: AtomicU64,
     unit: HistogramUnit,
 }
@@ -980,7 +983,6 @@ impl HistogramMetrics {
             bucket_bounds,
             bucket_counts,
             overflow_count: AtomicU64::new(0),
-            count: AtomicU64::new(0),
             sum: AtomicU64::new(0),
             unit,
         }
@@ -1018,8 +1020,7 @@ impl HistogramMetrics {
             Some(i) => self.bucket_counts[i].fetch_add(1, Ordering::Relaxed),
             None => self.overflow_count.fetch_add(1, Ordering::Relaxed),
         };
-        self.count.fetch_add(1, Ordering::Relaxed);
-        // sum_nanos can wrap at u64::MAX (~584 years of accumulated ns). Realistic
+        // `sum` can wrap at u64::MAX (~584 years of accumulated ns). Realistic
         // soak windows are weeks, so no protection beyond the wrap is necessary.
         self.sum.fetch_add(value, Ordering::Relaxed);
     }
@@ -1032,22 +1033,27 @@ impl HistogramMetrics {
     /// the Prometheus text format expects, plus the total count and sum in raw
     /// (native-unit) form. The writer converts ns→seconds at emission time when
     /// `unit == Nanoseconds`.
+    ///
+    /// `count` is derived from the prefix-sum of buckets + overflow, so it
+    /// equals `_bucket{le="+Inf"}` by construction. This avoids the bucket-vs-
+    /// separate-counter skew that a separately-incremented `count` atomic
+    /// would have under concurrent observe (Relaxed ordering doesn't
+    /// synchronise across atomics).
     pub fn snapshot(&self) -> HistogramSnapshot {
-        let mut cumulative_counts = Vec::with_capacity(self.bucket_bounds.len() + 1);
+        let mut cumulative_counts = Vec::with_capacity(self.bucket_bounds.len());
         let mut running = 0u64;
         for c in &self.bucket_counts {
             running += c.load(Ordering::Relaxed);
             cumulative_counts.push(running);
         }
         running += self.overflow_count.load(Ordering::Relaxed);
-        // Final cumulative is the +Inf bucket — equal to the total count by construction,
-        // emitted separately as `_bucket{le="+Inf"}` at exposition.
+        // `running` is now the total observation count = +Inf bucket = `_count`.
         let plus_inf_count = running;
         HistogramSnapshot {
             bucket_bounds: self.bucket_bounds.clone(),
             cumulative_counts,
             plus_inf_count,
-            count: self.count.load(Ordering::Relaxed),
+            count: plus_inf_count,
             sum: self.sum.load(Ordering::Relaxed),
             unit: self.unit,
         }

@@ -504,7 +504,20 @@ impl TransactionService {
         let txn_kind = self.transaction.as_ref().map(|t| t.load_kind());
         let txn_database_name = self.transaction.as_ref().map(|t| t.database_name().to_owned());
 
-        let outcome_flow = match self.transaction.take().expect("Expected existing transaction") {
+        // Record RolledBack BEFORE the responder send. The server-side rollback
+        // has completed at this point — the only thing left is acking it to the
+        // client, and `respond_else_return_break!` will early-return Break from
+        // this whole function on a failed send. Doing the record after the macro
+        // would lose the counter on every client-disconnect-mid-rollback.
+        let record_rolled_back = |s: &Self| {
+            if let (Some(kind), Some(name)) = (txn_kind, txn_database_name.as_ref()) {
+                s.server_state
+                    .diagnostics_manager()
+                    .record_transaction_outcome(name, kind, TransactionOutcome::RolledBack);
+            }
+        };
+
+        let _: ControlFlow<(), ()> = match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
                 respond_error_and_return_break!(responder, TransactionServiceError::CannotRollbackReadTransaction {});
@@ -512,24 +525,20 @@ impl TransactionService {
             Transaction::Write(mut transaction) => {
                 transaction.rollback();
                 self.transaction = Some(Transaction::Write(transaction));
+                record_rolled_back(self);
                 respond_else_return_break!(responder, TransactionServiceResponse::Ok);
                 Continue(())
             }
             Transaction::Schema(mut transaction) => {
                 transaction.rollback();
                 self.transaction = Some(Transaction::Schema(transaction));
+                record_rolled_back(self);
                 respond_else_return_break!(responder, TransactionServiceResponse::Ok);
                 Continue(())
             }
         };
 
-        if let (Some(kind), Some(name)) = (txn_kind, &txn_database_name) {
-            self.server_state
-                .diagnostics_manager()
-                .record_transaction_outcome(name, kind, TransactionOutcome::RolledBack);
-        }
-
-        outcome_flow
+        Continue(())
     }
 
     async fn handle_close(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {

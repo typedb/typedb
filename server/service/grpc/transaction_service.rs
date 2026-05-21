@@ -576,27 +576,38 @@ impl TransactionService {
             .expect("Expected schema transaction commit completion"),
         };
 
-        // Lifecycle outcome + transaction duration. Recorded regardless of
-        // whether commit_result is Ok or Err so the histogram stays calibrated
-        // even when commits fail (the transaction's lifetime is what it is).
-        // Aborted is not counted here; do_close handles that for transactions
-        // that never reach a successful commit. `lifecycle_outcome_recorded`
-        // gates that: set only on a successful commit so the rare double-commit
-        // attempt isn't counted twice.
+        // Lifecycle accounting. Three cases:
+        //  1. commit_result Ok: Write/Schema commit succeeded → Committed.
+        //  2. commit_result Err AND self.transaction is None: Write/Schema commit
+        //     failed (the transaction was consumed by .take() into the spawn and
+        //     didn't return). do_close won't see it, so we must record Aborted
+        //     here to keep started == committed + rolled_back + aborted.
+        //  3. commit_result Err AND self.transaction is Some: Read commit-attempt
+        //     (the Read arm restores the transaction before returning Err). The
+        //     transaction is still alive; the user can keep using it. NO terminal
+        //     outcome; do_close handles it later if/when the user closes.
+        //
+        // Cases 1 and 2 are terminal; cases 1 and 2 also observe transaction
+        // duration and queries-per-transaction. Case 3 leaves opened_at and
+        // query_count alone so do_close can consume them.
         if let (Some(kind), Some(name)) = (txn_kind, &txn_database_name) {
             let dm = self.server_state.diagnostics_manager();
-            if commit_result.is_ok() {
-                dm.record_transaction_outcome(name, kind, TransactionOutcome::Committed);
+            let transaction_consumed = self.transaction.is_none();
+            let terminal_outcome = match (commit_result.is_ok(), transaction_consumed) {
+                (true, _) => Some(TransactionOutcome::Committed),
+                (false, true) => Some(TransactionOutcome::Aborted),
+                (false, false) => None, // Read commit attempt — not terminal
+            };
+            if let Some(outcome) = terminal_outcome {
+                dm.record_transaction_outcome(name, kind, outcome);
                 self.lifecycle_outcome_recorded = true;
+                if let Some(start) = opened_at {
+                    dm.observe_transaction_duration(name, kind, start.elapsed());
+                    self.opened_at = None;
+                }
+                dm.observe_queries_per_transaction(name, self.query_count);
+                self.query_count = 0;
             }
-            if let Some(start) = opened_at {
-                dm.observe_transaction_duration(name, kind, start.elapsed());
-                self.opened_at = None;
-            }
-            // Observe queries-per-transaction once at commit. Snapshot+reset
-            // pattern: do_close won't observe again because the field is 0.
-            dm.observe_queries_per_transaction(name, self.query_count);
-            self.query_count = 0;
         }
         commit_result?;
 
