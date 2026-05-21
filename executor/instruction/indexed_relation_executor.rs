@@ -352,9 +352,6 @@ impl IndexedRelationExecutor {
                         }
                     },
                 );
-                // Bypass KMergeBy when only one underlying iterator exists (single start
-                // player × single relation type) — avoids heap pop/push and the PeekWrapper
-                // layer on every call.
                 if iterators.len() == 1 {
                     let single = iterators.pop().unwrap();
                     Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
@@ -634,10 +631,6 @@ impl FixedIndexedRelationBounds {
 }
 
 pub(super) struct IndexedRelationTupleIterator<Iter: LendingIterator> {
-    // Direct underlying iterator — no Peekable cache layer. IndexedRelationTupleIterator's
-    // own next() never reads via peek; it always consumes via inner.next() and filters
-    // in-loop. The outer wrapper (`SortedTupleIterator`'s Peekable, or `KMergeBy`'s
-    // PeekWrapper) already provides the one-element lookahead the rest of the executor needs.
     inner: Iter,
     filter_map: Arc<IndexedRelationFilterMapFn>,
     tuple_positions: TuplePositions,
