@@ -341,10 +341,6 @@ pub(crate) enum FixedHasBounds {
 }
 
 pub(super) struct HasTupleIterator<Iter: LendingIterator> {
-    // Direct underlying iterator — no Peekable cache layer. HasTupleIterator's own next()
-    // never reads via peek; it always consumes via inner.next() and filters in-loop. The
-    // outer wrapper (`SortedTupleIterator`'s Peekable, or `KMergeBy`'s PeekWrapper) already
-    // provides the one-element lookahead the rest of the executor needs.
     inner: Iter,
     filter_map: Arc<HasFilterMapFn>,
     to_tuple_fn: HasToTupleFn,

@@ -192,10 +192,6 @@ impl HasReverseExecutor {
                     filter_for_row,
                     storage_counters,
                 )?;
-                // Bypass KMergeBy when there is only one attribute type / underlying
-                // iterator — avoids the heap pop/push and the PeekWrapper layer on every
-                // call. This is the common case for typed queries (e.g. `has join_attr $j`
-                // where the annotated type set is a single attribute type).
                 if iterators.len() == 1 {
                     let single = iterators.pop().unwrap();
                     Ok(TupleIterator::HasReverseSingle(SortedTupleIterator::new(
@@ -301,9 +297,6 @@ impl HasReverseExecutor {
         storage_counters: StorageCounters,
     ) -> Result<Vec<HasTupleIterator<HasReverseIterator>>, Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();
-        // We KMerge the (potentially many) per-attribute-type iterators in the caller
-        // when there's more than one, so callers can bypass KMergeBy entirely when only
-        // one attribute type matches.
         attribute_type_owner_range
             .iter()
             // TODO: we shouldn't really filter out errors here, but presumably a ConceptReadError will crop up elsewhere too if it happens here
