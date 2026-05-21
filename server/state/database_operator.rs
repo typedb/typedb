@@ -9,7 +9,7 @@ use std::{fmt::Debug, sync::Arc};
 use async_trait::async_trait;
 use concurrency::TokioTaskSpawner;
 use database::{
-    Database,
+    Database, DatabaseSyncForWritesError,
     database_manager::DatabaseManager,
     transaction::{CommitIntent, DataCommitIntent, SchemaCommitIntent, TransactionRead},
 };
@@ -69,6 +69,8 @@ pub trait DatabaseOperator: Debug + Send + Sync {
     ) -> Result<bool, ArcServerStateError>;
 
     async fn delete(&self, name: &str) -> Result<(), ArcServerStateError>;
+
+    async fn sync_all_for_writes(&self) -> Result<(), DatabaseSyncForWritesError>;
 
     fn manager(&self) -> Arc<DatabaseManager>;
 }
@@ -223,6 +225,13 @@ impl DatabaseOperator for LocalDatabaseOperator {
         self.database_manager
             .delete_database(name)
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeDeleted { typedb_source: err }))
+    }
+
+    async fn sync_all_for_writes(&self) -> Result<(), DatabaseSyncForWritesError> {
+        let database_manager = self.database_manager.clone();
+        tokio::task::spawn_blocking(move || database_manager.sync_all_for_writes())
+            .await
+            .expect("sync_all_for_writes task panicked")
     }
 
     fn manager(&self) -> Arc<DatabaseManager> {

@@ -7,7 +7,9 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-pub use self::database::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
+pub use self::database::{
+    Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError, DatabaseSyncForWritesError,
+};
 
 pub mod database;
 pub mod database_manager;

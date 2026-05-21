@@ -16,7 +16,10 @@ use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_
 use storage::durability_client::WALClient;
 use tracing::{Level, debug, event, warn};
 
-use crate::{Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError, database::DatabaseCreateError};
+use crate::{
+    Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError, DatabaseSyncForWritesError,
+    database::DatabaseCreateError,
+};
 
 type DatabasesMap = HashMap<String, Arc<Database<WALClient>>>;
 type Databases = RwLock<DatabasesMap>;
@@ -72,7 +75,7 @@ impl DatabaseManager {
             }
 
             let database_name = entry_path.file_name().unwrap().to_string_lossy();
-            if let Err(_) = Self::validate_database_name(database_name) {
+            if Self::validate_database_name(&database_name).is_err() {
                 continue;
             }
 
@@ -290,6 +293,15 @@ impl DatabaseManager {
 
     pub fn databases(&self) -> RwLockReadGuard<'_, HashMap<String, Arc<Database<WALClient>>>> {
         self.databases.read().unwrap()
+    }
+
+    pub fn sync_all_for_writes(&self) -> Result<(), DatabaseOpenError> {
+        for (name, database) in self.databases.read().unwrap().iter() {
+            database
+                .sync_for_writes()
+                .map_err(|source| DatabaseOpenError::SyncForWrites { name: name.clone(), source })?;
+        }
+        Ok(())
     }
 
     pub fn is_user_database(name: &str) -> bool {
