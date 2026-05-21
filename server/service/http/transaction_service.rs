@@ -20,7 +20,7 @@ use database::query::{
     StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
     execute_write_query_in_schema, execute_write_query_in_write,
 };
-use diagnostics::metrics::{ClientEndpoint, TransactionOutcome};
+use diagnostics::metrics::{ClientEndpoint, LoadKind, TransactionOutcome};
 use executor::{
     ExecutionInterrupt, InterruptType,
     batch::Batch,
@@ -443,7 +443,7 @@ impl TransactionService {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
-                    TransactionType::Write.into(),
+                    LoadKind::WriteTransactions,
                 );
                 unwrap_or_execute_else_respond_error_and_return_break!(
                     commit_write_transaction(server_state, transaction).await.1,
@@ -459,7 +459,7 @@ impl TransactionService {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
-                    TransactionType::Schema.into(),
+                    LoadKind::SchemaTransactions,
                 );
 
                 unwrap_or_execute_else_respond_error_and_return_break!(
@@ -554,8 +554,8 @@ impl TransactionService {
         let _ = self.cancel_queued_write_queries(InterruptType::TransactionClosed).await;
 
         // Same logic as the gRPC service: if a transaction is still here and we
-        // didn't already record a terminal outcome, count it as aborted.
-        let aborted_kind_and_name: Option<(diagnostics::metrics::TransactionType, String)> =
+        // didn't already record a terminal outcome, count it as closed.
+        let closed_kind_and_name: Option<(LoadKind, String)> =
             self.transaction.as_ref().map(|t| (t.load_kind(), t.database_name().to_owned()));
         let opened_at = self.opened_at.take();
         let already_terminal = self.lifecycle_outcome_recorded;
@@ -566,7 +566,7 @@ impl TransactionService {
                 self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
-                    TransactionType::Read.into(),
+                    LoadKind::ReadTransactions,
                 );
                 transaction.close()
             }
@@ -574,7 +574,7 @@ impl TransactionService {
                 self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
-                    TransactionType::Write.into(),
+                    LoadKind::WriteTransactions,
                 );
                 transaction.close()
             }
@@ -582,16 +582,16 @@ impl TransactionService {
                 self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
-                    TransactionType::Schema.into(),
+                    LoadKind::SchemaTransactions,
                 );
                 transaction.close()
             }
         }
 
-        if let Some((kind, name)) = aborted_kind_and_name {
+        if let Some((kind, name)) = closed_kind_and_name {
             let dm = self.server_state.diagnostics_manager();
             if !already_terminal {
-                dm.record_transaction_outcome(&name, kind, TransactionOutcome::Aborted);
+                dm.record_transaction_outcome(&name, kind, TransactionOutcome::Closed);
                 dm.observe_queries_per_transaction(&name, self.query_count);
                 self.query_count = 0;
             }

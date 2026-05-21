@@ -12,7 +12,7 @@ use serde_json::{Map, Value, to_value};
 
 use crate::{
     DatabaseHash,
-    metrics::{ActionKind, ClientEndpoint, TransactionType},
+    metrics::{ActionKind, ClientEndpoint, LoadKind},
 };
 
 pub(crate) mod json_monitoring;
@@ -127,7 +127,7 @@ pub(crate) struct DataLoadReport {
     pub storage_key_count: u64,
 }
 
-pub type ConnectionLoadReport = HashMap<ClientEndpoint, HashMap<TransactionType, u64>>;
+pub type ConnectionLoadReport = HashMap<ClientEndpoint, HashMap<LoadKind, u64>>;
 
 #[derive(Debug)]
 pub(crate) struct ActionReport {

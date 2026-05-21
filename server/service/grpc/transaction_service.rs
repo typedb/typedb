@@ -22,7 +22,7 @@ use database::query::{
 };
 use diagnostics::{
     diagnostics_manager::DiagnosticsManager,
-    metrics::{ActionKind, ClientEndpoint, TransactionOutcome},
+    metrics::{ActionKind, ClientEndpoint, LoadKind, TransactionOutcome},
 };
 use executor::{
     ExecutionInterrupt, InterruptType,
@@ -550,7 +550,7 @@ impl TransactionService {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
-                    TransactionType::Write.into(),
+                    LoadKind::WriteTransactions,
                 );
                 let (_profile, commit_result) = commit_write_transaction(server_state, transaction).await;
                 commit_result.map_err(|typedb_source| {
@@ -563,7 +563,7 @@ impl TransactionService {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
-                    TransactionType::Schema.into(),
+                    LoadKind::SchemaTransactions,
                 );
                 let (_profile, commit_result) = commit_schema_transaction(server_state, transaction).await;
                 commit_result.map_err(|typedb_source| {
@@ -580,8 +580,8 @@ impl TransactionService {
         //  1. commit_result Ok: Write/Schema commit succeeded → Committed.
         //  2. commit_result Err AND self.transaction is None: Write/Schema commit
         //     failed (the transaction was consumed by .take() into the spawn and
-        //     didn't return). do_close won't see it, so we must record Aborted
-        //     here to keep started == committed + rolled_back + aborted.
+        //     didn't return). do_close won't see it, so we must record Closed
+        //     here to keep started == committed + rolled_back + closed.
         //  3. commit_result Err AND self.transaction is Some: Read commit-attempt
         //     (the Read arm restores the transaction before returning Err). The
         //     transaction is still alive; the user can keep using it. NO terminal
@@ -595,7 +595,7 @@ impl TransactionService {
             let transaction_consumed = self.transaction.is_none();
             let terminal_outcome = match (commit_result.is_ok(), transaction_consumed) {
                 (true, _) => Some(TransactionOutcome::Committed),
-                (false, true) => Some(TransactionOutcome::Aborted),
+                (false, true) => Some(TransactionOutcome::Closed),
                 (false, false) => None, // Read commit attempt — not terminal
             };
             if let Some(outcome) = terminal_outcome {
@@ -636,9 +636,9 @@ impl TransactionService {
 
         // Snapshot kind + name before the move-and-restore dance below; used to
         // record the rolled_back lifecycle outcome on success. Rollback is not
-        // a "terminal" outcome for transactions_aborted purposes — the transaction
+        // a "terminal" outcome for transactions_closed purposes — the transaction
         // remains alive and can be committed later; do_close still classifies the
-        // eventual close as aborted unless a successful commit happens first.
+        // eventual close as closed unless a successful commit happens first.
         let txn_kind = self.transaction.as_ref().map(|t| t.load_kind());
         let txn_database_name = self.transaction.as_ref().map(|t| t.database_name().to_owned());
 
@@ -684,10 +684,10 @@ impl TransactionService {
         let _ = self.cancel_queued_write_queries(InterruptType::TransactionClosed).await;
 
         // If a transaction is still present at this point, the client never reached
-        // a successful commit — count it as aborted and record its duration. A
+        // a successful commit — count it as closed and record its duration. A
         // transaction that did commit successfully had its outcome recorded in
         // handle_commit and lifecycle_outcome_recorded is true, so we skip here.
-        let aborted_kind_and_name: Option<(diagnostics::metrics::TransactionType, String)> =
+        let closed_kind_and_name: Option<(LoadKind, String)> =
             self.transaction.as_ref().map(|t| (t.load_kind(), t.database_name().to_owned()));
         let opened_at = self.opened_at.take();
         let already_terminal = self.lifecycle_outcome_recorded;
@@ -698,7 +698,7 @@ impl TransactionService {
                 self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
-                    TransactionType::Read.into(),
+                    LoadKind::ReadTransactions,
                 );
                 transaction.close()
             }
@@ -706,7 +706,7 @@ impl TransactionService {
                 self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
-                    TransactionType::Write.into(),
+                    LoadKind::WriteTransactions,
                 );
                 transaction.close()
             }
@@ -714,16 +714,16 @@ impl TransactionService {
                 self.server_state.diagnostics_manager().decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
-                    TransactionType::Schema.into(),
+                    LoadKind::SchemaTransactions,
                 );
                 transaction.close()
             }
         };
 
-        if let Some((kind, name)) = aborted_kind_and_name {
+        if let Some((kind, name)) = closed_kind_and_name {
             let dm = self.server_state.diagnostics_manager();
             if !already_terminal {
-                dm.record_transaction_outcome(&name, kind, TransactionOutcome::Aborted);
+                dm.record_transaction_outcome(&name, kind, TransactionOutcome::Closed);
                 // Only observe queries-per-transaction here if commit didn't —
                 // a committed transaction already observed.
                 dm.observe_queries_per_transaction(&name, self.query_count);

@@ -193,7 +193,7 @@ impl ServerState {
             diagnostics,
             config.monitoring.port,
             config.monitoring.enabled,
-            config.monitoring.expose_database_names,
+            config.monitoring.include_database_names,
             is_development_mode,
             background_tasks,
         );

@@ -20,7 +20,7 @@ use xxhash_rust::xxh3::Xxh3;
 use crate::{
     metrics::{
         ALL_CLIENT_ENDPOINTS, ActionKind, ActionMetrics, ClientEndpoint, DatabaseHistograms, DatabaseMetrics,
-        ErrorMetrics, LoadMetrics, QueryType, ServerMetrics, ServerProperties, TransactionType,
+        ErrorMetrics, LoadKind, LoadMetrics, QueryType, ServerMetrics, ServerProperties,
         client_endpoints_map,
     },
     reports::{
@@ -133,24 +133,24 @@ impl Diagnostics {
         &self,
         client: ClientEndpoint,
         database_name: impl AsRef<str> + Hash,
-        transaction_type: TransactionType,
+        load_kind: LoadKind,
     ) {
         let database_hash = Self::hash_database(&database_name);
         self.record_database_name(database_name.as_ref(), database_hash);
         let loads = self.lock_load_metrics_read_for_database(database_hash);
-        loads.get(&database_hash).expect("Expected database in loads").increment_connection_count(client, transaction_type);
+        loads.get(&database_hash).expect("Expected database in loads").increment_connection_count(client, load_kind);
     }
 
     pub fn decrement_load_count(
         &self,
         client: ClientEndpoint,
         database_name: impl AsRef<str> + Hash,
-        transaction_type: TransactionType,
+        load_kind: LoadKind,
     ) {
         let database_hash = Self::hash_database(&database_name);
         // No record_database_name here: increment must have been called first, so the name is already known.
         let loads = self.lock_load_metrics_read_for_database(database_hash);
-        loads.get(&database_hash).expect("Expected database in loads").decrement_connection_count(client, transaction_type);
+        loads.get(&database_hash).expect("Expected database in loads").decrement_connection_count(client, load_kind);
     }
 
     pub fn submit_action_success(
@@ -213,7 +213,7 @@ impl Diagnostics {
     pub fn observe_transaction_duration(
         &self,
         database_name: impl AsRef<str> + Hash,
-        kind: TransactionType,
+        kind: LoadKind,
         duration: std::time::Duration,
     ) {
         let database_hash = Self::hash_database(&database_name);
@@ -238,7 +238,7 @@ impl Diagnostics {
     pub fn record_transaction_outcome(
         &self,
         database_name: impl AsRef<str> + Hash,
-        kind: TransactionType,
+        kind: LoadKind,
         outcome: crate::metrics::TransactionOutcome,
     ) {
         let database_hash = Self::hash_database(&database_name);
@@ -281,8 +281,8 @@ impl Diagnostics {
         to_monitoring_json(self)
     }
 
-    pub fn to_monitoring_prometheus(&self, expose_database_names: bool) -> String {
-        to_monitoring_prometheus(self, expose_database_names)
+    pub fn to_monitoring_prometheus(&self, include_database_names: bool) -> String {
+        to_monitoring_prometheus(self, include_database_names)
     }
 
     pub fn to_posthog_reporting_json_against_snapshot(&self, api_key: &str) -> JSONValue {

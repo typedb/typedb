@@ -105,8 +105,8 @@ pub struct CLIArgs {
     /// multi-tenant deployments where database names may be customer-identifying
     /// and the Prometheus scrape leaves the operator's trust boundary; Posthog
     /// reporting is hash-only regardless of this setting.
-    #[arg(long = "diagnostics.monitoring.expose-database-names")]
-    pub diagnostics_monitoring_expose_database_names: Option<bool>,
+    #[arg(long = "diagnostics.monitoring.include-database-names")]
+    pub diagnostics_monitoring_include_database_names: Option<bool>,
 
     /// Enable development mode for testing setups. Note that running TypeDB in development mode
     /// may result in error reporting limitations (obstructing maintenance and support), additional

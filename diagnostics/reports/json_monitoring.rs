@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 
 use crate::{
     Diagnostics,
-    metrics::{ALL_CLIENT_ENDPOINTS, ActionKind, HistogramSnapshot, HistogramUnit, QueryType, TransactionType},
+    metrics::{ALL_CLIENT_ENDPOINTS, ActionKind, HistogramSnapshot, HistogramUnit, LoadKind, QueryType},
     reports::{
         ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport, SchemaLoadReport,
         ServerPropertiesReport, ServerReport, ServerReportSensitivePart, serialize_timestamp,
@@ -304,7 +304,7 @@ impl From<HistogramSnapshot> for JsonMonitoringHistogramReport {
                 count: snap.cumulative_counts[i],
             });
         }
-        buckets.push(JsonMonitoringHistogramBucket { le: "+Inf".to_owned(), count: snap.plus_inf_count });
+        buckets.push(JsonMonitoringHistogramBucket { le: "+Inf".to_owned(), count: snap.count });
         Self { buckets, count: snap.count, sum: snap.sum as f64 * scale }
     }
 }
@@ -340,7 +340,7 @@ pub(crate) struct JsonMonitoringHistogramByQueryKind {
 pub(crate) struct JsonMonitoringHistogramByTransactionKind {
     #[serde(flatten)]
     pub database: DatabaseReport,
-    pub kind: TransactionType,
+    pub kind: LoadKind,
     pub histogram: JsonMonitoringHistogramReport,
 }
 
@@ -357,14 +357,14 @@ pub(crate) struct JsonMonitoringHistogramPerDatabase {
 pub(crate) struct JsonMonitoringTransactionLifecycleEntry {
     #[serde(flatten)]
     pub database: DatabaseReport,
-    pub kind: TransactionType,
+    pub kind: LoadKind,
     pub started: u64,
     pub committed: u64,
     pub rolled_back: u64,
-    pub aborted: u64,
+    pub closed: u64,
 }
 
-// QueryType + TransactionType need Serialize for the JSON output. We add a
+// QueryType + LoadKind need Serialize for the JSON output. We add a
 // lowercased-name implementation via serde derive on the source types.
 
 pub(crate) fn to_monitoring_json(diagnostics: &Diagnostics) -> Value {
@@ -444,8 +444,8 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
         for (i, (kind, started)) in lc.started.iter().enumerate() {
             let committed = lc.committed[i].1;
             let rolled_back = lc.rolled_back[i].1;
-            let aborted = lc.aborted[i].1;
-            if *started == 0 && committed == 0 && rolled_back == 0 && aborted == 0 {
+            let closed = lc.closed[i].1;
+            if *started == 0 && committed == 0 && rolled_back == 0 && closed == 0 {
                 continue;
             }
             transaction_lifecycle.push(JsonMonitoringTransactionLifecycleEntry {
@@ -454,7 +454,7 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
                 started: *started,
                 committed,
                 rolled_back,
-                aborted,
+                closed,
             });
         }
     }

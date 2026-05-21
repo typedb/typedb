@@ -121,7 +121,7 @@ impl DiagnosticsConfig {
             monitoring: Monitoring {
                 enabled: true,
                 port: MONITORING_DEFAULT_PORT,
-                expose_database_names: true,
+                include_database_names: true,
             },
         }
     }
@@ -151,7 +151,7 @@ pub struct Monitoring {
     /// only the hash is emitted — for multi-tenant deployments where database names
     /// may be customer-identifying and scrapes leave the operator trust boundary.
     /// Posthog reporting is unaffected; it always uses the hash.
-    pub expose_database_names: bool,
+    pub include_database_names: bool,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -278,7 +278,7 @@ impl ConfigBuilder {
             diagnostics_reporting_errors,
             diagnostics_monitoring_enabled,
             diagnostics_monitoring_port,
-            diagnostics_monitoring_expose_database_names,
+            diagnostics_monitoring_include_database_names,
             development_mode_enabled,
         } = cliargs;
         let Self { config, raw_yaml: _ } = self;
@@ -302,7 +302,7 @@ impl ConfigBuilder {
             config.diagnostics.reporting.report_errors => diagnostics_reporting_errors;
             config.diagnostics.monitoring.enabled => diagnostics_monitoring_enabled;
             config.diagnostics.monitoring.port => diagnostics_monitoring_port;
-            config.diagnostics.monitoring.expose_database_names => diagnostics_monitoring_expose_database_names;
+            config.diagnostics.monitoring.include_database_names => diagnostics_monitoring_include_database_names;
 
             config.development_mode.enabled => development_mode_enabled;
         }

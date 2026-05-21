@@ -32,9 +32,8 @@ diagnostics:
     monitoring:
         enabled: true
         port: 4104
-        # USER COMMENT: call it 'include-database-names'
         # TODO: discuss with team if this is a good option/flag to have since it's so granular
-        expose-database-names: true
+        include-database-names: true
     reporting:
         metrics: true
         errors: true

@@ -232,14 +232,12 @@ impl LoadMetrics {
         self.data = data;
     }
 
-    // USER COMMENT: ok, let's go back to the old established LoadKind apporach instead of TransactionType, and we can refine it later.
-    //               It will make the diff smaller and easier to review!
-    pub fn increment_connection_count(&self, client: ClientEndpoint, transaction_type: TransactionType) {
-        self.connection.increment_count(client, transaction_type);
+    pub fn increment_connection_count(&self, client: ClientEndpoint, load_kind: LoadKind) {
+        self.connection.increment_count(client, load_kind);
     }
 
-    pub fn decrement_connection_count(&self, client: ClientEndpoint, transaction_type: TransactionType) {
-        self.connection.decrement_count(client, transaction_type);
+    pub fn decrement_connection_count(&self, client: ClientEndpoint, load_kind: LoadKind) {
+        self.connection.decrement_count(client, load_kind);
     }
 
     pub fn mark_deleted(&mut self) {
@@ -316,32 +314,32 @@ impl DataLoadMetrics {
 
 #[derive(Debug)]
 pub(crate) struct ConnectionLoadMetrics {
-    counts: HashMap<ClientEndpoint, HashMap<TransactionType, AtomicU64>>,
-    peak_counts: HashMap<ClientEndpoint, HashMap<TransactionType, AtomicU64>>,
-    backup_peak_counts: HashMap<ClientEndpoint, HashMap<TransactionType, AtomicU64>>,
+    counts: HashMap<ClientEndpoint, HashMap<LoadKind, AtomicU64>>,
+    peak_counts: HashMap<ClientEndpoint, HashMap<LoadKind, AtomicU64>>,
+    backup_peak_counts: HashMap<ClientEndpoint, HashMap<LoadKind, AtomicU64>>,
 }
 
 impl ConnectionLoadMetrics {
     pub fn new() -> Self {
         Self {
-            counts: client_endpoints_map!(TransactionType::all_empty_counts_map()),
-            peak_counts: client_endpoints_map!(TransactionType::all_empty_counts_map()),
-            backup_peak_counts: client_endpoints_map!(TransactionType::all_empty_counts_map()),
+            counts: client_endpoints_map!(LoadKind::all_empty_counts_map()),
+            peak_counts: client_endpoints_map!(LoadKind::all_empty_counts_map()),
+            backup_peak_counts: client_endpoints_map!(LoadKind::all_empty_counts_map()),
         }
     }
 
-    pub fn increment_count(&self, client: ClientEndpoint, transaction_type: TransactionType) {
-        let old_count = self.get_count(&client, &transaction_type).fetch_add(1, Ordering::Relaxed);
-        self.update_peak_counts(client, transaction_type, old_count + 1);
+    pub fn increment_count(&self, client: ClientEndpoint, load_kind: LoadKind) {
+        let old_count = self.get_count(&client, &load_kind).fetch_add(1, Ordering::Relaxed);
+        self.update_peak_counts(client, load_kind, old_count + 1);
     }
 
-    pub fn decrement_count(&self, client: ClientEndpoint, transaction_type: TransactionType) {
-        let old_count = self.get_count(&client, &transaction_type).fetch_sub(1, Ordering::Relaxed);
+    pub fn decrement_count(&self, client: ClientEndpoint, load_kind: LoadKind) {
+        let old_count = self.get_count(&client, &load_kind).fetch_sub(1, Ordering::Relaxed);
         assert_ne!(old_count, 0, "Attempted to decrement a zero count");
     }
 
-    pub fn update_peak_counts(&self, client: ClientEndpoint, transaction_type: TransactionType, count: u64) {
-        let peak_entry = self.get_peak_count(&client, &transaction_type);
+    pub fn update_peak_counts(&self, client: ClientEndpoint, load_kind: LoadKind, count: u64) {
+        let peak_entry = self.get_peak_count(&client, &load_kind);
         loop {
             let current_peak_count = peak_entry.load(Ordering::Relaxed);
             if current_peak_count >= count {
@@ -389,27 +387,27 @@ impl ConnectionLoadMetrics {
         peaks
     }
 
-    fn get_count(&self, client: &ClientEndpoint, transaction_type: &TransactionType) -> &AtomicU64 {
+    fn get_count(&self, client: &ClientEndpoint, load_kind: &LoadKind) -> &AtomicU64 {
         self.counts
             .get(client)
             .expect("Expected client {client}")
-            .get(transaction_type)
+            .get(load_kind)
             .expect("Load keys should be preinserted")
     }
 
-    fn get_peak_count(&self, client: &ClientEndpoint, transaction_type: &TransactionType) -> &AtomicU64 {
+    fn get_peak_count(&self, client: &ClientEndpoint, load_kind: &LoadKind) -> &AtomicU64 {
         self.peak_counts
             .get(client)
             .expect("Expected client {client}")
-            .get(transaction_type)
+            .get(load_kind)
             .expect("Load peak keys should be preinserted")
     }
 
-    fn get_backup_peak_counts(&self, client: &ClientEndpoint, transaction_type: &TransactionType) -> &AtomicU64 {
+    fn get_backup_peak_counts(&self, client: &ClientEndpoint, load_kind: &LoadKind) -> &AtomicU64 {
         self.backup_peak_counts
             .get(client)
             .expect("Expected client {client}")
-            .get(transaction_type)
+            .get(load_kind)
             .expect("Load peak keys should be preinserted")
     }
 }
@@ -693,49 +691,39 @@ impl ErrorInfo {
     }
 }
 
-/// Identifies the kind of a transaction across the diagnostics crate. Mirrors
-/// the server crate's own `TransactionType` (server/transaction.rs) — kept as a
-/// parallel definition here because the dependency direction is server →
-/// diagnostics, not the other way round, and we don't want diagnostics to
-/// depend on server.
-///
-/// Variant names match the server enum (Read/Write/Schema). The wire-format
-/// strings used by Posthog (`to_posthog_name`) and the historical Display
-/// representation are unchanged — only the enum identifier changed from
-/// `TransactionType` to `TransactionType` for clarity and naming alignment.
 #[derive(Serialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
-pub enum TransactionType {
-    Schema,
-    Read,
-    Write,
+pub enum LoadKind {
+    SchemaTransactions,
+    ReadTransactions,
+    WriteTransactions,
     // ATTENTION: When adding new variants, update all_empty_counts_map()!
 }
 
-impl TransactionType {
-    fn all_empty_counts_map() -> HashMap<TransactionType, AtomicU64> {
+impl LoadKind {
+    fn all_empty_counts_map() -> HashMap<LoadKind, AtomicU64> {
         HashMap::from([
-            (TransactionType::Schema, AtomicU64::new(0)),
-            (TransactionType::Write, AtomicU64::new(0)),
-            (TransactionType::Read, AtomicU64::new(0)),
+            (LoadKind::SchemaTransactions, AtomicU64::new(0)),
+            (LoadKind::WriteTransactions, AtomicU64::new(0)),
+            (LoadKind::ReadTransactions, AtomicU64::new(0)),
         ])
     }
 
     pub fn to_posthog_name(&self) -> &'static str {
         match self {
-            TransactionType::Schema => "schema_transactions_peak_count",
-            TransactionType::Read => "read_transactions_peak_count",
-            TransactionType::Write => "write_transactions_peak_count",
+            LoadKind::SchemaTransactions => "schema_transactions_peak_count",
+            LoadKind::ReadTransactions => "read_transactions_peak_count",
+            LoadKind::WriteTransactions => "write_transactions_peak_count",
         }
     }
 }
 
-impl fmt::Display for TransactionType {
+impl fmt::Display for LoadKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TransactionType::Schema => write!(f, "schemaTransactionPeakCount"),
-            TransactionType::Read => write!(f, "readTransactionPeakCount"),
-            TransactionType::Write => write!(f, "writeTransactionPeakCount"),
+            LoadKind::SchemaTransactions => write!(f, "schemaTransactionPeakCount"),
+            LoadKind::ReadTransactions => write!(f, "readTransactionPeakCount"),
+            LoadKind::WriteTransactions => write!(f, "writeTransactionPeakCount"),
         }
     }
 }
@@ -753,7 +741,7 @@ pub enum QueryType {
 
 impl QueryType {
     /// Lowercase string for the Prometheus `kind` label. Matches the variant set
-    /// `TransactionType` uses, keeping dashboards able to join the two.
+    /// `LoadKind` uses, keeping dashboards able to join the two.
     pub fn as_label(&self) -> &'static str {
         match self {
             QueryType::Read => "read",
@@ -921,30 +909,26 @@ struct SizeInfo {
 // ============================================================================
 
 /// Default bucket boundaries for all duration histograms, in nanoseconds.
-/// Covers six orders of magnitude (10µs … 10s) with one bucket per decade; broad
-/// enough to catch sub-100µs point queries and 10s+ pathological tails, narrow
-/// enough to keep per-histogram cardinality at 9 series (8 buckets + +Inf).
-/// `+Inf` is implicit — observations above the last bound land in an overflow
-/// bucket emitted as `le="+Inf"` at exposition time.
+/// One bucket per decade from 10µs to 100s; broad enough to catch sub-100µs
+/// point queries and soak-pathology tails, narrow enough to keep per-histogram
+/// cardinality at 10 series (9 buckets + +Inf). `+Inf` is implicit — observations
+/// above the last bound land in an overflow bucket emitted as `le="+Inf"` at
+/// exposition time.
 pub const DEFAULT_DURATION_BUCKETS_NANOS: &[u64] = &[
-    10_000,         //  10 µs
-    100_000,        // 100 µs
-    1_000_000,      //   1 ms
-    10_000_000,     //  10 ms
-    100_000_000,    // 100 ms
-    1_000_000_000,  //   1 s
-    10_000_000_000, //  10 s
+    10_000,          //  10 µs
+    100_000,         // 100 µs
+    1_000_000,       //   1 ms
+    10_000_000,      //  10 ms
+    100_000_000,     // 100 ms
+    1_000_000_000,   //   1 s
+    10_000_000_000,  //  10 s
+    100_000_000_000, // 100 s
 ];
 
-// USER COMMENT: let's add one more bucket for 10-100s, then 100s+
-
 /// Bucket boundaries for the queries-per-transaction histogram. Counts, not
-/// durations — same storage type, different scale. Mixes powers of ten with
-/// half-decade points to catch both healthy short transactions and the
-/// accidental-n+1 patterns the metric is meant to detect.
-pub const DEFAULT_QUERIES_PER_TRANSACTION_BUCKETS: &[u64] = &[1, 2, 5, 10, 25, 100, 500, 1000];
-
-// USER COMMENT: for queries use buckets, 1, 5, 10, 25, 100, 1000, 10000
+/// durations — same storage type, different scale. Fewer mid-range buckets,
+/// more headroom for accidental-n+1 outliers (top bound 10_000).
+pub const DEFAULT_QUERIES_PER_TRANSACTION_BUCKETS: &[u64] = &[1, 5, 10, 25, 100, 1000, 10000];
 
 /// Whether a histogram's stored u64 values represent nanoseconds (to be emitted
 /// as seconds in Prometheus output) or raw counts (emitted as-is).
@@ -1057,14 +1041,10 @@ impl HistogramMetrics {
         }
         running += self.overflow_count.load(Ordering::Relaxed);
         // `running` is now the total observation count = +Inf bucket = `_count`.
-        let plus_inf_count = running;
-
-        // USER QUESTION: why do we have two fields that contain plus_inf_count
         HistogramSnapshot {
             bucket_bounds: self.bucket_bounds.clone(),
             cumulative_counts,
-            plus_inf_count,
-            count: plus_inf_count,
+            count: running,
             sum: self.sum.load(Ordering::Relaxed),
             unit: self.unit,
         }
@@ -1072,12 +1052,11 @@ impl HistogramMetrics {
 }
 
 /// Plain-data snapshot of a `HistogramMetrics` at one moment, used by the
-/// JSON/Prometheus exposition. Cumulative counts; the +Inf bucket is separate.
+/// JSON/Prometheus exposition. Cumulative counts; `count` is the +Inf bucket.
 #[derive(Debug, Clone)]
 pub struct HistogramSnapshot {
     pub bucket_bounds: Vec<u64>,
     pub cumulative_counts: Vec<u64>,
-    pub plus_inf_count: u64,
     pub count: u64,
     pub sum: u64,
     pub unit: HistogramUnit,
@@ -1089,67 +1068,67 @@ pub struct HistogramSnapshot {
 
 /// Outcomes tracked by `TransactionLifecycleCounters`. Distinct from
 /// `ActionKind::Transaction{Commit,Rollback}` which count RPC outcomes — these
-/// count transaction *lifecycle* events. A transaction force-aborted on
+/// count transaction *lifecycle* events. A transaction force-closed on
 /// timeout, for example, may never produce a TransactionCommit RPC failure,
-/// but should still tick `aborted` here.
+/// but should still tick `closed` here.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum TransactionOutcome {
     Started,
     Committed,
     RolledBack,
-    Aborted, // USER COMMENT: 'closed' not 'aborted'
+    Closed,
 }
 
-/// Per-TransactionType atomic counters for each lifecycle outcome. Same pattern
+/// Per-LoadKind atomic counters for each lifecycle outcome. Same pattern
 /// as `ConnectionLoadMetrics`: variants pre-inserted, observe() is lock-free.
 #[derive(Debug)]
 pub(crate) struct TransactionLifecycleCounters {
-    started: HashMap<TransactionType, AtomicU64>,
-    committed: HashMap<TransactionType, AtomicU64>,
-    rolled_back: HashMap<TransactionType, AtomicU64>,
-    aborted: HashMap<TransactionType, AtomicU64>,
+    started: HashMap<LoadKind, AtomicU64>,
+    committed: HashMap<LoadKind, AtomicU64>,
+    rolled_back: HashMap<LoadKind, AtomicU64>,
+    closed: HashMap<LoadKind, AtomicU64>,
 }
 
 impl TransactionLifecycleCounters {
     pub fn new() -> Self {
-        fn zeros() -> HashMap<TransactionType, AtomicU64> {
-            [TransactionType::Read, TransactionType::Write, TransactionType::Schema]
+        fn zeros() -> HashMap<LoadKind, AtomicU64> {
+            [LoadKind::ReadTransactions, LoadKind::WriteTransactions, LoadKind::SchemaTransactions]
                 .into_iter()
                 .map(|tt| (tt, AtomicU64::new(0)))
                 .collect()
         }
-        Self { started: zeros(), committed: zeros(), rolled_back: zeros(), aborted: zeros() }
+        Self { started: zeros(), committed: zeros(), rolled_back: zeros(), closed: zeros() }
     }
 
-    pub fn record(&self, kind: TransactionType, outcome: TransactionOutcome) {
+    pub fn record(&self, kind: LoadKind, outcome: TransactionOutcome) {
         let table = match outcome {
             TransactionOutcome::Started => &self.started,
             TransactionOutcome::Committed => &self.committed,
             TransactionOutcome::RolledBack => &self.rolled_back,
-            TransactionOutcome::Aborted => &self.aborted,
+            TransactionOutcome::Closed => &self.closed,
         };
-        table.get(&kind).expect("All TransactionType variants pre-inserted").fetch_add(1, Ordering::Relaxed);
+        table.get(&kind).expect("All LoadKind variants pre-inserted").fetch_add(1, Ordering::Relaxed);
     }
 
     pub fn snapshot(&self) -> TransactionLifecycleSnapshot {
-        let load = |t: &HashMap<TransactionType, AtomicU64>, k: TransactionType| t.get(&k).unwrap().load(Ordering::Relaxed);
+        let load = |t: &HashMap<LoadKind, AtomicU64>, k: LoadKind| t.get(&k).unwrap().load(Ordering::Relaxed);
         // Emit Read/Write/Schema in fixed order so exposition is deterministic.
-        let kinds = [TransactionType::Read, TransactionType::Write, TransactionType::Schema];
+        let kinds = [LoadKind::ReadTransactions, LoadKind::WriteTransactions, LoadKind::SchemaTransactions];
         TransactionLifecycleSnapshot {
             started: kinds.into_iter().map(|k| (k, load(&self.started, k))).collect(),
             committed: kinds.into_iter().map(|k| (k, load(&self.committed, k))).collect(),
             rolled_back: kinds.into_iter().map(|k| (k, load(&self.rolled_back, k))).collect(),
-            aborted: kinds.into_iter().map(|k| (k, load(&self.aborted, k))).collect(),
+            closed: kinds.into_iter().map(|k| (k, load(&self.closed, k))).collect(),
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct TransactionLifecycleSnapshot {
-    pub started: Vec<(TransactionType, u64)>,
-    pub committed: Vec<(TransactionType, u64)>,
-    pub rolled_back: Vec<(TransactionType, u64)>,
-    pub aborted: Vec<(TransactionType, u64)>,
+    pub started: Vec<(LoadKind, u64)>,
+    pub committed: Vec<(LoadKind, u64)>,
+    pub rolled_back: Vec<(LoadKind, u64)>,
+    pub closed: Vec<(LoadKind, u64)>,
 }
 
 /// All Phase 2 per-database monitoring state: latency histograms, queries-per-
@@ -1161,7 +1140,7 @@ pub struct TransactionLifecycleSnapshot {
 #[derive(Debug)]
 pub(crate) struct DatabaseHistograms {
     query_duration: HashMap<QueryType, HistogramMetrics>,
-    transaction_duration: HashMap<TransactionType, HistogramMetrics>,
+    transaction_duration: HashMap<LoadKind, HistogramMetrics>,
     queries_per_transaction: HistogramMetrics,
     transaction_lifecycle: TransactionLifecycleCounters,
 }
@@ -1172,7 +1151,7 @@ impl DatabaseHistograms {
             .into_iter()
             .map(|qt| (qt, HistogramMetrics::new_duration()))
             .collect();
-        let transaction_duration = [TransactionType::Read, TransactionType::Write, TransactionType::Schema]
+        let transaction_duration = [LoadKind::ReadTransactions, LoadKind::WriteTransactions, LoadKind::SchemaTransactions]
             .into_iter()
             .map(|tt| (tt, HistogramMetrics::new_duration()))
             .collect();
@@ -1188,15 +1167,15 @@ impl DatabaseHistograms {
         self.query_duration.get(&kind).expect("All QueryType variants pre-inserted").observe_duration(d);
     }
 
-    pub fn observe_transaction_duration(&self, kind: TransactionType, d: std::time::Duration) {
-        self.transaction_duration.get(&kind).expect("All TransactionType variants pre-inserted").observe_duration(d);
+    pub fn observe_transaction_duration(&self, kind: LoadKind, d: std::time::Duration) {
+        self.transaction_duration.get(&kind).expect("All LoadKind variants pre-inserted").observe_duration(d);
     }
 
     pub fn observe_queries_per_transaction(&self, n: u64) {
         self.queries_per_transaction.observe_count(n);
     }
 
-    pub fn record_transaction_outcome(&self, kind: TransactionType, outcome: TransactionOutcome) {
+    pub fn record_transaction_outcome(&self, kind: LoadKind, outcome: TransactionOutcome) {
         self.transaction_lifecycle.record(kind, outcome);
     }
 
@@ -1216,9 +1195,9 @@ impl DatabaseHistograms {
         let mut transaction_duration: Vec<_> =
             self.transaction_duration.iter().map(|(k, h)| (*k, h.snapshot())).collect();
         transaction_duration.sort_by_key(|(k, _)| match k {
-            TransactionType::Read => 0,
-            TransactionType::Write => 1,
-            TransactionType::Schema => 2,
+            LoadKind::ReadTransactions => 0,
+            LoadKind::WriteTransactions => 1,
+            LoadKind::SchemaTransactions => 2,
         });
         DatabaseHistogramsSnapshot {
             query_duration,
@@ -1232,7 +1211,7 @@ impl DatabaseHistograms {
 #[derive(Debug, Clone)]
 pub struct DatabaseHistogramsSnapshot {
     pub query_duration: Vec<(QueryType, HistogramSnapshot)>,
-    pub transaction_duration: Vec<(TransactionType, HistogramSnapshot)>,
+    pub transaction_duration: Vec<(LoadKind, HistogramSnapshot)>,
     pub queries_per_transaction: HistogramSnapshot,
     pub transaction_lifecycle: TransactionLifecycleSnapshot,
 }
@@ -1256,8 +1235,8 @@ mod histogram_tests {
         h.observe_duration(Duration::from_micros(100));
         // 5 ms → fourth bucket (le=10ms).
         h.observe_duration(Duration::from_millis(5));
-        // 20 s → overflow (above the 10s top bound).
-        h.observe_duration(Duration::from_secs(20));
+        // 200 s → overflow (above the 100s top bound).
+        h.observe_duration(Duration::from_secs(200));
 
         let snap = h.snapshot();
         // Cumulative: bucket 0 (le=10µs) = 0, bucket 1 (le=100µs) = 2, ..., bucket 3 (le=10ms) = 3.
@@ -1265,9 +1244,8 @@ mod histogram_tests {
         assert_eq!(snap.cumulative_counts[1], 2, "100µs bucket sees 50µs + 100µs");
         assert_eq!(snap.cumulative_counts[2], 2, "1ms bucket unchanged");
         assert_eq!(snap.cumulative_counts[3], 3, "10ms bucket adds the 5ms observation");
-        assert_eq!(snap.cumulative_counts.last().copied().unwrap(), 3, "10s bucket = pre-overflow total");
-        assert_eq!(snap.plus_inf_count, 4, "+Inf includes the 20s overflow");
-        assert_eq!(snap.count, 4);
+        assert_eq!(snap.cumulative_counts.last().copied().unwrap(), 3, "100s bucket = pre-overflow total");
+        assert_eq!(snap.count, 4, "count includes the 200s overflow");
     }
 
     #[test]
@@ -1287,7 +1265,6 @@ mod histogram_tests {
         let snap = h.snapshot();
         assert_eq!(snap.count, 0);
         assert_eq!(snap.sum, 0);
-        assert_eq!(snap.plus_inf_count, 0);
         assert!(snap.cumulative_counts.iter().all(|&c| c == 0));
         // Bucket bound set matches the default duration buckets.
         assert_eq!(snap.bucket_bounds.as_slice(), DEFAULT_DURATION_BUCKETS_NANOS);
@@ -1298,16 +1275,18 @@ mod histogram_tests {
         let h = HistogramMetrics::new_queries_per_transaction();
         h.observe_count(1);
         h.observe_count(5);
-        h.observe_count(2000); // above last bound (1000) → overflow
+        h.observe_count(2000);
+        h.observe_count(50_000); // above last bound (10_000) → overflow
         let snap = h.snapshot();
-        assert_eq!(snap.count, 3);
-        assert_eq!(snap.sum, 1 + 5 + 2000);
-        // Buckets are [1, 2, 5, 10, 25, 100, 500, 1000]. The observation of 1 falls in
-        // bucket 0 (le=1); 5 falls in bucket 2 (le=5); 2000 overflows.
+        assert_eq!(snap.count, 4);
+        assert_eq!(snap.sum, 1 + 5 + 2000 + 50_000);
+        // Buckets are [1, 5, 10, 25, 100, 1000, 10000]. The observation of 1 falls in
+        // bucket 0 (le=1); 5 falls in bucket 1 (le=5); 2000 falls in bucket 6 (le=10000);
+        // 50_000 overflows.
         assert_eq!(snap.cumulative_counts[0], 1);
-        assert_eq!(snap.cumulative_counts[1], 1);
-        assert_eq!(snap.cumulative_counts[2], 2);
-        assert_eq!(snap.plus_inf_count, 3);
+        assert_eq!(snap.cumulative_counts[1], 2);
+        assert_eq!(snap.cumulative_counts[5], 2);
+        assert_eq!(snap.cumulative_counts[6], 3);
     }
 
     #[test]
@@ -1316,12 +1295,12 @@ mod histogram_tests {
         // value that lands in a different bucket, so we can also confirm bucketing
         // under contention.
         let h = Arc::new(HistogramMetrics::new_duration());
+        let n_buckets = DEFAULT_DURATION_BUCKETS_NANOS.len();
         let threads: Vec<_> = (0..8)
             .map(|t| {
                 let h = h.clone();
                 thread::spawn(move || {
-                    // Pick a value that maps deterministically to bucket `t % 7`.
-                    let nanos = DEFAULT_DURATION_BUCKETS_NANOS[t % 7];
+                    let nanos = DEFAULT_DURATION_BUCKETS_NANOS[t % n_buckets];
                     for _ in 0..1000 {
                         h.observe_duration(Duration::from_nanos(nanos));
                     }
@@ -1333,9 +1312,8 @@ mod histogram_tests {
         }
         let snap = h.snapshot();
         assert_eq!(snap.count, 8000, "no observation lost under contention");
-        // sum_nanos must equal the sum of (1000 × nanos_for_thread_t).
         let expected_sum: u64 =
-            (0..8u64).map(|t| 1000u64 * DEFAULT_DURATION_BUCKETS_NANOS[(t as usize) % 7]).sum();
+            (0..8u64).map(|t| 1000u64 * DEFAULT_DURATION_BUCKETS_NANOS[(t as usize) % n_buckets]).sum();
         assert_eq!(snap.sum, expected_sum);
     }
 }

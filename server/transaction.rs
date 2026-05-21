@@ -10,6 +10,7 @@ use database::{
     Database,
     transaction::{TransactionError, TransactionId, TransactionRead, TransactionSchema, TransactionWrite},
 };
+use diagnostics::metrics::LoadKind;
 use options::TransactionOptions;
 use serde::{Deserialize, Serialize};
 use storage::durability_client::WALClient;
@@ -21,16 +22,6 @@ pub enum TransactionType {
     Read,
     Write,
     Schema,
-}
-
-impl From<TransactionType> for diagnostics::metrics::TransactionType {
-    fn from(value: TransactionType) -> Self {
-        match value {
-            TransactionType::Read => Self::Read,
-            TransactionType::Write => Self::Write,
-            TransactionType::Schema => Self::Schema,
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -69,8 +60,12 @@ impl Transaction {
     }
 
     // TODO: delete, use type_() or whatever we had before
-    pub fn load_kind(&self) -> diagnostics::metrics::TransactionType {
-        self.type_().into()
+    pub fn load_kind(&self) -> LoadKind {
+        match self {
+            Transaction::Read(_) => LoadKind::ReadTransactions,
+            Transaction::Write(_) => LoadKind::WriteTransactions,
+            Transaction::Schema(_) => LoadKind::SchemaTransactions,
+        }
     }
 
     pub fn database_name(&self) -> &str {
