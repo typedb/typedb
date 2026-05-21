@@ -692,10 +692,16 @@ impl ErrorInfo {
 }
 
 #[derive(Serialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
 pub enum LoadKind {
+    // Variant names are *Transactions for historical reasons; JSON exposition
+    // strips the suffix so the wire-format `kind` field stays "read"/"write"/
+    // "schema" — matching the Prometheus `kind` label and the server's own
+    // TransactionType enum.
+    #[serde(rename = "schema")]
     SchemaTransactions,
+    #[serde(rename = "read")]
     ReadTransactions,
+    #[serde(rename = "write")]
     WriteTransactions,
     // ATTENTION: When adding new variants, update all_empty_counts_map()!
 }

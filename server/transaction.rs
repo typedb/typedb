@@ -59,7 +59,6 @@ impl Transaction {
         }
     }
 
-    // TODO: delete, use type_() or whatever we had before
     pub fn load_kind(&self) -> LoadKind {
         match self {
             Transaction::Read(_) => LoadKind::ReadTransactions,
