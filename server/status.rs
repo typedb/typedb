@@ -12,17 +12,17 @@ use crate::service::http::message::server::{BoxHttpServerResponse, LocalServerRe
 #[derive(Clone, Debug)]
 pub struct PublicEndpointAddress {
     listen_address: String,
-    advertise_address: String,
+    advertise_address: Option<String>,
 }
 
 impl PublicEndpointAddress {
-    pub fn new(listen_address: String, advertise_address: String) -> Self {
+    pub fn new(listen_address: String, advertise_address: Option<String>) -> Self {
         Self { listen_address, advertise_address }
     }
 
     pub fn from_socket_addr(
         listen_address: SocketAddr,
-        advertise_address: String, // reference info (can be an alias), do not resolve!
+        advertise_address: Option<String>, // reference info (can be an alias), do not resolve!
     ) -> Self {
         Self::new(listen_address.to_string(), advertise_address)
     }
@@ -31,8 +31,8 @@ impl PublicEndpointAddress {
         &self.listen_address
     }
 
-    pub fn advertise_address(&self) -> &str {
-        &self.advertise_address
+    pub fn advertise_address(&self) -> Option<&str> {
+        self.advertise_address.as_deref()
     }
 }
 
@@ -90,19 +90,21 @@ pub trait ServerStatus: Debug {
 
 impl ServerStatus for LocalServerStatus {
     fn to_proto(&self) -> typedb_protocol::Server {
-        typedb_protocol::Server { address: Some(self.grpc.advertise_address().to_string()), replication_status: None }
+        typedb_protocol::Server { address: self.grpc.advertise_address().map(str::to_string), replication_status: None }
     }
 
     fn to_http(&self) -> BoxHttpServerResponse {
-        Box::new(LocalServerResponse { address: self.http.as_ref().map(|http| http.advertise_address().to_string()) })
+        Box::new(LocalServerResponse {
+            address: self.http.as_ref().and_then(|http| http.advertise_address()).map(str::to_string),
+        })
     }
 
     fn grpc_listen_address(&self) -> Option<&str> {
-        Some(&self.grpc.listen_address())
+        Some(self.grpc.listen_address())
     }
 
     fn grpc_advertise_address(&self) -> Option<&str> {
-        Some(&self.grpc.advertise_address())
+        self.grpc.advertise_address()
     }
 
     fn http_listen_address(&self) -> Option<&str> {
@@ -110,7 +112,7 @@ impl ServerStatus for LocalServerStatus {
     }
 
     fn http_advertise_address(&self) -> Option<&str> {
-        self.http.as_ref().map(|http| http.advertise_address())
+        self.http.as_ref().and_then(|http| http.advertise_address())
     }
 
     fn admin_address(&self) -> Option<&str> {

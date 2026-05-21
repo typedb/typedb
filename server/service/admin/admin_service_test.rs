@@ -15,7 +15,8 @@ use server::{
 use test_utils::{TempDir, create_tmp_storage_dir};
 use tokio::sync::OnceCell;
 
-const GRPC_ADDRESS: &str = "127.0.0.1:11729";
+const GRPC_ADDRESS: &str = "0.0.0.0:11729";
+const GRPC_ADVERTISE_ADDRESS: &str = "127.0.0.1:11729";
 const ADMIN_PORT: u16 = 11728;
 const DISTRIBUTION_INFO: DistributionInfo =
     DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0-test" };
@@ -34,6 +35,7 @@ async fn ensure_server_started() {
             let config = ConfigBuilder::from_file(config_path())
                 .expect("Failed to load config file")
                 .server_listen_address(GRPC_ADDRESS)
+                .server_advertise_address(GRPC_ADVERTISE_ADDRESS)
                 .server_http_enabled(false)
                 .admin_port(ADMIN_PORT)
                 .admin_enabled(true)
@@ -91,7 +93,8 @@ async fn admin_server_status() {
 
     let grpc = res.grpc.expect("gRPC endpoint status should be present");
     assert!(!grpc.listen_address.is_empty(), "gRPC listen address should not be empty");
-    assert!(!grpc.advertise_address.is_empty(), "gRPC advertise address should not be empty");
+    assert!(grpc.advertise_address.is_some(), "gRPC advertise address should be some");
+    assert!(!grpc.advertise_address.unwrap().is_empty(), "gRPC advertise address should not be empty");
 
     assert!(res.http.is_none(), "HTTP should be disabled in test config");
 

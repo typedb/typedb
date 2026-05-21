@@ -9,12 +9,7 @@ pub mod server_operator;
 pub mod transaction_operator;
 pub mod user_operator;
 
-use std::{
-    collections::HashSet,
-    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
-    path::PathBuf,
-    sync::Arc,
-};
+use std::{collections::HashSet, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use concurrency::{IntervalRunner, TokioTaskSpawner};
 use database::database_manager::DatabaseManager;
@@ -224,28 +219,15 @@ impl ServerState {
             .ok_or_else(|| ServerOpenError::AddressResolutionEmpty { address: address.to_string() })
     }
 
-    fn default_advertise_address(listen: SocketAddr) -> String {
-        if listen.ip().is_unspecified() {
-            let loopback =
-                if listen.is_ipv4() { IpAddr::V4(Ipv4Addr::LOCALHOST) } else { IpAddr::V6(Ipv6Addr::LOCALHOST) };
-            SocketAddr::new(loopback, listen.port()).to_string()
-        } else {
-            listen.to_string()
-        }
-    }
-
     async fn resolve_endpoints(
         config: &crate::parameters::config::ServerConfig,
     ) -> Result<(SocketAddr, Option<SocketAddr>, LocalServerStatus), ServerOpenError> {
         let grpc_listen_address = Self::resolve_address(&config.listen_address).await?;
-        let grpc_advertise_address =
-            config.advertise_address.clone().unwrap_or_else(|| Self::default_advertise_address(grpc_listen_address));
+        let grpc_advertise_address = config.advertise_address.clone();
 
         let http_listen_address =
             if config.http.enabled { Some(Self::resolve_address(&config.http.listen_address).await?) } else { None };
-        let http_advertise_address = http_listen_address.map(|listen| {
-            config.http.advertise_address.clone().unwrap_or_else(|| Self::default_advertise_address(listen))
-        });
+        let http_advertise_address = config.http.advertise_address.clone();
 
         let admin_address = if config.admin.enabled {
             Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, config.admin.port)))
@@ -267,9 +249,7 @@ impl ServerState {
 
         let server_status = LocalServerStatus::new(
             PublicEndpointAddress::from_socket_addr(grpc_listen_address, grpc_advertise_address),
-            http_listen_address
-                .zip(http_advertise_address)
-                .map(|(serv, conn)| PublicEndpointAddress::from_socket_addr(serv, conn)),
+            http_listen_address.map(|listen| PublicEndpointAddress::from_socket_addr(listen, http_advertise_address)),
             admin_address.map(PrivateEndpointAddress::from_socket_addr),
         );
 
@@ -365,34 +345,5 @@ impl ServerStateBuilder {
             transaction_operator,
             user_operator,
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::net::SocketAddr;
-
-    use super::ServerState;
-
-    fn default_advertise_address(input: &str) -> String {
-        ServerState::default_advertise_address(input.parse::<SocketAddr>().unwrap())
-    }
-
-    #[test]
-    fn ipv4_wildcard_resolves_to_loopback() {
-        assert_eq!(default_advertise_address("0.0.0.0:1729"), "127.0.0.1:1729");
-        assert_eq!(default_advertise_address("0.0.0.0:8000"), "127.0.0.1:8000");
-    }
-
-    #[test]
-    fn ipv6_wildcard_resolves_to_loopback() {
-        assert_eq!(default_advertise_address("[::]:1729"), "[::1]:1729");
-    }
-
-    #[test]
-    fn explicit_listen_address_is_kept_as_is() {
-        assert_eq!(default_advertise_address("127.0.0.1:1729"), "127.0.0.1:1729");
-        assert_eq!(default_advertise_address("192.168.1.10:1729"), "192.168.1.10:1729");
-        assert_eq!(default_advertise_address("[2001:db8::1]:1729"), "[2001:db8::1]:1729");
     }
 }

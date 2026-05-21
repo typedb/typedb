@@ -51,16 +51,20 @@ async fn server_status(client: &mut AdminClient) -> CommandResult {
 
     if let Some(grpc) = &res.grpc {
         print!("  gRPC:  {}", grpc.listen_address);
-        if grpc.advertise_address != grpc.listen_address {
-            print!(" (connect via {})", grpc.advertise_address);
+        if let Some(advertise_address) = &grpc.advertise_address {
+            if advertise_address != &grpc.listen_address {
+                print!(" (connect via {})", advertise_address);
+            }
         }
         println!();
     }
 
     if let Some(http) = &res.http {
         print!("  HTTP:  {}", http.listen_address);
-        if http.advertise_address != http.listen_address {
-            print!(" (connect via {})", http.advertise_address);
+        if let Some(advertise_address) = &http.advertise_address {
+            if advertise_address != &http.listen_address {
+                print!(" (connect via {})", advertise_address);
+            }
         }
         println!();
     }

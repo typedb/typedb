@@ -29,5 +29,5 @@ message ServerStatus {
 
 message EndpointStatus {
     string listen_address = 1;
-    string advertise_address = 2;
+    optional string advertise_address = 2;
 }
