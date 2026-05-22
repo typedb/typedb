@@ -64,7 +64,7 @@ pub struct VariableModes {
 }
 
 impl VariableModes {
-    fn new() -> Self {
+    pub fn new() -> Self {
         VariableModes { modes: HashMap::new() }
     }
 
@@ -88,7 +88,7 @@ impl VariableModes {
         modes
     }
 
-    fn insert(&mut self, variable_position: ExecutorVariable, mode: VariableMode) {
+    pub fn insert(&mut self, variable_position: ExecutorVariable, mode: VariableMode) {
         let existing = self.modes.insert(variable_position, mode);
         debug_assert!(existing.is_none() || existing == Some(mode))
     }
