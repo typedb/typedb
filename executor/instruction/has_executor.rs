@@ -169,27 +169,24 @@ impl HasExecutor {
         })
     }
 
-    pub fn drain_count(
+    pub fn get_iterator(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
-    ) -> Result<usize, Box<ConceptReadError>> {
-        let mut iter = self.get_iterator(context, row, storage_counters)?;
-        let mut count = 0;
-        loop {
-            match iter.peek() {
-                Some(Ok(_)) => {
-                    count += 1;
-                    iter.advance_single()?;
-                }
-                Some(Err(err)) => return Err(err.clone()),
-                None => return Ok(count),
-            }
-        }
+    ) -> Result<impl Iterator<Item = Result<(), Box<ConceptReadError>>>, Box<ConceptReadError>> {
+        let mut iter = self.build_tuple_iterator(context, row, storage_counters)?;
+        Ok(std::iter::from_fn(move || match iter.peek() {
+            Some(Ok(_)) => match iter.advance_single() {
+                Ok(()) => Some(Ok(())),
+                Err(err) => Some(Err(err)),
+            },
+            Some(Err(err)) => Some(Err(err.clone())),
+            None => None,
+        }))
     }
 
-    pub(crate) fn get_iterator(
+    pub(crate) fn build_tuple_iterator(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,

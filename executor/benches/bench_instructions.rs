@@ -7,7 +7,7 @@
 #![deny(unused_must_use)]
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     sync::{Arc, OnceLock},
 };
 
@@ -18,17 +18,13 @@ use compiler::{
         PipelineAnnotationContext, function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types_for_block,
         pipeline::RunningVariableAnnotations,
     },
-    executable::match_::{
-        instructions::{ConstraintInstruction, Inputs, thing::HasInstruction},
-        planner::conjunction_executable::IntersectionStep,
-    },
+    executable::match_::instructions::{Inputs, VariableMode, VariableModes, thing::HasInstruction},
 };
 use concept::{
     thing::object::ObjectAPI,
     type_::{Ordering, OwnerAPI, annotation::AnnotationCardinality, owns::OwnsAnnotation},
 };
 use criterion::{Criterion, SamplingMode, criterion_group, criterion_main};
-use compiler::executable::match_::instructions::{VariableMode, VariableModes};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{HasExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 use ir::{
@@ -89,21 +85,6 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
-fn position_mapping<const N: usize, const M: usize>(
-    row_vars: [Variable; N],
-    internal_vars: [Variable; M],
-) -> (HashMap<Variable, VariablePosition>, HashMap<Variable, ExecutorVariable>, HashSet<ExecutorVariable>) {
-    let variable_positions: HashMap<_, _> =
-        row_vars.iter().enumerate().map(|(i, var)| (*var, VariablePosition::new(i as u32))).collect();
-    let mapping: HashMap<_, _> = row_vars
-        .iter()
-        .map(|var| (*var, ExecutorVariable::RowPosition(variable_positions[var])))
-        .chain(internal_vars.iter().map(|var| (*var, ExecutorVariable::Internal(*var))))
-        .collect();
-    let named_variables = mapping.values().copied().collect();
-    (variable_positions, mapping, named_variables)
-}
-
 fn build_has_executor(
     storage: &Arc<MVCCStorage<WALClient>>,
 ) -> (HasExecutor, ExecutionContext<storage::snapshot::ReadSnapshot<WALClient>>) {
@@ -136,15 +117,20 @@ fn build_has_executor(
     let block_annotations = infer_types_for_block(&mut ctx, &previous_annotations, &entry, false).unwrap();
     let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
-    let (variable_positions, mapping, named_variables) =
-        position_mapping([var_person, var_age], [var_person_type, var_age_type]);
-    let sort_by = mapping[&var_person];
+    let person = ExecutorVariable::RowPosition(VariablePosition::new(0));
+    let age = ExecutorVariable::RowPosition(VariablePosition::new(1));
+    let mapping: HashMap<Variable, ExecutorVariable> = HashMap::from([
+        (var_person, person),
+        (var_age, age),
+        (var_person_type, ExecutorVariable::Internal(var_person_type)),
+        (var_age_type, ExecutorVariable::Internal(var_age_type)),
+    ]);
 
     let has_instruction = HasInstruction::new(has, Inputs::None([]), &entry_annotations).map(&mapping);
     let mut variable_modes = VariableModes::new();
-    variable_modes.insert(*mapping.get(&var_person).unwrap(), VariableMode::Output);
-    variable_modes.insert(*mapping.get(&var_age).unwrap(), VariableMode::Output);
-    let executor = HasExecutor::new(has_instruction, variable_modes, sort_by, &snapshot, &thing_manager).unwrap();
+    variable_modes.insert(person, VariableMode::Output);
+    variable_modes.insert(age, VariableMode::Output);
+    let executor = HasExecutor::new(has_instruction, variable_modes, person, &snapshot, &thing_manager).unwrap();
     let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default());
     (executor, context)
 }
@@ -164,7 +150,12 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Linear);
     group.bench_function("unbound_sorted_from", |b| {
         b.iter(|| {
-            let count = executor.drain_count(&context, MaybeOwnedRow::empty(), StorageCounters::DISABLED).unwrap();
+            let iter = executor.get_iterator(&context, MaybeOwnedRow::empty(), StorageCounters::DISABLED).unwrap();
+            let mut count = 0;
+            for result in iter {
+                result.unwrap();
+                count += 1;
+            }
             assert_eq!(count, expected_count);
         });
     });
