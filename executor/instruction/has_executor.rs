@@ -174,23 +174,6 @@ impl HasExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
-    ) -> Result<impl Iterator<Item = Result<(), Box<ConceptReadError>>>, Box<ConceptReadError>> {
-        let mut iter = self.build_tuple_iterator(context, row, storage_counters)?;
-        Ok(std::iter::from_fn(move || match iter.peek() {
-            Some(Ok(_)) => match iter.advance_single() {
-                Ok(()) => Some(Ok(())),
-                Err(err) => Some(Err(err)),
-            },
-            Some(Err(err)) => Some(Err(err.clone())),
-            None => None,
-        }))
-    }
-
-    pub(crate) fn build_tuple_iterator(
-        &self,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-        row: MaybeOwnedRow<'_>,
-        storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());

@@ -150,10 +150,11 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Linear);
     group.bench_function("unbound_sorted_from", |b| {
         b.iter(|| {
-            let iter = executor.get_iterator(&context, MaybeOwnedRow::empty(), StorageCounters::DISABLED).unwrap();
+            let mut iter = executor.get_iterator(&context, MaybeOwnedRow::empty(), StorageCounters::DISABLED).unwrap();
             let mut count = 0;
-            for result in iter {
-                result.unwrap();
+            while let Some(result) = iter.peek() {
+                result.as_ref().unwrap();
+                iter.advance_single().unwrap();
                 count += 1;
             }
             assert_eq!(count, expected_count);
