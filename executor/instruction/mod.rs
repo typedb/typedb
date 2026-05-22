@@ -169,7 +169,7 @@ impl InstructionExecutor {
             Self::PlaysReverse(executor) => executor.get_iterator(context, row, storage_counters),
             Self::Isa(executor) => executor.get_iterator(context, row, storage_counters),
             Self::IsaReverse(executor) => executor.get_iterator(context, row, storage_counters),
-            Self::Has(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::Has(executor) => executor.build_tuple_iterator(context, row, storage_counters),
             Self::HasReverse(executor) => executor.get_iterator(context, row, storage_counters),
             Self::Links(executor) => executor.get_iterator(context, row, storage_counters),
             Self::LinksReverse(executor) => executor.get_iterator(context, row, storage_counters),
