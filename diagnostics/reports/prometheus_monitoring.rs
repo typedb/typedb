@@ -134,11 +134,13 @@ pub fn to_prometheus(
         }
     }
 
-    // Live in-flight transaction counts per (database, client, kind). Emitted
-    // even when zero so dashboards can render flat lines and detect drops.
-    // Only databases with non-empty active_transactions appear; absent zero
-    // entries are filtered upstream in to_active_report.
-    if report.load.iter().any(|db| !db.active_transactions.is_empty()) {
+    // Live in-flight transaction counts per (database, client, kind). All six
+    // (client × kind) entries are emitted per observed database, including
+    // zeros — matches the `process_*` family's "emit even when zero/unsupported"
+    // posture so dashboards render continuous flat lines at rest. See the
+    // matching note on ConnectionLoadMetrics::to_active_report for the
+    // cardinality trade-off rationale.
+    if !report.load.is_empty() {
         writeln!(out, "\n# HELP typedb_transactions_active In-flight transactions by client and kind.").unwrap();
         writeln!(out, "# TYPE typedb_transactions_active gauge").unwrap();
         for db in &report.load {
