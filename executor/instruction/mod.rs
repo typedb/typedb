@@ -35,7 +35,7 @@ use crate::{
 
 pub(crate) mod checker;
 pub(crate) mod has_executor;
-mod has_reverse_executor;
+pub(crate) mod has_reverse_executor;
 mod iid_executor;
 mod indexed_relation_executor;
 mod is_executor;

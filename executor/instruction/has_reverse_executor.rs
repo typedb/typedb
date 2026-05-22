@@ -42,7 +42,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-pub(crate) struct HasReverseExecutor {
+pub struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
@@ -65,7 +65,7 @@ pub(crate) type HasReverseTupleIteratorSingle = HasTupleIterator<HasReverseItera
 pub(crate) type HasReverseTupleIteratorMerged = KMergeBy<HasTupleIterator<HasReverseIterator>, TupleOrderingFn>;
 
 impl HasReverseExecutor {
-    pub(crate) fn new(
+    pub fn new(
         has_reverse: HasReverseInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
         sort_by: ExecutorVariable,
@@ -128,7 +128,7 @@ impl HasReverseExecutor {
         })
     }
 
-    pub(crate) fn get_iterator(
+    pub fn get_iterator(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
