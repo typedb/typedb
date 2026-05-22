@@ -81,6 +81,31 @@ pub fn to_prometheus(
         writeln!(out, "server_resources_count{{kind=\"diskUsedInBytes\"}} {}", sensitive.disk_used_in_bytes).unwrap();
         writeln!(out, "server_resources_count{{kind=\"diskAvailableInBytes\"}} {}", sensitive.disk_available_in_bytes)
             .unwrap();
+
+        // Standard Prometheus `process_*` family. No typedb_ prefix — these
+        // names are the ones every dashboard and exporter already knows. On
+        // non-Linux platforms open_fds/max_fds are 0 (sampler limitation);
+        // the lines are still emitted for dashboard uniformity.
+        let p = &sensitive.process;
+        writeln!(out, "\n# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.").unwrap();
+        writeln!(out, "# TYPE process_cpu_seconds_total counter").unwrap();
+        writeln!(out, "process_cpu_seconds_total {}", p.cpu_seconds_total).unwrap();
+        writeln!(out, "# HELP process_resident_memory_bytes Resident memory size in bytes.").unwrap();
+        writeln!(out, "# TYPE process_resident_memory_bytes gauge").unwrap();
+        writeln!(out, "process_resident_memory_bytes {}", p.resident_memory_bytes).unwrap();
+        writeln!(out, "# HELP process_virtual_memory_bytes Virtual memory size in bytes.").unwrap();
+        writeln!(out, "# TYPE process_virtual_memory_bytes gauge").unwrap();
+        writeln!(out, "process_virtual_memory_bytes {}", p.virtual_memory_bytes).unwrap();
+        writeln!(out, "# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.")
+            .unwrap();
+        writeln!(out, "# TYPE process_start_time_seconds gauge").unwrap();
+        writeln!(out, "process_start_time_seconds {}", p.start_time_unix_seconds).unwrap();
+        writeln!(out, "# HELP process_open_fds Number of open file descriptors.").unwrap();
+        writeln!(out, "# TYPE process_open_fds gauge").unwrap();
+        writeln!(out, "process_open_fds {}", p.open_fds).unwrap();
+        writeln!(out, "# HELP process_max_fds Maximum number of open file descriptors.").unwrap();
+        writeln!(out, "# TYPE process_max_fds gauge").unwrap();
+        writeln!(out, "process_max_fds {}", p.max_fds).unwrap();
     }
 
     writeln!(out, "\n# TYPE typedb_schema_data_count gauge").unwrap();
@@ -106,6 +131,29 @@ pub fn to_prometheus(
                 labels, data.storage_key_count
             )
             .unwrap();
+        }
+    }
+
+    // Live in-flight transaction counts per (database, client, kind). Emitted
+    // even when zero so dashboards can render flat lines and detect drops.
+    // Only databases with non-empty active_transactions appear; absent zero
+    // entries are filtered upstream in to_active_report.
+    if report.load.iter().any(|db| !db.active_transactions.is_empty()) {
+        writeln!(out, "\n# HELP typedb_transactions_active In-flight transactions by client and kind.").unwrap();
+        writeln!(out, "# TYPE typedb_transactions_active gauge").unwrap();
+        for db in &report.load {
+            let labels = db_labels(db.database.as_str(), names, include_database_names);
+            for entry in &db.active_transactions {
+                writeln!(
+                    out,
+                    "typedb_transactions_active{{{}, client=\"{}\", kind=\"{}\"}} {}",
+                    labels,
+                    entry.client,
+                    txn_kind_label(&entry.kind),
+                    entry.count
+                )
+                .unwrap();
+            }
         }
     }
 

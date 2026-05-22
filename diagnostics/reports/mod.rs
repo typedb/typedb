@@ -88,6 +88,7 @@ pub(crate) struct ServerReportSensitivePart {
     pub memory_available_in_bytes: u64,
     pub disk_used_in_bytes: u64,
     pub disk_available_in_bytes: u64,
+    pub process: ProcessReport,
 }
 
 #[derive(Debug)]
@@ -95,6 +96,21 @@ pub(crate) struct OsReport {
     pub name: String,
     pub arch: String,
     pub version: String,
+}
+
+/// Standard Prometheus `process_*` metric family snapshot. Emitted on the
+/// monitoring endpoint without a `typedb_` prefix to match the conventional
+/// names dashboards already know (node_exporter, postgres_exporter, etc.).
+/// On non-Linux platforms `open_fds` and `max_fds` may be zero — the metrics
+/// are emitted regardless so dashboards stay uniform across deployments.
+#[derive(Debug)]
+pub(crate) struct ProcessReport {
+    pub cpu_seconds_total: f64,
+    pub resident_memory_bytes: u64,
+    pub virtual_memory_bytes: u64,
+    pub start_time_unix_seconds: u64,
+    pub open_fds: u64,
+    pub max_fds: u64,
 }
 
 #[derive(Debug)]

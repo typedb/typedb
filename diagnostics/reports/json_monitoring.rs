@@ -13,8 +13,8 @@ use crate::{
     Diagnostics,
     metrics::{ALL_CLIENT_ENDPOINTS, ActionKind, HistogramSnapshot, HistogramUnit, LoadKind, QueryType},
     reports::{
-        ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport, SchemaLoadReport,
-        ServerPropertiesReport, ServerReport, ServerReportSensitivePart, serialize_timestamp,
+        ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport, ProcessReport,
+        SchemaLoadReport, ServerPropertiesReport, ServerReport, ServerReportSensitivePart, serialize_timestamp,
     },
 };
 
@@ -95,6 +95,7 @@ pub(crate) struct JsonMonitoringServerReportSensitivePart {
     pub memory_available_in_bytes: u64,
     pub disk_used_in_bytes: u64,
     pub disk_available_in_bytes: u64,
+    pub process: JsonMonitoringProcessReport,
 }
 
 impl From<ServerReportSensitivePart> for JsonMonitoringServerReportSensitivePart {
@@ -106,6 +107,7 @@ impl From<ServerReportSensitivePart> for JsonMonitoringServerReportSensitivePart
             memory_available_in_bytes: value.memory_available_in_bytes,
             disk_used_in_bytes: value.disk_used_in_bytes,
             disk_available_in_bytes: value.disk_available_in_bytes,
+            process: value.process.into(),
         }
     }
 }
@@ -125,18 +127,84 @@ impl From<OsReport> for JsonMonitoringOsReport {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct JsonMonitoringProcessReport {
+    pub cpu_seconds_total: f64,
+    pub resident_memory_bytes: u64,
+    pub virtual_memory_bytes: u64,
+    pub start_time_unix_seconds: u64,
+    pub open_fds: u64,
+    pub max_fds: u64,
+}
+
+impl From<ProcessReport> for JsonMonitoringProcessReport {
+    fn from(value: ProcessReport) -> Self {
+        Self {
+            cpu_seconds_total: value.cpu_seconds_total,
+            resident_memory_bytes: value.resident_memory_bytes,
+            virtual_memory_bytes: value.virtual_memory_bytes,
+            start_time_unix_seconds: value.start_time_unix_seconds,
+            open_fds: value.open_fds,
+            max_fds: value.max_fds,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct JsonMonitoringLoadReport {
     pub database: String,
     pub schema: Option<JsonMonitoringSchemaLoadReport>,
     pub data: Option<JsonMonitoringDataLoadReport>,
+    // Flat list (not a nested map) so JSON output ordering is stable and
+    // Prometheus exposition can iterate cleanly. Empty when no transactions
+    // are in flight for this database.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub active_transactions: Vec<JsonMonitoringActiveTransactionEntry>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct JsonMonitoringActiveTransactionEntry {
+    pub client: crate::metrics::ClientEndpoint,
+    pub kind: LoadKind,
+    pub count: u64,
 }
 
 impl From<LoadReport> for JsonMonitoringLoadReport {
     fn from(value: LoadReport) -> Self {
+        // Connection map → flat list. Sorted by (client, kind) so the
+        // Prometheus writer emits a deterministic series order.
+        let mut active_transactions: Vec<JsonMonitoringActiveTransactionEntry> = value
+            .connection
+            .map(|conn| {
+                conn.into_iter()
+                    .flat_map(|(client, by_kind)| {
+                        by_kind
+                            .into_iter()
+                            .map(move |(kind, count)| JsonMonitoringActiveTransactionEntry { client, kind, count })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        active_transactions.sort_by_key(|e| {
+            (
+                match e.client {
+                    crate::metrics::ClientEndpoint::Grpc => 0,
+                    crate::metrics::ClientEndpoint::Http => 1,
+                },
+                match e.kind {
+                    LoadKind::ReadTransactions => 0,
+                    LoadKind::WriteTransactions => 1,
+                    LoadKind::SchemaTransactions => 2,
+                },
+            )
+        });
         Self {
             database: value.database.to_string(),
             schema: value.schema.map(|schema| schema.into()),
             data: value.data.map(|data| data.into()),
+            active_transactions,
         }
     }
 }

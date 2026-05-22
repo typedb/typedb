@@ -96,6 +96,7 @@ pub mod server {
     pub const DEFAULT_LOG_DIR: &str = "log";
 
     pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(15);
+    pub const SYSTEM_METRICS_REFRESH_INTERVAL: Duration = Duration::from_secs(15);
 
     pub const SENTRY_REPORTING_URI: &str =
         "https://3d710295c75c81492e57e1997d9e01e1@o4506315929812992.ingest.sentry.io/4506316048629760";

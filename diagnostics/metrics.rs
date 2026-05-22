@@ -9,22 +9,24 @@ use std::{
     fmt,
     path::PathBuf,
     sync::{
-        Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
+        Arc, RwLock, RwLockReadGuard, RwLockWriteGuard,
         atomic::{AtomicU64, Ordering},
     },
     time::Instant,
 };
 
-use resource::constants::diagnostics::UNKNOWN_STR;
+use concurrency::IntervalRunner;
+use resource::constants::{diagnostics::UNKNOWN_STR, server::SYSTEM_METRICS_REFRESH_INTERVAL};
 use serde::{Deserialize, Serialize};
-use sysinfo::{Disks, MemoryRefreshKind, RefreshKind, System};
+use sysinfo::System;
 
 use crate::{
     DatabaseHash, DatabaseHashOpt,
     reports::{
-        ActionReport, ConnectionLoadReport, DataLoadReport, ErrorReport, LoadReport, OsReport, SchemaLoadReport,
-        ServerPropertiesReport, ServerReport, ServerReportSensitivePart,
+        ActionReport, ConnectionLoadReport, DataLoadReport, ErrorReport, LoadReport, OsReport, ProcessReport,
+        SchemaLoadReport, ServerPropertiesReport, ServerReport, ServerReportSensitivePart,
     },
+    system_sampler::SystemSampler,
 };
 
 #[derive(Serialize, Deserialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
@@ -103,13 +105,13 @@ pub(crate) struct ServerMetrics {
     os_version: String,
     version: String,
     data_directory: PathBuf,
-    // Reused sysinfo handles. Behaviour-preserving: each scrape still refreshes,
-    // but we no longer allocate a fresh System / Disks on every /diagnostics request.
-    // Phase 3 will replace the on-scrape refresh path with a background sampler
-    // that writes cached AtomicU64 values, after which to_full_state_report will
-    // read the atomics directly without taking the Mutex.
-    system: Mutex<System>,
-    disks: Mutex<Disks>,
+    // Background sampler refresh runner. Declared BEFORE `sampler` so it drops
+    // first when ServerMetrics drops — that joins the refresh thread before the
+    // sampler it captures by Arc can be deallocated. Functionally either order
+    // is safe (IntervalRunner::drop joins synchronously), but explicit ordering
+    // documents intent.
+    _sampler_refresh: IntervalRunner,
+    sampler: Arc<SystemSampler>,
 }
 
 impl ServerMetrics {
@@ -117,8 +119,12 @@ impl ServerMetrics {
         let os_name = System::name().unwrap_or(UNKNOWN_STR.to_string());
         let os_arch = System::cpu_arch();
         let os_version = System::os_version().unwrap_or(UNKNOWN_STR.to_string());
-        let system = System::new_with_specifics(RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()));
-        let disks = Disks::new_with_refreshed_list();
+        let sampler = Arc::new(SystemSampler::new(data_directory.clone()));
+        let sampler_for_refresh = sampler.clone();
+        let _sampler_refresh = IntervalRunner::new(
+            move || sampler_for_refresh.refresh(),
+            SYSTEM_METRICS_REFRESH_INTERVAL,
+        );
         Self {
             start_instant: Instant::now(),
             os_name,
@@ -126,8 +132,8 @@ impl ServerMetrics {
             os_version,
             version,
             data_directory,
-            system: Mutex::new(system),
-            disks: Mutex::new(disks),
+            _sampler_refresh,
+            sampler,
         }
     }
 
@@ -140,8 +146,10 @@ impl ServerMetrics {
     }
 
     pub fn to_full_state_report(&self) -> ServerReport {
-        let memory_info = self.get_memory_info();
-        let disk_info = self.get_disk_info();
+        let total_memory = self.sampler.total_memory_bytes();
+        let available_memory = self.sampler.available_memory_bytes();
+        let disk_total = self.sampler.disk_total_bytes();
+        let disk_available = self.sampler.disk_available_bytes();
         ServerReport {
             version: self.version.clone(),
             sensitive_part: Some(ServerReportSensitivePart {
@@ -151,36 +159,21 @@ impl ServerMetrics {
                     arch: self.os_arch.clone(),
                     version: self.os_version.clone(),
                 },
-                memory_used_in_bytes: memory_info.total - memory_info.available,
-                memory_available_in_bytes: memory_info.available,
-                disk_used_in_bytes: disk_info.total - disk_info.available,
-                disk_available_in_bytes: disk_info.available,
+                // Saturating subtraction in case sysinfo briefly reports
+                // available > total during refresh races.
+                memory_used_in_bytes: total_memory.saturating_sub(available_memory),
+                memory_available_in_bytes: available_memory,
+                disk_used_in_bytes: disk_total.saturating_sub(disk_available),
+                disk_available_in_bytes: disk_available,
+                process: ProcessReport {
+                    cpu_seconds_total: self.sampler.process_cpu_seconds_total(),
+                    resident_memory_bytes: self.sampler.process_resident_memory_bytes(),
+                    virtual_memory_bytes: self.sampler.process_virtual_memory_bytes(),
+                    start_time_unix_seconds: self.sampler.process_start_time_unix_seconds(),
+                    open_fds: self.sampler.process_open_fds(),
+                    max_fds: self.sampler.process_max_fds(),
+                },
             }),
-        }
-    }
-
-    fn get_memory_info(&self) -> SizeInfo {
-        let mut system = self.system.lock().expect("Expected sysinfo System lock acquisition");
-        system.refresh_memory();
-        // USER QUESTION: can we include RSS of the server process?
-        SizeInfo { total: system.total_memory(), available: system.available_memory() }
-    }
-
-    fn get_disk_info(&self) -> SizeInfo {
-        let mut disks = self.disks.lock().expect("Expected sysinfo Disks lock acquisition");
-        // remove_not_listed_disks = true preserves the original Disks::new_with_refreshed_list()
-        // semantics: each scrape sees the disks currently present, not stale entries.
-
-        // USER QUESTION: can we record the disk data directory size somehow? Eg. to record databases bytes or something
-        disks.refresh(true);
-        let disk = match self.data_directory.canonicalize() {
-            Ok(path) => disks.iter().find(|disk| path.starts_with(disk.mount_point())),
-            Err(_) => None,
-        };
-
-        match disk {
-            Some(disk) => SizeInfo { total: disk.total_space(), available: disk.available_space() },
-            None => SizeInfo { total: 0u64, available: 0u64 },
         }
     }
 
@@ -269,6 +262,9 @@ impl LoadMetrics {
             let mut report = LoadReport::new(*database_hash);
             report.schema = Some(self.schema.to_state_report());
             report.data = Some(self.data.to_state_report());
+            // Live in-flight counts → typedb_transactions_active gauge. Distinct
+            // from peak_counts (which feeds Posthog); this is the current value.
+            report.connection = Some(self.connection.to_active_report());
             Some(report)
         } else {
             None
@@ -385,6 +381,21 @@ impl ConnectionLoadMetrics {
             peaks.insert(*client, client_peaks);
         }
         peaks
+    }
+
+    /// Current live in-flight counts (not peaks). Feeds the
+    /// typedb_transactions_active gauge on the monitoring endpoint. Posthog
+    /// uses to_peak_report; the two paths are deliberately separate.
+    pub fn to_active_report(&self) -> ConnectionLoadReport {
+        let mut active = ConnectionLoadReport::new();
+        for (client, counts) in &self.counts {
+            let mut client_counts = HashMap::new();
+            for (kind, count) in counts {
+                client_counts.insert(*kind, count.load(Ordering::Relaxed));
+            }
+            active.insert(*client, client_counts);
+        }
+        active
     }
 
     fn get_count(&self, client: &ClientEndpoint, load_kind: &LoadKind) -> &AtomicU64 {
@@ -903,11 +914,6 @@ impl fmt::Display for ActionKind {
 
 fn get_delta(lhs: u64, rhs: u64) -> i64 {
     if lhs > rhs { (lhs - rhs) as i64 } else { -((rhs - lhs) as i64) }
-}
-
-struct SizeInfo {
-    pub total: u64,
-    pub available: u64,
 }
 
 // ============================================================================
