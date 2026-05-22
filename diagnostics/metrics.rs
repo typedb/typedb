@@ -105,11 +105,7 @@ pub(crate) struct ServerMetrics {
     os_version: String,
     version: String,
     data_directory: PathBuf,
-    // Background sampler refresh runner. Declared BEFORE `sampler` so it drops
-    // first when ServerMetrics drops — that joins the refresh thread before the
-    // sampler it captures by Arc can be deallocated. Functionally either order
-    // is safe (IntervalRunner::drop joins synchronously), but explicit ordering
-    // documents intent.
+    // Declared before `sampler` so the refresh thread is joined first on drop.
     _sampler_refresh: IntervalRunner,
     sampler: Arc<SystemSampler>,
 }
@@ -385,15 +381,9 @@ impl ConnectionLoadMetrics {
         peaks
     }
 
-    /// Current live in-flight counts (not peaks). Feeds the
-    /// typedb_transactions_active gauge on the monitoring endpoint. Posthog
-    /// uses to_peak_report; the two paths are deliberately separate.
-    ///
-    /// Emits ALL six (client × kind) entries per observed database, including
-    /// zeros — matches the Prometheus `process_*` family's "emit even if
-    /// unsupported/zero, for dashboard uniformity" posture. Cost: 6 × N
-    /// databases of low-cardinality series; the schema_data_count family is
-    /// already in the same neighbourhood.
+    /// Current live in-flight counts (not peaks). Feeds typedb_transactions_active;
+    /// Posthog uses to_peak_report instead. Emits all (client × kind) entries
+    /// including zeros — same "emit-on-zero" posture as the process_* family.
     pub fn to_active_report(&self) -> ConnectionLoadReport {
         let mut active = ConnectionLoadReport::new();
         for (client, counts) in &self.counts {
@@ -958,20 +948,11 @@ pub enum HistogramUnit {
     Count,
 }
 
-/// Lock-free histogram with fixed bucket boundaries declared at construction.
-/// `observe()` is the hot path: one atomic fetch_add on the chosen bucket (or
-/// the overflow slot) and one on `sum`. The total observation count is derived
-/// at snapshot time as the sum of all buckets + overflow — avoids a separate
-/// `count` atomic that could disagree with the bucket sum under concurrent
-/// observe (Relaxed loads are not synchronised across atomics). Bucket lookup
-/// is a linear scan — fine for the 7-bound default; with more bounds a binary
-/// search would be worth it.
-///
-/// Storage uses `u64` throughout. Durations are stored as nanoseconds (~584
-/// years of headroom in `sum`); counts are stored as themselves. The `unit`
-/// field tells the exposition writer how to render the bounds and the `_sum`
-/// line: `Nanoseconds` divides by 1e9 to emit seconds (Prometheus convention
-/// is seconds for the `_seconds` suffix), `Count` emits as-is.
+/// Lock-free histogram with fixed bucket boundaries. `observe()` does one
+/// atomic fetch_add on a bucket and one on `sum`; bucket lookup is a linear
+/// scan (fine for the 7-bound defaults — switch to partition_point above ~32).
+/// `unit` tells exposition how to render values: `Nanoseconds` divides by 1e9
+/// to emit seconds, `Count` emits as-is.
 #[derive(Debug)]
 pub struct HistogramMetrics {
     bucket_bounds: Vec<u64>,
@@ -1042,16 +1023,9 @@ impl HistogramMetrics {
         self.unit
     }
 
-    /// Snapshot for exposition. Produces *cumulative* bucket counts in the order
-    /// the Prometheus text format expects, plus the total count and sum in raw
-    /// (native-unit) form. The writer converts ns→seconds at emission time when
-    /// `unit == Nanoseconds`.
-    ///
-    /// `count` is derived from the prefix-sum of buckets + overflow, so it
-    /// equals `_bucket{le="+Inf"}` by construction. This avoids the bucket-vs-
-    /// separate-counter skew that a separately-incremented `count` atomic
-    /// would have under concurrent observe (Relaxed ordering doesn't
-    /// synchronise across atomics).
+    /// Snapshot for exposition: cumulative bucket counts, total count, raw sum.
+    /// `count` is the prefix sum of buckets + overflow, so it equals
+    /// `_bucket{le="+Inf"}` by construction (avoids torn reads across atomics).
     pub fn snapshot(&self) -> HistogramSnapshot {
         let mut cumulative_counts = Vec::with_capacity(self.bucket_bounds.len());
         let mut running = 0u64;
@@ -1151,12 +1125,6 @@ pub struct TransactionLifecycleSnapshot {
     pub closed: Vec<(LoadKind, u64)>,
 }
 
-/// All Phase 2 per-database monitoring state: latency histograms, queries-per-
-/// transaction, and the transaction-lifecycle counters. Held in one struct so
-/// the per-DB map (`Diagnostics.histogram_metrics`) doesn't multiply. One
-/// instance per database hash, constructed eagerly so observe() is lock-free
-/// once the outer map is unlocked. None of this goes to Posthog; see §1.3 of
-/// the Phase 2 design.
 #[derive(Debug)]
 pub(crate) struct DatabaseHistograms {
     query_duration: HashMap<QueryType, HistogramMetrics>,

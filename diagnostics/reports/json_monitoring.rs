@@ -31,7 +31,6 @@ pub(crate) struct JsonMonitoringReport {
     pub actions: Vec<JsonMonitoringActionReport>,
     pub errors: Vec<JsonMonitoringErrorReport>,
 
-    // Phase 2 additions. Empty when no Phase 2 data has been observed yet.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub query_duration: Vec<JsonMonitoringHistogramByQueryKind>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -482,8 +481,7 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
         }
     }
 
-    // Phase 2 per-database histograms + lifecycle counters. Sorted by hash so
-    // exposition order is stable across scrapes regardless of HashMap iteration.
+    // Sort by hash so exposition order is stable across scrapes.
     let mut histogram_snapshots = diagnostics.histogram_snapshots();
     histogram_snapshots.sort_by_key(|(hash, _)| *hash);
 

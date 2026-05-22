@@ -198,8 +198,6 @@ pub fn to_prometheus(
         }
     }
 
-    // ----- Phase 2: per-database histograms ---------------------------------
-
     if !report.query_duration.is_empty() {
         writeln!(out, "\n# HELP typedb_query_duration_seconds Query execution latency.").unwrap();
         writeln!(out, "# TYPE typedb_query_duration_seconds histogram").unwrap();
@@ -228,8 +226,6 @@ pub fn to_prometheus(
             write_histogram_body(&mut out, "typedb_queries_per_transaction", &labels, &entry.histogram);
         }
     }
-
-    // ----- Phase 2: transaction lifecycle counters --------------------------
 
     if !report.transaction_lifecycle.is_empty() {
         write_lifecycle_counter(

@@ -160,7 +160,6 @@ pub(crate) struct TransactionService {
     close_sender: Sender<()>,
     close_receiver: Receiver<()>,
 
-    // Phase 2: see the gRPC service for the rationale on these fields.
     opened_at: Option<Instant>,
     lifecycle_outcome_recorded: bool,
     query_count: u64,
@@ -717,9 +716,6 @@ impl TransactionService {
                     return self.run_write_query(responder, query_options, query_pipeline, source_query).await;
                 }
                 (QueueOptions::Query(query_options), false) => {
-                    // See the inline-dispatch read site in handle_query for the
-                    // rationale: HTTP reads don't stream, so total worker time
-                    // equals time to first batch.
                     let read_started = Instant::now();
                     let database_name = self.transaction.as_ref().map(|t| t.database_name().to_owned());
                     let outcome = self
@@ -754,7 +750,6 @@ impl TransactionService {
         query: String,
         responder: TransactionResponder,
     ) -> ControlFlow<(), ()> {
-        // Count every query dispatched (see the gRPC equivalent for rationale).
         self.query_count += 1;
 
         let parsed = match parse_query(&query) {
@@ -794,9 +789,6 @@ impl TransactionService {
                         // queued queries are not handled yet so there will be no query response yet
                         Continue(())
                     } else {
-                        // HTTP read queries don't stream — blocking_read_query_worker
-                        // collects all rows/documents and returns one batched response.
-                        // Total worker time == time to first batch.
                         let read_started = Instant::now();
                         let database_name =
                             self.transaction.as_ref().map(|t| t.database_name().to_owned());

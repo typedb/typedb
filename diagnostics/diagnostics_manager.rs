@@ -78,9 +78,6 @@ impl DiagnosticsManager {
         pub fn increment_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, load_kind: LoadKind);
         pub fn decrement_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, load_kind: LoadKind);
 
-        // Phase 2 histograms + lifecycle counters. All gated by is_diagnostics_needed
-        // inside the inner methods on Diagnostics; the manager wrapper is a thin
-        // pass-through via the diagnostics_method! macro above.
         pub fn observe_query_duration(&self, database_name: impl AsRef<str> + Hash, kind: QueryType, duration: std::time::Duration);
         pub fn observe_transaction_duration(&self, database_name: impl AsRef<str> + Hash, kind: LoadKind, duration: std::time::Duration);
         pub fn observe_queries_per_transaction(&self, database_name: impl AsRef<str> + Hash, queries: u64);

@@ -141,17 +141,6 @@ pub(crate) struct TransactionService {
     close_sender: Sender<()>,
     close_receiver: Receiver<()>,
 
-    // Phase 2 diagnostics state. `opened_at` is captured once at handle_open and
-    // consumed at each lifecycle endpoint (commit/rollback/abort) to feed the
-    // typedb_transaction_duration_seconds histogram. `lifecycle_outcome_recorded`
-    // gates do_close's "aborted" increment so a transaction that the client
-    // already committed or rolled back doesn't also count as aborted on stream
-    // teardown. `query_count` ticks once per handle_query call; observed into
-    // typedb_queries_per_transaction at each lifecycle endpoint.
-    // `write_query_started_at` is set when run_write_query spawns and consumed
-    // by the listen loop's write_query_worker arm to observe Write query
-    // duration. Schema-query duration is bracketed inline in handle_query_schema.
-    // Read-query duration is deferred (multi-completion-site streaming).
     opened_at: Option<Instant>,
     lifecycle_outcome_recorded: bool,
     query_count: u64,
@@ -576,27 +565,16 @@ impl TransactionService {
             .expect("Expected schema transaction commit completion"),
         };
 
-        // Lifecycle accounting. Three cases:
-        //  1. commit_result Ok: Write/Schema commit succeeded → Committed.
-        //  2. commit_result Err AND self.transaction is None: Write/Schema commit
-        //     failed (the transaction was consumed by .take() into the spawn and
-        //     didn't return). do_close won't see it, so we must record Closed
-        //     here to keep started == committed + rolled_back + closed.
-        //  3. commit_result Err AND self.transaction is Some: Read commit-attempt
-        //     (the Read arm restores the transaction before returning Err). The
-        //     transaction is still alive; the user can keep using it. NO terminal
-        //     outcome; do_close handles it later if/when the user closes.
-        //
-        // Cases 1 and 2 are terminal; cases 1 and 2 also observe transaction
-        // duration and queries-per-transaction. Case 3 leaves opened_at and
-        // query_count alone so do_close can consume them.
+        // The Read arm restores `self.transaction` and returns Err; it's not
+        // terminal. The Write/Schema arms consume the transaction either way
+        // and are terminal — Committed on Ok, Closed on Err.
         if let (Some(kind), Some(name)) = (txn_kind, &txn_database_name) {
             let dm = self.server_state.diagnostics_manager();
             let transaction_consumed = self.transaction.is_none();
             let terminal_outcome = match (commit_result.is_ok(), transaction_consumed) {
                 (true, _) => Some(TransactionOutcome::Committed),
                 (false, true) => Some(TransactionOutcome::Closed),
-                (false, false) => None, // Read commit attempt — not terminal
+                (false, false) => None,
             };
             if let Some(outcome) = terminal_outcome {
                 dm.record_transaction_outcome(name, kind, outcome);
@@ -920,10 +898,8 @@ impl TransactionService {
             return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
         }
 
-        // Count every query the transaction dispatches (including ones that fail
-        // to parse below) — that matches the "n+1 patterns" the metric is meant
-        // to catch. Observed into typedb_queries_per_transaction at lifecycle
-        // endpoints.
+        // Count dispatched queries before parsing — failed-parse queries still
+        // count, matching n+1 detection semantics.
         self.query_count += 1;
 
         let query = query_req.query;
