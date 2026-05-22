@@ -24,7 +24,7 @@ pub(crate) mod reduce_executor;
 pub mod row;
 pub mod write;
 
-pub use instruction::{has_executor::HasExecutor, iterator::TupleIterator};
+pub use instruction::{has_executor::HasExecutor, has_reverse_executor::HasReverseExecutor, iterator::TupleIterator};
 
 // TODO: use a bit-vec, since we have a continuously allocated range of positions
 // ---> for now, using a byte vec, which is 8x wasteful and on the heap!
