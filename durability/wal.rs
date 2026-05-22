@@ -39,12 +39,39 @@ const MAX_WAL_FILE_SIZE: u64 = 16 * 1024 * 1024;
 
 const FILE_PREFIX: &str = "wal-";
 
+pub trait WalMetricsRecorder: Send + Sync + std::fmt::Debug {
+    fn record_fsync_duration(&self, _duration: std::time::Duration) {}
+    fn record_bytes_written(&self, _bytes: u64) {}
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct WalMetricsHolder {
+    recorder: std::sync::OnceLock<Arc<dyn WalMetricsRecorder>>,
+}
+
+impl WalMetricsHolder {
+    pub(crate) fn record_fsync_duration(&self, d: std::time::Duration) {
+        if let Some(r) = self.recorder.get() {
+            r.record_fsync_duration(d);
+        }
+    }
+    pub(crate) fn record_bytes_written(&self, n: u64) {
+        if let Some(r) = self.recorder.get() {
+            r.record_bytes_written(n);
+        }
+    }
+    pub(crate) fn attach(&self, recorder: Arc<dyn WalMetricsRecorder>) {
+        let _ = self.recorder.set(recorder);
+    }
+}
+
 #[derive(Debug)]
 pub struct WAL {
     registered_types: HashMap<DurabilityRecordType, String>,
     next_sequence_number: AtomicU64,
     files: Arc<RwLock<Files>>,
     fsync_thread: FsyncThread,
+    metrics: Arc<WalMetricsHolder>,
 }
 
 impl WAL {
@@ -67,13 +94,15 @@ impl WAL {
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
-        let mut fsync_thread = FsyncThread::new(files.clone());
+        let metrics = Arc::new(WalMetricsHolder::default());
+        let mut fsync_thread = FsyncThread::new(files.clone(), metrics.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
             registered_types: HashMap::new(),
             next_sequence_number: AtomicU64::new(next.number()),
             files,
             fsync_thread,
+            metrics,
         })
     }
 
@@ -93,14 +122,20 @@ impl WAL {
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
 
-        let mut fsync_thread = FsyncThread::new(files.clone());
+        let metrics = Arc::new(WalMetricsHolder::default());
+        let mut fsync_thread = FsyncThread::new(files.clone(), metrics.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
             registered_types: HashMap::new(),
             next_sequence_number: AtomicU64::new(next.number()),
             files,
             fsync_thread,
+            metrics,
         })
+    }
+
+    pub fn set_metrics_recorder(&self, recorder: Arc<dyn WalMetricsRecorder>) {
+        self.metrics.attach(recorder);
     }
 
     fn increment(&self) -> DurabilitySequenceNumber {
@@ -138,7 +173,9 @@ impl DurabilityService for WAL {
         let sequence_number = self.increment();
         debug!("Writing unsequenced record with {sequence_number}");
         let raw_record = RawRecord { sequence_number, record_type, bytes: Cow::Borrowed(bytes) };
+        let bytes_len = bytes.len() as u64;
         files.write_record(raw_record)?;
+        self.metrics.record_bytes_written(bytes_len);
         Ok(sequence_number)
     }
 
@@ -148,7 +185,9 @@ impl DurabilityService for WAL {
         let sequence_number = self.previous();
         debug!("Writing unsequenced record with {sequence_number}");
         let raw_record = RawRecord { sequence_number, record_type, bytes: Cow::Borrowed(bytes) };
+        let bytes_len = bytes.len() as u64;
         files.write_record(raw_record)?;
+        self.metrics.record_bytes_written(bytes_len);
         Ok(())
     }
 
@@ -662,6 +701,7 @@ pub struct FsyncThreadContext {
     shutting_down: AtomicBool,
     signalling: [Mutex<Vec<Option<mpsc::Sender<()>>>>; 2],
     current_signal: AtomicU8,
+    metrics: Arc<WalMetricsHolder>,
 }
 
 #[derive(Debug)]
@@ -671,12 +711,13 @@ pub struct FsyncThread {
 }
 
 impl FsyncThread {
-    fn new(files: Arc<RwLock<Files>>) -> Self {
+    fn new(files: Arc<RwLock<Files>>, metrics: Arc<WalMetricsHolder>) -> Self {
         let context = FsyncThreadContext {
             files,
             shutting_down: AtomicBool::new(false),
             signalling: [Mutex::new(Vec::new()), Mutex::new(Vec::new())],
             current_signal: AtomicU8::new(0),
+            metrics,
         };
         Self { handle: None, context: Arc::new(context) }
     }
@@ -723,7 +764,9 @@ impl FsyncThread {
         let vec_lock = context.signalling.get(current_signal as usize).unwrap().lock();
         let mut vec = vec_lock.unwrap();
         if !vec.is_empty() {
+            let started = Instant::now();
             context.files.write().unwrap().sync_all().expect("Expected sync all");
+            context.metrics.record_fsync_duration(started.elapsed());
             while let Some(sender_opt) = vec.pop() {
                 if let Some(sender) = sender_opt {
                     sender.send(()).unwrap();

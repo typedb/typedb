@@ -11,6 +11,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         Arc, Mutex, MutexGuard, RwLock, TryLockError,
+        atomic::{AtomicU64, Ordering},
         mpsc::{SyncSender, sync_channel},
     },
     time::{Duration, Instant},
@@ -24,10 +25,10 @@ use concept::{
     },
 };
 use concurrency::IntervalRunner;
-use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
+use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, HistogramMetrics, SchemaLoadMetrics};
 use durability::{
     DurabilitySequenceNumber, DurabilityServiceError,
-    wal::{WAL, WALError},
+    wal::{WAL, WALError, WalMetricsRecorder},
 };
 use encoding::{
     EncodingKeyspace,
@@ -525,6 +526,31 @@ impl Database<WALClient> {
                 storage_key_count: self.storage.estimate_key_count().expect("Expected storage key count"),
             },
         }
+    }
+
+    pub fn attach_wal_metrics(
+        &self,
+        fsync_histogram: Arc<HistogramMetrics>,
+        bytes_counter: Arc<AtomicU64>,
+    ) {
+        self.storage
+            .durability()
+            .set_metrics_recorder(Arc::new(WalMetricsAdapter { fsync_histogram, bytes_counter }));
+    }
+}
+
+#[derive(Debug)]
+struct WalMetricsAdapter {
+    fsync_histogram: Arc<HistogramMetrics>,
+    bytes_counter: Arc<AtomicU64>,
+}
+
+impl WalMetricsRecorder for WalMetricsAdapter {
+    fn record_fsync_duration(&self, duration: std::time::Duration) {
+        self.fsync_histogram.observe_duration(duration);
+    }
+    fn record_bytes_written(&self, bytes: u64) {
+        self.bytes_counter.fetch_add(bytes, Ordering::Relaxed);
     }
 }
 

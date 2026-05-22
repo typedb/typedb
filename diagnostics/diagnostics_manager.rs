@@ -87,6 +87,13 @@ impl DiagnosticsManager {
         pub fn record_transaction_outcome(&self, database_name: impl AsRef<str> + Hash, kind: LoadKind, outcome: TransactionOutcome);
     }
 
+    pub fn wal_metrics_handles(
+        &self,
+        database_name: impl AsRef<str> + Hash,
+    ) -> (std::sync::Arc<crate::metrics::HistogramMetrics>, std::sync::Arc<std::sync::atomic::AtomicU64>) {
+        self.diagnostics.wal_metrics_handles(database_name)
+    }
+
     pub async fn may_start_reporting(&self) {
         if let Some(reporter) = &self.reporter {
             reporter.may_start().await;

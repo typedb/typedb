@@ -270,6 +270,24 @@ pub fn to_prometheus(
         );
     }
 
+    if !report.wal_fsync_duration.is_empty() {
+        writeln!(out, "\n# HELP typedb_wal_fsync_duration_seconds WAL fsync latency.").unwrap();
+        writeln!(out, "# TYPE typedb_wal_fsync_duration_seconds histogram").unwrap();
+        for entry in &report.wal_fsync_duration {
+            let labels = db_labels(&entry.database.0.to_string(), names, include_database_names);
+            write_histogram_body(&mut out, "typedb_wal_fsync_duration_seconds", &labels, &entry.histogram);
+        }
+    }
+
+    if !report.wal_bytes_written.is_empty() {
+        writeln!(out, "\n# HELP typedb_wal_bytes_written_total Bytes written to the WAL.").unwrap();
+        writeln!(out, "# TYPE typedb_wal_bytes_written_total counter").unwrap();
+        for entry in &report.wal_bytes_written {
+            let labels = db_labels(&entry.database.0.to_string(), names, include_database_names);
+            writeln!(out, "typedb_wal_bytes_written_total{{{}}} {}", labels, entry.value).unwrap();
+        }
+    }
+
     out
 }
 

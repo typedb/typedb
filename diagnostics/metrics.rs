@@ -1163,6 +1163,8 @@ pub(crate) struct DatabaseHistograms {
     transaction_duration: HashMap<LoadKind, HistogramMetrics>,
     queries_per_transaction: HistogramMetrics,
     transaction_lifecycle: TransactionLifecycleCounters,
+    wal_fsync_duration: Arc<HistogramMetrics>,
+    wal_bytes_written: Arc<AtomicU64>,
 }
 
 impl DatabaseHistograms {
@@ -1180,6 +1182,8 @@ impl DatabaseHistograms {
             transaction_duration,
             queries_per_transaction: HistogramMetrics::new_queries_per_transaction(),
             transaction_lifecycle: TransactionLifecycleCounters::new(),
+            wal_fsync_duration: Arc::new(HistogramMetrics::new_duration()),
+            wal_bytes_written: Arc::new(AtomicU64::new(0)),
         }
     }
 
@@ -1199,14 +1203,17 @@ impl DatabaseHistograms {
         self.transaction_lifecycle.record(kind, outcome);
     }
 
-    /// Snapshot all histograms; returns paired (kind, snapshot) lists for the
-    /// per-kind histograms and a single snapshot for queries-per-transaction.
-    /// Exposition iterates the result; no locks are taken here beyond the brief
-    /// per-bucket atomic loads inside `HistogramMetrics::snapshot`.
+    pub fn wal_fsync_duration(&self) -> Arc<HistogramMetrics> {
+        self.wal_fsync_duration.clone()
+    }
+
+    pub fn wal_bytes_written(&self) -> Arc<AtomicU64> {
+        self.wal_bytes_written.clone()
+    }
+
     pub fn snapshot(&self) -> DatabaseHistogramsSnapshot {
         let mut query_duration: Vec<_> =
             self.query_duration.iter().map(|(k, h)| (*k, h.snapshot())).collect();
-        // Stable order so dashboards don't churn with HashMap iteration order.
         query_duration.sort_by_key(|(k, _)| match k {
             QueryType::Read => 0,
             QueryType::Write => 1,
@@ -1224,6 +1231,8 @@ impl DatabaseHistograms {
             transaction_duration,
             queries_per_transaction: self.queries_per_transaction.snapshot(),
             transaction_lifecycle: self.transaction_lifecycle.snapshot(),
+            wal_fsync_duration: self.wal_fsync_duration.snapshot(),
+            wal_bytes_written: self.wal_bytes_written.load(Ordering::Relaxed),
         }
     }
 }
@@ -1234,6 +1243,8 @@ pub struct DatabaseHistogramsSnapshot {
     pub transaction_duration: Vec<(LoadKind, HistogramSnapshot)>,
     pub queries_per_transaction: HistogramSnapshot,
     pub transaction_lifecycle: TransactionLifecycleSnapshot,
+    pub wal_fsync_duration: HistogramSnapshot,
+    pub wal_bytes_written: u64,
 }
 
 // ============================================================================

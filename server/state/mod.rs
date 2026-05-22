@@ -206,12 +206,17 @@ impl ServerState {
         diagnostics_manager: Arc<DiagnosticsManager>,
         database_manager: Arc<DatabaseManager>,
     ) {
-        let metrics = database_manager
+        let user_databases: Vec<_> = database_manager
             .databases()
             .values()
             .filter(|database| DatabaseManager::is_user_database(database.name()))
-            .map(|database| database.get_metrics())
+            .cloned()
             .collect();
+        for database in &user_databases {
+            let (fsync_histogram, bytes_counter) = diagnostics_manager.wal_metrics_handles(database.name());
+            database.attach_wal_metrics(fsync_histogram, bytes_counter);
+        }
+        let metrics = user_databases.iter().map(|database| database.get_metrics()).collect();
         diagnostics_manager.submit_database_metrics(metrics);
     }
 

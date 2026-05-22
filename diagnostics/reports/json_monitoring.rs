@@ -40,6 +40,10 @@ pub(crate) struct JsonMonitoringReport {
     pub queries_per_transaction: Vec<JsonMonitoringHistogramPerDatabase>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub transaction_lifecycle: Vec<JsonMonitoringTransactionLifecycleEntry>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub wal_fsync_duration: Vec<JsonMonitoringHistogramPerDatabase>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub wal_bytes_written: Vec<JsonMonitoringDatabaseCounter>,
 }
 
 #[derive(Debug, Serialize)]
@@ -422,6 +426,14 @@ pub(crate) struct JsonMonitoringHistogramPerDatabase {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub(crate) struct JsonMonitoringDatabaseCounter {
+    #[serde(flatten)]
+    pub database: DatabaseReport,
+    pub value: u64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct JsonMonitoringTransactionLifecycleEntry {
     #[serde(flatten)]
     pub database: DatabaseReport,
@@ -479,6 +491,8 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
     let mut transaction_duration = Vec::new();
     let mut queries_per_transaction = Vec::new();
     let mut transaction_lifecycle = Vec::new();
+    let mut wal_fsync_duration = Vec::new();
+    let mut wal_bytes_written = Vec::new();
     for (hash, snap) in histogram_snapshots {
         let db = DatabaseReport(hash);
         for (kind, hist) in snap.query_duration {
@@ -507,7 +521,6 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
                 histogram: snap.queries_per_transaction.into(),
             });
         }
-        // Lifecycle counters: one row per (database, kind) with non-zero state.
         let lc = &snap.transaction_lifecycle;
         for (i, (kind, started)) in lc.started.iter().enumerate() {
             let committed = lc.committed[i].1;
@@ -525,6 +538,15 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
                 closed,
             });
         }
+        if snap.wal_fsync_duration.count != 0 {
+            wal_fsync_duration.push(JsonMonitoringHistogramPerDatabase {
+                database: db.clone(),
+                histogram: snap.wal_fsync_duration.into(),
+            });
+        }
+        if snap.wal_bytes_written != 0 {
+            wal_bytes_written.push(JsonMonitoringDatabaseCounter { database: db.clone(), value: snap.wal_bytes_written });
+        }
     }
 
     JsonMonitoringReport {
@@ -537,5 +559,7 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
         transaction_duration,
         queries_per_transaction,
         transaction_lifecycle,
+        wal_fsync_duration,
+        wal_bytes_written,
     }
 }
