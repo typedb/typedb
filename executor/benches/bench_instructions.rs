@@ -28,6 +28,7 @@ use concept::{
     type_::{Ordering, OwnerAPI, annotation::AnnotationCardinality, owns::OwnsAnnotation},
 };
 use criterion::{Criterion, SamplingMode, criterion_group, criterion_main};
+use compiler::executable::match_::instructions::{VariableMode, VariableModes};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{HasExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 use ir::{
@@ -139,19 +140,10 @@ fn build_has_executor(
         position_mapping([var_person, var_age], [var_person_type, var_age_type]);
     let sort_by = mapping[&var_person];
 
-    let step = IntersectionStep::new(
-        sort_by,
-        vec![ConstraintInstruction::Has(HasInstruction::new(has, Inputs::None([]), &entry_annotations).map(&mapping))],
-        vec![variable_positions[&var_person], variable_positions[&var_age]],
-        &named_variables,
-        2,
-    );
-    let (instruction, variable_modes) = step.instructions.into_iter().next().unwrap();
-    let has_instruction = match instruction {
-        ConstraintInstruction::Has(h) => h,
-        _ => unreachable!(),
-    };
-
+    let has_instruction = HasInstruction::new(has, Inputs::None([]), &entry_annotations).map(&mapping);
+    let mut variable_modes = VariableModes::new();
+    variable_modes.insert(*mapping.get(&var_person).unwrap(), VariableMode::Output);
+    variable_modes.insert(*mapping.get(&var_age).unwrap(), VariableMode::Output);
     let executor = HasExecutor::new(has_instruction, variable_modes, sort_by, &snapshot, &thing_manager).unwrap();
     let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default());
     (executor, context)
