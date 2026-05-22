@@ -421,62 +421,70 @@ impl TransactionService {
 
         let diagnostics_manager = self.server_state.diagnostics_manager();
         let server_state = self.server_state.clone();
-        // Capture kind + name before the move so we can record the lifecycle
-        // outcome after the spawn returns. NOTE: the spawn's macro pattern
-        // makes success/failure indistinguishable to the post-await code — we
-        // record Committed unconditionally here. Real commit failures are rare
-        // enough that the small over-count on the Committed counter is
-        // acceptable for v0; a follow-up should plumb success through the
-        // spawn so the counter is exact.
         let txn_kind = self.transaction.as_ref().map(|t| t.load_kind());
         let txn_database_name = self.transaction.as_ref().map(|t| t.database_name().to_owned());
         let opened_at = self.opened_at.take();
-        // Bind match to a typed local so the spawn closures' Break(()) inside
-        // each arm can infer ControlFlow<(), ()>; we don't use the value (we
-        // unconditionally return Break(()) at the end) but the type hint is.
+        // Set to true inside the spawn closures only after commit_*_transaction
+        // returns Ok and the response is sent. The respond_* macros early-return
+        // Break from the closure on any failure path, so on Err we never reach
+        // the .store(true) and the outer code below records Closed instead of
+        // Committed.
+        let commit_ok = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let _: ControlFlow<(), ()> = match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
                 respond_error_and_return_break!(responder, TransactionServiceError::CannotCommitReadTransaction {});
             }
-            Transaction::Write(transaction) => spawn(async move {
-                diagnostics_manager.decrement_load_count(
-                    ClientEndpoint::Http,
-                    transaction.database.name(),
-                    LoadKind::WriteTransactions,
-                );
-                unwrap_or_execute_else_respond_error_and_return_break!(
-                    commit_write_transaction(server_state, transaction).await.1,
-                    responder,
-                    |typedb_source| { TransactionServiceError::DataCommitFailed { typedb_source } }
-                );
-                respond_else_return_break!(responder, TransactionServiceResponse::Ok);
-                Break(())
-            })
-            .await
-            .expect("Expected write transaction commit completion"),
-            Transaction::Schema(transaction) => spawn(async move {
-                diagnostics_manager.decrement_load_count(
-                    ClientEndpoint::Http,
-                    transaction.database.name(),
-                    LoadKind::SchemaTransactions,
-                );
-
-                unwrap_or_execute_else_respond_error_and_return_break!(
-                    commit_schema_transaction(server_state, transaction).await.1,
-                    responder,
-                    |typedb_source| { TransactionServiceError::SchemaCommitFailed { typedb_source } }
-                );
-                respond_else_return_break!(responder, TransactionServiceResponse::Ok);
-                Break(())
-            })
-            .await
-            .expect("Expected schema transaction commit completion"),
+            Transaction::Write(transaction) => {
+                let commit_ok = commit_ok.clone();
+                spawn(async move {
+                    diagnostics_manager.decrement_load_count(
+                        ClientEndpoint::Http,
+                        transaction.database.name(),
+                        LoadKind::WriteTransactions,
+                    );
+                    unwrap_or_execute_else_respond_error_and_return_break!(
+                        commit_write_transaction(server_state, transaction).await.1,
+                        responder,
+                        |typedb_source| { TransactionServiceError::DataCommitFailed { typedb_source } }
+                    );
+                    commit_ok.store(true, std::sync::atomic::Ordering::Relaxed);
+                    respond_else_return_break!(responder, TransactionServiceResponse::Ok);
+                    Break(())
+                })
+                .await
+                .expect("Expected write transaction commit completion")
+            }
+            Transaction::Schema(transaction) => {
+                let commit_ok = commit_ok.clone();
+                spawn(async move {
+                    diagnostics_manager.decrement_load_count(
+                        ClientEndpoint::Http,
+                        transaction.database.name(),
+                        LoadKind::SchemaTransactions,
+                    );
+                    unwrap_or_execute_else_respond_error_and_return_break!(
+                        commit_schema_transaction(server_state, transaction).await.1,
+                        responder,
+                        |typedb_source| { TransactionServiceError::SchemaCommitFailed { typedb_source } }
+                    );
+                    commit_ok.store(true, std::sync::atomic::Ordering::Relaxed);
+                    respond_else_return_break!(responder, TransactionServiceResponse::Ok);
+                    Break(())
+                })
+                .await
+                .expect("Expected schema transaction commit completion")
+            }
         };
 
         if let (Some(kind), Some(name)) = (txn_kind, &txn_database_name) {
             let dm = self.server_state.diagnostics_manager();
-            dm.record_transaction_outcome(name, kind, TransactionOutcome::Committed);
+            let outcome = if commit_ok.load(std::sync::atomic::Ordering::Relaxed) {
+                TransactionOutcome::Committed
+            } else {
+                TransactionOutcome::Closed
+            };
+            dm.record_transaction_outcome(name, kind, outcome);
             self.lifecycle_outcome_recorded = true;
             if let Some(start) = opened_at {
                 dm.observe_transaction_duration(name, kind, start.elapsed());
