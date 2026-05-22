@@ -69,6 +69,17 @@ alias(
     })
 )
 
+alias(
+    name = "typedb_loader_artifact",
+    actual = select({
+        "@typedb_bazel_distribution//platform:is_linux_arm64" : "@typedb_loader_artifact_linux-arm64//file",
+        "@typedb_bazel_distribution//platform:is_linux_x86_64" : "@typedb_loader_artifact_linux-x86_64//file",
+        "@typedb_bazel_distribution//platform:is_mac_arm64" : "@typedb_loader_artifact_mac-arm64//file",
+        "@typedb_bazel_distribution//platform:is_mac_x86_64" : "@typedb_loader_artifact_mac-x86_64//file",
+        "@typedb_bazel_distribution//platform:is_windows_x86_64" : "@typedb_loader_artifact_windows-x86_64//file",
+    })
+)
+
 # The directory structure for distribution (Unix)
 pkg_files(
     name = "package-layout-server-files",
@@ -153,11 +164,18 @@ pkg_files(
     attributes = binary_permissions,
 )
 
+artifact_repackage(
+    name = "loader-repackaged",
+    srcs = [":typedb_loader_artifact"],
+    files_to_keep = ["loader"],
+)
+
 pkg_filegroup(
     name = "package-typedb-all",
     srcs = [
         ":package-typedb-server",
         ":console-repackaged",
+        ":loader-repackaged",
     ],
 )
 
