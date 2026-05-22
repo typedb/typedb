@@ -159,8 +159,10 @@ impl ServerMetrics {
                     arch: self.os_arch.clone(),
                     version: self.os_version.clone(),
                 },
-                // Saturating subtraction in case sysinfo briefly reports
-                // available > total during refresh races.
+                // Saturating subtraction: total and available are loaded from
+                // separate atomics, and although they're written under one lock
+                // they're read independently, so a reader can observe a torn pair
+                // across refreshes. Defensive against `available > total`.
                 memory_used_in_bytes: total_memory.saturating_sub(available_memory),
                 memory_available_in_bytes: available_memory,
                 disk_used_in_bytes: disk_total.saturating_sub(disk_available),
@@ -386,6 +388,12 @@ impl ConnectionLoadMetrics {
     /// Current live in-flight counts (not peaks). Feeds the
     /// typedb_transactions_active gauge on the monitoring endpoint. Posthog
     /// uses to_peak_report; the two paths are deliberately separate.
+    ///
+    /// Emits ALL six (client × kind) entries per observed database, including
+    /// zeros — matches the Prometheus `process_*` family's "emit even if
+    /// unsupported/zero, for dashboard uniformity" posture. Cost: 6 × N
+    /// databases of low-cardinality series; the schema_data_count family is
+    /// already in the same neighbourhood.
     pub fn to_active_report(&self) -> ConnectionLoadReport {
         let mut active = ConnectionLoadReport::new();
         for (client, counts) in &self.counts {

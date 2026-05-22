@@ -27,7 +27,7 @@ use sysinfo::{Disks, MemoryRefreshKind, Pid, ProcessRefreshKind, ProcessesToUpda
 #[derive(Debug)]
 pub(crate) struct SystemSampler {
     // Per-process metrics
-    process_cpu_seconds_x1000: AtomicU64,
+    process_cpu_microseconds: AtomicU64,
     process_rss_bytes: AtomicU64,
     process_vsize_bytes: AtomicU64,
     process_open_fds: AtomicU64,
@@ -68,7 +68,7 @@ impl SystemSampler {
         let disks = Disks::new_with_refreshed_list();
 
         let sampler = Self {
-            process_cpu_seconds_x1000: AtomicU64::new(0),
+            process_cpu_microseconds: AtomicU64::new(0),
             process_rss_bytes: AtomicU64::new(0),
             process_vsize_bytes: AtomicU64::new(0),
             process_open_fds: AtomicU64::new(0),
@@ -110,12 +110,18 @@ impl SystemSampler {
             // Integrate cpu_usage% × elapsed-since-previous-refresh. cpu_usage can
             // exceed 100 on multi-core; that's expected — cpu_seconds_total tracks
             // CPU-time, not wall-time, so 200% × 5s = 10 CPU-seconds is correct.
+            //
+            // Accumulate in microseconds (not milliseconds) so an idle process at
+            // e.g. 0.005% CPU still contributes a non-zero delta per refresh and
+            // the counter ticks monotonically. At 15s cadence with millisecond
+            // storage, anything below ~0.007% per refresh floor-rounds to 0 and
+            // never accumulates; microsecond storage cuts that floor by 1000×.
             if let Some(last) = state.last_refresh_at {
                 let elapsed = now.duration_since(last).as_secs_f64();
                 let cpu_pct = process.cpu_usage() as f64;
-                let cpu_millis_delta = ((cpu_pct / 100.0) * elapsed * 1000.0) as u64;
-                if cpu_millis_delta > 0 {
-                    self.process_cpu_seconds_x1000.fetch_add(cpu_millis_delta, Ordering::Relaxed);
+                let cpu_micros_delta = ((cpu_pct / 100.0) * elapsed * 1_000_000.0) as u64;
+                if cpu_micros_delta > 0 {
+                    self.process_cpu_microseconds.fetch_add(cpu_micros_delta, Ordering::Relaxed);
                 }
             }
         }
@@ -135,10 +141,18 @@ impl SystemSampler {
         // remain at 0; consumers should treat 0 as "unsupported on this platform"
         // (the standard Prometheus process_* convention is to emit the line
         // regardless, with 0 for unsupported, to keep dashboards uniform).
+        //
+        // On read failure (e.g. /proc unmounted or limits format changed) we leave
+        // the previous value in place rather than clearing to 0. Stale-but-bounded
+        // is more useful for dashboards than a confusing dip-to-zero.
         #[cfg(target_os = "linux")]
         {
             if let Ok(entries) = std::fs::read_dir("/proc/self/fd") {
-                self.process_open_fds.store(entries.count() as u64, Ordering::Relaxed);
+                // Subtract one for the dirfd that read_dir itself opens to enumerate
+                // /proc/self/fd. That FD is included in the entry list (Linux quirk,
+                // not Rust-specific). Without this we report N+1 every scrape.
+                let count = (entries.count() as u64).saturating_sub(1);
+                self.process_open_fds.store(count, Ordering::Relaxed);
             }
             if let Some(max) = read_max_open_files_linux() {
                 self.process_max_fds.store(max, Ordering::Relaxed);
@@ -159,7 +173,7 @@ impl SystemSampler {
         self.disk_available_bytes.load(Ordering::Relaxed)
     }
     pub(crate) fn process_cpu_seconds_total(&self) -> f64 {
-        self.process_cpu_seconds_x1000.load(Ordering::Relaxed) as f64 / 1000.0
+        self.process_cpu_microseconds.load(Ordering::Relaxed) as f64 / 1_000_000.0
     }
     pub(crate) fn process_resident_memory_bytes(&self) -> u64 {
         self.process_rss_bytes.load(Ordering::Relaxed)
