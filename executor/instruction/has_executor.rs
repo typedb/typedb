@@ -48,7 +48,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-pub(crate) struct HasExecutor {
+pub struct HasExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,
     variable_modes: VariableModes,
@@ -80,7 +80,7 @@ pub(super) const EXTRACT_ATTRIBUTE: HasVariableValueExtractor =
     |(has, _)| VariableValue::Thing(Thing::Attribute(has.attribute()));
 
 impl HasExecutor {
-    pub(crate) fn new<Snapshot: ReadableSnapshot>(
+    pub fn new<Snapshot: ReadableSnapshot>(
         has: HasInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
         sort_by: ExecutorVariable,
@@ -167,6 +167,26 @@ impl HasExecutor {
             owner_cache,
             checker,
         })
+    }
+
+    pub fn drain_count(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: MaybeOwnedRow<'_>,
+        storage_counters: StorageCounters,
+    ) -> Result<usize, Box<ConceptReadError>> {
+        let mut iter = self.get_iterator(context, row, storage_counters)?;
+        let mut count = 0;
+        loop {
+            match iter.peek() {
+                Some(Ok(_)) => {
+                    count += 1;
+                    iter.advance_single()?;
+                }
+                Some(Err(err)) => return Err(err.clone()),
+                None => return Ok(count),
+            }
+        }
     }
 
     pub(crate) fn get_iterator(
