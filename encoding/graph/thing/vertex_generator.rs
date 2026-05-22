@@ -86,11 +86,11 @@ impl ThingVertexGenerator {
             relation_ids: Self::allocate_empty_ids(),
             large_value_hasher,
         };
-        generator.re_seed_from_storage(storage)?;
+        generator.sync_from_storage(storage)?;
         Ok(generator)
     }
 
-    pub fn re_seed_from_storage<D>(&self, storage: Arc<MVCCStorage<D>>) -> Result<(), EncodingError> {
+    pub fn sync_from_storage<D>(&self, storage: Arc<MVCCStorage<D>>) -> Result<(), EncodingError> {
         let read_snapshot = storage.clone().open_snapshot_read();
         let entity_types = read_snapshot
             .iterate_range(

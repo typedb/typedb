@@ -471,7 +471,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
 }
 
 #[test]
-fn re_seed_from_storage_lifts_counters_to_match_storage() {
+fn sync_from_storage_lifts_counters_to_match_storage() {
     init_logging();
     let storage_path = create_tmp_storage_dir();
     let type_id = TypeID::new(0);
@@ -499,7 +499,7 @@ fn re_seed_from_storage_lifts_counters_to_match_storage() {
         snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
         let stale_generator = ThingVertexGenerator::new();
-        stale_generator.re_seed_from_storage(storage.clone()).unwrap();
+        stale_generator.sync_from_storage(storage.clone()).unwrap();
 
         let mut snapshot = storage.clone().open_snapshot_write();
         for _ in 0..2 {
@@ -526,9 +526,9 @@ fn re_seed_from_storage_lifts_counters_to_match_storage() {
     assert_eq!(stale_relation.object_id().as_u64(), 4, "stale generator must refer to the partially counted sete");
     drop(snapshot);
 
-    stale_generator.re_seed_from_storage(storage.clone()).unwrap();
+    stale_generator.sync_from_storage(storage.clone()).unwrap();
     let stale_generator_2 = ThingVertexGenerator::new();
-    stale_generator_2.re_seed_from_storage(storage.clone()).unwrap();
+    stale_generator_2.sync_from_storage(storage.clone()).unwrap();
 
     let mut snapshot = storage.clone().open_snapshot_write();
     let next_entity = stale_generator.create_entity(type_id, &mut snapshot);
@@ -551,7 +551,7 @@ fn re_seed_from_storage_lifts_counters_to_match_storage() {
 }
 
 #[test]
-fn re_seed_from_storage_never_lowers_a_counter() {
+fn sync_from_storage_never_lowers_a_counter() {
     init_logging();
     let storage_path = create_tmp_storage_dir();
     let type_id = TypeID::new(0);
@@ -582,7 +582,7 @@ fn re_seed_from_storage_never_lowers_a_counter() {
     drop(snapshot);
 
     // Re-seed from storage — would set counter to 3 if it was broken
-    generator.re_seed_from_storage(storage.clone()).unwrap();
+    generator.sync_from_storage(storage.clone()).unwrap();
 
     let mut snapshot = storage.clone().open_snapshot_write();
     let next = generator.create_entity(type_id, &mut snapshot);

@@ -292,11 +292,11 @@ impl DatabaseManager {
         self.databases.read().unwrap()
     }
 
-    pub fn sync_all_for_writes(&self) -> Result<(), DatabaseOpenError> {
+    pub fn prepare_for_writes(&self) -> Result<(), DatabaseOpenError> {
         for (name, database) in self.databases.read().unwrap().iter() {
             database
-                .sync_for_writes()
-                .map_err(|source| DatabaseOpenError::SyncForWrites { name: name.clone(), source })?;
+                .prepare_for_writes()
+                .map_err(|source| DatabaseOpenError::PrepareForWrites { name: name.clone(), source })?;
         }
         Ok(())
     }

@@ -70,7 +70,7 @@ pub trait DatabaseOperator: Debug + Send + Sync {
 
     async fn delete(&self, name: &str) -> Result<(), ArcServerStateError>;
 
-    async fn sync_all_for_writes(&self) -> Result<(), DatabaseOpenError>;
+    async fn prepare_for_writes(&self) -> Result<(), DatabaseOpenError>;
 
     fn manager(&self) -> Arc<DatabaseManager>;
 }
@@ -227,11 +227,11 @@ impl DatabaseOperator for LocalDatabaseOperator {
             .map_err(|err| arc_server_state_err(LocalServerStateError::DatabaseCannotBeDeleted { typedb_source: err }))
     }
 
-    async fn sync_all_for_writes(&self) -> Result<(), DatabaseOpenError> {
+    async fn prepare_for_writes(&self) -> Result<(), DatabaseOpenError> {
         let database_manager = self.database_manager.clone();
-        tokio::task::spawn_blocking(move || database_manager.sync_all_for_writes())
+        tokio::task::spawn_blocking(move || database_manager.prepare_for_writes())
             .await
-            .expect("sync_all_for_writes task panicked")
+            .expect("prepare_for_writes task panicked")
     }
 
     fn manager(&self) -> Arc<DatabaseManager> {

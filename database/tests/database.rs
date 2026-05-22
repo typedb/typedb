@@ -20,15 +20,15 @@ fn create_delete_database() {
 }
 
 #[test]
-fn sync_all_for_writes_iterates_every_loaded_database() {
+fn prepare_for_writes_iterates_every_loaded_database() {
     init_logging();
-    let data_dir = create_tmp_dir("sync_all_for_writes");
+    let data_dir = create_tmp_dir("prepare_for_writes");
     let dbm = DatabaseManager::new(&data_dir).expect("DatabaseManager::new");
     for name in ["alpha", "beta", "gamma"] {
         dbm.put_database_unrestricted(name).expect("put_database");
     }
 
-    dbm.sync_all_for_writes().expect("sync_all_for_writes on freshly created databases must succeed");
+    dbm.prepare_for_writes().expect("prepare_for_writes on freshly created databases must succeed");
 
     for name in ["alpha", "beta", "gamma"] {
         let db = dbm.database_unrestricted(name).expect("database still resolvable");
