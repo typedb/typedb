@@ -9,6 +9,9 @@
 use std::{
     borrow::Cow,
     collections::HashMap,
+    ffi::c_int,
+    fs::File,
+    path::Path,
     sync::{Arc, OnceLock},
 };
 
@@ -28,7 +31,7 @@ use concept::{
     thing::object::ObjectAPI,
     type_::{Ordering, OwnerAPI, annotation::AnnotationCardinality, owns::OwnsAnnotation},
 };
-use criterion::{Criterion, SamplingMode, criterion_group, criterion_main};
+use criterion::{Criterion, SamplingMode, criterion_group, criterion_main, profiler::Profiler};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{HasExecutor, HasReverseExecutor, TupleIterator, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
 use ir::{
@@ -36,6 +39,7 @@ use ir::{
     pipeline::{ParameterRegistry, block::Block},
     translation::PipelineTranslationContext,
 };
+use pprof::ProfilerGuard;
 use resource::profile::{CommitProfile, StorageCounters};
 use storage::{MVCCStorage, durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::init_logging;
@@ -234,9 +238,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.sampling_mode(SamplingMode::Linear);
     group.bench_function("single_type", |b| {
         b.iter(|| {
-            let iter = has_exec
-                .get_iterator(&has_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
-                .unwrap();
+            let iter = has_exec.get_iterator(&has_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED).unwrap();
             assert_count(iter, count_single);
         })
     });
@@ -263,5 +265,43 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, criterion_benchmark);
+struct FlamegraphProfiler<'a> {
+    frequency: c_int,
+    active_profiler: Option<ProfilerGuard<'a>>,
+}
+
+impl FlamegraphProfiler<'_> {
+    fn new(frequency: c_int) -> Self {
+        Self { frequency, active_profiler: None }
+    }
+}
+
+impl Profiler for FlamegraphProfiler<'_> {
+    fn start_profiling(&mut self, _benchmark_id: &str, _benchmark_dir: &Path) {
+        self.active_profiler = Some(ProfilerGuard::new(self.frequency).unwrap());
+    }
+
+    fn stop_profiling(&mut self, _benchmark_id: &str, benchmark_dir: &Path) {
+        std::fs::create_dir_all(benchmark_dir).unwrap();
+        let flamegraph_path = benchmark_dir.join("flamegraph.svg");
+        let flamegraph_file = File::create(&flamegraph_path).expect("create flamegraph.svg");
+        if let Some(profiler) = self.active_profiler.take() {
+            profiler.report().build().unwrap().flamegraph(flamegraph_file).expect("write flamegraph");
+            // Bazel runs the bench inside the runfiles tree; log the absolute path so the user
+            // can find the SVG without digging through bazel-out.
+            let absolute = flamegraph_path.canonicalize().unwrap_or(flamegraph_path);
+            eprintln!("[flamegraph] wrote {}", absolute.display());
+        }
+    }
+}
+
+fn profiled() -> Criterion {
+    Criterion::default().with_profiler(FlamegraphProfiler::new(997))
+}
+
+criterion_group!(
+    name = benches;
+    config = profiled();
+    targets = criterion_benchmark
+);
 criterion_main!(benches);
