@@ -278,7 +278,7 @@ impl StructIndexEntry<'static> {
             Value::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
             Value::Date(value) => buf.extend_from_slice(&DateBytes::build(*value).bytes()),
             Value::DateTime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
-            Value::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
+            Value::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(**value).bytes()),
             Value::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
             Value::String(value) => {
                 let string_bytes = StringBytes::<0>::build_ref(value);

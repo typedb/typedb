@@ -41,11 +41,13 @@ pub enum Value<'a> {
     Decimal(Decimal),
     Date(NaiveDate),
     DateTime(NaiveDateTime),
-    DateTimeTZ(DateTime<TimeZone>),
+    // Boxed: chrono::DateTime<TimeZone> is 48 bytes — the largest fixed-size variant. Boxing
+    // drops Value's max-variant size to Cow<'a, str> at 24 bytes. Rare variant; alloc cost
+    // only paid by datetime-with-timezone values.
+    DateTimeTZ(Box<DateTime<TimeZone>>),
     Duration(Duration),
     String(Cow<'a, str>),
-    // Boxed so Value isn't sized for the 96-byte StructValue (rare variant). With this box,
-    // Value's max variant is DateTime<TimeZone> at 48 bytes.
+    // Boxed so Value isn't sized for the 96-byte StructValue (rare variant).
     Struct(Box<Cow<'a, StructValue<'static>>>),
 }
 
@@ -125,7 +127,7 @@ impl<'a> Value<'a> {
             Value::Decimal(decimal) => Value::Decimal(decimal),
             Value::Date(date) => Value::Date(date),
             Value::DateTime(date_time) => Value::DateTime(date_time),
-            Value::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
+            Value::DateTimeTZ(ref date_time_tz) => Value::DateTimeTZ(Box::new(**date_time_tz)),
             Value::Duration(duration) => Value::Duration(duration),
             Value::String(ref string) => Value::String(Cow::Borrowed(string.as_ref())),
             Value::Struct(ref struct_) => Value::Struct(Box::new(Cow::Borrowed(struct_.as_ref().as_ref()))),
@@ -176,7 +178,7 @@ impl<'a> Value<'a> {
 
     pub fn unwrap_date_time_tz(self) -> DateTime<TimeZone> {
         match self {
-            Self::DateTimeTZ(date_time_tz) => date_time_tz,
+            Self::DateTimeTZ(date_time_tz) => *date_time_tz,
             _ => panic!("Cannot unwrap DateTimeTZ if not a datetime-tz value."),
         }
     }
@@ -412,7 +414,7 @@ impl ValueEncodable for Value<'_> {
 
     fn encode_date_time_tz(&self) -> DateTimeTZBytes {
         match self {
-            &Self::DateTimeTZ(date_time_tz) => DateTimeTZBytes::build(date_time_tz),
+            Self::DateTimeTZ(date_time_tz) => DateTimeTZBytes::build(**date_time_tz),
             _ => panic!("Cannot encoded non-datetime as DateTimeBytes"),
         }
     }
@@ -600,13 +602,13 @@ impl<'a> NativeValueConvertible<'a> for DateTime<TimeZone> {
 
     fn from_db_value(value: Value<'_>) -> Result<Self, ()> {
         match value {
-            Value::DateTimeTZ(value) => Ok(value),
+            Value::DateTimeTZ(value) => Ok(*value),
             _ => Err(()),
         }
     }
 
     fn to_db_value(self) -> Value<'static> {
-        Value::DateTimeTZ(self)
+        Value::DateTimeTZ(Box::new(self))
     }
 }
 

@@ -162,10 +162,10 @@ fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<Stru
                 DateTimeBytes::new(read_bytes_increment_offset::<{ DateTimeBytes::ENCODED_LENGTH }>(offset, buf)?)
                     .as_naive_date_time(),
             ),
-            ValueTypeCategory::DateTimeTZ => Value::DateTimeTZ(
+            ValueTypeCategory::DateTimeTZ => Value::DateTimeTZ(Box::new(
                 DateTimeTZBytes::new(read_bytes_increment_offset::<{ DateTimeTZBytes::ENCODED_LENGTH }>(offset, buf)?)
                     .as_date_time(),
-            ),
+            )),
             ValueTypeCategory::Duration => Value::Duration(
                 DurationBytes::new(read_bytes_increment_offset::<{ DurationBytes::ENCODED_LENGTH }>(offset, buf)?)
                     .as_duration(),

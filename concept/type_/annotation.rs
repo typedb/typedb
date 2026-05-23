@@ -1152,7 +1152,7 @@ mod serialize_annotation {
                 Value::DateTime(DateTimeBytes::new(bytes.try_into().unwrap()).as_naive_date_time())
             }
             ValueTypeCategory::DateTimeTZ => {
-                Value::DateTimeTZ(DateTimeTZBytes::new(bytes.try_into().unwrap()).as_date_time())
+                Value::DateTimeTZ(Box::new(DateTimeTZBytes::new(bytes.try_into().unwrap()).as_date_time()))
             }
             ValueTypeCategory::Duration => Value::Duration(DurationBytes::new(bytes.try_into().unwrap()).as_duration()),
             ValueTypeCategory::String => Value::String(Cow::Owned(
