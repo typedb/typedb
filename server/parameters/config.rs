@@ -146,11 +146,6 @@ pub struct Reporting {
 pub struct Monitoring {
     pub enabled: bool,
     pub port: u16,
-    /// When true (the default), Prometheus exposition includes the human database
-    /// name as the `database` label alongside `database_id` (the hash). When false,
-    /// only the hash is emitted — for multi-tenant deployments where database names
-    /// may be customer-identifying and scrapes leave the operator trust boundary.
-    /// Posthog reporting is unaffected; it always uses the hash.
     pub include_database_names: bool,
 }
 

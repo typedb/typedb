@@ -44,6 +44,7 @@ pub trait WalMetricsRecorder: Send + Sync + std::fmt::Debug {
     fn record_bytes_written(&self, _bytes: u64) {}
 }
 
+// USER COMMENT: just call this WalMetrics
 #[derive(Debug, Default)]
 pub(crate) struct WalMetricsHolder {
     recorder: std::sync::OnceLock<Arc<dyn WalMetricsRecorder>>,

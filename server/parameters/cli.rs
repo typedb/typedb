@@ -102,7 +102,7 @@ pub struct CLIArgs {
 
     /// Include human database names as the `database` label in /diagnostics
     /// (alongside `database_id`, the stable hash). Default: true. Set to false in
-    /// multi-tenant deployments where database names may be customer-identifying
+    /// deployments where database names may be identifiable data
     /// and the Prometheus scrape leaves the operator's trust boundary; Posthog
     /// reporting is hash-only regardless of this setting.
     #[arg(long = "diagnostics.monitoring.include-database-names")]

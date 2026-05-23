@@ -59,6 +59,9 @@ impl ServerState {
         shutdown_receiver: Receiver<()>,
         background_task_spawner: TokioTaskSpawner,
     ) -> Result<ServerStateBuilder, ServerOpenError> {
+
+        // USER COMMENT: I think it makes sense to initialize the diagnostics manager first, then pass it into the database manager
+        //       Then, during the open of a database, we can pass in required Metrics objects instead of 'attaching' it later, which is a weird pattern
         let database_manager = DatabaseManager::new(&config.storage.data_directory)
             .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
         let token_manager = Arc::new(
@@ -83,7 +86,9 @@ impl ServerState {
         // first /diagnostics scrape is never blank, even if it arrives in the
         // millisecond between IntervalRunner::new returning and the background
         // thread executing its first action().
-        // TODO: verify with georgii we want this?
+        //
+        // USER COMMENT: verify that we need this - the IntervalRunner::new runs immediately (initial delay 0) right? If yes, we can delete this
+        //
         ServerState::synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone());
         let database_diagnostics_updater = IntervalRunner::new(
             {
@@ -212,6 +217,7 @@ impl ServerState {
             .filter(|database| DatabaseManager::is_user_database(database.name()))
             .cloned()
             .collect();
+        // USER COMMENT: please analyze and let me know if it makes sense to push the WAL metrics into the DatabaseMetrics, so this doesn't have to be an external logical flow
         for database in &user_databases {
             let (fsync_histogram, bytes_counter) = diagnostics_manager.wal_metrics_handles(database.name());
             database.attach_wal_metrics(fsync_histogram, bytes_counter);

@@ -141,6 +141,12 @@ pub(crate) struct TransactionService {
     close_sender: Sender<()>,
     close_receiver: Receiver<()>,
 
+
+    // USER COMMENT: I don't like how random/scattered these metrics informations are.
+    //               Let's try creating a QueryMetrics struct, holding an active_write_query_metrics and using it for reads as well, if that makes sense
+    //               And for the transaction level lets keep TransactionMetrics struct
+    //               assess my idea first, then give feedback
+
     opened_at: Option<Instant>,
     lifecycle_outcome_recorded: bool,
     query_count: u64,
@@ -897,6 +903,7 @@ impl TransactionService {
             });
             return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
         }
+        self.query_count += 1;
 
         // Count dispatched queries before parsing — failed-parse queries still
         // count, matching n+1 detection semantics.
@@ -961,12 +968,6 @@ impl TransactionService {
                         spawn_blocking(move || execute_schema_query(schema_transaction, query, source_query))
                             .await
                             .expect("Expected schema query execution finishing");
-                    let elapsed = started.elapsed();
-                    self.server_state.diagnostics_manager().observe_query_duration(
-                        &database_name,
-                        diagnostics::metrics::QueryType::Schema,
-                        elapsed,
-                    );
                     self.transaction = Some(Transaction::Schema(transaction));
                     let message_ok_done =
                         result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
@@ -1427,8 +1428,7 @@ impl TransactionService {
                         first_observation_at, diagnostics_manager, database_name);
                         return;
                     }
-                }
-            }
+                }}
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
