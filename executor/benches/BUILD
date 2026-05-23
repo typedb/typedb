@@ -28,6 +28,7 @@ rust_test(
         "//util/test:test_utils",
 
         "@crates//:criterion",
+        "@crates//:pprof",
     ],
     use_libtest_harness = False,
 )
