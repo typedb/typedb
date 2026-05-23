@@ -8,6 +8,15 @@ package(default_visibility = ["//visibility:public",])
 
 # To run this via Bazel, Criterion must be provided the --bench argument:
 #   bazel run --compilation_mode=opt //executor/benches:bench_instructions -- --bench
+#
+# To run a single bench function, append a filter pattern:
+#   bazel run --compilation_mode=opt //executor/benches:bench_instructions -- --bench "has_reverse_unbound/multi_type"
+#
+# To generate a flamegraph instead of timing, pass --profile-time <seconds>.
+# Criterion will run each matched bench under pprof's SIGPROF sampler and write
+# a flamegraph.svg per bench function.
+#   bazel run --compilation_mode=opt //executor/benches:bench_instructions \
+#       -- --bench --profile-time 30 "has_reverse_unbound/multi_type"
 rust_test(
     name = "bench_instructions",
     srcs = glob([
