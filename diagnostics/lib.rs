@@ -293,8 +293,8 @@ impl Diagnostics {
         to_monitoring_json(self)
     }
 
-    pub fn to_monitoring_prometheus(&self, include_database_names: bool) -> String {
-        to_monitoring_prometheus(self, include_database_names)
+    pub fn to_monitoring_prometheus(&self) -> String {
+        to_monitoring_prometheus(self)
     }
 
     pub fn to_posthog_reporting_json_against_snapshot(&self, api_key: &str) -> JSONValue {

@@ -118,11 +118,7 @@ impl DiagnosticsConfig {
     pub fn enabled() -> Self {
         Self {
             reporting: Reporting { report_errors: true, report_metrics: true },
-            monitoring: Monitoring {
-                enabled: true,
-                port: MONITORING_DEFAULT_PORT,
-                include_database_names: true,
-            },
+            monitoring: Monitoring { enabled: true, port: MONITORING_DEFAULT_PORT },
         }
     }
 }
@@ -146,7 +142,6 @@ pub struct Reporting {
 pub struct Monitoring {
     pub enabled: bool,
     pub port: u16,
-    pub include_database_names: bool,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -273,7 +268,6 @@ impl ConfigBuilder {
             diagnostics_reporting_errors,
             diagnostics_monitoring_enabled,
             diagnostics_monitoring_port,
-            diagnostics_monitoring_include_database_names,
             development_mode_enabled,
         } = cliargs;
         let Self { config, raw_yaml: _ } = self;
@@ -297,7 +291,6 @@ impl ConfigBuilder {
             config.diagnostics.reporting.report_errors => diagnostics_reporting_errors;
             config.diagnostics.monitoring.enabled => diagnostics_monitoring_enabled;
             config.diagnostics.monitoring.port => diagnostics_monitoring_port;
-            config.diagnostics.monitoring.include_database_names => diagnostics_monitoring_include_database_names;
 
             config.development_mode.enabled => development_mode_enabled;
         }

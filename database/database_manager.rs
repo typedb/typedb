@@ -8,10 +8,18 @@ use std::{
     collections::HashMap,
     fs,
     path::{Path, PathBuf},
-    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    sync::{
+        Arc, RwLock, RwLockReadGuard, RwLockWriteGuard,
+        atomic::{AtomicU64, Ordering},
+    },
 };
 
 use cache::CACHE_DB_NAME_PREFIX;
+use diagnostics::{
+    diagnostics_manager::DiagnosticsManager,
+    metrics::HistogramMetrics,
+};
+use durability::wal::{NoopWalMetrics, WalMetrics};
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
 use tracing::{Level, debug, event, warn};
@@ -27,24 +35,59 @@ pub struct DatabaseManager {
     data_directory: PathBuf,
     import_directory: PathBuf,
     databases: Databases,
+    diagnostics_manager: Arc<DiagnosticsManager>,
+}
+
+#[derive(Debug)]
+struct WalMetricsAdapter {
+    fsync_histogram: Arc<HistogramMetrics>,
+    bytes_counter: Arc<AtomicU64>,
+}
+
+impl WalMetrics for WalMetricsAdapter {
+    fn record_fsync_duration(&self, duration: std::time::Duration) {
+        self.fsync_histogram.observe_duration(duration);
+    }
+    fn record_bytes_written(&self, bytes: u64) {
+        self.bytes_counter.fetch_add(bytes, Ordering::Relaxed);
+    }
 }
 
 impl DatabaseManager {
     const IMPORT_DIRECTORY_NAME: &'static str = concat!(internal_database_prefix!(), "import");
 
-    pub fn new(data_directory: impl AsRef<Path>) -> Result<Arc<Self>, DatabaseOpenError> {
+    fn wal_metrics_for(&self, name: &str) -> Arc<dyn WalMetrics> {
+        Self::wal_metrics_via(&self.diagnostics_manager, name)
+    }
+
+    fn wal_metrics_via(diagnostics_manager: &DiagnosticsManager, name: &str) -> Arc<dyn WalMetrics> {
+        // Internal databases are excluded from the user-facing diagnostics surface
+        // (matches the is_user_database filter applied at submit_database_metrics).
+        if Self::is_internal_database(name) {
+            return Arc::new(NoopWalMetrics);
+        }
+        let (fsync_histogram, bytes_counter) = diagnostics_manager.wal_metrics_handles(name);
+        Arc::new(WalMetricsAdapter { fsync_histogram, bytes_counter })
+    }
+
+    pub fn new(
+        data_directory: impl AsRef<Path>,
+        diagnostics_manager: Arc<DiagnosticsManager>,
+    ) -> Result<Arc<Self>, DatabaseOpenError> {
         let data_directory = data_directory.as_ref().to_owned();
         let import_directory = data_directory.join(Self::IMPORT_DIRECTORY_NAME);
 
-        let databases = RwLock::new(Self::initialise_databases(&data_directory, &import_directory)?);
+        let databases =
+            RwLock::new(Self::initialise_databases(&data_directory, &import_directory, &diagnostics_manager)?);
         Self::cleanup_import_directory(&import_directory)?;
 
-        Ok(Arc::new(Self { data_directory, import_directory, databases }))
+        Ok(Arc::new(Self { data_directory, import_directory, databases, diagnostics_manager }))
     }
 
     fn initialise_databases(
         data_directory: &PathBuf,
         import_directory: &PathBuf,
+        diagnostics_manager: &Arc<DiagnosticsManager>,
     ) -> Result<DatabasesMap, DatabaseOpenError> {
         let entries = fs::read_dir(data_directory).map_err(|error| DatabaseOpenError::DirectoryRead {
             name: Self::file_name_lossy(data_directory),
@@ -76,7 +119,8 @@ impl DatabaseManager {
                 continue;
             }
 
-            let database = match Database::<WALClient>::open(&entry_path) {
+            let wal_metrics = Self::wal_metrics_via(diagnostics_manager, &database_name);
+            let database = match Database::<WALClient>::open(&entry_path, wal_metrics) {
                 Ok(database) => database,
                 Err(DatabaseOpenError::NotADatabase { .. }) => {
                     warn!("{entry_path:?} is not a database, skipping");
@@ -314,12 +358,12 @@ impl DatabaseManager {
     }
 
     fn new_public_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.data_directory.join(name))
+        Database::<WALClient>::open(&self.data_directory.join(name), self.wal_metrics_for(name))
             .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 
     fn new_imported_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.import_directory.join(name))
+        Database::<WALClient>::open(&self.import_directory.join(name), self.wal_metrics_for(name))
             .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 

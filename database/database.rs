@@ -11,7 +11,6 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         Arc, Mutex, MutexGuard, RwLock, TryLockError,
-        atomic::{AtomicU64, Ordering},
         mpsc::{SyncSender, sync_channel},
     },
     time::{Duration, Instant},
@@ -25,10 +24,10 @@ use concept::{
     },
 };
 use concurrency::IntervalRunner;
-use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, HistogramMetrics, SchemaLoadMetrics};
+use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
 use durability::{
     DurabilitySequenceNumber, DurabilityServiceError,
-    wal::{WAL, WALError, WalMetricsRecorder},
+    wal::{WAL, WALError, WalMetrics},
 };
 use encoding::{
     EncodingKeyspace,
@@ -247,16 +246,27 @@ impl<D: DurabilityClient> Database<D> {
 }
 
 impl Database<WALClient> {
-    pub fn open(path: &Path) -> Result<Database<WALClient>, DatabaseOpenError> {
+    pub fn open(
+        path: &Path,
+        wal_metrics: Arc<dyn WalMetrics>,
+    ) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::InvalidUnicodeName;
 
         let file_name = path.file_name().unwrap();
         let name = file_name.to_str().ok_or_else(|| InvalidUnicodeName { name: file_name.to_owned() })?;
 
-        if path.exists() { Self::load(path, name) } else { Self::create(path, name) }
+        if path.exists() {
+            Self::load(path, name, wal_metrics)
+        } else {
+            Self::create(path, name, wal_metrics)
+        }
     }
 
-    fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
+    fn create(
+        path: &Path,
+        name: impl AsRef<str>,
+        wal_metrics: Arc<dyn WalMetrics>,
+    ) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
             DirectoryCreate, Encoding, FunctionCacheInitialise, StorageOpen, TypeCacheInitialise, WALOpen,
         };
@@ -265,7 +275,7 @@ impl Database<WALClient> {
 
         fs::create_dir(path).map_err(|source| DirectoryCreate { name: name.to_string(), source: Arc::new(source) })?;
 
-        let wal = WAL::create(path).map_err(|source| WALOpen { source })?;
+        let wal = WAL::create(path, wal_metrics).map_err(|source| WALOpen { source })?;
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
 
@@ -321,7 +331,11 @@ impl Database<WALClient> {
         })
     }
 
-    fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
+    fn load(
+        path: &Path,
+        name: impl AsRef<str>,
+        wal_metrics: Arc<dyn WalMetrics>,
+    ) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
             CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, NotADatabase, StatisticsInitialise,
             StorageOpen, TypeCacheInitialise, WALOpen,
@@ -336,7 +350,7 @@ impl Database<WALClient> {
         );
 
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
-        let wal = match WAL::load(path) {
+        let wal = match WAL::load(path, wal_metrics) {
             Ok(wal) => wal,
             Err(DurabilityServiceError::WAL { source: WALError::LoadDirectoryMissing { .. } }) => {
                 return Err(NotADatabase { name: name.to_owned() });
@@ -526,31 +540,6 @@ impl Database<WALClient> {
                 storage_key_count: self.storage.estimate_key_count().expect("Expected storage key count"),
             },
         }
-    }
-
-    pub fn attach_wal_metrics(
-        &self,
-        fsync_histogram: Arc<HistogramMetrics>,
-        bytes_counter: Arc<AtomicU64>,
-    ) {
-        self.storage
-            .durability()
-            .set_metrics_recorder(Arc::new(WalMetricsAdapter { fsync_histogram, bytes_counter }));
-    }
-}
-
-#[derive(Debug)]
-struct WalMetricsAdapter {
-    fsync_histogram: Arc<HistogramMetrics>,
-    bytes_counter: Arc<AtomicU64>,
-}
-
-impl WalMetricsRecorder for WalMetricsAdapter {
-    fn record_fsync_duration(&self, duration: std::time::Duration) {
-        self.fsync_histogram.observe_duration(duration);
-    }
-    fn record_bytes_written(&self, bytes: u64) {
-        self.bytes_counter.fetch_add(bytes, Ordering::Relaxed);
     }
 }
 

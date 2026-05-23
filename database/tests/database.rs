@@ -12,7 +12,7 @@ use test_utils::{create_tmp_dir, create_tmp_storage_dir, init_logging};
 fn create_delete_database() {
     init_logging();
     let database_path = create_tmp_storage_dir();
-    let db_result = Database::<WALClient>::open(&database_path.join("create_delete"));
+    let db_result = Database::<WALClient>::open(&database_path.join("create_delete", std::sync::Arc::new(durability::wal::NoopWalMetrics)));
     assert!(db_result.is_ok(), "{:?}", db_result.unwrap_err());
     let db = db_result.unwrap();
     let delete_result = db.delete();

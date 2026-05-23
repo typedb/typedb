@@ -121,7 +121,7 @@ fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WALCl
         MVCCStorage::create::<TestKeyspaceSet>(
             "storage_bench",
             storage_path,
-            WALClient::new(WAL::create(storage_path).unwrap()),
+            WALClient::new(WAL::create(storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap()),
         )
         .unwrap(),
     );

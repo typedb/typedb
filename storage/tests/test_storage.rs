@@ -124,7 +124,7 @@ fn create_reopen() {
 
     {
         let storage =
-            load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint))
+            load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap(), Some(checkpoint))
                 .unwrap();
         let items = storage
             .iterate_keyspace_range(

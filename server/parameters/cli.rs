@@ -100,14 +100,6 @@ pub struct CLIArgs {
     #[arg(long = "diagnostics.monitoring.port")]
     pub diagnostics_monitoring_port: Option<u16>,
 
-    /// Include human database names as the `database` label in /diagnostics
-    /// (alongside `database_id`, the stable hash). Default: true. Set to false in
-    /// deployments where database names may be identifiable data
-    /// and the Prometheus scrape leaves the operator's trust boundary; Posthog
-    /// reporting is hash-only regardless of this setting.
-    #[arg(long = "diagnostics.monitoring.include-database-names")]
-    pub diagnostics_monitoring_include_database_names: Option<bool>,
-
     /// Enable development mode for testing setups. Note that running TypeDB in development mode
     /// may result in error reporting limitations (obstructing maintenance and support), additional
     /// logging, restricted functionalities, and reduced performance

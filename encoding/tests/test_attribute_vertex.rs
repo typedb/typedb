@@ -424,7 +424,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     let storage_path = create_tmp_storage_dir();
     let type_id = TypeID::new(0);
     {
-        let wal = WAL::create(&storage_path).unwrap();
+        let wal = WAL::create(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
@@ -442,7 +442,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     }
 
     for i in 0..5 {
-        let wal = WAL::load(&storage_path).unwrap();
+        let wal = WAL::load(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
                 .unwrap(),
@@ -456,7 +456,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     }
 
     for i in 0..5 {
-        let wal = WAL::load(&storage_path).unwrap();
+        let wal = WAL::load(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
                 .unwrap(),

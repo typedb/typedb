@@ -12,21 +12,13 @@ use crate::{
     },
 };
 
-pub fn to_monitoring_prometheus(diagnostics: &Diagnostics, include_database_names: bool) -> String {
-    let names = if include_database_names { diagnostics.database_names_snapshot() } else { HashMap::new() };
-    to_prometheus(to_monitoring_report(diagnostics), &names, include_database_names)
+pub fn to_monitoring_prometheus(diagnostics: &Diagnostics) -> String {
+    to_prometheus(to_monitoring_report(diagnostics), &diagnostics.database_names_snapshot())
 }
 
-/// Render a `database` label fragment. When `include_database_names` is false,
-/// emits only `database="<hash>"` for backward compatibility with the original 3.x
-/// hash-only exposition format — no human name is included and no `database_id`
-/// label appears either (callers that scrape with the flag off should not have
-/// to learn a new label name). When true, emits `database="<name>", database_id="<hash>"`
-/// (falling back to hash for `database` if the name hasn't been observed yet).
-fn db_labels(hash_str: &str, names: &HashMap<DatabaseHash, String>, include_database_names: bool) -> String {
-    if !include_database_names {
-        return format!("database=\"{}\"", hash_str);
-    }
+/// Emits `database="<name>", database_id="<hash>"`. If the name hasn't been
+/// observed yet (transient at startup), falls back to the hash for both labels.
+fn db_labels(hash_str: &str, names: &HashMap<DatabaseHash, String>) -> String {
     let hash_u64 = hash_str.parse::<u64>().ok();
     match hash_u64.and_then(|h| names.get(&h)) {
         Some(name) => format!("database=\"{}\", database_id=\"{}\"", name, hash_str),
@@ -34,11 +26,7 @@ fn db_labels(hash_str: &str, names: &HashMap<DatabaseHash, String>, include_data
     }
 }
 
-pub fn to_prometheus(
-    report: JsonMonitoringReport,
-    names: &HashMap<DatabaseHash, String>,
-    include_database_names: bool,
-) -> String {
+pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash, String>) -> String {
     use std::fmt::Write;
 
     let mut out = String::new();
@@ -110,7 +98,7 @@ pub fn to_prometheus(
 
     writeln!(out, "\n# TYPE typedb_schema_data_count gauge").unwrap();
     for db in &report.load {
-        let labels = db_labels(db.database.as_str(), names, include_database_names);
+        let labels = db_labels(db.database.as_str(), names);
         if let Some(schema) = &db.schema {
             writeln!(out, "typedb_schema_data_count{{{}, kind=\"typeCount\"}} {}", labels, schema.type_count).unwrap();
         }
@@ -144,7 +132,7 @@ pub fn to_prometheus(
         writeln!(out, "\n# HELP typedb_transactions_active In-flight transactions by client and kind.").unwrap();
         writeln!(out, "# TYPE typedb_transactions_active gauge").unwrap();
         for db in &report.load {
-            let labels = db_labels(db.database.as_str(), names, include_database_names);
+            let labels = db_labels(db.database.as_str(), names);
             for entry in &db.active_transactions {
                 writeln!(
                     out,
@@ -162,7 +150,7 @@ pub fn to_prometheus(
     writeln!(out, "\n# TYPE typedb_attempted_requests_total counter").unwrap();
     for action in &report.actions {
         if let Some(db) = &action.database {
-            let labels = db_labels(&db.0.to_string(), names, include_database_names);
+            let labels = db_labels(&db.0.to_string(), names);
             writeln!(
                 out,
                 "typedb_attempted_requests_total{{{}, kind=\"{}\"}} {}",
@@ -177,7 +165,7 @@ pub fn to_prometheus(
     writeln!(out, "\n# TYPE typedb_successful_requests_total counter").unwrap();
     for action in &report.actions {
         if let Some(db) = &action.database {
-            let labels = db_labels(&db.0.to_string(), names, include_database_names);
+            let labels = db_labels(&db.0.to_string(), names);
             writeln!(
                 out,
                 "typedb_successful_requests_total{{{}, kind=\"{}\"}} {}",
@@ -193,7 +181,7 @@ pub fn to_prometheus(
     writeln!(out, "\n# TYPE typedb_error_total counter").unwrap();
     for err in &report.errors {
         if let Some(db) = &err.database {
-            let labels = db_labels(&db.0.to_string(), names, include_database_names);
+            let labels = db_labels(&db.0.to_string(), names);
             writeln!(out, "typedb_error_total{{{}, code=\"{}\"}} {}", labels, err.code, err.count).unwrap();
         }
     }
@@ -202,7 +190,7 @@ pub fn to_prometheus(
         writeln!(out, "\n# HELP typedb_query_duration_seconds Query execution latency.").unwrap();
         writeln!(out, "# TYPE typedb_query_duration_seconds histogram").unwrap();
         for entry in &report.query_duration {
-            let labels = db_labels(&entry.database.0.to_string(), names, include_database_names);
+            let labels = db_labels(&entry.database.0.to_string(), names);
             let kind_label = format!("{}, kind=\"{}\"", labels, query_kind_label(&entry.kind));
             write_histogram_body(&mut out, "typedb_query_duration_seconds", &kind_label, &entry.histogram);
         }
@@ -212,7 +200,7 @@ pub fn to_prometheus(
         writeln!(out, "\n# HELP typedb_transaction_duration_seconds Transaction lifetime (open\u{2192}commit/rollback/abort).").unwrap();
         writeln!(out, "# TYPE typedb_transaction_duration_seconds histogram").unwrap();
         for entry in &report.transaction_duration {
-            let labels = db_labels(&entry.database.0.to_string(), names, include_database_names);
+            let labels = db_labels(&entry.database.0.to_string(), names);
             let kind_label = format!("{}, kind=\"{}\"", labels, txn_kind_label(&entry.kind));
             write_histogram_body(&mut out, "typedb_transaction_duration_seconds", &kind_label, &entry.histogram);
         }
@@ -222,7 +210,7 @@ pub fn to_prometheus(
         writeln!(out, "\n# HELP typedb_queries_per_transaction Queries executed per transaction.").unwrap();
         writeln!(out, "# TYPE typedb_queries_per_transaction histogram").unwrap();
         for entry in &report.queries_per_transaction {
-            let labels = db_labels(&entry.database.0.to_string(), names, include_database_names);
+            let labels = db_labels(&entry.database.0.to_string(), names);
             write_histogram_body(&mut out, "typedb_queries_per_transaction", &labels, &entry.histogram);
         }
     }
@@ -234,7 +222,6 @@ pub fn to_prometheus(
             "Transactions opened, by transaction kind.",
             &report,
             names,
-            include_database_names,
             |e| e.started,
         );
         write_lifecycle_counter(
@@ -243,7 +230,6 @@ pub fn to_prometheus(
             "Transactions that committed successfully.",
             &report,
             names,
-            include_database_names,
             |e| e.committed,
         );
         write_lifecycle_counter(
@@ -252,7 +238,6 @@ pub fn to_prometheus(
             "Transactions explicitly rolled back by the client.",
             &report,
             names,
-            include_database_names,
             |e| e.rolled_back,
         );
         write_lifecycle_counter(
@@ -261,7 +246,6 @@ pub fn to_prometheus(
             "Transactions closed without a successful commit (force-closed, dropped, timed out).",
             &report,
             names,
-            include_database_names,
             |e| e.closed,
         );
     }
@@ -270,7 +254,7 @@ pub fn to_prometheus(
         writeln!(out, "\n# HELP typedb_wal_fsync_duration_seconds WAL fsync latency.").unwrap();
         writeln!(out, "# TYPE typedb_wal_fsync_duration_seconds histogram").unwrap();
         for entry in &report.wal_fsync_duration {
-            let labels = db_labels(&entry.database.0.to_string(), names, include_database_names);
+            let labels = db_labels(&entry.database.0.to_string(), names);
             write_histogram_body(&mut out, "typedb_wal_fsync_duration_seconds", &labels, &entry.histogram);
         }
     }
@@ -279,7 +263,7 @@ pub fn to_prometheus(
         writeln!(out, "\n# HELP typedb_wal_bytes_written_total Bytes written to the WAL.").unwrap();
         writeln!(out, "# TYPE typedb_wal_bytes_written_total counter").unwrap();
         for entry in &report.wal_bytes_written {
-            let labels = db_labels(&entry.database.0.to_string(), names, include_database_names);
+            let labels = db_labels(&entry.database.0.to_string(), names);
             writeln!(out, "typedb_wal_bytes_written_total{{{}}} {}", labels, entry.value).unwrap();
         }
     }
@@ -310,7 +294,6 @@ fn write_lifecycle_counter<F>(
     help_text: &str,
     report: &JsonMonitoringReport,
     names: &HashMap<DatabaseHash, String>,
-    include_database_names: bool,
     field: F,
 ) where
     F: Fn(&crate::reports::json_monitoring::JsonMonitoringTransactionLifecycleEntry) -> u64,
@@ -318,7 +301,7 @@ fn write_lifecycle_counter<F>(
     writeln!(out, "\n# HELP {} {}", metric_name, help_text).unwrap();
     writeln!(out, "# TYPE {} counter", metric_name).unwrap();
     for entry in &report.transaction_lifecycle {
-        let labels = db_labels(&entry.database.0.to_string(), names, include_database_names);
+        let labels = db_labels(&entry.database.0.to_string(), names);
         writeln!(
             out,
             "{}{{{}, kind=\"{}\"}} {}",

@@ -693,7 +693,7 @@ fn isolation_manager_correctly_recovers_from_disk() {
 
     {
         // TODO: Find a way to make commits crash before they're committed
-        let storage = load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), None).unwrap();
+        let storage = load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap(), None).unwrap();
         assert_eq!(watermark_after_one_commit, storage.snapshot_watermark());
     };
 }

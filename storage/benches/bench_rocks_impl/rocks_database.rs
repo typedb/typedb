@@ -115,7 +115,7 @@ mod typedb_database {
         pub(super) fn setup() -> Result<Self, StorageOpenError> {
             let name = "bench_rocks__typedb";
             let path = create_tmp_storage_dir();
-            let wal = WAL::create(&path).unwrap();
+            let wal = WAL::create(&path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap();
             let storage =
                 Arc::new(MVCCStorage::<WALClient>::create::<BenchKeySpace>(name, &path, WALClient::new(wal))?);
             Ok(Self { path, storage })

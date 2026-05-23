@@ -9,10 +9,7 @@ use std::{
     sync::{Arc, mpsc},
 };
 
-use durability::{
-    DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord,
-    wal::{WAL, WalMetricsRecorder},
-};
+use durability::{DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord, wal::WAL};
 use error::typedb_error;
 use itertools::Itertools;
 use resource::constants::storage::COMMIT_WAIT_FOR_FSYNC;
@@ -113,10 +110,6 @@ pub struct WALClient {
 impl WALClient {
     pub fn new(wal: WAL) -> Self {
         Self { wal }
-    }
-
-    pub fn set_metrics_recorder(&self, recorder: Arc<dyn WalMetricsRecorder>) {
-        self.wal.set_metrics_recorder(recorder);
     }
 
     fn serialise_record(record: &impl DurabilityRecord) -> Result<Vec<u8>, DurabilityClientError> {

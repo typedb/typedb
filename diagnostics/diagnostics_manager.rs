@@ -40,7 +40,6 @@ impl DiagnosticsManager {
         diagnostics: Diagnostics,
         monitoring_port: u16,
         is_monitoring_enabled: bool,
-        include_database_names: bool,
         is_development_mode: bool,
         background_tasks: TokioTaskSpawner,
     ) -> Self {
@@ -62,7 +61,7 @@ impl DiagnosticsManager {
         };
 
         let monitoring_server = if is_monitoring_enabled {
-            Some(MonitoringServer::new(diagnostics.clone(), monitoring_port, include_database_names))
+            Some(MonitoringServer::new(diagnostics.clone(), monitoring_port))
         } else {
             None
         };

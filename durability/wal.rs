@@ -39,32 +39,15 @@ const MAX_WAL_FILE_SIZE: u64 = 16 * 1024 * 1024;
 
 const FILE_PREFIX: &str = "wal-";
 
-pub trait WalMetricsRecorder: Send + Sync + std::fmt::Debug {
+pub trait WalMetrics: Send + Sync + std::fmt::Debug {
     fn record_fsync_duration(&self, _duration: std::time::Duration) {}
     fn record_bytes_written(&self, _bytes: u64) {}
 }
 
-// USER COMMENT: just call this WalMetrics
 #[derive(Debug, Default)]
-pub(crate) struct WalMetricsHolder {
-    recorder: std::sync::OnceLock<Arc<dyn WalMetricsRecorder>>,
-}
+pub struct NoopWalMetrics;
 
-impl WalMetricsHolder {
-    pub(crate) fn record_fsync_duration(&self, d: std::time::Duration) {
-        if let Some(r) = self.recorder.get() {
-            r.record_fsync_duration(d);
-        }
-    }
-    pub(crate) fn record_bytes_written(&self, n: u64) {
-        if let Some(r) = self.recorder.get() {
-            r.record_bytes_written(n);
-        }
-    }
-    pub(crate) fn attach(&self, recorder: Arc<dyn WalMetricsRecorder>) {
-        let _ = self.recorder.set(recorder);
-    }
-}
+impl WalMetrics for NoopWalMetrics {}
 
 #[derive(Debug)]
 pub struct WAL {
@@ -72,13 +55,16 @@ pub struct WAL {
     next_sequence_number: AtomicU64,
     files: Arc<RwLock<Files>>,
     fsync_thread: FsyncThread,
-    metrics: Arc<WalMetricsHolder>,
+    metrics: Arc<dyn WalMetrics>,
 }
 
 impl WAL {
     pub const WAL_DIR_NAME: &'static str = "wal";
 
-    pub fn create(directory: impl AsRef<Path>) -> Result<Self, DurabilityServiceError> {
+    pub fn create(
+        directory: impl AsRef<Path>,
+        metrics: Arc<dyn WalMetrics>,
+    ) -> Result<Self, DurabilityServiceError> {
         let directory = directory.as_ref().to_owned();
         let wal_dir = directory.join(Self::WAL_DIR_NAME);
         if wal_dir.exists() {
@@ -95,7 +81,6 @@ impl WAL {
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
-        let metrics = Arc::new(WalMetricsHolder::default());
         let mut fsync_thread = FsyncThread::new(files.clone(), metrics.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
@@ -107,7 +92,10 @@ impl WAL {
         })
     }
 
-    pub fn load(directory: impl AsRef<Path>) -> Result<Self, DurabilityServiceError> {
+    pub fn load(
+        directory: impl AsRef<Path>,
+        metrics: Arc<dyn WalMetrics>,
+    ) -> Result<Self, DurabilityServiceError> {
         let directory = directory.as_ref().to_owned();
         let wal_dir = directory.join(Self::WAL_DIR_NAME);
         if !wal_dir.exists() {
@@ -123,7 +111,6 @@ impl WAL {
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
 
-        let metrics = Arc::new(WalMetricsHolder::default());
         let mut fsync_thread = FsyncThread::new(files.clone(), metrics.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
@@ -133,10 +120,6 @@ impl WAL {
             fsync_thread,
             metrics,
         })
-    }
-
-    pub fn set_metrics_recorder(&self, recorder: Arc<dyn WalMetricsRecorder>) {
-        self.metrics.attach(recorder);
     }
 
     fn increment(&self) -> DurabilitySequenceNumber {
@@ -702,7 +685,7 @@ pub struct FsyncThreadContext {
     shutting_down: AtomicBool,
     signalling: [Mutex<Vec<Option<mpsc::Sender<()>>>>; 2],
     current_signal: AtomicU8,
-    metrics: Arc<WalMetricsHolder>,
+    metrics: Arc<dyn WalMetrics>,
 }
 
 #[derive(Debug)]
@@ -712,7 +695,7 @@ pub struct FsyncThread {
 }
 
 impl FsyncThread {
-    fn new(files: Arc<RwLock<Files>>, metrics: Arc<WalMetricsHolder>) -> Self {
+    fn new(files: Arc<RwLock<Files>>, metrics: Arc<dyn WalMetrics>) -> Self {
         let context = FsyncThreadContext {
             files,
             shutting_down: AtomicBool::new(false),
