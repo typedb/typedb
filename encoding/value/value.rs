@@ -44,7 +44,9 @@ pub enum Value<'a> {
     DateTimeTZ(DateTime<TimeZone>),
     Duration(Duration),
     String(Cow<'a, str>),
-    Struct(Cow<'a, StructValue<'static>>),
+    // Boxed so Value isn't sized for the 96-byte StructValue (rare variant). With this box,
+    // Value's max variant is DateTime<TimeZone> at 48 bytes.
+    Struct(Box<Cow<'a, StructValue<'static>>>),
 }
 
 // TODO: should we implement our own Equality, which takes into account floating point EPSILON? Otherwise, we'll transmit rounding errors throughout the language
@@ -126,7 +128,7 @@ impl<'a> Value<'a> {
             Value::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
             Value::Duration(duration) => Value::Duration(duration),
             Value::String(ref string) => Value::String(Cow::Borrowed(string.as_ref())),
-            Value::Struct(ref struct_) => Value::Struct(Cow::Borrowed(struct_.as_ref())),
+            Value::Struct(ref struct_) => Value::Struct(Box::new(Cow::Borrowed(struct_.as_ref().as_ref()))),
         }
     }
 
@@ -195,7 +197,7 @@ impl<'a> Value<'a> {
 
     pub fn unwrap_struct(self) -> Cow<'a, StructValue<'static>> {
         match self {
-            Value::Struct(struct_) => struct_,
+            Value::Struct(struct_) => *struct_,
             _ => panic!("Cannot unwrap Struct if not a struct value."),
         }
     }
@@ -218,7 +220,7 @@ impl<'a> Value<'a> {
             Self::DateTimeTZ(date_time_tz) => Value::DateTimeTZ(date_time_tz),
             Self::Duration(duration) => Value::Duration(duration),
             Self::String(string) => Value::String(Cow::Owned(string.into_owned())),
-            Self::Struct(struct_) => Value::Struct(Cow::Owned(struct_.into_owned())),
+            Self::Struct(struct_) => Value::Struct(Box::new(Cow::Owned((*struct_).into_owned()))),
         }
     }
 
