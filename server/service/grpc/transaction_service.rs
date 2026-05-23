@@ -22,7 +22,7 @@ use database::query::{
 };
 use diagnostics::{
     diagnostics_manager::DiagnosticsManager,
-    metrics::{ActionKind, ClientEndpoint, LoadKind, TransactionOutcome},
+    metrics::{ActionKind, ClientEndpoint, LoadKind},
 };
 use executor::{
     ExecutionInterrupt, InterruptType,
@@ -59,6 +59,7 @@ use uuid::Uuid;
 use crate::{
     service::{
         TransactionType,
+        transaction_metrics::{TransactionMetrics, WriteQueryMetrics},
         grpc::{
             analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
             diagnostics::run_with_diagnostics_async,
@@ -141,16 +142,8 @@ pub(crate) struct TransactionService {
     close_sender: Sender<()>,
     close_receiver: Receiver<()>,
 
-
-    // USER COMMENT: I don't like how random/scattered these metrics informations are.
-    //               Let's try creating a QueryMetrics struct, holding an active_write_query_metrics and using it for reads as well, if that makes sense
-    //               And for the transaction level lets keep TransactionMetrics struct
-    //               assess my idea first, then give feedback
-
-    opened_at: Option<Instant>,
-    lifecycle_outcome_recorded: bool,
-    query_count: u64,
-    write_query_started_at: Option<Instant>,
+    txn_metrics: Option<TransactionMetrics>,
+    write_query_metrics: Option<WriteQueryMetrics>,
 }
 
 impl TransactionService {
@@ -184,10 +177,8 @@ impl TransactionService {
             close_sender,
             close_receiver,
 
-            opened_at: None,
-            lifecycle_outcome_recorded: false,
-            query_count: 0,
-            write_query_started_at: None,
+            txn_metrics: None,
+            write_query_metrics: None,
         }
     }
 
@@ -219,17 +210,9 @@ impl TransactionService {
                     write_query_result = write_query_worker => {
                         let req_id = *req_id;
                         self.running_write_query = None;
-                        let started = self.write_query_started_at.take();
+                        // Drop WriteQueryMetrics — observes Write query_duration.
+                        self.write_query_metrics.take();
                         let (transaction, result) = write_query_result.expect("Expected write query result");
-                        // Observe write-query duration before re-attaching the transaction
-                        // (database name is reachable either way; here we use it once and move on).
-                        if let Some(start) = started {
-                            self.server_state.diagnostics_manager().observe_query_duration(
-                                transaction.database_name(),
-                                diagnostics::metrics::QueryType::Write,
-                                start.elapsed(),
-                            );
-                        }
                         self.transaction = Some(transaction);
                         if let Err(status) = self.transmit_write_results(req_id, result) {
                             Err(status)
@@ -488,17 +471,14 @@ impl TransactionService {
             &database_name,
             load_kind,
         );
-        self.server_state.diagnostics_manager().record_transaction_outcome(
-            &database_name,
+        self.txn_metrics = Some(TransactionMetrics::new(
+            self.server_state.diagnostics_manager(),
+            database_name.clone(),
             load_kind,
-            TransactionOutcome::Started,
-        );
+        ));
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
         self.is_open = true;
-        self.opened_at = Some(Instant::now());
-        self.lifecycle_outcome_recorded = false;
-        self.query_count = 0;
 
         let processing_time_millis = Instant::now().duration_since(receive_time).as_millis() as u64;
         send_ok_message!(
@@ -530,12 +510,6 @@ impl TransactionService {
 
         let diagnostics_manager = self.server_state.diagnostics_manager().clone();
         let server_state = self.server_state.clone();
-        // Snapshot the kind + name BEFORE moving the transaction into the spawn so
-        // we can record the lifecycle outcome on the way back out without holding
-        // a borrow across the await.
-        let txn_kind = self.transaction.as_ref().map(|t| t.load_kind());
-        let txn_database_name = self.transaction.as_ref().map(|t| t.database_name().to_owned());
-        let opened_at = self.opened_at;
         let commit_result = match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
@@ -571,27 +545,18 @@ impl TransactionService {
             .expect("Expected schema transaction commit completion"),
         };
 
-        // The Read arm restores `self.transaction` and returns Err; it's not
-        // terminal. The Write/Schema arms consume the transaction either way
-        // and are terminal — Committed on Ok, Closed on Err.
-        if let (Some(kind), Some(name)) = (txn_kind, &txn_database_name) {
-            let dm = self.server_state.diagnostics_manager();
-            let transaction_consumed = self.transaction.is_none();
-            let terminal_outcome = match (commit_result.is_ok(), transaction_consumed) {
-                (true, _) => Some(TransactionOutcome::Committed),
-                (false, true) => Some(TransactionOutcome::Closed),
-                (false, false) => None,
-            };
-            if let Some(outcome) = terminal_outcome {
-                dm.record_transaction_outcome(name, kind, outcome);
-                self.lifecycle_outcome_recorded = true;
-                if let Some(start) = opened_at {
-                    dm.observe_transaction_duration(name, kind, start.elapsed());
-                    self.opened_at = None;
+        // Read commit attempts restore self.transaction → not terminal. Write/Schema
+        // commit consumes it either way: mark_committed on Ok, Drop fires Closed on Err.
+        match (commit_result.is_ok(), self.transaction.is_none()) {
+            (true, _) => {
+                if let Some(mut m) = self.txn_metrics.take() {
+                    m.mark_committed();
                 }
-                dm.observe_queries_per_transaction(name, self.query_count);
-                self.query_count = 0;
             }
+            (false, true) => {
+                self.txn_metrics.take();
+            }
+            (false, false) => {}
         }
         commit_result?;
 
@@ -618,14 +583,6 @@ impl TransactionService {
             return Ok(Break(()));
         }
 
-        // Snapshot kind + name before the move-and-restore dance below; used to
-        // record the rolled_back lifecycle outcome on success. Rollback is not
-        // a "terminal" outcome for transactions_closed purposes — the transaction
-        // remains alive and can be committed later; do_close still classifies the
-        // eventual close as closed unless a successful commit happens first.
-        let txn_kind = self.transaction.as_ref().map(|t| t.load_kind());
-        let txn_database_name = self.transaction.as_ref().map(|t| t.database_name().to_owned());
-
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
@@ -643,10 +600,9 @@ impl TransactionService {
             }
         };
 
-        if let (Some(kind), Some(name)) = (txn_kind, &txn_database_name) {
-            self.server_state
-                .diagnostics_manager()
-                .record_transaction_outcome(name, kind, TransactionOutcome::RolledBack);
+        // Non-terminal: transaction stays alive; record RolledBack immediately.
+        if let Some(m) = self.txn_metrics.as_ref() {
+            m.record_rolled_back();
         }
 
         send_ok_message!(
@@ -666,15 +622,6 @@ impl TransactionService {
         let _ = self.cancel_queued_read_queries(InterruptType::TransactionClosed).await;
         let _ = self.finish_running_write_query_no_transmit(InterruptType::TransactionClosed).await;
         let _ = self.cancel_queued_write_queries(InterruptType::TransactionClosed).await;
-
-        // If a transaction is still present at this point, the client never reached
-        // a successful commit — count it as closed and record its duration. A
-        // transaction that did commit successfully had its outcome recorded in
-        // handle_commit and lifecycle_outcome_recorded is true, so we skip here.
-        let closed_kind_and_name: Option<(LoadKind, String)> =
-            self.transaction.as_ref().map(|t| (t.load_kind(), t.database_name().to_owned()));
-        let opened_at = self.opened_at.take();
-        let already_terminal = self.lifecycle_outcome_recorded;
 
         match self.transaction.take() {
             None => (),
@@ -704,19 +651,9 @@ impl TransactionService {
             }
         };
 
-        if let Some((kind, name)) = closed_kind_and_name {
-            let dm = self.server_state.diagnostics_manager();
-            if !already_terminal {
-                dm.record_transaction_outcome(&name, kind, TransactionOutcome::Closed);
-                // Only observe queries-per-transaction here if commit didn't —
-                // a committed transaction already observed.
-                dm.observe_queries_per_transaction(&name, self.query_count);
-                self.query_count = 0;
-            }
-            if let Some(start) = opened_at {
-                dm.observe_transaction_duration(&name, kind, start.elapsed());
-            }
-        }
+        // Drop fires the terminal outcome (Closed unless commit already marked it
+        // Committed), transaction_duration, and queries_per_transaction.
+        self.txn_metrics.take();
     }
 
     async fn interrupt_and_close_responders(&mut self, interrupt: InterruptType) {
@@ -756,15 +693,8 @@ impl TransactionService {
 
     async fn finish_running_write_query_no_transmit(&mut self, interrupt: InterruptType) -> Result<(), Status> {
         if let Some((req_id, worker)) = self.running_write_query.take() {
-            let started = self.write_query_started_at.take();
+            self.write_query_metrics.take();
             let (transaction, result) = worker.await.expect("Expected current write query to finish");
-            if let Some(start) = started {
-                self.server_state.diagnostics_manager().observe_query_duration(
-                    transaction.database_name(),
-                    diagnostics::metrics::QueryType::Write,
-                    start.elapsed(),
-                );
-            }
             self.transaction = Some(transaction);
 
             if let Err(err) = result {
@@ -903,11 +833,12 @@ impl TransactionService {
             });
             return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
         }
-        self.query_count += 1;
 
         // Count dispatched queries before parsing — failed-parse queries still
         // count, matching n+1 detection semantics.
-        self.query_count += 1;
+        if let Some(m) = self.txn_metrics.as_mut() {
+            m.record_query();
+        }
 
         let query = query_req.query;
         let parsed = match parse_query(&query) {
@@ -1043,10 +974,12 @@ impl TransactionService {
             }
         };
         self.running_write_query = Some((req_id, tokio::spawn(async move { handle.await.unwrap() })));
-        // Start the clock on the write query — the listen loop's write_query_worker
-        // arm observes when the spawn completes. Set last so an early-return error
-        // path above doesn't leave a stale Instant.
-        self.write_query_started_at = Some(Instant::now());
+        // WriteQueryMetrics observes query_duration on Drop — fires when the
+        // worker reaps in the listen loop or when interrupted via take().
+        if let Some(m) = self.txn_metrics.as_ref() {
+            self.write_query_metrics =
+                Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name().to_owned()));
+        }
     }
 
     fn activate_write_transmitter(&mut self, req_id: Uuid, answer: WriteQueryAnswer) {
