@@ -109,7 +109,7 @@ struct BenchVars {
     variable_modes: VariableModes,
 }
 
-fn build_ir(multi_type: bool) -> (Block, BenchVars, PipelineTranslationContext, ParameterRegistry) {
+fn build_has_ir(multi_attribute_type: bool) -> (Block, BenchVars, PipelineTranslationContext, ParameterRegistry) {
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
@@ -122,7 +122,7 @@ fn build_ir(multi_type: bool) -> (Block, BenchVars, PipelineTranslationContext, 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attribute, var_attribute_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.get().unwrap().clone()).unwrap();
-    if !multi_type {
+    if !multi_attribute_type {
         conjunction.constraints_mut().add_label(var_attribute_type, AGE_LABEL.get().unwrap().clone()).unwrap();
     }
     drop(conjunction);
@@ -145,10 +145,9 @@ fn build_ir(multi_type: bool) -> (Block, BenchVars, PipelineTranslationContext, 
 
 fn build_has_unbound_executor(
     storage: &Arc<MVCCStorage<WALClient>>,
-    multi_type: bool,
 ) -> (HasExecutor, ExecutionContext<storage::snapshot::ReadSnapshot<WALClient>>) {
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.snapshot_watermark()));
-    let (entry, vars, mut translation_context, value_parameters) = build_ir(multi_type);
+    let (entry, vars, mut translation_context, value_parameters) = build_has_ir(false);
 
     let snapshot = storage.clone().open_snapshot_read();
     let mut ctx = PipelineAnnotationContext::new(
@@ -173,10 +172,10 @@ fn build_has_unbound_executor(
 
 fn build_has_reverse_unbound_executor(
     storage: &Arc<MVCCStorage<WALClient>>,
-    multi_type: bool,
+    multi_attribute_type: bool,
 ) -> (HasReverseExecutor, ExecutionContext<storage::snapshot::ReadSnapshot<WALClient>>) {
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.snapshot_watermark()));
-    let (entry, vars, mut translation_context, value_parameters) = build_ir(multi_type);
+    let (entry, vars, mut translation_context, value_parameters) = build_has_ir(multi_attribute_type);
 
     let snapshot = storage.clone().open_snapshot_read();
     let mut ctx = PipelineAnnotationContext::new(
@@ -206,7 +205,7 @@ fn build_has_reverse_unbound_executor(
     (executor, context)
 }
 
-fn drain(mut iter: TupleIterator, expected_count: usize) {
+fn assert_count(mut iter: TupleIterator, expected_count: usize) {
     let mut count = 0;
     while let Some(result) = iter.peek() {
         result.as_ref().unwrap();
@@ -225,66 +224,20 @@ fn criterion_benchmark(c: &mut Criterion) {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
 
-    let (has_single_exec, has_single_ctx) = build_has_unbound_executor(&storage, false);
-    let (has_multi_exec, has_multi_ctx) = build_has_unbound_executor(&storage, true);
+    let (has_exec, has_ctx) = build_has_unbound_executor(&storage);
     let (has_reverse_single_exec, has_reverse_single_ctx) = build_has_reverse_unbound_executor(&storage, false);
     let (has_reverse_multi_exec, has_reverse_multi_ctx) = build_has_reverse_unbound_executor(&storage, true);
     let count_single = NUM_PERSONS * AGES_PER_PERSON;
     let count_multi = NUM_PERSONS * (AGES_PER_PERSON + NAMES_PER_PERSON);
 
-    if let Ok(secs) = std::env::var("BENCH_FLAMEGRAPH_DURATION_SEC") {
-        let secs: u64 = secs.parse().unwrap();
-        let multi_type = std::env::var("BENCH_MULTI_TYPE").is_ok();
-        let executor_kind = std::env::var("BENCH_EXECUTOR").unwrap_or_else(|_| "has".to_string());
-        let expected = if multi_type { count_multi } else { count_single };
-        eprintln!(
-            "[flamegraph] pid={} duration={}s executor={} multi_type={} rows_per_iter={}",
-            std::process::id(),
-            secs,
-            executor_kind,
-            multi_type,
-            expected
-        );
-        let start = std::time::Instant::now();
-        let mut total: u64 = 0;
-        while start.elapsed().as_secs() < secs {
-            let iter = match (executor_kind.as_str(), multi_type) {
-                ("has", false) => has_single_exec
-                    .get_iterator(&has_single_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
-                    .unwrap(),
-                ("has", true) => has_multi_exec
-                    .get_iterator(&has_multi_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
-                    .unwrap(),
-                ("has_reverse", false) => has_reverse_single_exec
-                    .get_iterator(&has_reverse_single_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
-                    .unwrap(),
-                ("has_reverse", true) => has_reverse_multi_exec
-                    .get_iterator(&has_reverse_multi_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
-                    .unwrap(),
-                _ => panic!("BENCH_EXECUTOR must be 'has' or 'has_reverse'"),
-            };
-            drain(iter, expected);
-            total += expected as u64;
-        }
-        eprintln!("[flamegraph] total_rows={}", total);
-        return;
-    }
-
     let mut group = c.benchmark_group("has_unbound");
     group.sampling_mode(SamplingMode::Linear);
     group.bench_function("single_type", |b| {
         b.iter(|| {
-            let iter = has_single_exec
-                .get_iterator(&has_single_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
+            let iter = has_exec
+                .get_iterator(&has_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
                 .unwrap();
-            drain(iter, count_single);
-        })
-    });
-    group.bench_function("multi_type", |b| {
-        b.iter(|| {
-            let iter =
-                has_multi_exec.get_iterator(&has_multi_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED).unwrap();
-            drain(iter, count_multi);
+            assert_count(iter, count_single);
         })
     });
     group.finish();
@@ -296,7 +249,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             let iter = has_reverse_single_exec
                 .get_iterator(&has_reverse_single_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
                 .unwrap();
-            drain(iter, count_single);
+            assert_count(iter, count_single);
         })
     });
     group.bench_function("multi_type", |b| {
@@ -304,7 +257,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             let iter = has_reverse_multi_exec
                 .get_iterator(&has_reverse_multi_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
                 .unwrap();
-            drain(iter, count_multi);
+            assert_count(iter, count_multi);
         })
     });
     group.finish();
