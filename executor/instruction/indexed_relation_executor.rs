@@ -681,7 +681,7 @@ where
                 _ => unreachable!("only 5 components exist"),
             }
         });
-        TupleResult::Ok(Tuple::Quintuple(tuple))
+        TupleResult::Ok(Tuple::Quintuple(Box::new(tuple)))
     }
 
     fn tuple_to_indexed(&self, tuple: &Tuple<'_>) -> IndexedRelationPlayers {
