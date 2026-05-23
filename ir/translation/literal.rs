@@ -61,7 +61,7 @@ impl FromTypeQLLiteral for Value<'static> {
                 Ok(Value::DateTime(NaiveDateTime::from_typeql_literal(datetime, source_span)?))
             }
             ValueLiteral::DateTimeTz(datetime_tz) => {
-                Ok(Value::DateTimeTZ(chrono::DateTime::from_typeql_literal(datetime_tz, source_span)?))
+                Ok(Value::DateTimeTZ(Box::new(chrono::DateTime::from_typeql_literal(datetime_tz, source_span)?)))
             }
             ValueLiteral::Duration(duration) => {
                 Ok(Value::Duration(Duration::from_typeql_literal(duration, source_span)?))
