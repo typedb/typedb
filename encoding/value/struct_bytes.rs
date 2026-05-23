@@ -99,7 +99,7 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
                 append_length_as_vle(value.len(), buf)?;
                 buf.extend_from_slice(StringBytes::<0>::build_ref(value.borrow()).bytes())
             }
-            Value::Struct(value) => encode_struct_into(value.borrow(), buf)?,
+            Value::Struct(value) => encode_struct_into(value.as_ref().as_ref(), buf)?,
             | Value::Boolean(_)
             | Value::Integer(_)
             | Value::Double(_)
@@ -178,7 +178,9 @@ fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<Stru
                         .to_owned(),
                 ))
             }
-            ValueTypeCategory::Struct => Value::Struct(Cow::Owned(decode_struct_increment_offset(offset, buf)?)),
+            ValueTypeCategory::Struct => {
+                Value::Struct(Box::new(Cow::Owned(decode_struct_increment_offset(offset, buf)?)))
+            }
         };
         fields.insert(field_idx, value);
     }
@@ -290,7 +292,7 @@ pub mod test {
             let nested_struct = StructValue::new(nested_key, nested_fields);
 
             let struct_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
-            let struct_fields = HashMap::from([(0, Value::Struct(Cow::Owned(nested_struct.clone())))]);
+            let struct_fields = HashMap::from([(0, Value::Struct(Box::new(Cow::Owned(nested_struct.clone()))))]);
             let struct_value = StructValue::new(struct_key, struct_fields);
 
             let struct_bytes: StructBytes<'static, BUFFER_VALUE_INLINE> =
