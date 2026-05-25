@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use diagnostics::{
     diagnostics_manager::DiagnosticsManager,
-    metrics::{LoadKind, QueryType, TransactionOutcome},
+    metrics::{ClientEndpoint, LoadKind, QueryType, TransactionOutcome},
 };
 use tokio::time::Instant;
 
@@ -17,6 +17,7 @@ pub(crate) struct TransactionMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
     database_name: String,
     kind: LoadKind,
+    client: ClientEndpoint,
     opened_at: Instant,
     query_count: u64,
     terminal_outcome: Option<TransactionOutcome>,
@@ -27,12 +28,15 @@ impl TransactionMetrics {
         diagnostics_manager: Arc<DiagnosticsManager>,
         database_name: String,
         kind: LoadKind,
+        client: ClientEndpoint,
     ) -> Self {
+        diagnostics_manager.increment_load_count(client, &database_name, kind);
         diagnostics_manager.record_transaction_outcome(&database_name, kind, TransactionOutcome::Started);
         Self {
             diagnostics_manager,
             database_name,
             kind,
+            client,
             opened_at: Instant::now(),
             query_count: 0,
             terminal_outcome: None,
@@ -69,6 +73,9 @@ impl TransactionMetrics {
 
 impl Drop for TransactionMetrics {
     fn drop(&mut self) {
+        // Decrement the connection-active gauge first: the connection is closing
+        // regardless of which terminal outcome we record next.
+        self.diagnostics_manager.decrement_load_count(self.client, &self.database_name, self.kind);
         let outcome = self.terminal_outcome.take().unwrap_or(TransactionOutcome::Closed);
         self.diagnostics_manager.record_transaction_outcome(&self.database_name, self.kind, outcome);
         self.diagnostics_manager.observe_transaction_duration(

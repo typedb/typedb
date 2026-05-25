@@ -20,7 +20,7 @@ use database::query::{
     StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
     execute_write_query_in_schema, execute_write_query_in_write,
 };
-use diagnostics::metrics::{ClientEndpoint, LoadKind};
+use diagnostics::metrics::ClientEndpoint;
 use executor::{
     ExecutionInterrupt, InterruptType,
     batch::Batch,
@@ -279,15 +279,11 @@ impl TransactionService {
             .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?;
 
         let load_kind = transaction.load_kind();
-        self.server_state.diagnostics_manager().increment_load_count(
-            ClientEndpoint::Http,
-            &database_name,
-            load_kind,
-        );
         self.txn_metrics = Some(TransactionMetrics::new(
             self.server_state.diagnostics_manager(),
             database_name.clone(),
             load_kind,
+            ClientEndpoint::Http,
         ));
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
@@ -405,7 +401,6 @@ impl TransactionService {
             respond_error_and_return_break!(responder, TransactionServiceError::QueueCleanupFailed {});
         }
 
-        let diagnostics_manager = self.server_state.diagnostics_manager();
         let server_state = self.server_state.clone();
         let _: ControlFlow<(), ()> = match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
@@ -417,14 +412,10 @@ impl TransactionService {
             Transaction::Write(transaction) => {
                 // Move txn_metrics into the spawn. On success: mark_committed +
                 // Drop fires Committed + observe. On any failure-macro early-return:
-                // Drop fires unwrap_or(Closed) + observe.
+                // Drop fires unwrap_or(Closed) + observe. Either way, Drop also
+                // fires decrement_load_count.
                 let txn_metrics = self.txn_metrics.take();
                 spawn(async move {
-                    diagnostics_manager.decrement_load_count(
-                        ClientEndpoint::Http,
-                        transaction.database.name(),
-                        LoadKind::WriteTransactions,
-                    );
                     unwrap_or_execute_else_respond_error_and_return_break!(
                         commit_write_transaction(server_state, transaction).await.1,
                         responder,
@@ -442,11 +433,6 @@ impl TransactionService {
             Transaction::Schema(transaction) => {
                 let txn_metrics = self.txn_metrics.take();
                 spawn(async move {
-                    diagnostics_manager.decrement_load_count(
-                        ClientEndpoint::Http,
-                        transaction.database.name(),
-                        LoadKind::SchemaTransactions,
-                    );
                     unwrap_or_execute_else_respond_error_and_return_break!(
                         commit_schema_transaction(server_state, transaction).await.1,
                         responder,
@@ -526,34 +512,13 @@ impl TransactionService {
 
         match self.transaction.take() {
             None => (),
-            Some(Transaction::Read(transaction)) => {
-                self.server_state.diagnostics_manager().decrement_load_count(
-                    ClientEndpoint::Http,
-                    transaction.database.name(),
-                    LoadKind::ReadTransactions,
-                );
-                transaction.close()
-            }
-            Some(Transaction::Write(transaction)) => {
-                self.server_state.diagnostics_manager().decrement_load_count(
-                    ClientEndpoint::Http,
-                    transaction.database.name(),
-                    LoadKind::WriteTransactions,
-                );
-                transaction.close()
-            }
-            Some(Transaction::Schema(transaction)) => {
-                self.server_state.diagnostics_manager().decrement_load_count(
-                    ClientEndpoint::Http,
-                    transaction.database.name(),
-                    LoadKind::SchemaTransactions,
-                );
-                transaction.close()
-            }
+            Some(Transaction::Read(transaction)) => transaction.close(),
+            Some(Transaction::Write(transaction)) => transaction.close(),
+            Some(Transaction::Schema(transaction)) => transaction.close(),
         }
 
-        // Drop fires terminal outcome (Closed unless commit marked Committed),
-        // transaction_duration, and queries_per_transaction.
+        // Drop fires decrement_load_count, terminal outcome (Closed unless commit
+        // marked Committed), transaction_duration, and queries_per_transaction.
         self.txn_metrics.take();
     }
 

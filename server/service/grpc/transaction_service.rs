@@ -22,7 +22,7 @@ use database::query::{
 };
 use diagnostics::{
     diagnostics_manager::DiagnosticsManager,
-    metrics::{ActionKind, ClientEndpoint, LoadKind},
+    metrics::{ActionKind, ClientEndpoint},
 };
 use executor::{
     ExecutionInterrupt, InterruptType,
@@ -465,15 +465,11 @@ impl TransactionService {
             .map_err(|err| err.into_status())?;
 
         let load_kind = transaction.load_kind();
-        self.server_state.diagnostics_manager().increment_load_count(
-            ClientEndpoint::Grpc,
-            &database_name,
-            load_kind,
-        );
         self.txn_metrics = Some(TransactionMetrics::new(
             self.server_state.diagnostics_manager(),
             database_name.clone(),
             load_kind,
+            ClientEndpoint::Grpc,
         ));
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
@@ -507,7 +503,6 @@ impl TransactionService {
         // finish executing any remaining writes so they make it into the commit
         self.finish_queued_write_queries(InterruptType::TransactionCommitted).await?;
 
-        let diagnostics_manager = self.server_state.diagnostics_manager().clone();
         let server_state = self.server_state.clone();
         let commit_result = match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
@@ -515,11 +510,6 @@ impl TransactionService {
                 Err(TransactionServiceError::CannotCommitReadTransaction {}.into_proto_error_message().into_status())
             }
             Transaction::Write(transaction) => spawn(async move {
-                diagnostics_manager.decrement_load_count(
-                    ClientEndpoint::Grpc,
-                    transaction.database.name(),
-                    LoadKind::WriteTransactions,
-                );
                 let (_profile, commit_result) = commit_write_transaction(server_state, transaction).await;
                 commit_result.map_err(|typedb_source| {
                     TransactionServiceError::DataCommitFailed { typedb_source }.into_proto_error_message().into_status()
@@ -528,11 +518,6 @@ impl TransactionService {
             .await
             .expect("Expected write transaction commit completion"),
             Transaction::Schema(transaction) => spawn(async move {
-                diagnostics_manager.decrement_load_count(
-                    ClientEndpoint::Grpc,
-                    transaction.database.name(),
-                    LoadKind::SchemaTransactions,
-                );
                 let (_profile, commit_result) = commit_schema_transaction(server_state, transaction).await;
                 commit_result.map_err(|typedb_source| {
                     TransactionServiceError::SchemaCommitFailed { typedb_source }
@@ -623,33 +608,12 @@ impl TransactionService {
 
         match self.transaction.take() {
             None => (),
-            Some(Transaction::Read(transaction)) => {
-                self.server_state.diagnostics_manager().decrement_load_count(
-                    ClientEndpoint::Grpc,
-                    transaction.database.name(),
-                    LoadKind::ReadTransactions,
-                );
-                transaction.close()
-            }
-            Some(Transaction::Write(transaction)) => {
-                self.server_state.diagnostics_manager().decrement_load_count(
-                    ClientEndpoint::Grpc,
-                    transaction.database.name(),
-                    LoadKind::WriteTransactions,
-                );
-                transaction.close()
-            }
-            Some(Transaction::Schema(transaction)) => {
-                self.server_state.diagnostics_manager().decrement_load_count(
-                    ClientEndpoint::Grpc,
-                    transaction.database.name(),
-                    LoadKind::SchemaTransactions,
-                );
-                transaction.close()
-            }
+            Some(Transaction::Read(transaction)) => transaction.close(),
+            Some(Transaction::Write(transaction)) => transaction.close(),
+            Some(Transaction::Schema(transaction)) => transaction.close(),
         };
 
-        self.txn_metrics.take(); // drop -> submits
+        self.txn_metrics.take(); // drop -> decrement_load_count + submits terminal metrics
     }
 
     async fn interrupt_and_close_responders(&mut self, interrupt: InterruptType) {
