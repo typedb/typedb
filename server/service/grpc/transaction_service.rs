@@ -503,12 +503,20 @@ impl TransactionService {
         // finish executing any remaining writes so they make it into the commit
         self.finish_queued_write_queries(InterruptType::TransactionCommitted).await?;
 
+        let transaction = self.transaction.take().expect("Expected existing transaction");
+        if let Transaction::Read(read_transaction) = transaction {
+            // Read commit attempts are non-terminal: restore the transaction, leave
+            // txn_metrics untouched, and reject the request. The lifecycle resolves
+            // later when the client closes or rolls back.
+            self.transaction = Some(Transaction::Read(read_transaction));
+            return Err(TransactionServiceError::CannotCommitReadTransaction {}
+                .into_proto_error_message()
+                .into_status());
+        }
+
+        // Past here: Write or Schema. The transaction is consumed; this is the terminal step.
         let server_state = self.server_state.clone();
-        let commit_result = match self.transaction.take().expect("Expected existing transaction") {
-            Transaction::Read(transaction) => {
-                self.transaction = Some(Transaction::Read(transaction));
-                Err(TransactionServiceError::CannotCommitReadTransaction {}.into_proto_error_message().into_status())
-            }
+        let commit_result = match transaction {
             Transaction::Write(transaction) => spawn(async move {
                 let (_profile, commit_result) = commit_write_transaction(server_state, transaction).await;
                 commit_result.map_err(|typedb_source| {
@@ -527,20 +535,15 @@ impl TransactionService {
             })
             .await
             .expect("Expected schema transaction commit completion"),
+            Transaction::Read(_) => unreachable!("Read transaction handled above"),
         };
 
-        // Read commit attempts restore self.transaction → not terminal. Write/Schema
-        // commit consumes it either way: mark_committed on Ok, Drop fires Closed on Err.
-        match (commit_result.is_ok(), self.transaction.is_none()) {
-            (true, _) => {
-                if let Some(mut m) = self.txn_metrics.take() {
-                    m.mark_committed();
-                }
+        // Ok → mark Committed; Err → leave terminal_outcome=None so Drop fires Closed.
+        if let Some(mut m) = self.txn_metrics.take() {
+            if commit_result.is_ok() {
+                m.mark_committed();
             }
-            (false, true) => {
-                self.txn_metrics.take(); // drop -> submits
-            }
-            (false, false) => {}
+            // m drops here → submits Committed (if marked) or Closed (otherwise).
         }
         commit_result?;
 
