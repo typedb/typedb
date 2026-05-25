@@ -630,10 +630,6 @@ fn run_mixed_benchmark(thread_counts: &[usize], batch_size: usize, write_ratio: 
 }
 
 // --- W6 (relations): Mixed read/write friendships ---
-//
-// Exercises the Links iterator path which yields Triple tuples
-// (relation, player, role_type) — useful for measuring the cost of large
-// Tuple enum variants.
 
 const MIXED_RELATIONS_SEED_PERSONS: usize = 10_000;
 const MIXED_RELATIONS_SEED_FRIENDSHIPS: usize = 50_000;
