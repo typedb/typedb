@@ -69,6 +69,13 @@ impl DiagnosticsManager {
         Self { diagnostics, reporter, monitoring_server }
     }
 
+    /// Whether anyone will read the collected metrics; mirrors the flag passed to
+    /// `Diagnostics::new`. Callers that own a metric-source adapter can use this to
+    /// substitute a no-op implementation and skip per-event work entirely.
+    pub fn is_collection_needed(&self) -> bool {
+        self.diagnostics.is_collection_needed()
+    }
+
     diagnostics_method! {
         pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>);
         pub fn submit_error(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, error_code: String);

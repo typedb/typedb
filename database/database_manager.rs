@@ -385,7 +385,7 @@ impl DatabaseManager {
     }
 
     fn wal_metrics_adapter(diagnostics_manager: &DiagnosticsManager, name: &str) -> Arc<dyn WalMetrics> {
-        if Self::is_internal_database(name) {
+        if Self::is_internal_database(name) || !diagnostics_manager.is_collection_needed() {
             return Arc::new(NoopWalMetrics);
         }
         let (fsync_histogram, bytes_counter) = diagnostics_manager.wal_metrics_handles(name);
