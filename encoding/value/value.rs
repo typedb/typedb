@@ -41,13 +41,9 @@ pub enum Value<'a> {
     Decimal(Decimal),
     Date(NaiveDate),
     DateTime(NaiveDateTime),
-    // Boxed: chrono::DateTime<TimeZone> is 48 bytes — the largest fixed-size variant. Boxing
-    // drops Value's max-variant size to Cow<'a, str> at 24 bytes. Rare variant; alloc cost
-    // only paid by datetime-with-timezone values.
     DateTimeTZ(Box<DateTime<TimeZone>>),
     Duration(Duration),
     String(Cow<'a, str>),
-    // Boxed so Value isn't sized for the 96-byte StructValue (rare variant).
     Struct(Box<Cow<'a, StructValue<'static>>>),
 }
 

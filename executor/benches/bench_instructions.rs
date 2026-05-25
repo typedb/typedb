@@ -287,8 +287,6 @@ impl Profiler for FlamegraphProfiler<'_> {
         let flamegraph_file = File::create(&flamegraph_path).expect("create flamegraph.svg");
         if let Some(profiler) = self.active_profiler.take() {
             profiler.report().build().unwrap().flamegraph(flamegraph_file).expect("write flamegraph");
-            // Bazel runs the bench inside the runfiles tree; log the absolute path so the user
-            // can find the SVG without digging through bazel-out.
             let absolute = flamegraph_path.canonicalize().unwrap_or(flamegraph_path);
             eprintln!("[flamegraph] wrote {}", absolute.display());
         }
