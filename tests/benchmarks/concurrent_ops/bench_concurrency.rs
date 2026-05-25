@@ -635,7 +635,7 @@ fn run_mixed_benchmark(thread_counts: &[usize], batch_size: usize, write_ratio: 
 // (relation, player, role_type) — useful for measuring the cost of large
 // Tuple enum variants.
 
-const MIXED_RELATIONS_PERSON_COUNT: usize = 10_000;
+const MIXED_RELATIONS_SEED_PERSONS: usize = 10_000;
 const MIXED_RELATIONS_SEED_FRIENDSHIPS: usize = 50_000;
 
 fn run_mixed_relations_benchmark(thread_counts: &[usize], batch_size: usize, write_ratio: f64, show_dist: bool) {
@@ -651,8 +651,8 @@ fn run_mixed_relations_benchmark(thread_counts: &[usize], batch_size: usize, wri
         }
 
         let (_tmp_dir, database) = create_database(SCHEMA);
-        seed_persons(&database, MIXED_RELATIONS_PERSON_COUNT);
-        seed_friendships(&database, MIXED_RELATIONS_PERSON_COUNT, MIXED_RELATIONS_SEED_FRIENDSHIPS);
+        seed_persons(&database, MIXED_RELATIONS_SEED_PERSONS);
+        seed_friendships(&database, MIXED_RELATIONS_SEED_PERSONS, MIXED_RELATIONS_SEED_FRIENDSHIPS);
 
         let write_timings = Arc::new(PhaseTimings::new());
         let write_ops_total = Arc::new(AtomicU64::new(0));
@@ -661,8 +661,6 @@ fn run_mixed_relations_benchmark(thread_counts: &[usize], batch_size: usize, wri
         let ops_per_write_tx = batch_size;
         let total_write_txns = TOTAL_OPS / ops_per_write_tx;
         let next_write_batch = Arc::new(AtomicU64::new(0));
-        // Writes use ids past the pre-seeded range to avoid contention with reads.
-        let write_batch_offset = (MIXED_RELATIONS_SEED_FRIENDSHIPS / ops_per_write_tx) as u64;
 
         let running = Arc::new(AtomicBool::new(true));
 
@@ -677,7 +675,7 @@ fn run_mixed_relations_benchmark(thread_counts: &[usize], batch_size: usize, wri
             let signal = start_signal.clone();
             let timings = write_timings.clone();
             let ops_counter = write_ops_total.clone();
-            let person_count = MIXED_RELATIONS_PERSON_COUNT;
+            let person_count = MIXED_RELATIONS_SEED_PERSONS;
             let next_batch = next_write_batch.clone();
             let total = total_write_txns;
             handles.push(thread::spawn(move || {
@@ -687,13 +685,7 @@ fn run_mixed_relations_benchmark(thread_counts: &[usize], batch_size: usize, wri
                     if batch_id >= total {
                         break;
                     }
-                    execute_relation_batch(
-                        &db,
-                        batch_id + write_batch_offset as usize,
-                        ops_per_write_tx,
-                        person_count,
-                        &timings,
-                    );
+                    execute_relation_batch(&db, batch_id, ops_per_write_tx, person_count, &timings);
                     ops_counter.fetch_add(ops_per_write_tx as u64, Ordering::Relaxed);
                 }
             }));
@@ -709,11 +701,9 @@ fn run_mixed_relations_benchmark(thread_counts: &[usize], batch_size: usize, wri
                 drop(signal.read().unwrap());
                 let mut count: u64 = 0;
                 while running.load(Ordering::Relaxed) {
-                    let person_id = (count % MIXED_RELATIONS_PERSON_COUNT as u64) as u32;
-                    let query_str = format!(
-                        r#"match $p isa person, has name "person_{person_id}"; $f isa friendship, links (friend: $p, friend: $q); limit 10;"#
-                    );
-                    execute_read_query(&db, &query_str);
+                    let query_str =
+                        r#"match $f isa friendship, links (friend: $p, friend: $q); limit 1000;"#;
+                    execute_read_query(&db, query_str);
                     count += 1;
                 }
                 ops_counter.fetch_add(count, Ordering::Relaxed);
