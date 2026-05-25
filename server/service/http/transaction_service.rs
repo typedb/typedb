@@ -51,7 +51,7 @@ use typeql::{parse_query, query::SchemaQuery};
 use crate::{
     service::{
         QueryType, TransactionType,
-        transaction_metrics::{SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics},
+        transaction_metrics::{ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics},
         http::message::{
             analyze::{
                 AnalysedQueryResponse, encode_analyzed_query,
@@ -623,8 +623,6 @@ impl TransactionService {
                     return self.run_write_query(responder, query_options, query_pipeline, source_query).await;
                 }
                 (QueueOptions::Query(query_options), false) => {
-                    let read_started = Instant::now();
-                    let database_name = self.transaction.as_ref().map(|t| t.database_name().to_owned());
                     let outcome = self
                         .blocking_read_query_worker(
                             responder,
@@ -635,13 +633,6 @@ impl TransactionService {
                         )
                         .await
                         .expect("Expected read query completion");
-                    if let Some(name) = database_name.as_deref() {
-                        self.server_state.diagnostics_manager().observe_query_duration(
-                            name,
-                            diagnostics::metrics::QueryType::Read,
-                            read_started.elapsed(),
-                        );
-                    }
                     if let Break(()) = outcome {
                         return Break(());
                     }
@@ -698,9 +689,6 @@ impl TransactionService {
                         // queued queries are not handled yet so there will be no query response yet
                         Continue(())
                     } else {
-                        let read_started = Instant::now();
-                        let database_name =
-                            self.transaction.as_ref().map(|t| t.database_name().to_owned());
                         let outcome = self
                             .blocking_read_query_worker(
                                 responder,
@@ -711,13 +699,6 @@ impl TransactionService {
                             )
                             .await
                             .expect("Expected read query completion");
-                        if let Some(name) = database_name.as_deref() {
-                            self.server_state.diagnostics_manager().observe_query_duration(
-                                name,
-                                diagnostics::metrics::QueryType::Read,
-                                read_started.elapsed(),
-                            );
-                        }
                         outcome
                     }
                 }
@@ -1004,6 +985,8 @@ impl TransactionService {
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
         let timeout_at = self.timeout_at;
         let interrupt = self.query_interrupt_receiver.clone();
+        let diagnostics_manager = self.server_state.diagnostics_manager();
+        let database_name = self.transaction.as_ref().unwrap().database_name_arc();
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
@@ -1011,6 +994,10 @@ impl TransactionService {
             let function_manager = transaction.function_manager.clone();
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
+                // Time-to-first-batch semantics: fires typedb_query_duration_seconds
+                // {kind="read"} once the result is materialized for the response,
+                // matching the gRPC behaviour for the same Prometheus label.
+                let mut read_metrics = ReadQueryMetrics::new(diagnostics_manager, database_name);
                 let pipeline_result = query_manager.prepare_read_pipeline(
                     snapshot.clone(),
                     &type_manager,
@@ -1040,6 +1027,7 @@ impl TransactionService {
                     &type_manager,
                     thing_manager,
                     storage_counters,
+                    &mut read_metrics,
                 )
             })
         })
@@ -1056,6 +1044,7 @@ impl TransactionService {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         storage_counters: StorageCounters,
+        read_metrics: &mut ReadQueryMetrics,
     ) -> ControlFlow<(), ()> {
         let query_profile = if pipeline.has_fetch() {
             let (iterator, context) = unwrap_or_execute_else_respond_error_and_return_break!(
@@ -1110,6 +1099,7 @@ impl TransactionService {
                     }
                 }
             }
+            read_metrics.observe_first_response();
             respond_else_return_break!(
                 responder,
                 TransactionServiceResponse::Query(QueryAnswer::ResDocuments((QueryType::Read, result, warning)))
@@ -1180,6 +1170,7 @@ impl TransactionService {
                     }
                 }
             }
+            read_metrics.observe_first_response();
             respond_else_return_break!(
                 responder,
                 TransactionServiceResponse::Query(QueryAnswer::ResRows((
