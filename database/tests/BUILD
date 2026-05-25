@@ -33,6 +33,7 @@ rust_test(
         "//common/logger",
         "//common/options",
         "//database",
+        "//diagnostics",
         "//encoding",
         "//storage",
         "//util/test:test_utils",
@@ -51,6 +52,7 @@ rust_test(
     deps = [
         "//common/options",
         "//database",
+        "//diagnostics",
         "//executor",
         "//storage",
         "//util/test:test_utils",
@@ -67,6 +69,7 @@ rust_test(
     deps = [
         "//common/options",
         "//database",
+        "//diagnostics",
         "//encoding",
         "//executor",
         "//storage",

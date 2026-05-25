@@ -46,7 +46,7 @@ fn statistics_synchronization_under_concurrent_load() {
     let total_has = 2 * total_persons;
 
     {
-        let dbm = DatabaseManager::new(&tmp_dir).unwrap();
+        let dbm = DatabaseManager::new(&tmp_dir, Arc::new(diagnostics::diagnostics_manager::DiagnosticsManager::new_test())).unwrap();
         dbm.put_database(DB_NAME).unwrap();
         let database = dbm.database(DB_NAME).unwrap();
 
@@ -75,7 +75,7 @@ fn statistics_synchronization_under_concurrent_load() {
 
     // dbm and database dropped here; IntervalRunner threads shut down synchronously on drop.
 
-    let dbm = DatabaseManager::new(&tmp_dir).unwrap();
+    let dbm = DatabaseManager::new(&tmp_dir, Arc::new(diagnostics::diagnostics_manager::DiagnosticsManager::new_test())).unwrap();
     let database = dbm.database(DB_NAME).unwrap();
     let metrics = database.get_metrics();
 

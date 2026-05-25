@@ -69,6 +69,23 @@ impl DiagnosticsManager {
         Self { diagnostics, reporter, monitoring_server }
     }
 
+    /// Construct a no-op manager for tests and benches. No reporter or monitoring
+    /// server is created; `is_collection_needed` is false so every observation
+    /// method short-circuits at zero cost (per SR5). Suitable for callers of
+    /// `DatabaseManager::new` that don't care about diagnostics.
+    pub fn new_test() -> Self {
+        let diagnostics = Diagnostics::new(
+            String::new(), // deployment_id
+            String::new(), // server_id
+            String::new(), // distribution
+            String::new(), // version
+            std::path::PathBuf::new(), // data_directory
+            false, // is_reporting_enabled
+            false, // is_collection_needed
+        );
+        Self { diagnostics: Arc::new(diagnostics), reporter: None, monitoring_server: None }
+    }
+
     /// Whether anyone will read the collected metrics; mirrors the flag passed to
     /// `Diagnostics::new`. Callers that own a metric-source adapter can use this to
     /// substitute a no-op implementation and skip per-event work entirely.

@@ -25,7 +25,7 @@ const DB_NAME: &str = "isolation-test";
 fn create_reset_database() -> (TempDir, Arc<Database<WALClient>>) {
     init_logging();
     let tmp_dir = test_utils::create_tmp_storage_dir();
-    let dbm = DatabaseManager::new(&tmp_dir).unwrap();
+    let dbm = DatabaseManager::new(&tmp_dir, Arc::new(diagnostics::diagnostics_manager::DiagnosticsManager::new_test())).unwrap();
     dbm.put_database(DB_NAME).unwrap();
     let database = dbm.database(DB_NAME).unwrap();
     (tmp_dir, database)
