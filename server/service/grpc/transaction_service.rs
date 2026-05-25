@@ -210,8 +210,7 @@ impl TransactionService {
                     write_query_result = write_query_worker => {
                         let req_id = *req_id;
                         self.running_write_query = None;
-                        // Drop WriteQueryMetrics — observes Write query_duration.
-                        self.write_query_metrics.take();
+                        self.write_query_metrics.take(); // drop finishes observation
                         let (transaction, result) = write_query_result.expect("Expected write query result");
                         self.transaction = Some(transaction);
                         if let Err(status) = self.transmit_write_results(req_id, result) {
@@ -554,7 +553,7 @@ impl TransactionService {
                 }
             }
             (false, true) => {
-                self.txn_metrics.take();
+                self.txn_metrics.take(); // drop -> submits
             }
             (false, false) => {}
         }
@@ -600,7 +599,6 @@ impl TransactionService {
             }
         };
 
-        // Non-terminal: transaction stays alive; record RolledBack immediately.
         if let Some(m) = self.txn_metrics.as_ref() {
             m.record_rolled_back();
         }
@@ -651,9 +649,7 @@ impl TransactionService {
             }
         };
 
-        // Drop fires the terminal outcome (Closed unless commit already marked it
-        // Committed), transaction_duration, and queries_per_transaction.
-        self.txn_metrics.take();
+        self.txn_metrics.take(); // drop -> submits
     }
 
     async fn interrupt_and_close_responders(&mut self, interrupt: InterruptType) {
@@ -693,8 +689,8 @@ impl TransactionService {
 
     async fn finish_running_write_query_no_transmit(&mut self, interrupt: InterruptType) -> Result<(), Status> {
         if let Some((req_id, worker)) = self.running_write_query.take() {
-            self.write_query_metrics.take();
             let (transaction, result) = worker.await.expect("Expected current write query to finish");
+            self.write_query_metrics.take(); // drops -> records
             self.transaction = Some(transaction);
 
             if let Err(err) = result {
@@ -834,9 +830,8 @@ impl TransactionService {
             return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
         }
 
-        // Count dispatched queries before parsing — failed-parse queries still
-        // count, matching n+1 detection semantics.
         if let Some(m) = self.txn_metrics.as_mut() {
+            // NOTE: if we ever handle multiple queries per query_req, we'll want to update this
             m.record_query();
         }
 
@@ -893,8 +888,6 @@ impl TransactionService {
         if let Some(transaction) = self.transaction.take() {
             match transaction {
                 Transaction::Schema(schema_transaction) => {
-                    let database_name = schema_transaction.database.name().to_owned();
-                    let started = Instant::now();
                     let (transaction, result) =
                         spawn_blocking(move || execute_schema_query(schema_transaction, query, source_query))
                             .await
@@ -974,8 +967,6 @@ impl TransactionService {
             }
         };
         self.running_write_query = Some((req_id, tokio::spawn(async move { handle.await.unwrap() })));
-        // WriteQueryMetrics observes query_duration on Drop — fires when the
-        // worker reaps in the listen loop or when interrupted via take().
         if let Some(m) = self.txn_metrics.as_ref() {
             self.write_query_metrics =
                 Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name().to_owned()));
@@ -1234,9 +1225,6 @@ impl TransactionService {
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
         let timeout_at = self.timeout_at;
         let interrupt = self.query_interrupt_receiver.clone();
-        // Captured into the spawn_blocking closure so the read worker can observe
-        // typedb_query_duration_seconds{kind="read"} at the "time to first batch"
-        // point (first non-init_ok response on the stream — see respond_read_query_sync).
         let diagnostics_manager = self.server_state.diagnostics_manager();
         let database_name = self.transaction.as_ref().unwrap().database_name().to_owned();
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
@@ -1248,8 +1236,7 @@ impl TransactionService {
             spawn_blocking(move || {
                 let start_time = Instant::now();
                 // first_observation_at is taken on the first emitted response other
-                // than init_ok_*. Time-to-first-batch semantics: the init_ok_* is a
-                // "headers ready" message, not a result row, so we exclude it.
+                // than init_ok_*. Time-to-first-batch semantics.
                 let mut first_observation_at: Option<Instant> = Some(start_time);
                 let pipeline = query_manager.prepare_read_pipeline(
                     snapshot.clone(),

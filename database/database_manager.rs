@@ -38,37 +38,8 @@ pub struct DatabaseManager {
     diagnostics_manager: Arc<DiagnosticsManager>,
 }
 
-#[derive(Debug)]
-struct WalMetricsAdapter {
-    fsync_histogram: Arc<HistogramMetrics>,
-    bytes_counter: Arc<AtomicU64>,
-}
-
-impl WalMetrics for WalMetricsAdapter {
-    fn record_fsync_duration(&self, duration: std::time::Duration) {
-        self.fsync_histogram.observe_duration(duration);
-    }
-    fn record_bytes_written(&self, bytes: u64) {
-        self.bytes_counter.fetch_add(bytes, Ordering::Relaxed);
-    }
-}
-
 impl DatabaseManager {
     const IMPORT_DIRECTORY_NAME: &'static str = concat!(internal_database_prefix!(), "import");
-
-    fn wal_metrics_for(&self, name: &str) -> Arc<dyn WalMetrics> {
-        Self::wal_metrics_via(&self.diagnostics_manager, name)
-    }
-
-    fn wal_metrics_via(diagnostics_manager: &DiagnosticsManager, name: &str) -> Arc<dyn WalMetrics> {
-        // Internal databases are excluded from the user-facing diagnostics surface
-        // (matches the is_user_database filter applied at submit_database_metrics).
-        if Self::is_internal_database(name) {
-            return Arc::new(NoopWalMetrics);
-        }
-        let (fsync_histogram, bytes_counter) = diagnostics_manager.wal_metrics_handles(name);
-        Arc::new(WalMetricsAdapter { fsync_histogram, bytes_counter })
-    }
 
     pub fn new(
         data_directory: impl AsRef<Path>,
@@ -119,7 +90,7 @@ impl DatabaseManager {
                 continue;
             }
 
-            let wal_metrics = Self::wal_metrics_via(diagnostics_manager, &database_name);
+            let wal_metrics = Self::wal_metrics_adapter(diagnostics_manager, &database_name);
             let database = match Database::<WALClient>::open(&entry_path, wal_metrics) {
                 Ok(database) => database,
                 Err(DatabaseOpenError::NotADatabase { .. }) => {
@@ -358,12 +329,12 @@ impl DatabaseManager {
     }
 
     fn new_public_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.data_directory.join(name), self.wal_metrics_for(name))
+        Database::<WALClient>::open(&self.data_directory.join(name), Self::wal_metrics_adapter(&self.diagnostics_manager, name))
             .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 
     fn new_imported_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.import_directory.join(name), self.wal_metrics_for(name))
+        Database::<WALClient>::open(&self.import_directory.join(name), Self::wal_metrics_adapter(&self.diagnostics_manager, name))
             .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 
@@ -412,4 +383,28 @@ impl DatabaseManager {
         }
         Ok(())
     }
+
+    fn wal_metrics_adapter(diagnostics_manager: &DiagnosticsManager, name: &str) -> Arc<dyn WalMetrics> {
+        if Self::is_internal_database(name) {
+            return Arc::new(NoopWalMetrics);
+        }
+        let (fsync_histogram, bytes_counter) = diagnostics_manager.wal_metrics_handles(name);
+        Arc::new(WalMetricsAdapter { fsync_histogram, bytes_counter })
+    }
 }
+
+#[derive(Debug)]
+struct WalMetricsAdapter {
+    fsync_histogram: Arc<HistogramMetrics>,
+    bytes_counter: Arc<AtomicU64>,
+}
+
+impl WalMetrics for WalMetricsAdapter {
+    fn record_fsync_duration(&self, duration: std::time::Duration) {
+        self.fsync_histogram.observe_duration(duration);
+    }
+    fn record_bytes_written(&self, bytes: u64) {
+        self.bytes_counter.fetch_add(bytes, Ordering::Relaxed);
+    }
+}
+

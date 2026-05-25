@@ -12,12 +12,6 @@ use diagnostics::{
 };
 use tokio::time::Instant;
 
-/// Per-transaction metric accumulator. Records Started on construction;
-/// rollbacks fire RolledBack inline (non-terminal); commit success is signalled
-/// via mark_committed. Drop emits the terminal outcome (Committed if marked,
-/// otherwise Closed) + transaction_duration + queries_per_transaction in one
-/// shot. Drop runs on panic, so the lifecycle invariant
-/// `started == committed + closed` holds by construction.
 #[derive(Debug)]
 pub(crate) struct TransactionMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
@@ -86,9 +80,6 @@ impl Drop for TransactionMetrics {
     }
 }
 
-/// Per-write-query timer. Constructed when a write query worker is spawned;
-/// Drop observes the Write query duration. Interrupt / cancel / timeout paths
-/// drop the worker and this struct together, so duration is always recorded.
 #[derive(Debug)]
 pub(crate) struct WriteQueryMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
