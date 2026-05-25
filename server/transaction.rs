@@ -71,6 +71,10 @@ impl Transaction {
         with_readable_transaction!(self, |transaction| { transaction.database.name() })
     }
 
+    pub fn database_name_arc(&self) -> Arc<String> {
+        with_readable_transaction!(self, |transaction| { transaction.database.name_arc() })
+    }
+
     pub fn close(self) {
         match self {
             Transaction::Read(transaction) => transaction.close(),

@@ -15,7 +15,7 @@ use tokio::time::Instant;
 #[derive(Debug)]
 pub(crate) struct TransactionMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
-    database_name: String,
+    database_name: Arc<String>,
     kind: LoadKind,
     client: ClientEndpoint,
     opened_at: Instant,
@@ -26,12 +26,12 @@ pub(crate) struct TransactionMetrics {
 impl TransactionMetrics {
     pub(crate) fn new(
         diagnostics_manager: Arc<DiagnosticsManager>,
-        database_name: String,
+        database_name: Arc<String>,
         kind: LoadKind,
         client: ClientEndpoint,
     ) -> Self {
-        diagnostics_manager.increment_load_count(client, &database_name, kind);
-        diagnostics_manager.record_transaction_outcome(&database_name, kind, TransactionOutcome::Started);
+        diagnostics_manager.increment_load_count(client, database_name.as_str(), kind);
+        diagnostics_manager.record_transaction_outcome(database_name.as_str(), kind, TransactionOutcome::Started);
         Self {
             diagnostics_manager,
             database_name,
@@ -47,8 +47,13 @@ impl TransactionMetrics {
         self.query_count += 1;
     }
 
+    #[allow(dead_code)]
     pub(crate) fn database_name(&self) -> &str {
-        &self.database_name
+        self.database_name.as_str()
+    }
+
+    pub(crate) fn database_name_arc(&self) -> Arc<String> {
+        Arc::clone(&self.database_name)
     }
 
     pub(crate) fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
@@ -64,7 +69,7 @@ impl TransactionMetrics {
     /// (Committed or Closed) is still decided later.
     pub(crate) fn record_rolled_back(&self) {
         self.diagnostics_manager.record_transaction_outcome(
-            &self.database_name,
+            self.database_name.as_str(),
             self.kind,
             TransactionOutcome::RolledBack,
         );
@@ -75,27 +80,27 @@ impl Drop for TransactionMetrics {
     fn drop(&mut self) {
         // Decrement the connection-active gauge first: the connection is closing
         // regardless of which terminal outcome we record next.
-        self.diagnostics_manager.decrement_load_count(self.client, &self.database_name, self.kind);
+        self.diagnostics_manager.decrement_load_count(self.client, self.database_name.as_str(), self.kind);
         let outcome = self.terminal_outcome.take().unwrap_or(TransactionOutcome::Closed);
-        self.diagnostics_manager.record_transaction_outcome(&self.database_name, self.kind, outcome);
+        self.diagnostics_manager.record_transaction_outcome(self.database_name.as_str(), self.kind, outcome);
         self.diagnostics_manager.observe_transaction_duration(
-            &self.database_name,
+            self.database_name.as_str(),
             self.kind,
             self.opened_at.elapsed(),
         );
-        self.diagnostics_manager.observe_queries_per_transaction(&self.database_name, self.query_count);
+        self.diagnostics_manager.observe_queries_per_transaction(self.database_name.as_str(), self.query_count);
     }
 }
 
 #[derive(Debug)]
 pub(crate) struct WriteQueryMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
-    database_name: String,
+    database_name: Arc<String>,
     started_at: Instant,
 }
 
 impl WriteQueryMetrics {
-    pub(crate) fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: String) -> Self {
+    pub(crate) fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: Arc<String>) -> Self {
         Self { diagnostics_manager, database_name, started_at: Instant::now() }
     }
 }
@@ -103,7 +108,7 @@ impl WriteQueryMetrics {
 impl Drop for WriteQueryMetrics {
     fn drop(&mut self) {
         self.diagnostics_manager.observe_query_duration(
-            &self.database_name,
+            self.database_name.as_str(),
             QueryType::Write,
             self.started_at.elapsed(),
         );
@@ -113,12 +118,12 @@ impl Drop for WriteQueryMetrics {
 #[derive(Debug)]
 pub(crate) struct ReadQueryMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
-    database_name: String,
+    database_name: Arc<String>,
     first_observation_at: Option<Instant>,
 }
 
 impl ReadQueryMetrics {
-    pub(crate) fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: String) -> Self {
+    pub(crate) fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: Arc<String>) -> Self {
         Self { diagnostics_manager, database_name, first_observation_at: Some(Instant::now()) }
     }
 
@@ -130,7 +135,7 @@ impl ReadQueryMetrics {
     pub(crate) fn observe_first_response(&mut self) {
         if let Some(start) = self.first_observation_at.take() {
             self.diagnostics_manager.observe_query_duration(
-                &self.database_name,
+                self.database_name.as_str(),
                 QueryType::Read,
                 start.elapsed(),
             );
@@ -145,18 +150,18 @@ impl ReadQueryMetrics {
 #[derive(Debug)]
 pub(crate) struct SchemaQueryMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
-    database_name: String,
+    database_name: Arc<String>,
     started_at: Instant,
 }
 
 impl SchemaQueryMetrics {
-    pub(crate) fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: String) -> Self {
+    pub(crate) fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: Arc<String>) -> Self {
         Self { diagnostics_manager, database_name, started_at: Instant::now() }
     }
 
     pub(crate) fn observe(self) {
         self.diagnostics_manager.observe_query_duration(
-            &self.database_name,
+            self.database_name.as_str(),
             QueryType::Schema,
             self.started_at.elapsed(),
         );

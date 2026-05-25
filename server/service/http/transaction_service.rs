@@ -281,7 +281,7 @@ impl TransactionService {
         let load_kind = transaction.load_kind();
         self.txn_metrics = Some(TransactionMetrics::new(
             self.server_state.diagnostics_manager(),
-            database_name.clone(),
+            transaction.database_name_arc(),
             load_kind,
             ClientEndpoint::Http,
         ));
@@ -743,7 +743,7 @@ impl TransactionService {
                 Transaction::Schema(schema_transaction) => {
                     let schema_metrics = SchemaQueryMetrics::new(
                         self.server_state.diagnostics_manager(),
-                        schema_transaction.database.name().to_owned(),
+                        schema_transaction.database.name_arc(),
                     );
                     let (transaction, result) =
                         spawn_blocking(move || execute_schema_query(schema_transaction, query, source_query))
@@ -782,7 +782,7 @@ impl TransactionService {
                 self.running_write_query = Some((responder, tokio::spawn(async move { handle.await.unwrap() })));
                 if let Some(m) = self.txn_metrics.as_ref() {
                     self.write_query_metrics =
-                        Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name().to_owned()));
+                        Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name_arc()));
                 }
             }
             Err(err) => {
