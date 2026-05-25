@@ -2233,7 +2233,7 @@ fn attribute_struct_write_read() {
         let attr_value_type = attr_type.get_value_type_without_source(&snapshot, &type_manager).unwrap().unwrap();
         assert_eq!(ValueTypeCategory::Struct, attr_value_type.category());
         let attr_instance = thing_manager
-            .create_attribute(&mut snapshot, attr_type, Value::Struct(Cow::Owned(struct_value.clone())))
+            .create_attribute(&mut snapshot, attr_type, Value::Struct(Box::new(Cow::Owned(struct_value.clone()))))
             .unwrap();
         thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
         snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
@@ -2251,7 +2251,7 @@ fn attribute_struct_write_read() {
         let attr = attr_vec.first().unwrap().clone();
         let value_0 = attr.get_value(&snapshot, &thing_manager, StorageCounters::DISABLED).unwrap();
         match value_0 {
-            Value::Struct(v) => assert_eq!(struct_value, *v),
+            Value::Struct(v) => assert_eq!(struct_value, **v),
             _ => panic!("Wrong data type"),
         }
 
@@ -2259,7 +2259,7 @@ fn attribute_struct_write_read() {
             .get_attribute_with_value(
                 &snapshot,
                 attr_type,
-                Value::Struct(Cow::Borrowed(&struct_value)),
+                Value::Struct(Box::new(Cow::Borrowed(&struct_value))),
                 StorageCounters::DISABLED,
             )
             .unwrap()
@@ -2321,10 +2321,10 @@ fn read_attribute_struct_by_field() {
                 StructValue::new(nested_struct_key.clone(), HashMap::from([(0, Value::String(Cow::Borrowed(val)))]));
             let outer_struct_value = StructValue::new(
                 struct_key.clone(),
-                HashMap::from([(0, Value::Struct(Cow::Owned(nested_struct_value)))]),
+                HashMap::from([(0, Value::Struct(Box::new(Cow::Owned(nested_struct_value))))]),
             );
             let attr = thing_manager
-                .create_attribute(&mut snapshot, attr_type, Value::Struct(Cow::Borrowed(&outer_struct_value)))
+                .create_attribute(&mut snapshot, attr_type, Value::Struct(Box::new(Cow::Borrowed(&outer_struct_value))))
                 .unwrap();
             attrs.push(attr);
         }

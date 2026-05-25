@@ -697,8 +697,7 @@ fn run_mixed_relations_benchmark(thread_counts: &[usize], batch_size: usize, wri
                 drop(signal.read().unwrap());
                 let mut count: u64 = 0;
                 while running.load(Ordering::Relaxed) {
-                    let query_str =
-                        r#"match $f isa friendship, links (friend: $p, friend: $q); limit 1000;"#;
+                    let query_str = r#"match $f isa friendship, links (friend: $p, friend: $q); limit 1000;"#;
                     execute_read_query(&db, query_str);
                     count += 1;
                 }
