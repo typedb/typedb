@@ -109,3 +109,56 @@ impl Drop for WriteQueryMetrics {
         );
     }
 }
+
+#[derive(Debug)]
+pub(crate) struct ReadQueryMetrics {
+    diagnostics_manager: Arc<DiagnosticsManager>,
+    database_name: String,
+    first_observation_at: Option<Instant>,
+}
+
+impl ReadQueryMetrics {
+    pub(crate) fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: String) -> Self {
+        Self { diagnostics_manager, database_name, first_observation_at: Some(Instant::now()) }
+    }
+
+    /// Fires typedb_query_duration_seconds{kind="read"} on the first call;
+    /// subsequent calls are no-ops. Time-to-first-batch semantics: this is
+    /// intended to be called at every read-response site except the
+    /// init_ok_* headers (which are server-prepared markers, not first-batch
+    /// content).
+    pub(crate) fn observe_first_response(&mut self) {
+        if let Some(start) = self.first_observation_at.take() {
+            self.diagnostics_manager.observe_query_duration(
+                &self.database_name,
+                QueryType::Read,
+                start.elapsed(),
+            );
+        }
+    }
+}
+
+/// Single-shot schema-query timer: constructed at the start of the schema
+/// query, consumed by `observe` at the single completion point. Consumes
+/// `self` to enforce single-shot semantics — unlike `ReadQueryMetrics`,
+/// which is called many times but only fires once.
+#[derive(Debug)]
+pub(crate) struct SchemaQueryMetrics {
+    diagnostics_manager: Arc<DiagnosticsManager>,
+    database_name: String,
+    started_at: Instant,
+}
+
+impl SchemaQueryMetrics {
+    pub(crate) fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: String) -> Self {
+        Self { diagnostics_manager, database_name, started_at: Instant::now() }
+    }
+
+    pub(crate) fn observe(self) {
+        self.diagnostics_manager.observe_query_duration(
+            &self.database_name,
+            QueryType::Schema,
+            self.started_at.elapsed(),
+        );
+    }
+}

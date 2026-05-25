@@ -51,7 +51,7 @@ use typeql::{parse_query, query::SchemaQuery};
 use crate::{
     service::{
         QueryType, TransactionType,
-        transaction_metrics::{TransactionMetrics, WriteQueryMetrics},
+        transaction_metrics::{SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics},
         http::message::{
             analyze::{
                 AnalysedQueryResponse, encode_analyzed_query,
@@ -741,17 +741,15 @@ impl TransactionService {
         if let Some(transaction) = self.transaction.take() {
             match transaction {
                 Transaction::Schema(schema_transaction) => {
-                    let database_name = schema_transaction.database.name().to_owned();
-                    let started = Instant::now();
+                    let schema_metrics = SchemaQueryMetrics::new(
+                        self.server_state.diagnostics_manager(),
+                        schema_transaction.database.name().to_owned(),
+                    );
                     let (transaction, result) =
                         spawn_blocking(move || execute_schema_query(schema_transaction, query, source_query))
                             .await
                             .expect("Expected schema query execution finishing");
-                    self.server_state.diagnostics_manager().observe_query_duration(
-                        &database_name,
-                        diagnostics::metrics::QueryType::Schema,
-                        started.elapsed(),
-                    );
+                    schema_metrics.observe();
                     self.transaction = Some(Transaction::Schema(transaction));
                     match result {
                         Ok(_) => return Ok(TransactionServiceResponse::Query(QueryAnswer::ResOk(QueryType::Schema))),

@@ -20,10 +20,7 @@ use database::query::{
     StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
     execute_write_query_in_schema, execute_write_query_in_write,
 };
-use diagnostics::{
-    diagnostics_manager::DiagnosticsManager,
-    metrics::{ActionKind, ClientEndpoint},
-};
+use diagnostics::metrics::{ActionKind, ClientEndpoint};
 use executor::{
     ExecutionInterrupt, InterruptType,
     batch::Batch,
@@ -59,7 +56,7 @@ use uuid::Uuid;
 use crate::{
     service::{
         TransactionType,
-        transaction_metrics::{TransactionMetrics, WriteQueryMetrics},
+        transaction_metrics::{ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics},
         grpc::{
             analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
             diagnostics::run_with_diagnostics_async,
@@ -855,10 +852,15 @@ impl TransactionService {
         if let Some(transaction) = self.transaction.take() {
             match transaction {
                 Transaction::Schema(schema_transaction) => {
+                    let schema_metrics = SchemaQueryMetrics::new(
+                        self.server_state.diagnostics_manager(),
+                        schema_transaction.database.name().to_owned(),
+                    );
                     let (transaction, result) =
                         spawn_blocking(move || execute_schema_query(schema_transaction, query, source_query))
                             .await
                             .expect("Expected schema query execution finishing");
+                    schema_metrics.observe();
                     self.transaction = Some(Transaction::Schema(transaction));
                     let message_ok_done =
                         result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
@@ -1202,9 +1204,9 @@ impl TransactionService {
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
                 let start_time = Instant::now();
-                // first_observation_at is taken on the first emitted response other
-                // than init_ok_*. Time-to-first-batch semantics.
-                let mut first_observation_at: Option<Instant> = Some(start_time);
+                // Time-to-first-batch semantics: fires typedb_query_duration_seconds
+                // {kind="read"} on the first emitted response other than init_ok_*.
+                let mut read_metrics = ReadQueryMetrics::new(diagnostics_manager, database_name);
                 let pipeline = query_manager.prepare_read_pipeline(
                     snapshot.clone(),
                     &type_manager,
@@ -1217,9 +1219,7 @@ impl TransactionService {
                     Self::submit_read_response_observing_first(
                         &sender,
                         StreamQueryResponse::done_err(err),
-                        &mut first_observation_at,
-                        &diagnostics_manager,
-                        &database_name,
+                        &mut read_metrics,
                     );
                 });
                 Self::respond_read_query_sync(
@@ -1233,9 +1233,7 @@ impl TransactionService {
                     &type_manager,
                     thing_manager,
                     start_time,
-                    &mut first_observation_at,
-                    &diagnostics_manager,
-                    &database_name,
+                    &mut read_metrics,
                 );
             })
         })
@@ -1252,9 +1250,7 @@ impl TransactionService {
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
         start_time: Instant,
-        first_observation_at: &mut Option<Instant>,
-        diagnostics_manager: &DiagnosticsManager,
-        database_name: &str,
+        read_metrics: &mut ReadQueryMetrics,
     ) {
         let query_profile: Arc<QueryProfile>;
         let encoding_profile: EncodingProfile;
@@ -1270,7 +1266,8 @@ impl TransactionService {
                             source_query: source_query.to_string(),
                             typedb_source: err,
                         }),
-                    first_observation_at, diagnostics_manager, database_name);
+                        read_metrics,
+                    );
                 });
             query_profile = context.profile;
             encoding_profile = EncodingProfile::new(query_profile.is_enabled());
@@ -1281,19 +1278,25 @@ impl TransactionService {
                     Self::submit_read_response_observing_first(
                         sender,
                         StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
-                    first_observation_at, diagnostics_manager, database_name);
+                        read_metrics,
+                    );
                     return;
                 }
                 if Instant::now() >= timeout_at {
                     Self::submit_read_response_observing_first(
                         sender,
                         StreamQueryResponse::done_err(TransactionServiceError::TransactionTimeout {}),
-                    first_observation_at, diagnostics_manager, database_name);
+                        read_metrics,
+                    );
                     return;
                 }
 
                 let document = unwrap_or_execute_and_return!(next, |err| {
-                    Self::submit_read_response_observing_first(sender, StreamQueryResponse::done_err(err), first_observation_at, diagnostics_manager, database_name);
+                    Self::submit_read_response_observing_first(
+                        sender,
+                        StreamQueryResponse::done_err(err),
+                        read_metrics,
+                    );
                 });
 
                 let encoded_document = encode_document(
@@ -1305,17 +1308,21 @@ impl TransactionService {
                     encoding_profile.storage_counters(),
                 );
                 match encoded_document {
-                    Ok(encoded_document) => {
-                        Self::submit_read_response_observing_first(sender, StreamQueryResponse::next_document(encoded_document), first_observation_at, diagnostics_manager, database_name)
-                    }
+                    Ok(encoded_document) => Self::submit_read_response_observing_first(
+                        sender,
+                        StreamQueryResponse::next_document(encoded_document),
+                        read_metrics,
+                    ),
                     Err(typedb_source) => {
                         Self::submit_read_response_observing_first(
                             sender,
                             StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
-                        first_observation_at, diagnostics_manager, database_name);
+                            read_metrics,
+                        );
                         return;
                     }
-                }}
+                }
+            }
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
@@ -1328,7 +1335,8 @@ impl TransactionService {
                     Self::submit_read_response_observing_first(
                         &sender,
                         StreamQueryResponse::init_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
-                    first_observation_at, diagnostics_manager, database_name)
+                        read_metrics,
+                    )
                 });
 
             let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read, encoded_structure);
@@ -1341,7 +1349,8 @@ impl TransactionService {
                             source_query: source_query.to_string(),
                             typedb_source: err,
                         }),
-                    first_observation_at, diagnostics_manager, database_name);
+                        read_metrics,
+                    );
                 });
             query_profile = context.profile;
             encoding_profile = EncodingProfile::new(query_profile.is_enabled());
@@ -1351,19 +1360,25 @@ impl TransactionService {
                     Self::submit_read_response_observing_first(
                         sender,
                         StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
-                    first_observation_at, diagnostics_manager, database_name);
+                        read_metrics,
+                    );
                     return;
                 }
                 if Instant::now() >= timeout_at {
                     Self::submit_read_response_observing_first(
                         sender,
                         StreamQueryResponse::done_err(TransactionServiceError::TransactionTimeout {}),
-                    first_observation_at, diagnostics_manager, database_name);
+                        read_metrics,
+                    );
                     return;
                 }
 
                 let row = unwrap_or_execute_and_return!(next, |err| {
-                    Self::submit_read_response_observing_first(sender, StreamQueryResponse::done_err(err), first_observation_at, diagnostics_manager, database_name);
+                    Self::submit_read_response_observing_first(
+                        sender,
+                        StreamQueryResponse::done_err(err),
+                        read_metrics,
+                    );
                 });
 
                 let encoded_row = encode_row(
@@ -1377,12 +1392,17 @@ impl TransactionService {
                     encoding_profile.storage_counters(),
                 );
                 match encoded_row {
-                    Ok(encoded_row) => Self::submit_read_response_observing_first(sender, StreamQueryResponse::next_row(encoded_row), first_observation_at, diagnostics_manager, database_name),
+                    Ok(encoded_row) => Self::submit_read_response_observing_first(
+                        sender,
+                        StreamQueryResponse::next_row(encoded_row),
+                        read_metrics,
+                    ),
                     Err(typedb_source) => {
                         Self::submit_read_response_observing_first(
                             sender,
                             StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
-                        first_observation_at, diagnostics_manager, database_name);
+                            read_metrics,
+                        );
                         return;
                     }
                 }
@@ -1399,7 +1419,7 @@ impl TransactionService {
                 encoding_profile
             );
         }
-        Self::submit_read_response_observing_first(sender, StreamQueryResponse::done_ok(), first_observation_at, diagnostics_manager, database_name)
+        Self::submit_read_response_observing_first(sender, StreamQueryResponse::done_ok(), read_metrics)
     }
 
     fn submit_response_sync(sender: &Sender<StreamQueryResponse>, response: StreamQueryResponse) {
@@ -1409,24 +1429,15 @@ impl TransactionService {
     }
 
     /// Like submit_response_sync, but observes typedb_query_duration_seconds
-    /// {kind="read"} for the elapsed time since `*first_observation_at` (if Some)
-    /// and clears the slot so the observation fires exactly once per query.
+    /// {kind="read"} on the first call (time-to-first-batch semantics).
     /// Used for every read-response site except the `init_ok_*` headers, which
     /// are server "schema/columns ready" markers, not first-batch content.
     fn submit_read_response_observing_first(
         sender: &Sender<StreamQueryResponse>,
         response: StreamQueryResponse,
-        first_observation_at: &mut Option<Instant>,
-        diagnostics_manager: &DiagnosticsManager,
-        database_name: &str,
+        metrics: &mut ReadQueryMetrics,
     ) {
-        if let Some(start) = first_observation_at.take() {
-            diagnostics_manager.observe_query_duration(
-                database_name,
-                diagnostics::metrics::QueryType::Read,
-                start.elapsed(),
-            );
-        }
+        metrics.observe_first_response();
         Self::submit_response_sync(sender, response);
     }
 
