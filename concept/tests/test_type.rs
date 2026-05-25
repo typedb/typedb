@@ -560,7 +560,7 @@ fn annotations_with_range_arguments() {
                 &mut snapshot,
                 &type_manager,
                 &thing_manager,
-                AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None)),
+                AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(Box::new(now))), None)),
                 StorageCounters::DISABLED,
             )
             .unwrap();
@@ -728,27 +728,21 @@ fn annotations_with_range_arguments() {
                 .contains(&OwnsAnnotation::Range(AnnotationRange::new(None, Some(Value::Double(0.00000000001)))))
         );
 
-        assert!(
-            schedule_type
-                .get_annotations_declared(&snapshot, &type_manager)
-                .unwrap()
-                .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None)))
-        );
+        assert!(schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
+            &AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(Box::new(now))), None))
+        ));
         assert!(
             !schedule_type
                 .get_annotations_declared(&snapshot, &type_manager)
                 .unwrap()
                 .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, None)))
         );
-        assert!(
-            !schedule_type
-                .get_annotations_declared(&snapshot, &type_manager)
-                .unwrap()
-                .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::DateTimeTZ(now)))))
-        );
+        assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
+            &AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::DateTimeTZ(Box::new(now)))))
+        ));
         assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &AttributeTypeAnnotation::Range(AnnotationRange::new(
-                Some(Value::DateTimeTZ(chrono::offset::Local::now().with_timezone(&tz))),
+                Some(Value::DateTimeTZ(Box::new(chrono::offset::Local::now().with_timezone(&tz)))),
                 None,
             ))
         ));
@@ -1033,7 +1027,7 @@ fn annotations_with_value_arguments() {
                 &mut snapshot,
                 &type_manager,
                 &thing_manager,
-                AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)])),
+                AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(Box::new(now))])),
                 StorageCounters::DISABLED,
             )
             .unwrap();
@@ -1192,21 +1186,20 @@ fn annotations_with_value_arguments() {
         );
 
         assert!(
-            schedule_type
-                .get_annotations_declared(&snapshot, &type_manager)
-                .unwrap()
-                .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)])))
+            schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
+                &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(Box::new(now))]))
+            )
         );
         assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
             &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![
-                Value::DateTimeTZ(now),
-                Value::DateTimeTZ(now),
+                Value::DateTimeTZ(Box::new(now)),
+                Value::DateTimeTZ(Box::new(now)),
             ]))
         ));
         assert!(!schedule_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
-            &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(
+            &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(Box::new(
                 chrono::offset::Local::now().with_timezone(&tz)
-            )]))
+            ))]))
         ));
         assert!(schedule_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
 
