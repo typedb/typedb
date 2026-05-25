@@ -810,14 +810,14 @@ mod test {
     }
 
     fn create_wal(directory: &TempDir) -> WAL {
-        let mut wal = WAL::create(directory).unwrap();
+        let mut wal = WAL::create(directory, std::sync::Arc::new(super::NoopWalMetrics)).unwrap();
         wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
         wal.register_record_type(UnsequencedTestRecord::RECORD_TYPE, UnsequencedTestRecord::RECORD_NAME);
         wal
     }
 
     fn load_wal(directory: &TempDir) -> WAL {
-        let mut wal = WAL::load(directory).unwrap();
+        let mut wal = WAL::load(directory, std::sync::Arc::new(super::NoopWalMetrics)).unwrap();
         wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
         wal.register_record_type(UnsequencedTestRecord::RECORD_TYPE, UnsequencedTestRecord::RECORD_NAME);
         wal

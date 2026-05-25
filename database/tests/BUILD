@@ -14,6 +14,7 @@ rust_test(
     deps = [
         "//common/logger",
         "//database",
+        "//durability",
         "//encoding",
         "//storage",
         "//util/test:test_utils",
