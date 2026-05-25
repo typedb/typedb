@@ -61,9 +61,6 @@ pub(crate) fn unsafe_compare_result_tuple<'a, 'b>(
 pub enum Tuple<'a> {
     Single([VariableValue<'a>; 1]),
     Pair([VariableValue<'a>; 2]),
-    // Box the larger variants so the enum is sized for Pair (~192 bytes) rather than Quintuple
-    // (~480 bytes). Per-row memcpy through Peekable/Inspect/filter_map drops proportionally.
-    // Cost: one heap alloc per Triple/Quintuple row materialised.
     Triple(Box<[VariableValue<'a>; 3]>),
     Quintuple(Box<[VariableValue<'a>; 5]>),
     Arbitrary(Vec<VariableValue<'a>>), // TODO: unknown sized tuples, for functions

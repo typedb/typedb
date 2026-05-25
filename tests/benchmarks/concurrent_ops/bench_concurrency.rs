@@ -189,6 +189,36 @@ fn seed_persons(database: &Arc<Database<WALClient>>, count: usize) {
     }
 }
 
+fn seed_friendships(database: &Arc<Database<WALClient>>, person_count: usize, friendship_count: usize) {
+    let batch_size = 1000;
+    let mut offset = 0;
+    while offset < friendship_count {
+        let n = std::cmp::min(batch_size, friendship_count - offset);
+        let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
+        for i in 0..n {
+            let idx = offset + i;
+            let a_id = idx % person_count;
+            let b_id = (idx * 7 + 3) % person_count;
+            let query_str = format!(
+                r#"match $a isa person, has name "person_{a_id}"; $b isa person, has name "person_{b_id}"; insert friendship (friend: $a, friend: $b);"#
+            );
+            let pipeline = typeql::parse_query(&query_str).unwrap().into_structure().into_pipeline();
+            let (returned_tx, result) = execute_write_query_in_write(
+                tx,
+                QueryOptions::default_grpc(),
+                pipeline,
+                query_str,
+                ExecutionInterrupt::new_uninterruptible(),
+            );
+            result.unwrap();
+            tx = returned_tx;
+        }
+        let (mut profile, intent) = tx.finalise();
+        intent.unwrap().commit(profile.commit_profile()).unwrap();
+        offset += n;
+    }
+}
+
 // --- Write transaction helpers ---
 
 fn execute_insert_batch(
@@ -612,7 +642,118 @@ fn run_mixed_benchmark(thread_counts: &[usize], batch_size: usize, write_ratio: 
     }
 }
 
-// --- W6: Pure Read ---
+// --- W6 (relations): Mixed read/write friendships ---
+//
+// Exercises the Links iterator path which yields Triple tuples
+// (relation, player, role_type) — useful for measuring the cost of large
+// Tuple enum variants.
+
+const MIXED_RELATIONS_PERSON_COUNT: usize = 10_000;
+const MIXED_RELATIONS_SEED_FRIENDSHIPS: usize = 50_000;
+
+fn run_mixed_relations_benchmark(thread_counts: &[usize], batch_size: usize, write_ratio: f64, show_dist: bool) {
+    let pct = (write_ratio * 100.0) as usize;
+    let name = format!("MixedRelations{pct}Write");
+    print_header(&name, batch_size);
+
+    for &num_threads in thread_counts {
+        let write_threads = std::cmp::max(1, (num_threads as f64 * write_ratio).round() as usize);
+        let read_threads = num_threads - write_threads;
+        if read_threads == 0 {
+            continue;
+        }
+
+        let (_tmp_dir, database) = create_database(SCHEMA);
+        seed_persons(&database, MIXED_RELATIONS_PERSON_COUNT);
+        seed_friendships(&database, MIXED_RELATIONS_PERSON_COUNT, MIXED_RELATIONS_SEED_FRIENDSHIPS);
+
+        let write_timings = Arc::new(PhaseTimings::new());
+        let write_ops_total = Arc::new(AtomicU64::new(0));
+        let read_ops_total = Arc::new(AtomicU64::new(0));
+
+        let ops_per_write_tx = batch_size;
+        let total_write_txns = TOTAL_OPS / ops_per_write_tx;
+        let next_write_batch = Arc::new(AtomicU64::new(0));
+        // Writes use ids past the pre-seeded range to avoid contention with reads.
+        let write_batch_offset = (MIXED_RELATIONS_SEED_FRIENDSHIPS / ops_per_write_tx) as u64;
+
+        let running = Arc::new(AtomicBool::new(true));
+
+        let start_signal = Arc::new(RwLock::new(()));
+        let write_guard = start_signal.write().unwrap();
+
+        let mut handles: Vec<JoinHandle<()>> = Vec::new();
+
+        // Spawn write threads (insert new friendships)
+        for _thread_id in 0..write_threads {
+            let db = database.clone();
+            let signal = start_signal.clone();
+            let timings = write_timings.clone();
+            let ops_counter = write_ops_total.clone();
+            let person_count = MIXED_RELATIONS_PERSON_COUNT;
+            let next_batch = next_write_batch.clone();
+            let total = total_write_txns;
+            handles.push(thread::spawn(move || {
+                drop(signal.read().unwrap());
+                loop {
+                    let batch_id = next_batch.fetch_add(1, Ordering::Relaxed) as usize;
+                    if batch_id >= total {
+                        break;
+                    }
+                    execute_relation_batch(
+                        &db,
+                        batch_id + write_batch_offset as usize,
+                        ops_per_write_tx,
+                        person_count,
+                        &timings,
+                    );
+                    ops_counter.fetch_add(ops_per_write_tx as u64, Ordering::Relaxed);
+                }
+            }));
+        }
+
+        // Spawn read threads (query friendships -> Links iterator -> Triple tuples)
+        for _thread_id in 0..read_threads {
+            let db = database.clone();
+            let signal = start_signal.clone();
+            let running = running.clone();
+            let ops_counter = read_ops_total.clone();
+            handles.push(thread::spawn(move || {
+                drop(signal.read().unwrap());
+                let mut count: u64 = 0;
+                while running.load(Ordering::Relaxed) {
+                    let person_id = (count % MIXED_RELATIONS_PERSON_COUNT as u64) as u32;
+                    let query_str = format!(
+                        r#"match $p isa person, has name "person_{person_id}"; $f isa friendship, links (friend: $p, friend: $q); limit 10;"#
+                    );
+                    execute_read_query(&db, &query_str);
+                    count += 1;
+                }
+                ops_counter.fetch_add(count, Ordering::Relaxed);
+            }));
+        }
+
+        let start = Instant::now();
+        drop(write_guard);
+
+        for handle in handles.drain(..write_threads) {
+            handle.join().unwrap();
+        }
+        running.store(false, Ordering::Relaxed);
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        let elapsed = start.elapsed();
+        let w_ops = write_ops_total.load(Ordering::Relaxed) as usize;
+        let r_ops = read_ops_total.load(Ordering::Relaxed) as usize;
+
+        print_mixed_result(num_threads, write_threads, read_threads, elapsed, w_ops, r_ops, &write_timings, show_dist);
+    }
+}
+
+// --- W7: Pure Read ---
 
 const READ_SEED_COUNT: usize = 10_000;
 
@@ -703,6 +844,11 @@ fn main() {
         run_mixed_benchmark(&thread_counts, batch_size, 0.2, show_dist);
     }
 
-    // W6: Pure Read
+    // W6: Mixed read/write relations (Triple-tuple-heavy)
+    for &batch_size in &[1000, 100, 1] {
+        run_mixed_relations_benchmark(&thread_counts, batch_size, 0.5, show_dist);
+    }
+
+    // W7: Pure Read
     run_pure_read_benchmark(&thread_counts);
 }
