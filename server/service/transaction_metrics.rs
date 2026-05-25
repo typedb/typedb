@@ -180,6 +180,17 @@ impl ReadQueryMetrics {
     }
 }
 
+impl Drop for ReadQueryMetrics {
+    fn drop(&mut self) {
+        // Catches error paths that exit before calling `observe_first_response`
+        // explicitly — gRPC observes on every response site (success or error)
+        // via its submission helper; HTTP error paths skip the explicit call,
+        // so Drop is what makes the kind="read" histogram symmetric across
+        // protocols. Idempotent: a no-op if `observe_first_response` already fired.
+        self.observe_first_response();
+    }
+}
+
 /// Single-shot schema-query timer: constructed at the start of the schema
 /// query, consumed by `observe` at the single completion point. Consumes
 /// `self` to enforce single-shot semantics — unlike `ReadQueryMetrics`,
