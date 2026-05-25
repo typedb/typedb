@@ -123,7 +123,7 @@ impl<'a> Value<'a> {
             Value::Decimal(decimal) => Value::Decimal(decimal),
             Value::Date(date) => Value::Date(date),
             Value::DateTime(date_time) => Value::DateTime(date_time),
-            Value::DateTimeTZ(ref date_time_tz) => Value::DateTimeTZ(Box::new(**date_time_tz)),
+            Value::DateTimeTZ(ref date_time_tz) => Value::DateTimeTZ(date_time_tz.clone()),
             Value::Duration(duration) => Value::Duration(duration),
             Value::String(ref string) => Value::String(Cow::Borrowed(string.as_ref())),
             Value::Struct(ref struct_) => Value::Struct(Box::new(Cow::Borrowed(struct_.as_ref().as_ref()))),
