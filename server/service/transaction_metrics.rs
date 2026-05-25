@@ -12,15 +12,49 @@ use diagnostics::{
 };
 use tokio::time::Instant;
 
+/// RAII pair for the connection-active gauge: the constructor increments,
+/// Drop decrements. Owning this as a field on `TransactionMetrics` ensures
+/// the gauge balances even if `TransactionMetrics::new` panics partway
+/// through (e.g. on a poisoned lock during `record_transaction_outcome`):
+/// the locally-bound guard unwinds and fires its Drop, balancing the
+/// earlier increment.
+#[derive(Debug)]
+struct LoadCountGuard {
+    diagnostics_manager: Arc<DiagnosticsManager>,
+    client: ClientEndpoint,
+    database_name: Arc<String>,
+    kind: LoadKind,
+}
+
+impl LoadCountGuard {
+    fn new(
+        diagnostics_manager: Arc<DiagnosticsManager>,
+        client: ClientEndpoint,
+        database_name: Arc<String>,
+        kind: LoadKind,
+    ) -> Self {
+        diagnostics_manager.increment_load_count(client, database_name.as_str(), kind);
+        Self { diagnostics_manager, client, database_name, kind }
+    }
+}
+
+impl Drop for LoadCountGuard {
+    fn drop(&mut self) {
+        self.diagnostics_manager.decrement_load_count(self.client, self.database_name.as_str(), self.kind);
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct TransactionMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
     database_name: Arc<String>,
     kind: LoadKind,
-    client: ClientEndpoint,
     opened_at: Instant,
     query_count: u64,
     terminal_outcome: Option<TransactionOutcome>,
+    // Declared LAST so its Drop fires AFTER `TransactionMetrics::drop` runs.
+    // (Rust drops fields in declaration order; the Drop impl body runs first.)
+    _load_guard: LoadCountGuard,
 }
 
 impl TransactionMetrics {
@@ -30,16 +64,19 @@ impl TransactionMetrics {
         kind: LoadKind,
         client: ClientEndpoint,
     ) -> Self {
-        diagnostics_manager.increment_load_count(client, database_name.as_str(), kind);
+        // Increment first via the guard. From here, any panic during this
+        // constructor unwinds the local guard and balances the gauge.
+        let _load_guard =
+            LoadCountGuard::new(diagnostics_manager.clone(), client, database_name.clone(), kind);
         diagnostics_manager.record_transaction_outcome(database_name.as_str(), kind, TransactionOutcome::Started);
         Self {
             diagnostics_manager,
             database_name,
             kind,
-            client,
             opened_at: Instant::now(),
             query_count: 0,
             terminal_outcome: None,
+            _load_guard,
         }
     }
 
@@ -78,9 +115,9 @@ impl TransactionMetrics {
 
 impl Drop for TransactionMetrics {
     fn drop(&mut self) {
-        // Decrement the connection-active gauge first: the connection is closing
-        // regardless of which terminal outcome we record next.
-        self.diagnostics_manager.decrement_load_count(self.client, self.database_name.as_str(), self.kind);
+        // The connection-active gauge is decremented by `_load_guard`'s Drop,
+        // which fires AFTER this body returns. Record the terminal outcome
+        // and final observations here.
         let outcome = self.terminal_outcome.take().unwrap_or(TransactionOutcome::Closed);
         self.diagnostics_manager.record_transaction_outcome(self.database_name.as_str(), self.kind, outcome);
         self.diagnostics_manager.observe_transaction_duration(
