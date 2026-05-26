@@ -173,81 +173,71 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
         }
     }
 
-    if !report.query_duration.is_empty() {
-        writeln!(out, "\n# HELP typedb_query_duration_seconds Query execution latency.").unwrap();
-        writeln!(out, "# TYPE typedb_query_duration_seconds histogram").unwrap();
-        for entry in &report.query_duration {
-            let labels = db_labels(&entry.database.0.to_string(), names);
-            let kind_label = format!("{}, kind=\"{}\"", labels, query_kind_label(&entry.kind));
-            write_histogram_body(&mut out, "typedb_query_duration_seconds", &kind_label, &entry.histogram);
-        }
+    writeln!(out, "\n# HELP typedb_query_duration_seconds Query execution latency.").unwrap();
+    writeln!(out, "# TYPE typedb_query_duration_seconds histogram").unwrap();
+    for entry in &report.query_duration {
+        let labels = db_labels(&entry.database.0.to_string(), names);
+        let kind_label = format!("{}, kind=\"{}\"", labels, query_kind_label(&entry.kind));
+        write_histogram_body(&mut out, "typedb_query_duration_seconds", &kind_label, &entry.histogram);
     }
 
-    if !report.transaction_duration.is_empty() {
-        writeln!(
-            out,
-            "\n# HELP typedb_transaction_duration_seconds Transaction lifetime (open\u{2192}commit/rollback/abort)."
-        )
-        .unwrap();
-        writeln!(out, "# TYPE typedb_transaction_duration_seconds histogram").unwrap();
-        for entry in &report.transaction_duration {
-            let labels = db_labels(&entry.database.0.to_string(), names);
-            let kind_label = format!("{}, kind=\"{}\"", labels, txn_kind_label(&entry.kind));
-            write_histogram_body(&mut out, "typedb_transaction_duration_seconds", &kind_label, &entry.histogram);
-        }
+    writeln!(
+        out,
+        "\n# HELP typedb_transaction_duration_seconds Transaction lifetime (open\u{2192}commit/rollback/abort)."
+    )
+    .unwrap();
+    writeln!(out, "# TYPE typedb_transaction_duration_seconds histogram").unwrap();
+    for entry in &report.transaction_duration {
+        let labels = db_labels(&entry.database.0.to_string(), names);
+        let kind_label = format!("{}, kind=\"{}\"", labels, txn_kind_label(&entry.kind));
+        write_histogram_body(&mut out, "typedb_transaction_duration_seconds", &kind_label, &entry.histogram);
     }
 
-    if !report.queries_per_transaction.is_empty() {
-        writeln!(out, "\n# HELP typedb_queries_per_transaction Queries executed per transaction.").unwrap();
-        writeln!(out, "# TYPE typedb_queries_per_transaction histogram").unwrap();
-        for entry in &report.queries_per_transaction {
-            let labels = db_labels(&entry.database.0.to_string(), names);
-            write_histogram_body(&mut out, "typedb_queries_per_transaction", &labels, &entry.histogram);
-        }
+    writeln!(out, "\n# HELP typedb_queries_per_transaction Queries executed per transaction.").unwrap();
+    writeln!(out, "# TYPE typedb_queries_per_transaction histogram").unwrap();
+    for entry in &report.queries_per_transaction {
+        let labels = db_labels(&entry.database.0.to_string(), names);
+        write_histogram_body(&mut out, "typedb_queries_per_transaction", &labels, &entry.histogram);
     }
 
-    if !report.transaction_lifecycle.is_empty() {
-        write_lifecycle_counter(
-            &mut out,
-            "typedb_transactions_started_total",
-            "Transactions opened, by transaction kind.",
-            &report,
-            names,
-            |e| e.started,
-        );
-        write_lifecycle_counter(
-            &mut out,
-            "typedb_transactions_committed_total",
-            "Transactions that committed successfully.",
-            &report,
-            names,
-            |e| e.committed,
-        );
-        write_lifecycle_counter(
-            &mut out,
-            "typedb_transactions_rolled_back_total",
-            "Transactions explicitly rolled back by the client.",
-            &report,
-            names,
-            |e| e.rolled_back,
-        );
-        write_lifecycle_counter(
-            &mut out,
-            "typedb_transactions_closed_total",
-            "Transactions closed without a successful commit (force-closed, dropped, timed out).",
-            &report,
-            names,
-            |e| e.closed,
-        );
-    }
+    write_lifecycle_counter(
+        &mut out,
+        "typedb_transactions_started_total",
+        "Transactions opened, by transaction kind.",
+        &report,
+        names,
+        |e| e.started,
+    );
+    write_lifecycle_counter(
+        &mut out,
+        "typedb_transactions_committed_total",
+        "Transactions that committed successfully.",
+        &report,
+        names,
+        |e| e.committed,
+    );
+    write_lifecycle_counter(
+        &mut out,
+        "typedb_transactions_rolled_back_total",
+        "Transactions explicitly rolled back by the client.",
+        &report,
+        names,
+        |e| e.rolled_back,
+    );
+    write_lifecycle_counter(
+        &mut out,
+        "typedb_transactions_closed_total",
+        "Transactions closed without a successful commit (force-closed, dropped, timed out).",
+        &report,
+        names,
+        |e| e.closed,
+    );
 
-    if !report.wal_fsync_duration.is_empty() {
-        writeln!(out, "\n# HELP typedb_wal_fsync_duration_seconds WAL fsync latency.").unwrap();
-        writeln!(out, "# TYPE typedb_wal_fsync_duration_seconds histogram").unwrap();
-        for entry in &report.wal_fsync_duration {
-            let labels = db_labels(&entry.database.0.to_string(), names);
-            write_histogram_body(&mut out, "typedb_wal_fsync_duration_seconds", &labels, &entry.histogram);
-        }
+    writeln!(out, "\n# HELP typedb_wal_fsync_duration_seconds WAL fsync latency.").unwrap();
+    writeln!(out, "# TYPE typedb_wal_fsync_duration_seconds histogram").unwrap();
+    for entry in &report.wal_fsync_duration {
+        let labels = db_labels(&entry.database.0.to_string(), names);
+        write_histogram_body(&mut out, "typedb_wal_fsync_duration_seconds", &labels, &entry.histogram);
     }
 
     if !report.wal_bytes_written.is_empty() {
