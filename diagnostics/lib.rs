@@ -58,9 +58,7 @@ pub struct Diagnostics {
     database_names: RwLock<HashMap<DatabaseHash, String>>,
 
     is_full_reporting: bool,
-    // True iff either monitoring or reporting is enabled; when false, observation
-    // methods early-return so we never hash, lock, or record in the hot path.
-    is_collection_needed: bool,
+    metrics_enabled: bool,
 }
 
 impl Diagnostics {
@@ -71,8 +69,7 @@ impl Diagnostics {
         version: String,
         data_directory: PathBuf,
         is_reporting_enabled: bool,
-        // is_monitoring_enabled || is_reporting_enabled; gates the observation hot path.
-        is_collection_needed: bool,
+        metrics_enabled: bool,
     ) -> Diagnostics {
         Self {
             server_properties: ServerProperties::new(deployment_id, server_id, distribution, is_reporting_enabled),
@@ -85,20 +82,12 @@ impl Diagnostics {
             database_names: RwLock::new(HashMap::new()),
 
             is_full_reporting: is_reporting_enabled,
-            is_collection_needed,
+            metrics_enabled,
         }
     }
 
-    pub(crate) fn is_collection_needed(&self) -> bool {
-        self.is_collection_needed
-    }
-
-    pub(crate) fn server_properties(&self) -> &ServerProperties {
-        &self.server_properties
-    }
-
-    pub(crate) fn server_metrics(&self) -> &ServerMetrics {
-        &self.server_metrics
+    pub(crate) fn metrics_enabled(&self) -> bool {
+        self.metrics_enabled
     }
 
     /// Snapshot of the current DatabaseHash → name table. Used by the Prometheus
@@ -121,15 +110,15 @@ impl Diagnostics {
     }
 
     pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>) {
-        if !self.is_collection_needed {
+        if !self.metrics_enabled {
             return;
         }
         let mut loads = self.lock_load_metrics_write();
         let mut deleted_databases: HashSet<DatabaseHash> = loads.keys().cloned().collect();
 
         for metrics in database_metrics {
-            let database_hash = Self::hash_database(&metrics.database_name);
-            self.record_database_name(&metrics.database_name, database_hash);
+            let database_hash = Self::hash_database(metrics.database_name.as_ref());
+            self.record_database_name(metrics.database_name.as_ref(), database_hash);
             deleted_databases.remove(&database_hash);
 
             let database_load = loads.entry(database_hash).or_insert(LoadMetrics::new());
@@ -148,7 +137,7 @@ impl Diagnostics {
         database_name: impl AsRef<str> + Hash,
         load_kind: LoadKind,
     ) {
-        if !self.is_collection_needed {
+        if !self.metrics_enabled {
             return;
         }
         let database_hash = Self::hash_database(&database_name);
@@ -163,7 +152,7 @@ impl Diagnostics {
         database_name: impl AsRef<str> + Hash,
         load_kind: LoadKind,
     ) {
-        if !self.is_collection_needed {
+        if !self.metrics_enabled {
             return;
         }
         let database_hash = Self::hash_database(&database_name);
@@ -178,7 +167,7 @@ impl Diagnostics {
         database_name: Option<impl AsRef<str> + Hash>,
         action_kind: ActionKind,
     ) {
-        if !self.is_collection_needed {
+        if !self.metrics_enabled {
             return;
         }
         let database_hash = Self::hash_database_opt(database_name.as_ref());
@@ -195,7 +184,7 @@ impl Diagnostics {
         database_name: Option<impl AsRef<str> + Hash>,
         action_kind: ActionKind,
     ) {
-        if !self.is_collection_needed {
+        if !self.metrics_enabled {
             return;
         }
         let database_hash = Self::hash_database_opt(database_name.as_ref());
@@ -212,7 +201,7 @@ impl Diagnostics {
         database_name: Option<impl AsRef<str> + Hash>,
         error_code: String,
     ) {
-        if !self.is_collection_needed {
+        if !self.metrics_enabled {
             return;
         }
         let database_hash = Self::hash_database_opt(database_name.as_ref());
@@ -229,7 +218,7 @@ impl Diagnostics {
         kind: QueryType,
         duration: std::time::Duration,
     ) {
-        if !self.is_collection_needed {
+        if !self.metrics_enabled {
             return;
         }
         let database_hash = Self::hash_database(&database_name);
@@ -244,7 +233,7 @@ impl Diagnostics {
         kind: LoadKind,
         duration: std::time::Duration,
     ) {
-        if !self.is_collection_needed {
+        if !self.metrics_enabled {
             return;
         }
         let database_hash = Self::hash_database(&database_name);
@@ -257,7 +246,7 @@ impl Diagnostics {
     }
 
     pub fn observe_queries_per_transaction(&self, database_name: impl AsRef<str> + Hash, queries: u64) {
-        if !self.is_collection_needed {
+        if !self.metrics_enabled {
             return;
         }
         let database_hash = Self::hash_database(&database_name);
@@ -275,7 +264,7 @@ impl Diagnostics {
         kind: LoadKind,
         outcome: crate::metrics::TransactionOutcome,
     ) {
-        if !self.is_collection_needed {
+        if !self.metrics_enabled {
             return;
         }
         let database_hash = Self::hash_database(&database_name);
@@ -298,10 +287,6 @@ impl Diagnostics {
         (entry.wal_fsync_duration(), entry.wal_bytes_written())
     }
 
-    /// Read-only snapshot of all per-database histograms. Returned as a
-    /// (DatabaseHash, snapshot) list in the iteration order of the lock-held
-    /// HashMap — order is unstable across calls, but exposition sorts deterministically
-    /// before emitting, so dashboard label series stay stable.
     pub(crate) fn histogram_snapshots(&self) -> Vec<(DatabaseHash, crate::metrics::DatabaseHistogramsSnapshot)> {
         self.lock_histogram_metrics_read().iter().map(|(&hash, db)| (hash, db.snapshot())).collect()
     }

@@ -281,7 +281,7 @@ impl TransactionService {
         let load_kind = transaction.load_kind();
         self.txn_metrics = Some(TransactionMetrics::new(
             self.server_state.diagnostics_manager(),
-            transaction.database_name(),
+            database_name.clone(),
             load_kind,
             ClientEndpoint::Http,
         ));
@@ -404,16 +404,10 @@ impl TransactionService {
         let server_state = self.server_state.clone();
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
-                // Read commit attempt: restore transaction; not terminal. txn_metrics
-                // stays on self and Drop fires later from do_close.
                 self.transaction = Some(Transaction::Read(transaction));
                 respond_error_and_return_break!(responder, TransactionServiceError::CannotCommitReadTransaction {});
             }
             Transaction::Write(transaction) => {
-                // Move txn_metrics into the spawn. On success: mark_committed +
-                // Drop fires Committed + observe. On any failure-macro early-return:
-                // Drop fires unwrap_or(Closed) + observe. Either way, Drop also
-                // fires decrement_load_count.
                 let txn_metrics = self.txn_metrics.take();
                 spawn(async move {
                     unwrap_or_execute_else_respond_error_and_return_break!(
@@ -463,9 +457,6 @@ impl TransactionService {
             return Break(());
         }
 
-        // Record RolledBack BEFORE the responder send: rollback has completed
-        // server-side, so a failed client-side ack only loses the reply, not the
-        // counter.
         match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
@@ -510,10 +501,7 @@ impl TransactionService {
             Some(Transaction::Write(transaction)) => transaction.close(),
             Some(Transaction::Schema(transaction)) => transaction.close(),
         }
-
-        // Drop fires decrement_load_count, terminal outcome (Closed unless commit
-        // marked Committed), transaction_duration, and queries_per_transaction.
-        self.txn_metrics.take();
+        self.txn_metrics.take(); // drop -> submit
     }
 
     async fn interrupt(&mut self, interrupt: InterruptType) {
@@ -539,8 +527,8 @@ impl TransactionService {
 
     async fn finish_running_write_query_no_transmit(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         if let Some((responder, worker)) = self.running_write_query.take() {
-            self.write_query_metrics.take();
             let (transaction, result) = worker.await.expect("Expected current write query to finish");
+            self.write_query_metrics.take(); // drop -> submit
             self.transaction = Some(transaction);
 
             if let Err(typedb_source) = result {

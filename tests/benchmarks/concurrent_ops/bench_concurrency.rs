@@ -140,7 +140,7 @@ impl TimingAnalysis {
 fn create_database(schema: &str) -> (TempDir, Arc<Database<WALClient>>) {
     let tmp_dir = create_tmp_storage_dir();
     let dbm =
-        DatabaseManager::new(&tmp_dir, Arc::new(diagnostics::diagnostics_manager::DiagnosticsManager::new_test()))
+        DatabaseManager::new(&tmp_dir, Arc::new(diagnostics::diagnostics_manager::DiagnosticsManager::new_disabled()))
             .unwrap();
     dbm.put_database(DB_NAME).unwrap();
     let database = dbm.database(DB_NAME).unwrap();

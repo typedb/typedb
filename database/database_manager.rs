@@ -55,7 +55,7 @@ impl DatabaseManager {
     fn initialise_databases(
         data_directory: &PathBuf,
         import_directory: &PathBuf,
-        diagnostics_manager: &Arc<DiagnosticsManager>,
+        diagnostics_manager: &DiagnosticsManager,
     ) -> Result<DatabasesMap, DatabaseOpenError> {
         let entries = fs::read_dir(data_directory).map_err(|error| DatabaseOpenError::DirectoryRead {
             name: Self::file_name_lossy(data_directory),
@@ -388,7 +388,7 @@ impl DatabaseManager {
     }
 
     fn wal_metrics_adapter(diagnostics_manager: &DiagnosticsManager, name: &str) -> Arc<dyn WalMetrics> {
-        if Self::is_internal_database(name) || !diagnostics_manager.is_collection_needed() {
+        if Self::is_internal_database(name) || !diagnostics_manager.metrics_enabled() {
             return Arc::new(NoopWalMetrics);
         }
         let (fsync_histogram, bytes_counter) = diagnostics_manager.wal_metrics_handles(name);

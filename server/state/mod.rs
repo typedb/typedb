@@ -175,7 +175,7 @@ impl ServerState {
         is_development_mode: bool,
         background_tasks: TokioTaskSpawner,
     ) -> DiagnosticsManager {
-        let is_collection_needed = config.monitoring.enabled || config.reporting.report_metrics;
+        let metrics_enabled = config.monitoring.enabled || config.reporting.report_metrics;
         let diagnostics = Diagnostics::new(
             deployment_id,
             server_id,
@@ -183,7 +183,7 @@ impl ServerState {
             distribution_info.version.to_owned(),
             storage_directory,
             config.reporting.report_metrics,
-            is_collection_needed,
+            metrics_enabled,
         );
         let diagnostics_manager = DiagnosticsManager::new(
             diagnostics,

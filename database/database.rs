@@ -103,7 +103,7 @@ impl<D> Database<D> {
     }
 
     pub fn name_arc(&self) -> Arc<String> {
-        Arc::clone(&self.name)
+        self.name.clone()
     }
 
     // Must be called before serving write transactions in case the storage was modified with
@@ -528,7 +528,7 @@ impl Database<WALClient> {
     pub fn get_metrics(&self) -> DatabaseMetrics {
         let schema = self.schema.read().expect("Expected database schema lock acquisition");
         DatabaseMetrics {
-            database_name: self.name().to_owned(),
+            database_name: self.name_arc(),
             schema: SchemaLoadMetrics { type_count: schema.type_cache.get_types_count() },
             data: DataLoadMetrics {
                 entity_count: schema.thing_statistics.total_entity_count,
