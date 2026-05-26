@@ -338,7 +338,7 @@ impl TransactionService {
                 Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
-                let db_name = self.get_database_name_arc();
+                let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
                     db_name.as_ref().map(|n| n.as_str()),
@@ -348,7 +348,7 @@ impl TransactionService {
                 .await
             }
             (true, typedb_protocol::transaction::req::Req::AnalyzeReq(analyze_req)) => {
-                let db_name = self.get_database_name_arc();
+                let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
                     db_name.as_ref().map(|n| n.as_str()),
@@ -366,7 +366,7 @@ impl TransactionService {
                 }
             }
             (true, typedb_protocol::transaction::req::Req::CommitReq(commit_req)) => {
-                let db_name = self.get_database_name_arc();
+                let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
                     db_name.as_ref().map(|n| n.as_str()),
@@ -380,7 +380,7 @@ impl TransactionService {
                 .await
             }
             (true, typedb_protocol::transaction::req::Req::RollbackReq(rollback_req)) => {
-                let db_name = self.get_database_name_arc();
+                let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
                     db_name.as_ref().map(|n| n.as_str()),
@@ -390,7 +390,7 @@ impl TransactionService {
                 .await
             }
             (true, typedb_protocol::transaction::req::Req::CloseReq(close_req)) => {
-                let db_name = self.get_database_name_arc();
+                let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
                     db_name.as_ref().map(|n| n.as_str()),
@@ -469,7 +469,7 @@ impl TransactionService {
         let load_kind = transaction.load_kind();
         self.txn_metrics = Some(TransactionMetrics::new(
             self.server_state.diagnostics_manager(),
-            transaction.database_name_arc(),
+            transaction.database_name(),
             load_kind,
             ClientEndpoint::Grpc,
         ));
@@ -943,7 +943,7 @@ impl TransactionService {
         self.running_write_query = Some((req_id, tokio::spawn(async move { handle.await.unwrap() })));
         if let Some(m) = self.txn_metrics.as_ref() {
             self.write_query_metrics =
-                Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name_arc()));
+                Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name()));
         }
     }
 
@@ -1200,7 +1200,7 @@ impl TransactionService {
         let timeout_at = self.timeout_at;
         let interrupt = self.query_interrupt_receiver.clone();
         let diagnostics_manager = self.server_state.diagnostics_manager();
-        let database_name = self.transaction.as_ref().unwrap().database_name_arc();
+        let database_name = self.transaction.as_ref().unwrap().database_name();
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
@@ -1209,8 +1209,6 @@ impl TransactionService {
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
                 let start_time = Instant::now();
-                // Time-to-first-batch semantics: fires typedb_query_duration_seconds
-                // {kind="read"} on the first emitted response other than init_ok_*.
                 let mut read_metrics = ReadQueryMetrics::new(diagnostics_manager, database_name);
                 let pipeline = query_manager.prepare_read_pipeline(
                     snapshot.clone(),
@@ -1221,7 +1219,7 @@ impl TransactionService {
                     &source_query,
                 );
                 let pipeline = unwrap_or_execute_and_return!(pipeline, |err| {
-                    Self::submit_read_response_observing_first(
+                    Self::submit_read_response_with_metrics(
                         &sender,
                         StreamQueryResponse::done_err(err),
                         &mut read_metrics,
@@ -1265,7 +1263,7 @@ impl TransactionService {
             Self::submit_response_sync(sender, initial_response);
             let (iterator, context) =
                 unwrap_or_execute_and_return!(pipeline.into_documents_iterator(interrupt.clone()), |(err, _)| {
-                    Self::submit_read_response_observing_first(
+                    Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::done_err(QueryError::ReadPipelineExecution {
                             source_query: source_query.to_string(),
@@ -1280,7 +1278,7 @@ impl TransactionService {
             let parameters = context.parameters;
             for next in iterator {
                 if let Some(interrupt) = interrupt.check() {
-                    Self::submit_read_response_observing_first(
+                    Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
                         read_metrics,
@@ -1288,7 +1286,7 @@ impl TransactionService {
                     return;
                 }
                 if Instant::now() >= timeout_at {
-                    Self::submit_read_response_observing_first(
+                    Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::done_err(TransactionServiceError::TransactionTimeout {}),
                         read_metrics,
@@ -1297,7 +1295,7 @@ impl TransactionService {
                 }
 
                 let document = unwrap_or_execute_and_return!(next, |err| {
-                    Self::submit_read_response_observing_first(
+                    Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::done_err(err),
                         read_metrics,
@@ -1313,13 +1311,13 @@ impl TransactionService {
                     encoding_profile.storage_counters(),
                 );
                 match encoded_document {
-                    Ok(encoded_document) => Self::submit_read_response_observing_first(
+                    Ok(encoded_document) => Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::next_document(encoded_document),
                         read_metrics,
                     ),
                     Err(typedb_source) => {
-                        Self::submit_read_response_observing_first(
+                        Self::submit_read_response_with_metrics(
                             sender,
                             StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                             read_metrics,
@@ -1337,7 +1335,7 @@ impl TransactionService {
                 });
             let (encoded_structure, include_involved_blocks) =
                 unwrap_or_execute_and_return!(may_encode_result, |err| {
-                    Self::submit_read_response_observing_first(
+                    Self::submit_read_response_with_metrics(
                         &sender,
                         StreamQueryResponse::init_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
                         read_metrics,
@@ -1348,7 +1346,7 @@ impl TransactionService {
             Self::submit_response_sync(sender, initial_response);
             let (mut iterator, context) =
                 unwrap_or_execute_and_return!(pipeline.into_rows_iterator(interrupt.clone()), |(err, _)| {
-                    Self::submit_read_response_observing_first(
+                    Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::done_err(QueryError::ReadPipelineExecution {
                             source_query: source_query.to_string(),
@@ -1362,7 +1360,7 @@ impl TransactionService {
 
             while let Some(next) = iterator.next() {
                 if let Some(interrupt) = interrupt.check() {
-                    Self::submit_read_response_observing_first(
+                    Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
                         read_metrics,
@@ -1370,7 +1368,7 @@ impl TransactionService {
                     return;
                 }
                 if Instant::now() >= timeout_at {
-                    Self::submit_read_response_observing_first(
+                    Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::done_err(TransactionServiceError::TransactionTimeout {}),
                         read_metrics,
@@ -1379,7 +1377,7 @@ impl TransactionService {
                 }
 
                 let row = unwrap_or_execute_and_return!(next, |err| {
-                    Self::submit_read_response_observing_first(
+                    Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::done_err(err),
                         read_metrics,
@@ -1397,13 +1395,13 @@ impl TransactionService {
                     encoding_profile.storage_counters(),
                 );
                 match encoded_row {
-                    Ok(encoded_row) => Self::submit_read_response_observing_first(
+                    Ok(encoded_row) => Self::submit_read_response_with_metrics(
                         sender,
                         StreamQueryResponse::next_row(encoded_row),
                         read_metrics,
                     ),
                     Err(typedb_source) => {
-                        Self::submit_read_response_observing_first(
+                        Self::submit_read_response_with_metrics(
                             sender,
                             StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source }),
                             read_metrics,
@@ -1424,7 +1422,7 @@ impl TransactionService {
                 encoding_profile
             );
         }
-        Self::submit_read_response_observing_first(sender, StreamQueryResponse::done_ok(), read_metrics)
+        Self::submit_read_response_with_metrics(sender, StreamQueryResponse::done_ok(), read_metrics)
     }
 
     fn submit_response_sync(sender: &Sender<StreamQueryResponse>, response: StreamQueryResponse) {
@@ -1433,11 +1431,7 @@ impl TransactionService {
         }
     }
 
-    /// Like submit_response_sync, but observes typedb_query_duration_seconds
-    /// {kind="read"} on the first call (time-to-first-batch semantics).
-    /// Used for every read-response site except the `init_ok_*` headers, which
-    /// are server "schema/columns ready" markers, not first-batch content.
-    fn submit_read_response_observing_first(
+    fn submit_read_response_with_metrics(
         sender: &Sender<StreamQueryResponse>,
         response: StreamQueryResponse,
         metrics: &mut ReadQueryMetrics,
@@ -1476,8 +1470,8 @@ impl TransactionService {
         }
     }
 
-    fn get_database_name_arc(&self) -> Option<Arc<String>> {
-        self.transaction.as_ref().map(Transaction::database_name_arc)
+    fn get_database_name(&self) -> Option<Arc<String>> {
+        self.transaction.as_ref().map(Transaction::database_name)
     }
 }
 

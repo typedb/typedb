@@ -281,7 +281,7 @@ impl TransactionService {
         let load_kind = transaction.load_kind();
         self.txn_metrics = Some(TransactionMetrics::new(
             self.server_state.diagnostics_manager(),
-            transaction.database_name_arc(),
+            transaction.database_name(),
             load_kind,
             ClientEndpoint::Http,
         ));
@@ -763,7 +763,7 @@ impl TransactionService {
                 self.running_write_query = Some((responder, tokio::spawn(async move { handle.await.unwrap() })));
                 if let Some(m) = self.txn_metrics.as_ref() {
                     self.write_query_metrics =
-                        Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name_arc()));
+                        Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name()));
                 }
             }
             Err(err) => {
@@ -986,7 +986,7 @@ impl TransactionService {
         let timeout_at = self.timeout_at;
         let interrupt = self.query_interrupt_receiver.clone();
         let diagnostics_manager = self.server_state.diagnostics_manager();
-        let database_name = self.transaction.as_ref().unwrap().database_name_arc();
+        let database_name = self.transaction.as_ref().unwrap().database_name();
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
@@ -994,9 +994,6 @@ impl TransactionService {
             let function_manager = transaction.function_manager.clone();
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
-                // Time-to-first-batch semantics: fires typedb_query_duration_seconds
-                // {kind="read"} once the result is materialized for the response,
-                // matching the gRPC behaviour for the same Prometheus label.
                 let mut read_metrics = ReadQueryMetrics::new(diagnostics_manager, database_name);
                 let pipeline_result = query_manager.prepare_read_pipeline(
                     snapshot.clone(),
