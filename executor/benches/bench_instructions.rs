@@ -66,13 +66,14 @@ static MEMBERSHIP_LABEL: OnceLock<Label> = OnceLock::new();
 static MEMBERSHIP_MEMBER_LABEL: OnceLock<Label> = OnceLock::new();
 static MEMBERSHIP_GROUP_LABEL: OnceLock<Label> = OnceLock::new();
 
-fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+fn setup_schema(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
+
     let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap()).unwrap();
     age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap()).unwrap();
@@ -97,6 +98,65 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .unwrap();
     }
 
+    let group_type = type_manager.create_entity_type(&mut snapshot, GROUP_LABEL.get().unwrap()).unwrap();
+    let membership_type = type_manager.create_relation_type(&mut snapshot, MEMBERSHIP_LABEL.get().unwrap()).unwrap();
+
+    let relates_member = membership_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            MEMBERSHIP_MEMBER_LABEL.get().unwrap().name.as_str(),
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    relates_member
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+        )
+        .unwrap();
+    let relates_group = membership_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            MEMBERSHIP_GROUP_LABEL.get().unwrap().name.as_str(),
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    relates_group
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+        )
+        .unwrap();
+
+    person_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, relates_member.role(), StorageCounters::DISABLED)
+        .unwrap();
+    group_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, relates_group.role(), StorageCounters::DISABLED)
+        .unwrap();
+
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+}
+
+fn setup_has_data(storage: &Arc<MVCCStorage<WALClient>>) {
+    let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.snapshot_watermark()));
+    let mut snapshot = storage.clone().open_snapshot_write();
+
+    let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();
+    let age_type = type_manager.get_attribute_type(&snapshot, AGE_LABEL.get().unwrap()).unwrap().unwrap();
+    let name_type = type_manager.get_attribute_type(&snapshot, NAME_LABEL.get().unwrap()).unwrap().unwrap();
+
     let mut next_id: i64 = 0;
     for _ in 0..NUM_PERSONS {
         let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
@@ -112,6 +172,33 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             person.set_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
             next_id += 1;
         }
+    }
+
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+}
+
+fn setup_links_data(storage: &Arc<MVCCStorage<WALClient>>) {
+    let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.snapshot_watermark()));
+    let mut snapshot = storage.clone().open_snapshot_write();
+
+    let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();
+    let group_type = type_manager.get_entity_type(&snapshot, GROUP_LABEL.get().unwrap()).unwrap().unwrap();
+    let membership_type = type_manager.get_relation_type(&snapshot, MEMBERSHIP_LABEL.get().unwrap()).unwrap().unwrap();
+    let member_role =
+        type_manager.get_role_type(&snapshot, MEMBERSHIP_MEMBER_LABEL.get().unwrap()).unwrap().unwrap();
+    let group_role = type_manager.get_role_type(&snapshot, MEMBERSHIP_GROUP_LABEL.get().unwrap()).unwrap().unwrap();
+
+    for _ in 0..NUM_MEMBERSHIPS {
+        let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let group = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
+        let membership = thing_manager.create_relation(&mut snapshot, membership_type).unwrap();
+        membership
+            .add_player(&mut snapshot, &thing_manager, member_role, person.into_object(), StorageCounters::DISABLED)
+            .unwrap();
+        membership
+            .add_player(&mut snapshot, &thing_manager, group_role, group.into_object(), StorageCounters::DISABLED)
+            .unwrap();
     }
 
     thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
@@ -221,76 +308,6 @@ fn build_has_reverse_unbound_executor(
     (executor, context)
 }
 
-fn setup_links_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
-    setup_concept_storage(storage);
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let mut snapshot = storage.clone().open_snapshot_write();
-
-    let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
-    let group_type = type_manager.create_entity_type(&mut snapshot, GROUP_LABEL.get().unwrap()).unwrap();
-    let membership_type = type_manager.create_relation_type(&mut snapshot, MEMBERSHIP_LABEL.get().unwrap()).unwrap();
-
-    let relates_member = membership_type
-        .create_relates(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            MEMBERSHIP_MEMBER_LABEL.get().unwrap().name.as_str(),
-            Ordering::Unordered,
-            StorageCounters::DISABLED,
-        )
-        .unwrap();
-    relates_member
-        .set_annotation(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
-        )
-        .unwrap();
-    let member_role = relates_member.role();
-
-    let relates_group = membership_type
-        .create_relates(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            MEMBERSHIP_GROUP_LABEL.get().unwrap().name.as_str(),
-            Ordering::Unordered,
-            StorageCounters::DISABLED,
-        )
-        .unwrap();
-    relates_group
-        .set_annotation(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
-        )
-        .unwrap();
-    let group_role = relates_group.role();
-
-    person_type
-        .set_plays(&mut snapshot, &type_manager, &thing_manager, member_role, StorageCounters::DISABLED)
-        .unwrap();
-    group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, group_role, StorageCounters::DISABLED).unwrap();
-
-    for _ in 0..NUM_MEMBERSHIPS {
-        let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
-        let group = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
-        let membership = thing_manager.create_relation(&mut snapshot, membership_type).unwrap();
-        membership
-            .add_player(&mut snapshot, &thing_manager, member_role, person.into_object(), StorageCounters::DISABLED)
-            .unwrap();
-        membership
-            .add_player(&mut snapshot, &thing_manager, group_role, group.into_object(), StorageCounters::DISABLED)
-            .unwrap();
-    }
-
-    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
-    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
-}
-
 struct LinksBenchVars {
     membership: ExecutorVariable,
     mapping: HashMap<Variable, ExecutorVariable>,
@@ -379,15 +396,14 @@ fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
 
     let (_tmp_dir, mut storage) = create_core_storage();
-    setup_database(&mut storage);
-
-    let (_links_tmp_dir, mut links_storage) = create_core_storage();
-    setup_links_database(&mut links_storage);
+    setup_schema(&mut storage);
+    setup_has_data(&storage);
+    setup_links_data(&storage);
 
     let (has_exec, has_ctx) = build_has_unbound_executor(&storage);
     let (has_reverse_single_exec, has_reverse_single_ctx) = build_has_reverse_unbound_executor(&storage, false);
     let (has_reverse_multi_exec, has_reverse_multi_ctx) = build_has_reverse_unbound_executor(&storage, true);
-    let (links_exec, links_ctx) = build_links_unbound_executor(&links_storage);
+    let (links_exec, links_ctx) = build_links_unbound_executor(&storage);
     let count_single = NUM_PERSONS * AGES_PER_PERSON;
     let count_multi = NUM_PERSONS * (AGES_PER_PERSON + NAMES_PER_PERSON);
     let count_links = NUM_MEMBERSHIPS * 2;
