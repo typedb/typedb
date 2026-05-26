@@ -61,8 +61,7 @@ impl TransactionMetrics {
         kind: LoadKind,
         client: ClientEndpoint,
     ) -> Self {
-        let _load_guard =
-            LoadCountGuard::new(diagnostics_manager.clone(), client, database_name.clone(), kind);
+        let _load_guard = LoadCountGuard::new(diagnostics_manager.clone(), client, database_name.clone(), kind);
         diagnostics_manager.record_transaction_outcome(database_name.as_str(), kind, TransactionOutcome::Started);
         Self {
             diagnostics_manager,

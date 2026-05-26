@@ -4,9 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
-use durability::{DurabilityRecordType, DurabilityService, wal::WAL};
+use durability::{
+    DurabilityRecordType, DurabilityService,
+    wal::{NoopWalMetrics, WAL},
+};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TestRecord {
@@ -27,13 +30,13 @@ impl TestRecord {
 }
 
 pub fn create_wal(directory: impl AsRef<Path>) -> WAL {
-    let mut wal = WAL::create(directory, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap();
+    let mut wal = WAL::create(directory, Arc::new(NoopWalMetrics)).unwrap();
     wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
     wal
 }
 
 pub fn load_wal(directory: impl AsRef<Path>) -> WAL {
-    let mut wal = WAL::load(directory, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap();
+    let mut wal = WAL::load(directory, Arc::new(NoopWalMetrics)).unwrap();
     wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
     wal
 }

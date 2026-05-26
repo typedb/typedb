@@ -250,20 +250,13 @@ impl<D: DurabilityClient> Database<D> {
 }
 
 impl Database<WALClient> {
-    pub fn open(
-        path: &Path,
-        wal_metrics: Arc<dyn WalMetrics>,
-    ) -> Result<Database<WALClient>, DatabaseOpenError> {
+    pub fn open(path: &Path, wal_metrics: Arc<dyn WalMetrics>) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::InvalidUnicodeName;
 
         let file_name = path.file_name().unwrap();
         let name = file_name.to_str().ok_or_else(|| InvalidUnicodeName { name: file_name.to_owned() })?;
 
-        if path.exists() {
-            Self::load(path, name, wal_metrics)
-        } else {
-            Self::create(path, name, wal_metrics)
-        }
+        if path.exists() { Self::load(path, name, wal_metrics) } else { Self::create(path, name, wal_metrics) }
     }
 
     fn create(
@@ -435,12 +428,8 @@ impl Database<WALClient> {
             schema_txn_lock.clone(),
             query_cache.clone(),
         );
-        let checkpoint_fn = make_checkpoint_fn(
-            Arc::clone(&name_arc),
-            path.to_owned(),
-            checkpoint_sequence_number,
-            storage.clone(),
-        );
+        let checkpoint_fn =
+            make_checkpoint_fn(Arc::clone(&name_arc), path.to_owned(), checkpoint_sequence_number, storage.clone());
 
         let database = Database::<WALClient> {
             name: name_arc,

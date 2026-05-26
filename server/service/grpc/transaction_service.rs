@@ -56,7 +56,6 @@ use uuid::Uuid;
 use crate::{
     service::{
         TransactionType,
-        transaction_metrics::{ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics},
         grpc::{
             analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
             diagnostics::run_with_diagnostics_async,
@@ -76,6 +75,7 @@ use crate::{
             row::encode_row,
         },
         may_encode_pipeline_structure,
+        transaction_metrics::{ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics},
         transaction_service::{
             Transaction, TransactionServiceError, commit_schema_transaction, commit_write_transaction,
             init_transaction_timeout, is_write_pipeline, with_readable_transaction,
@@ -942,8 +942,7 @@ impl TransactionService {
         };
         self.running_write_query = Some((req_id, tokio::spawn(async move { handle.await.unwrap() })));
         if let Some(m) = self.txn_metrics.as_ref() {
-            self.write_query_metrics =
-                Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name()));
+            self.write_query_metrics = Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name()));
         }
     }
 
@@ -1295,11 +1294,7 @@ impl TransactionService {
                 }
 
                 let document = unwrap_or_execute_and_return!(next, |err| {
-                    Self::submit_read_response_with_metrics(
-                        sender,
-                        StreamQueryResponse::done_err(err),
-                        read_metrics,
-                    );
+                    Self::submit_read_response_with_metrics(sender, StreamQueryResponse::done_err(err), read_metrics);
                 });
 
                 let encoded_document = encode_document(
@@ -1377,11 +1372,7 @@ impl TransactionService {
                 }
 
                 let row = unwrap_or_execute_and_return!(next, |err| {
-                    Self::submit_read_response_with_metrics(
-                        sender,
-                        StreamQueryResponse::done_err(err),
-                        read_metrics,
-                    );
+                    Self::submit_read_response_with_metrics(sender, StreamQueryResponse::done_err(err), read_metrics);
                 });
 
                 let encoded_row = encode_row(

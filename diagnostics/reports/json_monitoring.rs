@@ -183,9 +183,11 @@ impl From<LoadReport> for JsonMonitoringLoadReport {
             .map(|conn| {
                 conn.into_iter()
                     .flat_map(|(client, by_kind)| {
-                        by_kind
-                            .into_iter()
-                            .map(move |(kind, count)| JsonMonitoringActiveTransactionEntry { client, kind, count })
+                        by_kind.into_iter().map(move |(kind, count)| JsonMonitoringActiveTransactionEntry {
+                            client,
+                            kind,
+                            count,
+                        })
                     })
                     .collect()
             })
@@ -543,7 +545,8 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
             });
         }
         if snap.wal_bytes_written != 0 {
-            wal_bytes_written.push(JsonMonitoringDatabaseCounter { database: db.clone(), value: snap.wal_bytes_written });
+            wal_bytes_written
+                .push(JsonMonitoringDatabaseCounter { database: db.clone(), value: snap.wal_bytes_written });
         }
     }
 

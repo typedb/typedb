@@ -61,10 +61,7 @@ pub struct WAL {
 impl WAL {
     pub const WAL_DIR_NAME: &'static str = "wal";
 
-    pub fn create(
-        directory: impl AsRef<Path>,
-        metrics: Arc<dyn WalMetrics>,
-    ) -> Result<Self, DurabilityServiceError> {
+    pub fn create(directory: impl AsRef<Path>, metrics: Arc<dyn WalMetrics>) -> Result<Self, DurabilityServiceError> {
         let directory = directory.as_ref().to_owned();
         let wal_dir = directory.join(Self::WAL_DIR_NAME);
         if wal_dir.exists() {
@@ -92,10 +89,7 @@ impl WAL {
         })
     }
 
-    pub fn load(
-        directory: impl AsRef<Path>,
-        metrics: Arc<dyn WalMetrics>,
-    ) -> Result<Self, DurabilityServiceError> {
+    pub fn load(directory: impl AsRef<Path>, metrics: Arc<dyn WalMetrics>) -> Result<Self, DurabilityServiceError> {
         let directory = directory.as_ref().to_owned();
         let wal_dir = directory.join(Self::WAL_DIR_NAME);
         if !wal_dir.exists() {
@@ -771,11 +765,13 @@ impl Drop for FsyncThread {
 
 #[cfg(test)]
 mod test {
+    use std::sync::Arc;
+
     use assert as assert_true;
     use itertools::Itertools;
     use tempdir::TempDir;
 
-    use super::{MAX_WAL_FILE_SIZE, WAL};
+    use super::{MAX_WAL_FILE_SIZE, NoopWalMetrics, WAL};
     use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, RawRecord};
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     struct TestRecord {
@@ -810,14 +806,14 @@ mod test {
     }
 
     fn create_wal(directory: &TempDir) -> WAL {
-        let mut wal = WAL::create(directory, std::sync::Arc::new(super::NoopWalMetrics)).unwrap();
+        let mut wal = WAL::create(directory, Arc::new(NoopWalMetrics)).unwrap();
         wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
         wal.register_record_type(UnsequencedTestRecord::RECORD_TYPE, UnsequencedTestRecord::RECORD_NAME);
         wal
     }
 
     fn load_wal(directory: &TempDir) -> WAL {
-        let mut wal = WAL::load(directory, std::sync::Arc::new(super::NoopWalMetrics)).unwrap();
+        let mut wal = WAL::load(directory, Arc::new(NoopWalMetrics)).unwrap();
         wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
         wal.register_record_type(UnsequencedTestRecord::RECORD_TYPE, UnsequencedTestRecord::RECORD_NAME);
         wal

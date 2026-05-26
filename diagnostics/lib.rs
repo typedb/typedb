@@ -20,8 +20,7 @@ use xxhash_rust::xxh3::Xxh3;
 use crate::{
     metrics::{
         ALL_CLIENT_ENDPOINTS, ActionKind, ActionMetrics, ClientEndpoint, DatabaseHistograms, DatabaseMetrics,
-        ErrorMetrics, LoadKind, LoadMetrics, QueryType, ServerMetrics, ServerProperties,
-        client_endpoints_map,
+        ErrorMetrics, LoadKind, LoadMetrics, QueryType, ServerMetrics, ServerProperties, client_endpoints_map,
     },
     reports::{
         json_monitoring::to_monitoring_json,
@@ -236,10 +235,7 @@ impl Diagnostics {
         let database_hash = Self::hash_database(&database_name);
         self.record_database_name(database_name.as_ref(), database_hash);
         let histograms = self.lock_histogram_metrics_read_for_database(database_hash);
-        histograms
-            .get(&database_hash)
-            .expect("Expected database in histograms")
-            .observe_query_duration(kind, duration);
+        histograms.get(&database_hash).expect("Expected database in histograms").observe_query_duration(kind, duration);
     }
 
     pub fn observe_transaction_duration(
@@ -307,10 +303,7 @@ impl Diagnostics {
     /// HashMap — order is unstable across calls, but exposition sorts deterministically
     /// before emitting, so dashboard label series stay stable.
     pub(crate) fn histogram_snapshots(&self) -> Vec<(DatabaseHash, crate::metrics::DatabaseHistogramsSnapshot)> {
-        self.lock_histogram_metrics_read()
-            .iter()
-            .map(|(&hash, db)| (hash, db.snapshot()))
-            .collect()
+        self.lock_histogram_metrics_read().iter().map(|(&hash, db)| (hash, db.snapshot())).collect()
     }
 
     pub fn take_snapshot(&self) {

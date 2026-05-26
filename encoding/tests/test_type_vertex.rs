@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use durability::wal::WAL;
+use durability::wal::{NoopWalMetrics, WAL};
 use encoding::{
     AsBytes, EncodingKeyspace, Keyable,
     error::EncodingError,
@@ -132,7 +132,7 @@ fn loading_storage_assigns_next_vertex() {
     init_logging();
     let storage_path = create_tmp_storage_dir();
     {
-        let wal = WAL::create(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap();
+        let wal = WAL::create(&storage_path, Arc::new(NoopWalMetrics)).unwrap();
         let _ = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
@@ -141,7 +141,7 @@ fn loading_storage_assigns_next_vertex() {
     let create_till = 5;
 
     for i in 0..create_till {
-        let wal = WAL::load(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap();
+        let wal = WAL::load(&storage_path, Arc::new(NoopWalMetrics)).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
                 .unwrap(),
@@ -155,7 +155,7 @@ fn loading_storage_assigns_next_vertex() {
     }
 
     for i in 0..create_till {
-        let wal = WAL::load(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap();
+        let wal = WAL::load(&storage_path, Arc::new(NoopWalMetrics)).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
                 .unwrap(),
@@ -171,7 +171,7 @@ fn loading_storage_assigns_next_vertex() {
     // try with checkpoints
     let mut checkpoint = None;
     for i in 0..create_till {
-        let wal = WAL::load(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap();
+        let wal = WAL::load(&storage_path, Arc::new(NoopWalMetrics)).unwrap();
         let storage = match checkpoint {
             None => Arc::new(
                 MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
@@ -206,7 +206,7 @@ fn loading_storage_assigns_next_vertex() {
     }
 
     for i in 0..create_till {
-        let wal = WAL::load(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap();
+        let wal = WAL::load(&storage_path, Arc::new(NoopWalMetrics)).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
                 .unwrap(),

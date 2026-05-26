@@ -7,9 +7,7 @@ use std::{collections::HashMap, fmt::Write};
 
 use crate::{
     DatabaseHash, Diagnostics,
-    reports::json_monitoring::{
-        JsonMonitoringHistogramReport, JsonMonitoringReport, to_monitoring_report,
-    },
+    reports::json_monitoring::{JsonMonitoringHistogramReport, JsonMonitoringReport, to_monitoring_report},
 };
 
 pub fn to_monitoring_prometheus(diagnostics: &Diagnostics) -> String {
@@ -197,7 +195,11 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
     }
 
     if !report.transaction_duration.is_empty() {
-        writeln!(out, "\n# HELP typedb_transaction_duration_seconds Transaction lifetime (open\u{2192}commit/rollback/abort).").unwrap();
+        writeln!(
+            out,
+            "\n# HELP typedb_transaction_duration_seconds Transaction lifetime (open\u{2192}commit/rollback/abort)."
+        )
+        .unwrap();
         writeln!(out, "# TYPE typedb_transaction_duration_seconds histogram").unwrap();
         for entry in &report.transaction_duration {
             let labels = db_labels(&entry.database.0.to_string(), names);
@@ -275,12 +277,7 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
 /// The HELP/TYPE header is the caller's responsibility (so multiple per-database
 /// series share one header). `labels` is the inside of the `{ }` minus the `le`
 /// label, which this function appends per bucket.
-fn write_histogram_body(
-    out: &mut String,
-    metric_name: &str,
-    labels: &str,
-    histogram: &JsonMonitoringHistogramReport,
-) {
+fn write_histogram_body(out: &mut String, metric_name: &str, labels: &str, histogram: &JsonMonitoringHistogramReport) {
     for bucket in &histogram.buckets {
         writeln!(out, "{}_bucket{{{}, le=\"{}\"}} {}", metric_name, labels, bucket.le, bucket.count).unwrap();
     }
@@ -302,15 +299,8 @@ fn write_lifecycle_counter<F>(
     writeln!(out, "# TYPE {} counter", metric_name).unwrap();
     for entry in &report.transaction_lifecycle {
         let labels = db_labels(&entry.database.0.to_string(), names);
-        writeln!(
-            out,
-            "{}{{{}, kind=\"{}\"}} {}",
-            metric_name,
-            labels,
-            txn_kind_label(&entry.kind),
-            field(entry)
-        )
-        .unwrap();
+        writeln!(out, "{}{{{}, kind=\"{}\"}} {}", metric_name, labels, txn_kind_label(&entry.kind), field(entry))
+            .unwrap();
     }
 }
 

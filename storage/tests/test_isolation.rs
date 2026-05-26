@@ -7,7 +7,7 @@
 use std::{path::Path, sync::Arc};
 
 use bytes::byte_array::ByteArray;
-use durability::wal::WAL;
+use durability::wal::{NoopWalMetrics, WAL};
 use lending_iterator::LendingIterator;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
@@ -693,7 +693,12 @@ fn isolation_manager_correctly_recovers_from_disk() {
 
     {
         // TODO: Find a way to make commits crash before they're committed
-        let storage = load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap(), None).unwrap();
+        let storage = load_storage::<TestKeyspaceSet>(
+            &storage_path,
+            WAL::load(&storage_path, Arc::new(NoopWalMetrics)).unwrap(),
+            None,
+        )
+        .unwrap();
         assert_eq!(watermark_after_one_commit, storage.snapshot_watermark());
     };
 }

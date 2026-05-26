@@ -7,7 +7,7 @@
 use std::sync::Arc;
 
 use bytes::{Bytes, byte_array::ByteArray};
-use durability::wal::WAL;
+use durability::wal::{NoopWalMetrics, WAL};
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
@@ -123,9 +123,12 @@ fn create_reopen() {
     };
 
     {
-        let storage =
-            load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path, std::sync::Arc::new(durability::wal::NoopWalMetrics)).unwrap(), Some(checkpoint))
-                .unwrap();
+        let storage = load_storage::<TestKeyspaceSet>(
+            &storage_path,
+            WAL::load(&storage_path, Arc::new(NoopWalMetrics)).unwrap(),
+            Some(checkpoint),
+        )
+        .unwrap();
         let items = storage
             .iterate_keyspace_range(
                 &IteratorPool::new(),

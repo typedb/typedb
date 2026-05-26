@@ -51,7 +51,6 @@ use typeql::{parse_query, query::SchemaQuery};
 use crate::{
     service::{
         QueryType, TransactionType,
-        transaction_metrics::{ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics},
         http::message::{
             analyze::{
                 AnalysedQueryResponse, encode_analyzed_query,
@@ -60,6 +59,7 @@ use crate::{
             query::{document::encode_document, row::encode_row},
         },
         may_encode_pipeline_structure,
+        transaction_metrics::{ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics},
         transaction_service::{
             Transaction, TransactionServiceError, commit_schema_transaction, commit_write_transaction,
             init_transaction_timeout, is_write_pipeline, with_readable_transaction,
@@ -402,7 +402,7 @@ impl TransactionService {
         }
 
         let server_state = self.server_state.clone();
-        let _: ControlFlow<(), ()> = match self.transaction.take().expect("Expected existing transaction") {
+        match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 // Read commit attempt: restore transaction; not terminal. txn_metrics
                 // stays on self and Drop fires later from do_close.
@@ -447,9 +447,7 @@ impl TransactionService {
                 .await
                 .expect("Expected schema transaction commit completion")
             }
-        };
-
-        Break(())
+        }
     }
 
     async fn handle_rollback(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {
@@ -468,7 +466,7 @@ impl TransactionService {
         // Record RolledBack BEFORE the responder send: rollback has completed
         // server-side, so a failed client-side ack only loses the reply, not the
         // counter.
-        let _: ControlFlow<(), ()> = match self.transaction.take().expect("Expected existing transaction") {
+        match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
                 respond_error_and_return_break!(responder, TransactionServiceError::CannotRollbackReadTransaction {});
@@ -491,9 +489,7 @@ impl TransactionService {
                 respond_else_return_break!(responder, TransactionServiceResponse::Ok);
                 Continue(())
             }
-        };
-
-        Continue(())
+        }
     }
 
     async fn handle_close(&mut self, responder: TransactionResponder) -> ControlFlow<(), ()> {
@@ -621,19 +617,15 @@ impl TransactionService {
                     return self.run_write_query(responder, query_options, query_pipeline, source_query).await;
                 }
                 (QueueOptions::Query(query_options), false) => {
-                    let outcome = self
-                        .blocking_read_query_worker(
-                            responder,
-                            query_options,
-                            query_pipeline,
-                            source_query,
-                            StorageCounters::DISABLED,
-                        )
-                        .await
-                        .expect("Expected read query completion");
-                    if let Break(()) = outcome {
-                        return Break(());
-                    }
+                    self.blocking_read_query_worker(
+                        responder,
+                        query_options,
+                        query_pipeline,
+                        source_query,
+                        StorageCounters::DISABLED,
+                    )
+                    .await
+                    .expect("Expected read query completion")?;
                 }
             }
         }
@@ -687,17 +679,15 @@ impl TransactionService {
                         // queued queries are not handled yet so there will be no query response yet
                         Continue(())
                     } else {
-                        let outcome = self
-                            .blocking_read_query_worker(
-                                responder,
-                                query_options,
-                                pipeline,
-                                query,
-                                StorageCounters::DISABLED,
-                            )
-                            .await
-                            .expect("Expected read query completion");
-                        outcome
+                        self.blocking_read_query_worker(
+                            responder,
+                            query_options,
+                            pipeline,
+                            query,
+                            StorageCounters::DISABLED,
+                        )
+                        .await
+                        .expect("Expected read query completion")
                     }
                 }
             }
@@ -760,8 +750,7 @@ impl TransactionService {
                 // running write queries have no valid response yet (until they finish) and will respond asynchronously
                 self.running_write_query = Some((responder, tokio::spawn(async move { handle.await.unwrap() })));
                 if let Some(m) = self.txn_metrics.as_ref() {
-                    self.write_query_metrics =
-                        Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name()));
+                    self.write_query_metrics = Some(WriteQueryMetrics::new(m.diagnostics_manager(), m.database_name()));
                 }
             }
             Err(err) => {

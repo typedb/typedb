@@ -75,13 +75,13 @@ impl DiagnosticsManager {
     /// `DatabaseManager::new` that don't care about diagnostics.
     pub fn new_test() -> Self {
         let diagnostics = Diagnostics::new(
-            String::new(), // deployment_id
-            String::new(), // server_id
-            String::new(), // distribution
-            String::new(), // version
+            String::new(),             // deployment_id
+            String::new(),             // server_id
+            String::new(),             // distribution
+            String::new(),             // version
             std::path::PathBuf::new(), // data_directory
-            false, // is_reporting_enabled
-            false, // is_collection_needed
+            false,                     // is_reporting_enabled
+            false,                     // is_collection_needed
         );
         Self { diagnostics: Arc::new(diagnostics), reporter: None, monitoring_server: None }
     }

@@ -117,10 +117,8 @@ impl ServerMetrics {
         let os_version = System::os_version().unwrap_or(UNKNOWN_STR.to_string());
         let sampler = Arc::new(SystemSampler::new(data_directory.clone()));
         let sampler_for_refresh = sampler.clone();
-        let _sampler_refresh = IntervalRunner::new(
-            move || sampler_for_refresh.refresh(),
-            SYSTEM_METRICS_REFRESH_INTERVAL,
-        );
+        let _sampler_refresh =
+            IntervalRunner::new(move || sampler_for_refresh.refresh(), SYSTEM_METRICS_REFRESH_INTERVAL);
         Self {
             start_instant: Instant::now(),
             os_name,
@@ -973,13 +971,7 @@ impl HistogramMetrics {
             "histogram bucket bounds must be strictly ascending"
         );
         let bucket_counts = (0..bucket_bounds.len()).map(|_| AtomicU64::new(0)).collect();
-        Self {
-            bucket_bounds,
-            bucket_counts,
-            overflow_count: AtomicU64::new(0),
-            sum: AtomicU64::new(0),
-            unit,
-        }
+        Self { bucket_bounds, bucket_counts, overflow_count: AtomicU64::new(0), sum: AtomicU64::new(0), unit }
     }
 
     /// Constructor for duration histograms with the standard bucket set.
@@ -1141,10 +1133,11 @@ impl DatabaseHistograms {
             .into_iter()
             .map(|qt| (qt, HistogramMetrics::new_duration()))
             .collect();
-        let transaction_duration = [LoadKind::ReadTransactions, LoadKind::WriteTransactions, LoadKind::SchemaTransactions]
-            .into_iter()
-            .map(|tt| (tt, HistogramMetrics::new_duration()))
-            .collect();
+        let transaction_duration =
+            [LoadKind::ReadTransactions, LoadKind::WriteTransactions, LoadKind::SchemaTransactions]
+                .into_iter()
+                .map(|tt| (tt, HistogramMetrics::new_duration()))
+                .collect();
         Self {
             query_duration,
             transaction_duration,
@@ -1180,8 +1173,7 @@ impl DatabaseHistograms {
     }
 
     pub fn snapshot(&self) -> DatabaseHistogramsSnapshot {
-        let mut query_duration: Vec<_> =
-            self.query_duration.iter().map(|(k, h)| (*k, h.snapshot())).collect();
+        let mut query_duration: Vec<_> = self.query_duration.iter().map(|(k, h)| (*k, h.snapshot())).collect();
         query_duration.sort_by_key(|(k, _)| match k {
             QueryType::Read => 0,
             QueryType::Write => 1,

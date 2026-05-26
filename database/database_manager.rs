@@ -15,10 +15,7 @@ use std::{
 };
 
 use cache::CACHE_DB_NAME_PREFIX;
-use diagnostics::{
-    diagnostics_manager::DiagnosticsManager,
-    metrics::HistogramMetrics,
-};
+use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::HistogramMetrics};
 use durability::wal::{NoopWalMetrics, WalMetrics};
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
@@ -329,13 +326,19 @@ impl DatabaseManager {
     }
 
     fn new_public_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.data_directory.join(name), Self::wal_metrics_adapter(&self.diagnostics_manager, name))
-            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
+        Database::<WALClient>::open(
+            &self.data_directory.join(name),
+            Self::wal_metrics_adapter(&self.diagnostics_manager, name),
+        )
+        .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 
     fn new_imported_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.import_directory.join(name), Self::wal_metrics_adapter(&self.diagnostics_manager, name))
-            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
+        Database::<WALClient>::open(
+            &self.import_directory.join(name),
+            Self::wal_metrics_adapter(&self.diagnostics_manager, name),
+        )
+        .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 
     fn exists_public<'a>(&'a self, databases: &'a DatabasesWriteLock<'a>, name: &str) -> bool {
@@ -407,4 +410,3 @@ impl WalMetrics for WalMetricsAdapter {
         self.bytes_counter.fetch_add(bytes, Ordering::Relaxed);
     }
 }
-
