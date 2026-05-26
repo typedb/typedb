@@ -77,12 +77,6 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
             .unwrap();
         writeln!(out, "# TYPE process_start_time_seconds gauge").unwrap();
         writeln!(out, "process_start_time_seconds {}", p.start_time_unix_seconds).unwrap();
-        writeln!(out, "# HELP process_open_fds Number of open file descriptors.").unwrap();
-        writeln!(out, "# TYPE process_open_fds gauge").unwrap();
-        writeln!(out, "process_open_fds {}", p.open_fds).unwrap();
-        writeln!(out, "# HELP process_max_fds Maximum number of open file descriptors.").unwrap();
-        writeln!(out, "# TYPE process_max_fds gauge").unwrap();
-        writeln!(out, "process_max_fds {}", p.max_fds).unwrap();
     }
 
     writeln!(out, "\n# TYPE typedb_schema_data_count gauge").unwrap();

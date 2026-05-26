@@ -165,8 +165,6 @@ impl ServerMetrics {
                     resident_memory_bytes: self.sampler.process_resident_memory_bytes(),
                     virtual_memory_bytes: self.sampler.process_virtual_memory_bytes(),
                     start_time_unix_seconds: self.sampler.process_start_time_unix_seconds(),
-                    open_fds: self.sampler.process_open_fds(),
-                    max_fds: self.sampler.process_max_fds(),
                 },
             }),
         }

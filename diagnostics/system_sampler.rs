@@ -20,8 +20,6 @@ pub(crate) struct SystemSampler {
     process_cpu_microseconds: AtomicU64,
     process_rss_bytes: AtomicU64,
     process_vsize_bytes: AtomicU64,
-    process_open_fds: AtomicU64,
-    process_max_fds: AtomicU64,
 
     total_memory_bytes: AtomicU64,
     available_memory_bytes: AtomicU64,
@@ -58,8 +56,6 @@ impl SystemSampler {
             process_cpu_microseconds: AtomicU64::new(0),
             process_rss_bytes: AtomicU64::new(0),
             process_vsize_bytes: AtomicU64::new(0),
-            process_open_fds: AtomicU64::new(0),
-            process_max_fds: AtomicU64::new(0),
             total_memory_bytes: AtomicU64::new(0),
             available_memory_bytes: AtomicU64::new(0),
             disk_total_bytes: AtomicU64::new(0),
@@ -113,19 +109,6 @@ impl SystemSampler {
             self.disk_total_bytes.store(disk.total_space(), Ordering::Relaxed);
             self.disk_available_bytes.store(disk.available_space(), Ordering::Relaxed);
         }
-
-        // process_open_fds and process_max_fds stay at 0 on non-Linux.
-        #[cfg(target_os = "linux")]
-        {
-            if let Ok(entries) = std::fs::read_dir("/proc/self/fd") {
-                // Subtract one: read_dir's own dirfd is included in the entry list.
-                let count = (entries.count() as u64).saturating_sub(1);
-                self.process_open_fds.store(count, Ordering::Relaxed);
-            }
-            if let Some(max) = read_max_open_files_linux() {
-                self.process_max_fds.store(max, Ordering::Relaxed);
-            }
-        }
     }
 
     pub(crate) fn total_memory_bytes(&self) -> u64 {
@@ -149,26 +132,7 @@ impl SystemSampler {
     pub(crate) fn process_virtual_memory_bytes(&self) -> u64 {
         self.process_vsize_bytes.load(Ordering::Relaxed)
     }
-    pub(crate) fn process_open_fds(&self) -> u64 {
-        self.process_open_fds.load(Ordering::Relaxed)
-    }
-    pub(crate) fn process_max_fds(&self) -> u64 {
-        self.process_max_fds.load(Ordering::Relaxed)
-    }
     pub(crate) fn process_start_time_unix_seconds(&self) -> u64 {
         self.process_start_time_unix_seconds
     }
-}
-
-// Parses the soft limit (first column after the label) from a line like:
-//     Max open files            1024                 1048576              files
-#[cfg(target_os = "linux")]
-fn read_max_open_files_linux() -> Option<u64> {
-    let content = std::fs::read_to_string("/proc/self/limits").ok()?;
-    for line in content.lines() {
-        if let Some(rest) = line.strip_prefix("Max open files") {
-            return rest.split_whitespace().next().and_then(|s| s.parse().ok());
-        }
-    }
-    None
 }

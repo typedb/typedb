@@ -136,8 +136,6 @@ pub(crate) struct JsonMonitoringProcessReport {
     pub resident_memory_bytes: u64,
     pub virtual_memory_bytes: u64,
     pub start_time_unix_seconds: u64,
-    pub open_fds: u64,
-    pub max_fds: u64,
 }
 
 impl From<ProcessReport> for JsonMonitoringProcessReport {
@@ -147,8 +145,6 @@ impl From<ProcessReport> for JsonMonitoringProcessReport {
             resident_memory_bytes: value.resident_memory_bytes,
             virtual_memory_bytes: value.virtual_memory_bytes,
             start_time_unix_seconds: value.start_time_unix_seconds,
-            open_fds: value.open_fds,
-            max_fds: value.max_fds,
         }
     }
 }
