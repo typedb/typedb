@@ -47,7 +47,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-pub(crate) struct LinksExecutor {
+pub struct LinksExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
 
     iterate_mode: LinksIterateMode,
@@ -90,7 +90,7 @@ pub(crate) type LinksOrderingFn = for<'a, 'b> fn(
 ) -> Ordering;
 
 impl LinksExecutor {
-    pub(crate) fn new(
+    pub fn new(
         links: LinksInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
         sort_by: ExecutorVariable,
@@ -166,7 +166,7 @@ impl LinksExecutor {
         })
     }
 
-    pub(crate) fn get_iterator(
+    pub fn get_iterator(
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,

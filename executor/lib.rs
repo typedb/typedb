@@ -25,7 +25,8 @@ pub mod row;
 pub mod write;
 
 pub use instruction::{
-    has_executor::HasExecutor, has_reverse_executor::HasReverseExecutor, iterator::TupleIterator, tuple::Tuple,
+    has_executor::HasExecutor, has_reverse_executor::HasReverseExecutor, iterator::TupleIterator,
+    links_executor::LinksExecutor, tuple::Tuple,
 };
 
 // TODO: use a bit-vec, since we have a continuously allocated range of positions

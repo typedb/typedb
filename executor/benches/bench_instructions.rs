@@ -24,16 +24,22 @@ use compiler::{
     },
     executable::match_::instructions::{
         Inputs, VariableMode, VariableModes,
-        thing::{HasInstruction, HasReverseInstruction},
+        thing::{HasInstruction, HasReverseInstruction, LinksInstruction},
     },
 };
 use concept::{
     thing::object::ObjectAPI,
-    type_::{Ordering, OwnerAPI, annotation::AnnotationCardinality, owns::OwnsAnnotation},
+    type_::{
+        Ordering, OwnerAPI, PlayerAPI, annotation::AnnotationCardinality, owns::OwnsAnnotation,
+        relates::RelatesAnnotation,
+    },
 };
 use criterion::{Criterion, SamplingMode, criterion_group, criterion_main, profiler::Profiler};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use executor::{HasExecutor, HasReverseExecutor, TupleIterator, pipeline::stage::ExecutionContext, row::MaybeOwnedRow};
+use executor::{
+    HasExecutor, HasReverseExecutor, LinksExecutor, TupleIterator, pipeline::stage::ExecutionContext,
+    row::MaybeOwnedRow,
+};
 use ir::{
     pattern::constraint::IsaKind,
     pipeline::{ParameterRegistry, block::Block},
@@ -50,9 +56,15 @@ const NUM_PERSONS: usize = 10_000;
 const AGES_PER_PERSON: usize = 5;
 const NAMES_PER_PERSON: usize = 5;
 
+const NUM_MEMBERSHIPS: usize = 10_000;
+
 static PERSON_LABEL: OnceLock<Label> = OnceLock::new();
 static AGE_LABEL: OnceLock<Label> = OnceLock::new();
 static NAME_LABEL: OnceLock<Label> = OnceLock::new();
+static GROUP_LABEL: OnceLock<Label> = OnceLock::new();
+static MEMBERSHIP_LABEL: OnceLock<Label> = OnceLock::new();
+static MEMBERSHIP_MEMBER_LABEL: OnceLock<Label> = OnceLock::new();
+static MEMBERSHIP_GROUP_LABEL: OnceLock<Label> = OnceLock::new();
 
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
@@ -209,6 +221,143 @@ fn build_has_reverse_unbound_executor(
     (executor, context)
 }
 
+fn setup_links_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+    setup_concept_storage(storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let mut snapshot = storage.clone().open_snapshot_write();
+
+    let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
+    let group_type = type_manager.create_entity_type(&mut snapshot, GROUP_LABEL.get().unwrap()).unwrap();
+    let membership_type = type_manager.create_relation_type(&mut snapshot, MEMBERSHIP_LABEL.get().unwrap()).unwrap();
+
+    let relates_member = membership_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            MEMBERSHIP_MEMBER_LABEL.get().unwrap().name.as_str(),
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    relates_member
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+        )
+        .unwrap();
+    let member_role = relates_member.role();
+
+    let relates_group = membership_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            MEMBERSHIP_GROUP_LABEL.get().unwrap().name.as_str(),
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    relates_group
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+        )
+        .unwrap();
+    let group_role = relates_group.role();
+
+    person_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, member_role, StorageCounters::DISABLED)
+        .unwrap();
+    group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, group_role, StorageCounters::DISABLED).unwrap();
+
+    for _ in 0..NUM_MEMBERSHIPS {
+        let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let group = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
+        let membership = thing_manager.create_relation(&mut snapshot, membership_type).unwrap();
+        membership
+            .add_player(&mut snapshot, &thing_manager, member_role, person.into_object(), StorageCounters::DISABLED)
+            .unwrap();
+        membership
+            .add_player(&mut snapshot, &thing_manager, group_role, group.into_object(), StorageCounters::DISABLED)
+            .unwrap();
+    }
+
+    thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+}
+
+struct LinksBenchVars {
+    membership: ExecutorVariable,
+    mapping: HashMap<Variable, ExecutorVariable>,
+    variable_modes: VariableModes,
+}
+
+fn build_links_ir() -> (Block, LinksBenchVars, PipelineTranslationContext, ParameterRegistry) {
+    let mut translation_context = PipelineTranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+    let var_membership_type = conjunction.constraints_mut().get_or_declare_variable("membership_type", None).unwrap();
+    let var_membership = conjunction.constraints_mut().get_or_declare_variable("membership", None).unwrap();
+    let var_player = conjunction.constraints_mut().get_or_declare_variable("player", None).unwrap();
+    let var_role_type = conjunction.constraints_mut().get_or_declare_variable("role_type", None).unwrap();
+    conjunction.constraints_mut().add_links(var_membership, var_player, var_role_type, None).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None)
+        .unwrap();
+    conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.get().unwrap().clone()).unwrap();
+    drop(conjunction);
+    let entry = builder.finish().unwrap();
+
+    let membership = ExecutorVariable::RowPosition(VariablePosition::new(0));
+    let player = ExecutorVariable::RowPosition(VariablePosition::new(1));
+    let role_type = ExecutorVariable::RowPosition(VariablePosition::new(2));
+    let mapping: HashMap<Variable, ExecutorVariable> = HashMap::from([
+        (var_membership, membership),
+        (var_player, player),
+        (var_role_type, role_type),
+        (var_membership_type, ExecutorVariable::Internal(var_membership_type)),
+    ]);
+    let mut variable_modes = VariableModes::new();
+    variable_modes.insert(membership, VariableMode::Output);
+    variable_modes.insert(player, VariableMode::Output);
+    variable_modes.insert(role_type, VariableMode::Output);
+
+    (entry, LinksBenchVars { membership, mapping, variable_modes }, translation_context, value_parameters)
+}
+
+fn build_links_unbound_executor(
+    storage: &Arc<MVCCStorage<WALClient>>,
+) -> (LinksExecutor, ExecutionContext<storage::snapshot::ReadSnapshot<WALClient>>) {
+    let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.snapshot_watermark()));
+    let (entry, vars, mut translation_context, value_parameters) = build_links_ir();
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let mut ctx = PipelineAnnotationContext::new(
+        &snapshot,
+        &type_manager,
+        &EmptyAnnotatedFunctionSignatures,
+        &mut translation_context.variable_registry,
+        &value_parameters,
+    );
+    let previous_annotations = RunningVariableAnnotations::empty();
+    let block_annotations = infer_types_for_block(&mut ctx, &previous_annotations, &entry, false).unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
+    let links = entry.conjunction().constraints().iter().find_map(|c| c.as_links()).unwrap().clone();
+
+    let links_instruction = LinksInstruction::new(links, Inputs::None([]), &entry_annotations).map(&vars.mapping);
+    let executor =
+        LinksExecutor::new(links_instruction, vars.variable_modes, vars.membership, &snapshot, &thing_manager).unwrap();
+    let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, Arc::default());
+    (executor, context)
+}
+
 fn assert_count(mut iter: TupleIterator, expected_count: usize) {
     let mut count = 0;
     while let Some(result) = iter.peek() {
@@ -223,16 +372,25 @@ fn criterion_benchmark(c: &mut Criterion) {
     PERSON_LABEL.set(Label::new_static("person")).unwrap();
     AGE_LABEL.set(Label::new_static("age")).unwrap();
     NAME_LABEL.set(Label::new_static("name")).unwrap();
+    GROUP_LABEL.set(Label::new_static("group")).unwrap();
+    MEMBERSHIP_LABEL.set(Label::new_static("membership")).unwrap();
+    MEMBERSHIP_MEMBER_LABEL.set(Label::new_static_scoped("member", "membership", "membership:member")).unwrap();
+    MEMBERSHIP_GROUP_LABEL.set(Label::new_static_scoped("group", "membership", "membership:group")).unwrap();
     init_logging();
 
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
 
+    let (_links_tmp_dir, mut links_storage) = create_core_storage();
+    setup_links_database(&mut links_storage);
+
     let (has_exec, has_ctx) = build_has_unbound_executor(&storage);
     let (has_reverse_single_exec, has_reverse_single_ctx) = build_has_reverse_unbound_executor(&storage, false);
     let (has_reverse_multi_exec, has_reverse_multi_ctx) = build_has_reverse_unbound_executor(&storage, true);
+    let (links_exec, links_ctx) = build_links_unbound_executor(&links_storage);
     let count_single = NUM_PERSONS * AGES_PER_PERSON;
     let count_multi = NUM_PERSONS * (AGES_PER_PERSON + NAMES_PER_PERSON);
+    let count_links = NUM_MEMBERSHIPS * 2;
 
     let mut group = c.benchmark_group("has_unbound");
     group.sampling_mode(SamplingMode::Linear);
@@ -260,6 +418,16 @@ fn criterion_benchmark(c: &mut Criterion) {
                 .get_iterator(&has_reverse_multi_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED)
                 .unwrap();
             assert_count(iter, count_multi);
+        })
+    });
+    group.finish();
+
+    let mut group = c.benchmark_group("links_unbound");
+    group.sampling_mode(SamplingMode::Linear);
+    group.bench_function("single_type", |b| {
+        b.iter(|| {
+            let iter = links_exec.get_iterator(&links_ctx, MaybeOwnedRow::empty(), StorageCounters::DISABLED).unwrap();
+            assert_count(iter, count_links);
         })
     });
     group.finish();

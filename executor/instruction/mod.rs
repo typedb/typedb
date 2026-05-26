@@ -42,7 +42,7 @@ mod is_executor;
 mod isa_executor;
 mod isa_reverse_executor;
 pub(crate) mod iterator;
-mod links_executor;
+pub(crate) mod links_executor;
 mod links_reverse_executor;
 mod owns_executor;
 mod owns_reverse_executor;
