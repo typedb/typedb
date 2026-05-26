@@ -105,9 +105,8 @@ pub(crate) struct ServerMetrics {
     os_version: String,
     version: String,
     data_directory: PathBuf,
-    // Declared before `sampler` so the refresh thread is joined first on drop.
-    _sampler_refresh: IntervalRunner,
     sampler: Arc<SystemSampler>,
+    _sampler_refresh: IntervalRunner,
 }
 
 impl ServerMetrics {
@@ -126,8 +125,8 @@ impl ServerMetrics {
             os_version,
             version,
             data_directory,
-            _sampler_refresh,
             sampler,
+            _sampler_refresh,
         }
     }
 
@@ -258,8 +257,6 @@ impl LoadMetrics {
             let mut report = LoadReport::new(*database_hash);
             report.schema = Some(self.schema.to_state_report());
             report.data = Some(self.data.to_state_report());
-            // Live in-flight counts → typedb_transactions_active gauge. Distinct
-            // from peak_counts (which feeds Posthog); this is the current value.
             report.connection = Some(self.connection.to_active_report());
             Some(report)
         } else {
@@ -741,9 +738,6 @@ impl fmt::Display for LoadKind {
     }
 }
 
-/// Identifies the kind of a query for the query-duration histogram. Mirrors
-/// the server crate's `QueryType` (server/service/mod.rs). Used as the label
-/// dimension on `typedb_query_duration_seconds`.
 #[derive(Serialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum QueryType {
@@ -938,8 +932,6 @@ pub const DEFAULT_DURATION_BUCKETS_NANOS: &[u64] = &[
 /// more headroom for accidental-n+1 outliers (top bound 10_000).
 pub const DEFAULT_QUERIES_PER_TRANSACTION_BUCKETS: &[u64] = &[1, 5, 10, 25, 100, 1000, 10000];
 
-/// Whether a histogram's stored u64 values represent nanoseconds (to be emitted
-/// as seconds in Prometheus output) or raw counts (emitted as-is).
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum HistogramUnit {
     Nanoseconds,

@@ -12,9 +12,6 @@ use diagnostics::{
 };
 use tokio::time::Instant;
 
-/// RAII gauge balance: increment on construction, decrement on Drop. Held
-/// as a field on `TransactionMetrics` so the gauge balances even if the
-/// outer constructor panics after the guard is bound.
 #[derive(Debug)]
 struct LoadCountGuard {
     diagnostics_manager: Arc<DiagnosticsManager>,
@@ -90,9 +87,6 @@ impl TransactionMetrics {
         self.terminal_outcome = Some(TransactionOutcome::Committed);
     }
 
-    /// Non-terminal: a rolled-back transaction can be reused, so we fire the
-    /// counter immediately rather than waiting for Drop. The terminal outcome
-    /// (Committed or Closed) is still decided later.
     pub(crate) fn record_rolled_back(&self) {
         self.diagnostics_manager.record_transaction_outcome(
             self.database_name.as_str(),

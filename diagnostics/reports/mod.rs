@@ -98,11 +98,6 @@ pub(crate) struct OsReport {
     pub version: String,
 }
 
-/// Standard Prometheus `process_*` metric family snapshot. Emitted on the
-/// monitoring endpoint without a `typedb_` prefix to match the conventional
-/// names dashboards already know (node_exporter, postgres_exporter, etc.).
-/// On non-Linux platforms `open_fds` and `max_fds` may be zero — the metrics
-/// are emitted regardless so dashboards stay uniform across deployments.
 #[derive(Debug)]
 pub(crate) struct ProcessReport {
     pub cpu_seconds_total: f64,

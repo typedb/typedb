@@ -151,9 +151,8 @@ impl DurabilityService for WAL {
         let sequence_number = self.increment();
         debug!("Writing unsequenced record with {sequence_number}");
         let raw_record = RawRecord { sequence_number, record_type, bytes: Cow::Borrowed(bytes) };
-        let bytes_len = bytes.len() as u64;
         files.write_record(raw_record)?;
-        self.metrics.record_bytes_written(bytes_len);
+        self.metrics.record_bytes_written(bytes.len() as u64);
         Ok(sequence_number)
     }
 
@@ -163,9 +162,8 @@ impl DurabilityService for WAL {
         let sequence_number = self.previous();
         debug!("Writing unsequenced record with {sequence_number}");
         let raw_record = RawRecord { sequence_number, record_type, bytes: Cow::Borrowed(bytes) };
-        let bytes_len = bytes.len() as u64;
         files.write_record(raw_record)?;
-        self.metrics.record_bytes_written(bytes_len);
+        self.metrics.record_bytes_written(bytes.len() as u64);
         Ok(())
     }
 

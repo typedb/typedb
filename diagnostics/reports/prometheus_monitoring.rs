@@ -36,11 +36,6 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
         writeln!(out, "# os: {} {} {}", os.name, os.arch, os.version).unwrap();
     }
 
-    // typedb_build_info follows the Prometheus convention used by node_exporter,
-    // postgres_exporter, etc.: a value-1 gauge whose label set carries build/identity
-    // facts that should survive scrape aggregation (you can't aggregate scrape-time
-    // header comments). Empty strings for os labels keep the line valid even when
-    // the minimal report is in use (sensitive_part = None).
     writeln!(out, "\n# HELP typedb_build_info Build and runtime identity of this TypeDB server.").unwrap();
     writeln!(out, "# TYPE typedb_build_info gauge").unwrap();
     let (os_name, os_arch, os_version) = match &report.server.sensitive_part {
@@ -68,10 +63,6 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
         writeln!(out, "server_resources_count{{kind=\"diskAvailableInBytes\"}} {}", sensitive.disk_available_in_bytes)
             .unwrap();
 
-        // Standard Prometheus `process_*` family. No typedb_ prefix — these
-        // names are the ones every dashboard and exporter already knows. On
-        // non-Linux platforms open_fds/max_fds are 0 (sampler limitation);
-        // the lines are still emitted for dashboard uniformity.
         let p = &sensitive.process;
         writeln!(out, "\n# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.").unwrap();
         writeln!(out, "# TYPE process_cpu_seconds_total counter").unwrap();
@@ -123,9 +114,7 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
     // Live in-flight transaction counts per (database, client, kind). All six
     // (client × kind) entries are emitted per observed database, including
     // zeros — matches the `process_*` family's "emit even when zero/unsupported"
-    // posture so dashboards render continuous flat lines at rest. See the
-    // matching note on ConnectionLoadMetrics::to_active_report for the
-    // cardinality trade-off rationale.
+    // posture so dashboards render continuous flat lines at rest.
     if !report.load.is_empty() {
         writeln!(out, "\n# HELP typedb_transactions_active In-flight transactions by client and kind.").unwrap();
         writeln!(out, "# TYPE typedb_transactions_active gauge").unwrap();
@@ -273,10 +262,6 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
     out
 }
 
-/// Emit a Prometheus histogram body: `_bucket{le="X"}`, `_count`, `_sum` lines.
-/// The HELP/TYPE header is the caller's responsibility (so multiple per-database
-/// series share one header). `labels` is the inside of the `{ }` minus the `le`
-/// label, which this function appends per bucket.
 fn write_histogram_body(out: &mut String, metric_name: &str, labels: &str, histogram: &JsonMonitoringHistogramReport) {
     for bucket in &histogram.buckets {
         writeln!(out, "{}_bucket{{{}, le=\"{}\"}} {}", metric_name, labels, bucket.le, bucket.count).unwrap();
