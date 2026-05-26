@@ -12,6 +12,7 @@ use database::{
     query::{execute_schema_query, execute_write_query_in_write},
     transaction::{CommitIntent, DataCommitError, TransactionSchema, TransactionWrite},
 };
+use diagnostics::diagnostics_manager::DiagnosticsManager;
 use encoding::graph::thing::vertex_attribute::StringAttributeID;
 use executor::ExecutionInterrupt;
 use options::{QueryOptions, TransactionOptions};
@@ -25,9 +26,7 @@ const DB_NAME: &str = "isolation-test";
 fn create_reset_database() -> (TempDir, Arc<Database<WALClient>>) {
     init_logging();
     let tmp_dir = test_utils::create_tmp_storage_dir();
-    let dbm =
-        DatabaseManager::new(&tmp_dir, Arc::new(diagnostics::diagnostics_manager::DiagnosticsManager::new_disabled()))
-            .unwrap();
+    let dbm = DatabaseManager::new(&tmp_dir, Arc::new(DiagnosticsManager::new_disabled())).unwrap();
     dbm.put_database(DB_NAME).unwrap();
     let database = dbm.database(DB_NAME).unwrap();
     (tmp_dir, database)
