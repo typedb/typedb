@@ -57,7 +57,15 @@ impl HttpServiceError {
             HttpServiceError::Transaction { typedb_source }
             | HttpServiceError::QueryClose { typedb_source }
             | HttpServiceError::QueryCommit { typedb_source } => typedb_source.to_service_error(),
-            _ => None,
+
+            HttpServiceError::Internal { .. }
+            | HttpServiceError::JsonBodyExpected { .. }
+            | HttpServiceError::RequestTimeout { .. }
+            | HttpServiceError::NotFound { .. }
+            | HttpServiceError::UnknownVersion { .. }
+            | HttpServiceError::MissingPathParameter { .. }
+            | HttpServiceError::InvalidPathParameter { .. }
+            | HttpServiceError::Authentication { .. } => None,
         }
     }
 }
