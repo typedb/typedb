@@ -138,6 +138,7 @@ pub struct Reporting {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct Monitoring {
     pub enabled: bool,
     pub port: u16,
