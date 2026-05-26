@@ -341,7 +341,7 @@ impl TransactionService {
                 let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    db_name.as_ref().map(|n| n.as_str()),
+                    db_name.as_ref(),
                     ActionKind::TransactionQuery,
                     || async { self.handle_query(request_id, query_req).await },
                 )
@@ -351,7 +351,7 @@ impl TransactionService {
                 let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    db_name.as_ref().map(|n| n.as_str()),
+                    db_name.as_ref(),
                     ActionKind::TransactionAnalyse,
                     || async { self.handle_analyse_query(request_id, analyze_req).await },
                 )
@@ -369,7 +369,7 @@ impl TransactionService {
                 let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    db_name.as_ref().map(|n| n.as_str()),
+                    db_name.as_ref(),
                     ActionKind::TransactionCommit,
                     || async {
                         // Eagerly executed in main loop
@@ -383,7 +383,7 @@ impl TransactionService {
                 let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    db_name.as_ref().map(|n| n.as_str()),
+                    db_name.as_ref(),
                     ActionKind::TransactionRollback,
                     || async { self.handle_rollback(request_id, rollback_req).await },
                 )
@@ -393,7 +393,7 @@ impl TransactionService {
                 let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    db_name.as_ref().map(|n| n.as_str()),
+                    db_name.as_ref(),
                     ActionKind::TransactionClose,
                     || async {
                         self.handle_close(close_req).await;
@@ -1461,7 +1461,7 @@ impl TransactionService {
         }
     }
 
-    fn get_database_name(&self) -> Option<Arc<String>> {
+    fn get_database_name(&self) -> Option<Arc<str>> {
         self.transaction.as_ref().map(Transaction::database_name)
     }
 }

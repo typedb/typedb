@@ -67,7 +67,7 @@ impl Transaction {
         }
     }
 
-    pub fn database_name(&self) -> Arc<String> {
+    pub fn database_name(&self) -> Arc<str> {
         with_readable_transaction!(self, |transaction| { transaction.database.name_arc() })
     }
 

@@ -75,7 +75,7 @@ enum TransactionReservationRequest {
 }
 
 pub struct Database<D> {
-    name: Arc<String>,
+    name: Arc<str>,
     pub(super) path: PathBuf,
     pub(super) storage: Arc<MVCCStorage<D>>,
     pub(super) definition_key_generator: Arc<DefinitionKeyGenerator>,
@@ -99,10 +99,10 @@ impl<D> Database<D> {
     const TRY_LOCK_SLEEP_INTERVAL: Duration = Duration::from_millis(10);
 
     pub fn name(&self) -> &str {
-        self.name.as_str()
+        &self.name
     }
 
-    pub fn name_arc(&self) -> Arc<String> {
+    pub fn name_arc(&self) -> Arc<str> {
         self.name.clone()
     }
 
@@ -311,11 +311,10 @@ impl Database<WALClient> {
             schema_txn_lock.clone(),
             query_cache.clone(),
         );
-        let checkpoint_fn =
-            make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
+        let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
 
         Ok(Database::<WALClient> {
-            name: Arc::new(name.to_owned()),
+            name: Arc::<str>::from(name),
             path: path.to_owned(),
             storage,
             definition_key_generator,
@@ -430,7 +429,7 @@ impl Database<WALClient> {
             make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
 
         let database = Database::<WALClient> {
-            name: Arc::new(name.to_owned()),
+            name: Arc::<str>::from(name),
             path: path.to_owned(),
             storage,
             definition_key_generator,
@@ -457,12 +456,12 @@ impl Database<WALClient> {
     }
 
     fn checkpoint(&self) -> Result<(), CheckpointCreateError> {
-        checkpoint_storage(self.name.as_str(), &self.path, &self.storage)
+        checkpoint_storage(&self.name, &self.path, &self.storage)
     }
 
     #[allow(clippy::drop_non_drop)]
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
-        trace!("Deleting database '{}'.", self.name.as_str());
+        trace!("Deleting database '{}'.", &self.name);
         drop(self._statistics_updater);
         drop(self._checkpointer);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));

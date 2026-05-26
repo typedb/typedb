@@ -75,7 +75,7 @@ mod write_batches;
 
 #[derive(Debug)]
 pub struct MVCCStorage<Durability> {
-    name: Arc<String>,
+    name: Arc<str>,
     path: PathBuf,
     keyspaces: Keyspaces,
     durability_client: Durability,
@@ -110,7 +110,7 @@ impl<Durability> MVCCStorage<Durability> {
         let next_sequence_number = durability_client.current();
         let isolation_manager = IsolationManager::new(next_sequence_number);
         Ok(Self {
-            name: Arc::new(name.as_ref().to_owned()),
+            name: Arc::<str>::from(name.as_ref()),
             path: storage_dir,
             durability_client,
             keyspaces,
@@ -171,7 +171,7 @@ impl<Durability> MVCCStorage<Durability> {
 
         let isolation_manager = IsolationManager::new(next_sequence_number);
         Ok(Self {
-            name: Arc::new(name.to_owned()),
+            name: Arc::<str>::from(name),
             path: storage_dir,
             durability_client,
             keyspaces,
@@ -186,7 +186,7 @@ impl<Durability> MVCCStorage<Durability> {
         durability_client.register_record_type::<StatusRecord>();
     }
 
-    fn name(&self) -> Arc<String> {
+    fn name(&self) -> Arc<str> {
         self.name.clone()
     }
 
@@ -608,27 +608,27 @@ typedb_error! {
 
 typedb_error! {
     pub StorageCommitError(component = "Storage commit", prefix = "STC") {
-        Internal(1, "Commit in database '{name}' failed with internal error.", name: Arc<String>, source: Arc<dyn Error + Send + Sync + 'static>),
-        Isolation(2, "Commit in database '{name}' failed with isolation conflict: {conflict}", name: Arc<String>, conflict: IsolationConflict),
-        IO(3, "Commit in database '{name}' failed with I/O error'.", name: Arc<String>, source: Arc<io::Error>),
-        MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: Arc<String>, source: MVCCReadError),
-        Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<String>, source: Arc<KeyspaceError>),
-        Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: Arc<String>, typedb_source: DurabilityClientError),
+        Internal(1, "Commit in database '{name}' failed with internal error.", name: Arc<str>, source: Arc<dyn Error + Send + Sync + 'static>),
+        Isolation(2, "Commit in database '{name}' failed with isolation conflict: {conflict}", name: Arc<str>, conflict: IsolationConflict),
+        IO(3, "Commit in database '{name}' failed with I/O error'.", name: Arc<str>, source: Arc<io::Error>),
+        MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: Arc<str>, source: MVCCReadError),
+        Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<str>, source: Arc<KeyspaceError>),
+        Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: Arc<str>, typedb_source: DurabilityClientError),
     }
 }
 
 typedb_error! {
     pub StorageDeleteError(component = "Storage delete", prefix = "STD") {
-        DurabilityDelete(1, "Deleting storage of database '{name}' failed partway while deleting durability records.", name: Arc<String>, typedb_source: DurabilityClientError),
-        KeyspaceDelete(2, "Deleting storage of database '{name}' failed partway while deleting keyspaces: {errors:?}", name: Arc<String>, errors: Vec<KeyspaceDeleteError>),
-        DirectoryDelete(3, "Deleting storage of database '{name}' failed partway while deleting directory.", name: Arc<String>, source: Arc<io::Error>),
+        DurabilityDelete(1, "Deleting storage of database '{name}' failed partway while deleting durability records.", name: Arc<str>, typedb_source: DurabilityClientError),
+        KeyspaceDelete(2, "Deleting storage of database '{name}' failed partway while deleting keyspaces: {errors:?}", name: Arc<str>, errors: Vec<KeyspaceDeleteError>),
+        DirectoryDelete(3, "Deleting storage of database '{name}' failed partway while deleting directory.", name: Arc<str>, source: Arc<io::Error>),
     }
 }
 
 typedb_error! {
     pub StorageResetError(component = "Storage reset", prefix = "STR") {
-        KeyspaceError(1, "Resetting storage of database '{name}' failed partway while resetting keyspace.", name: Arc<String>, source: KeyspaceError),
-        Durability(2, "Resetting storage of database '{name}' failed partway while resetting durability records.", name: Arc<String>, typedb_source: DurabilityClientError),
+        KeyspaceError(1, "Resetting storage of database '{name}' failed partway while resetting keyspace.", name: Arc<str>, source: KeyspaceError),
+        Durability(2, "Resetting storage of database '{name}' failed partway while resetting durability records.", name: Arc<str>, typedb_source: DurabilityClientError),
     }
 }
 

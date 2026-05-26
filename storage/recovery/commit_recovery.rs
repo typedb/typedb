@@ -168,7 +168,7 @@ pub(crate) fn apply_recovered(
                 fail_point!(RECOVERY_PARTIAL_WRITE);
                 isolation_manager
                     .applied(commit_sequence_number)
-                    .map_err(|error| Internal { name: Arc::new(database_name.to_owned()), source: Arc::new(error) })?;
+                    .map_err(|error| Internal { name: Arc::<str>::from(database_name), source: Arc::new(error) })?;
             }
             RecoveryCommitStatus::Rejected => isolation_manager.load_aborted(commit_sequence_number),
             RecoveryCommitStatus::Pending(commit_record) => {
@@ -184,7 +184,7 @@ pub(crate) fn apply_recovered(
                         keyspaces.write(write_batches).map_err(|error| KeyspaceWrite { source: error })?;
                         fail_point!(RECOVERY_PARTIAL_WRITE);
                         isolation_manager.applied(commit_sequence_number).map_err(|error| Internal {
-                            name: Arc::new(database_name.to_owned()),
+                            name: Arc::<str>::from(database_name),
                             source: Arc::new(error),
                         })?;
                     }
@@ -217,6 +217,6 @@ typedb_error! {
             expected_sequence_number: SequenceNumber, first_record_sequence_number: SequenceNumber
         ),
         KeyspaceWrite(5, "Error writing recovered commits to keyspace.", source: KeyspaceError),
-        Internal(6, "Storage recovery for database '{name}' failed with internal error.", name: Arc<String>, source: Arc<dyn Error + Send + Sync + 'static>),
+        Internal(6, "Storage recovery for database '{name}' failed with internal error.", name: Arc<str>, source: Arc<dyn Error + Send + Sync + 'static>),
     }
 }

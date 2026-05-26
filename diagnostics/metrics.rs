@@ -179,7 +179,7 @@ impl ServerMetrics {
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct DatabaseMetrics {
-    pub database_name: Arc<String>,
+    pub database_name: Arc<str>,
     pub schema: SchemaLoadMetrics,
     pub data: DataLoadMetrics,
 }
