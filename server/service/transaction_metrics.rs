@@ -180,7 +180,7 @@ impl SchemaQueryMetrics {
         Self { diagnostics_manager, database_name, started_at: Instant::now() }
     }
 
-    pub(crate) fn observe(self) {
+    pub(crate) fn observe_finished(self) {
         self.diagnostics_manager.observe_query_duration(
             self.database_name.as_str(),
             QueryType::Schema,
