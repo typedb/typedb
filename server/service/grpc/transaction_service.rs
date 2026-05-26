@@ -338,20 +338,18 @@ impl TransactionService {
                 Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
-                let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    db_name.as_ref(),
+                    self.get_database_name().as_ref(),
                     ActionKind::TransactionQuery,
                     || async { self.handle_query(request_id, query_req).await },
                 )
                 .await
             }
             (true, typedb_protocol::transaction::req::Req::AnalyzeReq(analyze_req)) => {
-                let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    db_name.as_ref(),
+                    self.get_database_name().as_ref(),
                     ActionKind::TransactionAnalyse,
                     || async { self.handle_analyse_query(request_id, analyze_req).await },
                 )
@@ -366,10 +364,9 @@ impl TransactionService {
                 }
             }
             (true, typedb_protocol::transaction::req::Req::CommitReq(commit_req)) => {
-                let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    db_name.as_ref(),
+                    self.get_database_name().as_ref(),
                     ActionKind::TransactionCommit,
                     || async {
                         // Eagerly executed in main loop
@@ -380,20 +377,18 @@ impl TransactionService {
                 .await
             }
             (true, typedb_protocol::transaction::req::Req::RollbackReq(rollback_req)) => {
-                let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    db_name.as_ref(),
+                    self.get_database_name().as_ref(),
                     ActionKind::TransactionRollback,
                     || async { self.handle_rollback(request_id, rollback_req).await },
                 )
                 .await
             }
             (true, typedb_protocol::transaction::req::Req::CloseReq(close_req)) => {
-                let db_name = self.get_database_name();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    db_name.as_ref(),
+                    self.get_database_name().as_ref(),
                     ActionKind::TransactionClose,
                     || async {
                         self.handle_close(close_req).await;
@@ -466,11 +461,10 @@ impl TransactionService {
             .await
             .map_err(|err| err.into_status())?;
 
-        let load_kind = transaction.load_kind();
         self.txn_metrics = Some(TransactionMetrics::new(
             self.server_state.diagnostics_manager(),
             transaction.database_name(),
-            load_kind,
+            transaction.load_kind(),
             ClientEndpoint::Grpc,
         ));
         self.transaction = Some(transaction);
@@ -507,16 +501,12 @@ impl TransactionService {
 
         let transaction = self.transaction.take().expect("Expected existing transaction");
         if let Transaction::Read(read_transaction) = transaction {
-            // Read commit attempts are non-terminal: restore the transaction, leave
-            // txn_metrics untouched, and reject the request. The lifecycle resolves
-            // later when the client closes or rolls back.
             self.transaction = Some(Transaction::Read(read_transaction));
             return Err(TransactionServiceError::CannotCommitReadTransaction {}
                 .into_proto_error_message()
                 .into_status());
         }
 
-        // Past here: Write or Schema. The transaction is consumed; this is the terminal step.
         let server_state = self.server_state.clone();
         let commit_result = match transaction {
             Transaction::Write(transaction) => spawn(async move {
@@ -545,7 +535,6 @@ impl TransactionService {
             if commit_result.is_ok() {
                 m.mark_committed();
             }
-            // m drops here → submits Committed (if marked) or Closed (otherwise).
         }
         commit_result?;
 

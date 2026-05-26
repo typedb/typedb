@@ -278,11 +278,10 @@ impl TransactionService {
             .await
             .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?;
 
-        let load_kind = transaction.load_kind();
         self.txn_metrics = Some(TransactionMetrics::new(
             self.server_state.diagnostics_manager(),
             database_name.clone(),
-            load_kind,
+            transaction.load_kind(),
             ClientEndpoint::Http,
         ));
         self.transaction = Some(transaction);
