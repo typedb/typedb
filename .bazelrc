@@ -14,7 +14,7 @@ build --macos_minimum_os=11.0
 try-import ./.bazel-remote-cache.rc
 
 # Allow empty globs (many checkstyle_test patterns may not match)
-common --noincompatible_disallow_empty_glob --experimental_repository_downloader_retries=5 --http_timeout_scaling=2.0
+common --@rules_rust//:rustfmt.toml=//:rustfmt_config --noincompatible_disallow_empty_glob --experimental_repository_downloader_retries=5 --http_timeout_scaling=2.0
 
 # Fix Java runfiles path resolution in Bzlmod mode (required by release note validation)
 build --legacy_external_runfiles
@@ -22,10 +22,6 @@ build --legacy_external_runfiles
 build --incompatible_strict_action_env --remote_download_toplevel --disk_cache=~/.cache/bazel --experimental_disk_cache_gc_max_size=100G --experimental_disk_cache_gc_max_age=60d --java_runtime_version=remotejdk_21
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env --test_env=PATH
-
-# Make rustfmt_test targets use the project's rustfmt.toml (max_width=120, etc).
-# Without this, rules_rust falls back to rustfmt defaults (max_width=100).
-common --@rules_rust//:rustfmt.toml=//:rustfmt_config
 
 # CI configuration: disables disk cache to prevent cache size issues in CI environments
 build:ci --disk_cache= --remote_download_minimal --experimental_remote_cache_eviction_retries=5
