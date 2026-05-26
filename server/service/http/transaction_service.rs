@@ -265,7 +265,7 @@ impl TransactionService {
         &mut self,
         type_: TransactionType,
         owner: String,
-        database_name: String,
+        database_name: Arc<String>,
         options: TransactionOptions,
     ) -> Result<u64, TransactionServiceError> {
         let receive_time = Instant::now();
@@ -274,7 +274,7 @@ impl TransactionService {
         let transaction = self
             .server_state
             .transactions()
-            .open(&database_name, type_, options, owner, self.close_sender.clone())
+            .open(database_name.as_str(), type_, options, owner, self.close_sender.clone())
             .await
             .map_err(|typedb_source| TransactionServiceError::CannotOpen { typedb_source })?;
 

@@ -338,18 +338,20 @@ impl TransactionService {
                 Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
+                let db_name = self.get_database_name_arc();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    self.get_database_name().map(|name| name.to_owned()),
+                    db_name.as_ref().map(|n| n.as_str()),
                     ActionKind::TransactionQuery,
                     || async { self.handle_query(request_id, query_req).await },
                 )
                 .await
             }
             (true, typedb_protocol::transaction::req::Req::AnalyzeReq(analyze_req)) => {
+                let db_name = self.get_database_name_arc();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    self.get_database_name().map(|name| name.to_owned()),
+                    db_name.as_ref().map(|n| n.as_str()),
                     ActionKind::TransactionAnalyse,
                     || async { self.handle_analyse_query(request_id, analyze_req).await },
                 )
@@ -364,9 +366,10 @@ impl TransactionService {
                 }
             }
             (true, typedb_protocol::transaction::req::Req::CommitReq(commit_req)) => {
+                let db_name = self.get_database_name_arc();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    self.get_database_name().map(|name| name.to_owned()),
+                    db_name.as_ref().map(|n| n.as_str()),
                     ActionKind::TransactionCommit,
                     || async {
                         // Eagerly executed in main loop
@@ -377,18 +380,20 @@ impl TransactionService {
                 .await
             }
             (true, typedb_protocol::transaction::req::Req::RollbackReq(rollback_req)) => {
+                let db_name = self.get_database_name_arc();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    self.get_database_name().map(|name| name.to_owned()),
+                    db_name.as_ref().map(|n| n.as_str()),
                     ActionKind::TransactionRollback,
                     || async { self.handle_rollback(request_id, rollback_req).await },
                 )
                 .await
             }
             (true, typedb_protocol::transaction::req::Req::CloseReq(close_req)) => {
+                let db_name = self.get_database_name_arc();
                 run_with_diagnostics_async(
                     self.server_state.diagnostics_manager().clone(),
-                    self.get_database_name().map(|name| name.to_owned()),
+                    db_name.as_ref().map(|n| n.as_str()),
                     ActionKind::TransactionClose,
                     || async {
                         self.handle_close(close_req).await;
@@ -1471,8 +1476,8 @@ impl TransactionService {
         }
     }
 
-    fn get_database_name(&self) -> Option<&str> {
-        self.transaction.as_ref().map(Transaction::database_name)
+    fn get_database_name_arc(&self) -> Option<Arc<String>> {
+        self.transaction.as_ref().map(Transaction::database_name_arc)
     }
 }
 

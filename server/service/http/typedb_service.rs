@@ -61,7 +61,7 @@ type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder
 #[derive(Clone, Debug)]
 struct TransactionInfo {
     pub owner: String,
-    pub database_name: String,
+    pub database_name: Arc<String>,
     pub request_sender: TransactionRequestSender,
     pub transaction_timeout_millis: u64,
 }
@@ -112,10 +112,10 @@ impl HTTPTypeDBService {
         let transaction_timeout_millis = options.transaction_timeout_millis;
         let mut transaction_service = TransactionService::new(service.server_state.clone(), request_stream);
 
-        let database_name = payload.database_name;
+        let database_name = Arc::new(payload.database_name);
 
         let processing_time = transaction_service
-            .open(payload.transaction_type, owner.clone(), database_name.clone(), options)
+            .open(payload.transaction_type, owner.clone(), Arc::clone(&database_name), options)
             .await
             .map_err(|typedb_source| HttpServiceError::Transaction { typedb_source })?;
 
@@ -566,7 +566,7 @@ impl HTTPTypeDBService {
 
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
-            Some(transaction.database_name.clone()),
+            Some(transaction.database_name.as_str()),
             ActionKind::TransactionCommit,
             || async {
                 if accessor != transaction.owner {
@@ -592,7 +592,7 @@ impl HTTPTypeDBService {
 
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
-            Some(transaction.database_name.clone()),
+            Some(transaction.database_name.as_str()),
             ActionKind::TransactionClose,
             || async {
                 if accessor != transaction.owner {
@@ -616,7 +616,7 @@ impl HTTPTypeDBService {
 
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
-            Some(transaction.database_name.clone()),
+            Some(transaction.database_name.as_str()),
             ActionKind::TransactionRollback,
             || async {
                 if accessor != transaction.owner {
@@ -641,7 +641,7 @@ impl HTTPTypeDBService {
 
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
-            Some(transaction.database_name.clone()),
+            Some(transaction.database_name.as_str()),
             ActionKind::TransactionAnalyse,
             || async {
                 if accessor != transaction.owner {
@@ -666,7 +666,7 @@ impl HTTPTypeDBService {
 
         run_with_diagnostics_async(
             service.server_state.diagnostics_manager(),
-            Some(transaction.database_name.clone()),
+            Some(transaction.database_name.as_str()),
             ActionKind::TransactionQuery,
             || async {
                 if accessor != transaction.owner {
