@@ -468,12 +468,6 @@ impl TransactionService {
         // Record RolledBack BEFORE the responder send: rollback has completed
         // server-side, so a failed client-side ack only loses the reply, not the
         // counter.
-        let record_rolled_back = |s: &Self| {
-            if let Some(m) = s.txn_metrics.as_ref() {
-                m.record_rolled_back();
-            }
-        };
-
         let _: ControlFlow<(), ()> = match self.transaction.take().expect("Expected existing transaction") {
             Transaction::Read(transaction) => {
                 self.transaction = Some(Transaction::Read(transaction));
@@ -482,14 +476,18 @@ impl TransactionService {
             Transaction::Write(mut transaction) => {
                 transaction.rollback();
                 self.transaction = Some(Transaction::Write(transaction));
-                record_rolled_back(self);
+                if let Some(m) = self.txn_metrics.as_ref() {
+                    m.record_rolled_back();
+                }
                 respond_else_return_break!(responder, TransactionServiceResponse::Ok);
                 Continue(())
             }
             Transaction::Schema(mut transaction) => {
                 transaction.rollback();
                 self.transaction = Some(Transaction::Schema(transaction));
-                record_rolled_back(self);
+                if let Some(m) = self.txn_metrics.as_ref() {
+                    m.record_rolled_back();
+                }
                 respond_else_return_break!(responder, TransactionServiceResponse::Ok);
                 Continue(())
             }
