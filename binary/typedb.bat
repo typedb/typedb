@@ -11,6 +11,7 @@ if "%1" == "" goto missingargument
 
 if "%1" == "admin"   goto startadmin
 if "%1" == "console" goto startconsole
+if "%1" == "loader"  goto startloader
 if "%1" == "server"  goto startserver
 
 echo   Invalid argument: %1. Possible commands are:
@@ -32,6 +33,12 @@ for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
 "%TYPEDB_HOME%\console\typedb_console_bin.exe" %ARGS%
 goto exit
 
+:startloader
+
+for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
+"%TYPEDB_HOME%\loader\typedb_loader_bin.exe" %ARGS%
+goto exit
+
 :startserver
 for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
 "%TYPEDB_HOME%\server\typedb_server_bin.exe" %ARGS%
@@ -44,6 +51,7 @@ exit /b 0
 echo   Server:          typedb server [--help]
 echo   Admin:           typedb admin [--help]
 echo   Console:         typedb console [--help]
+echo   Loader:          typedb loader [--help]
 goto exiterror
 
 :exiterror
