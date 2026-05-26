@@ -9,9 +9,7 @@ use std::{borrow::Borrow, cmp::Ordering, collections::BinaryHeap, mem};
 use crate::{LendingIterator, Peekable, Seekable, higher_order::FnHktHelper};
 
 pub struct KMergeBy<I: LendingIterator, F> {
-    // Heap of boxed wrappers. PeekWrapper holds the entire inner iterator + its cached peek slot,
-    // which can be hundreds of bytes; boxing keeps heap sift-up/sift-down memmoves at one pointer
-    // (vs hundreds of bytes of struct memcpy on every swap).
+    // Box possibly large iterators to make moving them around the heap cheap
     pub iterators: BinaryHeap<Box<PeekWrapper<I, F>>>,
     pub next_iterator: Option<Box<PeekWrapper<I, F>>>,
 }
