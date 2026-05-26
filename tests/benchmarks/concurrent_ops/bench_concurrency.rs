@@ -189,6 +189,7 @@ fn seed_friendships(database: &Arc<Database<WALClient>>, person_count: usize, fr
         for i in 0..n {
             let idx = offset + i;
             let a_id = idx % person_count;
+            // pseudo-random spread so seeded friendships aren't all between adjacent persons
             let b_id = (idx * 7 + 3) % person_count;
             let query_str = format!(
                 r#"match $a isa person, has name "person_{a_id}"; $b isa person, has name "person_{b_id}"; insert friendship (friend: $a, friend: $b);"#
@@ -629,7 +630,7 @@ fn run_mixed_benchmark(thread_counts: &[usize], batch_size: usize, write_ratio: 
     }
 }
 
-// --- W6 (relations): Mixed read/write friendships ---
+// --- W6: Mixed Relations read/write ---
 
 const MIXED_RELATIONS_SEED_PERSONS: usize = 10_000;
 const MIXED_RELATIONS_SEED_FRIENDSHIPS: usize = 50_000;
@@ -697,6 +698,8 @@ fn run_mixed_relations_benchmark(thread_counts: &[usize], batch_size: usize, wri
                 drop(signal.read().unwrap());
                 let mut count: u64 = 0;
                 while running.load(Ordering::Relaxed) {
+                    // limit 1000 (vs limit 10 in W4/W5) to keep the read hot loop dominated by
+                    // Links iteration / Triple-tuple production rather than per-query setup
                     let query_str = r#"match $f isa friendship, links (friend: $p, friend: $q); limit 1000;"#;
                     execute_read_query(&db, query_str);
                     count += 1;
