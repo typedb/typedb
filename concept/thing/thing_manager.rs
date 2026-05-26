@@ -421,7 +421,7 @@ impl ThingManager {
                     )
                     .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
                     .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
-                Ok(Value::Struct(Box::new(Cow::Owned(struct_value))))
+                Ok(Value::Struct(Cow::Owned(struct_value)))
             }
         }
     }
