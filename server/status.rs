@@ -60,6 +60,7 @@ pub struct LocalServerStatus {
     grpc: PublicEndpointAddress,
     http: Option<PublicEndpointAddress>,
     admin: Option<PrivateEndpointAddress>,
+    monitoring: Option<PrivateEndpointAddress>,
 }
 
 impl LocalServerStatus {
@@ -67,8 +68,9 @@ impl LocalServerStatus {
         grpc: PublicEndpointAddress,
         http: Option<PublicEndpointAddress>,
         admin: Option<PrivateEndpointAddress>,
+        monitoring: Option<PrivateEndpointAddress>,
     ) -> Self {
-        Self { grpc, http, admin }
+        Self { grpc, http, admin, monitoring }
     }
 }
 
@@ -86,6 +88,8 @@ pub trait ServerStatus: Debug {
     fn http_advertise_address(&self) -> Option<&str>;
 
     fn admin_address(&self) -> Option<&str>;
+
+    fn monitoring_address(&self) -> Option<&str>;
 }
 
 impl ServerStatus for LocalServerStatus {
@@ -117,5 +121,9 @@ impl ServerStatus for LocalServerStatus {
 
     fn admin_address(&self) -> Option<&str> {
         self.admin.as_ref().map(|admin| admin.address())
+    }
+
+    fn monitoring_address(&self) -> Option<&str> {
+        self.monitoring.as_ref().map(|monitoring| monitoring.address())
     }
 }

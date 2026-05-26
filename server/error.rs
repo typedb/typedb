@@ -60,6 +60,7 @@ typedb_error! {
         MissingTLSCertificateKey(9, "TLS certificate key path must be specified when encryption is enabled."),
         HttpConflictingAddress(10, "Configuring HTTP and gRPC on the same address {address} is not supported.", address: SocketAddr),
         AdminConflictingAddress(11, "Configuring admin and public service on the same address {address} is not supported.", address: SocketAddr),
+        MonitoringConflictingAddress(30, "Configuring diagnostics monitoring on the same address {address} as another service is not supported.", address: SocketAddr),
         GrpcServe(12, "Could not serve gRPC on {address}.", address: SocketAddr, source: Arc<tonic::transport::Error>),
         GrpcCouldNotReadTlsCertificate(13, "Could not read TLS certificate from '{path}' for the gRPC server.", path: String, source: Arc<io::Error>),
         GrpcCouldNotReadTlsCertificateKey(14, "Could not read TLS certificate key from '{path}' for the gRPC server.", path: String, source: Arc<io::Error>),

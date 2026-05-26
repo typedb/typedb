@@ -88,7 +88,8 @@ impl ServerState {
             DATABASE_METRICS_UPDATE_INTERVAL,
         );
 
-        let (grpc_listen_address, http_listen_address, server_status) = Self::resolve_endpoints(&config.server).await?;
+        let (grpc_listen_address, http_listen_address, server_status) =
+            Self::resolve_endpoints(&config.server, &config.diagnostics.monitoring).await?;
 
         Ok(ServerStateBuilder {
             distribution_info,
@@ -223,6 +224,7 @@ impl ServerState {
 
     async fn resolve_endpoints(
         config: &crate::parameters::config::ServerConfig,
+        monitoring: &crate::parameters::config::Monitoring,
     ) -> Result<(SocketAddr, Option<SocketAddr>, LocalServerStatus), ServerOpenError> {
         let grpc_listen_address = Self::resolve_address(&config.listen_address).await?;
         let grpc_advertise_address = config.advertise_address.clone();
@@ -233,6 +235,12 @@ impl ServerState {
 
         let admin_address = if config.admin.enabled {
             Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, config.admin.port)))
+        } else {
+            None
+        };
+
+        let monitoring_address = if monitoring.enabled {
+            Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, monitoring.port)))
         } else {
             None
         };
@@ -248,11 +256,17 @@ impl ServerState {
                 return Err(ServerOpenError::AdminConflictingAddress { address });
             }
         }
+        if let Some(address) = monitoring_address {
+            if !reserved.insert(address) {
+                return Err(ServerOpenError::MonitoringConflictingAddress { address });
+            }
+        }
 
         let server_status = LocalServerStatus::new(
             PublicEndpointAddress::from_socket_addr(grpc_listen_address, grpc_advertise_address),
             http_listen_address.map(|listen| PublicEndpointAddress::from_socket_addr(listen, http_advertise_address)),
             admin_address.map(PrivateEndpointAddress::from_socket_addr),
+            monitoring_address.map(PrivateEndpointAddress::from_socket_addr),
         );
 
         Ok((grpc_listen_address, http_listen_address, server_status))
