@@ -23,6 +23,10 @@ build --incompatible_strict_action_env --remote_download_toplevel --disk_cache=~
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env --test_env=PATH
 
+# Make rustfmt_test targets use the project's rustfmt.toml (max_width=120, etc).
+# Without this, rules_rust falls back to rustfmt defaults (max_width=100).
+common --@rules_rust//:rustfmt.toml=//:rustfmt.toml
+
 # CI configuration: disables disk cache to prevent cache size issues in CI environments
 build:ci --disk_cache= --remote_download_minimal --experimental_remote_cache_eviction_retries=5
 

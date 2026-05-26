@@ -185,8 +185,7 @@ fn setup_links_data(storage: &Arc<MVCCStorage<WALClient>>) {
     let person_type = type_manager.get_entity_type(&snapshot, PERSON_LABEL.get().unwrap()).unwrap().unwrap();
     let group_type = type_manager.get_entity_type(&snapshot, GROUP_LABEL.get().unwrap()).unwrap().unwrap();
     let membership_type = type_manager.get_relation_type(&snapshot, MEMBERSHIP_LABEL.get().unwrap()).unwrap().unwrap();
-    let member_role =
-        type_manager.get_role_type(&snapshot, MEMBERSHIP_MEMBER_LABEL.get().unwrap()).unwrap().unwrap();
+    let member_role = type_manager.get_role_type(&snapshot, MEMBERSHIP_MEMBER_LABEL.get().unwrap()).unwrap().unwrap();
     let group_role = type_manager.get_role_type(&snapshot, MEMBERSHIP_GROUP_LABEL.get().unwrap()).unwrap().unwrap();
 
     for _ in 0..NUM_MEMBERSHIPS {
@@ -324,10 +323,7 @@ fn build_links_ir() -> (Block, LinksBenchVars, PipelineTranslationContext, Param
     let var_player = conjunction.constraints_mut().get_or_declare_variable("player", None).unwrap();
     let var_role_type = conjunction.constraints_mut().get_or_declare_variable("role_type", None).unwrap();
     conjunction.constraints_mut().add_links(var_membership, var_player, var_role_type, None).unwrap();
-    conjunction
-        .constraints_mut()
-        .add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None)
-        .unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.get().unwrap().clone()).unwrap();
     drop(conjunction);
     let entry = builder.finish().unwrap();
