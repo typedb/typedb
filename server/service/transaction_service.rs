@@ -124,3 +124,32 @@ typedb_error! {
         CannotOpen(21, "Could not open transaction.", typedb_source: ArcServerStateError),
     }
 }
+
+impl TransactionServiceError {
+    pub fn to_service_error(&self) -> Option<&ArcServerStateError> {
+        match self {
+            TransactionServiceError::DatabaseNotFound { .. }
+            | TransactionServiceError::CannotCommitReadTransaction { .. }
+            | TransactionServiceError::CannotRollbackReadTransaction { .. }
+            | TransactionServiceError::TransactionFailed { .. }
+            | TransactionServiceError::QueryParseFailed { .. }
+            | TransactionServiceError::SchemaQueryRequiresSchemaTransaction { .. }
+            | TransactionServiceError::WriteQueryRequiresSchemaOrWriteTransaction { .. }
+            | TransactionServiceError::SchemaQueryFailedAbortingTransaction { .. }
+            | TransactionServiceError::QueryFailed { .. }
+            | TransactionServiceError::NoOpenTransaction { .. }
+            | TransactionServiceError::QueryInterrupted { .. }
+            | TransactionServiceError::QueryStreamNotFound { .. }
+            | TransactionServiceError::QueueCleanupFailed { .. }
+            | TransactionServiceError::PipelineExecution { .. }
+            | TransactionServiceError::TransactionTimeout { .. }
+            | TransactionServiceError::InvalidPrefetchSize { .. }
+            | TransactionServiceError::AnalyseQueryExpectsPipeline { .. }
+            | TransactionServiceError::AnalyseQueryFailed { .. } => None,
+
+            TransactionServiceError::DataCommitFailed { typedb_source }
+            | TransactionServiceError::SchemaCommitFailed { typedb_source }
+            | TransactionServiceError::CannotOpen { typedb_source } => Some(typedb_source),
+        }
+    }
+}

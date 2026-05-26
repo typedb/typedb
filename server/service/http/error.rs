@@ -50,4 +50,14 @@ impl HttpServiceError {
     pub(crate) fn transaction_timeout() -> Self {
         Self::Transaction { typedb_source: TransactionServiceError::TransactionTimeout {} }
     }
+
+    pub(crate) fn to_service_error(&self) -> Option<&ArcServerStateError> {
+        match self {
+            HttpServiceError::State { typedb_source } => Some(typedb_source),
+            HttpServiceError::Transaction { typedb_source }
+            | HttpServiceError::QueryClose { typedb_source }
+            | HttpServiceError::QueryCommit { typedb_source } => typedb_source.to_service_error(),
+            _ => None,
+        }
+    }
 }

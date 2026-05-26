@@ -102,19 +102,7 @@ impl IntoResponse for HttpServiceError {
 }
 
 fn find_redirect_outcome(error: &HttpServiceError) -> Option<RedirectOutcome> {
-    let state_err = match error {
-        HttpServiceError::State { typedb_source } => typedb_source,
-        HttpServiceError::Transaction { typedb_source }
-        | HttpServiceError::QueryClose { typedb_source }
-        | HttpServiceError::QueryCommit { typedb_source } => match typedb_source {
-            TransactionServiceError::CannotOpen { typedb_source }
-            | TransactionServiceError::DataCommitFailed { typedb_source }
-            | TransactionServiceError::SchemaCommitFailed { typedb_source } => typedb_source,
-            _ => return None,
-        },
-        _ => return None,
-    };
-    match state_err.error_response_category() {
+    match error.to_service_error()?.error_response_category() {
         ErrorResponseCategory::Redirect { http_address: Some(addr), .. } => Some(RedirectOutcome::Misdirected(addr)),
         ErrorResponseCategory::Redirect { .. } => Some(RedirectOutcome::Unavailable),
         _ => None,
