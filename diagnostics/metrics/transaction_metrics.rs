@@ -6,11 +6,12 @@
 
 use std::sync::Arc;
 
-use diagnostics::{
+use tokio::time::Instant;
+
+use crate::{
     diagnostics_manager::DiagnosticsManager,
     metrics::{ClientEndpoint, LoadKind, QueryType, TransactionOutcome},
 };
-use tokio::time::Instant;
 
 #[derive(Debug)]
 struct LoadCountGuard {
@@ -39,7 +40,7 @@ impl Drop for LoadCountGuard {
 }
 
 #[derive(Debug)]
-pub(crate) struct TransactionMetrics {
+pub struct TransactionMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
     database_name: Arc<str>,
     kind: LoadKind,
@@ -52,7 +53,7 @@ pub(crate) struct TransactionMetrics {
 }
 
 impl TransactionMetrics {
-    pub(crate) fn new(
+    pub fn new(
         diagnostics_manager: Arc<DiagnosticsManager>,
         database_name: Arc<str>,
         kind: LoadKind,
@@ -71,23 +72,23 @@ impl TransactionMetrics {
         }
     }
 
-    pub(crate) fn record_query(&mut self) {
+    pub fn record_query(&mut self) {
         self.query_count += 1;
     }
 
-    pub(crate) fn database_name(&self) -> Arc<str> {
+    pub fn database_name(&self) -> Arc<str> {
         Arc::clone(&self.database_name)
     }
 
-    pub(crate) fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
+    pub fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
         self.diagnostics_manager.clone()
     }
 
-    pub(crate) fn mark_committed(&mut self) {
+    pub fn mark_committed(&mut self) {
         self.terminal_outcome = Some(TransactionOutcome::Committed);
     }
 
-    pub(crate) fn record_rolled_back(&self) {
+    pub fn record_rolled_back(&self) {
         self.diagnostics_manager.record_transaction_outcome(
             &self.database_name,
             self.kind,
@@ -106,14 +107,14 @@ impl Drop for TransactionMetrics {
 }
 
 #[derive(Debug)]
-pub(crate) struct WriteQueryMetrics {
+pub struct WriteQueryMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
     database_name: Arc<str>,
     started_at: Instant,
 }
 
 impl WriteQueryMetrics {
-    pub(crate) fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: Arc<str>) -> Self {
+    pub fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: Arc<str>) -> Self {
         Self { diagnostics_manager, database_name, started_at: Instant::now() }
     }
 }
@@ -129,18 +130,18 @@ impl Drop for WriteQueryMetrics {
 }
 
 #[derive(Debug)]
-pub(crate) struct ReadQueryMetrics {
+pub struct ReadQueryMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
     database_name: Arc<str>,
     first_observation_at: Option<Instant>,
 }
 
 impl ReadQueryMetrics {
-    pub(crate) fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: Arc<str>) -> Self {
+    pub fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: Arc<str>) -> Self {
         Self { diagnostics_manager, database_name, first_observation_at: Some(Instant::now()) }
     }
 
-    pub(crate) fn observe_first_response(&mut self) {
+    pub fn observe_first_response(&mut self) {
         if let Some(start) = self.first_observation_at.take() {
             self.diagnostics_manager.observe_query_duration(&self.database_name, QueryType::Read, start.elapsed());
         }
@@ -154,18 +155,18 @@ impl Drop for ReadQueryMetrics {
 }
 
 #[derive(Debug)]
-pub(crate) struct SchemaQueryMetrics {
+pub struct SchemaQueryMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
     database_name: Arc<str>,
     started_at: Instant,
 }
 
 impl SchemaQueryMetrics {
-    pub(crate) fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: Arc<str>) -> Self {
+    pub fn new(diagnostics_manager: Arc<DiagnosticsManager>, database_name: Arc<str>) -> Self {
         Self { diagnostics_manager, database_name, started_at: Instant::now() }
     }
 
-    pub(crate) fn observe_finished(self) {
+    pub fn observe_finished(self) {
         self.diagnostics_manager.observe_query_duration(
             &self.database_name,
             QueryType::Schema,

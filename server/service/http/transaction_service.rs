@@ -20,7 +20,9 @@ use database::query::{
     StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
     execute_write_query_in_schema, execute_write_query_in_write,
 };
-use diagnostics::metrics::ClientEndpoint;
+use diagnostics::metrics::{
+    ClientEndpoint, ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics,
+};
 use executor::{
     ExecutionInterrupt, InterruptType,
     batch::Batch,
@@ -59,7 +61,6 @@ use crate::{
             query::{document::encode_document, row::encode_row},
         },
         may_encode_pipeline_structure,
-        transaction_metrics::{ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics},
         transaction_service::{
             Transaction, TransactionServiceError, commit_schema_transaction, commit_write_transaction,
             init_transaction_timeout, is_write_pipeline, with_readable_transaction,

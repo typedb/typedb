@@ -15,7 +15,6 @@ pub(crate) mod export_service;
 pub(crate) mod grpc;
 pub mod http;
 pub mod import_service;
-mod transaction_metrics;
 mod transaction_service;
 
 pub use crate::transaction::TransactionType;

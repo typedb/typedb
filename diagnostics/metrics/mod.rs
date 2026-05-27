@@ -30,7 +30,9 @@ use crate::{
 };
 
 pub mod file_metrics;
+pub mod transaction_metrics;
 pub use file_metrics::FsyncMetrics;
+pub use transaction_metrics::{ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics};
 
 #[derive(Serialize, Deserialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
