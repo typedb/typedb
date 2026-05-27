@@ -47,8 +47,6 @@ pub struct TransactionMetrics {
     opened_at: Instant,
     query_count: u64,
     terminal_outcome: Option<TransactionOutcome>,
-    // Declared LAST so its Drop fires AFTER `TransactionMetrics::drop` runs.
-    // (Rust drops fields in declaration order; the Drop impl body runs first.)
     _load_guard: LoadCountGuard,
 }
 

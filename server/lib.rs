@@ -462,7 +462,8 @@ impl Server {
 
         match server_status.monitoring_address() {
             Some(monitoring_address) => {
-                println!("  Monitoring: http://{monitoring_address}/diagnostics (Prometheus scrape)")
+                println!("  Monitoring: http://{monitoring_address}/diagnostics (Prometheus scrape)");
+                println!("              http://{monitoring_address}/diagnostics?format=json (JSON)");
             }
             None => println!("  Monitoring: {DISABLED}"),
         }
