@@ -21,14 +21,15 @@ pub struct FsyncMetrics {
 }
 
 impl FsyncMetrics {
-    pub fn new(fsync_histogram: Arc<HistogramMetrics>, bytes_counter: Arc<AtomicU64>) -> Self {
-        Self { fsync_histogram, bytes_counter }
+    pub fn new() -> Self {
+        Self { fsync_histogram: Arc::new(HistogramMetrics::new_duration()), bytes_counter: Arc::new(AtomicU64::new(0)) }
     }
 
-    /// Construct a no-op instance for tests, benches, internal databases,
-    /// and the disabled-collection case.
+    /// Alias for new(). Documents intent at call sites where the FsyncMetrics
+    /// is standalone (tests, benches, internal DBs, disabled-collection) and
+    /// nobody reads the storage it allocates.
     pub fn noop() -> Self {
-        Self { fsync_histogram: Arc::new(HistogramMetrics::new_duration()), bytes_counter: Arc::new(AtomicU64::new(0)) }
+        Self::new()
     }
 
     pub fn record_fsync_duration(&self, duration: Duration) {
@@ -37,5 +38,13 @@ impl FsyncMetrics {
 
     pub fn record_bytes_written(&self, bytes: u64) {
         self.bytes_counter.fetch_add(bytes, Ordering::Relaxed);
+    }
+
+    pub fn fsync_histogram_snapshot(&self) -> crate::metrics::HistogramSnapshot {
+        self.fsync_histogram.snapshot()
+    }
+
+    pub fn bytes_written(&self) -> u64 {
+        self.bytes_counter.load(Ordering::Relaxed)
     }
 }

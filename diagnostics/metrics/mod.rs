@@ -1118,8 +1118,7 @@ pub(crate) struct DatabaseHistograms {
     transaction_duration: HashMap<LoadKind, HistogramMetrics>,
     queries_per_transaction: HistogramMetrics,
     transaction_lifecycle: TransactionLifecycleCounters,
-    wal_fsync_duration: Arc<HistogramMetrics>,
-    wal_bytes_written: Arc<AtomicU64>,
+    wal: FsyncMetrics,
 }
 
 impl DatabaseHistograms {
@@ -1138,8 +1137,7 @@ impl DatabaseHistograms {
             transaction_duration,
             queries_per_transaction: HistogramMetrics::new_queries_per_transaction(),
             transaction_lifecycle: TransactionLifecycleCounters::new(),
-            wal_fsync_duration: Arc::new(HistogramMetrics::new_duration()),
-            wal_bytes_written: Arc::new(AtomicU64::new(0)),
+            wal: FsyncMetrics::new(),
         }
     }
 
@@ -1159,12 +1157,8 @@ impl DatabaseHistograms {
         self.transaction_lifecycle.record(kind, outcome);
     }
 
-    pub fn wal_fsync_duration(&self) -> Arc<HistogramMetrics> {
-        self.wal_fsync_duration.clone()
-    }
-
-    pub fn wal_bytes_written(&self) -> Arc<AtomicU64> {
-        self.wal_bytes_written.clone()
+    pub fn wal_metrics(&self) -> FsyncMetrics {
+        self.wal.clone()
     }
 
     pub fn snapshot(&self) -> DatabaseHistogramsSnapshot {
@@ -1186,8 +1180,8 @@ impl DatabaseHistograms {
             transaction_duration,
             queries_per_transaction: self.queries_per_transaction.snapshot(),
             transaction_lifecycle: self.transaction_lifecycle.snapshot(),
-            wal_fsync_duration: self.wal_fsync_duration.snapshot(),
-            wal_bytes_written: self.wal_bytes_written.load(Ordering::Relaxed),
+            wal_fsync_duration: self.wal.fsync_histogram_snapshot(),
+            wal_bytes_written: self.wal.bytes_written(),
         }
     }
 }

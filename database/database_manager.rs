@@ -384,7 +384,6 @@ impl DatabaseManager {
         if Self::is_internal_database(name) || !diagnostics_manager.metrics_enabled() {
             return FsyncMetrics::noop();
         }
-        let (fsync_histogram, bytes_counter) = diagnostics_manager.wal_metrics_handles(name);
-        FsyncMetrics::new(fsync_histogram, bytes_counter)
+        diagnostics_manager.wal_metrics(name)
     }
 }

@@ -100,11 +100,8 @@ impl DiagnosticsManager {
         pub fn record_transaction_outcome(&self, database_name: impl AsRef<str> + Hash, kind: LoadKind, outcome: TransactionOutcome);
     }
 
-    pub fn wal_metrics_handles(
-        &self,
-        database_name: impl AsRef<str> + Hash,
-    ) -> (std::sync::Arc<crate::metrics::HistogramMetrics>, Arc<std::sync::atomic::AtomicU64>) {
-        self.diagnostics.wal_metrics_handles(database_name)
+    pub fn wal_metrics(&self, database_name: impl AsRef<str> + Hash) -> crate::metrics::FsyncMetrics {
+        self.diagnostics.wal_metrics(database_name)
     }
 
     pub async fn may_start_reporting(&self) {

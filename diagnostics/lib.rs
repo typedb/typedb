@@ -11,7 +11,7 @@ use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
     path::PathBuf,
-    sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
 use serde_json::Value as JSONValue;
@@ -276,15 +276,12 @@ impl Diagnostics {
             .record_transaction_outcome(kind, outcome);
     }
 
-    pub fn wal_metrics_handles(
-        &self,
-        database_name: impl AsRef<str> + Hash,
-    ) -> (Arc<crate::metrics::HistogramMetrics>, Arc<std::sync::atomic::AtomicU64>) {
+    pub fn wal_metrics(&self, database_name: impl AsRef<str> + Hash) -> crate::metrics::FsyncMetrics {
         let database_hash = Self::hash_database(&database_name);
         self.record_database_name(database_name.as_ref(), database_hash);
         let histograms = self.lock_histogram_metrics_read_for_database(database_hash);
         let entry = histograms.get(&database_hash).expect("Expected database in histograms");
-        (entry.wal_fsync_duration(), entry.wal_bytes_written())
+        entry.wal_metrics()
     }
 
     pub(crate) fn histogram_snapshots(&self) -> Vec<(DatabaseHash, crate::metrics::DatabaseHistogramsSnapshot)> {
