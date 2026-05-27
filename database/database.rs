@@ -26,7 +26,7 @@ use concept::{
 use concurrency::IntervalRunner;
 use diagnostics::{
     diagnostics_manager::DiagnosticsManager,
-    metrics::{DataLoadMetrics, DatabaseMetrics, FsyncMetrics, SchemaLoadMetrics},
+    metrics::{DataLoadMetrics, DatabaseMetricsSnapshot, FsyncMetrics, SchemaLoadMetrics},
 };
 use durability::{
     DurabilitySequenceNumber, DurabilityServiceError,
@@ -530,10 +530,9 @@ impl Database<WALClient> {
         Ok(())
     }
 
-    pub fn get_metrics(&self) -> DatabaseMetrics {
+    pub fn get_metrics(&self) -> DatabaseMetricsSnapshot {
         let schema = self.schema.read().expect("Expected database schema lock acquisition");
-        DatabaseMetrics {
-            database_name: self.name_arc(),
+        DatabaseMetricsSnapshot {
             schema: SchemaLoadMetrics { type_count: schema.type_cache.get_types_count() },
             data: DataLoadMetrics {
                 entity_count: schema.thing_statistics.total_entity_count,

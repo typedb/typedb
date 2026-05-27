@@ -20,7 +20,7 @@ use xxhash_rust::xxh3::Xxh3;
 
 use crate::{
     metrics::{
-        ALL_CLIENT_ENDPOINTS, ActionKind, ActionMetrics, ClientEndpoint, DatabaseHistograms, DatabaseMetrics,
+        ALL_CLIENT_ENDPOINTS, ActionKind, ActionMetrics, ClientEndpoint, DatabaseHistograms, DatabaseMetricsSnapshot,
         ErrorMetrics, LoadKind, LoadMetrics, QueryType, ServerMetrics, ServerProperties, client_endpoints_map,
     },
     reports::{
@@ -128,21 +128,20 @@ impl Diagnostics {
         self.metrics_enabled
     }
 
-    pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>) {
+    pub fn submit_database_metrics(&self, snapshots: HashMap<Arc<str>, DatabaseMetricsSnapshot>) {
         if !self.metrics_enabled {
             return;
         }
         let mut loads = self.lock_load_metrics_write();
         let mut deleted_databases: HashSet<DatabaseHash> = loads.keys().cloned().collect();
 
-        for metrics in database_metrics {
-            let id = DatabaseId::new(metrics.database_name.as_ref());
+        for (database_name, snapshot) in snapshots {
+            let id = DatabaseId::new(database_name.as_ref());
             let database_hash = id.hash_value();
             deleted_databases.remove(&database_hash);
 
             let database_load = loads.entry(database_hash).or_insert_with(|| LoadMetrics::new(id));
-            database_load.set_schema(metrics.schema);
-            database_load.set_data(metrics.data);
+            database_load.set_snapshot(snapshot);
         }
 
         for database_hash in deleted_databases {

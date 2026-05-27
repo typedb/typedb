@@ -4,14 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use concurrency::TokioTaskSpawner;
 use resource::constants::database::INTERNAL_DATABASE_PREFIX;
 
 use crate::{
     Diagnostics,
-    metrics::{ActionKind, ClientEndpoint, DatabaseMetrics, LoadKind, QueryType, TransactionOutcome},
+    metrics::{ActionKind, ClientEndpoint, DatabaseMetricsSnapshot, LoadKind, QueryType, TransactionOutcome},
     monitoring_server::MonitoringServer,
     reporter::Reporter,
 };
@@ -87,7 +87,7 @@ impl DiagnosticsManager {
     }
 
     diagnostics_method! {
-        pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>);
+        pub fn submit_database_metrics(&self, snapshots: HashMap<Arc<str>, DatabaseMetricsSnapshot>);
         pub fn submit_error(&self, client: ClientEndpoint, database_name: Option<&str>, error_code: String);
         pub fn submit_action_success(&self, client: ClientEndpoint, database_name: Option<&str>, action_kind: ActionKind);
         pub fn submit_action_fail(&self, client: ClientEndpoint, database_name: Option<&str>, action_kind: ActionKind);

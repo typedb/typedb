@@ -187,9 +187,8 @@ impl ServerMetrics {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct DatabaseMetrics {
-    pub database_name: Arc<str>,
+#[derive(Debug, Default, PartialEq, Eq, Hash)]
+pub struct DatabaseMetricsSnapshot {
     pub schema: SchemaLoadMetrics,
     pub data: DataLoadMetrics,
 }
@@ -197,8 +196,7 @@ pub struct DatabaseMetrics {
 #[derive(Debug)]
 pub(crate) struct LoadMetrics {
     database_id: Arc<DatabaseId>,
-    schema: SchemaLoadMetrics,
-    data: DataLoadMetrics,
+    snapshot: DatabaseMetricsSnapshot,
     connection: ConnectionLoadMetrics,
     is_deleted: bool,
 }
@@ -207,16 +205,7 @@ impl LoadMetrics {
     pub fn new(database_id: Arc<DatabaseId>) -> Self {
         Self {
             database_id,
-            schema: SchemaLoadMetrics { type_count: 0 },
-            data: DataLoadMetrics {
-                entity_count: 0,
-                relation_count: 0,
-                attribute_count: 0,
-                has_count: 0,
-                role_count: 0,
-                storage_in_bytes: 0,
-                storage_key_count: 0,
-            },
+            snapshot: DatabaseMetricsSnapshot::default(),
             connection: ConnectionLoadMetrics::new(),
             is_deleted: false,
         }
@@ -226,14 +215,9 @@ impl LoadMetrics {
         &self.database_id
     }
 
-    pub fn set_schema(&mut self, schema: SchemaLoadMetrics) {
+    pub fn set_snapshot(&mut self, snapshot: DatabaseMetricsSnapshot) {
         self.is_deleted = false;
-        self.schema = schema;
-    }
-
-    pub fn set_data(&mut self, data: DataLoadMetrics) {
-        self.is_deleted = false;
-        self.data = data;
+        self.snapshot = snapshot;
     }
 
     pub fn increment_connection_count(&self, client: ClientEndpoint, load_kind: LoadKind) {
@@ -260,8 +244,8 @@ impl LoadMetrics {
         if !self.is_deleted || !self.connection.is_empty() {
             let mut report = LoadReport::new(self.database_id.clone());
             report.connection = Some(self.connection.to_peak_report());
-            report.schema = Some(self.schema.to_state_report());
-            report.data = Some(self.data.to_state_report());
+            report.schema = Some(self.snapshot.schema.to_state_report());
+            report.data = Some(self.snapshot.data.to_state_report());
             Some(report)
         } else {
             None
@@ -271,8 +255,8 @@ impl LoadMetrics {
     pub fn to_state_report(&self) -> Option<LoadReport> {
         if !self.is_deleted {
             let mut report = LoadReport::new(self.database_id.clone());
-            report.schema = Some(self.schema.to_state_report());
-            report.data = Some(self.data.to_state_report());
+            report.schema = Some(self.snapshot.schema.to_state_report());
+            report.data = Some(self.snapshot.data.to_state_report());
             report.connection = Some(self.connection.to_active_report());
             Some(report)
         } else {
@@ -281,7 +265,7 @@ impl LoadMetrics {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, PartialEq, Eq, Hash)]
 pub struct SchemaLoadMetrics {
     pub type_count: u64,
 }
@@ -292,7 +276,7 @@ impl SchemaLoadMetrics {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, PartialEq, Eq, Hash)]
 pub struct DataLoadMetrics {
     pub entity_count: u64,
     pub relation_count: u64,
