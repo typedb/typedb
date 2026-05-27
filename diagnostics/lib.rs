@@ -34,7 +34,6 @@ pub mod metrics;
 mod monitoring_server;
 mod reporter;
 mod reports;
-mod system_sampler;
 
 #[macro_export]
 macro_rules! error_with_report {

@@ -26,12 +26,13 @@ use crate::{
         ActionReport, ConnectionLoadReport, DataLoadReport, ErrorReport, LoadReport, OsReport, ProcessReport,
         SchemaLoadReport, ServerPropertiesReport, ServerReport, ServerReportSensitivePart,
     },
-    system_sampler::SystemSampler,
 };
 
 pub mod file_metrics;
+mod system_sampler;
 pub mod transaction_metrics;
 pub use file_metrics::FsyncMetrics;
+use system_sampler::SystemSampler;
 pub use transaction_metrics::{ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics};
 
 #[derive(Serialize, Deserialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
