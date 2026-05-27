@@ -188,6 +188,7 @@ pub struct DatabaseMetrics {
 
 #[derive(Debug)]
 pub(crate) struct LoadMetrics {
+    database_id: Arc<DatabaseId>,
     schema: SchemaLoadMetrics,
     data: DataLoadMetrics,
     connection: ConnectionLoadMetrics,
@@ -195,8 +196,9 @@ pub(crate) struct LoadMetrics {
 }
 
 impl LoadMetrics {
-    pub fn new() -> Self {
+    pub fn new(database_id: Arc<DatabaseId>) -> Self {
         Self {
+            database_id,
             schema: SchemaLoadMetrics { type_count: 0 },
             data: DataLoadMetrics {
                 entity_count: 0,
@@ -210,6 +212,10 @@ impl LoadMetrics {
             connection: ConnectionLoadMetrics::new(),
             is_deleted: false,
         }
+    }
+
+    pub fn database_id(&self) -> &Arc<DatabaseId> {
+        &self.database_id
     }
 
     pub fn set_schema(&mut self, schema: SchemaLoadMetrics) {
@@ -242,9 +248,9 @@ impl LoadMetrics {
         self.connection.restore_snapshot()
     }
 
-    pub fn to_peak_report(&self, database_hash: &DatabaseHash) -> Option<LoadReport> {
+    pub fn to_peak_report(&self) -> Option<LoadReport> {
         if !self.is_deleted || !self.connection.is_empty() {
-            let mut report = LoadReport::new(*database_hash);
+            let mut report = LoadReport::new(self.database_id.clone());
             report.connection = Some(self.connection.to_peak_report());
             report.schema = Some(self.schema.to_state_report());
             report.data = Some(self.data.to_state_report());
@@ -254,9 +260,9 @@ impl LoadMetrics {
         }
     }
 
-    pub fn to_state_report(&self, database_hash: &DatabaseHash) -> Option<LoadReport> {
+    pub fn to_state_report(&self) -> Option<LoadReport> {
         if !self.is_deleted {
-            let mut report = LoadReport::new(*database_hash);
+            let mut report = LoadReport::new(self.database_id.clone());
             report.schema = Some(self.schema.to_state_report());
             report.data = Some(self.data.to_state_report());
             report.connection = Some(self.connection.to_active_report());
@@ -417,18 +423,25 @@ impl ConnectionLoadMetrics {
 
 #[derive(Debug)]
 pub(crate) struct ActionMetrics {
+    /// `None` denotes the server-level (no-database) metrics record.
+    database_id: Option<Arc<DatabaseId>>,
     actions: HashMap<ActionKind, ActionInfo>,
     actions_snapshot: HashMap<ActionKind, ActionInfo>,
     actions_snapshot_backup: HashMap<ActionKind, ActionInfo>, // in case if reporting fails
 }
 
 impl ActionMetrics {
-    pub fn new() -> Self {
+    pub fn new(database_id: Option<Arc<DatabaseId>>) -> Self {
         Self {
+            database_id,
             actions: ActionKind::all_empty_counts_map(),
             actions_snapshot: ActionKind::all_empty_counts_map(),
             actions_snapshot_backup: ActionKind::all_empty_counts_map(),
         }
+    }
+
+    pub fn database_id(&self) -> Option<&Arc<DatabaseId>> {
+        self.database_id.as_ref()
     }
 
     pub fn submit_success(&self, action_kind: ActionKind) {
@@ -484,7 +497,7 @@ impl ActionMetrics {
         }
     }
 
-    pub fn to_diff_reports(&self, database_hash: DatabaseHashOpt) -> Vec<ActionReport> {
+    pub fn to_diff_reports(&self) -> Vec<ActionReport> {
         let mut actions = vec![];
         for kind in self.actions.keys() {
             let successful = self.get_successful_delta(kind);
@@ -492,17 +505,12 @@ impl ActionMetrics {
             if successful == 0 && failed == 0 {
                 continue;
             }
-            actions.push(ActionReport {
-                database: database_hash.map(|hash| DatabaseReport(hash)),
-                kind: *kind,
-                successful,
-                failed,
-            });
+            actions.push(ActionReport { database: self.database_id.clone(), kind: *kind, successful, failed });
         }
         actions
     }
 
-    pub fn to_state_reports(&self, database_hash: &DatabaseHashOpt) -> Vec<ActionReport> {
+    pub fn to_state_reports(&self) -> Vec<ActionReport> {
         let mut actions = vec![];
         for kind in self.actions.keys() {
             let successful = self.get_successful(kind) as i64;
@@ -510,7 +518,7 @@ impl ActionMetrics {
             if successful == 0 && failed == 0 {
                 continue;
             }
-            actions.push(ActionReport { database: database_hash.map(DatabaseReport), kind: *kind, successful, failed });
+            actions.push(ActionReport { database: self.database_id.clone(), kind: *kind, successful, failed });
         }
         actions
     }
@@ -579,18 +587,25 @@ impl Clone for ActionInfo {
 
 #[derive(Debug)]
 pub(crate) struct ErrorMetrics {
+    /// `None` denotes the server-level (no-database) metrics record.
+    database_id: Option<Arc<DatabaseId>>,
     errors: RwLock<HashMap<String, ErrorInfo>>,
     errors_snapshot: RwLock<HashMap<String, ErrorInfo>>,
     errors_snapshot_backup: RwLock<HashMap<String, ErrorInfo>>,
 }
 
 impl ErrorMetrics {
-    pub fn new() -> Self {
+    pub fn new(database_id: Option<Arc<DatabaseId>>) -> Self {
         Self {
+            database_id,
             errors: RwLock::new(HashMap::new()),
             errors_snapshot: RwLock::new(HashMap::new()),
             errors_snapshot_backup: RwLock::new(HashMap::new()),
         }
+    }
+
+    pub fn database_id(&self) -> Option<&Arc<DatabaseId>> {
+        self.database_id.as_ref()
     }
 
     pub fn submit(&self, error_code: String) {
@@ -621,28 +636,24 @@ impl ErrorMetrics {
         *snapshot = backup;
     }
 
-    pub fn to_diff_reports(&self, database_hash: DatabaseHashOpt) -> Vec<ErrorReport> {
+    pub fn to_diff_reports(&self) -> Vec<ErrorReport> {
         let mut errors = vec![];
         for code in self.get_errors().keys() {
             let count = self.get_count_delta(code);
             if count == 0 {
                 continue;
             }
-            errors.push(ErrorReport {
-                database: database_hash.map(|hash| DatabaseReport(hash)),
-                code: code.clone(),
-                count,
-            });
+            errors.push(ErrorReport { database: self.database_id.clone(), code: code.clone(), count });
         }
         errors
     }
 
-    pub fn to_state_reports(&self, database_hash: &DatabaseHashOpt) -> Vec<ErrorReport> {
+    pub fn to_state_reports(&self) -> Vec<ErrorReport> {
         let mut errors = vec![];
         for (code, info) in self.get_errors().iter() {
             assert_ne!(info.count, 0, "Error count cannot be 0");
             errors.push(ErrorReport {
-                database: database_hash.map(|hash| DatabaseReport(hash)),
+                database: self.database_id.clone(),
                 code: code.clone(),
                 count: info.count as i64,
             });
@@ -1110,6 +1121,7 @@ pub struct TransactionLifecycleSnapshot {
 
 #[derive(Debug)]
 pub(crate) struct DatabaseHistograms {
+    database_id: Arc<DatabaseId>,
     query_duration: HashMap<QueryType, HistogramMetrics>,
     transaction_duration: HashMap<LoadKind, HistogramMetrics>,
     queries_per_transaction: HistogramMetrics,
@@ -1118,7 +1130,7 @@ pub(crate) struct DatabaseHistograms {
 }
 
 impl DatabaseHistograms {
-    pub fn new() -> Self {
+    pub fn new(database_id: Arc<DatabaseId>) -> Self {
         let query_duration = [QueryType::Read, QueryType::Write, QueryType::Schema]
             .into_iter()
             .map(|qt| (qt, HistogramMetrics::new_duration()))
@@ -1129,12 +1141,17 @@ impl DatabaseHistograms {
                 .map(|tt| (tt, HistogramMetrics::new_duration()))
                 .collect();
         Self {
+            database_id,
             query_duration,
             transaction_duration,
             queries_per_transaction: HistogramMetrics::new_queries_per_transaction(),
             transaction_lifecycle: TransactionLifecycleCounters::new(),
             wal: FsyncMetrics::new(),
         }
+    }
+
+    pub fn database_id(&self) -> &Arc<DatabaseId> {
+        &self.database_id
     }
 
     pub fn observe_query_duration(&self, kind: QueryType, d: std::time::Duration) {

@@ -3,20 +3,62 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use chrono::{DateTime, Utc};
-use serde::Serialize;
+use serde::{Serialize, Serializer, ser::SerializeStruct};
 use serde_json::{Value, json};
 
 use crate::{
-    Diagnostics,
+    DatabaseId, Diagnostics,
     metrics::{ALL_CLIENT_ENDPOINTS, ActionKind, HistogramSnapshot, HistogramUnit, LoadKind, QueryType},
     reports::{
-        ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport, ProcessReport,
-        SchemaLoadReport, ServerPropertiesReport, ServerReport, ServerReportSensitivePart, serialize_timestamp,
+        ActionReport, DataLoadReport, ErrorReport, LoadReport, OsReport, ProcessReport, SchemaLoadReport,
+        ServerPropertiesReport, ServerReport, ServerReportSensitivePart, serialize_timestamp,
     },
 };
+
+/// Name + hash wrapper for the JSON monitoring exposition. Serializes as
+/// `{"database": "<name>", "databaseId": "<hash>"}` via `flatten`; the
+/// equivalent Prometheus emitter reads the fields directly.
+#[derive(Debug, Clone)]
+pub(crate) struct MonitoringDatabaseId(pub Arc<DatabaseId>);
+
+impl MonitoringDatabaseId {
+    pub fn name(&self) -> &str {
+        self.0.name()
+    }
+
+    pub fn hash_value(&self) -> u64 {
+        self.0.hash_value()
+    }
+}
+
+impl Serialize for MonitoringDatabaseId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("MonitoringDatabaseId", 2)?;
+        state.serialize_field("database", self.0.name())?;
+        state.serialize_field("databaseId", &format!("{:.0}", self.0.hash_value()))?;
+        state.end()
+    }
+}
+
+impl PartialEq for MonitoringDatabaseId {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.hash_value() == other.0.hash_value()
+    }
+}
+
+impl Eq for MonitoringDatabaseId {}
+
+impl std::hash::Hash for MonitoringDatabaseId {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash_value().hash(state);
+    }
+}
 
 const MONITORING_API_VERSION: usize = 1;
 
@@ -152,7 +194,8 @@ impl From<ProcessReport> for JsonMonitoringProcessReport {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct JsonMonitoringLoadReport {
-    pub database: String,
+    #[serde(flatten)]
+    pub database: MonitoringDatabaseId,
     pub schema: Option<JsonMonitoringSchemaLoadReport>,
     pub data: Option<JsonMonitoringDataLoadReport>,
     // Flat list (not a nested map) so JSON output ordering is stable and
@@ -202,7 +245,7 @@ impl From<LoadReport> for JsonMonitoringLoadReport {
             )
         });
         Self {
-            database: value.database.to_string(),
+            database: MonitoringDatabaseId(value.database),
             schema: value.schema.map(|schema| schema.into()),
             data: value.data.map(|data| data.into()),
             active_transactions,
@@ -254,7 +297,7 @@ pub(crate) struct JsonMonitoringActionReport {
     pub name: ActionKind,
 
     #[serde(flatten)]
-    pub database: Option<DatabaseReport>,
+    pub database: Option<MonitoringDatabaseId>,
 
     pub attempted: i64,
     pub successful: i64,
@@ -264,7 +307,7 @@ impl From<ActionReport> for JsonMonitoringActionReport {
     fn from(value: ActionReport) -> Self {
         Self {
             name: value.kind,
-            database: value.database,
+            database: value.database.map(MonitoringDatabaseId),
             attempted: value.successful + value.failed,
             successful: value.successful,
         }
@@ -277,19 +320,19 @@ pub(crate) struct JsonMonitoringErrorReport {
     pub code: String,
 
     #[serde(flatten)]
-    pub database: Option<DatabaseReport>,
+    pub database: Option<MonitoringDatabaseId>,
 
     pub count: i64,
 }
 
 impl From<ErrorReport> for JsonMonitoringErrorReport {
     fn from(value: ErrorReport) -> Self {
-        Self { code: value.code, database: value.database, count: value.count }
+        Self { code: value.code, database: value.database.map(MonitoringDatabaseId), count: value.count }
     }
 }
 
 pub(crate) struct JsonMonitoringActionReportsBuilder {
-    reports: HashMap<Option<DatabaseReport>, HashMap<ActionKind, JsonMonitoringActionReport>>,
+    reports: HashMap<Option<MonitoringDatabaseId>, HashMap<ActionKind, JsonMonitoringActionReport>>,
 }
 
 impl JsonMonitoringActionReportsBuilder {
@@ -315,7 +358,7 @@ impl JsonMonitoringActionReportsBuilder {
 }
 
 pub(crate) struct JsonMonitoringErrorReportsBuilder {
-    reports: HashMap<Option<DatabaseReport>, HashMap<String, JsonMonitoringErrorReport>>,
+    reports: HashMap<Option<MonitoringDatabaseId>, HashMap<String, JsonMonitoringErrorReport>>,
 }
 
 impl JsonMonitoringErrorReportsBuilder {
@@ -397,7 +440,7 @@ pub(crate) fn format_le(value: f64) -> String {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct JsonMonitoringHistogramByQueryKind {
     #[serde(flatten)]
-    pub database: DatabaseReport,
+    pub database: MonitoringDatabaseId,
     pub kind: QueryType,
     pub histogram: JsonMonitoringHistogramReport,
 }
@@ -406,7 +449,7 @@ pub(crate) struct JsonMonitoringHistogramByQueryKind {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct JsonMonitoringHistogramByTransactionKind {
     #[serde(flatten)]
-    pub database: DatabaseReport,
+    pub database: MonitoringDatabaseId,
     pub kind: LoadKind,
     pub histogram: JsonMonitoringHistogramReport,
 }
@@ -415,7 +458,7 @@ pub(crate) struct JsonMonitoringHistogramByTransactionKind {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct JsonMonitoringHistogramPerDatabase {
     #[serde(flatten)]
-    pub database: DatabaseReport,
+    pub database: MonitoringDatabaseId,
     pub histogram: JsonMonitoringHistogramReport,
 }
 
@@ -423,7 +466,7 @@ pub(crate) struct JsonMonitoringHistogramPerDatabase {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct JsonMonitoringDatabaseCounter {
     #[serde(flatten)]
-    pub database: DatabaseReport,
+    pub database: MonitoringDatabaseId,
     pub value: u64,
 }
 
@@ -431,7 +474,7 @@ pub(crate) struct JsonMonitoringDatabaseCounter {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct JsonMonitoringTransactionLifecycleEntry {
     #[serde(flatten)]
-    pub database: DatabaseReport,
+    pub database: MonitoringDatabaseId,
     pub kind: LoadKind,
     pub started: u64,
     pub committed: u64,
@@ -452,26 +495,22 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
 
     let load = diagnostics
         .lock_load_metrics_read()
-        .iter()
-        .filter_map(|(database_hash, metrics)| {
-            metrics.to_state_report(database_hash).map(|load_report| load_report.into())
-        })
+        .values()
+        .filter_map(|metrics| metrics.to_state_report().map(|load_report| load_report.into()))
         .collect();
 
     let mut actions_builder = JsonMonitoringActionReportsBuilder::new();
     let mut errors_builder = JsonMonitoringErrorReportsBuilder::new();
 
     for client in ALL_CLIENT_ENDPOINTS {
-        for (&database_hash, metrics) in diagnostics.lock_action_metrics_read(client).iter() {
-            let action_reports = metrics.to_state_reports(&database_hash);
-            for action_report in action_reports {
+        for metrics in diagnostics.lock_action_metrics_read(client).values() {
+            for action_report in metrics.to_state_reports() {
                 actions_builder.insert(action_report.into());
             }
         }
 
-        for (&database_hash, metrics) in diagnostics.lock_error_metrics_read(client).iter() {
-            let error_reports = metrics.to_state_reports(&database_hash);
-            for error_report in error_reports {
+        for metrics in diagnostics.lock_error_metrics_read(client).values() {
+            for error_report in metrics.to_state_reports() {
                 errors_builder.insert(error_report.into());
             }
         }
@@ -479,7 +518,7 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
 
     // Sort by hash so exposition order is stable across scrapes.
     let mut histogram_snapshots = diagnostics.histogram_snapshots();
-    histogram_snapshots.sort_by_key(|(hash, _)| *hash);
+    histogram_snapshots.sort_by_key(|(id, _)| id.hash_value());
 
     let mut query_duration = Vec::new();
     let mut transaction_duration = Vec::new();
@@ -487,8 +526,8 @@ pub(crate) fn to_monitoring_report(diagnostics: &Diagnostics) -> JsonMonitoringR
     let mut transaction_lifecycle = Vec::new();
     let mut wal_fsync_duration = Vec::new();
     let mut wal_bytes_written = Vec::new();
-    for (hash, snap) in histogram_snapshots {
-        let db = DatabaseReport(hash);
+    for (id, snap) in histogram_snapshots {
+        let db = MonitoringDatabaseId(id);
         for (kind, hist) in snap.query_duration {
             if hist.count == 0 {
                 continue;

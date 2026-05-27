@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, hash::Hash, sync::Arc};
+use std::{collections::HashSet, sync::Arc};
 
 use concurrency::TokioTaskSpawner;
 use resource::constants::database::INTERNAL_DATABASE_PREFIX;
@@ -88,20 +88,20 @@ impl DiagnosticsManager {
 
     diagnostics_method! {
         pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>);
-        pub fn submit_error(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, error_code: String);
-        pub fn submit_action_success(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
-        pub fn submit_action_fail(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
-        pub fn increment_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, load_kind: LoadKind);
-        pub fn decrement_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, load_kind: LoadKind);
+        pub fn submit_error(&self, client: ClientEndpoint, database_name: Option<&str>, error_code: String);
+        pub fn submit_action_success(&self, client: ClientEndpoint, database_name: Option<&str>, action_kind: ActionKind);
+        pub fn submit_action_fail(&self, client: ClientEndpoint, database_name: Option<&str>, action_kind: ActionKind);
+        pub fn increment_load_count(&self, client: ClientEndpoint, database_name: &str, load_kind: LoadKind);
+        pub fn decrement_load_count(&self, client: ClientEndpoint, database_name: &str, load_kind: LoadKind);
 
-        pub fn observe_query_duration(&self, database_name: impl AsRef<str> + Hash, kind: QueryType, duration: std::time::Duration);
-        pub fn observe_transaction_duration(&self, database_name: impl AsRef<str> + Hash, kind: LoadKind, duration: std::time::Duration);
-        pub fn observe_queries_per_transaction(&self, database_name: impl AsRef<str> + Hash, queries: u64);
-        pub fn record_transaction_outcome(&self, database_name: impl AsRef<str> + Hash, kind: LoadKind, outcome: TransactionOutcome);
+        pub fn observe_query_duration(&self, database_name: &str, kind: QueryType, duration: std::time::Duration);
+        pub fn observe_transaction_duration(&self, database_name: &str, kind: LoadKind, duration: std::time::Duration);
+        pub fn observe_queries_per_transaction(&self, database_name: &str, queries: u64);
+        pub fn record_transaction_outcome(&self, database_name: &str, kind: LoadKind, outcome: TransactionOutcome);
     }
 
-    pub fn wal_metrics(&self, database_name: impl AsRef<str> + Hash) -> crate::metrics::FsyncMetrics {
-        if !self.metrics_enabled() || is_internal_database(database_name.as_ref()) {
+    pub fn wal_metrics(&self, database_name: &str) -> crate::metrics::FsyncMetrics {
+        if !self.metrics_enabled() || is_internal_database(database_name) {
             return crate::metrics::FsyncMetrics::noop();
         }
         self.diagnostics.wal_metrics(database_name)
@@ -120,9 +120,9 @@ impl DiagnosticsManager {
     }
 }
 
-pub fn is_diagnostics_needed(database_name: Option<impl AsRef<str> + Hash>) -> bool {
+pub fn is_diagnostics_needed(database_name: Option<&str>) -> bool {
     match database_name {
-        Some(database_name) => !is_internal_database(database_name.as_ref()),
+        Some(database_name) => !is_internal_database(database_name),
         None => true,
     }
 }

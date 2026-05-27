@@ -3,30 +3,28 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{collections::HashMap, fmt::Write};
+use std::fmt::Write;
 
 use crate::{
-    DatabaseHash, Diagnostics,
-    reports::json_monitoring::{JsonMonitoringHistogramReport, JsonMonitoringReport, to_monitoring_report},
+    Diagnostics,
+    reports::json_monitoring::{
+        JsonMonitoringHistogramReport, JsonMonitoringReport, MonitoringDatabaseId, to_monitoring_report,
+    },
 };
 
 pub fn to_monitoring_prometheus(diagnostics: &Diagnostics) -> String {
-    to_prometheus(to_monitoring_report(diagnostics), &diagnostics.database_names_snapshot())
+    to_prometheus(to_monitoring_report(diagnostics))
 }
 
-/// Emits `database="<name>", database_id="<hash>"`. If the name hasn't been
-/// observed yet (transient at startup), falls back to the hash for both labels.
-fn db_labels(hash_str: &str, names: &HashMap<DatabaseHash, String>) -> String {
-    let hash_u64 = hash_str.parse::<u64>().ok();
-    match hash_u64.and_then(|h| names.get(&h)) {
-        Some(name) => format!("database=\"{}\", database_id=\"{}\"", name, hash_str),
-        None => format!("database=\"{}\", database_id=\"{}\"", hash_str, hash_str),
-    }
+/// Emits `database="<name>", database_id="<hash>"` from the carried
+/// `MonitoringDatabaseId`. No reverse-map lookup needed: every per-database
+/// report struct already carries both fields by reference into the
+/// `Arc<DatabaseId>` that lives alongside the metrics.
+fn db_labels(id: &MonitoringDatabaseId) -> String {
+    format!("database=\"{}\", database_id=\"{}\"", id.name(), id.hash_value())
 }
 
-pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash, String>) -> String {
-    use std::fmt::Write;
-
+pub fn to_prometheus(report: JsonMonitoringReport) -> String {
     let mut out = String::new();
 
     writeln!(out, "# distribution: {}", report.server_properties.distribution).unwrap();
@@ -81,7 +79,7 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
 
     writeln!(out, "\n# TYPE typedb_schema_data_count gauge").unwrap();
     for db in &report.load {
-        let labels = db_labels(db.database.as_str(), names);
+        let labels = db_labels(&db.database);
         if let Some(schema) = &db.schema {
             writeln!(out, "typedb_schema_data_count{{{}, kind=\"typeCount\"}} {}", labels, schema.type_count).unwrap();
         }
@@ -113,7 +111,7 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
         writeln!(out, "\n# HELP typedb_transactions_active In-flight transactions by client and kind.").unwrap();
         writeln!(out, "# TYPE typedb_transactions_active gauge").unwrap();
         for db in &report.load {
-            let labels = db_labels(db.database.as_str(), names);
+            let labels = db_labels(&db.database);
             for entry in &db.active_transactions {
                 writeln!(
                     out,
@@ -131,7 +129,7 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
     writeln!(out, "\n# TYPE typedb_attempted_requests_total counter").unwrap();
     for action in &report.actions {
         if let Some(db) = &action.database {
-            let labels = db_labels(&db.0.to_string(), names);
+            let labels = db_labels(db);
             writeln!(
                 out,
                 "typedb_attempted_requests_total{{{}, kind=\"{}\"}} {}",
@@ -146,7 +144,7 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
     writeln!(out, "\n# TYPE typedb_successful_requests_total counter").unwrap();
     for action in &report.actions {
         if let Some(db) = &action.database {
-            let labels = db_labels(&db.0.to_string(), names);
+            let labels = db_labels(db);
             writeln!(
                 out,
                 "typedb_successful_requests_total{{{}, kind=\"{}\"}} {}",
@@ -162,7 +160,7 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
     writeln!(out, "\n# TYPE typedb_error_total counter").unwrap();
     for err in &report.errors {
         if let Some(db) = &err.database {
-            let labels = db_labels(&db.0.to_string(), names);
+            let labels = db_labels(db);
             writeln!(out, "typedb_error_total{{{}, code=\"{}\"}} {}", labels, err.code, err.count).unwrap();
         }
     }
@@ -170,7 +168,7 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
     writeln!(out, "\n# HELP typedb_query_duration_seconds Query execution latency.").unwrap();
     writeln!(out, "# TYPE typedb_query_duration_seconds histogram").unwrap();
     for entry in &report.query_duration {
-        let labels = db_labels(&entry.database.0.to_string(), names);
+        let labels = db_labels(&entry.database);
         let kind_label = format!("{}, kind=\"{}\"", labels, query_kind_label(&entry.kind));
         write_histogram_body(&mut out, "typedb_query_duration_seconds", &kind_label, &entry.histogram);
     }
@@ -182,7 +180,7 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
     .unwrap();
     writeln!(out, "# TYPE typedb_transaction_duration_seconds histogram").unwrap();
     for entry in &report.transaction_duration {
-        let labels = db_labels(&entry.database.0.to_string(), names);
+        let labels = db_labels(&entry.database);
         let kind_label = format!("{}, kind=\"{}\"", labels, txn_kind_label(&entry.kind));
         write_histogram_body(&mut out, "typedb_transaction_duration_seconds", &kind_label, &entry.histogram);
     }
@@ -190,7 +188,7 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
     writeln!(out, "\n# HELP typedb_queries_per_transaction Queries executed per transaction.").unwrap();
     writeln!(out, "# TYPE typedb_queries_per_transaction histogram").unwrap();
     for entry in &report.queries_per_transaction {
-        let labels = db_labels(&entry.database.0.to_string(), names);
+        let labels = db_labels(&entry.database);
         write_histogram_body(&mut out, "typedb_queries_per_transaction", &labels, &entry.histogram);
     }
 
@@ -199,7 +197,6 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
         "typedb_transactions_started_total",
         "Transactions opened, by transaction kind.",
         &report,
-        names,
         |e| e.started,
     );
     write_lifecycle_counter(
@@ -207,7 +204,6 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
         "typedb_transactions_committed_total",
         "Transactions that committed successfully.",
         &report,
-        names,
         |e| e.committed,
     );
     write_lifecycle_counter(
@@ -215,7 +211,6 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
         "typedb_transactions_rolled_back_total",
         "Transactions explicitly rolled back by the client.",
         &report,
-        names,
         |e| e.rolled_back,
     );
     write_lifecycle_counter(
@@ -223,14 +218,13 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
         "typedb_transactions_closed_total",
         "Transactions closed without a successful commit (force-closed, dropped, timed out).",
         &report,
-        names,
         |e| e.closed,
     );
 
     writeln!(out, "\n# HELP typedb_wal_fsync_duration_seconds WAL fsync latency.").unwrap();
     writeln!(out, "# TYPE typedb_wal_fsync_duration_seconds histogram").unwrap();
     for entry in &report.wal_fsync_duration {
-        let labels = db_labels(&entry.database.0.to_string(), names);
+        let labels = db_labels(&entry.database);
         write_histogram_body(&mut out, "typedb_wal_fsync_duration_seconds", &labels, &entry.histogram);
     }
 
@@ -238,7 +232,7 @@ pub fn to_prometheus(report: JsonMonitoringReport, names: &HashMap<DatabaseHash,
         writeln!(out, "\n# HELP typedb_wal_bytes_written_total Bytes written to the WAL.").unwrap();
         writeln!(out, "# TYPE typedb_wal_bytes_written_total counter").unwrap();
         for entry in &report.wal_bytes_written {
-            let labels = db_labels(&entry.database.0.to_string(), names);
+            let labels = db_labels(&entry.database);
             writeln!(out, "typedb_wal_bytes_written_total{{{}}} {}", labels, entry.value).unwrap();
         }
     }
@@ -259,7 +253,6 @@ fn write_lifecycle_counter<F>(
     metric_name: &str,
     help_text: &str,
     report: &JsonMonitoringReport,
-    names: &HashMap<DatabaseHash, String>,
     field: F,
 ) where
     F: Fn(&crate::reports::json_monitoring::JsonMonitoringTransactionLifecycleEntry) -> u64,
@@ -267,7 +260,7 @@ fn write_lifecycle_counter<F>(
     writeln!(out, "\n# HELP {} {}", metric_name, help_text).unwrap();
     writeln!(out, "# TYPE {} counter", metric_name).unwrap();
     for entry in &report.transaction_lifecycle {
-        let labels = db_labels(&entry.database.0.to_string(), names);
+        let labels = db_labels(&entry.database);
         writeln!(out, "{}{{{}, kind=\"{}\"}} {}", metric_name, labels, txn_kind_label(&entry.kind), field(entry))
             .unwrap();
     }

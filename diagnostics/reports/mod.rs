@@ -4,14 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt};
+use std::{
+    collections::HashMap,
+    fmt,
+    hash::{Hash, Hasher},
+    sync::Arc,
+};
 
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 use serde_json::{Map, Value, to_value};
 
 use crate::{
-    DatabaseHash,
+    DatabaseId,
     metrics::{ActionKind, ClientEndpoint, LoadKind},
 };
 
@@ -44,25 +49,45 @@ where
     serializer.serialize_str(&format_datetime(*datetime))
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub(crate) struct DatabaseReport(pub DatabaseHash);
+/// Hash-only view onto a database identity, used as the Posthog wire-format
+/// type. `Serialize` emits `{"database": "<hash>"}` and only that — no name
+/// field — so the PII discipline is upheld at the type level: any Posthog
+/// payload that embeds a database identifier goes through `DatabaseReport`,
+/// and `DatabaseReport` cannot serialize the name even if its `Arc<DatabaseId>`
+/// carries one.
+#[derive(Debug, Clone)]
+pub(crate) struct DatabaseReport(pub Arc<DatabaseId>);
+
+impl PartialEq for DatabaseReport {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.hash_value() == other.0.hash_value()
+    }
+}
+
+impl Eq for DatabaseReport {}
+
+impl Hash for DatabaseReport {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash_value().hash(state);
+    }
+}
 
 impl Serialize for DatabaseReport {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
+        // Hash-only on the wire: this serializer is reached by the Posthog
+        // payload path; PII discipline is preserved by construction.
         let mut state = serializer.serialize_struct("DatabaseReport", 1)?;
-        let DatabaseReport(database_hash) = self;
-        state.serialize_field("database", &format!("{:.0}", database_hash))?;
+        state.serialize_field("database", &format!("{:.0}", self.0.hash_value()))?;
         state.end()
     }
 }
 
 impl fmt::Display for DatabaseReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let DatabaseReport(database_hash) = self;
-        write!(f, "{:.0}", database_hash)
+        write!(f, "{:.0}", self.0.hash_value())
     }
 }
 
@@ -108,15 +133,15 @@ pub(crate) struct ProcessReport {
 
 #[derive(Debug)]
 pub(crate) struct LoadReport {
-    pub database: DatabaseReport,
+    pub database: Arc<DatabaseId>,
     pub schema: Option<SchemaLoadReport>,
     pub data: Option<DataLoadReport>,
     pub connection: Option<ConnectionLoadReport>,
 }
 
 impl LoadReport {
-    pub fn new(database_hash: DatabaseHash) -> Self {
-        Self { database: DatabaseReport(database_hash), schema: None, data: None, connection: None }
+    pub fn new(database_id: Arc<DatabaseId>) -> Self {
+        Self { database: database_id, schema: None, data: None, connection: None }
     }
 }
 
@@ -140,7 +165,7 @@ pub type ConnectionLoadReport = HashMap<ClientEndpoint, HashMap<LoadKind, u64>>;
 
 #[derive(Debug)]
 pub(crate) struct ActionReport {
-    pub database: Option<DatabaseReport>,
+    pub database: Option<Arc<DatabaseId>>,
     pub kind: ActionKind,
     pub successful: i64,
     pub failed: i64,
@@ -148,7 +173,7 @@ pub(crate) struct ActionReport {
 
 #[derive(Debug)]
 pub(crate) struct ErrorReport {
-    pub database: Option<DatabaseReport>,
+    pub database: Option<Arc<DatabaseId>>,
     pub code: String,
     pub count: i64,
 }
