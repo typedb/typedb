@@ -32,6 +32,9 @@ features = {}
 	[dev-dependencies.http_steps]
 		workspace = true
 
+	[dev-dependencies.diagnostics]
+		workspace = true
+
 	[dev-dependencies.answer]
 		workspace = true
 

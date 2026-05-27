@@ -31,7 +31,7 @@ impl TestRecord {
 }
 
 pub fn create_wal(directory: impl AsRef<Path>) -> WAL {
-    let mut wal = WAL::create(directory, FsyncMetrics::noop()).unwrap();
+    let mut wal = WAL::create(directory, FsyncMetrics::disabled()).unwrap();
     wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
     wal
 }

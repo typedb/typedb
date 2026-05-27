@@ -904,6 +904,7 @@ dependencies = [
  "answer",
  "chrono",
  "concept",
+ "diagnostics",
  "durability",
  "encoding",
  "error",
@@ -1267,6 +1268,7 @@ version = "0.0.0"
 dependencies = [
  "clap",
  "concept",
+ "diagnostics",
  "durability",
  "storage",
 ]
@@ -1321,6 +1323,7 @@ dependencies = [
  "tokio",
  "tonic",
  "tonic-types",
+ "tracing",
  "typeql",
  "xxhash-rust",
 ]
@@ -1377,6 +1380,7 @@ version = "0.0.0"
 dependencies = [
  "bincode",
  "criterion",
+ "diagnostics",
  "durability_test_common",
  "error",
  "fail_point",
@@ -1395,6 +1399,7 @@ name = "durability_test_common"
 version = "0.0.0"
 dependencies = [
  "bincode",
+ "diagnostics",
  "durability",
 ]
 
@@ -1425,6 +1430,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "criterion",
+ "diagnostics",
  "durability",
  "error",
  "itertools 0.14.0",
@@ -1676,6 +1682,7 @@ dependencies = [
  "bytes 0.0.0",
  "compiler",
  "concept",
+ "diagnostics",
  "durability",
  "encoding",
  "error",
@@ -5018,6 +5025,7 @@ dependencies = [
  "chrono",
  "criterion",
  "database",
+ "diagnostics",
  "durability",
  "error",
  "fail_point",
@@ -5277,6 +5285,7 @@ dependencies = [
 name = "test_utils_encoding"
 version = "0.0.0"
 dependencies = [
+ "diagnostics",
  "durability",
  "encoding",
  "logger",
@@ -5290,6 +5299,7 @@ name = "test_utils_storage"
 version = "0.0.0"
 dependencies = [
  "bytes 0.0.0",
+ "diagnostics",
  "durability",
  "logger",
  "resource",
@@ -5793,6 +5803,7 @@ dependencies = [
  "answer",
  "clap",
  "database",
+ "diagnostics",
  "executor",
  "fail_point",
  "function",

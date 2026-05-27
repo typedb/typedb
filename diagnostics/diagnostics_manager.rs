@@ -100,9 +100,9 @@ impl DiagnosticsManager {
         pub fn record_transaction_outcome(&self, database_name: &str, kind: LoadKind, outcome: TransactionOutcome);
     }
 
-    pub fn wal_metrics(&self, database_name: &str) -> crate::metrics::FsyncMetrics {
-        if !self.metrics_enabled() || is_internal_database(database_name) {
-            return crate::metrics::FsyncMetrics::noop();
+    pub fn wal_metrics(&self, database_name: &str, is_internal_database: bool) -> crate::metrics::FsyncMetrics {
+        if !self.metrics_enabled() || is_internal_database {
+            return crate::metrics::FsyncMetrics::disabled();
         }
         self.diagnostics.wal_metrics(database_name)
     }

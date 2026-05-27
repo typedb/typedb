@@ -513,7 +513,7 @@ pub mod tests {
     fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
         init_logging();
         let storage_path = create_tmp_storage_dir();
-        let wal = WAL::create(&storage_path, FsyncMetrics::noop()).unwrap();
+        let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),

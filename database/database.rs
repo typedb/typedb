@@ -62,6 +62,7 @@ use crate::{
     },
     transaction::TransactionError,
 };
+use crate::database_manager::DatabaseManager;
 
 #[derive(Debug, Clone)]
 pub(super) struct Schema {
@@ -261,7 +262,7 @@ impl Database<WALClient> {
 
         let file_name = path.file_name().unwrap();
         let name = file_name.to_str().ok_or_else(|| InvalidUnicodeName { name: file_name.to_owned() })?;
-        let wal_metrics = diagnostics_manager.wal_metrics(name);
+        let wal_metrics = diagnostics_manager.wal_metrics(name, DatabaseManager::is_internal_database(name));
 
         if path.exists() { Self::load(path, name, wal_metrics) } else { Self::create(path, name, wal_metrics) }
     }

@@ -126,7 +126,7 @@ fn create_reopen() {
     {
         let storage = load_storage::<TestKeyspaceSet>(
             &storage_path,
-            WAL::load(&storage_path, FsyncMetrics::noop()).unwrap(),
+            WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap(),
             Some(checkpoint),
         )
         .unwrap();

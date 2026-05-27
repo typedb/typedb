@@ -21,6 +21,9 @@ features = {}
 	[dev-dependencies.rand]
 		workspace = true
 
+	[dev-dependencies.diagnostics]
+		workspace = true
+
 	[dev-dependencies.tracing]
 		workspace = true
 

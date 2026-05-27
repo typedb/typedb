@@ -11,6 +11,9 @@ features = {}
 
 [dependencies]
 
+	[dependencies.diagnostics]
+		workspace = true
+
 	[dependencies.clap]
 		workspace = true
 

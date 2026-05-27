@@ -15,7 +15,7 @@ use test_utils::{TempDir, create_tmp_storage_dir, init_logging};
 pub fn create_core_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
     init_logging();
     let storage_path = create_tmp_storage_dir();
-    let wal = WAL::create(&storage_path, FsyncMetrics::noop()).unwrap();
+    let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
     let storage =
         Arc::new(MVCCStorage::create::<EncodingKeyspace>("db_storage", &storage_path, WALClient::new(wal)).unwrap());
     (storage_path, storage)

@@ -696,7 +696,7 @@ fn isolation_manager_correctly_recovers_from_disk() {
         // TODO: Find a way to make commits crash before they're committed
         let storage = load_storage::<TestKeyspaceSet>(
             &storage_path,
-            WAL::load(&storage_path, FsyncMetrics::noop()).unwrap(),
+            WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap(),
             None,
         )
         .unwrap();

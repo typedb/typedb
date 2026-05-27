@@ -31,6 +31,7 @@ rust_library(
         "@crates//:tokio",
         "@crates//:tonic",
         "@crates//:tonic-types",
+        "@crates//:tracing",
         "@crates//:xxhash-rust",
     ]
 )

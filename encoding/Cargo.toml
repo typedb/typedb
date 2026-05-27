@@ -24,6 +24,9 @@ features = {}
 	[dev-dependencies.test_utils_encoding]
 		workspace = true
 
+	[dev-dependencies.diagnostics]
+		workspace = true
+
 	[dev-dependencies.criterion]
 		workspace = true
 

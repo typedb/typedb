@@ -796,14 +796,14 @@ mod test {
     }
 
     fn create_wal(directory: &TempDir) -> WAL {
-        let mut wal = WAL::create(directory, FsyncMetrics::noop()).unwrap();
+        let mut wal = WAL::create(directory, FsyncMetrics::disabled()).unwrap();
         wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
         wal.register_record_type(UnsequencedTestRecord::RECORD_TYPE, UnsequencedTestRecord::RECORD_NAME);
         wal
     }
 
     fn load_wal(directory: &TempDir) -> WAL {
-        let mut wal = WAL::load(directory, FsyncMetrics::noop()).unwrap();
+        let mut wal = WAL::load(directory, FsyncMetrics::disabled()).unwrap();
         wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
         wal.register_record_type(UnsequencedTestRecord::RECORD_TYPE, UnsequencedTestRecord::RECORD_NAME);
         wal

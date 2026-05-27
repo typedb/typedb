@@ -108,7 +108,7 @@ fn print_raw_record(record: RawRecord<'_>) {
 }
 
 fn print_range(path: PathBuf, from: u64, to: Option<u64>) {
-    let wal = WAL::load(path, FsyncMetrics::noop()).unwrap();
+    let wal = WAL::load(path, FsyncMetrics::disabled()).unwrap();
 
     let mut wal = WALClient::new(wal);
     wal.register_record_type::<Statistics>();
@@ -128,7 +128,7 @@ fn print_range(path: PathBuf, from: u64, to: Option<u64>) {
 }
 
 fn print_at(path: PathBuf, sequence_number: Option<u64>) {
-    let wal = WAL::load(path, FsyncMetrics::noop()).unwrap();
+    let wal = WAL::load(path, FsyncMetrics::disabled()).unwrap();
 
     let mut wal = WALClient::new(wal);
     wal.register_record_type::<Statistics>();

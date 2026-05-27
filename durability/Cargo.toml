@@ -35,6 +35,9 @@ features = {}
 	[dependencies.tracing]
 		workspace = true
 
+	[dependencies.diagnostics]
+		workspace = true
+
 	[dependencies.resource]
 		workspace = true
 

@@ -50,7 +50,7 @@ enum RecordKind {
 fn main() {
     let cli = Cli::parse();
 
-    let source_wal = WAL::load(cli.source_directory, FsyncMetrics::noop()).unwrap();
+    let source_wal = WAL::load(cli.source_directory, FsyncMetrics::disabled()).unwrap();
 
     let mut source_wal = WALClient::new(source_wal);
     source_wal.register_record_type::<Statistics>();
@@ -64,7 +64,7 @@ fn main() {
         err @ Err(_) => dbg!(err).unwrap(),
     }
 
-    let mut target_wal = WALClient::new(WAL::load(cli.target_directory, FsyncMetrics::noop()).unwrap());
+    let mut target_wal = WALClient::new(WAL::load(cli.target_directory, FsyncMetrics::disabled()).unwrap());
     target_wal.register_record_type::<Statistics>();
     target_wal.register_record_type::<LegacyCommitRecordV1>();
     target_wal.register_record_type::<CommitRecord>();

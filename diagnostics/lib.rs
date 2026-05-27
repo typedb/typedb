@@ -47,17 +47,6 @@ macro_rules! error_with_report {
 type DatabaseHash = u64;
 type DatabaseHashOpt = Option<u64>;
 
-/// Name + xxh3 hash for one database, allocated once at first observation and
-/// shared via Arc thereafter. Carried on every per-database metrics record so
-/// the Prometheus emitter can read `name` and `hash` together — no reverse-map,
-/// no snapshot indirection. Posthog serialization explicitly reads only `hash`
-/// (see `reports::DatabaseReport`); PII discipline is preserved at the type
-/// level because callers reach for `id.hash` or `id.name` explicitly.
-///
-/// `Hash`/`Eq`/`PartialEq` delegate to the hash field so the type is
-/// interchangeable with a bare `DatabaseHash` for map-key purposes; we don't
-/// rely on that today (maps stay keyed by `u64`), but it keeps the shape
-/// future-proof for a Borrow-based lookup if it ever becomes preferable.
 #[derive(Debug, Clone, Eq)]
 pub(crate) struct DatabaseId {
     name: Arc<str>,
@@ -73,10 +62,6 @@ impl DatabaseId {
         &self.name
     }
 
-    /// The cached xxh3 hash of `name`. Named `hash_value` rather than `hash`
-    /// to avoid shadowing by `Hash::hash` when the value is held through an
-    /// `Arc` (Arc's `Hash` impl reaches before autoderef would find the
-    /// inherent method).
     pub(crate) fn hash_value(&self) -> u64 {
         self.hash
     }
@@ -84,7 +69,7 @@ impl DatabaseId {
 
 impl PartialEq for DatabaseId {
     fn eq(&self, other: &Self) -> bool {
-        self.hash == other.hash
+        self.name == other.name
     }
 }
 

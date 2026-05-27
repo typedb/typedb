@@ -46,7 +46,7 @@ fn wal_and_checkpoint_ok() {
     {
         let storage = load_storage::<TestKeyspaceSet>(
             &storage_path,
-            WAL::load(&storage_path, FsyncMetrics::noop()).unwrap(),
+            WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap(),
             Some(checkpoint),
         )
         .unwrap();
@@ -96,7 +96,7 @@ fn wal_and_no_checkpoint_ok() {
     {
         let storage = load_storage::<TestKeyspaceSet>(
             &storage_path,
-            WAL::load(&storage_path, FsyncMetrics::noop()).unwrap(),
+            WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap(),
             None,
         )
         .unwrap();
@@ -135,7 +135,7 @@ fn no_wal_and_checkpoint_illegal() {
     fs::remove_dir_all(directory.join(WAL::WAL_DIR_NAME)).unwrap();
 
     {
-        let wal_result = WAL::load(&storage_path, FsyncMetrics::noop());
+        let wal_result = WAL::load(&storage_path, FsyncMetrics::disabled());
         assert!(wal_result.is_err());
     }
 }
@@ -162,7 +162,7 @@ fn no_wal_and_no_checkpoint_and_keyspaces_illegal() {
     fs::remove_dir_all(storage_path.join(WAL::WAL_DIR_NAME)).unwrap();
 
     {
-        let wal_result = WAL::load(&storage_path, FsyncMetrics::noop());
+        let wal_result = WAL::load(&storage_path, FsyncMetrics::disabled());
         assert!(wal_result.is_err());
     }
 }
@@ -191,7 +191,7 @@ fn no_wal_and_no_checkpoint_and_no_keyspaces_illegal() {
     fs::remove_dir_all(storage_path.join(MVCCStorage::<WALClient>::STORAGE_DIR_NAME)).unwrap();
 
     {
-        let wal_result = WAL::load(&storage_path, FsyncMetrics::noop());
+        let wal_result = WAL::load(&storage_path, FsyncMetrics::disabled());
         assert!(wal_result.is_err());
     }
 }

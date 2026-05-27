@@ -11,40 +11,59 @@ use std::{
     },
     time::Duration,
 };
-
+use crate::error_with_report;
 use crate::metrics::HistogramMetrics;
 
 #[derive(Debug, Clone)]
 pub struct FsyncMetrics {
+    data: Option<FsyncMetricData>,
+}
+
+#[derive(Debug, Clone)]
+struct FsyncMetricData {
     fsync_histogram: Arc<HistogramMetrics>,
     bytes_counter: Arc<AtomicU64>,
 }
 
 impl FsyncMetrics {
     pub fn new() -> Self {
-        Self { fsync_histogram: Arc::new(HistogramMetrics::new_duration()), bytes_counter: Arc::new(AtomicU64::new(0)) }
+        let data = FsyncMetricData {
+            fsync_histogram: Arc::new(HistogramMetrics::new_duration()),
+            bytes_counter: Arc::new(AtomicU64::new(0)),
+        };
+        Self { data: Some(data) }
     }
 
-    /// Alias for new(). Documents intent at call sites where the FsyncMetrics
-    /// is standalone (tests, benches, internal DBs, disabled-collection) and
-    /// nobody reads the storage it allocates.
-    pub fn noop() -> Self {
-        Self::new()
+    pub fn disabled() -> Self {
+        Self { data: None }
     }
 
     pub fn record_fsync_duration(&self, duration: Duration) {
-        self.fsync_histogram.observe_duration(duration);
+        if let Some(data) = &self.data {
+            data.fsync_histogram.observe_duration(duration);
+        }
     }
 
     pub fn record_bytes_written(&self, bytes: u64) {
-        self.bytes_counter.fetch_add(bytes, Ordering::Relaxed);
+        if let Some(data) = &self.data {
+            data.bytes_counter.fetch_add(bytes, Ordering::Relaxed);
+        }
     }
 
     pub fn fsync_histogram_snapshot(&self) -> crate::metrics::HistogramSnapshot {
-        self.fsync_histogram.snapshot()
+        match &self.data {
+            Some(data) => data.fsync_histogram.snapshot(),
+            None => {
+                error_with_report!("Fsync histogram snapshot requested when Fsync metrics are disabled");
+                HistogramMetrics::new_duration().snapshot()
+            }
+        }
     }
 
     pub fn bytes_written(&self) -> u64 {
-        self.bytes_counter.load(Ordering::Relaxed)
+        match &self.data {
+            Some(data) => data.bytes_counter.load(Ordering::Relaxed),
+            None => 0
+        }
     }
 }
