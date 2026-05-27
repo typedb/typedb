@@ -9,7 +9,7 @@ use std::{
     fmt,
     path::PathBuf,
     sync::{
-        Arc, RwLock, RwLockReadGuard, RwLockWriteGuard,
+        Arc,
         atomic::{AtomicU64, Ordering},
     },
     time::Instant,
@@ -23,17 +23,25 @@ use sysinfo::System;
 use crate::{
     DatabaseId,
     reports::{
-        ActionReport, ConnectionLoadReport, DataLoadReport, ErrorReport, LoadReport, OsReport, ProcessReport,
-        SchemaLoadReport, ServerPropertiesReport, ServerReport, ServerReportSensitivePart,
+        ActionReport, ConnectionLoadReport, DataLoadReport, LoadReport, OsReport, ProcessReport, SchemaLoadReport,
+        ServerPropertiesReport, ServerReport, ServerReportSensitivePart,
     },
 };
 
+pub mod error_metrics;
 pub mod file_metrics;
+pub mod histogram_metrics;
 mod system_sampler;
 pub mod transaction_metrics;
+pub(crate) use error_metrics::ErrorMetrics;
 pub use file_metrics::FsyncMetrics;
+pub use histogram_metrics::{HistogramMetrics, HistogramSnapshot, HistogramUnit};
 use system_sampler::SystemSampler;
-pub use transaction_metrics::{ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics};
+pub(crate) use transaction_metrics::TransactionLifecycleCounters;
+pub use transaction_metrics::{
+    LoadKind, QueryType, ReadQueryMetrics, SchemaQueryMetrics, TransactionLifecycleSnapshot, TransactionMetrics,
+    TransactionOutcome, WriteQueryMetrics,
+};
 
 #[derive(Serialize, Deserialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -585,189 +593,6 @@ impl Clone for ActionInfo {
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct ErrorMetrics {
-    /// `None` denotes the server-level (no-database) metrics record.
-    database_id: Option<Arc<DatabaseId>>,
-    errors: RwLock<HashMap<String, ErrorInfo>>,
-    errors_snapshot: RwLock<HashMap<String, ErrorInfo>>,
-    errors_snapshot_backup: RwLock<HashMap<String, ErrorInfo>>,
-}
-
-impl ErrorMetrics {
-    pub fn new(database_id: Option<Arc<DatabaseId>>) -> Self {
-        Self {
-            database_id,
-            errors: RwLock::new(HashMap::new()),
-            errors_snapshot: RwLock::new(HashMap::new()),
-            errors_snapshot_backup: RwLock::new(HashMap::new()),
-        }
-    }
-
-    pub fn database_id(&self) -> Option<&Arc<DatabaseId>> {
-        self.database_id.as_ref()
-    }
-
-    pub fn submit(&self, error_code: String) {
-        self.get_errors_mut().entry(error_code).or_insert(ErrorInfo::new()).submit();
-    }
-
-    fn get_count_delta(&self, error_code: &str) -> i64 {
-        get_delta(
-            self.get_errors().get(error_code).unwrap_or(&ErrorInfo::default()).count,
-            self.get_errors_snapshot().get(error_code).unwrap_or(&ErrorInfo::default()).count,
-        )
-    }
-
-    pub fn take_snapshot(&mut self) {
-        let errors = self.get_errors();
-        let mut snapshot = self.get_errors_snapshot_mut();
-        let mut backup = self.get_errors_snapshot_backup_mut();
-
-        *backup = snapshot.clone();
-        for (code, info) in errors.iter() {
-            snapshot.insert(code.clone(), info.clone());
-        }
-    }
-
-    pub fn restore_snapshot(&self) {
-        let backup = self.get_errors_snapshot_backup().clone();
-        let mut snapshot = self.get_errors_snapshot_mut();
-        *snapshot = backup;
-    }
-
-    pub fn to_diff_reports(&self) -> Vec<ErrorReport> {
-        let mut errors = vec![];
-        for code in self.get_errors().keys() {
-            let count = self.get_count_delta(code);
-            if count == 0 {
-                continue;
-            }
-            errors.push(ErrorReport { database: self.database_id.clone(), code: code.clone(), count });
-        }
-        errors
-    }
-
-    pub fn to_state_reports(&self) -> Vec<ErrorReport> {
-        let mut errors = vec![];
-        for (code, info) in self.get_errors().iter() {
-            assert_ne!(info.count, 0, "Error count cannot be 0");
-            errors.push(ErrorReport {
-                database: self.database_id.clone(),
-                code: code.clone(),
-                count: info.count as i64,
-            });
-        }
-        errors
-    }
-
-    pub fn get_errors(&self) -> RwLockReadGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors.read().expect("Expected error metrics read lock acquisition")
-    }
-
-    pub fn get_errors_mut(&self) -> RwLockWriteGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors.write().expect("Expected error metrics write lock acquisition")
-    }
-
-    pub fn get_errors_snapshot(&self) -> RwLockReadGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors_snapshot.read().expect("Expected error metrics snapshot read lock acquisition")
-    }
-
-    pub fn get_errors_snapshot_mut(&self) -> RwLockWriteGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors_snapshot.write().expect("Expected error metrics snapshot write lock acquisition")
-    }
-
-    pub fn get_errors_snapshot_backup(&self) -> RwLockReadGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors_snapshot_backup.read().expect("Expected error metrics snapshot backup read lock acquisition")
-    }
-
-    pub fn get_errors_snapshot_backup_mut(&self) -> RwLockWriteGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors_snapshot_backup.write().expect("Expected error metrics snapshot backup write lock acquisition")
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct ErrorInfo {
-    count: u64,
-}
-
-impl ErrorInfo {
-    pub const fn new() -> Self {
-        Self::default()
-    }
-
-    pub const fn default() -> Self {
-        Self { count: 0 }
-    }
-
-    pub fn submit(&mut self) {
-        self.count += 1;
-    }
-}
-
-#[derive(Serialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
-pub enum LoadKind {
-    // Variant names are *Transactions for historical reasons; JSON exposition
-    // strips the suffix so the wire-format `kind` field stays "read"/"write"/
-    // "schema" — matching the Prometheus `kind` label and the server's own
-    // TransactionType enum.
-    #[serde(rename = "schema")]
-    SchemaTransactions,
-    #[serde(rename = "read")]
-    ReadTransactions,
-    #[serde(rename = "write")]
-    WriteTransactions,
-    // ATTENTION: When adding new variants, update all_empty_counts_map()!
-}
-
-impl LoadKind {
-    fn all_empty_counts_map() -> HashMap<LoadKind, AtomicU64> {
-        HashMap::from([
-            (LoadKind::SchemaTransactions, AtomicU64::new(0)),
-            (LoadKind::WriteTransactions, AtomicU64::new(0)),
-            (LoadKind::ReadTransactions, AtomicU64::new(0)),
-        ])
-    }
-
-    pub fn to_posthog_name(&self) -> &'static str {
-        match self {
-            LoadKind::SchemaTransactions => "schema_transactions_peak_count",
-            LoadKind::ReadTransactions => "read_transactions_peak_count",
-            LoadKind::WriteTransactions => "write_transactions_peak_count",
-        }
-    }
-}
-
-impl fmt::Display for LoadKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            LoadKind::SchemaTransactions => write!(f, "schemaTransactionPeakCount"),
-            LoadKind::ReadTransactions => write!(f, "readTransactionPeakCount"),
-            LoadKind::WriteTransactions => write!(f, "writeTransactionPeakCount"),
-        }
-    }
-}
-
-#[derive(Serialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum QueryType {
-    Read,
-    Write,
-    Schema,
-}
-
-impl QueryType {
-    /// Lowercase string for the Prometheus `kind` label. Matches the variant set
-    /// `LoadKind` uses, keeping dashboards able to join the two.
-    pub fn as_label(&self) -> &'static str {
-        match self {
-            QueryType::Read => "read",
-            QueryType::Write => "write",
-            QueryType::Schema => "schema",
-        }
-    }
-}
-
 #[derive(Serialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ActionKind {
@@ -912,12 +737,12 @@ impl fmt::Display for ActionKind {
     }
 }
 
-fn get_delta(lhs: u64, rhs: u64) -> i64 {
+pub(crate) fn get_delta(lhs: u64, rhs: u64) -> i64 {
     if lhs > rhs { (lhs - rhs) as i64 } else { -((rhs - lhs) as i64) }
 }
 
 // ============================================================================
-// Histogram primitive
+// Histogram primitive bucket constants
 // ============================================================================
 
 /// Default bucket boundaries for all duration histograms, in nanoseconds.
@@ -942,182 +767,9 @@ pub const DEFAULT_DURATION_BUCKETS_NANOS: &[u64] = &[
 /// more headroom for accidental-n+1 outliers (top bound 10_000).
 pub const DEFAULT_QUERIES_PER_TRANSACTION_BUCKETS: &[u64] = &[1, 5, 10, 25, 100, 1000, 10000];
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum HistogramUnit {
-    Nanoseconds,
-    Count,
-}
-
-/// Lock-free histogram with fixed bucket boundaries. `observe()` does one
-/// atomic fetch_add on a bucket and one on `sum`; bucket lookup is a linear
-/// scan (fine for the 7-bound defaults — switch to partition_point above ~32).
-/// `unit` tells exposition how to render values: `Nanoseconds` divides by 1e9
-/// to emit seconds, `Count` emits as-is.
-#[derive(Debug)]
-pub struct HistogramMetrics {
-    bucket_bounds: Vec<u64>,
-    bucket_counts: Vec<AtomicU64>,
-    overflow_count: AtomicU64,
-    sum: AtomicU64,
-    unit: HistogramUnit,
-}
-
-impl HistogramMetrics {
-    /// Construct with explicit bucket boundaries (in the unit's native u64).
-    /// Boundaries are inclusive upper bounds; an observation of exactly `bounds[i]`
-    /// counts in bucket i. `+Inf` is implicit — anything above the last bound
-    /// counts in the overflow bucket.
-    pub fn new(bucket_bounds: Vec<u64>, unit: HistogramUnit) -> Self {
-        debug_assert!(
-            bucket_bounds.windows(2).all(|w| w[0] < w[1]),
-            "histogram bucket bounds must be strictly ascending"
-        );
-        let bucket_counts = (0..bucket_bounds.len()).map(|_| AtomicU64::new(0)).collect();
-        Self { bucket_bounds, bucket_counts, overflow_count: AtomicU64::new(0), sum: AtomicU64::new(0), unit }
-    }
-
-    /// Constructor for duration histograms with the standard bucket set.
-    pub fn new_duration() -> Self {
-        Self::new(DEFAULT_DURATION_BUCKETS_NANOS.to_vec(), HistogramUnit::Nanoseconds)
-    }
-
-    /// Constructor for the queries-per-transaction histogram (count-shaped).
-    pub fn new_queries_per_transaction() -> Self {
-        Self::new(DEFAULT_QUERIES_PER_TRANSACTION_BUCKETS.to_vec(), HistogramUnit::Count)
-    }
-
-    /// Observe a duration. Saturates a Duration exceeding `u64::MAX` ns
-    /// (~584 years) into the overflow bucket — not a realistic timing.
-    pub fn observe_duration(&self, d: std::time::Duration) {
-        let nanos = u64::try_from(d.as_nanos()).unwrap_or(u64::MAX);
-        debug_assert!(self.unit == HistogramUnit::Nanoseconds);
-        self.observe_raw(nanos);
-    }
-
-    /// Observe a raw count.
-    pub fn observe_count(&self, n: u64) {
-        debug_assert!(self.unit == HistogramUnit::Count);
-        self.observe_raw(n);
-    }
-
-    fn observe_raw(&self, value: u64) {
-        // Linear scan: the standard bucket sets are 7-9 bounds. If a future bucket
-        // set grows beyond ~32 bounds, switch to partition_point binary search.
-        let bucket = self.bucket_bounds.iter().position(|&b| value <= b);
-        match bucket {
-            Some(i) => self.bucket_counts[i].fetch_add(1, Ordering::Relaxed),
-            None => self.overflow_count.fetch_add(1, Ordering::Relaxed),
-        };
-        // `sum` can wrap at u64::MAX (~584 years of accumulated ns). Realistic
-        // soak windows are weeks, so no protection beyond the wrap is necessary.
-        self.sum.fetch_add(value, Ordering::Relaxed);
-    }
-
-    pub fn unit(&self) -> HistogramUnit {
-        self.unit
-    }
-
-    /// Snapshot for exposition: cumulative bucket counts, total count, raw sum.
-    /// `count` is the prefix sum of buckets + overflow, so it equals
-    /// `_bucket{le="+Inf"}` by construction (avoids torn reads across atomics).
-    pub fn snapshot(&self) -> HistogramSnapshot {
-        let mut cumulative_counts = Vec::with_capacity(self.bucket_bounds.len());
-        let mut running = 0u64;
-        for c in &self.bucket_counts {
-            running += c.load(Ordering::Relaxed);
-            cumulative_counts.push(running);
-        }
-        running += self.overflow_count.load(Ordering::Relaxed);
-        // `running` is now the total observation count = +Inf bucket = `_count`.
-        HistogramSnapshot {
-            bucket_bounds: self.bucket_bounds.clone(),
-            cumulative_counts,
-            count: running,
-            sum: self.sum.load(Ordering::Relaxed),
-            unit: self.unit,
-        }
-    }
-}
-
-/// Plain-data snapshot of a `HistogramMetrics` at one moment, used by the
-/// JSON/Prometheus exposition. Cumulative counts; `count` is the +Inf bucket.
-#[derive(Debug, Clone)]
-pub struct HistogramSnapshot {
-    pub bucket_bounds: Vec<u64>,
-    pub cumulative_counts: Vec<u64>,
-    pub count: u64,
-    pub sum: u64,
-    pub unit: HistogramUnit,
-}
-
 // ============================================================================
-// Per-database histogram container + transaction lifecycle counters
+// Per-database histogram container
 // ============================================================================
-
-/// Outcomes tracked by `TransactionLifecycleCounters`. Distinct from
-/// `ActionKind::Transaction{Commit,Rollback}` which count RPC outcomes — these
-/// count transaction *lifecycle* events. A transaction force-closed on
-/// timeout, for example, may never produce a TransactionCommit RPC failure,
-/// but should still tick `closed` here.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum TransactionOutcome {
-    Started,
-    Committed,
-    RolledBack,
-    Closed,
-}
-
-/// Per-LoadKind atomic counters for each lifecycle outcome. Same pattern
-/// as `ConnectionLoadMetrics`: variants pre-inserted, observe() is lock-free.
-#[derive(Debug)]
-pub(crate) struct TransactionLifecycleCounters {
-    started: HashMap<LoadKind, AtomicU64>,
-    committed: HashMap<LoadKind, AtomicU64>,
-    rolled_back: HashMap<LoadKind, AtomicU64>,
-    closed: HashMap<LoadKind, AtomicU64>,
-}
-
-impl TransactionLifecycleCounters {
-    pub fn new() -> Self {
-        fn zeros() -> HashMap<LoadKind, AtomicU64> {
-            [LoadKind::ReadTransactions, LoadKind::WriteTransactions, LoadKind::SchemaTransactions]
-                .into_iter()
-                .map(|tt| (tt, AtomicU64::new(0)))
-                .collect()
-        }
-        Self { started: zeros(), committed: zeros(), rolled_back: zeros(), closed: zeros() }
-    }
-
-    pub fn record(&self, kind: LoadKind, outcome: TransactionOutcome) {
-        let table = match outcome {
-            TransactionOutcome::Started => &self.started,
-            TransactionOutcome::Committed => &self.committed,
-            TransactionOutcome::RolledBack => &self.rolled_back,
-            TransactionOutcome::Closed => &self.closed,
-        };
-        table.get(&kind).expect("All LoadKind variants pre-inserted").fetch_add(1, Ordering::Relaxed);
-    }
-
-    pub fn snapshot(&self) -> TransactionLifecycleSnapshot {
-        let load = |t: &HashMap<LoadKind, AtomicU64>, k: LoadKind| t.get(&k).unwrap().load(Ordering::Relaxed);
-        // Emit Read/Write/Schema in fixed order so exposition is deterministic.
-        let kinds = [LoadKind::ReadTransactions, LoadKind::WriteTransactions, LoadKind::SchemaTransactions];
-        TransactionLifecycleSnapshot {
-            started: kinds.into_iter().map(|k| (k, load(&self.started, k))).collect(),
-            committed: kinds.into_iter().map(|k| (k, load(&self.committed, k))).collect(),
-            rolled_back: kinds.into_iter().map(|k| (k, load(&self.rolled_back, k))).collect(),
-            closed: kinds.into_iter().map(|k| (k, load(&self.closed, k))).collect(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct TransactionLifecycleSnapshot {
-    pub started: Vec<(LoadKind, u64)>,
-    pub committed: Vec<(LoadKind, u64)>,
-    pub rolled_back: Vec<(LoadKind, u64)>,
-    pub closed: Vec<(LoadKind, u64)>,
-}
 
 #[derive(Debug)]
 pub(crate) struct DatabaseHistograms {
@@ -1207,106 +859,4 @@ pub struct DatabaseHistogramsSnapshot {
     pub transaction_lifecycle: TransactionLifecycleSnapshot,
     pub wal_fsync_duration: HistogramSnapshot,
     pub wal_bytes_written: u64,
-}
-
-// ============================================================================
-// Histogram unit tests
-// ============================================================================
-
-#[cfg(test)]
-mod histogram_tests {
-    use std::{sync::Arc, thread, time::Duration};
-
-    use super::{DEFAULT_DURATION_BUCKETS_NANOS, HistogramMetrics, HistogramUnit};
-
-    #[test]
-    fn bucketing_picks_the_smallest_upper_bound_that_includes_the_observation() {
-        let h = HistogramMetrics::new_duration();
-        // 50 µs → second bucket (le=100µs).
-        h.observe_duration(Duration::from_micros(50));
-        // Exactly 100 µs → still the second bucket (bounds are inclusive upper).
-        h.observe_duration(Duration::from_micros(100));
-        // 5 ms → fourth bucket (le=10ms).
-        h.observe_duration(Duration::from_millis(5));
-        // 200 s → overflow (above the 100s top bound).
-        h.observe_duration(Duration::from_secs(200));
-
-        let snap = h.snapshot();
-        // Cumulative: bucket 0 (le=10µs) = 0, bucket 1 (le=100µs) = 2, ..., bucket 3 (le=10ms) = 3.
-        assert_eq!(snap.cumulative_counts[0], 0, "10µs bucket should be empty");
-        assert_eq!(snap.cumulative_counts[1], 2, "100µs bucket sees 50µs + 100µs");
-        assert_eq!(snap.cumulative_counts[2], 2, "1ms bucket unchanged");
-        assert_eq!(snap.cumulative_counts[3], 3, "10ms bucket adds the 5ms observation");
-        assert_eq!(snap.cumulative_counts.last().copied().unwrap(), 3, "100s bucket = pre-overflow total");
-        assert_eq!(snap.count, 4, "count includes the 200s overflow");
-    }
-
-    #[test]
-    fn sum_accumulates_in_native_units() {
-        let h = HistogramMetrics::new_duration();
-        h.observe_duration(Duration::from_micros(50));
-        h.observe_duration(Duration::from_millis(5));
-        let snap = h.snapshot();
-        // 50 µs + 5 ms = 5_050_000 ns
-        assert_eq!(snap.sum, 50_000 + 5_000_000);
-        assert_eq!(snap.unit, HistogramUnit::Nanoseconds);
-    }
-
-    #[test]
-    fn empty_histogram_snapshots_with_zeros_everywhere() {
-        let h = HistogramMetrics::new_duration();
-        let snap = h.snapshot();
-        assert_eq!(snap.count, 0);
-        assert_eq!(snap.sum, 0);
-        assert!(snap.cumulative_counts.iter().all(|&c| c == 0));
-        // Bucket bound set matches the default duration buckets.
-        assert_eq!(snap.bucket_bounds.as_slice(), DEFAULT_DURATION_BUCKETS_NANOS);
-    }
-
-    #[test]
-    fn count_histogram_observes_u64_directly() {
-        let h = HistogramMetrics::new_queries_per_transaction();
-        h.observe_count(1);
-        h.observe_count(5);
-        h.observe_count(2000);
-        h.observe_count(50_000); // above last bound (10_000) → overflow
-        let snap = h.snapshot();
-        assert_eq!(snap.count, 4);
-        assert_eq!(snap.sum, 1 + 5 + 2000 + 50_000);
-        // Buckets are [1, 5, 10, 25, 100, 1000, 10000]. The observation of 1 falls in
-        // bucket 0 (le=1); 5 falls in bucket 1 (le=5); 2000 falls in bucket 6 (le=10000);
-        // 50_000 overflows.
-        assert_eq!(snap.cumulative_counts[0], 1);
-        assert_eq!(snap.cumulative_counts[1], 2);
-        assert_eq!(snap.cumulative_counts[5], 2);
-        assert_eq!(snap.cumulative_counts[6], 3);
-    }
-
-    #[test]
-    fn concurrent_observers_do_not_lose_observations() {
-        // 8 threads × 1000 observations each = 8000 total. Each thread observes a
-        // value that lands in a different bucket, so we can also confirm bucketing
-        // under contention.
-        let h = Arc::new(HistogramMetrics::new_duration());
-        let n_buckets = DEFAULT_DURATION_BUCKETS_NANOS.len();
-        let threads: Vec<_> = (0..8)
-            .map(|t| {
-                let h = h.clone();
-                thread::spawn(move || {
-                    let nanos = DEFAULT_DURATION_BUCKETS_NANOS[t % n_buckets];
-                    for _ in 0..1000 {
-                        h.observe_duration(Duration::from_nanos(nanos));
-                    }
-                })
-            })
-            .collect();
-        for j in threads {
-            j.join().unwrap();
-        }
-        let snap = h.snapshot();
-        assert_eq!(snap.count, 8000, "no observation lost under contention");
-        let expected_sum: u64 =
-            (0..8u64).map(|t| 1000u64 * DEFAULT_DURATION_BUCKETS_NANOS[(t as usize) % n_buckets]).sum();
-        assert_eq!(snap.sum, expected_sum);
-    }
 }
