@@ -17,11 +17,11 @@ We have updated the wire protocol version in TypeDB 3.11 in preparation of TypeD
 2) TypeDB Driver entry point
 TypeDB drivers version 3.11.x will use the following format to open a driver:
 
-`python
+```python
 TypeDB.driver(TypeDB.DEFAULT_ADDRESS, Credentials("admin", "password"), DriverOptions(DriverTlsConfig.disabled()))
 
 # old version: TypeDB.driver(TypeDB.DEFAULT_ADDRESS, Credentials("admin", "password"), DriverOptions())
-`
+```
 
 3) Disk compatibility
 **Once you upgrade to 3.11.x, you cannot downgrade your server with the same database**. We've made some backwards-compatible changes to TypeDB's storage. You can upgrade freely, but once the new data format is written, older versions will not understand your databases anymore. It's a good time to take a backup copy of your databases or use typedb export if you think you may want to downgrade
