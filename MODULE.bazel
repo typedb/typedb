@@ -65,16 +65,16 @@ bazel_dep(name = "rules_java", version = "8.6.2")
 # ===========================================================
 
 bazel_dep(name = "rules_proto", version = "7.1.0")
-bazel_dep(name = "protobuf", version = "29.3", repo_name = "com_google_protobuf")
+bazel_dep(name = "protobuf", version = "35.0", repo_name = "com_google_protobuf")
 
 # ===========================================================
 # Package managers
 # ===========================================================
 
 # Maven
-bazel_dep(name = "rules_jvm_external", version = "6.6")
-maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
-use_repo(maven, "maven")
+maven = use_extension("@typedb_dependencies//library/maven:maven_extension.bzl", "maven")
+maven.namespace(name = "typedb_maven", artifacts = []) # Empty list because None initialises all
+use_repo(maven, "typedb_maven")
 
 # Rust crates
 crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
@@ -140,14 +140,14 @@ bazel_dep(name = "typedb_bazel_distribution", version = "0.0.0")
 git_override(
     module_name = "typedb_bazel_distribution",
     remote = "https://github.com/typedb/bazel-distribution",
-    commit = "6c81a5180ed94a11c989e06a4ff8215df6da163e",
+    commit = "c34c0c513e45e69e3f9d97664c7ccb5afd5f1341",
 )
 
 bazel_dep(name = "typedb_dependencies", version = "0.0.0")
 git_override(
     module_name = "typedb_dependencies",
     remote = "https://github.com/typedb/dependencies",
-    commit = "ec1d121856cbd2ea1078b293f387b9d9d03188b2",
+    commit = "cdb696f58b0827c32e241f246b1b56360847679b",
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")
@@ -161,7 +161,7 @@ bazel_dep(name = "typedb_protocol", version = "0.0.0")
 git_override(
     module_name = "typedb_protocol",
     remote = "https://github.com/typedb/typedb-protocol",
-    tag = "3.11.0",
+    commit = "9a45ab625534a01afe5ecf89acaa06cecc92cafb",
 )
 
 bazel_dep(name = "typedb_behaviour", version = "0.0.0")
