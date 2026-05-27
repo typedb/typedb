@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 use sysinfo::System;
 
 use crate::{
-    DatabaseHash, DatabaseHashOpt,
+    DatabaseId,
     reports::{
         ActionReport, ConnectionLoadReport, DataLoadReport, ErrorReport, LoadReport, OsReport, ProcessReport,
         SchemaLoadReport, ServerPropertiesReport, ServerReport, ServerReportSensitivePart,
@@ -60,8 +60,6 @@ macro_rules! client_endpoints_map {
     };
 }
 pub(crate) use client_endpoints_map;
-
-use crate::reports::DatabaseReport;
 
 #[derive(Debug)]
 pub(crate) struct ServerProperties {
@@ -380,9 +378,6 @@ impl ConnectionLoadMetrics {
         peaks
     }
 
-    /// Current live in-flight counts (not peaks). Feeds typedb_transactions_active;
-    /// Posthog uses to_peak_report instead. Emits all (client × kind) entries
-    /// including zeros — same "emit-on-zero" posture as the process_* family.
     pub fn to_active_report(&self) -> ConnectionLoadReport {
         let mut active = ConnectionLoadReport::new();
         for (client, counts) in &self.counts {

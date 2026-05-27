@@ -14,40 +14,14 @@ use crate::{
 };
 
 #[derive(Debug)]
-struct LoadCountGuard {
-    diagnostics_manager: Arc<DiagnosticsManager>,
-    client: ClientEndpoint,
-    database_name: Arc<str>,
-    kind: LoadKind,
-}
-
-impl LoadCountGuard {
-    fn new(
-        diagnostics_manager: Arc<DiagnosticsManager>,
-        client: ClientEndpoint,
-        database_name: Arc<str>,
-        kind: LoadKind,
-    ) -> Self {
-        diagnostics_manager.increment_load_count(client, &database_name, kind);
-        Self { diagnostics_manager, client, database_name, kind }
-    }
-}
-
-impl Drop for LoadCountGuard {
-    fn drop(&mut self) {
-        self.diagnostics_manager.decrement_load_count(self.client, &self.database_name, self.kind);
-    }
-}
-
-#[derive(Debug)]
 pub struct TransactionMetrics {
     diagnostics_manager: Arc<DiagnosticsManager>,
     database_name: Arc<str>,
     kind: LoadKind,
+    client: ClientEndpoint,
     opened_at: Instant,
     query_count: u64,
     terminal_outcome: Option<TransactionOutcome>,
-    _load_guard: LoadCountGuard,
 }
 
 impl TransactionMetrics {
@@ -57,16 +31,16 @@ impl TransactionMetrics {
         kind: LoadKind,
         client: ClientEndpoint,
     ) -> Self {
-        let _load_guard = LoadCountGuard::new(diagnostics_manager.clone(), client, database_name.clone(), kind);
+        diagnostics_manager.increment_load_count(client, &database_name, kind);
         diagnostics_manager.record_transaction_outcome(&database_name, kind, TransactionOutcome::Started);
         Self {
             diagnostics_manager,
             database_name,
             kind,
+            client,
             opened_at: Instant::now(),
             query_count: 0,
             terminal_outcome: None,
-            _load_guard,
         }
     }
 
@@ -101,6 +75,7 @@ impl Drop for TransactionMetrics {
         self.diagnostics_manager.record_transaction_outcome(&self.database_name, self.kind, outcome);
         self.diagnostics_manager.observe_transaction_duration(&self.database_name, self.kind, self.opened_at.elapsed());
         self.diagnostics_manager.observe_queries_per_transaction(&self.database_name, self.query_count);
+        self.diagnostics_manager.decrement_load_count(self.client, &self.database_name, self.kind);
     }
 }
 
