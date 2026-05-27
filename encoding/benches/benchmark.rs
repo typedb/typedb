@@ -9,7 +9,8 @@
 use std::sync::Arc;
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use durability::wal::{NoopWalMetrics, WAL};
+use diagnostics::metrics::FsyncMetrics;
+use durability::wal::WAL;
 use encoding::{
     EncodingKeyspace, Keyable,
     graph::{
@@ -40,7 +41,7 @@ fn vertex_generation_to_key<D>(
 fn criterion_benchmark(c: &mut Criterion) {
     init_logging();
     let storage_path = create_tmp_storage_dir();
-    let wal = WAL::create(&storage_path, Arc::new(NoopWalMetrics)).unwrap();
+    let wal = WAL::create(&storage_path, FsyncMetrics::noop()).unwrap();
     let storage = Arc::new(
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );

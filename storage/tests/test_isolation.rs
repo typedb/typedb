@@ -7,7 +7,8 @@
 use std::{path::Path, sync::Arc};
 
 use bytes::byte_array::ByteArray;
-use durability::wal::{NoopWalMetrics, WAL};
+use diagnostics::metrics::FsyncMetrics;
+use durability::wal::WAL;
 use lending_iterator::LendingIterator;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
@@ -695,7 +696,7 @@ fn isolation_manager_correctly_recovers_from_disk() {
         // TODO: Find a way to make commits crash before they're committed
         let storage = load_storage::<TestKeyspaceSet>(
             &storage_path,
-            WAL::load(&storage_path, Arc::new(NoopWalMetrics)).unwrap(),
+            WAL::load(&storage_path, FsyncMetrics::noop()).unwrap(),
             None,
         )
         .unwrap();

@@ -8,7 +8,8 @@
 
 use std::{fs, sync::Arc};
 
-use durability::wal::{NoopWalMetrics, WAL};
+use diagnostics::metrics::FsyncMetrics;
+use durability::wal::WAL;
 use resource::{
     constants::snapshot::BUFFER_KEY_INLINE,
     profile::{CommitProfile, StorageCounters},
@@ -45,7 +46,7 @@ fn wal_and_checkpoint_ok() {
     {
         let storage = load_storage::<TestKeyspaceSet>(
             &storage_path,
-            WAL::load(&storage_path, Arc::new(NoopWalMetrics)).unwrap(),
+            WAL::load(&storage_path, FsyncMetrics::noop()).unwrap(),
             Some(checkpoint),
         )
         .unwrap();
@@ -95,7 +96,7 @@ fn wal_and_no_checkpoint_ok() {
     {
         let storage = load_storage::<TestKeyspaceSet>(
             &storage_path,
-            WAL::load(&storage_path, Arc::new(NoopWalMetrics)).unwrap(),
+            WAL::load(&storage_path, FsyncMetrics::noop()).unwrap(),
             None,
         )
         .unwrap();
@@ -134,7 +135,7 @@ fn no_wal_and_checkpoint_illegal() {
     fs::remove_dir_all(directory.join(WAL::WAL_DIR_NAME)).unwrap();
 
     {
-        let wal_result = WAL::load(&storage_path, Arc::new(NoopWalMetrics));
+        let wal_result = WAL::load(&storage_path, FsyncMetrics::noop());
         assert!(wal_result.is_err());
     }
 }
@@ -161,7 +162,7 @@ fn no_wal_and_no_checkpoint_and_keyspaces_illegal() {
     fs::remove_dir_all(storage_path.join(WAL::WAL_DIR_NAME)).unwrap();
 
     {
-        let wal_result = WAL::load(&storage_path, Arc::new(NoopWalMetrics));
+        let wal_result = WAL::load(&storage_path, FsyncMetrics::noop());
         assert!(wal_result.is_err());
     }
 }
@@ -190,7 +191,7 @@ fn no_wal_and_no_checkpoint_and_no_keyspaces_illegal() {
     fs::remove_dir_all(storage_path.join(MVCCStorage::<WALClient>::STORAGE_DIR_NAME)).unwrap();
 
     {
-        let wal_result = WAL::load(&storage_path, Arc::new(NoopWalMetrics));
+        let wal_result = WAL::load(&storage_path, FsyncMetrics::noop());
         assert!(wal_result.is_err());
     }
 }

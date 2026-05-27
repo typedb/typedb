@@ -8,10 +8,8 @@ use std::{fs::create_dir_all, io, path::PathBuf, sync::Arc};
 
 use clap::{Parser, ValueEnum};
 use concept::thing::statistics::Statistics;
-use durability::{
-    DurabilitySequenceNumber,
-    wal::{NoopWalMetrics, WAL},
-};
+use diagnostics::metrics::FsyncMetrics;
+use durability::{DurabilitySequenceNumber, wal::WAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityRecord, WALClient},
     record::{CommitRecord, LegacyCommitRecordV1, StatusRecord},
@@ -52,7 +50,7 @@ enum RecordKind {
 fn main() {
     let cli = Cli::parse();
 
-    let source_wal = WAL::load(cli.source_directory, Arc::new(NoopWalMetrics)).unwrap();
+    let source_wal = WAL::load(cli.source_directory, FsyncMetrics::noop()).unwrap();
 
     let mut source_wal = WALClient::new(source_wal);
     source_wal.register_record_type::<Statistics>();
@@ -66,7 +64,7 @@ fn main() {
         err @ Err(_) => dbg!(err).unwrap(),
     }
 
-    let mut target_wal = WALClient::new(WAL::load(cli.target_directory, Arc::new(NoopWalMetrics)).unwrap());
+    let mut target_wal = WALClient::new(WAL::load(cli.target_directory, FsyncMetrics::noop()).unwrap());
     target_wal.register_record_type::<Statistics>();
     target_wal.register_record_type::<LegacyCommitRecordV1>();
     target_wal.register_record_type::<CommitRecord>();

@@ -37,6 +37,7 @@ rust_test(
     name = "test_crate_compiler",
     crate = ":compiler",
     deps = [
+        "//diagnostics",
         "//durability",
         "//util/test:test_utils",
         "//resource",

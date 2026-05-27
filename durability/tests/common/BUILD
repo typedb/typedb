@@ -12,6 +12,7 @@ rust_library(
     crate_root = "test_common.rs",
     srcs = ["test_common.rs"],
     deps = [
+        "//diagnostics",
         "//durability:durability",
         "@crates//:bincode",
     ],

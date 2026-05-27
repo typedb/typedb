@@ -12,6 +12,7 @@ rust_binary(
     ],
     deps = [
         "//concept",
+        "//diagnostics",
         "//durability",
         "//storage",
         "@crates//:clap",
@@ -25,6 +26,7 @@ rust_binary(
     ],
     deps = [
         "//concept",
+        "//diagnostics",
         "//durability",
         "//storage",
         "@crates//:clap",

@@ -16,6 +16,7 @@ rust_library(
         "//common/error",
         "//common/fail_point",
         "//common/logger",
+        "//diagnostics",
         "//resource",
 
         "@crates//:itertools",

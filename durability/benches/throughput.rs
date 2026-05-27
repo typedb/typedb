@@ -7,10 +7,8 @@
 use std::{path::Path, sync::Arc};
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use durability::{
-    DurabilityRecordType, DurabilityService,
-    wal::{NoopWalMetrics, WAL},
-};
+use diagnostics::metrics::FsyncMetrics;
+use durability::{DurabilityRecordType, DurabilityService, wal::WAL};
 use itertools::Itertools;
 use tempdir::TempDir;
 
@@ -33,7 +31,7 @@ impl TestRecord {
 }
 
 pub fn create_wal(directory: impl AsRef<Path>) -> WAL {
-    let mut wal = WAL::create(directory, Arc::new(NoopWalMetrics)).unwrap();
+    let mut wal = WAL::create(directory, FsyncMetrics::noop()).unwrap();
     wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
     wal
 }

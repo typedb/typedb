@@ -11,6 +11,7 @@ rust_test(
     name = "throughput",
     srcs = ["throughput.rs"],
     deps = [
+        "//diagnostics",
         "//durability:durability",
 
         "@crates//:bincode",

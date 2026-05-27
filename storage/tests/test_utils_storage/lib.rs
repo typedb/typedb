@@ -6,7 +6,8 @@
 
 use std::{path::Path, sync::Arc};
 
-use durability::wal::{NoopWalMetrics, WAL};
+use diagnostics::metrics::FsyncMetrics;
+use durability::wal::WAL;
 use storage::{
     MVCCStorage, StorageOpenError,
     durability_client::WALClient,
@@ -37,7 +38,7 @@ macro_rules! test_keyspace_set {
 }
 
 pub fn create_storage<KS: KeyspaceSet>(path: &Path) -> Result<Arc<MVCCStorage<WALClient>>, StorageOpenError> {
-    let wal = WAL::create(path, Arc::new(NoopWalMetrics)).unwrap();
+    let wal = WAL::create(path, FsyncMetrics::noop()).unwrap();
     let storage = MVCCStorage::create::<KS>("storage", path, WALClient::new(wal))?;
     Ok(Arc::new(storage))
 }

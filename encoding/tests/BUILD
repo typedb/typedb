@@ -11,6 +11,7 @@ rust_library(
     srcs = ["test_utils_encoding.rs"],
     deps = [
         "//common/logger",
+        "//diagnostics",
         "//encoding",
         "//storage",
         "//durability",
@@ -23,6 +24,7 @@ rust_library(
 test_deps = [
     "//common/bytes",
     "//common/logger",
+    "//diagnostics",
     "//encoding",
     "//storage",
     "//durability",

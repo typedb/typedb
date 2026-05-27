@@ -733,7 +733,8 @@ impl StorageOperation {
 #[cfg(test)]
 mod tests {
     use bytes::byte_array::ByteArray;
-    use durability::wal::{NoopWalMetrics, WAL};
+    use diagnostics::metrics::FsyncMetrics;
+    use durability::wal::WAL;
     use resource::profile::{CommitProfile, StorageCounters};
     use test_utils::{create_tmp_storage_dir, init_logging};
 
@@ -790,7 +791,7 @@ mod tests {
                 .insert(key_1.byte_array().clone(), ByteArray::empty());
 
             let mut durability_client =
-                WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME), Arc::new(NoopWalMetrics)).unwrap());
+                WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME), FsyncMetrics::noop()).unwrap());
             durability_client.register_record_type::<LegacyCommitRecordV1>();
             durability_client.register_record_type::<CommitRecord>();
             let seq = durability_client
@@ -814,7 +815,7 @@ mod tests {
         };
 
         let mut durability_client =
-            WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME), Arc::new(NoopWalMetrics)).unwrap());
+            WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME), FsyncMetrics::noop()).unwrap());
         durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         let storage =
@@ -838,7 +839,7 @@ mod tests {
 
         let storage_path = create_tmp_storage_dir();
         let mut durability_client =
-            WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME), Arc::new(NoopWalMetrics)).unwrap());
+            WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME), FsyncMetrics::noop()).unwrap());
         durability_client.register_record_type::<LegacyCommitRecordV1>();
         durability_client.register_record_type::<CommitRecord>();
         let storage = Arc::new(
@@ -950,7 +951,7 @@ mod tests {
         let storage_path = create_tmp_storage_dir();
 
         let mut wal_client =
-            WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME), Arc::new(NoopWalMetrics)).unwrap());
+            WALClient::new(WAL::create(storage_path.join(WAL::WAL_DIR_NAME), FsyncMetrics::noop()).unwrap());
         wal_client.register_record_type::<LegacyCommitRecordV1>();
         wal_client.register_record_type::<CommitRecord>();
         wal_client.register_record_type::<StatusRecord>();
@@ -965,7 +966,7 @@ mod tests {
         // Load WAL back
         drop(wal_client);
         let mut wal_client =
-            WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME), Arc::new(NoopWalMetrics)).unwrap());
+            WALClient::new(WAL::load(storage_path.join(WAL::WAL_DIR_NAME), FsyncMetrics::noop()).unwrap());
         wal_client.register_record_type::<LegacyCommitRecordV1>();
         wal_client.register_record_type::<CommitRecord>();
         wal_client.register_record_type::<StatusRecord>();

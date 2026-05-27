@@ -14,6 +14,7 @@ rust_test(
         "benchmark.rs",
     ]),
     deps = [
+        "//diagnostics",
         "//encoding",
         "//resource",
         "//storage",

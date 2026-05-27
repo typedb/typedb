@@ -17,6 +17,7 @@ rust_test(
         "//common/bytes",
         "//common/logger",
         "//common/primitive",
+        "//diagnostics",
         "//resource",
         "//storage",
         "//durability",
@@ -50,6 +51,7 @@ rust_test(
 
         "//common/bytes",
         "//database:database",
+        "//diagnostics",
         "//durability",
         "//resource",
         "//storage:storage",

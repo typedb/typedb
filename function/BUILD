@@ -34,7 +34,10 @@ rust_library(
 rust_test(
     name = "test_crate_function",
     crate = ":function",
-    deps = ["//util/test:test_utils"],
+    deps = [
+        "//diagnostics",
+        "//util/test:test_utils",
+    ],
 )
 
 rustfmt_test(

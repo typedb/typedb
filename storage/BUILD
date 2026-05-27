@@ -22,6 +22,7 @@ rust_library(
         "//common/lending_iterator",
         "//common/logger",
         "//common/primitive",
+        "//diagnostics",
         "//durability",
         "//resource",
 

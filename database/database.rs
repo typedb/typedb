@@ -24,10 +24,10 @@ use concept::{
     },
 };
 use concurrency::IntervalRunner;
-use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
+use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, FsyncMetrics, SchemaLoadMetrics};
 use durability::{
     DurabilitySequenceNumber, DurabilityServiceError,
-    wal::{WAL, WALError, WalMetrics},
+    wal::{WAL, WALError},
 };
 use encoding::{
     EncodingKeyspace,
@@ -250,7 +250,7 @@ impl<D: DurabilityClient> Database<D> {
 }
 
 impl Database<WALClient> {
-    pub fn open(path: &Path, wal_metrics: Arc<dyn WalMetrics>) -> Result<Database<WALClient>, DatabaseOpenError> {
+    pub fn open(path: &Path, wal_metrics: FsyncMetrics) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::InvalidUnicodeName;
 
         let file_name = path.file_name().unwrap();
@@ -262,7 +262,7 @@ impl Database<WALClient> {
     fn create(
         path: &Path,
         name: impl AsRef<str>,
-        wal_metrics: Arc<dyn WalMetrics>,
+        wal_metrics: FsyncMetrics,
     ) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
             DirectoryCreate, Encoding, FunctionCacheInitialise, StorageOpen, TypeCacheInitialise, WALOpen,
@@ -331,7 +331,7 @@ impl Database<WALClient> {
     fn load(
         path: &Path,
         name: impl AsRef<str>,
-        wal_metrics: Arc<dyn WalMetrics>,
+        wal_metrics: FsyncMetrics,
     ) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
             CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, NotADatabase, StatisticsInitialise,

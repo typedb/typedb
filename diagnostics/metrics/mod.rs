@@ -29,6 +29,9 @@ use crate::{
     system_sampler::SystemSampler,
 };
 
+pub mod file_metrics;
+pub use file_metrics::FsyncMetrics;
+
 #[derive(Serialize, Deserialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ClientEndpoint {
