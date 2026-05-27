@@ -122,11 +122,7 @@ impl DiagnosticsManager {
 
 pub fn is_diagnostics_needed(database_name: Option<&str>) -> bool {
     match database_name {
-        Some(database_name) => !is_internal_database(database_name),
+        Some(database_name) => !database_name.starts_with(INTERNAL_DATABASE_PREFIX),
         None => true,
     }
-}
-
-fn is_internal_database(database_name: &str) -> bool {
-    database_name.starts_with(INTERNAL_DATABASE_PREFIX)
 }

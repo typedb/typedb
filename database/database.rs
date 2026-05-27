@@ -60,9 +60,9 @@ use crate::{
         CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,
         CorruptionPartialResetTypeVertexGeneratorInUse,
     },
+    database_manager::DatabaseManager,
     transaction::TransactionError,
 };
-use crate::database_manager::DatabaseManager;
 
 #[derive(Debug, Clone)]
 pub(super) struct Schema {

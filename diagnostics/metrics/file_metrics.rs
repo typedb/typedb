@@ -11,8 +11,8 @@ use std::{
     },
     time::Duration,
 };
-use crate::error_with_report;
-use crate::metrics::HistogramMetrics;
+
+use crate::{error_with_report, metrics::HistogramMetrics};
 
 #[derive(Debug, Clone)]
 pub struct FsyncMetrics {
@@ -63,7 +63,7 @@ impl FsyncMetrics {
     pub fn bytes_written(&self) -> u64 {
         match &self.data {
             Some(data) => data.bytes_counter.load(Ordering::Relaxed),
-            None => 0
+            None => 0,
         }
     }
 }
