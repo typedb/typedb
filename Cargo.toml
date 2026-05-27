@@ -532,6 +532,11 @@ features = {}
 			version = "0.25.0"
 			default-features = false
 
+		[workspace.dependencies.hyper-util]
+			features = ["tokio"]
+			version = "0.1.18"
+			default-features = false
+
 		[workspace.dependencies.rand_core]
 			features = ["default", "std"]
 			version = "0.3.1"

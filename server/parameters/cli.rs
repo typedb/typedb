@@ -48,10 +48,11 @@ pub struct CLIArgs {
     #[arg(long = "server.admin.enabled")]
     pub server_admin_enabled: Option<bool>,
 
-    /// Port for local Admin endpoint (e.g., 1728)
-    /// Serves only localhost connections
-    #[arg(long = "server.admin.port")]
-    pub server_admin_port: Option<u16>,
+    /// Filesystem path for the local Admin Unix domain socket.
+    /// Defaults to `<data-directory>/admin.sock`. The socket file is created
+    /// with mode 0600, so access is restricted to the server process owner.
+    #[arg(long = "server.admin.socket-path", value_name = "FILE")]
+    pub server_admin_socket_path: Option<String>,
 
     /// The amount of seconds generated authentication tokens will remain valid, specified in seconds.
     /// Use smaller values for better security and bigger values for better authentication performance and convenience

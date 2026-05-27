@@ -16,6 +16,14 @@ typedb_error! {
         InvalidArgument(4, "Invalid argument '{name}': {reason}", name: String, reason: String),
         UnknownCommand(5, "Unknown command: '{input}'. Type 'help' for available commands.", input: String),
         ScriptReadFailed(6, "Failed to read script '{path}'.", path: String, source: Arc<std::io::Error>),
+        SocketPathInaccessible(7, "Admin socket '{path}' could not be inspected.", path: String, source: Arc<std::io::Error>),
+        SocketNotASocket(8, "Admin endpoint at '{path}' is not a Unix socket; refusing to connect.", path: String),
+        SocketPermissionsTooWide(
+            9,
+            "Admin socket '{path}' has mode {mode:#o}; which exposes too wide permissions and a security danger. Run `chmod 600 '{path}'` or restart the server.",
+            path: String,
+            mode: u32,
+        ),
     }
 }
 

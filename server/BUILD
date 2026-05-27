@@ -126,13 +126,11 @@ rust_test(
     data = [":config.yml"],
     deps = [
         ":server",
+        "//admin/client",
         "//resource",
         "//util/test:test_utils",
-        "@crates//:futures",
-        "@crates//:http",
         "@crates//:tokio",
         "@crates//:tonic",
-        "@crates//:tower",
     ],
 )
 

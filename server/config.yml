@@ -11,7 +11,8 @@ server:
         advertise-address:
     admin:
         enabled: true
-        port: 1728
+        # socket-path defaults to <storage.data-directory>/admin.sock when unset.
+        socket-path:
 
     authentication:
         token-expiration-seconds: 5000

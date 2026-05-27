@@ -5,10 +5,12 @@
  */
 
 pub mod server;
+pub mod users;
 
 use crate::command::CommandRegistry;
 
 pub fn base_commands() -> CommandRegistry {
     let registry = CommandRegistry::new();
-    server::register(registry)
+    let registry = server::register(registry);
+    users::register(registry)
 }

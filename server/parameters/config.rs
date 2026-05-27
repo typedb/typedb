@@ -11,9 +11,7 @@ use std::{
     time::Duration,
 };
 
-use resource::constants::server::{
-    ADMIN_DEFAULT_PORT, DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT,
-};
+use resource::constants::server::{DEFAULT_AUTHENTICATION_TOKEN_EXPIRATION, MONITORING_DEFAULT_PORT};
 use serde::Deserialize;
 use serde_with::{DurationSeconds, serde_as};
 
@@ -93,12 +91,26 @@ impl Default for EncryptionConfig {
 #[serde(rename_all = "kebab-case")]
 pub struct AdminConfig {
     pub enabled: bool,
-    pub port: u16,
+    /// Absolute filesystem path for the admin Unix domain socket.
+    /// `None` resolves at server start to `<data-directory>/admin.sock`,
+    /// so the socket inherits the data directory's access controls.
+    #[serde(default)]
+    pub socket_path: Option<PathBuf>,
 }
 
 impl Default for AdminConfig {
     fn default() -> Self {
-        Self { enabled: true, port: ADMIN_DEFAULT_PORT }
+        Self { enabled: true, socket_path: None }
+    }
+}
+
+impl AdminConfig {
+    /// Resolve the socket path. Falls back to `<data_directory>/admin.sock`
+    /// when no explicit path is configured.
+    pub fn resolve_socket_path(&self, data_directory: &Path) -> PathBuf {
+        self.socket_path
+            .clone()
+            .unwrap_or_else(|| data_directory.join(resource::constants::server::ADMIN_DEFAULT_SOCKET_FILENAME))
     }
 }
 
@@ -256,7 +268,7 @@ impl ConfigBuilder {
             server_http_listen_address,
             server_http_advertise_address,
             server_admin_enabled,
-            server_admin_port,
+            server_admin_socket_path,
             server_authentication_token_expiration_seconds,
             server_encryption_enabled,
             server_encryption_certificate,
@@ -276,7 +288,7 @@ impl ConfigBuilder {
             config.server.http.enabled => server_http_enabled;
             config.server.http.listen_address => server_http_listen_address;
             config.server.admin.enabled => server_admin_enabled;
-            config.server.admin.port => server_admin_port;
+            config.server.admin.socket_path => server_admin_socket_path.map(|p| Some(CLIArgs::resolve_path_from_pwd(Path::new(&p))));
             config.server.authentication.token_expiration => server_authentication_token_expiration_seconds.map(|secs| Duration::new(secs, 0));
 
             config.server.encryption.enabled => server_encryption_enabled;
@@ -360,8 +372,8 @@ impl ConfigBuilder {
         self
     }
 
-    pub fn admin_port(mut self, port: u16) -> Self {
-        self.config.server.admin.port = port;
+    pub fn admin_socket_path(mut self, path: impl Into<PathBuf>) -> Self {
+        self.config.server.admin.socket_path = Some(path.into());
         self
     }
 

@@ -10,8 +10,9 @@
 use std::{
     fs,
     future::Future,
-    net::{Ipv4Addr, SocketAddr},
-    path::Path,
+    net::SocketAddr,
+    os::unix::fs::PermissionsExt,
+    path::{Path, PathBuf},
     pin::Pin,
     sync::Arc,
 };
@@ -25,19 +26,23 @@ use resource::{
     constants::{
         common::STUDIO_URL,
         server::{
-            DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, GRPC_MAX_MESSAGE_SIZE, SERVER_ID_ALPHABET,
-            SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
+            ADMIN_SOCKET_FILE_MODE, DISTRIBUTION_INFO, GRPC_CONNECTION_KEEPALIVE, GRPC_MAX_MESSAGE_SIZE,
+            SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
         },
     },
     distribution_info::DistributionInfo,
 };
-use tokio::sync::watch::{Receiver, Sender, channel};
-use tracing::info;
+use tokio::{
+    net::UnixListener,
+    sync::watch::{Receiver, Sender, channel},
+};
+use tokio_stream::wrappers::UnixListenerStream;
+use tracing::{info, warn};
 
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig, ServerConfig, StorageConfig},
-    service::{admin::localhost_guard::LocalhostGuardLayer, grpc, http},
+    service::{grpc, http},
     state::{BoxServerStatus, ServerState},
 };
 
@@ -315,11 +320,9 @@ impl Server {
             servers.push(Box::pin(http_server));
         }
 
-        if server_config.admin.enabled {
-            let admin_server = admin_serve_override.unwrap_or_else(|| {
-                let address = SocketAddr::from((Ipv4Addr::LOCALHOST, server_config.admin.port));
-                Self::serve_admin(address, server_state.clone(), shutdown_receiver.clone())
-            });
+        if let Some(socket_path) = server_state.admin_socket_path().map(Path::to_path_buf) {
+            let admin_server = admin_serve_override
+                .unwrap_or_else(|| Self::serve_admin(socket_path, server_state.clone(), shutdown_receiver.clone()));
             servers.push(Box::pin(admin_server));
         }
 
@@ -404,21 +407,39 @@ impl Server {
     }
 
     fn serve_admin(
-        address: SocketAddr,
+        socket_path: PathBuf,
         server_state: Arc<ServerState>,
         mut shutdown_receiver: Receiver<()>,
     ) -> AdminServeFuture {
         let admin_service = service::admin::AdminService::new(server_state);
         Box::pin(async move {
-            tonic::transport::Server::builder()
-                .layer(LocalhostGuardLayer)
+            let listener = bind_admin_socket(&socket_path)?;
+            let incoming = UnixListenerStream::new(listener);
+            let socket_path_for_cleanup = socket_path.clone();
+            let serve_result = tonic::transport::Server::builder()
                 .add_service(admin_proto::type_db_admin_server::TypeDbAdminServer::new(admin_service))
-                .serve_with_shutdown(address, async {
-                    // The tonic server starts a shutdown process when this closure execution finishes
+                .serve_with_incoming_shutdown(incoming, async {
                     shutdown_receiver.changed().await.expect("Expected shutdown receiver signal");
                 })
                 .await
-                .map_err(|err| ServerOpenError::AdminServe { address, source: Arc::new(err) })
+                .map_err(|err| ServerOpenError::AdminServe {
+                    path: socket_path.to_string_lossy().into_owned(),
+                    source: Arc::new(err),
+                });
+            // Best-effort: remove the socket file when serving stops so the next start
+            // doesn't trip the "path exists" guard. Failures here only get logged because
+            // the more important "couldn't serve" error is already being returned, and on
+            // hard crashes the unlink wouldn't run anyway — the stale-socket cleanup at
+            // bind time is the durable mechanism.
+            if let Err(err) = fs::remove_file(&socket_path_for_cleanup) {
+                if err.kind() != std::io::ErrorKind::NotFound {
+                    warn!(
+                        "Could not remove admin socket file '{}' after shutdown: {err}",
+                        socket_path_for_cleanup.display()
+                    );
+                }
+            }
+            serve_result
         })
     }
 
@@ -456,7 +477,7 @@ impl Server {
         }
 
         match server_status.admin_address() {
-            Some(admin_address) => println!("  Admin:      {admin_address} (localhost only)"),
+            Some(admin_address) => println!("  Admin:      {admin_address} (Unix socket, mode 0600)"),
             None => println!("  Admin:      {DISABLED}"),
         }
 
@@ -557,4 +578,66 @@ impl Server {
     pub fn database_manager(&self) -> Arc<DatabaseManager> {
         self.server_state.databases().manager()
     }
+}
+
+/// Bind the admin Unix domain socket with restrictive permissions.
+///
+/// Trust on the admin channel is anchored entirely in filesystem access to this socket
+/// file, so the cleanup-then-bind-then-chmod sequence is load-bearing:
+///
+/// 1. If the path already exists as a socket from a previous run, unlink it — `bind(2)`
+///    would otherwise fail with EADDRINUSE.
+/// 2. If the path exists but is *not* a socket (regular file, symlink, etc.), refuse:
+///    overwriting an arbitrary file could be a foothold for a malicious local process,
+///    and the user should investigate before we delete it.
+/// 3. Bind, then immediately `chmod 0600`. Tokio's `UnixListener::bind` honours `umask`,
+///    which we can't trust to be `0o077`, so an explicit chmod is required to guarantee
+///    the socket is owner-readable only.
+fn bind_admin_socket(socket_path: &Path) -> Result<UnixListener, ServerOpenError> {
+    if let Some(parent) = socket_path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent).map_err(|source| ServerOpenError::AdminSocketBind {
+                path: socket_path.to_string_lossy().into_owned(),
+                source: Arc::new(source),
+            })?;
+        }
+    }
+
+    match fs::symlink_metadata(socket_path) {
+        Ok(metadata) => {
+            use std::os::unix::fs::FileTypeExt;
+            if metadata.file_type().is_socket() {
+                fs::remove_file(socket_path).map_err(|source| ServerOpenError::AdminSocketCleanup {
+                    path: socket_path.to_string_lossy().into_owned(),
+                    source: Arc::new(source),
+                })?;
+            } else {
+                return Err(ServerOpenError::AdminSocketPathInUse {
+                    path: socket_path.to_string_lossy().into_owned(),
+                });
+            }
+        }
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
+        Err(source) => {
+            return Err(ServerOpenError::AdminSocketBind {
+                path: socket_path.to_string_lossy().into_owned(),
+                source: Arc::new(source),
+            });
+        }
+    }
+
+    let listener = UnixListener::bind(socket_path).map_err(|source| ServerOpenError::AdminSocketBind {
+        path: socket_path.to_string_lossy().into_owned(),
+        source: Arc::new(source),
+    })?;
+
+    fs::set_permissions(socket_path, fs::Permissions::from_mode(ADMIN_SOCKET_FILE_MODE)).map_err(|source| {
+        ServerOpenError::AdminSocketChmod {
+            path: socket_path.to_string_lossy().into_owned(),
+            source: Arc::new(source),
+        }
+    })?;
+
+    info!("Admin Unix socket bound at {} (mode {:#o})", socket_path.display(), ADMIN_SOCKET_FILE_MODE);
+    Ok(listener)
 }

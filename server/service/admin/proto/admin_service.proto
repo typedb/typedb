@@ -8,6 +8,10 @@ package typedb.admin;
 service TypeDBAdmin {
     rpc server_version (ServerVersion.Req) returns (ServerVersion.Res);
     rpc server_status (ServerStatus.Req) returns (ServerStatus.Res);
+    // Force-set the password of an existing user, bypassing the gRPC authentication layer.
+    // Authority for this call is rooted in the caller's filesystem access to the admin
+    // Unix domain socket; the server itself does not authenticate the request beyond that.
+    rpc users_set_password (UsersSetPassword.Req) returns (UsersSetPassword.Res);
 }
 
 message ServerVersion {
@@ -30,4 +34,12 @@ message ServerStatus {
 message EndpointStatus {
     string listen_address = 1;
     optional string advertise_address = 2;
+}
+
+message UsersSetPassword {
+    message Req {
+        string username = 1;
+        string password = 2;
+    }
+    message Res {}
 }

@@ -6,6 +6,7 @@
 
 use std::sync::Arc;
 
+use system::concepts::Credential;
 use tonic::{Request, Response, Status};
 
 use crate::{admin_proto, state::ServerState};
@@ -57,5 +58,27 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
         let admin_address = status.admin_address().map(|a| a.to_string());
 
         Ok(Response::new(admin_proto::server_status::Res { grpc: Some(grpc), http, admin_address }))
+    }
+
+    async fn users_set_password(
+        &self,
+        request: Request<admin_proto::users_set_password::Req>,
+    ) -> Result<Response<admin_proto::users_set_password::Res>, Status> {
+        let admin_proto::users_set_password::Req { username, password } = request.into_inner();
+        if username.is_empty() {
+            return Err(Status::invalid_argument("Username must not be empty"));
+        }
+        if password.is_empty() {
+            return Err(Status::invalid_argument("Password must not be empty"));
+        }
+
+        let credential = Credential::new_password(&password);
+        self.server_state
+            .users()
+            .set_credential(&username, credential)
+            .await
+            .map_err(|err| Status::internal(format!("{err:?}")))?;
+
+        Ok(Response::new(admin_proto::users_set_password::Res {}))
     }
 }

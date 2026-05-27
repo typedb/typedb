@@ -5769,11 +5769,13 @@ version = "0.0.0"
 dependencies = [
  "error",
  "home",
+ "hyper-util",
  "resource",
  "rustyline",
  "server_admin_proto",
  "tokio",
  "tonic",
+ "tower 0.4.13",
  "typeql",
 ]
 

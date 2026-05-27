@@ -33,6 +33,12 @@ features = {}
 	[dependencies.tonic]
 		workspace = true
 
+	[dependencies.tower]
+		workspace = true
+
+	[dependencies.hyper-util]
+		workspace = true
+
 	[dependencies.error]
 		workspace = true
 
