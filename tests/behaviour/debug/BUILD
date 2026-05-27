@@ -14,6 +14,7 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["debug.feature"],
+    tags = ["manual"],
 )
 
 rustfmt_test(

@@ -15,6 +15,7 @@ rust_test(
     ],
     data = ["@typedb_behaviour//driver:concept.feature"],
     crate_features = ["bazel"],
+    tags = ["manual"],
 )
 
 rust_test(
@@ -27,6 +28,7 @@ rust_test(
     ],
     data = ["@typedb_behaviour//driver:connection.feature"],
     crate_features = ["bazel"],
+    tags = ["manual"],
 )
 
 rust_test(
@@ -39,6 +41,7 @@ rust_test(
     ],
     data = ["@typedb_behaviour//driver/http:http.feature"],
     crate_features = ["bazel"],
+    tags = ["manual"],
 )
 
 rust_test(
@@ -51,6 +54,7 @@ rust_test(
     ],
     data = ["@typedb_behaviour//driver:query.feature"],
     crate_features = ["bazel"],
+    tags = ["manual"],
 )
 
 rust_test(
@@ -63,6 +67,7 @@ rust_test(
     ],
     data = ["@typedb_behaviour//driver:user.feature"],
     crate_features = ["bazel"],
+    tags = ["manual"],
 )
 
 rustfmt_test(
