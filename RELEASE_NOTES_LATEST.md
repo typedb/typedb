@@ -6,7 +6,7 @@
 
 ```docker pull typedb/typedb:3.11.5```
 
--## Breaking changes
+## Breaking changes
 This release breaks backwards compatibility.
 This version is only compatible with TypeDB driver versions >= 3.11.0.
 Connections from older drivers will be rejected.
