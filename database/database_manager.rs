@@ -12,7 +12,7 @@ use std::{
 };
 
 use cache::CACHE_DB_NAME_PREFIX;
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::FsyncMetrics};
+use diagnostics::diagnostics_manager::DiagnosticsManager;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
 use tracing::{Level, debug, event, warn};
@@ -83,8 +83,7 @@ impl DatabaseManager {
                 continue;
             }
 
-            let wal_metrics = Self::wal_metrics(diagnostics_manager, &database_name);
-            let database = match Database::<WALClient>::open(&entry_path, wal_metrics) {
+            let database = match Database::<WALClient>::open(&entry_path, diagnostics_manager) {
                 Ok(database) => database,
                 Err(DatabaseOpenError::NotADatabase { .. }) => {
                     warn!("{entry_path:?} is not a database, skipping");
@@ -322,16 +321,13 @@ impl DatabaseManager {
     }
 
     fn new_public_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(&self.data_directory.join(name), Self::wal_metrics(&self.diagnostics_manager, name))
+        Database::<WALClient>::open(&self.data_directory.join(name), &self.diagnostics_manager)
             .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 
     fn new_imported_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(
-            &self.import_directory.join(name),
-            Self::wal_metrics(&self.diagnostics_manager, name),
-        )
-        .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
+        Database::<WALClient>::open(&self.import_directory.join(name), &self.diagnostics_manager)
+            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 
     fn exists_public<'a>(&'a self, databases: &'a DatabasesWriteLock<'a>, name: &str) -> bool {
@@ -378,12 +374,5 @@ impl DatabaseManager {
             return Err(DatabaseCreateError::InvalidName { name: name.to_string() });
         }
         Ok(())
-    }
-
-    fn wal_metrics(diagnostics_manager: &DiagnosticsManager, name: &str) -> FsyncMetrics {
-        if Self::is_internal_database(name) || !diagnostics_manager.metrics_enabled() {
-            return FsyncMetrics::noop();
-        }
-        diagnostics_manager.wal_metrics(name)
     }
 }

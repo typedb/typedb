@@ -101,6 +101,9 @@ impl DiagnosticsManager {
     }
 
     pub fn wal_metrics(&self, database_name: impl AsRef<str> + Hash) -> crate::metrics::FsyncMetrics {
+        if !self.metrics_enabled() || is_internal_database(database_name.as_ref()) {
+            return crate::metrics::FsyncMetrics::noop();
+        }
         self.diagnostics.wal_metrics(database_name)
     }
 
@@ -118,9 +121,12 @@ impl DiagnosticsManager {
 }
 
 pub fn is_diagnostics_needed(database_name: Option<impl AsRef<str> + Hash>) -> bool {
-    // TODO: Would be good to reuse DatabaseManager's is_user_database() instead
     match database_name {
-        Some(database_name) => !database_name.as_ref().starts_with(INTERNAL_DATABASE_PREFIX),
+        Some(database_name) => !is_internal_database(database_name.as_ref()),
         None => true,
     }
+}
+
+fn is_internal_database(database_name: &str) -> bool {
+    database_name.starts_with(INTERNAL_DATABASE_PREFIX)
 }

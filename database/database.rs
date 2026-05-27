@@ -24,7 +24,10 @@ use concept::{
     },
 };
 use concurrency::IntervalRunner;
-use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, FsyncMetrics, SchemaLoadMetrics};
+use diagnostics::{
+    diagnostics_manager::DiagnosticsManager,
+    metrics::{DataLoadMetrics, DatabaseMetrics, FsyncMetrics, SchemaLoadMetrics},
+};
 use durability::{
     DurabilitySequenceNumber, DurabilityServiceError,
     wal::{WAL, WALError},
@@ -250,11 +253,15 @@ impl<D: DurabilityClient> Database<D> {
 }
 
 impl Database<WALClient> {
-    pub fn open(path: &Path, wal_metrics: FsyncMetrics) -> Result<Database<WALClient>, DatabaseOpenError> {
+    pub fn open(
+        path: &Path,
+        diagnostics_manager: &DiagnosticsManager,
+    ) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::InvalidUnicodeName;
 
         let file_name = path.file_name().unwrap();
         let name = file_name.to_str().ok_or_else(|| InvalidUnicodeName { name: file_name.to_owned() })?;
+        let wal_metrics = diagnostics_manager.wal_metrics(name);
 
         if path.exists() { Self::load(path, name, wal_metrics) } else { Self::create(path, name, wal_metrics) }
     }

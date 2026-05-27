@@ -4,8 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::sync::Arc;
+
 use database::{Database, database_manager::DatabaseManager};
-use diagnostics::metrics::FsyncMetrics;
+use diagnostics::diagnostics_manager::DiagnosticsManager;
 use storage::durability_client::WALClient;
 use test_utils::{create_tmp_dir, create_tmp_storage_dir, init_logging};
 
@@ -13,7 +15,8 @@ use test_utils::{create_tmp_dir, create_tmp_storage_dir, init_logging};
 fn create_delete_database() {
     init_logging();
     let database_path = create_tmp_storage_dir();
-    let db_result = Database::<WALClient>::open(&database_path.join("create_delete"), FsyncMetrics::noop());
+    let diagnostics_manager = Arc::new(DiagnosticsManager::new_disabled());
+    let db_result = Database::<WALClient>::open(&database_path.join("create_delete"), &diagnostics_manager);
     assert!(db_result.is_ok(), "{:?}", db_result.unwrap_err());
     let db = db_result.unwrap();
     let delete_result = db.delete();
