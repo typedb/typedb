@@ -322,11 +322,8 @@ impl DatabaseManager {
     }
 
     fn new_public_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(
-            &self.data_directory.join(name),
-            Self::wal_metrics(&self.diagnostics_manager, name),
-        )
-        .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
+        Database::<WALClient>::open(&self.data_directory.join(name), Self::wal_metrics(&self.diagnostics_manager, name))
+            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 
     fn new_imported_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {

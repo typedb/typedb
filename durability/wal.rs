@@ -757,10 +757,9 @@ mod test {
     use std::sync::Arc;
 
     use assert as assert_true;
+    use diagnostics::metrics::FsyncMetrics;
     use itertools::Itertools;
     use tempdir::TempDir;
-
-    use diagnostics::metrics::FsyncMetrics;
 
     use super::{MAX_WAL_FILE_SIZE, WAL};
     use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, RawRecord};
