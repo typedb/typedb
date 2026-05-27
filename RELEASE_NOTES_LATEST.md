@@ -6,10 +6,26 @@
 
 ```docker pull typedb/typedb:3.11.5```
 
--## Breaking changes
-This release breaks backwards compatibility.
-This version is only compatible with TypeDB driver versions >= 3.11.0.
-Connections from older drivers will be rejected.
+
+## Breaking changes ⚠️
+
+1) Driver-Server compatibility:
+We have updated the wire protocol version in TypeDB 3.11 in preparation of TypeDB cluster GA.
+- Connections from drivers older than 3.11.0 will be rejected by a server running 3.11.0 or newer. 
+- Connections from drivers running 3.11.0 or newer will be rejected by server versions older than  3.11.0. 
+
+2) TypeDB Driver entry point
+TypeDB drivers version 3.11.x will use the following format to open a driver:
+
+```python
+TypeDB.driver(TypeDB.DEFAULT_ADDRESS, Credentials("admin", "password"), DriverOptions(DriverTlsConfig.disabled()))
+
+# old version: TypeDB.driver(TypeDB.DEFAULT_ADDRESS, Credentials("admin", "password"), DriverOptions())
+```
+
+3) Disk compatibility
+**Once you upgrade to 3.11.x, you cannot downgrade your server with the same database**. We've made some backwards-compatible changes to TypeDB's storage. You can upgrade freely, but once the new data format is written, older versions will not understand your databases anymore. It's a good time to take a backup copy of your databases or use typedb export if you think you may want to downgrade
+
 
 ## New Features
 - **Print TypeDB Studio link and Console command on server startup**
