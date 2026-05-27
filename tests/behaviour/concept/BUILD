@@ -32,6 +32,7 @@ rust_test(
     ],
     crate_features = ["bazel"],
     size = "enormous",
+    tags = ["manual"],
 )
 
 rustfmt_test(
