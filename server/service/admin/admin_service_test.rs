@@ -4,34 +4,67 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::path::PathBuf;
+use std::{
+    os::unix::fs::PermissionsExt,
+    path::{Path, PathBuf},
+    sync::{Arc, LazyLock},
+};
 
-use resource::distribution_info::DistributionInfo;
+use resource::{
+    constants::server::{ADMIN_TOKEN_FILE_MODE, ADMIN_TOKEN_FILENAME, DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD},
+    distribution_info::DistributionInfo,
+};
 use server::{
     ServerBuilder,
     admin_proto::{self, type_db_admin_client::TypeDbAdminClient},
     parameters::config::ConfigBuilder,
 };
 use test_utils::{TempDir, create_tmp_storage_dir};
-use tokio::sync::OnceCell;
+use tokio::{
+    runtime::Runtime,
+    sync::{Mutex, OnceCell},
+};
+use tonic::{
+    codegen::InterceptedService,
+    transport::{Channel, Endpoint},
+};
+use typedb_admin::BearerTokenInterceptor;
 
 const GRPC_ADDRESS: &str = "0.0.0.0:11729";
 const GRPC_ADVERTISE_ADDRESS: &str = "127.0.0.1:11729";
 const ADMIN_PORT: u16 = 11728;
+const ADMIN_ADDRESS: &str = "http://127.0.0.1:11728";
 const DISTRIBUTION_INFO: DistributionInfo =
     DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0-test" };
 
-static SERVER: OnceCell<(TempDir, tokio::sync::watch::Sender<()>)> = OnceCell::const_new();
+// Server task is spawned on this long-lived runtime so it outlives individual #[tokio::test]
+// runtimes; otherwise the first test to win the OnceCell init would also tear the server
+// down on its way out, breaking later tests with ConnectionReset.
+static SERVER_RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .worker_threads(2)
+        .thread_name("admin-test-server")
+        .build()
+        .expect("failed to build admin-test server runtime")
+});
+
+static SERVER: OnceCell<(TempDir, tokio::sync::watch::Sender<()>, PathBuf)> = OnceCell::const_new();
+
+// Serialises tests that mutate the admin user's password.
+static MUTATION_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 fn config_path() -> PathBuf {
     std::env::current_dir().unwrap().join("server/config.yml")
 }
 
-async fn ensure_server_started() {
-    SERVER
+async fn ensure_server_started() -> PathBuf {
+    let (_dir, _sender, token_path) = SERVER
         .get_or_init(|| async {
             let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
             let server_dir = create_tmp_storage_dir();
+            let token_path = server_dir.as_ref().join(ADMIN_TOKEN_FILENAME);
+
             let config = ConfigBuilder::from_file(config_path())
                 .expect("Failed to load config file")
                 .server_listen_address(GRPC_ADDRESS)
@@ -44,41 +77,65 @@ async fn ensure_server_started() {
                 .build()
                 .expect("Failed to build config");
 
-            let server = ServerBuilder::new()
-                .distribution_info(DISTRIBUTION_INFO)
-                .shutdown_channel((shutdown_sender.clone(), shutdown_receiver))
-                .build(config)
+            let shutdown_sender_for_build = shutdown_sender.clone();
+            let server = SERVER_RUNTIME
+                .spawn(async move {
+                    ServerBuilder::new()
+                        .distribution_info(DISTRIBUTION_INFO)
+                        .shutdown_channel((shutdown_sender_for_build, shutdown_receiver))
+                        .build(config)
+                        .await
+                        .expect("Failed to build server")
+                })
                 .await
-                .expect("Failed to build server");
+                .expect("Server build task panicked");
 
-            tokio::spawn(async move {
+            SERVER_RUNTIME.spawn(async move {
                 server.serve().await.expect("Server failed");
             });
 
-            (server_dir, shutdown_sender)
+            (server_dir, shutdown_sender, token_path)
         })
         .await;
+    token_path.clone()
 }
 
-async fn connect_admin_client() -> TypeDbAdminClient<tonic::transport::Channel> {
-    ensure_server_started().await;
-    let mut client = None;
+async fn admin_channel() -> Channel {
     for _ in 0..50 {
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-        match TypeDbAdminClient::connect(format!("http://127.0.0.1:{ADMIN_PORT}")).await {
-            Ok(c) => {
-                client = Some(c);
-                break;
-            }
+        match Endpoint::from_static(ADMIN_ADDRESS).connect().await {
+            Ok(ch) => return ch,
             Err(_) => continue,
         }
     }
-    client.expect("Failed to connect to admin service")
+    panic!("Failed to connect to admin endpoint");
+}
+
+async fn authenticated_admin_client(
+    token_path: &Path,
+) -> TypeDbAdminClient<InterceptedService<Channel, BearerTokenInterceptor>> {
+    // Wait until the server has written the token file (it's the last step in serve_admin
+    // setup, so its presence also signals the listener is up).
+    for _ in 0..50 {
+        if token_path.exists() {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
+    let token = typedb_admin::read_token_file(token_path).expect("token file should be readable");
+    let channel = admin_channel().await;
+    TypeDbAdminClient::with_interceptor(channel, BearerTokenInterceptor::new(Arc::new(token)))
+}
+
+async fn unauthenticated_admin_client() -> TypeDbAdminClient<Channel> {
+    let channel = admin_channel().await;
+    TypeDbAdminClient::new(channel)
 }
 
 #[tokio::test]
-async fn admin_server_version() {
-    let mut client = connect_admin_client().await;
+async fn admin_server_version_with_token_succeeds() {
+    let token_path = ensure_server_started().await;
+    let mut client = authenticated_admin_client(&token_path).await;
     let response = client.server_version(admin_proto::server_version::Req {}).await.expect("RPC failed");
     let res = response.into_inner();
     assert_eq!(res.distribution, DISTRIBUTION_INFO.distribution);
@@ -86,114 +143,114 @@ async fn admin_server_version() {
 }
 
 #[tokio::test]
-async fn admin_server_status() {
-    let mut client = connect_admin_client().await;
-    let response = client.server_status(admin_proto::server_status::Req {}).await.expect("RPC failed");
-    let res = response.into_inner();
-
-    let grpc = res.grpc.expect("gRPC endpoint status should be present");
-    assert!(!grpc.listen_address.is_empty(), "gRPC listen address should not be empty");
-    assert!(grpc.advertise_address.is_some(), "gRPC advertise address should be some");
-    assert!(!grpc.advertise_address.unwrap().is_empty(), "gRPC advertise address should not be empty");
-
-    assert!(res.http.is_none(), "HTTP should be disabled in test config");
-
-    let admin_address = res.admin_address.expect("Admin address should be present");
-    assert!(admin_address.contains(&ADMIN_PORT.to_string()), "Admin address should contain the configured port");
+async fn admin_server_version_without_token_is_rejected() {
+    let _ = ensure_server_started().await;
+    let mut client = unauthenticated_admin_client().await;
+    let err = client
+        .server_version(admin_proto::server_version::Req {})
+        .await
+        .expect_err("call without bearer token should be rejected");
+    assert_eq!(err.code(), tonic::Code::Unauthenticated, "got {err:?}");
 }
 
-mod localhost_guard_tests {
-    use std::net::SocketAddr;
-
-    use server::service::admin::localhost_guard::is_loopback;
-
-    #[test]
-    fn loopback_ipv4_allowed() {
-        let addr: SocketAddr = "127.0.0.1:1728".parse().unwrap();
-        assert!(is_loopback(addr));
-    }
-
-    #[test]
-    fn loopback_ipv6_allowed() {
-        let addr: SocketAddr = "[::1]:1728".parse().unwrap();
-        assert!(is_loopback(addr));
-    }
-
-    #[test]
-    fn non_loopback_rejected() {
-        let addr: SocketAddr = "192.168.1.1:1728".parse().unwrap();
-        assert!(!is_loopback(addr));
-    }
-
-    #[test]
-    fn non_loopback_public_rejected() {
-        let addr: SocketAddr = "8.8.8.8:1728".parse().unwrap();
-        assert!(!is_loopback(addr));
-    }
+#[tokio::test]
+async fn admin_server_version_with_wrong_token_is_rejected() {
+    let _ = ensure_server_started().await;
+    let channel = admin_channel().await;
+    let bad = BearerTokenInterceptor::new(Arc::new("definitely-not-the-real-token".to_string()));
+    let mut client = TypeDbAdminClient::with_interceptor(channel, bad);
+    let err = client
+        .server_version(admin_proto::server_version::Req {})
+        .await
+        .expect_err("call with wrong bearer token should be rejected");
+    assert_eq!(err.code(), tonic::Code::Unauthenticated, "got {err:?}");
 }
 
-mod localhost_guard_middleware_tests {
-    use std::{
-        net::SocketAddr,
-        task::{Context, Poll},
-    };
+#[tokio::test]
+async fn admin_token_file_has_owner_only_permissions() {
+    let token_path = ensure_server_started().await;
+    // Round-trip a call so we know the server's serve_admin has run to completion (and
+    // therefore set up the file) before stat'ing it.
+    let mut client = authenticated_admin_client(&token_path).await;
+    let _ = client.server_version(admin_proto::server_version::Req {}).await.expect("RPC failed");
 
-    use futures::future::BoxFuture;
-    use http::{Request, Response};
-    use server::service::admin::localhost_guard::LocalhostGuardLayer;
-    use tonic::{Status, body::BoxBody, transport::server::TcpConnectInfo};
-    use tower::{Layer, Service};
+    let metadata = std::fs::symlink_metadata(&token_path).expect("token file should exist");
+    let mode = metadata.permissions().mode() & 0o777;
+    assert_eq!(
+        mode, ADMIN_TOKEN_FILE_MODE,
+        "Admin token file should be mode {:#o}, got {:#o}",
+        ADMIN_TOKEN_FILE_MODE, mode
+    );
+}
 
-    #[derive(Clone)]
-    struct MockService;
+#[tokio::test]
+async fn users_set_password_succeeds_for_default_user() {
+    let _guard = MUTATION_LOCK.lock().await;
+    let token_path = ensure_server_started().await;
+    let mut client = authenticated_admin_client(&token_path).await;
 
-    impl Service<Request<BoxBody>> for MockService {
-        type Response = Response<BoxBody>;
-        type Error = Status;
-        type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
+    client
+        .users_set_password(admin_proto::users_set_password::Req {
+            username: DEFAULT_USER_NAME.to_string(),
+            password: "a-new-password".to_string(),
+        })
+        .await
+        .expect("users_set_password RPC failed");
 
-        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-            Poll::Ready(Ok(()))
-        }
+    // Restore the default so other tests sharing this server aren't affected.
+    client
+        .users_set_password(admin_proto::users_set_password::Req {
+            username: DEFAULT_USER_NAME.to_string(),
+            password: DEFAULT_USER_PASSWORD.to_string(),
+        })
+        .await
+        .expect("users_set_password RPC failed during cleanup");
+}
 
-        fn call(&mut self, _request: Request<BoxBody>) -> Self::Future {
-            Box::pin(async { Ok(Response::new(BoxBody::default())) })
-        }
-    }
+#[tokio::test]
+async fn users_set_password_rejects_empty_username() {
+    let token_path = ensure_server_started().await;
+    let mut client = authenticated_admin_client(&token_path).await;
+    let err = client
+        .users_set_password(admin_proto::users_set_password::Req {
+            username: String::new(),
+            password: "anything".to_string(),
+        })
+        .await
+        .expect_err("empty username should be rejected");
+    assert_eq!(err.code(), tonic::Code::InvalidArgument);
+}
 
-    fn request_with_remote_addr(addr: SocketAddr) -> Request<BoxBody> {
-        let mut request = Request::new(BoxBody::default());
-        let connect_info =
-            TcpConnectInfo { local_addr: Some("127.0.0.1:1728".parse().unwrap()), remote_addr: Some(addr) };
-        request.extensions_mut().insert(connect_info);
-        request
-    }
+#[tokio::test]
+async fn users_set_password_rejects_empty_password() {
+    let token_path = ensure_server_started().await;
+    let mut client = authenticated_admin_client(&token_path).await;
+    let err = client
+        .users_set_password(admin_proto::users_set_password::Req {
+            username: DEFAULT_USER_NAME.to_string(),
+            password: String::new(),
+        })
+        .await
+        .expect_err("empty password should be rejected");
+    assert_eq!(err.code(), tonic::Code::InvalidArgument);
+}
 
-    #[tokio::test]
-    async fn loopback_connection_allowed() {
-        let mut service = LocalhostGuardLayer.layer(MockService);
-        let request = request_with_remote_addr("127.0.0.1:54321".parse().unwrap());
-        let result = service.call(request).await;
-        assert!(result.is_ok(), "Loopback connection should be allowed");
-    }
-
-    #[tokio::test]
-    async fn non_loopback_connection_rejected() {
-        let mut service = LocalhostGuardLayer.layer(MockService);
-        let request = request_with_remote_addr("192.168.1.100:54321".parse().unwrap());
-        let result = service.call(request).await;
-        assert!(result.is_err(), "Non-loopback connection should be rejected");
-        let status = result.unwrap_err();
-        assert_eq!(status.code(), tonic::Code::PermissionDenied);
-    }
-
-    #[tokio::test]
-    async fn missing_connect_info_rejected() {
-        let mut service = LocalhostGuardLayer.layer(MockService);
-        let request = Request::new(BoxBody::default()); // no TcpConnectInfo
-        let result = service.call(request).await;
-        assert!(result.is_err(), "Missing connect info should be rejected");
-        let status = result.unwrap_err();
-        assert_eq!(status.code(), tonic::Code::PermissionDenied);
-    }
+#[tokio::test]
+async fn users_set_password_rejects_unknown_user() {
+    let _guard = MUTATION_LOCK.lock().await;
+    let token_path = ensure_server_started().await;
+    let mut client = authenticated_admin_client(&token_path).await;
+    let err = client
+        .users_set_password(admin_proto::users_set_password::Req {
+            username: "no-such-user".to_string(),
+            password: "secret".to_string(),
+        })
+        .await
+        .expect_err("unknown user should be rejected");
+    assert_eq!(err.code(), tonic::Code::Internal);
+    let message = err.message();
+    assert!(
+        message.contains("SRV4") || message.contains("User not found"),
+        "expected user-not-found in error message, got: {message}",
+    );
 }

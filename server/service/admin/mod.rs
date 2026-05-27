@@ -5,6 +5,7 @@
  */
 
 pub mod admin_service;
+pub mod bearer_token;
 pub mod localhost_guard;
 
 pub use admin_service::AdminService;

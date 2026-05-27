@@ -9,7 +9,12 @@ pub mod server_operator;
 pub mod transaction_operator;
 pub mod user_operator;
 
-use std::{collections::HashSet, net::SocketAddr, path::PathBuf, sync::Arc};
+use std::{
+    collections::HashSet,
+    net::SocketAddr,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use concurrency::{IntervalRunner, TokioTaskSpawner};
 use database::database_manager::DatabaseManager;
@@ -34,11 +39,21 @@ use crate::{
 
 pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
 
+struct ResolvedEndpoints {
+    grpc_listen_address: SocketAddr,
+    http_listen_address: Option<SocketAddr>,
+    admin_listen_address: Option<SocketAddr>,
+    admin_token_path: Option<PathBuf>,
+    server_status: LocalServerStatus,
+}
+
 #[derive(Debug)]
 pub struct ServerState {
     distribution_info: DistributionInfo,
     grpc_listen_address: SocketAddr,
     http_listen_address: Option<SocketAddr>,
+    admin_listen_address: Option<SocketAddr>,
+    admin_token_path: Option<PathBuf>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
@@ -88,12 +103,20 @@ impl ServerState {
             DATABASE_METRICS_UPDATE_INTERVAL,
         );
 
-        let (grpc_listen_address, http_listen_address, server_status) = Self::resolve_endpoints(&config.server).await?;
+        let ResolvedEndpoints {
+            grpc_listen_address,
+            http_listen_address,
+            admin_listen_address,
+            admin_token_path,
+            server_status,
+        } = Self::resolve_endpoints(&config).await?;
 
         Ok(ServerStateBuilder {
             distribution_info,
             grpc_listen_address,
             http_listen_address,
+            admin_listen_address,
+            admin_token_path,
             server_status,
             database_manager,
             token_manager,
@@ -118,6 +141,14 @@ impl ServerState {
 
     pub fn http_listen_address(&self) -> Option<SocketAddr> {
         self.http_listen_address
+    }
+
+    pub fn admin_listen_address(&self) -> Option<SocketAddr> {
+        self.admin_listen_address
+    }
+
+    pub fn admin_token_path(&self) -> Option<&Path> {
+        self.admin_token_path.as_deref()
     }
 
     pub fn servers(&self) -> &dyn ServerOperator {
@@ -219,21 +250,22 @@ impl ServerState {
             .ok_or_else(|| ServerOpenError::AddressResolutionEmpty { address: address.to_string() })
     }
 
-    async fn resolve_endpoints(
-        config: &crate::parameters::config::ServerConfig,
-    ) -> Result<(SocketAddr, Option<SocketAddr>, LocalServerStatus), ServerOpenError> {
-        let grpc_listen_address = Self::resolve_address(&config.listen_address).await?;
-        let grpc_advertise_address = config.advertise_address.clone();
+    async fn resolve_endpoints(config: &crate::parameters::config::Config) -> Result<ResolvedEndpoints, ServerOpenError> {
+        let server = &config.server;
+        let grpc_listen_address = Self::resolve_address(&server.listen_address).await?;
+        let grpc_advertise_address = server.advertise_address.clone();
 
         let http_listen_address =
-            if config.http.enabled { Some(Self::resolve_address(&config.http.listen_address).await?) } else { None };
-        let http_advertise_address = config.http.advertise_address.clone();
+            if server.http.enabled { Some(Self::resolve_address(&server.http.listen_address).await?) } else { None };
+        let http_advertise_address = server.http.advertise_address.clone();
 
-        let admin_address = if config.admin.enabled {
-            Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, config.admin.port)))
+        let admin_listen_address = if server.admin.enabled {
+            Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, server.admin.port)))
         } else {
             None
         };
+        let admin_token_path =
+            server.admin.enabled.then(|| server.admin.resolve_token_path(&config.storage.data_directory));
 
         let mut reserved = HashSet::from([grpc_listen_address]);
         if let Some(address) = http_listen_address {
@@ -241,7 +273,7 @@ impl ServerState {
                 return Err(ServerOpenError::HttpConflictingAddress { address });
             }
         }
-        if let Some(address) = admin_address {
+        if let Some(address) = admin_listen_address {
             if !reserved.insert(address) {
                 return Err(ServerOpenError::AdminConflictingAddress { address });
             }
@@ -249,11 +281,17 @@ impl ServerState {
 
         let server_status = LocalServerStatus::new(
             PublicEndpointAddress::from_socket_addr(grpc_listen_address, grpc_advertise_address),
-            http_listen_address.map(|listen| PublicEndpointAddress::from_socket_addr(listen, http_advertise_address)),
-            admin_address.map(PrivateEndpointAddress::from_socket_addr),
+            http_listen_address.map(|listen| PublicEndpointAddress::from_socket_addr(listen, http_advertise_address.clone())),
+            admin_listen_address.map(PrivateEndpointAddress::from_socket_addr),
         );
 
-        Ok((grpc_listen_address, http_listen_address, server_status))
+        Ok(ResolvedEndpoints {
+            grpc_listen_address,
+            http_listen_address,
+            admin_listen_address,
+            admin_token_path,
+            server_status,
+        })
     }
 }
 
@@ -261,6 +299,8 @@ pub struct ServerStateBuilder {
     distribution_info: DistributionInfo,
     grpc_listen_address: SocketAddr,
     http_listen_address: Option<SocketAddr>,
+    admin_listen_address: Option<SocketAddr>,
+    admin_token_path: Option<PathBuf>,
     server_status: LocalServerStatus,
     database_manager: Arc<DatabaseManager>,
     token_manager: Arc<TokenManager>,
@@ -336,6 +376,8 @@ impl ServerStateBuilder {
             distribution_info: self.distribution_info,
             grpc_listen_address: self.grpc_listen_address,
             http_listen_address: self.http_listen_address,
+            admin_listen_address: self.admin_listen_address,
+            admin_token_path: self.admin_token_path,
             diagnostics_manager: self.diagnostics_manager,
             shutdown_receiver: self.shutdown_receiver,
             background_task_spawner: self.background_task_spawner,

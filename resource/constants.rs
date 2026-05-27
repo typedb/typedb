@@ -71,6 +71,9 @@ pub mod server {
 
     pub const ADMIN_DEFAULT_PORT: u16 = 1728;
     pub const ADMIN_DEFAULT_ADDRESS: &str = "127.0.0.1:1728";
+    pub const ADMIN_TOKEN_FILENAME: &str = "admin.token";
+    pub const ADMIN_TOKEN_FILE_MODE: u32 = 0o600;
+    pub const ADMIN_TOKEN_BYTES: usize = 32;
     pub const MONITORING_DEFAULT_PORT: u16 = 4104;
 
     pub const SERVER_ID_FILE_NAME: &str = concat!(system_file_prefix!(), "server_id");

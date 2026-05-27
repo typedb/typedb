@@ -16,6 +16,15 @@ typedb_error! {
         InvalidArgument(4, "Invalid argument '{name}': {reason}", name: String, reason: String),
         UnknownCommand(5, "Unknown command: '{input}'. Type 'help' for available commands.", input: String),
         ScriptReadFailed(6, "Failed to read script '{path}'.", path: String, source: Arc<std::io::Error>),
+        TokenFileUnreadable(7, "Could not read admin token file '{path}'.", path: String, source: Arc<std::io::Error>),
+        TokenFileEmpty(8, "Admin token file '{path}' is empty.", path: String),
+        TokenFilePermissionsTooWide(
+            9,
+            "Admin token file '{path}' has mode {mode:#o}; which exposes too wide permissions and a security danger. Run `chmod 600 '{path}'` or restart the server.",
+            path: String,
+            mode: u32,
+        ),
+        TokenFileNotRegular(10, "Admin token file '{path}' is not a regular file (symlinks, fifos and directories are refused).", path: String),
     }
 }
 

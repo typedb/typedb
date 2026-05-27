@@ -40,6 +40,15 @@ pub trait UserOperator: Debug + Send + Sync {
         credential_update: Option<Credential>,
     ) -> Result<(), ArcServerStateError>;
 
+    /// Force-set a user's credential without going through the gRPC permission check.
+    ///
+    /// Only reachable through the localhost admin endpoint guarded by the bearer-token
+    /// interceptor; trust on that channel is anchored in filesystem access to the token
+    /// file. The implementation invalidates the user's existing tokens and closes their
+    /// open transactions so that previously issued sessions cannot continue under the
+    /// old credential.
+    async fn set_credential(&self, username: &str, credential: Credential) -> Result<(), ArcServerStateError>;
+
     async fn delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError>;
 
     async fn verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError>;
@@ -176,6 +185,28 @@ impl UserOperator for LocalUserOperator {
 
         self.token_manager.invalidate_user(username).await;
         self.transaction_operator.close_by_owner(username).await;
+        Ok(())
+    }
+
+    async fn set_credential(&self, username: &str, credential: Credential) -> Result<(), ArcServerStateError> {
+        let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
+        // The underlying user_repository::update runs a TypeQL match-delete-insert that
+        // silently no-ops when the user doesn't exist. Check first so the admin tool
+        // can't accidentally claim to have set a credential for a user that isn't there.
+        let exists = user_manager
+            .contains(username)
+            .map_err(|typedb_source| arc_server_state_err(LocalServerStateError::UserCannotBeRetrieved { typedb_source }))?;
+        if !exists {
+            return Err(arc_server_state_err(LocalServerStateError::UserNotFound {}));
+        }
+
+        user_manager.update(username, &None, &Some(credential)).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::UserCannotBeUpdated { typedb_source })
+        })?;
+
+        self.token_manager.invalidate_user(username).await;
+        self.transaction_operator.close_by_owner(username).await;
+        tracing::info!("admin: password force-set for user '{username}' via local admin endpoint");
         Ok(())
     }
 

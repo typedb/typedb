@@ -180,8 +180,8 @@ pub mod user_repository {
 
     typedb_error! {
         pub SystemDBError(component = "System database", prefix = "SDB") {
-            EmptyUpdate(1, "There is nothing to update"),
-            IllegalQueryInput(2, "The specified input contains one or more illegal character(s)"),
+            EmptyUpdate(1, "There is nothing to update."),
+            IllegalQueryInput(2, "The specified input contains one or more illegal character(s)."),
             QueryFailed(3, "System database query could not be executed. The system database may not be fully initialised yet."),
         }
     }

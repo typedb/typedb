@@ -94,11 +94,25 @@ impl Default for EncryptionConfig {
 pub struct AdminConfig {
     pub enabled: bool,
     pub port: u16,
+    /// Absolute filesystem path for the admin bearer-token file.
+    /// `None` resolves at server start to `<data-directory>/admin.token`.
+    /// The file is recreated with mode 0600 on every startup; the typedb
+    /// admin tool reads it to authenticate against the admin gRPC service.
+    #[serde(default)]
+    pub token_path: Option<PathBuf>,
 }
 
 impl Default for AdminConfig {
     fn default() -> Self {
-        Self { enabled: true, port: ADMIN_DEFAULT_PORT }
+        Self { enabled: true, port: ADMIN_DEFAULT_PORT, token_path: None }
+    }
+}
+
+impl AdminConfig {
+    pub fn resolve_token_path(&self, data_directory: &Path) -> PathBuf {
+        self.token_path
+            .clone()
+            .unwrap_or_else(|| data_directory.join(resource::constants::server::ADMIN_TOKEN_FILENAME))
     }
 }
 
@@ -256,6 +270,7 @@ impl ConfigBuilder {
             server_http_advertise_address,
             server_admin_enabled,
             server_admin_port,
+            server_admin_token_path,
             server_authentication_token_expiration_seconds,
             server_encryption_enabled,
             server_encryption_certificate,
@@ -276,6 +291,7 @@ impl ConfigBuilder {
             config.server.http.listen_address => server_http_listen_address;
             config.server.admin.enabled => server_admin_enabled;
             config.server.admin.port => server_admin_port;
+            config.server.admin.token_path => server_admin_token_path.map(|p| Some(CLIArgs::resolve_path_from_pwd(Path::new(&p))));
             config.server.authentication.token_expiration => server_authentication_token_expiration_seconds.map(|secs| Duration::new(secs, 0));
 
             config.server.encryption.enabled => server_encryption_enabled;
@@ -361,6 +377,11 @@ impl ConfigBuilder {
 
     pub fn admin_port(mut self, port: u16) -> Self {
         self.config.server.admin.port = port;
+        self
+    }
+
+    pub fn admin_token_path(mut self, path: impl Into<PathBuf>) -> Self {
+        self.config.server.admin.token_path = Some(path.into());
         self
     }
 

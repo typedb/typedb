@@ -10,8 +10,8 @@
 use std::{
     fs,
     future::Future,
-    net::{Ipv4Addr, SocketAddr},
-    path::Path,
+    net::SocketAddr,
+    path::{Path, PathBuf},
     pin::Pin,
     sync::Arc,
 };
@@ -37,7 +37,10 @@ use tracing::info;
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig, ServerConfig, StorageConfig},
-    service::{admin::localhost_guard::LocalhostGuardLayer, grpc, http},
+    service::{
+        admin::{bearer_token, bearer_token::BearerTokenInterceptor, localhost_guard::LocalhostGuardLayer},
+        grpc, http,
+    },
     state::{BoxServerStatus, ServerState},
 };
 
@@ -315,11 +318,11 @@ impl Server {
             servers.push(Box::pin(http_server));
         }
 
-        if server_config.admin.enabled {
-            let admin_server = admin_serve_override.unwrap_or_else(|| {
-                let address = SocketAddr::from((Ipv4Addr::LOCALHOST, server_config.admin.port));
-                Self::serve_admin(address, server_state.clone(), shutdown_receiver.clone())
-            });
+        if let (Some(address), Some(token_path)) =
+            (server_state.admin_listen_address(), server_state.admin_token_path().map(Path::to_path_buf))
+        {
+            let admin_server = admin_serve_override
+                .unwrap_or_else(|| Self::serve_admin(address, token_path, server_state.clone(), shutdown_receiver.clone()));
             servers.push(Box::pin(admin_server));
         }
 
@@ -405,14 +408,25 @@ impl Server {
 
     fn serve_admin(
         address: SocketAddr,
+        token_path: PathBuf,
         server_state: Arc<ServerState>,
         mut shutdown_receiver: Receiver<()>,
     ) -> AdminServeFuture {
         let admin_service = service::admin::AdminService::new(server_state);
         Box::pin(async move {
+            // Trust anchor for this endpoint is filesystem access to the token file. The
+            // localhost-only TCP bind is defense-in-depth: any process on the box still
+            // can't talk to the admin service without the token, even if the bind is
+            // ever misconfigured to non-loopback.
+            let token = bearer_token::generate_and_write_token(&token_path).map_err(|source| {
+                ServerOpenError::AdminTokenWrite { path: token_path.to_string_lossy().into_owned(), source: Arc::new(source) }
+            })?;
+            info!("Admin bearer token written to {} (mode {:#o})", token_path.display(), resource::constants::server::ADMIN_TOKEN_FILE_MODE);
+            let interceptor = BearerTokenInterceptor::new(Arc::new(token));
+            let intercepted = admin_proto::type_db_admin_server::TypeDbAdminServer::with_interceptor(admin_service, interceptor);
             tonic::transport::Server::builder()
                 .layer(LocalhostGuardLayer)
-                .add_service(admin_proto::type_db_admin_server::TypeDbAdminServer::new(admin_service))
+                .add_service(intercepted)
                 .serve_with_shutdown(address, async {
                     // The tonic server starts a shutdown process when this closure execution finishes
                     shutdown_receiver.changed().await.expect("Expected shutdown receiver signal");

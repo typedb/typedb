@@ -53,6 +53,13 @@ pub struct CLIArgs {
     #[arg(long = "server.admin.port")]
     pub server_admin_port: Option<u16>,
 
+    /// Filesystem path for the admin bearer-token file. Defaults to
+    /// `<data-directory>/admin.token`. Recreated on every server start with mode 0600 so
+    /// only the server's owner can read it; the typedb-admin tool reads this file to
+    /// authenticate against the localhost admin endpoint.
+    #[arg(long = "server.admin.token-path", value_name = "FILE")]
+    pub server_admin_token_path: Option<String>,
+
     /// The amount of seconds generated authentication tokens will remain valid, specified in seconds.
     /// Use smaller values for better security and bigger values for better authentication performance and convenience
     /// (min: 1 second, max: 1 year)

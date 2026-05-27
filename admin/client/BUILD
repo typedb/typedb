@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 package(default_visibility = ["//visibility:public"])
@@ -25,6 +25,12 @@ rust_library(
         "@crates//:tonic",
         "@typeql//rust:typeql",
     ],
+)
+
+rust_test(
+    name = "test_crate_client",
+    crate = ":client",
+    deps = [],
 )
 
 checkstyle_test(
