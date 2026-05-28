@@ -16,6 +16,11 @@ use crate::{
     },
 };
 
+enum RedirectOutcome {
+    Misdirected(String),
+    Unavailable,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ErrorResponse {
@@ -35,6 +40,17 @@ pub struct MisdirectedResponse {
 
 impl IntoResponse for HttpServiceError {
     fn into_response(self) -> Response {
+        if let Some(outcome) = find_redirect_outcome(&self) {
+            return match outcome {
+                RedirectOutcome::Misdirected(primary_address) => (
+                    StatusCode::MISDIRECTED_REQUEST,
+                    JsonBody(MisdirectedResponse { error: encode_error(self), primary_address }),
+                )
+                    .into_response(),
+                RedirectOutcome::Unavailable => StatusCode::SERVICE_UNAVAILABLE.into_response(),
+            };
+        }
+
         let code = match &self {
             HttpServiceError::Internal { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             HttpServiceError::JsonBodyExpected { .. } => StatusCode::BAD_REQUEST,
@@ -49,16 +65,8 @@ impl IntoResponse for HttpServiceError {
                 ErrorResponseCategory::Forbidden => StatusCode::FORBIDDEN,
                 ErrorResponseCategory::NotImplemented => StatusCode::NOT_IMPLEMENTED,
                 ErrorResponseCategory::Unavailable => StatusCode::SERVICE_UNAVAILABLE,
-                ErrorResponseCategory::Redirect { http_address, .. } => match http_address {
-                    Some(primary_address) => {
-                        return (
-                            StatusCode::MISDIRECTED_REQUEST,
-                            JsonBody(MisdirectedResponse { error: encode_error(self), primary_address }),
-                        )
-                            .into_response();
-                    }
-                    None => StatusCode::SERVICE_UNAVAILABLE,
-                },
+                // Redirect is handled by `find_redirect_state` above.
+                ErrorResponseCategory::Redirect { .. } => StatusCode::SERVICE_UNAVAILABLE,
                 ErrorResponseCategory::InvalidRequest => StatusCode::BAD_REQUEST,
                 ErrorResponseCategory::Internal => StatusCode::INTERNAL_SERVER_ERROR,
             },
@@ -90,6 +98,14 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::QueryCommit { .. } => StatusCode::BAD_REQUEST,
         };
         (code, JsonBody(encode_error(self))).into_response()
+    }
+}
+
+fn find_redirect_outcome(error: &HttpServiceError) -> Option<RedirectOutcome> {
+    match error.to_service_error()?.error_response_category() {
+        ErrorResponseCategory::Redirect { http_address: Some(addr), .. } => Some(RedirectOutcome::Misdirected(addr)),
+        ErrorResponseCategory::Redirect { .. } => Some(RedirectOutcome::Unavailable),
+        _ => None,
     }
 }
 
