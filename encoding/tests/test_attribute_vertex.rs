@@ -469,3 +469,122 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
         snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
     }
 }
+
+#[test]
+fn sync_from_storage_lifts_counters_to_match_storage() {
+    init_logging();
+    let storage_path = create_tmp_storage_dir();
+    let type_id = TypeID::new(0);
+
+    let stale_generator = {
+        let wal = WAL::create(&storage_path).unwrap();
+        let storage = Arc::new(
+            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
+                .unwrap(),
+        );
+        let mut snapshot = storage.clone().open_snapshot_write();
+        let type_generator = TypeVertexGenerator::new();
+        type_generator.create_entity_type(&mut snapshot).unwrap();
+        type_generator.create_relation_type(&mut snapshot).unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+        let primary_generator = ThingVertexGenerator::load(storage.clone()).unwrap();
+        let mut snapshot = storage.clone().open_snapshot_write();
+        for _ in 0..8 {
+            primary_generator.create_entity(type_id, &mut snapshot);
+        }
+        for _ in 0..4 {
+            primary_generator.create_relation(type_id, &mut snapshot);
+        }
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+        let stale_generator = ThingVertexGenerator::new();
+        stale_generator.sync_from_storage(storage.clone()).unwrap();
+
+        let mut snapshot = storage.clone().open_snapshot_write();
+        for _ in 0..2 {
+            primary_generator.create_entity(type_id, &mut snapshot);
+        }
+        for _ in 0..2 {
+            primary_generator.create_relation(type_id, &mut snapshot);
+        }
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+        stale_generator
+    };
+
+    let wal = WAL::load(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
+            .unwrap(),
+    );
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let stale_entity = stale_generator.create_entity(type_id, &mut snapshot);
+    assert_eq!(stale_entity.object_id().as_u64(), 8, "stale generator must refer to the partially counted set");
+    let stale_relation = stale_generator.create_relation(type_id, &mut snapshot);
+    assert_eq!(stale_relation.object_id().as_u64(), 4, "stale generator must refer to the partially counted sete");
+    drop(snapshot);
+
+    stale_generator.sync_from_storage(storage.clone()).unwrap();
+    let stale_generator_2 = ThingVertexGenerator::new();
+    stale_generator_2.sync_from_storage(storage.clone()).unwrap();
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let next_entity = stale_generator.create_entity(type_id, &mut snapshot);
+    assert_eq!(next_entity.object_id().as_u64(), 10, "next entity must skip past the 10 already in storage");
+    let next_relation = stale_generator.create_relation(type_id, &mut snapshot);
+    assert_eq!(next_relation.object_id().as_u64(), 6, "next relation must skip past the 6 already in storage");
+
+    let next_entity = stale_generator_2.create_entity(type_id, &mut snapshot);
+    assert_eq!(
+        next_entity.object_id().as_u64(),
+        10,
+        "next entity must skip past the 10 already in storage for generator 2"
+    );
+    let next_relation = stale_generator_2.create_relation(type_id, &mut snapshot);
+    assert_eq!(
+        next_relation.object_id().as_u64(),
+        6,
+        "next relation must skip past the 6 already in storage for generator 2"
+    );
+}
+
+#[test]
+fn sync_from_storage_never_lowers_a_counter() {
+    init_logging();
+    let storage_path = create_tmp_storage_dir();
+    let type_id = TypeID::new(0);
+
+    let wal = WAL::create(&storage_path).unwrap();
+    let storage = Arc::new(
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+    );
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let type_generator = TypeVertexGenerator::new();
+    type_generator.create_entity_type(&mut snapshot).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+    let generator = ThingVertexGenerator::load(storage.clone()).unwrap();
+    // Commit 3 entities so storage has IIDs 0, 1, 2.
+    let mut snapshot = storage.clone().open_snapshot_write();
+    for _ in 0..3 {
+        generator.create_entity(type_id, &mut snapshot);
+    }
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
+
+    // Allocate another 5 in memory without committing — counter goes to 8.
+    let mut snapshot = storage.clone().open_snapshot_write();
+    for _ in 0..5 {
+        generator.create_entity(type_id, &mut snapshot);
+    }
+    // Don't commit. The 5 extra IIDs are in-memory only; storage still holds 3.
+    drop(snapshot);
+
+    // Re-seed from storage — would set counter to 3 if it was broken
+    generator.sync_from_storage(storage.clone()).unwrap();
+
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let next = generator.create_entity(type_id, &mut snapshot);
+    assert_eq!(next.object_id().as_u64(), 8, "counter must not be rolled back to storage's max");
+}

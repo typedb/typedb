@@ -41,6 +41,7 @@ struct Cli {
 #[derive(ValueEnum, Clone, Copy, PartialEq, Eq)]
 enum RecordKind {
     CommitRecord,
+    LegacyCommitRecordV1,
     CommitStatus,
     Statistics,
 }
@@ -77,7 +78,7 @@ fn main() {
         }
         match record.record_type {
             LegacyCommitRecordV1::RECORD_TYPE
-                if cli.kind.is_empty() || cli.kind.contains(&RecordKind::CommitRecord) =>
+                if cli.kind.is_empty() || cli.kind.contains(&RecordKind::LegacyCommitRecordV1) =>
             {
                 _ = target_wal.sequenced_write::<LegacyCommitRecordV1>(&deserialise_record(&record.bytes)).unwrap()
             }

@@ -81,6 +81,16 @@ impl ThingVertexGenerator {
         storage: Arc<MVCCStorage<D>>,
         large_value_hasher: fn(&[u8]) -> u64,
     ) -> Result<Self, EncodingError> {
+        let generator = ThingVertexGenerator {
+            entity_ids: Self::allocate_empty_ids(),
+            relation_ids: Self::allocate_empty_ids(),
+            large_value_hasher,
+        };
+        generator.sync_from_storage(storage)?;
+        Ok(generator)
+    }
+
+    pub fn sync_from_storage<D>(&self, storage: Arc<MVCCStorage<D>>) -> Result<(), EncodingError> {
         let read_snapshot = storage.clone().open_snapshot_read();
         let entity_types = read_snapshot
             .iterate_range(
@@ -103,8 +113,6 @@ impl ThingVertexGenerator {
             .collect_cloned_vec(|k, _v| TypeVertex::decode(Bytes::Reference(k.bytes())).type_id_().as_u16())
             .map_err(|err| EncodingError::ExistingTypesRead { source: err })?;
 
-        let entity_ids = Self::allocate_empty_ids();
-        let relation_ids = Self::allocate_empty_ids();
         for type_id in entity_types {
             let mut max_object_id =
                 ObjectVertex::build_entity(TypeID::new(type_id), ObjectID::new(u64::MAX)).to_bytes().into_array();
@@ -117,7 +125,8 @@ impl ThingVertexGenerator {
                 if ObjectVertex::is_entity_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);
                     if object_vertex.type_id_() == TypeID::new(type_id) {
-                        entity_ids[type_id as usize].store(object_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+                        self.entity_ids[type_id as usize]
+                            .fetch_max(object_vertex.object_id().as_u64() + 1, Ordering::SeqCst);
                     }
                 }
             }
@@ -134,13 +143,13 @@ impl ThingVertexGenerator {
                 if ObjectVertex::is_relation_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);
                     if object_vertex.type_id_() == TypeID::new(type_id) {
-                        relation_ids[type_id as usize].store(object_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+                        self.relation_ids[type_id as usize]
+                            .fetch_max(object_vertex.object_id().as_u64() + 1, Ordering::SeqCst);
                     }
                 }
             }
         }
-
-        Ok(ThingVertexGenerator { entity_ids, relation_ids, large_value_hasher })
+        Ok(())
     }
 
     fn allocate_empty_ids() -> Box<[AtomicU64]> {
