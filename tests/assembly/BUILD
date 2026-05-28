@@ -24,6 +24,16 @@ rust_test(
 )
 
 rust_test(
+    name = "test_admin_assembly",
+    srcs = ["admin.rs"],
+    deps = [
+        "@crates//:tokio",
+    ],
+    data = ["//:assemble-typedb-all"],
+    env = env,
+)
+
+rust_test(
     name = "test_fail_points",
     srcs = ["fail_points.rs"],
     deps = [
@@ -41,6 +51,7 @@ rustfmt_test(
     name = "rustfmt_test",
     targets = [
         ":test_assembly",
+        ":test_admin_assembly",
     ],
     size = "small",
 )

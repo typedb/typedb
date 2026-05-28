@@ -91,7 +91,7 @@ commands:
           echo 'skipped'
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel build --config=ci --jobs=8 //:assemble-typedb-all --compilation_mode=opt
-          bazel test --config=ci //tests/assembly:test_assembly --test_output=errors
+          bazel test --config=ci //tests/assembly:test_assembly //tests/assembly:test_admin_assembly --test_output=errors
 
   test-admin-service-unix:
     steps:
