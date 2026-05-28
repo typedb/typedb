@@ -80,6 +80,18 @@ rust_test(
     ]
 )
 
+rust_test(
+    name = "test_diagnostics_posthog_pii",
+    srcs = glob([
+        "diagnostics_posthog_pii.rs",
+    ]),
+    deps = [
+        "//diagnostics",
+
+        "@crates//:serde_json",
+    ]
+)
+
 rustfmt_test(
     name = "rustfmt_test",
     targets = [
@@ -87,6 +99,7 @@ rustfmt_test(
         ":test_transaction",
         ":test_statistics_synchronization",
         ":test_transaction_isolation",
+        ":test_diagnostics_posthog_pii",
     ],
     size = "small",
 )
