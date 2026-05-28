@@ -16,7 +16,7 @@ use serde::{Serialize, Serializer, ser::SerializeStruct};
 use serde_json::{Map, Value, to_value};
 
 use crate::{
-    DatabaseId,
+    DatabaseHash, DatabaseId,
     metrics::{ActionKind, ClientEndpoint, LoadKind},
 };
 
@@ -49,45 +49,12 @@ where
     serializer.serialize_str(&format_datetime(*datetime))
 }
 
-/// Hash-only view onto a database identity, used as the Posthog wire-format
-/// type. `Serialize` emits `{"database": "<hash>"}` and only that — no name
-/// field — so the PII discipline is upheld at the type level: any Posthog
-/// payload that embeds a database identifier goes through `DatabaseReport`,
-/// and `DatabaseReport` cannot serialize the name even if its `Arc<DatabaseId>`
-/// carries one.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct DatabaseReport(pub Arc<DatabaseId>);
 
-impl PartialEq for DatabaseReport {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.hash_value() == other.0.hash_value()
-    }
-}
-
-impl Eq for DatabaseReport {}
-
-impl Hash for DatabaseReport {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.hash_value().hash(state);
-    }
-}
-
-impl Serialize for DatabaseReport {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // Hash-only on the wire: this serializer is reached by the Posthog
-        // payload path; PII discipline is preserved by construction.
-        let mut state = serializer.serialize_struct("DatabaseReport", 1)?;
-        state.serialize_field("database", &format!("{:.0}", self.0.hash_value()))?;
-        state.end()
-    }
-}
-
-impl fmt::Display for DatabaseReport {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:.0}", self.0.hash_value())
+impl From<Arc<DatabaseId>> for DatabaseReport {
+    fn from(id: Arc<DatabaseId>) -> Self {
+        DatabaseReport(id)
     }
 }
 
@@ -133,15 +100,15 @@ pub(crate) struct ProcessReport {
 
 #[derive(Debug)]
 pub(crate) struct LoadReport {
-    pub database: Arc<DatabaseId>,
+    pub database: DatabaseReport,
     pub schema: Option<SchemaLoadReport>,
     pub data: Option<DataLoadReport>,
     pub connection: Option<ConnectionLoadReport>,
 }
 
 impl LoadReport {
-    pub fn new(database_id: Arc<DatabaseId>) -> Self {
-        Self { database: database_id, schema: None, data: None, connection: None }
+    pub fn new(database_report: impl Into<DatabaseReport>) -> Self {
+        Self { database: database_report.into(), schema: None, data: None, connection: None }
     }
 }
 

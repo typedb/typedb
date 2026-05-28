@@ -47,13 +47,10 @@ macro_rules! error_with_report {
 type DatabaseHash = u64;
 type DatabaseHashOpt = Option<u64>;
 
-/// Carries both the human name (for the local Prometheus `database` label) and
-/// the xxh3 hash (the only identifier Posthog ever sees). PII discipline is
-/// enforced at the type: `DatabaseReport` serializes only the hash.
 #[derive(Debug, Clone, Eq)]
 pub(crate) struct DatabaseId {
     name: Arc<str>,
-    hash: u64,
+    hash: DatabaseHash,
 }
 
 impl DatabaseId {
@@ -65,7 +62,7 @@ impl DatabaseId {
         &self.name
     }
 
-    pub(crate) fn hash_value(&self) -> u64 {
+    pub(crate) fn hash_value(&self) -> DatabaseHash {
         self.hash
     }
 }

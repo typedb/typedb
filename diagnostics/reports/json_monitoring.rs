@@ -13,16 +13,15 @@ use crate::{
     DatabaseId, Diagnostics,
     metrics::{ALL_CLIENT_ENDPOINTS, ActionKind, HistogramSnapshot, HistogramUnit, LoadKind, QueryType},
     reports::{
-        ActionReport, DataLoadReport, ErrorReport, LoadReport, OsReport, ProcessReport, SchemaLoadReport,
-        ServerPropertiesReport, ServerReport, ServerReportSensitivePart, serialize_timestamp,
+        ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport, ProcessReport,
+        SchemaLoadReport, ServerPropertiesReport, ServerReport, ServerReportSensitivePart, serialize_timestamp,
     },
 };
 
 /// Name + hash wrapper for the JSON monitoring exposition. Serializes as
-/// `{"database": "<name>", "databaseId": "<hash>"}` via `flatten`; the
-/// equivalent Prometheus emitter reads the fields directly.
+/// `{"database": "<name>", "databaseId": "<hash>"}
 #[derive(Debug, Clone)]
-pub(crate) struct MonitoringDatabaseId(pub Arc<DatabaseId>);
+pub(crate) struct MonitoringDatabaseId(Arc<DatabaseId>);
 
 impl MonitoringDatabaseId {
     pub fn name(&self) -> &str {
@@ -31,6 +30,15 @@ impl MonitoringDatabaseId {
 
     pub fn hash_value(&self) -> u64 {
         self.0.hash_value()
+    }
+}
+
+impl<T> From<T> for MonitoringDatabaseId
+where
+    T: Into<DatabaseReport>,
+{
+    fn from(id: T) -> Self {
+        Self(id.into().0)
     }
 }
 
@@ -245,7 +253,7 @@ impl From<LoadReport> for JsonMonitoringLoadReport {
             )
         });
         Self {
-            database: MonitoringDatabaseId(value.database),
+            database: value.database.into(),
             schema: value.schema.map(|schema| schema.into()),
             data: value.data.map(|data| data.into()),
             active_transactions,

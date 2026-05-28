@@ -14,7 +14,7 @@ use serde::Serialize;
 use serde_json::{Map, Value, json};
 
 use crate::{
-    DatabaseHashOpt, DatabaseId, Diagnostics,
+    DatabaseHash, DatabaseHashOpt, DatabaseId, Diagnostics,
     metrics::{ALL_CLIENT_ENDPOINTS, ActionKind, ClientEndpoint},
     reports::{
         ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport, SchemaLoadReport,
@@ -133,6 +133,21 @@ impl From<LoadReport> for PosthogLoadReport {
         }
 
         Self { schema: value.schema.map(|schema| schema.into()), data: value.data.map(|data| data.into()), connection }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+struct PosthogDatabaseReport {
+    database_hash: DatabaseHash,
+}
+
+impl<T> From<T> for PosthogDatabaseReport
+where
+    T: Into<DatabaseReport>,
+{
+    fn from(value: T) -> Self {
+        Self { database_hash: value.into().0.hash_value() }
     }
 }
 
@@ -368,9 +383,7 @@ impl PosthogPayloadBuilder {
         if !self.usage_reports.contains_key(&database_hash) {
             let mut usage = if let Some(database_id) = database_id {
                 let mut database_usage = PosthogReportBuilder::database_usage();
-                // DatabaseReport's Serialize impl emits hash-only; the carried
-                // Arc<DatabaseId> never has its name field reach the wire.
-                database_usage.flat_properties.extend(DatabaseReport(database_id).to_json_map());
+                database_usage.flat_properties.extend(PosthogDatabaseReport::from(database_id).to_json_map());
                 database_usage.flat_properties.extend(self.server_metrics_minimal.clone());
                 database_usage
             } else {
