@@ -175,6 +175,11 @@ features = {}
 			features = []
 			default-features = false
 
+		[workspace.dependencies.rpassword]
+			features = []
+			version = "7.5.3"
+			default-features = false
+
 		[workspace.dependencies.rand]
 			features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
 			version = "0.8.6"

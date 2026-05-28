@@ -6,9 +6,9 @@
 
 //! Unix domain socket transport for the admin endpoint.
 //!
-//! Trust anchor: the socket file's mode bits, enforced by the kernel via the standard
-//! `inode_permission` check on `connect(2)`. The server binds the socket as 0600 owned
-//! by the typedb service account, so only that account (and root) can dial it.
+//! Trust anchor: the socket file's mode bits, kernel-enforced via the standard
+//! `inode_permission` check on `connect(2)`. The server binds the socket as `0600`
+//! owned by the typedb service account.
 
 use std::{
     fs, io,
@@ -17,27 +17,23 @@ use std::{
     sync::Arc,
 };
 
-use resource::constants::server::ADMIN_SOCKET_FILE_MODE;
+use resource::constants::server::{ADMIN_SOCKET_FILE_MODE, ADMIN_SOCKET_FILE_NON_OWNER_BITS};
 use tokio::net::UnixListener;
 use tokio_stream::wrappers::UnixListenerStream;
 use tracing::{info, warn};
 
 use crate::error::ServerOpenError;
 
-/// Endpoint address on Unix — a filesystem path to the socket file.
 pub type AdminPath = PathBuf;
 
-/// Server-side listener wrapping the bound socket.
+pub type AdminConnection = tokio::net::UnixStream;
+
 pub struct AdminListener {
     inner: UnixListener,
     path: PathBuf,
 }
 
-/// A connected client — what tonic sees as an inbound connection.
-pub type AdminConnection = tokio::net::UnixStream;
-
 impl AdminListener {
-    /// Convert into a [`Stream`] of inbound connections for `serve_with_incoming`.
     pub fn into_incoming(self) -> UnixListenerStream {
         UnixListenerStream::new(self.inner)
     }
@@ -47,19 +43,6 @@ impl AdminListener {
     }
 }
 
-/// Bind the admin Unix domain socket with restrictive permissions.
-///
-/// The cleanup-then-umask-bind-chmod sequence is load-bearing:
-///
-/// 1. If the path already exists as a socket from a previous run, unlink it — `bind(2)`
-///    would otherwise fail with EADDRINUSE.
-/// 2. If the path exists but is *not* a socket (regular file, symlink, etc.), refuse:
-///    overwriting an arbitrary file could be a foothold for a malicious local process.
-/// 3. Set umask 0o077 so `bind(2)` creates the socket with at-most owner-only
-///    permissions *atomically*. Restore umask. Without this, there's a window where
-///    `bind` has run but `chmod` hasn't, and the socket exists with whatever umask
-///    permitted (0755 on a default system, 0777 with umask 0).
-/// 4. `chmod 0600` as belt-and-braces: normalises the mode regardless of the umask.
 pub fn bind_admin_endpoint(path: &Path) -> Result<AdminListener, ServerOpenError> {
     if let Some(parent) = path.parent() {
         if !parent.exists() {
@@ -91,8 +74,12 @@ pub fn bind_admin_endpoint(path: &Path) -> Result<AdminListener, ServerOpenError
         }
     }
 
+    // Bracket the bind with a restrictive umask so the socket file is created with
+    // owner-only mode atomically. Otherwise there's a brief window where the socket
+    // exists with whatever the operator's umask happens to permit. The subsequent
+    // `set_permissions` is belt-and-braces.
     let listener = {
-        let _restrictive_umask = ScopedUmask::new(0o077);
+        let _restrictive_umask = ScopedUmask::new(ADMIN_SOCKET_FILE_NON_OWNER_BITS);
         UnixListener::bind(path)
     }
     .map_err(|source| ServerOpenError::AdminSocketBind {
@@ -108,10 +95,7 @@ pub fn bind_admin_endpoint(path: &Path) -> Result<AdminListener, ServerOpenError
     Ok(AdminListener { inner: listener, path: path.to_path_buf() })
 }
 
-/// Best-effort socket file removal on shutdown.
-///
-/// Failures are only logged — on a hard crash this never runs anyway, and the
-/// stale-socket cleanup at bind time is the durable mechanism.
+// Best-effort: unlinks the UDS file on Unix, no-op on Windows (it has auto cleanups)
 pub fn cleanup_admin_endpoint(path: &Path) {
     if let Err(err) = fs::remove_file(path) {
         if err.kind() != io::ErrorKind::NotFound {
@@ -120,23 +104,16 @@ pub fn cleanup_admin_endpoint(path: &Path) {
     }
 }
 
-/// Set the process file-creation umask and return the previous value.
 fn set_process_umask(mask: u32) -> u32 {
-    // SAFETY: `umask(2)` is a trivial libc function with no pointer arguments and no UB.
-    // It always succeeds and returns the previous umask.
+    // SAFETY: `umask(2)` has no pointer args and no UB. It always succeeds
     unsafe extern "C" {
         fn umask(mask: u32) -> u32;
     }
     unsafe { umask(mask) }
 }
 
-/// RAII guard that sets the process umask on construction and restores it on drop.
-///
-/// Used to bracket a single `bind(2)` call so the socket file is created atomically
-/// with owner-only permissions. The bracketed region must be as short as possible —
-/// umask is a per-process global, and other threads creating files during the window
-/// inherit the guard's mask. For our usage that window is microseconds and any side
-/// effect can only narrow permissions, never widen them.
+/// RAII guard around the per-process umask. Kept around exactly one syscall so other
+/// threads' file creations during the window inherit the (stricter) mask harmlessly.
 struct ScopedUmask {
     previous: u32,
 }

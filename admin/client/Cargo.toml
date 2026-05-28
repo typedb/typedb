@@ -40,6 +40,9 @@ dev-dependencies = {}
 	[dependencies.error]
 		workspace = true
 
+	[dependencies.rpassword]
+		workspace = true
+
 	[dependencies.tower]
 		workspace = true
 

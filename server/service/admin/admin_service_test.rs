@@ -8,7 +8,7 @@
 use std::os::unix::fs::PermissionsExt;
 use std::{
     path::{Path, PathBuf},
-    sync::{Arc, LazyLock},
+    sync::LazyLock,
 };
 
 #[cfg(unix)]
@@ -34,11 +34,6 @@ const GRPC_ADVERTISE_ADDRESS: &str = "127.0.0.1:11729";
 const DISTRIBUTION_INFO: DistributionInfo =
     DistributionInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0-test" };
 
-/// Platform-specific admin endpoint identifier for the test server.
-///
-/// On Unix we land the socket inside a per-process temp directory so multiple test
-/// suites (or repeated `bazel test` runs) don't fight over the same path. On Windows
-/// the pipe name includes the process ID for the same reason.
 #[cfg(unix)]
 fn test_admin_endpoint(server_dir: &Path) -> String {
     server_dir.join("test-admin.sock").to_string_lossy().into_owned()
@@ -49,28 +44,19 @@ fn test_admin_endpoint(_server_dir: &Path) -> String {
     format!(r"\\.\pipe\typedb-admin-test-{}", std::process::id())
 }
 
-/// A *wrong* endpoint that the server is not bound to. Used to verify that a
-/// misconfigured client cannot connect — the negative side of the "wrong config
-/// must not connect" test the CI exercises across all supported OSes.
 #[cfg(unix)]
 fn wrong_admin_endpoint() -> String {
     let mut p = std::env::temp_dir();
     p.push(format!("typedb-admin-wrong-{}.sock", std::process::id()));
-    // Ensure it doesn't exist — connecting must fail with ENOENT, not succeed.
     let _ = std::fs::remove_file(&p);
     p.to_string_lossy().into_owned()
 }
 
 #[cfg(windows)]
 fn wrong_admin_endpoint() -> String {
-    // A pipe name the server never binds. CreateFile against this returns
-    // ERROR_FILE_NOT_FOUND, surfaced as ConnectionFailed by the client.
     format!(r"\\.\pipe\typedb-admin-wrong-{}", std::process::id())
 }
 
-// Server task is spawned on this long-lived runtime so it outlives individual #[tokio::test]
-// runtimes; otherwise the first test to win the OnceCell init would also tear the server
-// down on its way out, breaking later tests with ConnectionReset.
 static SERVER_RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -95,6 +81,9 @@ async fn ensure_server_started() -> String {
             let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
             let server_dir = create_tmp_storage_dir();
             let endpoint = test_admin_endpoint(server_dir.as_ref());
+
+            #[cfg(unix)]
+            pre_create_stale_socket(&endpoint);
 
             let config = ConfigBuilder::from_file(config_path())
                 .expect("Failed to load config file")
@@ -129,6 +118,17 @@ async fn ensure_server_started() -> String {
         })
         .await;
     endpoint.clone()
+}
+
+// Simulate a previous-run crash leaving a stale socket file at the
+// path the server is about to bind. The server's bind logic must unlink the stale
+// socket and bind successfully, otherwise restarts after a crash would be stuck
+#[cfg(unix)]
+fn pre_create_stale_socket(endpoint: &str) {
+    use std::os::unix::net::UnixListener;
+    let _ = std::fs::remove_file(endpoint);
+    let stale = UnixListener::bind(endpoint).expect("pre-create stale socket");
+    drop(stale);
 }
 
 async fn admin_channel(endpoint: &str) -> Channel {
@@ -172,10 +172,8 @@ async fn admin_server_status_reports_endpoint() {
     assert_eq!(reported, endpoint, "Admin status should report the configured endpoint");
 }
 
-/// Unix-only assertion: the bound socket file has the documented mode bits.
-/// On Windows the corresponding check would inspect the named-pipe DACL, which
-/// requires the Win32 GetSecurityInfo APIs that we deliberately did not pull in for the
-/// production path; we leave that as a manual / integration concern on Windows.
+// Unix-only: the bound socket file has the documented mode bits. Windows uses a DACL
+// whose verification would need GetSecurityInfo and is left as a manual concern
 #[cfg(unix)]
 #[tokio::test]
 async fn admin_socket_file_has_owner_only_permissions() {
@@ -192,6 +190,8 @@ async fn admin_socket_file_has_owner_only_permissions() {
     );
 }
 
+// Implicit positive control. If the server fails to recover from the stale-socket
+// pre-create in `pre_create_stale_socket`, this test fails to connect
 #[tokio::test]
 async fn correct_endpoint_connects_and_admins_successfully() {
     let endpoint = ensure_server_started().await;
@@ -203,8 +203,6 @@ async fn correct_endpoint_connects_and_admins_successfully() {
 
 #[tokio::test]
 async fn wrong_endpoint_does_not_connect() {
-    // Make sure the real server is up — otherwise this test might fail for the wrong
-    // reason (server not running) instead of the right one (wrong endpoint).
     let _real = ensure_server_started().await;
 
     let bad = wrong_admin_endpoint();
@@ -214,34 +212,34 @@ async fn wrong_endpoint_does_not_connect() {
 }
 
 #[tokio::test]
-async fn users_set_password_succeeds_for_default_user() {
+async fn users_reset_password_succeeds_for_default_user() {
     let _guard = MUTATION_LOCK.lock().await;
     let endpoint = ensure_server_started().await;
     let mut client = TypeDbAdminClient::new(admin_channel(&endpoint).await);
 
     client
-        .users_set_password(admin_proto::users_set_password::Req {
+        .users_reset_password(admin_proto::users_reset_password::Req {
             username: DEFAULT_USER_NAME.to_string(),
             password: "a-new-password".to_string(),
         })
         .await
-        .expect("users_set_password RPC failed");
+        .expect("users_reset_password RPC failed");
 
     client
-        .users_set_password(admin_proto::users_set_password::Req {
+        .users_reset_password(admin_proto::users_reset_password::Req {
             username: DEFAULT_USER_NAME.to_string(),
             password: DEFAULT_USER_PASSWORD.to_string(),
         })
         .await
-        .expect("users_set_password RPC failed during cleanup");
+        .expect("users_reset_password RPC failed during cleanup");
 }
 
 #[tokio::test]
-async fn users_set_password_rejects_empty_username() {
+async fn users_reset_password_rejects_empty_username() {
     let endpoint = ensure_server_started().await;
     let mut client = TypeDbAdminClient::new(admin_channel(&endpoint).await);
     let err = client
-        .users_set_password(admin_proto::users_set_password::Req {
+        .users_reset_password(admin_proto::users_reset_password::Req {
             username: String::new(),
             password: "anything".to_string(),
         })
@@ -251,11 +249,11 @@ async fn users_set_password_rejects_empty_username() {
 }
 
 #[tokio::test]
-async fn users_set_password_rejects_empty_password() {
+async fn users_reset_password_rejects_empty_password() {
     let endpoint = ensure_server_started().await;
     let mut client = TypeDbAdminClient::new(admin_channel(&endpoint).await);
     let err = client
-        .users_set_password(admin_proto::users_set_password::Req {
+        .users_reset_password(admin_proto::users_reset_password::Req {
             username: DEFAULT_USER_NAME.to_string(),
             password: String::new(),
         })
@@ -265,12 +263,12 @@ async fn users_set_password_rejects_empty_password() {
 }
 
 #[tokio::test]
-async fn users_set_password_rejects_unknown_user() {
+async fn users_reset_password_rejects_unknown_user() {
     let _guard = MUTATION_LOCK.lock().await;
     let endpoint = ensure_server_started().await;
     let mut client = TypeDbAdminClient::new(admin_channel(&endpoint).await);
     let err = client
-        .users_set_password(admin_proto::users_set_password::Req {
+        .users_reset_password(admin_proto::users_reset_password::Req {
             username: "no-such-user".to_string(),
             password: "secret".to_string(),
         })
@@ -282,10 +280,4 @@ async fn users_set_password_rejects_unknown_user() {
         message.contains("SRV4") || message.contains("User not found"),
         "expected user-not-found in error message, got: {message}",
     );
-}
-
-// Suppress unused-import lint on platforms that don't activate the relevant code paths.
-#[cfg(any())]
-fn _suppress_unused() {
-    let _ = Arc::new(());
 }

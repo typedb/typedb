@@ -40,13 +40,7 @@ pub trait UserOperator: Debug + Send + Sync {
         credential_update: Option<Credential>,
     ) -> Result<(), ArcServerStateError>;
 
-    /// Force-set a user's credential without going through the gRPC permission check.
-    ///
-    /// This is only reachable through the localhost admin Unix domain socket; trust on
-    /// that channel is anchored in filesystem access to the socket file. The implementation
-    /// must still invalidate the user's tokens and close their open transactions so that
-    /// previously issued sessions cannot continue under the old credential.
-    async fn set_credential(&self, username: &str, credential: Credential) -> Result<(), ArcServerStateError>;
+    async fn reset_credential(&self, username: &str, credential: Credential) -> Result<(), ArcServerStateError>;
 
     async fn delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError>;
 
@@ -187,11 +181,9 @@ impl UserOperator for LocalUserOperator {
         Ok(())
     }
 
-    async fn set_credential(&self, username: &str, credential: Credential) -> Result<(), ArcServerStateError> {
+    async fn reset_credential(&self, username: &str, credential: Credential) -> Result<(), ArcServerStateError> {
         let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
-        // The underlying user_repository::update runs a TypeQL match-delete-insert that
-        // silently no-ops when the user doesn't exist. Check first so the admin tool
-        // can't accidentally create the *appearance* of having reset a credential.
+        // user_repository::update silently no-ops when the username doesn't match.
         let exists = user_manager.contains(username).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::UserCannotBeRetrieved { typedb_source })
         })?;
@@ -205,7 +197,7 @@ impl UserOperator for LocalUserOperator {
 
         self.token_manager.invalidate_user(username).await;
         self.transaction_operator.close_by_owner(username).await;
-        tracing::info!("admin: password force-set for user '{username}' via local admin socket");
+        tracing::info!("admin: password reset for user '{username}' via local admin endpoint");
         Ok(())
     }
 

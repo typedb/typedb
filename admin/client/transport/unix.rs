@@ -11,6 +11,7 @@ use std::{
 };
 
 use hyper_util::rt::TokioIo;
+use resource::constants::server::ADMIN_SOCKET_FILE_NON_OWNER_BITS;
 use tokio::net::UnixStream;
 use tonic::transport::{Channel, Endpoint, Uri};
 use tower::service_fn;
@@ -26,7 +27,7 @@ pub(super) fn verify_endpoint(path: &Path) -> Result<(), AdminError> {
         return Err(AdminError::SocketNotASocket { path: path.display().to_string() });
     }
     let mode = metadata.permissions().mode() & 0o777;
-    if mode & 0o077 != 0 {
+    if mode & ADMIN_SOCKET_FILE_NON_OWNER_BITS != 0 {
         return Err(AdminError::SocketPermissionsTooWide { path: path.display().to_string(), mode });
     }
     Ok(())

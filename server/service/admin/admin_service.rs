@@ -60,11 +60,11 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
         Ok(Response::new(admin_proto::server_status::Res { grpc: Some(grpc), http, admin_address }))
     }
 
-    async fn users_set_password(
+    async fn users_reset_password(
         &self,
-        request: Request<admin_proto::users_set_password::Req>,
-    ) -> Result<Response<admin_proto::users_set_password::Res>, Status> {
-        let admin_proto::users_set_password::Req { username, password } = request.into_inner();
+        request: Request<admin_proto::users_reset_password::Req>,
+    ) -> Result<Response<admin_proto::users_reset_password::Res>, Status> {
+        let admin_proto::users_reset_password::Req { username, password } = request.into_inner();
         if username.is_empty() {
             return Err(Status::invalid_argument("Username must not be empty"));
         }
@@ -75,10 +75,10 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
         let credential = Credential::new_password(&password);
         self.server_state
             .users()
-            .set_credential(&username, credential)
+            .reset_credential(&username, credential)
             .await
             .map_err(|err| Status::internal(format!("{err:?}")))?;
 
-        Ok(Response::new(admin_proto::users_set_password::Res {}))
+        Ok(Response::new(admin_proto::users_reset_password::Res {}))
     }
 }

@@ -415,9 +415,6 @@ impl Server {
                 })
                 .await
                 .map_err(|err| ServerOpenError::AdminServe { path: endpoint_for_error, source: Arc::new(err) });
-            // Best-effort cleanup. On Unix this unlinks the socket file; on Windows it's
-            // a no-op because Named Pipes are cleaned up automatically by the kernel when
-            // the server closes its handles.
             transport::cleanup_admin_endpoint(&endpoint_for_cleanup);
             serve_result
         })

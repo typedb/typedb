@@ -27,6 +27,8 @@ use crate::error::AdminError;
 /// interpreted as a path, on Windows as a Named Pipe name (e.g. `\\.\pipe\typedb-admin`).
 pub type AdminEndpoint = Path;
 
+const DEFAULT_PLACEHOLDER_IP: &str = "http://127.0.0.1";
+
 pub async fn connect_channel(endpoint: &AdminEndpoint) -> Result<Channel, AdminError> {
     #[cfg(unix)]
     {
@@ -37,11 +39,9 @@ pub async fn connect_channel(endpoint: &AdminEndpoint) -> Result<Channel, AdminE
         windows::verify_endpoint(endpoint)?;
     }
 
-    // tonic's Endpoint always needs a URI even for non-IP transports; the URI is never
-    // dialed because connect_with_connector overrides the transport with our factory.
-    let placeholder_endpoint = Endpoint::try_from("http://[::]").map_err(|source| AdminError::ConnectionFailed {
-        address: endpoint.display().to_string(),
-        source: Arc::new(source),
+    // tonic requires a URI even for non-IP transports; `connect_with_connector` overrides it
+    let placeholder_endpoint = Endpoint::try_from(DEFAULT_PLACEHOLDER_IP).map_err(|source| {
+        AdminError::ConnectionFailed { address: endpoint.display().to_string(), source: Arc::new(source) }
     })?;
 
     #[cfg(unix)]

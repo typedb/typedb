@@ -13,8 +13,8 @@ use tower::service_fn;
 
 use crate::error::AdminError;
 
-// ERROR_PIPE_BUSY: the named pipe is currently servicing another client. Standard
-// retry-after-WaitNamedPipe pattern applies; we just sleep briefly and retry.
+// Win32 `ERROR_PIPE_BUSY` (231) — all pipe instances are servicing other clients.
+// https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
 const ERROR_PIPE_BUSY: i32 = 231;
 const CONNECT_RETRY_DELAY: Duration = Duration::from_millis(50);
 const MAX_CONNECT_ATTEMPTS: u32 = 20;

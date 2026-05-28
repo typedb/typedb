@@ -8,17 +8,14 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-/// Environment variable consulted when `--socket-path` is not supplied. Lets scripts
-/// avoid hard-coding the per-deployment socket location.
-const SOCKET_PATH_ENV: &str = "TYPEDB_ADMIN_SOCKET";
-
 #[derive(Parser)]
-#[command(name = "typedb-admin", about = "TypeDB administration tool (local Unix socket)")]
+#[command(name = "typedb-admin", about = "TypeDB administration tool (local-only)")]
 struct Args {
-    /// Path to the TypeDB admin Unix domain socket. Defaults to the value of
-    /// $TYPEDB_ADMIN_SOCKET when set.
+    /// Path to the local admin endpoint: a Unix socket file on Unix, a Named Pipe name
+    /// (e.g. \\.\pipe\typedb-admin) on Windows. Must match the configured endpoint on
+    /// the running server.
     #[arg(long)]
-    socket_path: Option<PathBuf>,
+    socket_path: PathBuf,
 
     /// Execute a command and exit (repeatable)
     #[arg(short, long)]
@@ -34,15 +31,7 @@ async fn main() {
     let args = Args::parse();
     let registry = typedb_admin::commands::base_commands();
 
-    let socket_path = match args.socket_path.or_else(|| std::env::var_os(SOCKET_PATH_ENV).map(PathBuf::from)) {
-        Some(path) => path,
-        None => {
-            eprintln!("error: --socket-path is required (or set ${SOCKET_PATH_ENV})");
-            std::process::exit(2);
-        }
-    };
-
-    let mut client = match typedb_admin::connect(&socket_path).await {
+    let mut client = match typedb_admin::connect(&args.socket_path).await {
         Ok(client) => client,
         Err(err) => {
             eprintln!("{err:?}");
@@ -50,7 +39,7 @@ async fn main() {
         }
     };
 
-    let address_display = socket_path.to_string_lossy().into_owned();
+    let address_display = args.socket_path.to_string_lossy().into_owned();
     if let Some(script) = &args.script {
         if !args.command.is_empty() {
             eprintln!("Cannot specify both --command and --script");

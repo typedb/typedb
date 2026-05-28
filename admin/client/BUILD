@@ -21,6 +21,7 @@ rust_library(
         "//server/service/admin/proto:server_admin_proto",
         "@crates//:home",
         "@crates//:rustyline",
+        "@crates//:rpassword",
         "@crates//:hyper-util",
         "@crates//:tokio",
         "@crates//:tonic",

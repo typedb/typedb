@@ -97,7 +97,7 @@ pub struct AdminConfig {
 
 impl Default for AdminConfig {
     fn default() -> Self {
-        Self { enabled: true, socket_path: None }
+        Self { enabled: false, socket_path: None }
     }
 }
 
@@ -114,7 +114,7 @@ impl AdminConfig {
     pub fn resolve_endpoint(&self, _data_directory: &Path) -> crate::service::admin::transport::AdminPath {
         self.socket_path
             .clone()
-            .unwrap_or_else(|| format!(r"\\.\pipe\{}", resource::constants::server::ADMIN_DEFAULT_PIPE_NAME))
+            .unwrap_or_else(|| format!(r"\\.\pipe\{}", resource::constants::server::ADMIN_DEFAULT_WINDOWS_PIPE_NAME))
     }
 }
 

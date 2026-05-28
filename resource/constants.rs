@@ -70,11 +70,9 @@ pub mod server {
     pub const PERF_COUNTERS_ENABLED: bool = true;
 
     pub const ADMIN_DEFAULT_SOCKET_FILENAME: &str = "admin.sock";
+    pub const ADMIN_DEFAULT_WINDOWS_PIPE_NAME: &str = "typedb-admin";
     pub const ADMIN_SOCKET_FILE_MODE: u32 = 0o600;
-    /// Default Windows Named Pipe name (without the `\\.\pipe\` prefix) for the admin
-    /// endpoint. Multiple typedb instances on the same host would clash here — the
-    /// operator can override via `--server.admin.socket-path`.
-    pub const ADMIN_DEFAULT_PIPE_NAME: &str = "typedb-admin";
+    pub const ADMIN_SOCKET_FILE_NON_OWNER_BITS: u32 = 0o777 & !ADMIN_SOCKET_FILE_MODE;
     pub const MONITORING_DEFAULT_PORT: u16 = 4104;
 
     pub const SERVER_ID_FILE_NAME: &str = concat!(system_file_prefix!(), "server_id");
