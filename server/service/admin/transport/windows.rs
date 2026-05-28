@@ -121,36 +121,30 @@ fn create_pipe_instance(name: &str, sd: &SecurityDescriptor, is_first: bool) -> 
 pub struct AdminConnection(NamedPipeServer);
 
 impl AsyncRead for AdminConnection {
-    fn poll_read(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
-        // SAFETY: structural pinning — we never move the inner pipe out
-        let inner = unsafe { self.map_unchecked_mut(|s| &mut s.0) };
-        inner.poll_read(cx, buf)
+    fn poll_read(mut self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.0).poll_read(cx, buf)
     }
 }
 
 impl AsyncWrite for AdminConnection {
-    fn poll_write(self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<io::Result<usize>> {
-        let inner = unsafe { self.map_unchecked_mut(|s| &mut s.0) };
-        inner.poll_write(cx, buf)
+    fn poll_write(mut self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<io::Result<usize>> {
+        Pin::new(&mut self.0).poll_write(cx, buf)
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        let inner = unsafe { self.map_unchecked_mut(|s| &mut s.0) };
-        inner.poll_flush(cx)
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.0).poll_flush(cx)
     }
 
-    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        let inner = unsafe { self.map_unchecked_mut(|s| &mut s.0) };
-        inner.poll_shutdown(cx)
+    fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        Pin::new(&mut self.0).poll_shutdown(cx)
     }
 
     fn poll_write_vectored(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         bufs: &[io::IoSlice<'_>],
     ) -> Poll<io::Result<usize>> {
-        let inner = unsafe { self.map_unchecked_mut(|s| &mut s.0) };
-        inner.poll_write_vectored(cx, bufs)
+        Pin::new(&mut self.0).poll_write_vectored(cx, bufs)
     }
 
     fn is_write_vectored(&self) -> bool {

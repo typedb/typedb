@@ -17,7 +17,7 @@ use std::{
     sync::Arc,
 };
 
-use resource::constants::server::{ADMIN_SOCKET_FILE_MODE, ADMIN_SOCKET_FILE_NON_OWNER_BITS};
+use resource::constants::{common::PERMISSION_BITS_ALL, server::ADMIN_SOCKET_FILE_MODE};
 use tokio::net::UnixListener;
 use tokio_stream::wrappers::UnixListenerStream;
 use tracing::{info, warn};
@@ -79,7 +79,8 @@ pub fn bind_admin_endpoint(path: &Path) -> Result<AdminListener, ServerOpenError
     // exists with whatever the operator's umask happens to permit. The subsequent
     // `set_permissions` is belt-and-braces.
     let listener = {
-        let _restrictive_umask = ScopedUmask::new(ADMIN_SOCKET_FILE_NON_OWNER_BITS);
+        // While the unmask exists, new sockets are created with 0o777 & umask (-> ADMIN_SOCKET_FILE_MODE)
+        let _restrictive_umask = ScopedUmask::new(PERMISSION_BITS_ALL & !ADMIN_SOCKET_FILE_MODE);
         UnixListener::bind(path)
     }
     .map_err(|source| ServerOpenError::AdminSocketBind {

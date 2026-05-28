@@ -12,7 +12,7 @@ use std::{
 };
 
 #[cfg(unix)]
-use resource::constants::server::ADMIN_SOCKET_FILE_MODE;
+use resource::constants::{common::PERMISSION_BITS_ALL, server::ADMIN_SOCKET_FILE_MODE};
 use resource::{
     constants::server::{DEFAULT_USER_NAME, DEFAULT_USER_PASSWORD},
     distribution_info::DistributionInfo,
@@ -182,7 +182,7 @@ async fn admin_socket_file_has_owner_only_permissions() {
     let _ = client.server_version(admin_proto::server_version::Req {}).await.expect("RPC failed");
 
     let metadata = std::fs::symlink_metadata(&endpoint).expect("socket file should exist");
-    let mode = metadata.permissions().mode() & 0o777;
+    let mode = metadata.permissions().mode() & PERMISSION_BITS_ALL;
     assert_eq!(
         mode, ADMIN_SOCKET_FILE_MODE,
         "Admin socket should be mode {:#o}, got {:#o}",

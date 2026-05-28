@@ -26,6 +26,11 @@ pub mod common {
     pub const ERROR_QUERY_POINTER_LINES_AFTER: usize = 2;
 
     pub const STUDIO_URL: &str = "https://studio.typedb.com";
+
+    /// Unix mode-bit patterns
+    pub const PERMISSION_BITS_ALL: u32 = 0o777;
+    pub const PERMISSION_BITS_OWNER_RW: u32 = 0o600;
+    pub const PERMISSION_BITS_NON_OWNER: u32 = 0o077;
 }
 
 pub mod server {
@@ -71,8 +76,7 @@ pub mod server {
 
     pub const ADMIN_DEFAULT_SOCKET_FILENAME: &str = "admin.sock";
     pub const ADMIN_DEFAULT_WINDOWS_PIPE_NAME: &str = "typedb-admin";
-    pub const ADMIN_SOCKET_FILE_MODE: u32 = 0o600;
-    pub const ADMIN_SOCKET_FILE_NON_OWNER_BITS: u32 = 0o777 & !ADMIN_SOCKET_FILE_MODE;
+    pub const ADMIN_SOCKET_FILE_MODE: u32 = super::common::PERMISSION_BITS_OWNER_RW;
     pub const MONITORING_DEFAULT_PORT: u16 = 4104;
 
     pub const SERVER_ID_FILE_NAME: &str = concat!(system_file_prefix!(), "server_id");
