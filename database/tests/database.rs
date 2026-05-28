@@ -27,7 +27,8 @@ fn create_delete_database() {
 fn prepare_for_writes_iterates_every_loaded_database() {
     init_logging();
     let data_dir = create_tmp_dir("prepare_for_writes");
-    let dbm = DatabaseManager::new(&data_dir).expect("DatabaseManager::new");
+    let dbm =
+        DatabaseManager::new(&data_dir, Arc::new(DiagnosticsManager::new_disabled())).expect("DatabaseManager::new");
     for name in ["alpha", "beta", "gamma"] {
         dbm.put_database_unrestricted(name).expect("put_database");
     }
