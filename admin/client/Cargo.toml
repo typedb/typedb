@@ -3,6 +3,7 @@
 # Do not modify this file.
 
 features = {}
+dev-dependencies = {}
 
 [package]
 	name = "typedb-admin"
@@ -16,6 +17,9 @@ features = {}
 [dependencies]
 
 	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.hyper-util]
 		workspace = true
 
 	[dependencies.rustyline]
@@ -33,13 +37,10 @@ features = {}
 	[dependencies.tonic]
 		workspace = true
 
-	[dependencies.tower]
-		workspace = true
-
-	[dependencies.hyper-util]
-		workspace = true
-
 	[dependencies.error]
+		workspace = true
+
+	[dependencies.tower]
 		workspace = true
 
 	[dependencies.home]
