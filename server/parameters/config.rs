@@ -91,11 +91,12 @@ impl Default for EncryptionConfig {
 #[serde(rename_all = "kebab-case")]
 pub struct AdminConfig {
     pub enabled: bool,
-    /// Absolute filesystem path for the admin Unix domain socket.
-    /// `None` resolves at server start to `<data-directory>/admin.sock`,
-    /// so the socket inherits the data directory's access controls.
+    /// Identifier for the admin endpoint. On Unix, this is the filesystem path for the
+    /// admin Unix domain socket (defaulting to `<data-directory>/admin.sock`). On Windows,
+    /// this is the Named Pipe name (defaulting to `\\.\pipe\typedb-admin`). When
+    /// unspecified the server uses the platform-appropriate default.
     #[serde(default)]
-    pub socket_path: Option<PathBuf>,
+    pub socket_path: Option<String>,
 }
 
 impl Default for AdminConfig {
@@ -105,12 +106,25 @@ impl Default for AdminConfig {
 }
 
 impl AdminConfig {
-    /// Resolve the socket path. Falls back to `<data_directory>/admin.sock`
-    /// when no explicit path is configured.
-    pub fn resolve_socket_path(&self, data_directory: &Path) -> PathBuf {
+    /// Resolve the configured endpoint identifier to the platform-native type the
+    /// transport layer consumes.
+    ///
+    /// On Unix this returns a [`PathBuf`] under `<data_directory>` when unspecified. On
+    /// Windows it returns the default Named Pipe name (`data_directory` is not consulted
+    /// — pipes live in their own namespace, not in the filesystem).
+    #[cfg(unix)]
+    pub fn resolve_endpoint(&self, data_directory: &Path) -> crate::service::admin::transport::AdminPath {
+        self.socket_path
+            .as_ref()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| data_directory.join(resource::constants::server::ADMIN_DEFAULT_SOCKET_FILENAME))
+    }
+
+    #[cfg(windows)]
+    pub fn resolve_endpoint(&self, _data_directory: &Path) -> crate::service::admin::transport::AdminPath {
         self.socket_path
             .clone()
-            .unwrap_or_else(|| data_directory.join(resource::constants::server::ADMIN_DEFAULT_SOCKET_FILENAME))
+            .unwrap_or_else(|| format!(r"\\.\pipe\{}", resource::constants::server::ADMIN_DEFAULT_PIPE_NAME))
     }
 }
 
@@ -288,7 +302,7 @@ impl ConfigBuilder {
             config.server.http.enabled => server_http_enabled;
             config.server.http.listen_address => server_http_listen_address;
             config.server.admin.enabled => server_admin_enabled;
-            config.server.admin.socket_path => server_admin_socket_path.map(|p| Some(CLIArgs::resolve_path_from_pwd(Path::new(&p))));
+            config.server.admin.socket_path => server_admin_socket_path.map(Some);
             config.server.authentication.token_expiration => server_authentication_token_expiration_seconds.map(|secs| Duration::new(secs, 0));
 
             config.server.encryption.enabled => server_encryption_enabled;
@@ -372,7 +386,7 @@ impl ConfigBuilder {
         self
     }
 
-    pub fn admin_socket_path(mut self, path: impl Into<PathBuf>) -> Self {
+    pub fn admin_socket_path(mut self, path: impl Into<String>) -> Self {
         self.config.server.admin.socket_path = Some(path.into());
         self
     }

@@ -9,12 +9,7 @@ pub mod server_operator;
 pub mod transaction_operator;
 pub mod user_operator;
 
-use std::{
-    collections::HashSet,
-    net::SocketAddr,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{collections::HashSet, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use concurrency::{IntervalRunner, TokioTaskSpawner};
 use database::database_manager::DatabaseManager;
@@ -34,6 +29,7 @@ use crate::{
     authentication::token_manager::TokenManager,
     error::{ArcServerStateError, ServerOpenError},
     parameters::config::{Config, DiagnosticsConfig},
+    service::admin::transport::AdminPath,
     status::{LocalServerStatus, PrivateEndpointAddress, PublicEndpointAddress, ServerStatus},
 };
 
@@ -42,7 +38,7 @@ pub type BoxServerStatus = Box<dyn ServerStatus + Send + Sync>;
 struct ResolvedEndpoints {
     grpc_listen_address: SocketAddr,
     http_listen_address: Option<SocketAddr>,
-    admin_socket_path: Option<PathBuf>,
+    admin_endpoint: Option<AdminPath>,
     server_status: LocalServerStatus,
 }
 
@@ -51,7 +47,7 @@ pub struct ServerState {
     distribution_info: DistributionInfo,
     grpc_listen_address: SocketAddr,
     http_listen_address: Option<SocketAddr>,
-    admin_socket_path: Option<PathBuf>,
+    admin_endpoint: Option<AdminPath>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     shutdown_receiver: Receiver<()>,
     background_task_spawner: TokioTaskSpawner,
@@ -101,14 +97,14 @@ impl ServerState {
             DATABASE_METRICS_UPDATE_INTERVAL,
         );
 
-        let ResolvedEndpoints { grpc_listen_address, http_listen_address, admin_socket_path, server_status } =
+        let ResolvedEndpoints { grpc_listen_address, http_listen_address, admin_endpoint, server_status } =
             Self::resolve_endpoints(&config).await?;
 
         Ok(ServerStateBuilder {
             distribution_info,
             grpc_listen_address,
             http_listen_address,
-            admin_socket_path,
+            admin_endpoint,
             server_status,
             database_manager,
             token_manager,
@@ -135,8 +131,8 @@ impl ServerState {
         self.http_listen_address
     }
 
-    pub fn admin_socket_path(&self) -> Option<&Path> {
-        self.admin_socket_path.as_deref()
+    pub fn admin_endpoint(&self) -> Option<&AdminPath> {
+        self.admin_endpoint.as_ref()
     }
 
     pub fn servers(&self) -> &dyn ServerOperator {
@@ -252,10 +248,8 @@ impl ServerState {
             if server.http.enabled { Some(Self::resolve_address(&server.http.listen_address).await?) } else { None };
         let http_advertise_address = server.http.advertise_address.clone();
 
-        let admin_socket_path = server
-            .admin
-            .enabled
-            .then(|| server.admin.resolve_socket_path(&config.storage.data_directory));
+        let admin_endpoint =
+            server.admin.enabled.then(|| server.admin.resolve_endpoint(&config.storage.data_directory));
 
         let monitoring_address = if monitoring.enabled {
             Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, monitoring.port)))
@@ -278,13 +272,13 @@ impl ServerState {
         let server_status = LocalServerStatus::new(
             PublicEndpointAddress::from_socket_addr(grpc_listen_address, grpc_advertise_address),
             http_listen_address.map(|listen| PublicEndpointAddress::from_socket_addr(listen, http_advertise_address)),
-            admin_socket_path
+            admin_endpoint
                 .as_ref()
-                .map(|path| PrivateEndpointAddress::new(path.to_string_lossy().into_owned())),
+                .map(|ep| PrivateEndpointAddress::new(crate::service::admin::transport::endpoint_to_string(ep))),
             monitoring_address.map(PrivateEndpointAddress::from_socket_addr),
         );
 
-        Ok(ResolvedEndpoints { grpc_listen_address, http_listen_address, admin_socket_path, server_status })
+        Ok(ResolvedEndpoints { grpc_listen_address, http_listen_address, admin_endpoint, server_status })
     }
 }
 
@@ -292,7 +286,7 @@ pub struct ServerStateBuilder {
     distribution_info: DistributionInfo,
     grpc_listen_address: SocketAddr,
     http_listen_address: Option<SocketAddr>,
-    admin_socket_path: Option<PathBuf>,
+    admin_endpoint: Option<AdminPath>,
     server_status: LocalServerStatus,
     database_manager: Arc<DatabaseManager>,
     token_manager: Arc<TokenManager>,
@@ -368,7 +362,7 @@ impl ServerStateBuilder {
             distribution_info: self.distribution_info,
             grpc_listen_address: self.grpc_listen_address,
             http_listen_address: self.http_listen_address,
-            admin_socket_path: self.admin_socket_path,
+            admin_endpoint: self.admin_endpoint,
             diagnostics_manager: self.diagnostics_manager,
             shutdown_receiver: self.shutdown_receiver,
             background_task_spawner: self.background_task_spawner,

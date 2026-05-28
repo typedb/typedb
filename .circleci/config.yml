@@ -85,16 +85,19 @@ commands:
     steps:
       - run: arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-
-  # TODO: It's still commented out!!! Implement or remove
-  # deploy & test steps
   test-assembly-unix:
     steps:
       - run: |
           echo 'skipped'
-          # bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          # bazel build --config=ci --jobs=8 //:assemble-typedb-all --compilation_mode=opt
-          # bazel test --config=ci //tests/assembly:test_assembly --test_output=errors
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel build --config=ci --jobs=8 //:assemble-typedb-all --compilation_mode=opt
+          bazel test --config=ci //tests/assembly:test_assembly --test_output=errors
+
+  test-admin-service-unix:
+    steps:
+      - run: |
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+          bazel test --config=ci --test_output=errors //admin/client:test_crate_client //server:test_admin_service
 
   deploy-snapshot-unix:
     steps:
@@ -217,6 +220,38 @@ jobs:
       - run: .circleci\windows\prepare.bat
       - run: REM "Restore .circleci\windows\test_assembly.bat"
       - run: .circleci\windows\deploy_snapshot.bat
+
+  test-admin-service-linux-x86_64:
+    executor: linux-x86_64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: amd64
+      - test-admin-service-unix
+
+  test-admin-service-linux-arm64:
+    executor: linux-arm64-amazonlinux-2
+    steps:
+      - checkout
+      - install-deps-yum:
+          bazel-arch: arm64
+      - test-admin-service-unix
+
+  test-admin-service-mac-arm64:
+    executor: mac-arm64
+    steps:
+      - checkout
+      - install-deps-brew:
+          bazel-arch: arm64
+      - test-admin-service-unix
+
+  test-admin-service-windows-x86_64:
+    executor: win-x86_64
+    working_directory: ~/typedb
+    steps:
+      - checkout
+      - run: .circleci\windows\prepare.bat
+      - run: .circleci\windows\test_admin.bat
 
   deploy-docker-snapshot-x86_64:
     executor: linux-x86_64-amazonlinux-2
@@ -404,6 +439,13 @@ jobs:
           git push --delete https://$REPO_GITHUB_TOKEN@github.com/typedb/typedb.git $CIRCLE_BRANCH
 
 workflows:
+  admin-tests:
+    jobs:
+      - test-admin-service-linux-x86_64
+      - test-admin-service-linux-arm64
+      - test-admin-service-mac-arm64
+      - test-admin-service-windows-x86_64
+
   typedb-snapshot:
     jobs:
       - test-deploy-snapshot-linux-x86_64:

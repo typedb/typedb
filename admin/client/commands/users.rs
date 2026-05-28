@@ -36,9 +36,7 @@ async fn set_password(client: &mut AdminClient, args: &[String]) -> CommandResul
 
     let password = read_password_from_stdin()?;
 
-    client
-        .users_set_password(admin_proto::users_set_password::Req { username: username.clone(), password })
-        .await?;
+    client.users_set_password(admin_proto::users_set_password::Req { username: username.clone(), password }).await?;
     println!("Password updated for user '{username}'.");
     Ok(())
 }

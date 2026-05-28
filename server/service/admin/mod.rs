@@ -5,5 +5,6 @@
  */
 
 pub mod admin_service;
+pub mod transport;
 
 pub use admin_service::AdminService;

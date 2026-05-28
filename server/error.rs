@@ -76,12 +76,13 @@ typedb_error! {
         ServerState(26, "Invalid server state.", typedb_source: ArcServerStateError),
         AddressResolutionFailed(27, "Could not resolve address '{address}'.", address: String, source: Arc<io::Error>),
         AddressResolutionEmpty(28, "Could not resolve address '{address}' to any IP address.", address: String),
-        AdminServe(29, "Could not serve admin on socket '{path}'.", path: String, source: Arc<tonic::transport::Error>),
+        AdminServe(29, "Could not serve admin endpoint at '{path}'.", path: String, source: Arc<tonic::transport::Error>),
         AdminSocketPathInUse(30, "Admin socket path '{path}' already exists and is not a socket. Refusing to overwrite.", path: String),
         AdminSocketBind(31, "Could not bind admin Unix socket at '{path}'.", path: String, source: Arc<io::Error>),
         AdminSocketCleanup(32, "Could not remove stale admin socket file at '{path}'.", path: String, source: Arc<io::Error>),
         AdminSocketChmod(33, "Could not set permissions on admin socket file at '{path}'.", path: String, source: Arc<io::Error>),
-        MonitoringConflictingAddress(34, "Configuring diagnostics monitoring on the same address {address} as another service is not supported.", address: SocketAddr),
+        AdminPipeBind(34, "Could not create admin Named Pipe '{name}'.", name: String, source: Arc<io::Error>),
+        MonitoringConflictingAddress(36, "Configuring diagnostics monitoring on the same address {address} as another service is not supported.", address: SocketAddr),
     }
 }
 

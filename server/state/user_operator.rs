@@ -192,9 +192,9 @@ impl UserOperator for LocalUserOperator {
         // The underlying user_repository::update runs a TypeQL match-delete-insert that
         // silently no-ops when the user doesn't exist. Check first so the admin tool
         // can't accidentally create the *appearance* of having reset a credential.
-        let exists = user_manager
-            .contains(username)
-            .map_err(|typedb_source| arc_server_state_err(LocalServerStateError::UserCannotBeRetrieved { typedb_source }))?;
+        let exists = user_manager.contains(username).map_err(|typedb_source| {
+            arc_server_state_err(LocalServerStateError::UserCannotBeRetrieved { typedb_source })
+        })?;
         if !exists {
             return Err(arc_server_state_err(LocalServerStateError::UserNotFound {}));
         }
