@@ -237,6 +237,16 @@ jobs:
           bazel-arch: arm64
       - test-admin-service-unix
 
+  test-admin-service-mac-x86_64:
+    executor: mac-arm64
+    steps:
+      - macos/install-rosetta
+      - checkout
+      - install-brew-rosetta
+      - install-deps-brew:
+          bazel-arch: amd64
+      - test-admin-service-unix
+
   test-admin-service-mac-arm64:
     executor: mac-arm64
     steps:
@@ -439,10 +449,12 @@ jobs:
           git push --delete https://$REPO_GITHUB_TOKEN@github.com/typedb/typedb.git $CIRCLE_BRANCH
 
 workflows:
+  # TODO: Move to test-deploy-snapshot?
   admin-tests:
     jobs:
       - test-admin-service-linux-x86_64
       - test-admin-service-linux-arm64
+      - test-admin-service-mac-x86_64
       - test-admin-service-mac-arm64
       - test-admin-service-windows-x86_64
 
