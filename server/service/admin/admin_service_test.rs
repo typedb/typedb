@@ -72,7 +72,9 @@ static SERVER: OnceCell<(TempDir, tokio::sync::watch::Sender<()>, String)> = Onc
 static MUTATION_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 fn config_path() -> PathBuf {
-    std::env::current_dir().unwrap().join("server/config.yml")
+    let cwd = std::env::current_dir().unwrap();
+    let bazel_layout = cwd.join("server/config.yml");
+    if bazel_layout.exists() { bazel_layout } else { cwd.join("config.yml") }
 }
 
 async fn ensure_server_started() -> String {

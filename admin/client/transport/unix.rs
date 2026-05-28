@@ -67,8 +67,13 @@ mod tests {
         fn new(suffix: &str) -> Self {
             let n = COUNTER.fetch_add(1, Ordering::Relaxed);
             let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-            let path = std::env::temp_dir()
-                .join(format!("typedb-admin-verify-{}-{}-{}-{}", std::process::id(), nanos, n, suffix));
+            let path = std::env::temp_dir().join(format!(
+                "typedb-admin-verify-{}-{}-{}-{}",
+                std::process::id(),
+                nanos,
+                n,
+                suffix
+            ));
             let _ = fs::remove_file(&path);
             let _ = fs::remove_dir_all(&path);
             Self(path)

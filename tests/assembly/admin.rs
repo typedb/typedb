@@ -80,15 +80,10 @@ fn test_admin_assembly() {
         panic!();
     }
     let stdout = String::from_utf8_lossy(&admin_output.stdout);
-    assert!(
-        stdout.contains("TypeDB"),
-        "Expected admin `server version` output to contain 'TypeDB', got: {stdout:?}"
-    );
+    assert!(stdout.contains("TypeDB"), "Expected admin `server version` output to contain 'TypeDB', got: {stdout:?}");
 }
 
 fn run_admin_command(endpoint: &str, command: &str) -> Output {
-    let cmd = format!(
-        "typedb-extracted/typedb admin --socket-path '{endpoint}' --command '{command}'",
-    );
+    let cmd = format!("typedb-extracted/typedb admin --socket-path '{endpoint}' --command '{command}'",);
     build_cmd(&cmd).output().expect("Failed to run admin command")
 }
