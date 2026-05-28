@@ -16,8 +16,8 @@ use crate::{
 
 pub fn register(registry: CommandRegistry) -> CommandRegistry {
     registry.register(CommandDefinition {
-        tokens: &["user", "set-password"],
-        description: "Force-set a user's password. Reads the new password from stdin (one line).",
+        tokens: &["user", "reset-password"],
+        description: "Reset a user's password. Reads the new password from stdin (one line).",
         args: &["username"],
         executor: |ctx| {
             let args = ctx.args.to_vec();
@@ -30,7 +30,7 @@ async fn set_password(client: &mut AdminClient, args: &[String]) -> CommandResul
     let username = match args {
         [username] => username.clone(),
         _ => {
-            return Err(AdminError::InvalidArgCount { usage: "user set-password <username>".to_string() });
+            return Err(AdminError::InvalidArgCount { usage: "user reset-password <username>".to_string() });
         }
     };
 
@@ -41,16 +41,12 @@ async fn set_password(client: &mut AdminClient, args: &[String]) -> CommandResul
     Ok(())
 }
 
-/// Reading from stdin (rather than an argv flag) keeps the secret out of shell
-/// history and process listings. We refuse to run when stdin is a TTY because
-/// the obvious "type it now" experience would echo characters; recovery flows
-/// should pipe from a file or process substitution instead.
 fn read_password_from_stdin() -> Result<String, AdminError> {
     let stdin = io::stdin();
     if stdin.is_terminal() {
         return Err(AdminError::InvalidArgument {
             name: "password".to_string(),
-            reason: "stdin must not be a terminal; pipe the password in, e.g. `cat pw.txt | typedb-admin --command 'user set-password <name>'`"
+            reason: "stdin must not be a terminal; pipe the password in, e.g. `cat pw.txt | typedb-admin --command 'user reset-password <name>'`"
                 .to_string(),
         });
     }

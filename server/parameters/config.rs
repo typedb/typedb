@@ -91,10 +91,6 @@ impl Default for EncryptionConfig {
 #[serde(rename_all = "kebab-case")]
 pub struct AdminConfig {
     pub enabled: bool,
-    /// Identifier for the admin endpoint. On Unix, this is the filesystem path for the
-    /// admin Unix domain socket (defaulting to `<data-directory>/admin.sock`). On Windows,
-    /// this is the Named Pipe name (defaulting to `\\.\pipe\typedb-admin`). When
-    /// unspecified the server uses the platform-appropriate default.
     #[serde(default)]
     pub socket_path: Option<String>,
 }
@@ -106,12 +102,6 @@ impl Default for AdminConfig {
 }
 
 impl AdminConfig {
-    /// Resolve the configured endpoint identifier to the platform-native type the
-    /// transport layer consumes.
-    ///
-    /// On Unix this returns a [`PathBuf`] under `<data_directory>` when unspecified. On
-    /// Windows it returns the default Named Pipe name (`data_directory` is not consulted
-    /// — pipes live in their own namespace, not in the filesystem).
     #[cfg(unix)]
     pub fn resolve_endpoint(&self, data_directory: &Path) -> crate::service::admin::transport::AdminPath {
         self.socket_path

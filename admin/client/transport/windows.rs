@@ -19,9 +19,8 @@ const ERROR_PIPE_BUSY: i32 = 231;
 const CONNECT_RETRY_DELAY: Duration = Duration::from_millis(50);
 const MAX_CONNECT_ATTEMPTS: u32 = 20;
 
-/// Verify the endpoint string looks like a valid Named Pipe name before attempting to
-/// connect. Named Pipes don't have a filesystem inode we can `stat`, so unlike Unix we
-/// can't pre-check the DACL — the kernel enforces it at `CreateFile` time and a wrong
+/// Named Pipes don't have a filesystem inode we can `stat`, so unlike Unix we
+/// can't pre-check the DACL. The kernel enforces it at `CreateFile` time and a wrong
 /// DACL surfaces as ERROR_ACCESS_DENIED from the connect call.
 pub(super) fn verify_endpoint(path: &Path) -> Result<(), AdminError> {
     let s = path.to_string_lossy();
@@ -37,18 +36,18 @@ pub(super) fn verify_endpoint(path: &Path) -> Result<(), AdminError> {
 }
 
 pub(super) async fn connect(endpoint: Endpoint, path: &Path) -> Result<Channel, AdminError> {
-    let path_string = path.to_string_lossy().into_owned();
-    let path_for_error = path_string.clone();
+    let connector_path = path.to_string_lossy().into_owned();
+    let error_path = connector_path.clone();
     endpoint
         .connect_with_connector(service_fn(move |_: Uri| {
-            let path = path_string.clone();
+            let path = connector_path.clone();
             async move {
                 let client = open_named_pipe(&path).await?;
                 Ok::<_, std::io::Error>(TokioIo::new(client))
             }
         }))
         .await
-        .map_err(|source| AdminError::ConnectionFailed { address: path_for_error, source: Arc::new(source) })
+        .map_err(|source| AdminError::ConnectionFailed { address: error_path, source: Arc::new(source) })
 }
 
 async fn open_named_pipe(path: &str) -> std::io::Result<tokio::net::windows::named_pipe::NamedPipeClient> {

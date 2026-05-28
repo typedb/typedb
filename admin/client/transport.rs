@@ -27,12 +27,6 @@ use crate::error::AdminError;
 /// interpreted as a path, on Windows as a Named Pipe name (e.g. `\\.\pipe\typedb-admin`).
 pub type AdminEndpoint = Path;
 
-/// Connect to the admin gRPC endpoint, returning a tonic [`Channel`].
-///
-/// The kernel-enforced permission check on the endpoint is the load-bearing fence: on
-/// Unix that's the socket file's mode bits; on Windows it's the Named Pipe DACL. We do
-/// a defensive client-side check first (refuses an obviously-loose endpoint and gives
-/// the operator a clear error), then dial.
 pub async fn connect_channel(endpoint: &AdminEndpoint) -> Result<Channel, AdminError> {
     #[cfg(unix)]
     {

@@ -17,12 +17,6 @@ use tower::service_fn;
 
 use crate::error::AdminError;
 
-/// Verify the path is a Unix socket with owner-only permissions before connecting.
-///
-/// Mirrors PostgreSQL's `~/.pgpass` check: refuses to use an endpoint whose mode lets
-/// group or other read it, and refuses non-socket files. The kernel would already
-/// enforce mode-0600 access at `connect(2)`, so this is a UX safety net that surfaces
-/// misconfiguration to the operator before failing for a less-obvious reason.
 pub(super) fn verify_endpoint(path: &Path) -> Result<(), AdminError> {
     let metadata = std::fs::symlink_metadata(path).map_err(|source| AdminError::SocketPathInaccessible {
         path: path.display().to_string(),
@@ -39,15 +33,15 @@ pub(super) fn verify_endpoint(path: &Path) -> Result<(), AdminError> {
 }
 
 pub(super) async fn connect(endpoint: Endpoint, path: &Path) -> Result<Channel, AdminError> {
-    let path_for_connector = path.to_path_buf();
-    let path_for_error = path.display().to_string();
+    let connector_path = path.to_path_buf();
+    let error_path = path.display().to_string();
     endpoint
         .connect_with_connector(service_fn(move |_: Uri| {
-            // tonic 0.12 uses hyper 1.x I/O traits, which tokio's UnixStream doesn't
-            // implement directly. TokioIo bridges the two trait surfaces.
-            let path = path_for_connector.clone();
+            // tonic 0.12 uses hyper 1.x I/O traits, which tokio's UnixStream doesn't implement
+            // directly. TokioIo bridges the two trait surfaces. Could be updated later
+            let path = connector_path.clone();
             async move { UnixStream::connect(path).await.map(TokioIo::new) }
         }))
         .await
-        .map_err(|source| AdminError::ConnectionFailed { address: path_for_error, source: Arc::new(source) })
+        .map_err(|source| AdminError::ConnectionFailed { address: error_path, source: Arc::new(source) })
 }
