@@ -34,6 +34,17 @@ impl SnapshotRangeIterator {
         SnapshotRangeIterator { storage_iterator: Some(mvcc_iterator), buffered_iterator, ready_item_source: None }
     }
 
+    /// Construct an iterator with no storage backing, driven entirely by a buffered
+    /// (in-memory) source. Used by `MaterialisedSnapshot`, where the entire dataset
+    /// has been materialised up front and storage is never consulted.
+    pub fn new_buffered_only(buffered_iterator: BufferRangeIterator) -> Self {
+        SnapshotRangeIterator {
+            storage_iterator: None,
+            buffered_iterator: Some(buffered_iterator),
+            ready_item_source: None,
+        }
+    }
+
     // for testing
     pub fn new_empty() -> Self {
         SnapshotRangeIterator { storage_iterator: None, buffered_iterator: None, ready_item_source: None }
@@ -61,15 +72,30 @@ impl SnapshotRangeIterator {
                     // buffered iterators check that the seek is in ascending order internally
                     iter.seek(key.bytes())
                 }
-                // storage iterators check that the seek is in ascending order internally
-                self.storage_iterator.as_mut().unwrap().seek(key.bytes());
+                if let Some(iter) = self.storage_iterator.as_mut() {
+                    // storage iterators check that the seek is in ascending order internally
+                    iter.seek(key.bytes());
+                }
                 self.find_next_state();
             }
         }
     }
 
     fn find_next_state(&mut self) {
-        while self.ready_item_source.is_none() && self.storage_iterator.is_some() {
+        while self.ready_item_source.is_none() {
+            // Buffered-only path: when there is no MVCC storage iterator, drive the
+            // buffered iterator alone (skipping any tombstoned Delete entries).
+            if self.storage_iterator.is_none() {
+                if let Some(buffered_iterator) = self.buffered_iterator.as_mut() {
+                    while let Some((_, Write::Delete)) = buffered_iterator.peek() {
+                        buffered_iterator.next();
+                    }
+                    if buffered_iterator.peek().is_some() {
+                        self.ready_item_source = Some(ReadyItemSource::Buffered);
+                    }
+                }
+                break;
+            }
             let Some(Ok((storage_key, _storage_value))) = self.storage_iterator.as_mut().unwrap().peek() else {
                 if let Some(buffered_iterator) = self.buffered_iterator.as_mut() {
                     while let Some((_, Write::Delete)) = buffered_iterator.peek() {

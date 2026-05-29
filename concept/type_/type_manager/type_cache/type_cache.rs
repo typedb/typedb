@@ -10,11 +10,15 @@ use std::{
 };
 
 use encoding::{
+    EncodingKeyspace,
     graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition},
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use storage::{MVCCStorage, sequence_number::SequenceNumber};
+use storage::{
+    MVCCStorage, durability_client::DurabilityClient, keyspace::KeyspaceSet, sequence_number::SequenceNumber,
+    snapshot::MaterialisedSnapshot,
+};
 
 use crate::type_::{
     Independent, KindAPI, Ordering, OwnerAPI, PlayerAPI,
@@ -81,16 +85,22 @@ selection::impl_has_object_cache!(EntityTypeCache, EntityType);
 selection::impl_has_object_cache!(RelationTypeCache, RelationType);
 
 impl TypeCache {
-    // If creation becomes slow, We should restore pre-fetching of the schema
-    //  with a single pass on disk (as it was in 1f339733feaf4542e47ff604462f107d2ade1f1a)
     pub fn new<D>(
         storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
-    ) -> Result<Self, TypeCacheCreateError> {
-        // note: since we will parse out many heterogenous properties/edges from the schema, we will scan once into a vector,
-        //       then go through it again to pull out the type information.
-
-        let snapshot = storage.open_snapshot_read_at(open_sequence_number);
+    ) -> Result<Self, TypeCacheCreateError>
+    where
+        D: DurabilityClient,
+    {
+        // Load the entire schema keyspace into a `MaterialisedSnapshot` once, then run all
+        // per-kind cache creators against it. Each subsequent read is a BTreeMap lookup
+        // instead of an MVCC iterator open against rocksdb — orders of magnitude cheaper
+        // on large schemas, where this rebuild is dominated by millions of small reads.
+        let snapshot = MaterialisedSnapshot::load_entire_keyspace(
+            &storage,
+            open_sequence_number,
+            EncodingKeyspace::DefaultOptimisedPrefix11.id(),
+        );
 
         let entity_type_caches = EntityTypeCache::create(&snapshot);
         let relation_type_caches = RelationTypeCache::create(&snapshot);

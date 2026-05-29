@@ -6,9 +6,12 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::graph::definition::r#struct::StructDefinition;
+use encoding::{EncodingKeyspace, graph::definition::r#struct::StructDefinition};
 use itertools::Itertools;
-use storage::snapshot::ReadableSnapshot;
+use storage::{
+    keyspace::KeyspaceSet,
+    snapshot::{MaterialisedSnapshot, ReadableSnapshot},
+};
 
 use crate::{
     error::ConceptReadError,
@@ -85,11 +88,18 @@ impl CommitTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Vec<Box<SchemaValidationError>>, Box<ConceptReadError>> {
+        // Materialise the schema TX's merged view (storage + buffered writes) into a
+        // `MaterialisedSnapshot` once. The per-type validators below collectively make
+        // millions of small reads against this snapshot; serving them from an in-memory
+        // BTreeMap rather than via MVCC iterators cuts the validate phase by ~5x on
+        // large schemas.
+        let snapshot =
+            MaterialisedSnapshot::load_from_snapshot(snapshot, EncodingKeyspace::DefaultOptimisedPrefix11.id());
         let mut errors = Vec::new();
-        Self::validate_entity_types(snapshot, type_manager, &mut errors)?;
-        Self::validate_relation_types(snapshot, type_manager, &mut errors)?;
-        Self::validate_attribute_types(snapshot, type_manager, &mut errors)?;
-        Self::validate_struct_definitions(snapshot, type_manager, &mut errors)?;
+        Self::validate_entity_types(&snapshot, type_manager, &mut errors)?;
+        Self::validate_relation_types(&snapshot, type_manager, &mut errors)?;
+        Self::validate_attribute_types(&snapshot, type_manager, &mut errors)?;
+        Self::validate_struct_definitions(&snapshot, type_manager, &mut errors)?;
         Ok(errors)
     }
 

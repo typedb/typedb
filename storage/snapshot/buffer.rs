@@ -273,7 +273,7 @@ pub struct BufferRangeIterator {
 }
 
 impl BufferRangeIterator {
-    fn new(range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>) -> Self {
+    pub(crate) fn new(range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>) -> Self {
         Self { inner: range.into_iter().peekable() }
     }
 
