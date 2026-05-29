@@ -6,9 +6,8 @@
 
 //! Unix domain socket transport for the admin endpoint.
 //!
-//! Trust anchor: the socket file's mode bits, kernel-enforced via the standard
-//! `inode_permission` check on `connect(2)`. The server binds the socket as `0600`
-//! owned by the typedb service account.
+//! Trust anchor: the socket file's mode bits, kernel-enforced on `connect(2)`. The
+//! server binds the socket as `0600` owned by the typedb service account.
 
 use std::{
     fs, io,
@@ -75,11 +74,10 @@ pub fn bind_admin_endpoint(path: &Path) -> Result<AdminListener, ServerOpenError
     }
 
     // Bracket the bind with a restrictive umask so the socket file is created with
-    // owner-only mode atomically. Otherwise there's a brief window where the socket
-    // exists with whatever the operator's umask happens to permit. The subsequent
-    // `set_permissions` is belt-and-braces.
+    // owner-only mode atomically. Without this there's a brief window where the
+    // socket exists with whatever the operator's umask happens to permit. The
+    // subsequent `set_permissions` is belt-and-braces.
     let listener = {
-        // While the unmask exists, new sockets are created with 0o777 & umask (-> ADMIN_SOCKET_FILE_MODE)
         let _restrictive_umask = ScopedUmask::new(PERMISSION_BITS_ALL & !ADMIN_SOCKET_FILE_MODE);
         UnixListener::bind(path)
     }
@@ -96,7 +94,7 @@ pub fn bind_admin_endpoint(path: &Path) -> Result<AdminListener, ServerOpenError
     Ok(AdminListener { inner: listener, path: path.to_path_buf() })
 }
 
-// Best-effort: unlinks the UDS file on Unix, no-op on Windows (it has auto cleanups)
+/// Best-effort unlink of the socket file. Already-removed is not an error.
 pub fn cleanup_admin_endpoint(path: &Path) {
     if let Err(err) = fs::remove_file(path) {
         if err.kind() != io::ErrorKind::NotFound {
@@ -106,15 +104,16 @@ pub fn cleanup_admin_endpoint(path: &Path) {
 }
 
 fn set_process_umask(mask: u32) -> u32 {
-    // SAFETY: `umask(2)` has no pointer args and no UB. It always succeeds
+    // SAFETY: `umask(2)` has no pointer args, no UB, and always succeeds.
     unsafe extern "C" {
         fn umask(mask: u32) -> u32;
     }
     unsafe { umask(mask) }
 }
 
-/// RAII guard around the per-process umask. Kept around exactly one syscall so other
-/// threads' file creations during the window inherit the (stricter) mask harmlessly.
+/// RAII guard around the per-process umask. Held only across the `bind` call;
+/// other threads creating files during that window inherit the stricter mask
+/// harmlessly.
 struct ScopedUmask {
     previous: u32,
 }

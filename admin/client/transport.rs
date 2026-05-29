@@ -4,11 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-//! Platform-specific transport for the admin client.
-//!
-//! On Unix the admin endpoint is a Unix domain socket addressed by filesystem path; on
-//! Windows it's a Named Pipe addressed by pipe name. The two transports use different
-//! tokio APIs underneath; the client connect path is gated per OS.
+//! Platform-specific transport for the admin client. Unix uses a UDS addressed
+//! by filesystem path; Windows uses a Named Pipe addressed by pipe name.
 
 #[cfg(unix)]
 mod unix;

@@ -103,7 +103,8 @@ pub fn bind_admin_endpoint(pipe_name: &str) -> Result<AdminListener, ServerOpenE
     Ok(AdminListener { incoming: rx, pipe_name: pipe_name.to_string() })
 }
 
-/// No-op on Windows — pipes are cleaned up by the kernel when the server closes its handles.
+/// Named pipes are released by the kernel when the server closes its handles;
+/// there is no filesystem entry to remove.
 pub fn cleanup_admin_endpoint(_pipe_name: &str) {}
 
 fn create_pipe_instance(name: &str, sd: &SecurityDescriptor, is_first: bool) -> io::Result<NamedPipeServer> {
@@ -114,7 +115,7 @@ fn create_pipe_instance(name: &str, sd: &SecurityDescriptor, is_first: bool) -> 
     }
     // SAFETY: `sa` points at a valid SECURITY_ATTRIBUTES whose security descriptor is
     // owned by `sd` and outlives this call. Tokio forwards the pointer to
-    // CreateNamedPipeW without retaining it
+    // CreateNamedPipeW without retaining it.
     unsafe { opts.create_with_security_attributes_raw(name, &mut sa as *mut _ as *mut _) }
 }
 
@@ -162,9 +163,7 @@ impl Connected for AdminConnection {
     }
 }
 
-// ---------------------------------------------------------------------------
 // Win32 FFI for the security descriptor.
-// ---------------------------------------------------------------------------
 
 #[repr(C)]
 struct SECURITY_ATTRIBUTES {
@@ -189,9 +188,9 @@ struct SecurityDescriptor {
     ptr: *mut c_void,
 }
 
-// SAFETY: SECURITY_DESCRIPTOR contents are immutable after construction. The kernel
-// duplicates them into pipe metadata on CreateNamedPipe. The pointer is into LocalAlloc
-// storage and is safe to share across threads
+// SAFETY: the descriptor bytes are immutable after construction; we only read
+// `self.ptr` through `&self`. The kernel duplicates the descriptor into pipe
+// metadata on CreateNamedPipe, so cross-thread sharing is sound.
 unsafe impl Send for SecurityDescriptor {}
 unsafe impl Sync for SecurityDescriptor {}
 
@@ -226,8 +225,8 @@ impl SecurityDescriptor {
 impl Drop for SecurityDescriptor {
     fn drop(&mut self) {
         if !self.ptr.is_null() {
-            // SAFETY: `ptr` was returned by the SDDL conversion above; LocalFree is the
-            // documented deallocator
+            // SAFETY: `ptr` was returned by the SDDL conversion; LocalFree is the
+            // documented deallocator. Drop runs at most once.
             unsafe {
                 LocalFree(self.ptr);
             }

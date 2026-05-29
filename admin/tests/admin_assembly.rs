@@ -6,17 +6,10 @@
 
 // Spawns the cargo-built typedb_server_bin and typedb_admin_bin and asserts the
 // admin tool can connect via the per-OS admin endpoint and round-trip a command.
-//
-// Complementary to:
-//   * //server:test_admin_service          -- library / in-process, all OSes
-//   * //tests/assembly:test_admin_assembly -- archive + bash launcher, Linux/Mac
-// This test covers what only-the-binary-cares-about: clap parsing of the
-// per-OS socket path, tokio runtime startup from main, exit-code propagation.
-//
-// On Windows we drive this via cargo from .circleci/windows/test_admin.bat
-// because rules_rust 0.56's crate_universe leaves ring's MSVC headers
-// dangling on Windows; on Unix the assembly test covers the binaries via
-// bazel, so this test is currently only run in Windows CI.
+// This is the Windows arm of `//tests/assembly:test_admin_assembly` (which on
+// Unix runs against the archive-extracted binaries via the bash launcher); they
+// cover the same surface — binary startup, clap parsing of the per-OS socket
+// path, and exit-code propagation.
 
 use std::{
     env,
@@ -55,16 +48,16 @@ impl Drop for ServerGuard {
 }
 
 #[test]
-fn admin_binary_connects_to_server_binary() {
+fn test_admin_assembly() {
     let server_bin = bin_path("typedb_server_bin");
     let admin_bin = bin_path("typedb_admin_bin");
     assert!(
         server_bin.exists(),
-        "{server_bin:?} not built. Run `cargo build --bin typedb_server_bin --bin typedb_admin_bin` first."
+        "{server_bin:?} not built. Run `cargo build -p typedb_server_bin -p typedb_admin_bin` first."
     );
     assert!(
         admin_bin.exists(),
-        "{admin_bin:?} not built. Run `cargo build --bin typedb_server_bin --bin typedb_admin_bin` first."
+        "{admin_bin:?} not built. Run `cargo build -p typedb_server_bin -p typedb_admin_bin` first."
     );
 
     let endpoint = admin_endpoint();

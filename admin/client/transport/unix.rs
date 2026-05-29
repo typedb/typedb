@@ -38,8 +38,8 @@ pub(super) async fn connect(endpoint: Endpoint, path: &Path) -> Result<Channel, 
     let error_path = path.display().to_string();
     endpoint
         .connect_with_connector(service_fn(move |_: Uri| {
-            // tonic 0.12 uses hyper 1.x I/O traits, which tokio's UnixStream doesn't implement
-            // directly. TokioIo bridges the two trait surfaces. Could be updated later
+            // tonic 0.12 uses hyper 1.x I/O traits; tokio's UnixStream doesn't implement
+            // them directly, so TokioIo bridges the two trait surfaces.
             let path = connector_path.clone();
             async move { UnixStream::connect(path).await.map(TokioIo::new) }
         }))
