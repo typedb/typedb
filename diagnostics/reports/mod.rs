@@ -4,14 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt};
+use std::{
+    collections::HashMap,
+    fmt,
+    hash::{Hash, Hasher},
+    sync::Arc,
+};
 
 use chrono::{DateTime, Utc};
 use serde::{Serialize, Serializer, ser::SerializeStruct};
 use serde_json::{Map, Value, to_value};
 
 use crate::{
-    DatabaseHash,
+    DatabaseHash, DatabaseId,
     metrics::{ActionKind, ClientEndpoint, LoadKind},
 };
 
@@ -44,25 +49,12 @@ where
     serializer.serialize_str(&format_datetime(*datetime))
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub(crate) struct DatabaseReport(pub DatabaseHash);
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub(crate) struct DatabaseReport(pub Arc<DatabaseId>);
 
-impl Serialize for DatabaseReport {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut state = serializer.serialize_struct("DatabaseReport", 1)?;
-        let DatabaseReport(database_hash) = self;
-        state.serialize_field("database", &format!("{:.0}", database_hash))?;
-        state.end()
-    }
-}
-
-impl fmt::Display for DatabaseReport {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let DatabaseReport(database_hash) = self;
-        write!(f, "{:.0}", database_hash)
+impl From<Arc<DatabaseId>> for DatabaseReport {
+    fn from(id: Arc<DatabaseId>) -> Self {
+        DatabaseReport(id)
     }
 }
 
@@ -88,6 +80,7 @@ pub(crate) struct ServerReportSensitivePart {
     pub memory_available_in_bytes: u64,
     pub disk_used_in_bytes: u64,
     pub disk_available_in_bytes: u64,
+    pub process: ProcessReport,
 }
 
 #[derive(Debug)]
@@ -95,6 +88,14 @@ pub(crate) struct OsReport {
     pub name: String,
     pub arch: String,
     pub version: String,
+}
+
+#[derive(Debug)]
+pub(crate) struct ProcessReport {
+    pub cpu_seconds_total: f64,
+    pub resident_memory_bytes: u64,
+    pub virtual_memory_bytes: u64,
+    pub start_time_unix_seconds: u64,
 }
 
 #[derive(Debug)]
@@ -106,8 +107,8 @@ pub(crate) struct LoadReport {
 }
 
 impl LoadReport {
-    pub fn new(database_hash: DatabaseHash) -> Self {
-        Self { database: DatabaseReport(database_hash), schema: None, data: None, connection: None }
+    pub fn new(database_report: impl Into<DatabaseReport>) -> Self {
+        Self { database: database_report.into(), schema: None, data: None, connection: None }
     }
 }
 
@@ -131,7 +132,7 @@ pub type ConnectionLoadReport = HashMap<ClientEndpoint, HashMap<LoadKind, u64>>;
 
 #[derive(Debug)]
 pub(crate) struct ActionReport {
-    pub database: Option<DatabaseReport>,
+    pub database: Option<Arc<DatabaseId>>,
     pub kind: ActionKind,
     pub successful: i64,
     pub failed: i64,
@@ -139,7 +140,7 @@ pub(crate) struct ActionReport {
 
 #[derive(Debug)]
 pub(crate) struct ErrorReport {
-    pub database: Option<DatabaseReport>,
+    pub database: Option<Arc<DatabaseId>>,
     pub code: String,
     pub count: i64,
 }

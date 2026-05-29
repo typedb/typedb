@@ -13,6 +13,7 @@ rust_test(
         "//common/lending_iterator",
         "//common/options",
         "//database",
+        "//diagnostics",
         "//executor",
         "//function",
         "//query",

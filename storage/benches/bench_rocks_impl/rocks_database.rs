@@ -93,6 +93,7 @@ mod typedb_database {
     use std::sync::Arc;
 
     use bytes::byte_array::ByteArray;
+    use diagnostics::metrics::FsyncMetrics;
     use durability::wal::WAL;
     use resource::profile::CommitProfile;
     use storage::{
@@ -115,7 +116,7 @@ mod typedb_database {
         pub(super) fn setup() -> Result<Self, StorageOpenError> {
             let name = "bench_rocks__typedb";
             let path = create_tmp_storage_dir();
-            let wal = WAL::create(&path).unwrap();
+            let wal = WAL::create(&path, FsyncMetrics::disabled()).unwrap();
             let storage =
                 Arc::new(MVCCStorage::<WALClient>::create::<BenchKeySpace>(name, &path, WALClient::new(wal))?);
             Ok(Self { path, storage })

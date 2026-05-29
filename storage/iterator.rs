@@ -19,7 +19,7 @@ use crate::{
 };
 
 pub(crate) struct MVCCRangeIterator {
-    storage_name: Arc<String>,
+    storage_name: Arc<str>,
     keyspace_id: KeyspaceId,
     iterator: Peekable<KeyspaceRangeIterator>,
     open_sequence_number: SequenceNumber,
@@ -134,7 +134,7 @@ impl Seekable<[u8]> for MVCCRangeIterator {
 
 #[derive(Debug, Clone)]
 pub enum MVCCReadError {
-    Keyspace { storage_name: Arc<String>, source: Arc<KeyspaceError> },
+    Keyspace { storage_name: Arc<str>, source: Arc<KeyspaceError> },
 }
 
 impl fmt::Display for MVCCReadError {

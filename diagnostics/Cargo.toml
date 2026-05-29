@@ -3,6 +3,7 @@
 # Do not modify this file.
 
 features = {}
+dev-dependencies = {}
 
 [package]
 	name = "diagnostics"
@@ -16,6 +17,9 @@ features = {}
 [dependencies]
 
 	[dependencies.tokio]
+		workspace = true
+
+	[dependencies.tracing]
 		workspace = true
 
 	[dependencies.serde]

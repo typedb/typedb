@@ -9,22 +9,38 @@ use std::{
     fmt,
     path::PathBuf,
     sync::{
-        RwLock, RwLockReadGuard, RwLockWriteGuard,
+        Arc,
         atomic::{AtomicU64, Ordering},
     },
     time::Instant,
 };
 
-use resource::constants::diagnostics::UNKNOWN_STR;
+use concurrency::IntervalRunner;
+use resource::constants::{diagnostics::UNKNOWN_STR, server::SYSTEM_METRICS_REFRESH_INTERVAL};
 use serde::{Deserialize, Serialize};
-use sysinfo::{Disks, MemoryRefreshKind, RefreshKind, System};
+use sysinfo::System;
 
 use crate::{
-    DatabaseHash, DatabaseHashOpt,
+    DatabaseId,
     reports::{
-        ActionReport, ConnectionLoadReport, DataLoadReport, ErrorReport, LoadReport, OsReport, SchemaLoadReport,
+        ActionReport, ConnectionLoadReport, DataLoadReport, LoadReport, OsReport, ProcessReport, SchemaLoadReport,
         ServerPropertiesReport, ServerReport, ServerReportSensitivePart,
     },
+};
+
+pub mod error_metrics;
+pub mod file_metrics;
+pub mod histogram_metrics;
+mod system_sampler;
+pub mod transaction_metrics;
+pub(crate) use error_metrics::ErrorMetrics;
+pub use file_metrics::FsyncMetrics;
+pub use histogram_metrics::{HistogramMetrics, HistogramSnapshot, HistogramUnit};
+use system_sampler::SystemSampler;
+pub(crate) use transaction_metrics::TransactionLifecycleCounters;
+pub use transaction_metrics::{
+    LoadKind, QueryType, ReadQueryMetrics, SchemaQueryMetrics, TransactionLifecycleSnapshot, TransactionMetrics,
+    TransactionOutcome, WriteQueryMetrics,
 };
 
 #[derive(Serialize, Deserialize, Debug, Hash, Copy, Clone, PartialEq, Eq)]
@@ -52,8 +68,6 @@ macro_rules! client_endpoints_map {
     };
 }
 pub(crate) use client_endpoints_map;
-
-use crate::reports::DatabaseReport;
 
 #[derive(Debug)]
 pub(crate) struct ServerProperties {
@@ -103,6 +117,8 @@ pub(crate) struct ServerMetrics {
     os_version: String,
     version: String,
     data_directory: PathBuf,
+    sampler: Arc<SystemSampler>,
+    _sampler_refresh: IntervalRunner,
 }
 
 impl ServerMetrics {
@@ -110,7 +126,20 @@ impl ServerMetrics {
         let os_name = System::name().unwrap_or(UNKNOWN_STR.to_string());
         let os_arch = System::cpu_arch();
         let os_version = System::os_version().unwrap_or(UNKNOWN_STR.to_string());
-        Self { start_instant: Instant::now(), os_name, os_arch, os_version, version, data_directory }
+        let sampler = Arc::new(SystemSampler::new(data_directory.clone()));
+        let sampler_for_refresh = sampler.clone();
+        let _sampler_refresh =
+            IntervalRunner::new(move || sampler_for_refresh.refresh(), SYSTEM_METRICS_REFRESH_INTERVAL);
+        Self {
+            start_instant: Instant::now(),
+            os_name,
+            os_arch,
+            os_version,
+            version,
+            data_directory,
+            sampler,
+            _sampler_refresh,
+        }
     }
 
     pub fn data_directory(&self) -> &PathBuf {
@@ -122,8 +151,10 @@ impl ServerMetrics {
     }
 
     pub fn to_full_state_report(&self) -> ServerReport {
-        let memory_info = self.get_memory_info();
-        let disk_info = self.get_disk_info();
+        let total_memory = self.sampler.total_memory_bytes();
+        let available_memory = self.sampler.available_memory_bytes();
+        let disk_total = self.sampler.disk_total_bytes();
+        let disk_available = self.sampler.disk_available_bytes();
         ServerReport {
             version: self.version.clone(),
             sensitive_part: Some(ServerReportSensitivePart {
@@ -133,30 +164,21 @@ impl ServerMetrics {
                     arch: self.os_arch.clone(),
                     version: self.os_version.clone(),
                 },
-                memory_used_in_bytes: memory_info.total - memory_info.available,
-                memory_available_in_bytes: memory_info.available,
-                disk_used_in_bytes: disk_info.total - disk_info.available,
-                disk_available_in_bytes: disk_info.available,
+                // Saturating subtraction: total and available are loaded from
+                // separate atomics, and although they're written under one lock
+                // they're read independently, so a reader can observe a torn pair
+                // across refreshes. Defensive against `available > total`.
+                memory_used_in_bytes: total_memory.saturating_sub(available_memory),
+                memory_available_in_bytes: available_memory,
+                disk_used_in_bytes: disk_total.saturating_sub(disk_available),
+                disk_available_in_bytes: disk_available,
+                process: ProcessReport {
+                    cpu_seconds_total: self.sampler.process_cpu_seconds_total(),
+                    resident_memory_bytes: self.sampler.process_resident_memory_bytes(),
+                    virtual_memory_bytes: self.sampler.process_virtual_memory_bytes(),
+                    start_time_unix_seconds: self.sampler.process_start_time_unix_seconds(),
+                },
             }),
-        }
-    }
-
-    fn get_memory_info(&self) -> SizeInfo {
-        let system_info =
-            System::new_with_specifics(RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()));
-        SizeInfo { total: system_info.total_memory(), available: system_info.available_memory() }
-    }
-
-    fn get_disk_info(&self) -> SizeInfo {
-        let disks = Disks::new_with_refreshed_list();
-        let disk = match self.data_directory.canonicalize() {
-            Ok(path) => disks.iter().find(|disk| path.starts_with(disk.mount_point())),
-            Err(_) => None,
-        };
-
-        match disk {
-            Some(disk) => SizeInfo { total: disk.total_space(), available: disk.available_space() },
-            None => SizeInfo { total: 0u64, available: 0u64 },
         }
     }
 
@@ -165,47 +187,37 @@ impl ServerMetrics {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct DatabaseMetrics {
-    pub database_name: String,
+#[derive(Debug, Default, PartialEq, Eq, Hash)]
+pub struct DatabaseMetricsSnapshot {
     pub schema: SchemaLoadMetrics,
     pub data: DataLoadMetrics,
 }
 
 #[derive(Debug)]
 pub(crate) struct LoadMetrics {
-    schema: SchemaLoadMetrics,
-    data: DataLoadMetrics,
+    database_id: Arc<DatabaseId>,
+    snapshot: DatabaseMetricsSnapshot,
     connection: ConnectionLoadMetrics,
     is_deleted: bool,
 }
 
 impl LoadMetrics {
-    pub fn new() -> Self {
+    pub fn new(database_id: Arc<DatabaseId>) -> Self {
         Self {
-            schema: SchemaLoadMetrics { type_count: 0 },
-            data: DataLoadMetrics {
-                entity_count: 0,
-                relation_count: 0,
-                attribute_count: 0,
-                has_count: 0,
-                role_count: 0,
-                storage_in_bytes: 0,
-                storage_key_count: 0,
-            },
+            database_id,
+            snapshot: DatabaseMetricsSnapshot::default(),
             connection: ConnectionLoadMetrics::new(),
             is_deleted: false,
         }
     }
 
-    pub fn set_schema(&mut self, schema: SchemaLoadMetrics) {
-        self.is_deleted = false;
-        self.schema = schema;
+    pub fn database_id(&self) -> &Arc<DatabaseId> {
+        &self.database_id
     }
 
-    pub fn set_data(&mut self, data: DataLoadMetrics) {
+    pub fn set_snapshot(&mut self, snapshot: DatabaseMetricsSnapshot) {
         self.is_deleted = false;
-        self.data = data;
+        self.snapshot = snapshot;
     }
 
     pub fn increment_connection_count(&self, client: ClientEndpoint, load_kind: LoadKind) {
@@ -228,23 +240,24 @@ impl LoadMetrics {
         self.connection.restore_snapshot()
     }
 
-    pub fn to_peak_report(&self, database_hash: &DatabaseHash) -> Option<LoadReport> {
+    pub fn to_peak_report(&self) -> Option<LoadReport> {
         if !self.is_deleted || !self.connection.is_empty() {
-            let mut report = LoadReport::new(*database_hash);
+            let mut report = LoadReport::new(self.database_id.clone());
             report.connection = Some(self.connection.to_peak_report());
-            report.schema = Some(self.schema.to_state_report());
-            report.data = Some(self.data.to_state_report());
+            report.schema = Some(self.snapshot.schema.to_state_report());
+            report.data = Some(self.snapshot.data.to_state_report());
             Some(report)
         } else {
             None
         }
     }
 
-    pub fn to_state_report(&self, database_hash: &DatabaseHash) -> Option<LoadReport> {
+    pub fn to_state_report(&self) -> Option<LoadReport> {
         if !self.is_deleted {
-            let mut report = LoadReport::new(*database_hash);
-            report.schema = Some(self.schema.to_state_report());
-            report.data = Some(self.data.to_state_report());
+            let mut report = LoadReport::new(self.database_id.clone());
+            report.schema = Some(self.snapshot.schema.to_state_report());
+            report.data = Some(self.snapshot.data.to_state_report());
+            report.connection = Some(self.connection.to_active_report());
             Some(report)
         } else {
             None
@@ -252,7 +265,7 @@ impl LoadMetrics {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, PartialEq, Eq, Hash)]
 pub struct SchemaLoadMetrics {
     pub type_count: u64,
 }
@@ -263,7 +276,7 @@ impl SchemaLoadMetrics {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, PartialEq, Eq, Hash)]
 pub struct DataLoadMetrics {
     pub entity_count: u64,
     pub relation_count: u64,
@@ -363,6 +376,18 @@ impl ConnectionLoadMetrics {
         peaks
     }
 
+    pub fn to_active_report(&self) -> ConnectionLoadReport {
+        let mut active = ConnectionLoadReport::new();
+        for (client, counts) in &self.counts {
+            let mut client_counts = HashMap::new();
+            for (kind, count) in counts {
+                client_counts.insert(*kind, count.load(Ordering::Relaxed));
+            }
+            active.insert(*client, client_counts);
+        }
+        active
+    }
+
     fn get_count(&self, client: &ClientEndpoint, load_kind: &LoadKind) -> &AtomicU64 {
         self.counts
             .get(client)
@@ -390,18 +415,25 @@ impl ConnectionLoadMetrics {
 
 #[derive(Debug)]
 pub(crate) struct ActionMetrics {
+    /// `None` denotes the server-level (no-database) metrics record.
+    database_id: Option<Arc<DatabaseId>>,
     actions: HashMap<ActionKind, ActionInfo>,
     actions_snapshot: HashMap<ActionKind, ActionInfo>,
     actions_snapshot_backup: HashMap<ActionKind, ActionInfo>, // in case if reporting fails
 }
 
 impl ActionMetrics {
-    pub fn new() -> Self {
+    pub fn new(database_id: Option<Arc<DatabaseId>>) -> Self {
         Self {
+            database_id,
             actions: ActionKind::all_empty_counts_map(),
             actions_snapshot: ActionKind::all_empty_counts_map(),
             actions_snapshot_backup: ActionKind::all_empty_counts_map(),
         }
+    }
+
+    pub fn database_id(&self) -> Option<&Arc<DatabaseId>> {
+        self.database_id.as_ref()
     }
 
     pub fn submit_success(&self, action_kind: ActionKind) {
@@ -457,7 +489,7 @@ impl ActionMetrics {
         }
     }
 
-    pub fn to_diff_reports(&self, database_hash: DatabaseHashOpt) -> Vec<ActionReport> {
+    pub fn to_diff_reports(&self) -> Vec<ActionReport> {
         let mut actions = vec![];
         for kind in self.actions.keys() {
             let successful = self.get_successful_delta(kind);
@@ -465,17 +497,12 @@ impl ActionMetrics {
             if successful == 0 && failed == 0 {
                 continue;
             }
-            actions.push(ActionReport {
-                database: database_hash.map(|hash| DatabaseReport(hash)),
-                kind: *kind,
-                successful,
-                failed,
-            });
+            actions.push(ActionReport { database: self.database_id.clone(), kind: *kind, successful, failed });
         }
         actions
     }
 
-    pub fn to_state_reports(&self, database_hash: &DatabaseHashOpt) -> Vec<ActionReport> {
+    pub fn to_state_reports(&self) -> Vec<ActionReport> {
         let mut actions = vec![];
         for kind in self.actions.keys() {
             let successful = self.get_successful(kind) as i64;
@@ -483,7 +510,7 @@ impl ActionMetrics {
             if successful == 0 && failed == 0 {
                 continue;
             }
-            actions.push(ActionReport { database: database_hash.map(DatabaseReport), kind: *kind, successful, failed });
+            actions.push(ActionReport { database: self.database_id.clone(), kind: *kind, successful, failed });
         }
         actions
     }
@@ -546,159 +573,6 @@ impl Clone for ActionInfo {
         Self {
             successful: AtomicU64::from(self.successful.load(Ordering::Relaxed)),
             failed: AtomicU64::from(self.failed.load(Ordering::Relaxed)),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct ErrorMetrics {
-    errors: RwLock<HashMap<String, ErrorInfo>>,
-    errors_snapshot: RwLock<HashMap<String, ErrorInfo>>,
-    errors_snapshot_backup: RwLock<HashMap<String, ErrorInfo>>,
-}
-
-impl ErrorMetrics {
-    pub fn new() -> Self {
-        Self {
-            errors: RwLock::new(HashMap::new()),
-            errors_snapshot: RwLock::new(HashMap::new()),
-            errors_snapshot_backup: RwLock::new(HashMap::new()),
-        }
-    }
-
-    pub fn submit(&self, error_code: String) {
-        self.get_errors_mut().entry(error_code).or_insert(ErrorInfo::new()).submit();
-    }
-
-    fn get_count_delta(&self, error_code: &str) -> i64 {
-        get_delta(
-            self.get_errors().get(error_code).unwrap_or(&ErrorInfo::default()).count,
-            self.get_errors_snapshot().get(error_code).unwrap_or(&ErrorInfo::default()).count,
-        )
-    }
-
-    pub fn take_snapshot(&mut self) {
-        let errors = self.get_errors();
-        let mut snapshot = self.get_errors_snapshot_mut();
-        let mut backup = self.get_errors_snapshot_backup_mut();
-
-        *backup = snapshot.clone();
-        for (code, info) in errors.iter() {
-            snapshot.insert(code.clone(), info.clone());
-        }
-    }
-
-    pub fn restore_snapshot(&self) {
-        let backup = self.get_errors_snapshot_backup().clone();
-        let mut snapshot = self.get_errors_snapshot_mut();
-        *snapshot = backup;
-    }
-
-    pub fn to_diff_reports(&self, database_hash: DatabaseHashOpt) -> Vec<ErrorReport> {
-        let mut errors = vec![];
-        for code in self.get_errors().keys() {
-            let count = self.get_count_delta(code);
-            if count == 0 {
-                continue;
-            }
-            errors.push(ErrorReport {
-                database: database_hash.map(|hash| DatabaseReport(hash)),
-                code: code.clone(),
-                count,
-            });
-        }
-        errors
-    }
-
-    pub fn to_state_reports(&self, database_hash: &DatabaseHashOpt) -> Vec<ErrorReport> {
-        let mut errors = vec![];
-        for (code, info) in self.get_errors().iter() {
-            assert_ne!(info.count, 0, "Error count cannot be 0");
-            errors.push(ErrorReport {
-                database: database_hash.map(|hash| DatabaseReport(hash)),
-                code: code.clone(),
-                count: info.count as i64,
-            });
-        }
-        errors
-    }
-
-    pub fn get_errors(&self) -> RwLockReadGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors.read().expect("Expected error metrics read lock acquisition")
-    }
-
-    pub fn get_errors_mut(&self) -> RwLockWriteGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors.write().expect("Expected error metrics write lock acquisition")
-    }
-
-    pub fn get_errors_snapshot(&self) -> RwLockReadGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors_snapshot.read().expect("Expected error metrics snapshot read lock acquisition")
-    }
-
-    pub fn get_errors_snapshot_mut(&self) -> RwLockWriteGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors_snapshot.write().expect("Expected error metrics snapshot write lock acquisition")
-    }
-
-    pub fn get_errors_snapshot_backup(&self) -> RwLockReadGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors_snapshot_backup.read().expect("Expected error metrics snapshot backup read lock acquisition")
-    }
-
-    pub fn get_errors_snapshot_backup_mut(&self) -> RwLockWriteGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors_snapshot_backup.write().expect("Expected error metrics snapshot backup write lock acquisition")
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct ErrorInfo {
-    count: u64,
-}
-
-impl ErrorInfo {
-    pub const fn new() -> Self {
-        Self::default()
-    }
-
-    pub const fn default() -> Self {
-        Self { count: 0 }
-    }
-
-    pub fn submit(&mut self) {
-        self.count += 1;
-    }
-}
-
-#[derive(Debug, Hash, Copy, Clone, PartialEq, Eq)]
-pub enum LoadKind {
-    SchemaTransactions,
-    ReadTransactions,
-    WriteTransactions,
-    // ATTENTION: When adding new Kinds, update all_empty_counts_map()!
-}
-
-impl LoadKind {
-    fn all_empty_counts_map() -> HashMap<LoadKind, AtomicU64> {
-        HashMap::from([
-            (LoadKind::SchemaTransactions, AtomicU64::new(0)),
-            (LoadKind::WriteTransactions, AtomicU64::new(0)),
-            (LoadKind::ReadTransactions, AtomicU64::new(0)),
-        ])
-    }
-
-    pub fn to_posthog_name(&self) -> &'static str {
-        match self {
-            LoadKind::SchemaTransactions => "schema_transactions_peak_count",
-            LoadKind::ReadTransactions => "read_transactions_peak_count",
-            LoadKind::WriteTransactions => "write_transactions_peak_count",
-        }
-    }
-}
-
-impl fmt::Display for LoadKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            LoadKind::SchemaTransactions => write!(f, "schemaTransactionPeakCount"),
-            LoadKind::ReadTransactions => write!(f, "readTransactionPeakCount"),
-            LoadKind::WriteTransactions => write!(f, "writeTransactionPeakCount"),
         }
     }
 }
@@ -847,11 +721,126 @@ impl fmt::Display for ActionKind {
     }
 }
 
-fn get_delta(lhs: u64, rhs: u64) -> i64 {
+pub(crate) fn get_delta(lhs: u64, rhs: u64) -> i64 {
     if lhs > rhs { (lhs - rhs) as i64 } else { -((rhs - lhs) as i64) }
 }
 
-struct SizeInfo {
-    pub total: u64,
-    pub available: u64,
+// ============================================================================
+// Histogram primitive bucket constants
+// ============================================================================
+
+/// Default bucket boundaries for all duration histograms, in nanoseconds.
+/// One bucket per decade from 10µs to 100s; broad enough to catch sub-100µs
+/// point queries and soak-pathology tails, narrow enough to keep per-histogram
+/// cardinality at 10 series (9 buckets + +Inf). `+Inf` is implicit — observations
+/// above the last bound land in an overflow bucket emitted as `le="+Inf"` at
+/// exposition time.
+pub const DEFAULT_DURATION_BUCKETS_NANOS: &[u64] = &[
+    10_000,          //  10 µs
+    100_000,         // 100 µs
+    1_000_000,       //   1 ms
+    10_000_000,      //  10 ms
+    100_000_000,     // 100 ms
+    1_000_000_000,   //   1 s
+    10_000_000_000,  //  10 s
+    100_000_000_000, // 100 s
+];
+
+/// Bucket boundaries for the queries-per-transaction histogram. Counts, not
+/// durations — same storage type, different scale. Fewer mid-range buckets,
+/// more headroom for accidental-n+1 outliers (top bound 10_000).
+pub const DEFAULT_QUERIES_PER_TRANSACTION_BUCKETS: &[u64] = &[1, 5, 10, 25, 100, 1000, 10000];
+
+// ============================================================================
+// Per-database histogram container
+// ============================================================================
+
+#[derive(Debug)]
+pub(crate) struct DatabaseHistograms {
+    database_id: Arc<DatabaseId>,
+    query_duration: HashMap<QueryType, HistogramMetrics>,
+    transaction_duration: HashMap<LoadKind, HistogramMetrics>,
+    queries_per_transaction: HistogramMetrics,
+    transaction_lifecycle: TransactionLifecycleCounters,
+    wal: FsyncMetrics,
+}
+
+impl DatabaseHistograms {
+    pub fn new(database_id: Arc<DatabaseId>) -> Self {
+        let query_duration = [QueryType::Read, QueryType::Write, QueryType::Schema]
+            .into_iter()
+            .map(|qt| (qt, HistogramMetrics::new_duration()))
+            .collect();
+        let transaction_duration =
+            [LoadKind::ReadTransactions, LoadKind::WriteTransactions, LoadKind::SchemaTransactions]
+                .into_iter()
+                .map(|tt| (tt, HistogramMetrics::new_duration()))
+                .collect();
+        Self {
+            database_id,
+            query_duration,
+            transaction_duration,
+            queries_per_transaction: HistogramMetrics::new_queries_per_transaction(),
+            transaction_lifecycle: TransactionLifecycleCounters::new(),
+            wal: FsyncMetrics::new(),
+        }
+    }
+
+    pub fn database_id(&self) -> &Arc<DatabaseId> {
+        &self.database_id
+    }
+
+    pub fn observe_query_duration(&self, kind: QueryType, d: std::time::Duration) {
+        self.query_duration.get(&kind).expect("All QueryType variants pre-inserted").observe_duration(d);
+    }
+
+    pub fn observe_transaction_duration(&self, kind: LoadKind, d: std::time::Duration) {
+        self.transaction_duration.get(&kind).expect("All LoadKind variants pre-inserted").observe_duration(d);
+    }
+
+    pub fn observe_queries_per_transaction(&self, n: u64) {
+        self.queries_per_transaction.observe_count(n);
+    }
+
+    pub fn record_transaction_outcome(&self, kind: LoadKind, outcome: TransactionOutcome) {
+        self.transaction_lifecycle.record(kind, outcome);
+    }
+
+    pub fn wal_metrics(&self) -> FsyncMetrics {
+        self.wal.clone()
+    }
+
+    pub fn snapshot(&self) -> DatabaseHistogramsSnapshot {
+        let mut query_duration: Vec<_> = self.query_duration.iter().map(|(k, h)| (*k, h.snapshot())).collect();
+        query_duration.sort_by_key(|(k, _)| match k {
+            QueryType::Read => 0,
+            QueryType::Write => 1,
+            QueryType::Schema => 2,
+        });
+        let mut transaction_duration: Vec<_> =
+            self.transaction_duration.iter().map(|(k, h)| (*k, h.snapshot())).collect();
+        transaction_duration.sort_by_key(|(k, _)| match k {
+            LoadKind::ReadTransactions => 0,
+            LoadKind::WriteTransactions => 1,
+            LoadKind::SchemaTransactions => 2,
+        });
+        DatabaseHistogramsSnapshot {
+            query_duration,
+            transaction_duration,
+            queries_per_transaction: self.queries_per_transaction.snapshot(),
+            transaction_lifecycle: self.transaction_lifecycle.snapshot(),
+            wal_fsync_duration: self.wal.fsync_histogram_snapshot(),
+            wal_bytes_written: self.wal.bytes_written(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DatabaseHistogramsSnapshot {
+    pub query_duration: Vec<(QueryType, HistogramSnapshot)>,
+    pub transaction_duration: Vec<(LoadKind, HistogramSnapshot)>,
+    pub queries_per_transaction: HistogramSnapshot,
+    pub transaction_lifecycle: TransactionLifecycleSnapshot,
+    pub wal_fsync_duration: HistogramSnapshot,
+    pub wal_bytes_written: u64,
 }

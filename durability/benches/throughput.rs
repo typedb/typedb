@@ -4,9 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
+use diagnostics::metrics::FsyncMetrics;
 use durability::{DurabilityRecordType, DurabilityService, wal::WAL};
 use itertools::Itertools;
 use tempdir::TempDir;
@@ -30,7 +31,7 @@ impl TestRecord {
 }
 
 pub fn create_wal(directory: impl AsRef<Path>) -> WAL {
-    let mut wal = WAL::create(directory).unwrap();
+    let mut wal = WAL::create(directory, FsyncMetrics::disabled()).unwrap();
     wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
     wal
 }

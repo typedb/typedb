@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{future::Future, hash::Hash, sync::Arc};
+use std::{future::Future, sync::Arc};
 
 use diagnostics::{
     diagnostics_manager::{DiagnosticsManager, is_diagnostics_needed},
@@ -13,23 +13,24 @@ use diagnostics::{
 use tonic::Status;
 use tonic_types::StatusExt;
 
-pub(crate) fn run_with_diagnostics<F, T>(
+pub(crate) fn run_with_diagnostics<F, T, S>(
     diagnostics_manager: &DiagnosticsManager,
-    database_name: Option<impl AsRef<str> + Hash>,
+    database_name: Option<S>,
     action_kind: ActionKind,
     f: F,
 ) -> Result<T, Status>
 where
     F: FnOnce() -> Result<T, Status>,
+    S: AsRef<str>,
 {
     let result = f();
-    submit_result_metrics(diagnostics_manager, database_name, action_kind, &result);
+    submit_result_metrics(diagnostics_manager, database_name.as_ref().map(|s| s.as_ref()), action_kind, &result);
     result
 }
 
-pub(crate) async fn run_with_diagnostics_async<F, Fut, T>(
+pub(crate) async fn run_with_diagnostics_async<F, Fut, T, S>(
     diagnostics_manager: Arc<DiagnosticsManager>,
-    database_name: Option<impl AsRef<str> + Hash>,
+    database_name: Option<S>,
     action_kind: ActionKind,
     f: F,
 ) -> Result<T, Status>
@@ -37,26 +38,27 @@ where
     F: FnOnce() -> Fut,
     Fut: Future<Output = Result<T, Status>> + Send,
     T: Send,
+    S: AsRef<str>,
 {
     let result = f().await;
-    submit_result_metrics(&diagnostics_manager, database_name, action_kind, &result);
+    submit_result_metrics(&diagnostics_manager, database_name.as_ref().map(|s| s.as_ref()), action_kind, &result);
     result
 }
 
 fn submit_result_metrics<T>(
     diagnostics_manager: &DiagnosticsManager,
-    database_name: Option<impl AsRef<str> + Hash>,
+    database_name: Option<&str>,
     action_kind: ActionKind,
     result: &Result<T, Status>,
 ) {
-    if !is_diagnostics_needed(database_name.as_ref()) {
+    if !is_diagnostics_needed(database_name) {
         return;
     }
 
     match result {
         Ok(_) => diagnostics_manager.submit_action_success(ClientEndpoint::Grpc, database_name, action_kind),
         Err(status) => {
-            diagnostics_manager.submit_action_fail(ClientEndpoint::Grpc, database_name.as_ref(), action_kind);
+            diagnostics_manager.submit_action_fail(ClientEndpoint::Grpc, database_name, action_kind);
             if let Some(error_code) = get_status_error_code(status) {
                 diagnostics_manager.submit_error(ClientEndpoint::Grpc, database_name, error_code.clone());
             }

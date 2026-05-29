@@ -9,6 +9,7 @@
 use std::sync::Arc;
 
 use bytes::{Bytes, byte_array::ByteArray};
+use diagnostics::metrics::FsyncMetrics;
 use durability::wal::WAL;
 use encoding::{
     EncodingKeyspace,
@@ -424,7 +425,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     let storage_path = create_tmp_storage_dir();
     let type_id = TypeID::new(0);
     {
-        let wal = WAL::create(&storage_path).unwrap();
+        let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
@@ -442,7 +443,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     }
 
     for i in 0..5 {
-        let wal = WAL::load(&storage_path).unwrap();
+        let wal = WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
                 .unwrap(),
@@ -456,7 +457,7 @@ fn next_entity_and_relation_ids_are_determined_from_storage() {
     }
 
     for i in 0..5 {
-        let wal = WAL::load(&storage_path).unwrap();
+        let wal = WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
                 .unwrap(),
@@ -477,7 +478,7 @@ fn sync_from_storage_lifts_counters_to_match_storage() {
     let type_id = TypeID::new(0);
 
     let stale_generator = {
-        let wal = WAL::create(&storage_path).unwrap();
+        let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),
@@ -513,7 +514,7 @@ fn sync_from_storage_lifts_counters_to_match_storage() {
         stale_generator
     };
 
-    let wal = WAL::load(&storage_path).unwrap();
+    let wal = WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap();
     let storage = Arc::new(
         MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
             .unwrap(),
@@ -556,7 +557,7 @@ fn sync_from_storage_never_lowers_a_counter() {
     let storage_path = create_tmp_storage_dir();
     let type_id = TypeID::new(0);
 
-    let wal = WAL::create(&storage_path).unwrap();
+    let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
     let storage = Arc::new(
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );

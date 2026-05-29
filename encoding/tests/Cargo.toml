@@ -21,6 +21,9 @@ features = {}
 	[dependencies.tracing]
 		workspace = true
 
+	[dependencies.diagnostics]
+		workspace = true
+
 	[dependencies.logger]
 		workspace = true
 

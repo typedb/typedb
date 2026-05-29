@@ -7,13 +7,14 @@ use std::{
     collections::HashMap,
     iter::Sum,
     ops::{Add, AddAssign},
+    sync::Arc,
 };
 
 use serde::Serialize;
 use serde_json::{Map, Value, json};
 
 use crate::{
-    DatabaseHashOpt, Diagnostics,
+    DatabaseHash, DatabaseHashOpt, DatabaseId, Diagnostics,
     metrics::{ALL_CLIENT_ENDPOINTS, ActionKind, ClientEndpoint},
     reports::{
         ActionReport, DataLoadReport, DatabaseReport, ErrorReport, LoadReport, OsReport, SchemaLoadReport,
@@ -132,6 +133,21 @@ impl From<LoadReport> for PosthogLoadReport {
         }
 
         Self { schema: value.schema.map(|schema| schema.into()), data: value.data.map(|data| data.into()), connection }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+struct PosthogDatabaseReport {
+    database_hash: DatabaseHash,
+}
+
+impl<T> From<T> for PosthogDatabaseReport
+where
+    T: Into<DatabaseReport>,
+{
+    fn from(value: T) -> Self {
+        Self { database_hash: value.into().0.hash_value() }
     }
 }
 
@@ -356,16 +372,18 @@ impl PosthogPayloadBuilder {
         PosthogPayload { api_key: self.api_key, batch }
     }
 
-    fn get_or_init_report(&mut self, database_hash: DatabaseHashOpt) -> &mut PosthogReportBuilder {
-        self.init_report_if_needed(database_hash);
+    fn get_or_init_report(&mut self, database_id: Option<Arc<DatabaseId>>) -> &mut PosthogReportBuilder {
+        let database_hash = database_id.as_ref().map(|id| id.hash_value());
+        self.init_report_if_needed(database_id);
         self.usage_reports.get_mut(&database_hash).expect("Expected to get by a just inserted key")
     }
 
-    fn init_report_if_needed(&mut self, database_hash: DatabaseHashOpt) {
+    fn init_report_if_needed(&mut self, database_id: Option<Arc<DatabaseId>>) {
+        let database_hash = database_id.as_ref().map(|id| id.hash_value());
         if !self.usage_reports.contains_key(&database_hash) {
-            let mut usage = if let Some(database_hash) = database_hash {
+            let mut usage = if let Some(database_id) = database_id {
                 let mut database_usage = PosthogReportBuilder::database_usage();
-                database_usage.flat_properties.extend(DatabaseReport(database_hash).to_json_map());
+                database_usage.flat_properties.extend(PosthogDatabaseReport::from(database_id).to_json_map());
                 database_usage.flat_properties.extend(self.server_metrics_minimal.clone());
                 database_usage
             } else {
@@ -383,10 +401,10 @@ pub(crate) fn to_full_posthog_reporting_json(diagnostics: &Diagnostics, api_key:
     let mut builder = PosthogPayloadBuilder::new(diagnostics, api_key.to_string());
     builder.init_report_if_needed(None);
 
-    for (database_hash, metrics) in diagnostics.lock_load_metrics_read().iter() {
-        match metrics.to_peak_report(database_hash) {
+    for metrics in diagnostics.lock_load_metrics_read().values() {
+        match metrics.to_peak_report() {
             Some(load_report) => {
-                let report_builder = builder.get_or_init_report(Some(*database_hash));
+                let report_builder = builder.get_or_init_report(Some(metrics.database_id().clone()));
                 report_builder.set_load(load_report);
             }
             None => continue,
@@ -394,25 +412,25 @@ pub(crate) fn to_full_posthog_reporting_json(diagnostics: &Diagnostics, api_key:
     }
 
     for client in ALL_CLIENT_ENDPOINTS {
-        for (&database_hash, metrics) in diagnostics.lock_action_metrics_read(client).iter() {
-            let action_reports = metrics.to_diff_reports(database_hash);
+        for metrics in diagnostics.lock_action_metrics_read(client).values() {
+            let action_reports = metrics.to_diff_reports();
             if action_reports.is_empty() {
                 continue;
             }
 
-            let report_builder = builder.get_or_init_report(database_hash);
+            let report_builder = builder.get_or_init_report(metrics.database_id().cloned());
             for action_report in action_reports {
                 report_builder.insert_action(client, action_report);
             }
         }
 
-        for (&database_hash, metrics) in diagnostics.lock_error_metrics_read(client).iter() {
-            let error_reports = metrics.to_diff_reports(database_hash);
+        for metrics in diagnostics.lock_error_metrics_read(client).values() {
+            let error_reports = metrics.to_diff_reports();
             if error_reports.is_empty() {
                 continue;
             }
 
-            let report_builder = builder.get_or_init_report(database_hash);
+            let report_builder = builder.get_or_init_report(metrics.database_id().cloned());
             for error_report in error_reports {
                 report_builder.insert_error(client, error_report);
             }

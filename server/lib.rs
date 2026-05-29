@@ -434,27 +434,38 @@ impl Server {
 
     pub fn print_serving_information(server_status: &BoxServerStatus, encryption_config: &EncryptionConfig) {
         const UNKNOWN: &str = "<UNKNOWN ADDRESS>";
+        const DISABLED: &str = "disabled";
         println!("Serving:");
 
         let grpc_listen_address = server_status.grpc_listen_address().unwrap_or(UNKNOWN);
         match server_status.grpc_advertise_address() {
             Some(grpc_advertise_address) if grpc_advertise_address != grpc_listen_address => {
-                println!("  gRPC:  {grpc_listen_address} (connect via {grpc_advertise_address})");
+                println!("  gRPC:       {grpc_listen_address} (connect via {grpc_advertise_address})");
             }
-            _ => println!("  gRPC:  {grpc_listen_address}"),
+            _ => println!("  gRPC:       {grpc_listen_address}"),
         }
 
-        if let Some(http_listen_address) = server_status.http_listen_address() {
-            match server_status.http_advertise_address() {
+        match server_status.http_listen_address() {
+            Some(http_listen_address) => match server_status.http_advertise_address() {
                 Some(http_advertise_address) if http_advertise_address != http_listen_address => {
-                    println!("  HTTP:  {http_listen_address} (connect via {http_advertise_address})");
+                    println!("  HTTP:       {http_listen_address} (connect via {http_advertise_address})");
                 }
-                _ => println!("  HTTP:  {http_listen_address}"),
-            }
+                _ => println!("  HTTP:       {http_listen_address}"),
+            },
+            None => println!("  HTTP:       {DISABLED}"),
         }
 
-        if let Some(admin_address) = server_status.admin_address() {
-            println!("  Admin: {admin_address} (localhost only)");
+        match server_status.admin_address() {
+            Some(admin_address) => println!("  Admin:      {admin_address} (localhost only)"),
+            None => println!("  Admin:      {DISABLED}"),
+        }
+
+        match server_status.monitoring_address() {
+            Some(monitoring_address) => {
+                println!("  Monitoring: http://{monitoring_address}/diagnostics (Prometheus scrape)");
+                println!("              http://{monitoring_address}/diagnostics?format=json (JSON)");
+            }
+            None => println!("  Monitoring: {DISABLED}"),
         }
 
         if encryption_config.enabled {

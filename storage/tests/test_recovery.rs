@@ -6,8 +6,9 @@
 
 #![allow(const_item_mutation, reason = "`&mut CommitProfile::DISABLED` is a dummy")]
 
-use std::fs;
+use std::{fs, sync::Arc};
 
+use diagnostics::metrics::FsyncMetrics;
 use durability::wal::WAL;
 use resource::{
     constants::snapshot::BUFFER_KEY_INLINE,
@@ -43,9 +44,12 @@ fn wal_and_checkpoint_ok() {
     };
 
     {
-        let storage =
-            load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint))
-                .unwrap();
+        let storage = load_storage::<TestKeyspaceSet>(
+            &storage_path,
+            WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap(),
+            Some(checkpoint),
+        )
+        .unwrap();
         assert_eq!(watermark, storage.snapshot_watermark());
         let snapshot = storage.open_snapshot_read();
         assert!(
@@ -90,7 +94,12 @@ fn wal_and_no_checkpoint_ok() {
     };
 
     {
-        let storage = load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), None).unwrap();
+        let storage = load_storage::<TestKeyspaceSet>(
+            &storage_path,
+            WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap(),
+            None,
+        )
+        .unwrap();
         assert_eq!(watermark, storage.snapshot_watermark());
         let snapshot = storage.open_snapshot_read();
         assert!(
@@ -126,7 +135,7 @@ fn no_wal_and_checkpoint_illegal() {
     fs::remove_dir_all(directory.join(WAL::WAL_DIR_NAME)).unwrap();
 
     {
-        let wal_result = WAL::load(&storage_path);
+        let wal_result = WAL::load(&storage_path, FsyncMetrics::disabled());
         assert!(wal_result.is_err());
     }
 }
@@ -153,7 +162,7 @@ fn no_wal_and_no_checkpoint_and_keyspaces_illegal() {
     fs::remove_dir_all(storage_path.join(WAL::WAL_DIR_NAME)).unwrap();
 
     {
-        let wal_result = WAL::load(&storage_path);
+        let wal_result = WAL::load(&storage_path, FsyncMetrics::disabled());
         assert!(wal_result.is_err());
     }
 }
@@ -182,7 +191,7 @@ fn no_wal_and_no_checkpoint_and_no_keyspaces_illegal() {
     fs::remove_dir_all(storage_path.join(MVCCStorage::<WALClient>::STORAGE_DIR_NAME)).unwrap();
 
     {
-        let wal_result = WAL::load(&storage_path);
+        let wal_result = WAL::load(&storage_path, FsyncMetrics::disabled());
         assert!(wal_result.is_err());
     }
 }

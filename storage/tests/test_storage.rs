@@ -7,6 +7,7 @@
 use std::sync::Arc;
 
 use bytes::{Bytes, byte_array::ByteArray};
+use diagnostics::metrics::FsyncMetrics;
 use durability::wal::WAL;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
@@ -123,9 +124,12 @@ fn create_reopen() {
     };
 
     {
-        let storage =
-            load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), Some(checkpoint))
-                .unwrap();
+        let storage = load_storage::<TestKeyspaceSet>(
+            &storage_path,
+            WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap(),
+            Some(checkpoint),
+        )
+        .unwrap();
         let items = storage
             .iterate_keyspace_range(
                 &IteratorPool::new(),

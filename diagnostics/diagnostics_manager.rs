@@ -4,14 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, hash::Hash, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use concurrency::TokioTaskSpawner;
 use resource::constants::database::INTERNAL_DATABASE_PREFIX;
 
 use crate::{
     Diagnostics,
-    metrics::{ActionKind, ClientEndpoint, DatabaseMetrics, LoadKind},
+    metrics::{ActionKind, ClientEndpoint, DatabaseMetricsSnapshot, LoadKind, QueryType, TransactionOutcome},
     monitoring_server::MonitoringServer,
     reporter::Reporter,
 };
@@ -69,13 +69,42 @@ impl DiagnosticsManager {
         Self { diagnostics, reporter, monitoring_server }
     }
 
+    pub fn new_disabled() -> Self {
+        let diagnostics = Diagnostics::new(
+            String::new(),
+            String::new(),
+            String::new(),
+            String::new(),
+            std::path::PathBuf::new(),
+            false,
+            false,
+        );
+        Self { diagnostics: Arc::new(diagnostics), reporter: None, monitoring_server: None }
+    }
+
+    pub fn metrics_enabled(&self) -> bool {
+        self.diagnostics.metrics_enabled()
+    }
+
     diagnostics_method! {
-        pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>);
-        pub fn submit_error(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, error_code: String);
-        pub fn submit_action_success(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
-        pub fn submit_action_fail(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
-        pub fn increment_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, connection_: LoadKind);
-        pub fn decrement_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, connection_: LoadKind);
+        pub fn submit_database_metrics(&self, snapshots: HashMap<Arc<str>, DatabaseMetricsSnapshot>);
+        pub fn submit_error(&self, client: ClientEndpoint, database_name: Option<&str>, error_code: String);
+        pub fn submit_action_success(&self, client: ClientEndpoint, database_name: Option<&str>, action_kind: ActionKind);
+        pub fn submit_action_fail(&self, client: ClientEndpoint, database_name: Option<&str>, action_kind: ActionKind);
+        pub fn increment_load_count(&self, client: ClientEndpoint, database_name: &str, load_kind: LoadKind);
+        pub fn decrement_load_count(&self, client: ClientEndpoint, database_name: &str, load_kind: LoadKind);
+
+        pub fn observe_query_duration(&self, database_name: &str, kind: QueryType, duration: std::time::Duration);
+        pub fn observe_transaction_duration(&self, database_name: &str, kind: LoadKind, duration: std::time::Duration);
+        pub fn observe_queries_per_transaction(&self, database_name: &str, queries: u64);
+        pub fn record_transaction_outcome(&self, database_name: &str, kind: LoadKind, outcome: TransactionOutcome);
+    }
+
+    pub fn wal_metrics(&self, database_name: &str, is_internal_database: bool) -> crate::metrics::FsyncMetrics {
+        if !self.metrics_enabled() || is_internal_database {
+            return crate::metrics::FsyncMetrics::disabled();
+        }
+        self.diagnostics.wal_metrics(database_name)
     }
 
     pub async fn may_start_reporting(&self) {
@@ -91,10 +120,9 @@ impl DiagnosticsManager {
     }
 }
 
-pub fn is_diagnostics_needed(database_name: Option<impl AsRef<str> + Hash>) -> bool {
-    // TODO: Would be good to reuse DatabaseManager's is_user_database() instead
+pub fn is_diagnostics_needed(database_name: Option<&str>) -> bool {
     match database_name {
-        Some(database_name) => !database_name.as_ref().starts_with(INTERNAL_DATABASE_PREFIX),
+        Some(database_name) => !database_name.starts_with(INTERNAL_DATABASE_PREFIX),
         None => true,
     }
 }

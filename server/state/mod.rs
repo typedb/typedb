@@ -59,8 +59,6 @@ impl ServerState {
         shutdown_receiver: Receiver<()>,
         background_task_spawner: TokioTaskSpawner,
     ) -> Result<ServerStateBuilder, ServerOpenError> {
-        let database_manager = DatabaseManager::new(&config.storage.data_directory)
-            .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
         let token_manager = Arc::new(
             TokenManager::new(config.server.authentication.token_expiration, background_task_spawner.clone())
                 .map_err(|typedb_source| ServerOpenError::TokenConfiguration { typedb_source })?,
@@ -79,6 +77,8 @@ impl ServerState {
             )
             .await,
         );
+        let database_manager = DatabaseManager::new(&config.storage.data_directory, diagnostics_manager.clone())
+            .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
         let database_diagnostics_updater = IntervalRunner::new(
             {
                 let diagnostics_manager = diagnostics_manager.clone();
@@ -88,7 +88,8 @@ impl ServerState {
             DATABASE_METRICS_UPDATE_INTERVAL,
         );
 
-        let (grpc_listen_address, http_listen_address, server_status) = Self::resolve_endpoints(&config.server).await?;
+        let (grpc_listen_address, http_listen_address, server_status) =
+            Self::resolve_endpoints(&config.server, &config.diagnostics.monitoring).await?;
 
         Ok(ServerStateBuilder {
             distribution_info,
@@ -175,6 +176,7 @@ impl ServerState {
         is_development_mode: bool,
         background_tasks: TokioTaskSpawner,
     ) -> DiagnosticsManager {
+        let metrics_enabled = config.monitoring.enabled || config.reporting.report_metrics;
         let diagnostics = Diagnostics::new(
             deployment_id,
             server_id,
@@ -182,6 +184,7 @@ impl ServerState {
             distribution_info.version.to_owned(),
             storage_directory,
             config.reporting.report_metrics,
+            metrics_enabled,
         );
         let diagnostics_manager = DiagnosticsManager::new(
             diagnostics,
@@ -199,13 +202,13 @@ impl ServerState {
         diagnostics_manager: Arc<DiagnosticsManager>,
         database_manager: Arc<DatabaseManager>,
     ) {
-        let metrics = database_manager
+        let snapshots = database_manager
             .databases()
             .values()
             .filter(|database| DatabaseManager::is_user_database(database.name()))
-            .map(|database| database.get_metrics())
+            .map(|database| (database.name_arc(), database.get_metrics()))
             .collect();
-        diagnostics_manager.submit_database_metrics(metrics);
+        diagnostics_manager.submit_database_metrics(snapshots);
     }
 
     pub async fn resolve_address(address: &str) -> Result<SocketAddr, ServerOpenError> {
@@ -221,6 +224,7 @@ impl ServerState {
 
     async fn resolve_endpoints(
         config: &crate::parameters::config::ServerConfig,
+        monitoring: &crate::parameters::config::Monitoring,
     ) -> Result<(SocketAddr, Option<SocketAddr>, LocalServerStatus), ServerOpenError> {
         let grpc_listen_address = Self::resolve_address(&config.listen_address).await?;
         let grpc_advertise_address = config.advertise_address.clone();
@@ -231,6 +235,12 @@ impl ServerState {
 
         let admin_address = if config.admin.enabled {
             Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, config.admin.port)))
+        } else {
+            None
+        };
+
+        let monitoring_address = if monitoring.enabled {
+            Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, monitoring.port)))
         } else {
             None
         };
@@ -246,11 +256,17 @@ impl ServerState {
                 return Err(ServerOpenError::AdminConflictingAddress { address });
             }
         }
+        if let Some(address) = monitoring_address {
+            if !reserved.insert(address) {
+                return Err(ServerOpenError::MonitoringConflictingAddress { address });
+            }
+        }
 
         let server_status = LocalServerStatus::new(
             PublicEndpointAddress::from_socket_addr(grpc_listen_address, grpc_advertise_address),
             http_listen_address.map(|listen| PublicEndpointAddress::from_socket_addr(listen, http_advertise_address)),
             admin_address.map(PrivateEndpointAddress::from_socket_addr),
+            monitoring_address.map(PrivateEndpointAddress::from_socket_addr),
         );
 
         Ok((grpc_listen_address, http_listen_address, server_status))

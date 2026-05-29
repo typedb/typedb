@@ -10,6 +10,7 @@ use std::{fs::File, os::raw::c_int, path::Path, sync::Arc};
 
 use bytes::byte_array::ByteArray;
 use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler};
+use diagnostics::metrics::FsyncMetrics;
 use durability::wal::WAL;
 use pprof::ProfilerGuard;
 use resource::{
@@ -121,7 +122,7 @@ fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WALCl
         MVCCStorage::create::<TestKeyspaceSet>(
             "storage_bench",
             storage_path,
-            WALClient::new(WAL::create(storage_path).unwrap()),
+            WALClient::new(WAL::create(storage_path, FsyncMetrics::disabled()).unwrap()),
         )
         .unwrap(),
     );

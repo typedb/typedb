@@ -24,7 +24,10 @@ use concept::{
     },
 };
 use concurrency::IntervalRunner;
-use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
+use diagnostics::{
+    diagnostics_manager::DiagnosticsManager,
+    metrics::{DataLoadMetrics, DatabaseMetricsSnapshot, FsyncMetrics, SchemaLoadMetrics},
+};
 use durability::{
     DurabilitySequenceNumber, DurabilityServiceError,
     wal::{WAL, WALError},
@@ -57,6 +60,7 @@ use crate::{
         CorruptionPartialResetKeyGeneratorInUse, CorruptionPartialResetThingVertexGeneratorInUse,
         CorruptionPartialResetTypeVertexGeneratorInUse,
     },
+    database_manager::DatabaseManager,
     transaction::TransactionError,
 };
 
@@ -75,7 +79,7 @@ enum TransactionReservationRequest {
 }
 
 pub struct Database<D> {
-    name: String,
+    name: Arc<str>,
     pub(super) path: PathBuf,
     pub(super) storage: Arc<MVCCStorage<D>>,
     pub(super) definition_key_generator: Arc<DefinitionKeyGenerator>,
@@ -100,6 +104,10 @@ impl<D> Database<D> {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn name_arc(&self) -> Arc<str> {
+        self.name.clone()
     }
 
     // Must be called before serving write transactions in case the storage was modified with
@@ -246,16 +254,24 @@ impl<D: DurabilityClient> Database<D> {
 }
 
 impl Database<WALClient> {
-    pub fn open(path: &Path) -> Result<Database<WALClient>, DatabaseOpenError> {
+    pub fn open(
+        path: &Path,
+        diagnostics_manager: &DiagnosticsManager,
+    ) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::InvalidUnicodeName;
 
         let file_name = path.file_name().unwrap();
         let name = file_name.to_str().ok_or_else(|| InvalidUnicodeName { name: file_name.to_owned() })?;
+        let wal_metrics = diagnostics_manager.wal_metrics(name, DatabaseManager::is_internal_database(name));
 
-        if path.exists() { Self::load(path, name) } else { Self::create(path, name) }
+        if path.exists() { Self::load(path, name, wal_metrics) } else { Self::create(path, name, wal_metrics) }
     }
 
-    fn create(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
+    fn create(
+        path: &Path,
+        name: impl AsRef<str>,
+        wal_metrics: FsyncMetrics,
+    ) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
             DirectoryCreate, Encoding, FunctionCacheInitialise, StorageOpen, TypeCacheInitialise, WALOpen,
         };
@@ -264,7 +280,7 @@ impl Database<WALClient> {
 
         fs::create_dir(path).map_err(|source| DirectoryCreate { name: name.to_string(), source: Arc::new(source) })?;
 
-        let wal = WAL::create(path).map_err(|source| WALOpen { source })?;
+        let wal = WAL::create(path, wal_metrics).map_err(|source| WALOpen { source })?;
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
 
@@ -306,7 +322,7 @@ impl Database<WALClient> {
         let checkpoint_fn = make_checkpoint_fn(name.to_owned(), path.to_owned(), SequenceNumber::MIN, storage.clone());
 
         Ok(Database::<WALClient> {
-            name: name.to_owned(),
+            name: Arc::<str>::from(name),
             path: path.to_owned(),
             storage,
             definition_key_generator,
@@ -320,7 +336,11 @@ impl Database<WALClient> {
         })
     }
 
-    fn load(path: &Path, name: impl AsRef<str>) -> Result<Database<WALClient>, DatabaseOpenError> {
+    fn load(
+        path: &Path,
+        name: impl AsRef<str>,
+        wal_metrics: FsyncMetrics,
+    ) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::{
             CheckpointCreate, CheckpointLoad, DurabilityClientRead, Encoding, NotADatabase, StatisticsInitialise,
             StorageOpen, TypeCacheInitialise, WALOpen,
@@ -335,7 +355,7 @@ impl Database<WALClient> {
         );
 
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
-        let wal = match WAL::load(path) {
+        let wal = match WAL::load(path, wal_metrics) {
             Ok(wal) => wal,
             Err(DurabilityServiceError::WAL { source: WALError::LoadDirectoryMissing { .. } }) => {
                 return Err(NotADatabase { name: name.to_owned() });
@@ -417,7 +437,7 @@ impl Database<WALClient> {
             make_checkpoint_fn(name.to_owned(), path.to_owned(), checkpoint_sequence_number, storage.clone());
 
         let database = Database::<WALClient> {
-            name: name.to_owned(),
+            name: Arc::<str>::from(name),
             path: path.to_owned(),
             storage,
             definition_key_generator,
@@ -449,7 +469,7 @@ impl Database<WALClient> {
 
     #[allow(clippy::drop_non_drop)]
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
-        trace!("Deleting database '{}'.", self.name);
+        trace!("Deleting database '{}'.", &self.name);
         drop(self._statistics_updater);
         drop(self._checkpointer);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
@@ -510,10 +530,9 @@ impl Database<WALClient> {
         Ok(())
     }
 
-    pub fn get_metrics(&self) -> DatabaseMetrics {
+    pub fn get_metrics(&self) -> DatabaseMetricsSnapshot {
         let schema = self.schema.read().expect("Expected database schema lock acquisition");
-        DatabaseMetrics {
-            database_name: self.name().to_owned(),
+        DatabaseMetricsSnapshot {
             schema: SchemaLoadMetrics { type_count: schema.type_cache.get_types_count() },
             data: DataLoadMetrics {
                 entity_count: schema.thing_statistics.total_entity_count,
@@ -573,7 +592,7 @@ fn make_update_statistics_fn(
             let new_statistics = Arc::new(new_statistics);
             query_cache.set_statistics_and_invalidate_outdated(new_statistics.clone());
             schema.write().unwrap().thing_statistics = new_statistics;
-            debug!("Finished updating statistics for database {database_name}");
+            debug!("Finished updating statistics for database {}", database_name.as_str());
         }
     }
 }

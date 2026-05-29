@@ -308,6 +308,7 @@ pub mod tests {
         thing::{statistics::Statistics, thing_manager::ThingManager},
         type_::type_manager::TypeManager,
     };
+    use diagnostics::metrics::FsyncMetrics;
     use durability::{DurabilitySequenceNumber, wal::WAL};
     use encoding::{
         EncodingKeyspace,
@@ -356,7 +357,7 @@ pub mod tests {
     pub(crate) fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
         init_logging();
         let storage_path = create_tmp_storage_dir();
-        let wal = WAL::create(&storage_path).unwrap();
+        let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
         let storage = Arc::new(
             MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
                 .unwrap(),

@@ -18,6 +18,9 @@ features = {}
 	[dev-dependencies.test_utils]
 		workspace = true
 
+	[dev-dependencies.diagnostics]
+		workspace = true
+
 	[dev-dependencies.test_utils_encoding]
 		workspace = true
 

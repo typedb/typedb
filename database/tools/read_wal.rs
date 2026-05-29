@@ -4,10 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use clap::{Parser, Subcommand};
 use concept::thing::statistics::Statistics;
+use diagnostics::metrics::FsyncMetrics;
 use durability::{DurabilitySequenceNumber, RawRecord, wal::WAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityRecord, WALClient},
@@ -107,7 +108,7 @@ fn print_raw_record(record: RawRecord<'_>) {
 }
 
 fn print_range(path: PathBuf, from: u64, to: Option<u64>) {
-    let wal = WAL::load(path).unwrap();
+    let wal = WAL::load(path, FsyncMetrics::disabled()).unwrap();
 
     let mut wal = WALClient::new(wal);
     wal.register_record_type::<Statistics>();
@@ -127,7 +128,7 @@ fn print_range(path: PathBuf, from: u64, to: Option<u64>) {
 }
 
 fn print_at(path: PathBuf, sequence_number: Option<u64>) {
-    let wal = WAL::load(path).unwrap();
+    let wal = WAL::load(path, FsyncMetrics::disabled()).unwrap();
 
     let mut wal = WALClient::new(wal);
     wal.register_record_type::<Statistics>();

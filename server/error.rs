@@ -78,6 +78,7 @@ typedb_error! {
         AddressResolutionFailed(27, "Could not resolve address '{address}'.", address: String, source: Arc<io::Error>),
         AddressResolutionEmpty(28, "Could not resolve address '{address}' to any IP address.", address: String),
         AdminServe(29, "Could not serve admin on {address}.", address: SocketAddr, source: Arc<tonic::transport::Error>),
+        MonitoringConflictingAddress(30, "Configuring diagnostics monitoring on the same address {address} as another service is not supported.", address: SocketAddr),
     }
 }
 

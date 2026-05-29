@@ -68,6 +68,9 @@ features = {}
 	[dependencies.itertools]
 		workspace = true
 
+	[dependencies.diagnostics]
+		workspace = true
+
 	[dependencies.bytes]
 		workspace = true
 

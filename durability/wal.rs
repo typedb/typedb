@@ -24,6 +24,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use diagnostics::metrics::FsyncMetrics;
 use fail_point::{
     WAL_EMPTY_WAL_DIR, WAL_PARTIAL_HEADER_SEQ, WAL_PARTIAL_HEADER_SEQ_LEN, WAL_RECORD_ONLY_HEADER,
     WAL_RECORD_UNFLUSHED, fail_point,
@@ -45,12 +46,13 @@ pub struct WAL {
     next_sequence_number: AtomicU64,
     files: Arc<RwLock<Files>>,
     fsync_thread: FsyncThread,
+    metrics: FsyncMetrics,
 }
 
 impl WAL {
     pub const WAL_DIR_NAME: &'static str = "wal";
 
-    pub fn create(directory: impl AsRef<Path>) -> Result<Self, DurabilityServiceError> {
+    pub fn create(directory: impl AsRef<Path>, metrics: FsyncMetrics) -> Result<Self, DurabilityServiceError> {
         let directory = directory.as_ref().to_owned();
         let wal_dir = directory.join(Self::WAL_DIR_NAME);
         if wal_dir.exists() {
@@ -67,17 +69,18 @@ impl WAL {
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
-        let mut fsync_thread = FsyncThread::new(files.clone());
+        let mut fsync_thread = FsyncThread::new(files.clone(), metrics.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
             registered_types: HashMap::new(),
             next_sequence_number: AtomicU64::new(next.number()),
             files,
             fsync_thread,
+            metrics,
         })
     }
 
-    pub fn load(directory: impl AsRef<Path>) -> Result<Self, DurabilityServiceError> {
+    pub fn load(directory: impl AsRef<Path>, metrics: FsyncMetrics) -> Result<Self, DurabilityServiceError> {
         let directory = directory.as_ref().to_owned();
         let wal_dir = directory.join(Self::WAL_DIR_NAME);
         if !wal_dir.exists() {
@@ -93,13 +96,14 @@ impl WAL {
             .map(|rr| rr.unwrap().sequence_number.next())
             .unwrap_or(DurabilitySequenceNumber::MIN.next());
 
-        let mut fsync_thread = FsyncThread::new(files.clone());
+        let mut fsync_thread = FsyncThread::new(files.clone(), metrics.clone());
         FsyncThread::start(&mut fsync_thread.handle, fsync_thread.context.clone());
         Ok(Self {
             registered_types: HashMap::new(),
             next_sequence_number: AtomicU64::new(next.number()),
             files,
             fsync_thread,
+            metrics,
         })
     }
 
@@ -139,6 +143,7 @@ impl DurabilityService for WAL {
         debug!("Writing unsequenced record with {sequence_number}");
         let raw_record = RawRecord { sequence_number, record_type, bytes: Cow::Borrowed(bytes) };
         files.write_record(raw_record)?;
+        self.metrics.record_bytes_written(bytes.len() as u64);
         Ok(sequence_number)
     }
 
@@ -149,6 +154,7 @@ impl DurabilityService for WAL {
         debug!("Writing unsequenced record with {sequence_number}");
         let raw_record = RawRecord { sequence_number, record_type, bytes: Cow::Borrowed(bytes) };
         files.write_record(raw_record)?;
+        self.metrics.record_bytes_written(bytes.len() as u64);
         Ok(())
     }
 
@@ -662,6 +668,7 @@ pub struct FsyncThreadContext {
     shutting_down: AtomicBool,
     signalling: [Mutex<Vec<Option<mpsc::Sender<()>>>>; 2],
     current_signal: AtomicU8,
+    metrics: FsyncMetrics,
 }
 
 #[derive(Debug)]
@@ -671,12 +678,13 @@ pub struct FsyncThread {
 }
 
 impl FsyncThread {
-    fn new(files: Arc<RwLock<Files>>) -> Self {
+    fn new(files: Arc<RwLock<Files>>, metrics: FsyncMetrics) -> Self {
         let context = FsyncThreadContext {
             files,
             shutting_down: AtomicBool::new(false),
             signalling: [Mutex::new(Vec::new()), Mutex::new(Vec::new())],
             current_signal: AtomicU8::new(0),
+            metrics,
         };
         Self { handle: None, context: Arc::new(context) }
     }
@@ -723,7 +731,9 @@ impl FsyncThread {
         let vec_lock = context.signalling.get(current_signal as usize).unwrap().lock();
         let mut vec = vec_lock.unwrap();
         if !vec.is_empty() {
+            let started = Instant::now();
             context.files.write().unwrap().sync_all().expect("Expected sync all");
+            context.metrics.record_fsync_duration(started.elapsed());
             while let Some(sender_opt) = vec.pop() {
                 if let Some(sender) = sender_opt {
                     sender.send(()).unwrap();
@@ -744,7 +754,10 @@ impl Drop for FsyncThread {
 
 #[cfg(test)]
 mod test {
+    use std::sync::Arc;
+
     use assert as assert_true;
+    use diagnostics::metrics::FsyncMetrics;
     use itertools::Itertools;
     use tempdir::TempDir;
 
@@ -783,14 +796,14 @@ mod test {
     }
 
     fn create_wal(directory: &TempDir) -> WAL {
-        let mut wal = WAL::create(directory).unwrap();
+        let mut wal = WAL::create(directory, FsyncMetrics::disabled()).unwrap();
         wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
         wal.register_record_type(UnsequencedTestRecord::RECORD_TYPE, UnsequencedTestRecord::RECORD_NAME);
         wal
     }
 
     fn load_wal(directory: &TempDir) -> WAL {
-        let mut wal = WAL::load(directory).unwrap();
+        let mut wal = WAL::load(directory, FsyncMetrics::disabled()).unwrap();
         wal.register_record_type(TestRecord::RECORD_TYPE, TestRecord::RECORD_NAME);
         wal.register_record_type(UnsequencedTestRecord::RECORD_TYPE, UnsequencedTestRecord::RECORD_NAME);
         wal

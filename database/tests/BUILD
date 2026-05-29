@@ -14,6 +14,8 @@ rust_test(
     deps = [
         "//common/logger",
         "//database",
+        "//diagnostics",
+        "//durability",
         "//encoding",
         "//storage",
         "//util/test:test_utils",
@@ -32,6 +34,7 @@ rust_test(
         "//common/logger",
         "//common/options",
         "//database",
+        "//diagnostics",
         "//encoding",
         "//storage",
         "//util/test:test_utils",
@@ -50,6 +53,7 @@ rust_test(
     deps = [
         "//common/options",
         "//database",
+        "//diagnostics",
         "//executor",
         "//storage",
         "//util/test:test_utils",
@@ -66,12 +70,25 @@ rust_test(
     deps = [
         "//common/options",
         "//database",
+        "//diagnostics",
         "//encoding",
         "//executor",
         "//storage",
         "//util/test:test_utils",
 
         "@typeql//rust:typeql",
+    ]
+)
+
+rust_test(
+    name = "test_diagnostics_posthog_pii",
+    srcs = glob([
+        "diagnostics_posthog_pii.rs",
+    ]),
+    deps = [
+        "//diagnostics",
+
+        "@crates//:serde_json",
     ]
 )
 
@@ -82,6 +99,7 @@ rustfmt_test(
         ":test_transaction",
         ":test_statistics_synchronization",
         ":test_transaction_isolation",
+        ":test_diagnostics_posthog_pii",
     ],
     size = "small",
 )
