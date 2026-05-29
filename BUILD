@@ -75,7 +75,7 @@ alias(
 # The directory structure for distribution (Unix)
 pkg_files(
     name = "package-layout-server",
-    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml", "//:LICENSE"],
+    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml", "//:LICENSE", ":pkg-empty-server-data"],
     renames = {
         "//:typedb_server_bin" : "server/typedb_server_bin",
         "//admin:typedb_admin_bin" : "admin/typedb_admin_bin",

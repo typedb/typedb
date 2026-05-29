@@ -20,8 +20,8 @@ index a0be2b37e7..1aa5de414a 100644
 +# The directory structure for distribution (Windows)
  pkg_files(
      name = "package-layout-server",
--    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml", "//:LICENSE"],
-+    srcs = ["//:typedb_server_bin_release", "//:typedb_admin_bin_release", "//binary:typedb.bat", "//server:config.yml", "//:LICENSE"],
+-    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml", "//:LICENSE", ":pkg-empty-server-data"],
++    srcs = ["//:typedb_server_bin_release", "//:typedb_admin_bin_release", "//binary:typedb.bat", "//server:config.yml", "//:LICENSE", ":pkg-empty-server-data"],
      renames = {
 -        "//:typedb_server_bin" : "server/typedb_server_bin",
 -        "//admin:typedb_admin_bin" : "admin/typedb_admin_bin",
