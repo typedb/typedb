@@ -126,11 +126,16 @@ native_artifact_files.artifact(
 )
 use_repo(
     native_artifact_files,
-     "typedb_console_artifact_linux-x86_64-extracted",
-     "typedb_console_artifact_linux-arm64-extracted",
-     "typedb_console_artifact_mac-x86_64-extracted",
-     "typedb_console_artifact_mac-arm64-extracted",
-     "typedb_console_artifact_windows-x86_64-extracted",
+    "typedb_console_artifact_linux-x86_64",
+    "typedb_console_artifact_linux-arm64",
+    "typedb_console_artifact_mac-x86_64",
+    "typedb_console_artifact_mac-arm64",
+    "typedb_console_artifact_windows-x86_64",
+    "typedb_console_artifact_linux-x86_64-extracted",
+    "typedb_console_artifact_linux-arm64-extracted",
+    "typedb_console_artifact_mac-x86_64-extracted",
+    "typedb_console_artifact_mac-arm64-extracted",
+    "typedb_console_artifact_windows-x86_64-extracted",
 )
 
 # ===========================================================
