@@ -60,9 +60,6 @@ pkg_mkdirs(
 )
 
 binary_permissions = pkg_attributes(mode = "0744")
-other_permissions = {
-    "server/data": "0755",
-}
 
 alias(
     name = "typedb_console_artifact_extracted",
@@ -151,7 +148,8 @@ select_file(
 pkg_files(
     name = "console-repackaged",
     srcs = [":console-binary-only"],
-    prefix = "console"
+    prefix = "console",
+    attributes = binary_permissions,
 )
 
 pkg_filegroup(
