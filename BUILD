@@ -14,7 +14,7 @@ load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_a
 load("@bazel_skylib//rules:select_file.bzl", "select_file")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_push")
 
-load("@rules_pkg//:mappings.bzl", "pkg_attributes" , "pkg_files", "pkg_filegroup", "pkg_mkdirs", "strip_prefix", "filter_directory")
+load("@rules_pkg//:mappings.bzl", "pkg_attributes" , "pkg_files", "pkg_filegroup", "pkg_mkdirs")
 load("@rules_pkg//:pkg.bzl", "pkg_tar", "pkg_zip")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rustfmt_test")
 
@@ -141,7 +141,6 @@ pkg_zip(
 select_file(
     name = "console-binary-only",
     srcs = ":typedb_console_artifact_extracted",
-#     strip_prefix = strip_prefix.from_pkg("typedb-console-mac"),
     subpath = "console/typedb_console_bin",
 )
 
@@ -385,10 +384,6 @@ label_flag(
 )
 
 # apt
-assemble_files = {
-    "//:LICENSE": "LICENSE",
-}
-
 apt_depends = []
 
 apt_installation_dir = "/opt/typedb/core/"
@@ -427,7 +422,6 @@ assemble_apt(
     description = "TypeDB",
     empty_dirs = apt_empty_dirs,
     empty_dirs_permission = "0777",
-    files = assemble_files,
     installation_dir = apt_installation_dir,
     maintainer = "TypeDB Community <community@typedb.com>",
     symlinks = apt_symlinks,
@@ -453,7 +447,6 @@ assemble_apt(
     description = "TypeDB",
     empty_dirs = apt_empty_dirs,
     empty_dirs_permission = "0777",
-    files = assemble_files,
     installation_dir = apt_installation_dir,
     maintainer = "TypeDB Community <community@typedb.com>",
     symlinks = apt_symlinks,

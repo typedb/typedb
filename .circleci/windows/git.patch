@@ -1,8 +1,8 @@
 diff --git a/BUILD b/BUILD
-index a0be2b37e7..1aa5de414a 100644
+index bb3d50325e..814c752450 100644
 --- a/BUILD
 +++ b/BUILD
-@@ -75,13 +75,23 @@ alias(
+@@ -72,13 +72,23 @@ alias(
      })
  )
  
@@ -30,10 +30,10 @@ index a0be2b37e7..1aa5de414a 100644
          "//server:config.yml" : "server/config.yml",
      },
      attributes = binary_permissions,
-@@ -145,7 +155,7 @@ select_file(
+@@ -141,7 +151,7 @@ pkg_zip(
+ select_file(
      name = "console-binary-only",
      srcs = ":typedb_console_artifact_extracted",
- #     strip_prefix = strip_prefix.from_pkg("typedb-console-mac"),
 -    subpath = "console/typedb_console_bin",
 +    subpath = "console/typedb_console_bin.exe",
  )
