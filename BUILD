@@ -84,11 +84,6 @@ pkg_files(
     attributes = binary_permissions,
 )
 
-pkg_tar(
-    name = "package-typedb-server-only",
-    srcs = [":package-layout-server"],
-)
-
 pkg_zip(
     name = "assemble-server-mac-x86_64-zip",
     srcs = [":package-layout-server"],
@@ -110,7 +105,7 @@ pkg_zip(
 
 pkg_tar(
     name = "assemble-server-linux-x86_64-targz",
-    srcs = ["//:package-typedb-server-only"],
+    srcs = [":package-layout-server"],
     package_dir = "typedb-server-linux-x86_64",
     out = "typedb-server-linux-x86_64.tar.gz",
     visibility = ["//tests/assembly:__subpackages__"],
@@ -119,7 +114,7 @@ pkg_tar(
 
 pkg_tar(
     name = "assemble-server-linux-arm64-targz",
-    srcs = ["//:package-typedb-server-only"],
+    srcs = [":package-layout-server"],
     package_dir = "typedb-server-linux-arm64",
     out = "typedb-server-linux-arm64.tar.gz",
     visibility = ["//tests/assembly:__subpackages__"],
