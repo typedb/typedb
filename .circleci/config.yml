@@ -421,7 +421,7 @@ workflows:
       - test-deploy-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [ master, one-off/python39-for-rules_pkg ]
+              only: [ master ]
 
       - deploy-docker-snapshot-x86_64:
           filters:
