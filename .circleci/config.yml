@@ -53,8 +53,12 @@ commands:
         type: string
     steps:
       - run: |
-          amazon-linux-extras install java-openjdk11 docker -y
+          amazon-linux-extras install java-openjdk11 docker python3.8 -y
           yum install -y git tar gcc gcc-c++ file lsof which procps llvm-devel clang-devel wget
+
+          rm /usr/bin/python3
+          ln -s /usr/bin/python3.8 /usr/bin/python3
+          
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.bazel-arch>>"
           mv "bazelisk-linux-<<parameters.bazel-arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
@@ -417,7 +421,7 @@ workflows:
       - test-deploy-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [ master ]
+              only: [ master, one-off/python39-for-rules_pkg ]
 
       - deploy-docker-snapshot-x86_64:
           filters:

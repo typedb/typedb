@@ -121,15 +121,16 @@ native_artifact_files.artifact(
     name = "typedb_console_artifact",
     group_name = "typedb-console-{platform}",
     artifact_name = "typedb-console-{platform}-{version}.{ext}",
+    archive_strip_prefix = "typedb-console-{platform}-{version}",
     tag = "3.11.5",
 )
 use_repo(
     native_artifact_files,
-     "typedb_console_artifact_linux-x86_64",
-     "typedb_console_artifact_linux-arm64",
-     "typedb_console_artifact_mac-x86_64",
-     "typedb_console_artifact_mac-arm64",
-     "typedb_console_artifact_windows-x86_64",
+     "typedb_console_artifact_linux-x86_64-extracted",
+     "typedb_console_artifact_linux-arm64-extracted",
+     "typedb_console_artifact_mac-x86_64-extracted",
+     "typedb_console_artifact_mac-arm64-extracted",
+     "typedb_console_artifact_windows-x86_64-extracted",
 )
 
 # ===========================================================
@@ -147,7 +148,7 @@ bazel_dep(name = "typedb_dependencies", version = "0.0.0")
 git_override(
     module_name = "typedb_dependencies",
     remote = "https://github.com/typedb/dependencies",
-    commit = "cdb696f58b0827c32e241f246b1b56360847679b",
+    commit = "548c7d87efe44fab5a6b32be8b60b23308a40adb",
 )
 
 bazel_dep(name = "typeql", version = "0.0.0")
