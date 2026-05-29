@@ -342,12 +342,8 @@ impl DatabaseManager {
     }
 
     fn new_imported_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Database::<WALClient>::open(
-            &self.import_directory.join(name),
-            &self.diagnostics_manager,
-            &self.rocks_resources,
-        )
-        .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
+        Database::<WALClient>::open(&self.import_directory.join(name), &self.diagnostics_manager, &self.rocks_resources)
+            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
     }
 
     fn exists_public<'a>(&'a self, databases: &'a DatabasesWriteLock<'a>, name: &str) -> bool {

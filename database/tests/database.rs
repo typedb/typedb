@@ -19,8 +19,7 @@ fn create_delete_database() {
     let database_path = create_tmp_storage_dir();
     let diagnostics_manager = Arc::new(DiagnosticsManager::new_disabled());
     let resources = create_rocks_resources();
-    let db_result =
-        Database::<WALClient>::open(&database_path.join("create_delete"), &diagnostics_manager, &resources);
+    let db_result = Database::<WALClient>::open(&database_path.join("create_delete"), &diagnostics_manager, &resources);
     assert!(db_result.is_ok(), "{:?}", db_result.unwrap_err());
     let db = db_result.unwrap();
     let delete_result = db.delete();
