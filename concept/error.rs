@@ -9,11 +9,10 @@ use std::{fmt, sync::Arc};
 use bytes::util::HexBytesFormatter;
 use encoding::{
     error::EncodingError,
-    graph::type_::Kind,
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use storage::snapshot::{SnapshotGetError, iterator::SnapshotIteratorError};
+use storage::snapshot::{SnapshotError, SnapshotGetError, iterator::SnapshotIteratorError};
 
 use crate::{
     thing::thing_manager::validation::DataValidationError,
@@ -89,6 +88,7 @@ typedb_error! {
         Format(26, "Formatting error.", source: fmt::Error),
         IidRepresentsWrongInstanceKind(27, "Could not read a concept of the expected kind by IID."),
         FunctionNotFound(28, "Function named '{function_name}' not found.", function_name: String),
+        LoadSchemaSnapshot(29, "Failed to load schema keyspace into cached read snapshot.", typedb_source: SnapshotError),
     }
 }
 

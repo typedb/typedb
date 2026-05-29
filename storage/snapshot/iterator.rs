@@ -33,6 +33,13 @@ impl SnapshotRangeIterator {
     pub(crate) fn new(mvcc_iterator: MVCCRangeIterator, buffered_iterator: Option<BufferRangeIterator>) -> Self {
         SnapshotRangeIterator { storage_iterator: Some(mvcc_iterator), buffered_iterator, ready_item_source: None }
     }
+    pub fn new_buffered_only(buffered_iterator: BufferRangeIterator) -> Self {
+        SnapshotRangeIterator {
+            storage_iterator: None,
+            buffered_iterator: Some(buffered_iterator),
+            ready_item_source: None,
+        }
+    }
 
     // for testing
     pub fn new_empty() -> Self {
@@ -61,19 +68,22 @@ impl SnapshotRangeIterator {
                     // buffered iterators check that the seek is in ascending order internally
                     iter.seek(key.bytes())
                 }
-                // storage iterators check that the seek is in ascending order internally
-                self.storage_iterator.as_mut().unwrap().seek(key.bytes());
+                if let Some(iter) = self.storage_iterator.as_mut() {
+                    // storage iterators check that the seek is in ascending order internally
+                    iter.seek(key.bytes());
+                }
                 self.find_next_state();
             }
         }
     }
 
     fn find_next_state(&mut self) {
-        while self.ready_item_source.is_none() && self.storage_iterator.is_some() {
-            let Some(Ok((storage_key, _storage_value))) = self.storage_iterator.as_mut().unwrap().peek() else {
+        while self.ready_item_source.is_none() {
+            // get the storage key if there is one, else just fall back to the next buffered key
+            let storage_peek = self.storage_iterator.as_mut().and_then(|iter| iter.peek());
+            let Some(Ok((storage_key, _storage_value))) = storage_peek else {
                 if let Some(buffered_iterator) = self.buffered_iterator.as_mut() {
                     while let Some((_, Write::Delete)) = buffered_iterator.peek() {
-                        // SKIP buffered
                         buffered_iterator.next();
                     }
                     if buffered_iterator.peek().is_some() {
@@ -83,12 +93,14 @@ impl SnapshotRangeIterator {
                 break;
             };
 
+            // if we have a storage key, try to get the next buffered key, else just fall back to storage key
             let Some(Some((buffered_key, buffered_write))) = self.buffered_iterator.as_mut().map(|iter| iter.peek())
             else {
                 self.ready_item_source = Some(ReadyItemSource::Storage);
                 break;
             };
 
+            // if we have both, compare
             let (buffered_key, buffered_write) = (StorageKeyReference::from(buffered_key), buffered_write);
             match buffered_key.cmp(storage_key) {
                 Ordering::Less => {
@@ -117,11 +129,6 @@ impl SnapshotRangeIterator {
                 }
             }
         }
-    }
-
-    fn get_buffered_peek(buffered_iterator: &mut BufferRangeIterator) -> (StorageKeyReference<'_>, &[u8]) {
-        let (key, write) = buffered_iterator.peek().unwrap();
-        (StorageKeyReference::from(key), write.get_value())
     }
 
     pub fn collect_cloned_vec<F, M>(self, mapper: F) -> Result<Vec<M>, Arc<SnapshotIteratorError>>
@@ -174,13 +181,6 @@ impl SnapshotRangeIterator {
         match self.storage_iterator.as_mut().unwrap().next()? {
             Ok((key, value)) => Some(Ok((StorageKey::Reference(key), Bytes::Reference(value)))),
             Err(error) => Some(Err(Arc::new(SnapshotIteratorError::MVCCRead { source: error.clone() }))),
-        }
-    }
-
-    fn storage_peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, &[u8]), SnapshotIteratorError>> {
-        match self.storage_iterator.as_mut().unwrap().peek()? {
-            &Ok((key, value)) => Some(Ok((key, value))),
-            Err(error) => Some(Err(SnapshotIteratorError::MVCCRead { source: error.clone() })),
         }
     }
 

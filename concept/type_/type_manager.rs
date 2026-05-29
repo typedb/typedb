@@ -11,6 +11,7 @@ use std::{
 };
 
 use encoding::{
+    EncodingKeyspace,
     error::EncodingError,
     graph::{
         definition::{
@@ -18,6 +19,7 @@ use encoding::{
         },
         type_::{Kind, vertex::TypeVertexEncoding, vertex_generator::TypeVertexGenerator},
     },
+    layout::prefix::Prefix,
     value::{label::Label, value_type::ValueType},
 };
 use itertools::Itertools;
@@ -26,7 +28,11 @@ use resource::{
     constants::{concept::RELATION_INDEX_THRESHOLD, encoding::StructFieldIDUInt},
     profile::StorageCounters,
 };
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use storage::{
+    durability_client::DurabilityClient,
+    keyspace::KeyspaceSet,
+    snapshot::{PreloadedRangesSnapshot, ReadableSnapshot, WritableSnapshot, iterator::SnapshotIteratorError},
+};
 use type_cache::TypeCache;
 use type_writer::TypeWriter;
 use validation::{commit_time_validation::CommitTimeValidation, operation_time_validation::OperationTimeValidation};
@@ -378,6 +384,15 @@ macro_rules! get_type_capability_filtered_constraints_methods {
             }
         )*
     }
+}
+
+pub(crate) fn preload_schema_from(
+    snapshot: &impl ReadableSnapshot,
+) -> Result<PreloadedRangesSnapshot, Arc<SnapshotIteratorError>> {
+    PreloadedRangesSnapshot::load_from(
+        snapshot,
+        vec![(EncodingKeyspace::DefaultOptimisedPrefix11.id(), Prefix::schema_byte_ranges())],
+    )
 }
 
 impl TypeManager {

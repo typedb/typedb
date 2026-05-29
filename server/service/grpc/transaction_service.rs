@@ -23,13 +23,9 @@ use concept::{
     thing::{ThingAPI, attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager},
     type_::type_manager::TypeManager,
 };
-use database::{
-    database_manager::DatabaseManager,
-    query::{
-        StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
-        execute_write_query_in_schema, execute_write_query_in_write,
-    },
-    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
+use database::query::{
+    StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
+    execute_write_query_in_schema, execute_write_query_in_write,
 };
 use diagnostics::{
     diagnostics_manager::DiagnosticsManager,

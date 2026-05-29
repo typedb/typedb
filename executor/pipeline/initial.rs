@@ -7,12 +7,8 @@
 use lending_iterator::LendingIterator;
 
 use crate::{
-    ExecutionInterrupt, Provenance,
-    batch::{Batch, BatchRowIterator, FixedBatch, FixedBatchRowIterator},
-    pipeline::{
-        PipelineExecutionError, StageIterator,
-        stage::{ExecutionContext, StageAPI},
-    },
+    batch::{Batch, BatchRowIterator},
+    pipeline::{PipelineExecutionError, StageIterator, stage::StageAPI},
     row::MaybeOwnedRow,
 };
 

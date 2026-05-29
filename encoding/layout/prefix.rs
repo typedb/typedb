@@ -4,13 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+use std::ops::RangeInclusive;
+
+use itertools::Itertools;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct PrefixID {
     pub(crate) byte: u8,
 }
 
 impl PrefixID {
     pub const LENGTH: usize = 1;
+    pub const MAX: u8 = u8::MAX;
+
     pub const fn new(byte: u8) -> Self {
         PrefixID { byte }
     }
@@ -20,7 +26,7 @@ impl PrefixID {
 }
 
 macro_rules! make_prefix_enum {
-    ($($name:ident => $byte:literal = $hex:literal, $fixed_width_keys:literal);*) => {
+    ($($name:ident => $byte:literal = $hex:literal, $width:expr, $domain:expr);* $(;)?) => {
         // assert that $byte and $hex are the same literal
         $(const _: [(); $byte] = [(); $hex];)*
 
@@ -30,6 +36,8 @@ macro_rules! make_prefix_enum {
         }
 
         impl Prefix {
+            pub const ALL: &'static [Prefix] = &[$(Self::$name,)*];
+
             pub const fn prefix_id(&self) -> PrefixID {
                 match self {
                     $(Self::$name => PrefixID::new($byte),)*
@@ -42,24 +50,42 @@ macro_rules! make_prefix_enum {
                 }
             }
 
-            pub fn from_prefix_id(prefix: PrefixID) -> Self {
+            pub fn from_prefix_id(prefix: PrefixID) -> Option<Self> {
                 match prefix.byte {
-                    $($byte => Self::$name,)*
-                    _ => unreachable!(),
+                    $($byte => Some(Self::$name),)*
+                    _ => None
                 }
-           }
+            }
 
             ///
             /// Return true if we expect all keys within this exact prefix to have the same width.
             /// Note: two different prefixes with fixed width are not necessarily the same fixed widths!
             ///
-           pub const fn fixed_width_keys(&self) -> bool {
-                match self {
-                    $(Self::$name => $fixed_width_keys,)*
-                }
+            pub const fn fixed_width_keys(&self) -> bool {
+                let width = match self {
+                    $(Self::$name => $width,)*
+                };
+                matches!(width, Width::Fixed)
+            }
+
+            pub const fn is_schema(&self) -> bool {
+                let domain = match self {
+                    $(Self::$name => $domain,)*
+                };
+                matches!(domain, Domain::Schema)
             }
         }
     };
+}
+
+enum Width {
+    Fixed,
+    Variable,
+}
+
+enum Domain {
+    Schema,
+    Data,
 }
 
 impl Prefix {
@@ -78,46 +104,66 @@ impl Prefix {
             Prefix::VertexEntityType
         }
     }
+
+    pub fn schema_byte_ranges() -> Vec<RangeInclusive<u8>> {
+        let mut ranges: Vec<RangeInclusive<u8>> = Vec::new();
+        let mut current: Option<(u8, u8)> = None;
+        for prefix in Self::ALL.iter().copied().sorted_by_key(|p| p.prefix_id()) {
+            let byte = prefix.prefix_id().byte;
+            if prefix.is_schema() {
+                current = Some(match current {
+                    Some((start, _)) => (start, byte),
+                    None => (byte, byte),
+                });
+            } else if let Some((start, end)) = current.take() {
+                ranges.push(start..=end);
+            }
+        }
+        if let Some((start, end)) = current {
+            ranges.push(start..=end);
+        }
+        ranges
+    }
 }
 
 make_prefix_enum! {
     // Reserved: 0-9 = 0x00-0x09
-    VertexEntityType => 10 = 0x0A, true;
-    VertexRelationType => 11 = 0x0B, true;
-    VertexAttributeType => 12 = 0x0C, true;
-    VertexRoleType => 15 = 0x0F, true;
-    DefinitionStruct => 20 = 0x14, true;
-    DefinitionFunction => 21 = 0x15, true;
+    VertexEntityType => 10 = 0x0A, Width::Fixed, Domain::Schema;
+    VertexRelationType => 11 = 0x0B, Width::Fixed, Domain::Schema;
+    VertexAttributeType => 12 = 0x0C, Width::Fixed, Domain::Schema;
+    VertexRoleType => 15 = 0x0F, Width::Fixed, Domain::Schema;
+    DefinitionStruct => 20 = 0x14, Width::Fixed, Domain::Schema;
+    DefinitionFunction => 21 = 0x15, Width::Fixed, Domain::Schema;
 
     // All objects are stored consecutively for iteration
-    VertexEntity => 30 = 0x1E, true;
-    VertexRelation => 31 = 0x1F, true;
-    VertexAttribute => 32 = 0x20, false;
+    VertexEntity => 30 = 0x1E, Width::Fixed, Domain::Data;
+    VertexRelation => 31 = 0x1F, Width::Fixed, Domain::Data;
+    VertexAttribute => 32 = 0x20, Width::Variable, Domain::Data;
 
-    EdgeSub => 100 = 0x64, true;
-    EdgeSubReverse => 101 = 0x65, true;
-    EdgeOwns => 102 = 0x66, true;
-    EdgeOwnsReverse => 103 = 0x67, true;
-    EdgePlays => 104 = 0x68, true;
-    EdgePlaysReverse => 105 = 0x69, true;
-    EdgeRelates => 106 = 0x6A, true;
-    EdgeRelatesReverse => 107 = 0x6B, true;
+    EdgeSub => 100 = 0x64, Width::Fixed, Domain::Schema;
+    EdgeSubReverse => 101 = 0x65, Width::Fixed, Domain::Schema;
+    EdgeOwns => 102 = 0x66, Width::Fixed, Domain::Schema;
+    EdgeOwnsReverse => 103 = 0x67, Width::Fixed, Domain::Schema;
+    EdgePlays => 104 = 0x68, Width::Fixed, Domain::Schema;
+    EdgePlaysReverse => 105 = 0x69, Width::Fixed, Domain::Schema;
+    EdgeRelates => 106 = 0x6A, Width::Fixed, Domain::Schema;
+    EdgeRelatesReverse => 107 = 0x6B, Width::Fixed, Domain::Schema;
 
-    EdgeHas => 130 = 0x82, false;
-    EdgeHasReverse => 131 = 0x83, false;
-    EdgeLinks => 132 = 0x84, true;
-    EdgeLinksReverse => 133 = 0x85, true;
-    EdgeLinksIndex => 140 = 0x8C, true;
+    EdgeHas => 130 = 0x82, Width::Variable, Domain::Data;
+    EdgeHasReverse => 131 = 0x83, Width::Variable, Domain::Data;
+    EdgeLinks => 132 = 0x84, Width::Fixed, Domain::Data;
+    EdgeLinksReverse => 133 = 0x85, Width::Fixed, Domain::Data;
+    EdgeLinksIndex => 140 = 0x8C, Width::Fixed, Domain::Data;
 
-    PropertyTypeVertex => 160 = 0xA0, true;
-    PropertyTypeEdge => 162 = 0xA2, true;
-    PropertyObjectVertex => 163 = 0xA3, true;
-    PropertyFunction => 164 = 0xA4, true;
+    PropertyTypeVertex => 160 = 0xA0, Width::Fixed, Domain::Schema;
+    PropertyTypeEdge => 162 = 0xA2, Width::Fixed, Domain::Schema;
+    PropertyObjectVertex => 163 = 0xA3, Width::Fixed, Domain::Data;
+    PropertyFunction => 164 = 0xA4, Width::Fixed, Domain::Schema;
 
-    IndexLabelToType => 182 = 0xB6, false;
-    IndexNameToDefinitionStruct => 183 = 0xB7, false;
-    IndexNameToDefinitionFunction => 184 = 0xB8, false;
+    IndexLabelToType => 182 = 0xB6, Width::Variable, Domain::Schema;
+    IndexNameToDefinitionStruct => 183 = 0xB7, Width::Variable, Domain::Schema;
+    IndexNameToDefinitionFunction => 184 = 0xB8, Width::Variable, Domain::Schema;
 
-    IndexValueToStruct => 190 = 0xBE, false
+    IndexValueToStruct => 190 = 0xBE, Width::Variable, Domain::Data;
     // Reserved: 200-255 = 0xC8-0xFF
 }

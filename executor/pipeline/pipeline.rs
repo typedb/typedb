@@ -46,7 +46,6 @@ use crate::{
         },
         update::UpdateStageExecutor,
     },
-    row::MaybeOwnedRow,
 };
 
 pub struct Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {

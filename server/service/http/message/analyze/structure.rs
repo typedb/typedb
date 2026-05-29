@@ -520,8 +520,8 @@ fn encode_role_type_as_vertex(
 #[cfg(debug_assertions)]
 pub mod bdd {
     use compiler::query_structure::{
-        FunctionReturnStructure, QueryStructureConjunctionID, QueryStructureGiven, QueryStructureStage,
-        StructureReduceAssign, StructureReducer, StructureSortVariable, StructureVariableId,
+        FunctionReturnStructure, QueryStructureConjunctionID, QueryStructureStage, StructureReduceAssign,
+        StructureReducer, StructureSortVariable, StructureVariableId,
     };
     use itertools::Itertools;
     use serde_json::Value;

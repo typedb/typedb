@@ -41,7 +41,6 @@ use crate::{
     },
     translation::{
         PipelineTranslationContext,
-        constraints::register_type_label,
         expression::{add_function_call, build_expression},
         fetch::FetchRepresentationError::{
             AnonymousVariableEncountered, InvalidAttributeLabelEncountered, NamedVariableEncountered,
