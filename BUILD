@@ -184,7 +184,7 @@ pkg_tar(
     name = "assemble-all-linux-x86_64-targz",
     srcs = [":package-typedb-all"],
     package_dir = "typedb-all-linux-x86_64",
-    out = "typedb-all-linux-x86_64.zip",
+    out = "typedb-all-linux-x86_64.tar.gz",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_x86_64,
 )
@@ -193,7 +193,7 @@ pkg_tar(
     name = "assemble-all-linux-arm64-targz",
     srcs = [":package-typedb-all"],
     package_dir = "typedb-all-linux-arm64",
-    out = "typedb-all-linux-arm64.zip",
+    out = "typedb-all-linux-arm64.tar.gz",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_arm64,
 )
