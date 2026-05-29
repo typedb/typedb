@@ -13,6 +13,7 @@ rust_test(
     ]),
     deps = [
         "//common/logger",
+        "//common/options",
         "//database",
         "//diagnostics",
         "//durability",

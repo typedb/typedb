@@ -501,9 +501,15 @@ fn sync_from_storage_lifts_counters_to_match_storage() {
 
     let stale_generator = {
         let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
+        let resources = create_rocks_resources();
         let storage = Arc::new(
-            MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal))
-                .unwrap(),
+            MVCCStorage::<WALClient>::create::<EncodingKeyspace>(
+                "storage",
+                &storage_path,
+                WALClient::new(wal),
+                &resources,
+            )
+            .unwrap(),
         );
         let mut snapshot = storage.clone().open_snapshot_write();
         let type_generator = TypeVertexGenerator::new();
@@ -537,9 +543,16 @@ fn sync_from_storage_lifts_counters_to_match_storage() {
     };
 
     let wal = WAL::load(&storage_path, FsyncMetrics::disabled()).unwrap();
+    let resources = create_rocks_resources();
     let storage = Arc::new(
-        MVCCStorage::<WALClient>::load::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &None)
-            .unwrap(),
+        MVCCStorage::<WALClient>::load::<EncodingKeyspace>(
+            "storage",
+            &storage_path,
+            WALClient::new(wal),
+            &None,
+            &resources,
+        )
+        .unwrap(),
     );
 
     let mut snapshot = storage.clone().open_snapshot_write();
@@ -580,8 +593,10 @@ fn sync_from_storage_never_lowers_a_counter() {
     let type_id = TypeID::new(0);
 
     let wal = WAL::create(&storage_path, FsyncMetrics::disabled()).unwrap();
+    let resources = create_rocks_resources();
     let storage = Arc::new(
-        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
+        MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal), &resources)
+            .unwrap(),
     );
     let mut snapshot = storage.clone().open_snapshot_write();
     let type_generator = TypeVertexGenerator::new();
