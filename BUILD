@@ -74,7 +74,7 @@ alias(
 
 # The directory structure for distribution (Unix)
 pkg_files(
-    name = "package-layout-server",
+    name = "package-layout-server-without-dirs",
     srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml", "//:LICENSE", ":pkg-empty-server-data"],
     renames = {
         "//:typedb_server_bin" : "server/typedb_server_bin",
@@ -84,9 +84,14 @@ pkg_files(
     attributes = binary_permissions,
 )
 
+pkg_filegroup(
+    name = "package-server-only",
+    srcs = [":package-layout-server-without-dirs", ":pkg-empty-server-data"]
+)
+
 pkg_zip(
     name = "assemble-server-mac-x86_64-zip",
-    srcs = [":package-layout-server"],
+    srcs = [":package-server-only"],
     package_dir = "typedb-server-mac-x86_64",
     out = "typedb-server-mac-x86_64.zip",
     visibility = ["//tests/assembly:__subpackages__"],
@@ -95,7 +100,7 @@ pkg_zip(
 
 pkg_zip(
     name = "assemble-server-mac-arm64-zip",
-    srcs = [":package-layout-server"],
+    srcs = [":package-server-only"],
     package_dir = "typedb-server-mac-arm64",
     out = "typedb-server-mac-arm64.zip",
     visibility = ["//tests/assembly:__subpackages__"],
@@ -105,7 +110,7 @@ pkg_zip(
 
 pkg_tar(
     name = "assemble-server-linux-x86_64-targz",
-    srcs = [":package-layout-server"],
+    srcs = [":package-server-only"],
     package_dir = "typedb-server-linux-x86_64",
     out = "typedb-server-linux-x86_64.tar.gz",
     visibility = ["//tests/assembly:__subpackages__"],
@@ -114,7 +119,7 @@ pkg_tar(
 
 pkg_tar(
     name = "assemble-server-linux-arm64-targz",
-    srcs = [":package-layout-server"],
+    srcs = [":package-server-only"],
     package_dir = "typedb-server-linux-arm64",
     out = "typedb-server-linux-arm64.tar.gz",
     visibility = ["//tests/assembly:__subpackages__"],
@@ -123,7 +128,7 @@ pkg_tar(
 
 pkg_zip(
     name = "assemble-server-windows-x86_64-zip",
-    srcs = [":package-layout-server"],
+    srcs = [":package-server-only"],
     package_dir = "typedb-server-windows-x86_64",
     out = "typedb-server-windows-x86_64.zip",
     visibility = ["//tests/assembly:__subpackages__"],
@@ -149,7 +154,7 @@ pkg_files(
 pkg_filegroup(
     name = "package-typedb-all",
     srcs = [
-        ":package-layout-server",
+        ":package-server-only",
         ":console-repackaged",
     ],
 )
