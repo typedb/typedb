@@ -96,30 +96,30 @@ features = {}
 		workspace = true
 
 [[bench]]
-	name = "bench_insert_queries"
-	harness = false
-
-[[bench]]
 	name = "bench_insert_queries_multithreaded"
 	harness = false
 
+[[bench]]
+	name = "bench_insert_queries"
+	harness = false
+
 [[test]]
-	path = "tests/pipeline_stages_limit.rs"
-	name = "test_pipeline_stages_limit"
+	path = "tests/define.rs"
+	name = "test_define"
 
 [[test]]
 	path = "tests/fetch.rs"
 	name = "test_fetch"
 
 [[test]]
-	path = "tests/unimplemented.rs"
-	name = "test_unimplemented"
+	path = "tests/pipeline_stages_limit.rs"
+	name = "test_pipeline_stages_limit"
 
 [[test]]
 	path = "tests/query_profile.rs"
 	name = "test_query_profile"
 
 [[test]]
-	path = "tests/define.rs"
-	name = "test_define"
+	path = "tests/unimplemented.rs"
+	name = "test_unimplemented"
 

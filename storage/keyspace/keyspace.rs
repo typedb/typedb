@@ -14,12 +14,12 @@ use std::{
 use bytes::Bytes;
 use fail_point::{KEYSPACE_CHECKPOINT_FAIL, KEYSPACE_DELETE_FAIL, KEYSPACE_OPEN_FAIL, fail_point};
 use itertools::Itertools;
-use resource::{constants::storage::ROCKSDB_CACHE_SIZE, profile::StorageCounters};
+use resource::profile::StorageCounters;
 use rocksdb::{DB, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, checkpoint::Checkpoint};
 use serde::{Deserialize, Serialize};
 
 use super::{IteratorPool, constants, iterator};
-use crate::{key_range::KeyRange, write_batches::WriteBatches};
+use crate::{key_range::KeyRange, keyspace::storage_resources::RocksResources, write_batches::WriteBatches};
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyspaceId(pub u8);
@@ -47,7 +47,7 @@ pub trait KeyspaceSet: Copy {
     fn iter() -> impl Iterator<Item = Self>;
     fn id(&self) -> KeyspaceId;
     fn name(&self) -> &'static str;
-    fn rocks_configuration(&self, _cache: &rocksdb::Cache) -> rocksdb::Options {
+    fn rocks_configuration(&self, _resources: &RocksResources) -> rocksdb::Options {
         let mut options = Options::default();
         options.create_if_missing(true);
         options
@@ -66,17 +66,19 @@ impl Keyspaces {
         Self { keyspaces: Vec::new(), index: std::array::from_fn(|_| None) }
     }
 
-    pub(crate) fn open<KS: KeyspaceSet>(storage_dir: impl AsRef<Path>) -> Result<Self, KeyspaceOpenError> {
+    pub(crate) fn open<KS: KeyspaceSet>(
+        storage_dir: impl AsRef<Path>,
+        resources: &RocksResources,
+    ) -> Result<Self, KeyspaceOpenError> {
         let path = storage_dir.as_ref();
 
-        let cache = rocksdb::Cache::new_lru_cache(ROCKSDB_CACHE_SIZE as usize);
         let mut keyspaces = Keyspaces::new();
         for keyspace in KS::iter() {
             keyspaces
                 .validate_new_keyspace(keyspace)
                 .map_err(|error| KeyspaceOpenError::Validation { source: error })?;
             fail_point!(KEYSPACE_OPEN_FAIL);
-            keyspaces.keyspaces.push(Keyspace::open(path, keyspace, &keyspace.rocks_configuration(&cache))?);
+            keyspaces.keyspaces.push(Keyspace::open(path, keyspace, &keyspace.rocks_configuration(resources))?);
             keyspaces.index[keyspace.id().0 as usize] = Some(KeyspaceId(keyspaces.keyspaces.len() as u8 - 1));
         }
         Ok(keyspaces)

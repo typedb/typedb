@@ -7,12 +7,14 @@
 #![deny(elided_lifetimes_in_paths)]
 #![deny(unused_must_use)]
 
+use std::{ffi::c_int, num::NonZero};
+
 use bytes::Bytes;
 use resource::constants::common::MB;
 use rocksdb::{BlockBasedIndexType, BlockBasedOptions, DBCompressionType, SliceTransform};
 use storage::{
     key_value::StorageKey,
-    keyspace::{KeyspaceId, KeyspaceSet},
+    keyspace::{KeyspaceId, KeyspaceSet, storage_resources::RocksResources},
 };
 
 use crate::layout::prefix::{Prefix, PrefixID};
@@ -88,7 +90,7 @@ impl KeyspaceSet for EncodingKeyspace {
         }
     }
 
-    fn rocks_configuration(&self, cache: &rocksdb::Cache) -> rocksdb::Options {
+    fn rocks_configuration(&self, resources: &RocksResources) -> rocksdb::Options {
         let mut options = rocksdb::Options::default();
 
         // Enable if we wanted to check bloom filter usage, cache hits, etc.
@@ -97,11 +99,14 @@ impl KeyspaceSet for EncodingKeyspace {
 
         options.create_if_missing(true);
         options.create_missing_column_families(true);
-        options.set_max_background_jobs(10);
+        if let Ok(parallelism) = std::thread::available_parallelism() {
+            options.set_max_background_jobs(parallelism.get() as c_int);
+        };
         options.set_target_file_size_base(64 * MB);
         options.set_write_buffer_size(64 * MB as usize);
         options.set_max_write_buffer_size_to_maintain(0);
         options.set_max_write_buffer_number(2);
+        options.set_write_buffer_manager(&resources.write_buffer_manager());
         options.set_memtable_whole_key_filtering(false);
         options.set_optimize_filters_for_hits(false); // true => don't build bloom filters for the last level
         options.set_compression_per_level(&[
@@ -117,7 +122,7 @@ impl KeyspaceSet for EncodingKeyspace {
         // TODO: 2.x has   enable_index_compression: 1 set to 0
 
         let mut block_options = BlockBasedOptions::default();
-        block_options.set_block_cache(cache);
+        block_options.set_block_cache(&resources.cache());
         block_options.set_block_restart_interval(16);
         block_options.set_index_block_restart_interval(16);
         block_options.set_format_version(6);
