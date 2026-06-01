@@ -143,9 +143,7 @@ pkg_zip(
     target_compatible_with = constraint_win_x86_64,
 )
 
-#
-# rules_pkg-only assembly — no assemble_zip
-
+# package with console included.
 select_file(
     name = "console-binary-only",
     srcs = ":typedb_console_artifact_extracted",
