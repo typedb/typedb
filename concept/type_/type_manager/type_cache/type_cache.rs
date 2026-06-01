@@ -97,13 +97,14 @@ impl TypeCache {
         // once, then run all per-kind cache creators against it. Each subsequent read is
         // a BTreeMap lookup instead of an MVCC iterator open against rocksdb — orders of
         // magnitude cheaper on large schemas, where this rebuild is dominated by millions
-        // of small reads. Object-vertex and instance-edge data also live in this keyspace
-        // but are irrelevant to the type cache, so we filter them out.
+        // of small reads. Object-vertex and instance-edge data share this keyspace; we
+        // scan only the schema prefix ranges to avoid pulling them into the snapshot.
+        let schema_ranges = Prefix::schema_byte_ranges();
         let snapshot = MaterialisedSnapshot::load_keyspace(
             &storage,
             open_sequence_number,
             EncodingKeyspace::DefaultOptimisedPrefix11.id(),
-            Prefix::key_is_schema,
+            &schema_ranges,
         );
 
         let entity_type_caches = EntityTypeCache::create(&snapshot);

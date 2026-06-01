@@ -89,14 +89,16 @@ impl CommitTimeValidation {
         type_manager: &TypeManager,
     ) -> Result<Vec<Box<SchemaValidationError>>, Box<ConceptReadError>> {
         // Materialise the schema TX's merged view (storage + buffered writes) into a
-        // `MaterialisedSnapshot` once, keeping only schema-side keys. The per-type
-        // validators below collectively make millions of small reads against this
-        // snapshot; serving them from an in-memory BTreeMap rather than via MVCC
-        // iterators cuts the validate phase by ~5x on large schemas.
+        // `MaterialisedSnapshot` once, scanning only the schema prefix byte ranges of
+        // the schema keyspace. The per-type validators below collectively make millions
+        // of small reads against this snapshot; serving them from an in-memory BTreeMap
+        // rather than via MVCC iterators cuts the validate phase by ~5x on large
+        // schemas.
+        let schema_ranges = Prefix::schema_byte_ranges();
         let snapshot = MaterialisedSnapshot::load_from_snapshot(
             snapshot,
             EncodingKeyspace::DefaultOptimisedPrefix11.id(),
-            Prefix::key_is_schema,
+            &schema_ranges,
         );
         let mut errors = Vec::new();
         Self::validate_entity_types(&snapshot, type_manager, &mut errors)?;

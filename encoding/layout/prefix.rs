@@ -104,11 +104,44 @@ impl Prefix {
         }
     }
 
-    /// Predicate convenience: true iff `key` starts with a known schema prefix byte.
-    /// Suitable for passing directly as the `key_filter` to `MaterialisedSnapshot`
-    /// constructors when only the schema-side keys of a mixed keyspace are wanted.
-    pub fn key_is_schema(key: &[u8]) -> bool {
-        !key.is_empty() && Self::from_prefix_id(PrefixID::new(key[0])).is_schema()
+    /// Maximal contiguous byte ranges, inclusive on both sides, that contain only
+    /// schema prefixes. Each emitted range is bounded by schema-prefix bytes and is
+    /// guaranteed to contain no data-prefix byte; reserved/unused bytes between two
+    /// schema prefixes are absorbed into the same range (storage has no keys at those
+    /// bytes, so including them in a scan is harmless).
+    ///
+    /// Returned in ascending byte order. Derived directly from [`Prefix::ALL`] and
+    /// [`Prefix::is_schema`], so adding or reclassifying a prefix automatically updates
+    /// the ranges without further bookkeeping.
+    ///
+    /// Intended for passing to `MaterialisedSnapshot` constructors so they can open one
+    /// storage iterator per range, copying only the schema-side data into memory and
+    /// skipping the data-side keys that share the same rocksdb keyspace.
+    pub fn schema_byte_ranges() -> Vec<(u8, u8)> {
+        let prefix_for =
+            |byte: u8| -> Option<Prefix> { Self::ALL.iter().copied().find(|p| p.prefix_id().byte == byte) };
+        let mut ranges: Vec<(u8, u8)> = Vec::new();
+        let mut current: Option<(u8, u8)> = None;
+        for b in 0..=255u8 {
+            match prefix_for(b) {
+                Some(p) if !p.is_schema() => {
+                    if let Some(range) = current.take() {
+                        ranges.push(range);
+                    }
+                }
+                Some(_) => {
+                    current = Some(match current {
+                        Some((start, _)) => (start, b),
+                        None => (b, b),
+                    });
+                }
+                None => {}
+            }
+        }
+        if let Some(range) = current {
+            ranges.push(range);
+        }
+        ranges
     }
 }
 

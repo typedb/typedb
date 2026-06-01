@@ -40,6 +40,10 @@ use crate::{
     },
 };
 
+/// Inclusive `(start_byte, end_byte)` range over leading-prefix bytes of keys in a
+/// keyspace. See [`MaterialisedSnapshot::load_keyspace`].
+pub type PrefixByteRange = (u8, u8);
+
 const KEYSPACE_SLOTS: usize = 16;
 
 pub struct MaterialisedSnapshot {
@@ -50,47 +54,51 @@ pub struct MaterialisedSnapshot {
 }
 
 impl MaterialisedSnapshot {
-    /// Open a read snapshot at `open_sequence_number` and materialise every key in
-    /// `keyspace_id` for which `key_filter` returns true into an in-memory `BTreeMap`.
+    /// Open a read snapshot at `open_sequence_number` and materialise the keys in
+    /// `keyspace_id` whose leading byte falls in any of `prefix_ranges`. Each range is
+    /// `(start_byte, end_byte)` inclusive. Storage is consulted only once per range.
     /// Subsequent reads against the returned snapshot are served entirely from memory.
     ///
-    /// The filter is invoked once per key encountered in the underlying scan; it lets the
-    /// caller skip keys that share `keyspace_id` but are outside the caller's interest
-    /// (e.g. the schema keyspace shares its rocksdb keyspace with object-vertex data, so
-    /// schema-only callers pass `encoding::layout::prefix::Prefix::key_is_schema`).
-    pub fn load_keyspace<D, F>(
+    /// `prefix_ranges` typically comes from `Prefix::schema_byte_ranges()` (defined in
+    /// the encoding crate), which derives the schema-side byte ranges of the schema
+    /// keyspace directly from each prefix's `is_schema` classification.
+    pub fn load_keyspace<D>(
         storage: &Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
         keyspace_id: KeyspaceId,
-        key_filter: F,
+        prefix_ranges: &[PrefixByteRange],
     ) -> Self
     where
         D: DurabilityClient,
-        F: Fn(&[u8]) -> bool,
     {
         let source = storage.clone().open_snapshot_read_at(open_sequence_number);
-        Self::load_from_snapshot(&source, keyspace_id, key_filter)
+        Self::load_from_snapshot(&source, keyspace_id, prefix_ranges)
     }
 
     /// Materialise the merged view of `keyspace_id` visible to `source` — including any
-    /// buffered writes it carries — into an in-memory `BTreeMap`, keeping only the keys
-    /// for which `key_filter` returns true.
-    pub fn load_from_snapshot<S, F>(source: &S, keyspace_id: KeyspaceId, key_filter: F) -> Self
+    /// buffered writes it carries — into an in-memory `BTreeMap`. Only keys whose
+    /// leading byte falls in one of `prefix_ranges` are loaded; one storage iterator is
+    /// opened per range.
+    pub fn load_from_snapshot<S>(source: &S, keyspace_id: KeyspaceId, prefix_ranges: &[PrefixByteRange]) -> Self
     where
         S: ReadableSnapshot,
-        F: Fn(&[u8]) -> bool,
     {
         let mut keyspaces: Box<
             [Option<BTreeMap<ByteArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>>>; KEYSPACE_SLOTS],
         > = Box::new(std::array::from_fn(|_| None));
         let mut bt: BTreeMap<ByteArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>> = BTreeMap::new();
-        let start: StorageKey<'static, BUFFER_KEY_INLINE> =
-            StorageKey::Reference(StorageKeyReference::new_raw(keyspace_id, &[]));
-        let range = KeyRange::new_unbounded(RangeStart::Inclusive(start));
-        let mut it = source.iterate_range(&range, StorageCounters::DISABLED);
-        while let Some(result) = it.next() {
-            let (key, value) = result.expect("MaterialisedSnapshot load failed");
-            if key_filter(key.bytes()) {
+        for &(start_byte, end_byte) in prefix_ranges {
+            let start_bytes = [start_byte];
+            let end_bytes = [end_byte];
+            let start_key: StorageKey<'_, BUFFER_KEY_INLINE> =
+                StorageKey::Reference(StorageKeyReference::new_raw(keyspace_id, &start_bytes));
+            let end_key: StorageKey<'_, BUFFER_KEY_INLINE> =
+                StorageKey::Reference(StorageKeyReference::new_raw(keyspace_id, &end_bytes));
+            let range =
+                KeyRange::new_variable_width(RangeStart::Inclusive(start_key), RangeEnd::EndPrefixInclusive(end_key));
+            let mut it = source.iterate_range(&range, StorageCounters::DISABLED);
+            while let Some(result) = it.next() {
+                let (key, value) = result.expect("MaterialisedSnapshot load failed");
                 bt.insert(ByteArray::copy(key.bytes()), ByteArray::copy(&*value));
             }
         }
