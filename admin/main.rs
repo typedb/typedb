@@ -39,21 +39,20 @@ async fn main() {
         }
     };
 
-    let address_display = args.socket_path.to_string_lossy().into_owned();
     if let Some(script) = &args.script {
         if !args.command.is_empty() {
             eprintln!("Cannot specify both --command and --script");
             std::process::exit(1);
         }
-        if let Err(err) = typedb_admin::repl::run_script(&mut client, &address_display, &registry, script).await {
+        if let Err(err) = typedb_admin::repl::run_script(&mut client, &registry, script).await {
             eprintln!("{err:?}");
             std::process::exit(1);
         }
     } else if !args.command.is_empty() {
-        let code = typedb_admin::repl::run_commands(&mut client, &address_display, &registry, &args.command).await;
+        let code = typedb_admin::repl::run_commands(&mut client, &registry, &args.command).await;
         std::process::exit(code);
     } else {
         typedb_admin::repl::print_server_info(&mut client).await;
-        typedb_admin::repl::run_interactive(&mut client, &address_display, &registry).await;
+        typedb_admin::repl::run_interactive(&mut client, &registry).await;
     }
 }

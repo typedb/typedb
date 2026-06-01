@@ -20,7 +20,7 @@ typedb_error! {
         SocketNotASocket(8, "Admin endpoint at '{path}' is not a Unix socket; refusing to connect.", path: String),
         SocketPermissionsTooWide(
             9,
-            "Admin socket '{path}' has mode {mode:#o}; which exposes too wide permissions and a security danger. Run `chmod 600 '{path}'` or restart the server.",
+            "Admin socket '{path}' has mode {mode:#o}; permissions are too wide for a local-only admin endpoint. Run `chmod 600 '{path}'` or restart the server to recreate the socket.",
             path: String,
             mode: u32,
         ),

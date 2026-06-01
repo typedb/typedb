@@ -41,7 +41,7 @@ pub async fn print_server_info(client: &mut AdminClient) {
     println!("Connected to {} {} ({}).", server_version.distribution, server_version.version, admin_address);
 }
 
-pub async fn run_interactive(client: &mut AdminClient, address: &str, registry: &CommandRegistry) {
+pub async fn run_interactive(client: &mut AdminClient, registry: &CommandRegistry) {
     println!("Type 'help' for available commands, 'exit' to quit.\n");
 
     let config = Config::builder().auto_add_history(true).build();
@@ -55,7 +55,7 @@ pub async fn run_interactive(client: &mut AdminClient, address: &str, registry: 
                 if input.is_empty() {
                     continue;
                 }
-                if let Err(err) = execute_input(client, address, registry, input).await {
+                if let Err(err) = execute_input(client, registry, input).await {
                     eprintln!("[Error] {err:?}");
                 }
             }
@@ -70,14 +70,9 @@ pub async fn run_interactive(client: &mut AdminClient, address: &str, registry: 
     let _ = editor.save_history(&history_path());
 }
 
-pub async fn run_commands(
-    client: &mut AdminClient,
-    address: &str,
-    registry: &CommandRegistry,
-    commands: &[String],
-) -> i32 {
+pub async fn run_commands(client: &mut AdminClient, registry: &CommandRegistry, commands: &[String]) -> i32 {
     for command in commands {
-        if let Err(err) = execute_input(client, address, registry, command.trim()).await {
+        if let Err(err) = execute_input(client, registry, command.trim()).await {
             eprintln!("[Error] {err:?}");
             return 1;
         }
@@ -85,12 +80,7 @@ pub async fn run_commands(
     0
 }
 
-pub async fn run_script(
-    client: &mut AdminClient,
-    address: &str,
-    registry: &CommandRegistry,
-    path: &str,
-) -> Result<(), AdminError> {
+pub async fn run_script(client: &mut AdminClient, registry: &CommandRegistry, path: &str) -> Result<(), AdminError> {
     let content = std::fs::read_to_string(path).map_err(|source| AdminError::ScriptReadFailed {
         path: path.to_string(),
         source: std::sync::Arc::new(source),
@@ -100,7 +90,7 @@ pub async fn run_script(
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        if let Err(err) = execute_input(client, address, registry, line).await {
+        if let Err(err) = execute_input(client, registry, line).await {
             eprintln!("[Error] Line {}: {err:?}", line_num + 1);
             return Err(err);
         }
@@ -108,12 +98,7 @@ pub async fn run_script(
     Ok(())
 }
 
-async fn execute_input(
-    client: &mut AdminClient,
-    address: &str,
-    registry: &CommandRegistry,
-    input: &str,
-) -> Result<(), AdminError> {
+async fn execute_input(client: &mut AdminClient, registry: &CommandRegistry, input: &str) -> Result<(), AdminError> {
     match input {
         "exit" | "quit" => std::process::exit(0),
         "help" => {
@@ -124,7 +109,7 @@ async fn execute_input(
             let tokens: Vec<&str> = input.split_whitespace().collect();
             match registry.find(&tokens) {
                 Some((cmd, args)) => {
-                    let ctx = CommandContext { client, address, args: &args };
+                    let ctx = CommandContext { client, args: &args };
                     (cmd.executor)(ctx).await
                 }
                 None => Err(AdminError::UnknownCommand { input: input.to_string() }),
