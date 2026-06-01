@@ -81,9 +81,19 @@ pub fn bind_admin_endpoint(path: &Path) -> Result<AdminListener, ServerOpenError
         let _restrictive_umask = ScopedUmask::new(PERMISSION_BITS_ALL & !ADMIN_SOCKET_FILE_MODE);
         UnixListener::bind(path)
     }
-    .map_err(|source| ServerOpenError::AdminSocketBind {
-        path: path.to_string_lossy().into_owned(),
-        source: Arc::new(source),
+    .map_err(|source| {
+        // The kernel returns EINVAL with a "SUN_LEN" message when sun_path doesn't fit
+        // (108 bytes on Linux, 104 on macOS/BSDs). Surface that as a specific error so
+        // the operator knows to pass a shorter --server.admin.socket-path.
+        let msg = source.to_string();
+        if source.kind() == io::ErrorKind::InvalidInput && (msg.contains("SUN_LEN") || msg.contains("too long")) {
+            ServerOpenError::AdminSocketPathTooLong {
+                path: path.to_string_lossy().into_owned(),
+                length: path.as_os_str().len(),
+            }
+        } else {
+            ServerOpenError::AdminSocketBind { path: path.to_string_lossy().into_owned(), source: Arc::new(source) }
+        }
     })?;
 
     fs::set_permissions(path, fs::Permissions::from_mode(ADMIN_SOCKET_FILE_MODE)).map_err(|source| {

@@ -265,6 +265,30 @@ async fn users_reset_password_rejects_empty_password() {
 }
 
 #[tokio::test]
+async fn users_reset_password_accepts_special_characters() {
+    let _guard = MUTATION_LOCK.lock().await;
+    let endpoint = ensure_server_started().await;
+    let mut client = TypeDbAdminClient::new(admin_channel(&endpoint).await);
+
+    let special = r#"P@ss w0rd!#$%^&*()'"\"#;
+    client
+        .users_reset_password(admin_proto::users_reset_password::Req {
+            username: DEFAULT_USER_NAME.to_string(),
+            password: special.to_string(),
+        })
+        .await
+        .expect("special-char password should be accepted");
+
+    client
+        .users_reset_password(admin_proto::users_reset_password::Req {
+            username: DEFAULT_USER_NAME.to_string(),
+            password: DEFAULT_USER_PASSWORD.to_string(),
+        })
+        .await
+        .expect("cleanup reset failed");
+}
+
+#[tokio::test]
 async fn users_reset_password_rejects_unknown_user() {
     let _guard = MUTATION_LOCK.lock().await;
     let endpoint = ensure_server_started().await;

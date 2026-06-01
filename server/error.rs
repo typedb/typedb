@@ -82,6 +82,12 @@ typedb_error! {
         AdminSocketCleanup(32, "Could not remove stale admin socket file at '{path}'.", path: String, source: Arc<io::Error>),
         AdminSocketChmod(33, "Could not set permissions on admin socket file at '{path}'.", path: String, source: Arc<io::Error>),
         AdminPipeBind(34, "Could not create admin Named Pipe '{name}'.", name: String, source: Arc<io::Error>),
+        AdminSocketPathTooLong(
+            35,
+            "Admin socket path '{path}' ({length} bytes) is too long for a Unix domain socket on this OS. Set --server.admin.socket-path to a shorter path (e.g. somewhere under /tmp).",
+            path: String,
+            length: usize
+        ),
         MonitoringConflictingAddress(36, "Configuring diagnostics monitoring on the same address {address} as another service is not supported.", address: SocketAddr),
     }
 }
