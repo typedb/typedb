@@ -477,14 +477,16 @@ impl Server {
             println!("  Drivers must be configured to connect *without TLS*.");
         }
 
-        let grpc_connect_address = server_status.grpc_advertise_address();
-        let http_connect_address = server_status.http_advertise_address();
+        let grpc_connect_address =
+            Self::connect_address(server_status.grpc_advertise_address(), server_status.grpc_listen_address());
+        let http_connect_address =
+            Self::connect_address(server_status.http_advertise_address(), server_status.http_listen_address());
         if grpc_connect_address.is_some() || http_connect_address.is_some() {
-            println!("To connect:");
-            if let Some(http_connect_address) = http_connect_address {
+            println!("\nTo connect:");
+            if let Some(http_connect_address) = http_connect_address.as_deref() {
                 println!("  Studio:  {}", Self::studio_connect_link(http_connect_address, encryption_config));
             }
-            if let Some(grpc_connect_address) = grpc_connect_address {
+            if let Some(grpc_connect_address) = grpc_connect_address.as_deref() {
                 println!("  Console: {}", Self::console_connect_command(grpc_connect_address, encryption_config));
             }
         }
@@ -494,6 +496,14 @@ impl Server {
 
     pub fn print_ready() {
         info!("\nReady!");
+    }
+
+    fn connect_address(advertise: Option<&str>, listen: Option<&str>) -> Option<String> {
+        if let Some(advertise) = advertise {
+            Some(advertise.to_owned())
+        } else {
+            listen.map(|listen| listen.replace("0.0.0.0", "127.0.0.1"))
+        }
     }
 
     fn studio_connect_link(http_advertise_address: &str, encryption_config: &EncryptionConfig) -> String {
