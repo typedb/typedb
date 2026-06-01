@@ -19,7 +19,7 @@ rust_test(
         "@typedb_behaviour//connection:transaction.feature"
     ],
     crate_features = ["bazel"],
-    tags = ["manual"],
+    tags = ["manual_build"],
 )
 
 rustfmt_test(
