@@ -57,7 +57,7 @@ rust_binary(
 package_version_vars(name = "server-version-vars")
 
 pkg_mkdirs(
-    name = "pkg-empty-server-data",
+    name = "package-layout-server-dirs",
     dirs = ["server/data"],
     attributes = pkg_attributes(mode = "0755"),
 )
@@ -77,7 +77,7 @@ alias(
 
 # The directory structure for distribution (Unix)
 pkg_files(
-    name = "package-layout-server-without-dirs",
+    name = "package-layout-server-files",
     srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml", "//:LICENSE"],
     renames = {
         "//:typedb_server_bin" : "server/typedb_server_bin",
@@ -88,13 +88,13 @@ pkg_files(
 )
 
 pkg_filegroup(
-    name = "package-server-only",
-    srcs = [":package-layout-server-without-dirs", ":pkg-empty-server-data"]
+    name = "package-typedb-server",
+    srcs = [":package-layout-server-files", ":package-layout-server-dirs"]
 )
 
 pkg_zip(
     name = "assemble-server-mac-x86_64-zip",
-    srcs = [":package-server-only"],
+    srcs = [":package-typedb-server"],
     package_dir = "typedb-server-mac-x86_64-{version}",
     out = "typedb-server-mac-x86_64.zip",
     package_variables = ":server-version-vars",
@@ -104,7 +104,7 @@ pkg_zip(
 
 pkg_zip(
     name = "assemble-server-mac-arm64-zip",
-    srcs = [":package-server-only"],
+    srcs = [":package-typedb-server"],
     package_dir = "typedb-server-mac-arm64-{version}",
     out = "typedb-server-mac-arm64.zip",
     package_variables = ":server-version-vars",
@@ -115,7 +115,7 @@ pkg_zip(
 
 pkg_tar(
     name = "assemble-server-linux-x86_64-targz",
-    srcs = [":package-server-only"],
+    srcs = [":package-typedb-server"],
     package_dir = "typedb-server-linux-x86_64-{version}",
     out = "typedb-server-linux-x86_64.tar.gz",
     package_variables = ":server-version-vars",
@@ -125,7 +125,7 @@ pkg_tar(
 
 pkg_tar(
     name = "assemble-server-linux-arm64-targz",
-    srcs = [":package-server-only"],
+    srcs = [":package-typedb-server"],
     package_dir = "typedb-server-linux-arm64-{version}",
     out = "typedb-server-linux-arm64.tar.gz",
     package_variables = ":server-version-vars",
@@ -135,7 +135,7 @@ pkg_tar(
 
 pkg_zip(
     name = "assemble-server-windows-x86_64-zip",
-    srcs = [":package-server-only"],
+    srcs = [":package-typedb-server"],
     package_dir = "typedb-server-windows-x86_64-{version}",
     out = "typedb-server-windows-x86_64.zip",
     package_variables = ":server-version-vars",
@@ -162,7 +162,7 @@ pkg_files(
 pkg_filegroup(
     name = "package-typedb-all",
     srcs = [
-        ":package-server-only",
+        ":package-typedb-server",
         ":console-repackaged",
     ],
 )
@@ -419,7 +419,7 @@ pkg_tar(
     visibility = ["//visibility:public"]
 )
 pkg_tar(
-    name = "package-typedb-all-tarred",
+    name = "package-typedb-all-targz",
     srcs = [":package-typedb-all"]
 )
 
@@ -428,7 +428,7 @@ assemble_apt(
     package_name = "typedb",
     architecture = "amd64",
     archives = [
-        "//:package-typedb-all-tarred",
+        "//:package-typedb-all-targz",
         "//:assemble-service-targz",
     ],
     depends = apt_depends,
@@ -453,7 +453,7 @@ assemble_apt(
     package_name = "typedb",
     architecture = "arm64",
     archives = [
-        "//:package-typedb-all-tarred",
+        "//:package-typedb-all-targz",
         "//:assemble-service-targz",
     ],
     depends = apt_depends,
