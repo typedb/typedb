@@ -86,10 +86,6 @@ features = {}
 		workspace = true
 
 [[test]]
-	path = "tests/assembly/admin.rs"
-	name = "test_admin_assembly"
-
-[[test]]
 	path = "tests/assembly/assembly.rs"
 	name = "test_assembly"
 

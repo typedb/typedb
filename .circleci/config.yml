@@ -97,7 +97,7 @@ commands:
     steps:
       - run: |
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel test --config=ci --test_output=errors //admin/client:test_crate_client //server:test_admin_service //tests/assembly:test_admin_assembly
+          bazel test --config=ci --test_output=errors //admin/client:test_crate_client //server:test_admin_service //admin:test_admin_assembly
 
   deploy-snapshot-unix:
     steps:
