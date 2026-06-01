@@ -40,7 +40,7 @@ fn setup_common(schema: &str) -> Context {
     setup_concept_storage(&mut storage);
 
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
+    let function_manager = Arc::new(FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None));
     let query_manager = QueryManager::new(None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
