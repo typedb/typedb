@@ -454,7 +454,10 @@ impl Server {
         }
 
         match server_status.admin_address() {
-            Some(admin_address) => println!("  Admin:      {admin_address} (Unix socket, mode 0600)"),
+            #[cfg(unix)]
+            Some(admin_address) => println!("  Admin:      {admin_address} (Unix socket)"),
+            #[cfg(windows)]
+            Some(admin_address) => println!("  Admin:      {admin_address} (Named Pipe)"),
             None => println!("  Admin:      {DISABLED}"),
         }
 

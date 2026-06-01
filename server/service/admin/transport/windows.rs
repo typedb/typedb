@@ -25,7 +25,7 @@ use tokio::{
 };
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::server::Connected;
-use tracing::{info, warn};
+use tracing::warn;
 
 use crate::error::ServerOpenError;
 
@@ -57,7 +57,6 @@ pub fn bind_admin_endpoint(pipe_name: &str) -> Result<AdminListener, ServerOpenE
 
     let first = create_pipe_instance(pipe_name, &sd, true)
         .map_err(|source| ServerOpenError::AdminPipeBind { name: pipe_name.to_string(), source: Arc::new(source) })?;
-    info!("Admin Named Pipe bound at {} (DACL: owner + Administrators + SYSTEM)", pipe_name);
 
     let (tx, rx) = mpsc::channel(16);
     let pipe_name_for_task = pipe_name.to_string();

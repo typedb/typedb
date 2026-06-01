@@ -197,7 +197,6 @@ impl UserOperator for LocalUserOperator {
 
         self.token_manager.invalidate_user(username).await;
         self.transaction_operator.close_by_owner(username).await;
-        tracing::info!("admin: password reset for user '{username}' via local admin endpoint");
         Ok(())
     }
 

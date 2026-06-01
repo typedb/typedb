@@ -4,13 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-// Spawns the cargo-built typedb_server_bin and typedb_admin_bin and asserts the
-// admin tool can connect via the per-OS admin endpoint and round-trip a command.
-// This is the Windows arm of `//tests/assembly:test_admin_assembly` (which on
-// Unix runs against the archive-extracted binaries via the bash launcher); they
-// cover the same surface — binary startup, clap parsing of the per-OS socket
-// path, and exit-code propagation.
-
 use std::{
     env,
     path::PathBuf,

@@ -19,7 +19,7 @@ use std::{
 use resource::constants::{common::PERMISSION_BITS_ALL, server::ADMIN_SOCKET_FILE_MODE};
 use tokio::net::UnixListener;
 use tokio_stream::wrappers::UnixListenerStream;
-use tracing::{info, warn};
+use tracing::warn;
 
 use crate::error::ServerOpenError;
 
@@ -90,7 +90,6 @@ pub fn bind_admin_endpoint(path: &Path) -> Result<AdminListener, ServerOpenError
         ServerOpenError::AdminSocketChmod { path: path.to_string_lossy().into_owned(), source: Arc::new(source) }
     })?;
 
-    info!("Admin Unix socket bound at {} (mode {:#o})", path.display(), ADMIN_SOCKET_FILE_MODE);
     Ok(AdminListener { inner: listener, path: path.to_path_buf() })
 }
 
