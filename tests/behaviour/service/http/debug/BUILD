@@ -15,7 +15,7 @@ rust_test(
     ],
     data = ["debug.feature"],
     crate_features = ["bazel"],
-    tags = ["manual"],
+    tags = ["manual_build"],
 )
 
 rustfmt_test(
