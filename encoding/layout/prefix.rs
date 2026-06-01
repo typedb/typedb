@@ -20,7 +20,7 @@ impl PrefixID {
 }
 
 macro_rules! make_prefix_enum {
-    ($($name:ident => $byte:literal = $hex:literal, $width:???, $domain:???);*) => {
+    ($($name:ident => $byte:literal = $hex:literal, $width:expr, $domain:expr);* $(;)?) => {
         // assert that $byte and $hex are the same literal
         $(const _: [(); $byte] = [(); $hex];)*
 
@@ -30,6 +30,10 @@ macro_rules! make_prefix_enum {
         }
 
         impl Prefix {
+            /// Every defined prefix, in declaration order. Useful for iterating over all prefixes
+            /// (e.g. for prefix-classification checks like [`Prefix::is_schema`]).
+            pub const ALL: &'static [Prefix] = &[$(Self::$name,)*];
+
             pub const fn prefix_id(&self) -> PrefixID {
                 match self {
                     $(Self::$name => PrefixID::new($byte),)*
@@ -47,19 +51,22 @@ macro_rules! make_prefix_enum {
                     $($byte => Self::$name,)*
                     _ => unreachable!(),
                 }
-           }
+            }
 
             ///
             /// Return true if we expect all keys within this exact prefix to have the same width.
             /// Note: two different prefixes with fixed width are not necessarily the same fixed widths!
             ///
-           pub const fn fixed_width_keys(&self) -> bool {
+            pub const fn fixed_width_keys(&self) -> bool {
                 let width = match self {
                     $(Self::$name => $width,)*
                 };
                 matches!(width, Width::Fixed)
             }
 
+            /// Return true if this prefix belongs to the schema (types, definitions, type-edges,
+            /// type-properties, schema-only indexes). Otherwise the prefix is part of the data
+            /// (instances, instance-edges, instance-properties).
             pub const fn is_schema(&self) -> bool {
                 let domain = match self {
                     $(Self::$name => $domain,)*
@@ -72,12 +79,12 @@ macro_rules! make_prefix_enum {
 
 enum Width {
     Fixed,
-    Variable
+    Variable,
 }
 
 enum MetaDomain {
     Schema,
-    Data
+    Data,
 }
 
 impl Prefix {
@@ -100,41 +107,41 @@ impl Prefix {
 
 make_prefix_enum! {
     // Reserved: 0-9 = 0x00-0x09
-    VertexEntityType => 10 = 0x0A, Width::Fixed;
-    VertexRelationType => 11 = 0x0B, Width::Fixed;
-    VertexAttributeType => 12 = 0x0C, Width::Fixed;
-    VertexRoleType => 15 = 0x0F, Width::Fixed;
-    DefinitionStruct => 20 = 0x14, Width::Fixed;
-    DefinitionFunction => 21 = 0x15, Width::Fixed;
+    VertexEntityType => 10 = 0x0A, Width::Fixed, MetaDomain::Schema;
+    VertexRelationType => 11 = 0x0B, Width::Fixed, MetaDomain::Schema;
+    VertexAttributeType => 12 = 0x0C, Width::Fixed, MetaDomain::Schema;
+    VertexRoleType => 15 = 0x0F, Width::Fixed, MetaDomain::Schema;
+    DefinitionStruct => 20 = 0x14, Width::Fixed, MetaDomain::Schema;
+    DefinitionFunction => 21 = 0x15, Width::Fixed, MetaDomain::Schema;
 
     // All objects are stored consecutively for iteration
-    VertexEntity => 30 = 0x1E, Width::Fixed;
-    VertexRelation => 31 = 0x1F, Width::Fixed;
-    VertexAttribute => 32 = 0x20, false;
+    VertexEntity => 30 = 0x1E, Width::Fixed, MetaDomain::Data;
+    VertexRelation => 31 = 0x1F, Width::Fixed, MetaDomain::Data;
+    VertexAttribute => 32 = 0x20, Width::Variable, MetaDomain::Data;
 
-    EdgeSub => 100 = 0x64, Width::Fixed;
-    EdgeSubReverse => 101 = 0x65, Width::Fixed;
-    EdgeOwns => 102 = 0x66, Width::Fixed;
-    EdgeOwnsReverse => 103 = 0x67, Width::Fixed;
-    EdgePlays => 104 = 0x68, Width::Fixed;
-    EdgePlaysReverse => 105 = 0x69, Width::Fixed;
-    EdgeRelates => 106 = 0x6A, Width::Fixed;
-    EdgeRelatesReverse => 107 = 0x6B, Width::Fixed;
+    EdgeSub => 100 = 0x64, Width::Fixed, MetaDomain::Schema;
+    EdgeSubReverse => 101 = 0x65, Width::Fixed, MetaDomain::Schema;
+    EdgeOwns => 102 = 0x66, Width::Fixed, MetaDomain::Schema;
+    EdgeOwnsReverse => 103 = 0x67, Width::Fixed, MetaDomain::Schema;
+    EdgePlays => 104 = 0x68, Width::Fixed, MetaDomain::Schema;
+    EdgePlaysReverse => 105 = 0x69, Width::Fixed, MetaDomain::Schema;
+    EdgeRelates => 106 = 0x6A, Width::Fixed, MetaDomain::Schema;
+    EdgeRelatesReverse => 107 = 0x6B, Width::Fixed, MetaDomain::Schema;
 
-    EdgeHas => 130 = 0x82, false;
-    EdgeHasReverse => 131 = 0x83, false;
-    EdgeLinks => 132 = 0x84, Width::Fixed;
-    EdgeLinksReverse => 133 = 0x85, Width::Fixed;
-    EdgeLinksIndex => 140 = 0x8C, Width::Fixed;
+    EdgeHas => 130 = 0x82, Width::Variable, MetaDomain::Data;
+    EdgeHasReverse => 131 = 0x83, Width::Variable, MetaDomain::Data;
+    EdgeLinks => 132 = 0x84, Width::Fixed, MetaDomain::Data;
+    EdgeLinksReverse => 133 = 0x85, Width::Fixed, MetaDomain::Data;
+    EdgeLinksIndex => 140 = 0x8C, Width::Fixed, MetaDomain::Data;
 
-    PropertyTypeVertex => 160 = 0xA0, Width::Fixed;
-    PropertyTypeEdge => 162 = 0xA2, Width::Fixed;
-    PropertyObjectVertex => 163 = 0xA3, Width::Fixed;
+    PropertyTypeVertex => 160 = 0xA0, Width::Fixed, MetaDomain::Schema;
+    PropertyTypeEdge => 162 = 0xA2, Width::Fixed, MetaDomain::Schema;
+    PropertyObjectVertex => 163 = 0xA3, Width::Fixed, MetaDomain::Data;
 
-    IndexLabelToType => 182 = 0xB6, Width::Variable;
-    IndexNameToDefinitionStruct => 183 = 0xB7, Width::Variable;
-    IndexNameToDefinitionFunction => 184 = 0xB8, Width::Variable;
+    IndexLabelToType => 182 = 0xB6, Width::Variable, MetaDomain::Schema;
+    IndexNameToDefinitionStruct => 183 = 0xB7, Width::Variable, MetaDomain::Schema;
+    IndexNameToDefinitionFunction => 184 = 0xB8, Width::Variable, MetaDomain::Schema;
 
-    IndexValueToStruct => 190 = 0xBE, Width::Variable
+    IndexValueToStruct => 190 = 0xBE, Width::Variable, MetaDomain::Data;
     // Reserved: 200-255 = 0xC8-0xFF
 }
