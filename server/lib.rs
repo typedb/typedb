@@ -482,7 +482,7 @@ impl Server {
         let http_connect_address =
             Self::connect_address(server_status.http_advertise_address(), server_status.http_listen_address());
         if grpc_connect_address.is_some() || http_connect_address.is_some() {
-            println!("To connect:");
+            println!("\nTo connect:");
             if let Some(http_connect_address) = http_connect_address.as_deref() {
                 println!("  Studio:  {}", Self::studio_connect_link(http_connect_address, encryption_config));
             }
