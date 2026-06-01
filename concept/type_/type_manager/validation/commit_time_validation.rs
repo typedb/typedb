@@ -10,7 +10,7 @@ use encoding::{EncodingKeyspace, graph::definition::r#struct::StructDefinition, 
 use itertools::Itertools;
 use storage::{
     keyspace::KeyspaceSet,
-    snapshot::{MaterialisedSnapshot, ReadableSnapshot},
+    snapshot::{CachedReadSnapshot, ReadableSnapshot},
 };
 
 use crate::{
@@ -89,16 +89,14 @@ impl CommitTimeValidation {
         type_manager: &TypeManager,
     ) -> Result<Vec<Box<SchemaValidationError>>, Box<ConceptReadError>> {
         // Materialise the schema TX's merged view (storage + buffered writes) into a
-        // `MaterialisedSnapshot` once, scanning only the schema prefix byte ranges of
+        // `CachedReadSnapshot` once, scanning only the schema prefix byte ranges of
         // the schema keyspace. The per-type validators below collectively make millions
         // of small reads against this snapshot; serving them from an in-memory BTreeMap
         // rather than via MVCC iterators cuts the validate phase by ~5x on large
         // schemas.
-        let schema_ranges = Prefix::schema_byte_ranges();
-        let snapshot = MaterialisedSnapshot::load_from_snapshot(
+        let snapshot = CachedReadSnapshot::load_from_snapshot(
             snapshot,
-            EncodingKeyspace::DefaultOptimisedPrefix11.id(),
-            &schema_ranges,
+            vec![(EncodingKeyspace::DefaultOptimisedPrefix11.id(), Prefix::schema_byte_ranges())],
         );
         let mut errors = Vec::new();
         Self::validate_entity_types(&snapshot, type_manager, &mut errors)?;

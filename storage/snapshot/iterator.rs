@@ -35,7 +35,7 @@ impl SnapshotRangeIterator {
     }
 
     /// Construct an iterator with no storage backing, driven entirely by a buffered
-    /// (in-memory) source. Used by `MaterialisedSnapshot`, where the entire dataset
+    /// (in-memory) source. Used by `CachedReadSnapshot`, where the entire dataset
     /// has been materialised up front and storage is never consulted.
     pub fn new_buffered_only(buffered_iterator: BufferRangeIterator) -> Self {
         SnapshotRangeIterator {

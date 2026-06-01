@@ -18,7 +18,7 @@ use encoding::{
 use error::typedb_error;
 use storage::{
     MVCCStorage, durability_client::DurabilityClient, keyspace::KeyspaceSet, sequence_number::SequenceNumber,
-    snapshot::MaterialisedSnapshot,
+    snapshot::CachedReadSnapshot,
 };
 
 use crate::type_::{
@@ -93,18 +93,16 @@ impl TypeCache {
     where
         D: DurabilityClient,
     {
-        // Load the schema-side keys of the schema keyspace into a `MaterialisedSnapshot`
+        // Load the schema-side keys of the schema keyspace into a `CachedReadSnapshot`
         // once, then run all per-kind cache creators against it. Each subsequent read is
         // a BTreeMap lookup instead of an MVCC iterator open against rocksdb — orders of
         // magnitude cheaper on large schemas, where this rebuild is dominated by millions
         // of small reads. Object-vertex and instance-edge data share this keyspace; we
         // scan only the schema prefix ranges to avoid pulling them into the snapshot.
-        let schema_ranges = Prefix::schema_byte_ranges();
-        let snapshot = MaterialisedSnapshot::load_keyspace(
+        let snapshot = CachedReadSnapshot::load_keyspaces(
             &storage,
             open_sequence_number,
-            EncodingKeyspace::DefaultOptimisedPrefix11.id(),
-            &schema_ranges,
+            vec![(EncodingKeyspace::DefaultOptimisedPrefix11.id(), Prefix::schema_byte_ranges())],
         );
 
         let entity_type_caches = EntityTypeCache::create(&snapshot);

@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::ops::RangeInclusive;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PrefixID {
     pub(crate) byte: u8,
@@ -114,19 +116,19 @@ impl Prefix {
     /// [`Prefix::is_schema`], so adding or reclassifying a prefix automatically updates
     /// the ranges without further bookkeeping.
     ///
-    /// Intended for passing to `MaterialisedSnapshot` constructors so they can open one
+    /// Intended for passing to `CachedReadSnapshot` constructors so they can open one
     /// storage iterator per range, copying only the schema-side data into memory and
     /// skipping the data-side keys that share the same rocksdb keyspace.
-    pub fn schema_byte_ranges() -> Vec<(u8, u8)> {
+    pub fn schema_byte_ranges() -> Vec<RangeInclusive<u8>> {
         let prefix_for =
             |byte: u8| -> Option<Prefix> { Self::ALL.iter().copied().find(|p| p.prefix_id().byte == byte) };
-        let mut ranges: Vec<(u8, u8)> = Vec::new();
+        let mut ranges: Vec<RangeInclusive<u8>> = Vec::new();
         let mut current: Option<(u8, u8)> = None;
         for b in 0..=255u8 {
             match prefix_for(b) {
                 Some(p) if !p.is_schema() => {
-                    if let Some(range) = current.take() {
-                        ranges.push(range);
+                    if let Some((start, end)) = current.take() {
+                        ranges.push(start..=end);
                     }
                 }
                 Some(_) => {
@@ -138,8 +140,8 @@ impl Prefix {
                 None => {}
             }
         }
-        if let Some(range) = current {
-            ranges.push(range);
+        if let Some((start, end)) = current {
+            ranges.push(start..=end);
         }
         ranges
     }

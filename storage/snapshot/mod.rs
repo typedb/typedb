@@ -4,16 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub use materialised::MaterialisedSnapshot;
+pub use cached_read::CachedReadSnapshot;
 pub use snapshot::{
     CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, SnapshotGetError,
     WritableSnapshot, WriteSnapshot,
 };
 
 pub mod buffer;
+pub mod cached_read;
 pub mod iterator;
 pub mod lock;
-pub mod materialised;
 pub(crate) mod pool;
 mod snapshot;
 pub mod snapshot_id;
