@@ -174,7 +174,7 @@ pkg_zip(
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_mac_x86_64,
 )
-#
+
 pkg_zip(
     name = "assemble-all-mac-arm64-zip",
     srcs = [":package-typedb-all"],
