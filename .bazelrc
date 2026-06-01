@@ -19,7 +19,7 @@ common --noincompatible_disallow_empty_glob --experimental_repository_downloader
 # Fix Java runfiles path resolution in Bzlmod mode (required by release note validation)
 build --legacy_external_runfiles
 
-build --incompatible_strict_action_env --remote_download_toplevel --disk_cache=~/.cache/bazel --java_runtime_version=remotejdk_21
+build --incompatible_strict_action_env --remote_download_toplevel --disk_cache=~/.cache/bazel --experimental_disk_cache_gc_max_size=100G --experimental_disk_cache_gc_max_age=60d --java_runtime_version=remotejdk_21
 run --incompatible_strict_action_env
 test --incompatible_strict_action_env --test_env=PATH
 
