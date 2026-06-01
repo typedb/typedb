@@ -36,11 +36,11 @@ fn kill_process(process: Child) -> std::io::Result<Output> {
 fn test_assembly() {
     let archive_name = std::env::var("TYPEDB_ASSEMBLY_ARCHIVE").unwrap();
     let extract_cmd = if archive_name.ends_with(".zip") {
-        let without_extension = archive_name.replace(".zip", "");
-        format!("unzip {archive_name} && mv {without_extension} typedb-extracted")
+        let without_extension_with_version = archive_name.replace(".zip", "-0.0.0");
+        format!("unzip {archive_name} && mv {without_extension_with_version} typedb-extracted")
     } else if archive_name.ends_with(".tar.gz") {
-        let without_extension = archive_name.replace(".tar.gz", "");
-        format!("tar -xf {archive_name} && mv {without_extension} typedb-extracted")
+        let without_extension_with_version = archive_name.replace(".tar.gz", "-0.0.0");
+        format!("tar -xf {archive_name} && mv {without_extension_with_version} typedb-extracted")
     } else {
         unreachable!("Expected .zip or .tar.gz");
     };

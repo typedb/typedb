@@ -174,11 +174,11 @@ fn extract_typedb() {
     }
     let archive_name = std::env::var("TYPEDB_ASSEMBLY_ARCHIVE").unwrap();
     let extract_cmd = if archive_name.ends_with(".zip") {
-        let without_extension = Path::new(archive_name.trim_end_matches(".zip")).file_name().unwrap().to_str().unwrap();
-        format!("unzip {archive_name} && mv {without_extension} typedb-extracted")
+        let without_extension_with_version = archive_name.replace(".zip", "-0.0.0");
+        format!("unzip {archive_name} && mv {without_extension_with_version} typedb-extracted")
     } else if archive_name.ends_with(".tar.gz") {
-        let without_extension = archive_name.replace(".tar.gz", "");
-        format!("tar -xf {archive_name} && mv {without_extension} typedb-extracted")
+        let without_extension_with_version = archive_name.replace(".tar.gz", "-0.0.0");
+        format!("tar -xf {archive_name} && mv {without_extension_with_version} typedb-extracted")
     } else {
         unreachable!("Expected .zip or .tar.gz");
     };

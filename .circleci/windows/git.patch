@@ -1,6 +1,8 @@
---- a/BUILD	2026-04-30 14:54:24.805494009 +0000
-+++ b/BUILD	2026-04-30 14:54:40.840196003 +0000
-@@ -77,13 +77,23 @@
+diff --git a/BUILD b/BUILD
+index bb3d50325e..814c752450 100644
+--- a/BUILD
++++ b/BUILD
+@@ -72,13 +72,23 @@ alias(
      })
  )
  
@@ -17,9 +19,9 @@
 +
 +# The directory structure for distribution (Windows)
  pkg_files(
-     name = "package-layout-server",
--    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml"],
-+    srcs = ["//:typedb_server_bin_release", "//:typedb_admin_bin_release", "//binary:typedb.bat", "//server:config.yml"],
+     name = "package-layout-server-files",
+-    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml", "//:LICENSE"],
++    srcs = ["//:typedb_server_bin_release", "//:typedb_admin_bin_release", "//binary:typedb.bat", "//server:config.yml", "//:LICENSE"],
      renames = {
 -        "//:typedb_server_bin" : "server/typedb_server_bin",
 -        "//admin:typedb_admin_bin" : "admin/typedb_admin_bin",
@@ -28,3 +30,12 @@
          "//server:config.yml" : "server/config.yml",
      },
      attributes = binary_permissions,
+@@ -141,7 +151,7 @@ pkg_zip(
+ select_file(
+     name = "console-binary-only",
+     srcs = ":typedb_console_artifact_extracted",
+-    subpath = "console/typedb_console_bin",
++    subpath = "console/typedb_console_bin.exe",
+ )
+ 
+ pkg_files(

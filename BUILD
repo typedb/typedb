@@ -7,15 +7,16 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@typedb_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 
 load("@typedb_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
+load("@typedb_bazel_distribution//common:rules.bzl", "package_version_vars")
 load("@typedb_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
-load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip")
 load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_arm64", "constraint_linux_x86_64",
      "constraint_mac_arm64", "constraint_mac_x86_64", "constraint_win_x86_64")
 
+load("@bazel_skylib//rules:select_file.bzl", "select_file")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_push")
 
-load("@rules_pkg//:mappings.bzl", "pkg_files", "pkg_attributes")
-load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("@rules_pkg//:mappings.bzl", "pkg_attributes" , "pkg_files", "pkg_filegroup", "pkg_mkdirs")
+load("@rules_pkg//:pkg.bzl", "pkg_tar", "pkg_zip")
 load("@rules_rust//rust:defs.bzl", "rust_binary", "rustfmt_test")
 
 load("@typedb_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
@@ -53,34 +54,31 @@ rust_binary(
 )
 
 # Assembly
-assemble_files = {
-    "//:LICENSE": "LICENSE",
-}
+package_version_vars(name = "server-version-vars")
 
-empty_directories = [
-    "server/data",
-]
+pkg_mkdirs(
+    name = "package-layout-server-dirs",
+    dirs = ["server/data"],
+    attributes = pkg_attributes(mode = "0755"),
+)
 
 binary_permissions = pkg_attributes(mode = "0744")
-other_permissions = {
-    "server/data": "0755",
-}
 
 alias(
-    name = "typedb_console_artifact",
+    name = "typedb_console_artifact_extracted",
     actual = select({
-        "@typedb_bazel_distribution//platform:is_linux_arm64" : "@typedb_console_artifact_linux-arm64//file",
-        "@typedb_bazel_distribution//platform:is_linux_x86_64" : "@typedb_console_artifact_linux-x86_64//file",
-        "@typedb_bazel_distribution//platform:is_mac_arm64" : "@typedb_console_artifact_mac-arm64//file",
-        "@typedb_bazel_distribution//platform:is_mac_x86_64" : "@typedb_console_artifact_mac-x86_64//file",
-        "@typedb_bazel_distribution//platform:is_windows_x86_64" : "@typedb_console_artifact_windows-x86_64//file",
+        "@typedb_bazel_distribution//platform:is_linux_arm64" : "@typedb_console_artifact_linux-arm64-extracted//:all_files",
+        "@typedb_bazel_distribution//platform:is_linux_x86_64" : "@typedb_console_artifact_linux-x86_64-extracted//:all_files",
+        "@typedb_bazel_distribution//platform:is_mac_arm64" : "@typedb_console_artifact_mac-arm64-extracted//:all_files",
+        "@typedb_bazel_distribution//platform:is_mac_x86_64" : "@typedb_console_artifact_mac-x86_64-extracted//:all_files",
+        "@typedb_bazel_distribution//platform:is_windows_x86_64" : "@typedb_console_artifact_windows-x86_64-extracted//:all_files",
     })
 )
 
 # The directory structure for distribution (Unix)
 pkg_files(
-    name = "package-layout-server",
-    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml"],
+    name = "package-layout-server-files",
+    srcs = ["//:typedb_server_bin", "//admin:typedb_admin_bin", "//binary:typedb", "//server:config.yml", "//:LICENSE"],
     renames = {
         "//:typedb_server_bin" : "server/typedb_server_bin",
         "//admin:typedb_admin_bin" : "admin/typedb_admin_bin",
@@ -89,129 +87,130 @@ pkg_files(
     attributes = binary_permissions,
 )
 
-pkg_tar(
-    name = "package-typedb-server-only",
-    srcs = [":package-layout-server"],
+pkg_filegroup(
+    name = "package-typedb-server",
+    srcs = [":package-layout-server-files", ":package-layout-server-dirs"]
 )
 
-assemble_zip(
+pkg_zip(
     name = "assemble-server-mac-x86_64-zip",
-    additional_files = assemble_files,
-    empty_directories = empty_directories,
-    output_filename = "typedb-server-mac-x86_64",
-    permissions = other_permissions,
-    targets = ["//:package-typedb-server-only"],
+    srcs = [":package-typedb-server"],
+    package_dir = "typedb-server-mac-x86_64-{version}",
+    out = "typedb-server-mac-x86_64.zip",
+    package_variables = ":server-version-vars",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_mac_x86_64,
 )
 
-assemble_zip(
+pkg_zip(
     name = "assemble-server-mac-arm64-zip",
-    additional_files = assemble_files,
-    empty_directories = empty_directories,
-    output_filename = "typedb-server-mac-arm64",
-    permissions = other_permissions,
-    targets = ["//:package-typedb-server-only"],
+    srcs = [":package-typedb-server"],
+    package_dir = "typedb-server-mac-arm64-{version}",
+    out = "typedb-server-mac-arm64.zip",
+    package_variables = ":server-version-vars",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_mac_arm64,
 )
 
-assemble_targz(
+
+pkg_tar(
     name = "assemble-server-linux-x86_64-targz",
-    additional_files = assemble_files,
-    empty_directories = empty_directories,
-    output_filename = "typedb-server-linux-x86_64",
-    permissions = other_permissions,
-    targets = ["//:package-typedb-server-only"],
+    srcs = [":package-typedb-server"],
+    package_dir = "typedb-server-linux-x86_64-{version}",
+    out = "typedb-server-linux-x86_64.tar.gz",
+    package_variables = ":server-version-vars",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_x86_64,
 )
 
-assemble_targz(
+pkg_tar(
     name = "assemble-server-linux-arm64-targz",
-    additional_files = assemble_files,
-    empty_directories = empty_directories,
-    output_filename = "typedb-server-linux-arm64",
-    permissions = other_permissions,
-    targets = ["//:package-typedb-server-only"],
+    srcs = [":package-typedb-server"],
+    package_dir = "typedb-server-linux-arm64-{version}",
+    out = "typedb-server-linux-arm64.tar.gz",
+    package_variables = ":server-version-vars",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_arm64,
 )
 
-assemble_zip(
+pkg_zip(
     name = "assemble-server-windows-x86_64-zip",
-    additional_files = assemble_files,
-    empty_directories = empty_directories,
-    output_filename = "typedb-server-windows-x86_64",
-    permissions = other_permissions,
-    targets = ["//:package-typedb-server-only"],
+    srcs = [":package-typedb-server"],
+    package_dir = "typedb-server-windows-x86_64-{version}",
+    out = "typedb-server-windows-x86_64.zip",
+    package_variables = ":server-version-vars",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_win_x86_64,
 )
 
-artifact_repackage(
+# package with console included.
+select_file(
+    name = "console-binary-only",
+    srcs = ":typedb_console_artifact_extracted",
+    subpath = "console/typedb_console_bin",
+)
+
+pkg_files(
     name = "console-repackaged",
-    srcs = [":typedb_console_artifact"],
-    files_to_keep = ["console"],
+    srcs = [":console-binary-only"],
+    prefix = "console",
+    attributes = binary_permissions,
 )
 
-pkg_tar(
+pkg_filegroup(
     name = "package-typedb-all",
-    srcs = [":package-layout-server"],
-    deps = [":console-repackaged"],
+    srcs = [
+        ":package-typedb-server",
+        ":console-repackaged",
+    ],
 )
 
-assemble_zip(
+pkg_zip(
     name = "assemble-all-mac-x86_64-zip",
-    additional_files = assemble_files,
-    empty_directories = empty_directories,
-    output_filename = "typedb-all-mac-x86_64",
-    permissions = other_permissions,
-    targets = ["//:package-typedb-all"],
+    srcs = [":package-typedb-all"],
+    package_dir = "typedb-all-mac-x86_64-{version}",
+    out = "typedb-all-mac-x86_64.zip",
+    package_variables = ":server-version-vars",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_mac_x86_64,
 )
 
-assemble_zip(
+pkg_zip(
     name = "assemble-all-mac-arm64-zip",
-    additional_files = assemble_files,
-    empty_directories = empty_directories,
-    output_filename = "typedb-all-mac-arm64",
-    permissions = other_permissions,
-    targets = ["//:package-typedb-all"],
+    srcs = [":package-typedb-all"],
+    package_dir = "typedb-all-mac-arm64-{version}",
+    out = "typedb-all-mac-arm64.zip",
+    package_variables = ":server-version-vars",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_mac_arm64,
 )
 
-assemble_targz(
+pkg_tar(
     name = "assemble-all-linux-x86_64-targz",
-    additional_files = assemble_files,
-    empty_directories = empty_directories,
-    output_filename = "typedb-all-linux-x86_64",
-    permissions = other_permissions,
-    targets = ["//:package-typedb-all"],
+    srcs = [":package-typedb-all"],
+    package_dir = "typedb-all-linux-x86_64-{version}",
+    out = "typedb-all-linux-x86_64.tar.gz",
+    package_variables = ":server-version-vars",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_x86_64,
 )
 
-assemble_targz(
+pkg_tar(
     name = "assemble-all-linux-arm64-targz",
-    additional_files = assemble_files,
-    empty_directories = empty_directories,
-    output_filename = "typedb-all-linux-arm64",
-    permissions = other_permissions,
-    targets = ["//:package-typedb-all"],
+    srcs = [":package-typedb-all"],
+    package_dir = "typedb-all-linux-arm64-{version}",
+    out = "typedb-all-linux-arm64.tar.gz",
+    package_variables = ":server-version-vars",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_linux_arm64,
 )
 
-assemble_zip(
+pkg_zip(
     name = "assemble-all-windows-x86_64-zip",
-    additional_files = assemble_files,
-    empty_directories = empty_directories,
-    output_filename = "typedb-all-windows-x86_64",
-    permissions = other_permissions,
-    targets = ["//:package-typedb-all"],
+    srcs = [":package-typedb-all"],
+    package_dir = "typedb-all-windows-x86_64-{version}",
+    out = "typedb-all-windows-x86_64.zip",
+    package_variables = ":server-version-vars",
     visibility = ["//tests/assembly:__subpackages__"],
     target_compatible_with = constraint_win_x86_64,
 )
@@ -412,12 +411,14 @@ apt_symlinks = {
     "/usr/lib/systemd/system/typedb.service": "/opt/typedb/core/typedb.service",
 }
 
-assemble_targz(
+pkg_tar(
     name = "assemble-service-targz",
-    additional_files = {
-        "//binary:typedb.service": "typedb.service",
-    },
+    srcs = ["//binary:typedb.service"],
     visibility = ["//visibility:public"]
+)
+pkg_tar(
+    name = "package-typedb-all-targz",
+    srcs = [":package-typedb-all"]
 )
 
 assemble_apt(
@@ -425,14 +426,13 @@ assemble_apt(
     package_name = "typedb",
     architecture = "amd64",
     archives = [
-        "//:package-typedb-all",
+        "//:package-typedb-all-targz",
         "//:assemble-service-targz",
     ],
     depends = apt_depends,
     description = "TypeDB",
     empty_dirs = apt_empty_dirs,
     empty_dirs_permission = "0777",
-    files = assemble_files,
     installation_dir = apt_installation_dir,
     maintainer = "TypeDB Community <community@typedb.com>",
     symlinks = apt_symlinks,
@@ -451,14 +451,13 @@ assemble_apt(
     package_name = "typedb",
     architecture = "arm64",
     archives = [
-        "//:package-typedb-all",
+        "//:package-typedb-all-targz",
         "//:assemble-service-targz",
     ],
     depends = apt_depends,
     description = "TypeDB",
     empty_dirs = apt_empty_dirs,
     empty_dirs_permission = "0777",
-    files = assemble_files,
     installation_dir = apt_installation_dir,
     maintainer = "TypeDB Community <community@typedb.com>",
     symlinks = apt_symlinks,
