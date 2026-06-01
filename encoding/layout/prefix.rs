@@ -103,6 +103,13 @@ impl Prefix {
             Prefix::VertexEntityType
         }
     }
+
+    /// Predicate convenience: true iff `key` starts with a known schema prefix byte.
+    /// Suitable for passing directly as the `key_filter` to `MaterialisedSnapshot`
+    /// constructors when only the schema-side keys of a mixed keyspace are wanted.
+    pub fn key_is_schema(key: &[u8]) -> bool {
+        !key.is_empty() && Self::from_prefix_id(PrefixID::new(key[0])).is_schema()
+    }
 }
 
 make_prefix_enum! {

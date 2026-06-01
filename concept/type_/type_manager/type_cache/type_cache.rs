@@ -12,6 +12,7 @@ use std::{
 use encoding::{
     EncodingKeyspace,
     graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition},
+    layout::prefix::Prefix,
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
@@ -92,14 +93,17 @@ impl TypeCache {
     where
         D: DurabilityClient,
     {
-        // Load the entire schema keyspace into a `MaterialisedSnapshot` once, then run all
-        // per-kind cache creators against it. Each subsequent read is a BTreeMap lookup
-        // instead of an MVCC iterator open against rocksdb — orders of magnitude cheaper
-        // on large schemas, where this rebuild is dominated by millions of small reads.
-        let snapshot = MaterialisedSnapshot::load_entire_keyspace(
+        // Load the schema-side keys of the schema keyspace into a `MaterialisedSnapshot`
+        // once, then run all per-kind cache creators against it. Each subsequent read is
+        // a BTreeMap lookup instead of an MVCC iterator open against rocksdb — orders of
+        // magnitude cheaper on large schemas, where this rebuild is dominated by millions
+        // of small reads. Object-vertex and instance-edge data also live in this keyspace
+        // but are irrelevant to the type cache, so we filter them out.
+        let snapshot = MaterialisedSnapshot::load_keyspace(
             &storage,
             open_sequence_number,
             EncodingKeyspace::DefaultOptimisedPrefix11.id(),
+            Prefix::key_is_schema,
         );
 
         let entity_type_caches = EntityTypeCache::create(&snapshot);

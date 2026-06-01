@@ -50,24 +50,36 @@ pub struct MaterialisedSnapshot {
 }
 
 impl MaterialisedSnapshot {
-    /// Open a read snapshot at `open_sequence_number` and materialise every
-    /// key/value in `keyspace_id` into an in-memory `BTreeMap`. Subsequent reads
-    /// against the returned snapshot are served entirely from memory.
-    pub fn load_entire_keyspace<D>(
+    /// Open a read snapshot at `open_sequence_number` and materialise every key in
+    /// `keyspace_id` for which `key_filter` returns true into an in-memory `BTreeMap`.
+    /// Subsequent reads against the returned snapshot are served entirely from memory.
+    ///
+    /// The filter is invoked once per key encountered in the underlying scan; it lets the
+    /// caller skip keys that share `keyspace_id` but are outside the caller's interest
+    /// (e.g. the schema keyspace shares its rocksdb keyspace with object-vertex data, so
+    /// schema-only callers pass `encoding::layout::prefix::Prefix::key_is_schema`).
+    pub fn load_keyspace<D, F>(
         storage: &Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
         keyspace_id: KeyspaceId,
+        key_filter: F,
     ) -> Self
     where
         D: DurabilityClient,
+        F: Fn(&[u8]) -> bool,
     {
         let source = storage.clone().open_snapshot_read_at(open_sequence_number);
-        Self::load_from_snapshot(&source, keyspace_id)
+        Self::load_from_snapshot(&source, keyspace_id, key_filter)
     }
 
-    /// Materialise the merged view of `keyspace_id` visible to `source` —
-    /// including any buffered writes it carries — into an in-memory `BTreeMap`.
-    pub fn load_from_snapshot<S: ReadableSnapshot>(source: &S, keyspace_id: KeyspaceId) -> Self {
+    /// Materialise the merged view of `keyspace_id` visible to `source` — including any
+    /// buffered writes it carries — into an in-memory `BTreeMap`, keeping only the keys
+    /// for which `key_filter` returns true.
+    pub fn load_from_snapshot<S, F>(source: &S, keyspace_id: KeyspaceId, key_filter: F) -> Self
+    where
+        S: ReadableSnapshot,
+        F: Fn(&[u8]) -> bool,
+    {
         let mut keyspaces: Box<
             [Option<BTreeMap<ByteArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>>>; KEYSPACE_SLOTS],
         > = Box::new(std::array::from_fn(|_| None));
@@ -78,7 +90,9 @@ impl MaterialisedSnapshot {
         let mut it = source.iterate_range(&range, StorageCounters::DISABLED);
         while let Some(result) = it.next() {
             let (key, value) = result.expect("MaterialisedSnapshot load failed");
-            bt.insert(ByteArray::copy(key.bytes()), ByteArray::copy(&*value));
+            if key_filter(key.bytes()) {
+                bt.insert(ByteArray::copy(key.bytes()), ByteArray::copy(&*value));
+            }
         }
         keyspaces[keyspace_id.0 as usize] = Some(bt);
         Self {
