@@ -58,6 +58,7 @@ fn run_write(tx: TransactionWrite<WALClient>, query: &str) -> TransactionWrite<W
         tx,
         QueryOptions::default_grpc(),
         pipeline,
+        None,
         query.to_string(),
         ExecutionInterrupt::new_uninterruptible(),
     );

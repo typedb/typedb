@@ -90,6 +90,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
             thing_manager.clone(),
             &function_manager,
             &data_query,
+            None,
             &data_str,
         )
         .unwrap();
@@ -139,6 +140,7 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
             thing_manager.clone(),
             function_manager,
             &query,
+            None,
             query_str,
         )
         .unwrap();

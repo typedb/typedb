@@ -5,7 +5,9 @@
  */
 use std::sync::Arc;
 
+use concept::error::ConceptDecodeError;
 use error::{TypeDBError, typedb_error};
+use ir::LiteralParseError;
 
 use crate::{
     authentication::AuthenticationError,
@@ -27,6 +29,10 @@ typedb_error!(
         Transaction(16, "Transaction error.", typedb_source: TransactionServiceError),
         QueryClose(17, "Error while closing single-query transaction.", typedb_source: TransactionServiceError),
         QueryCommit(18, "Error while committing single-query transaction.", typedb_source: TransactionServiceError),
+        ConceptDecode(19, "An error occurred while decoding the provided concept.", typedb_source: Box<ConceptDecodeError>),
+        InvalidIIDFormatForGivenEntry(20, "The provided iid string '{iid}' was invalid.", iid: String),
+        ParsingValueFailedForGivenEntry(21, "An error occured while parsing the provided value '{value}'.", value: String, typedb_source: typeql::Error),
+        TranslatingValueFailedForGivenEntry(22, "An error occured while parsing the provided value '{value}'.", value: String, typedb_source: LiteralParseError),
     }
 );
 
@@ -65,7 +71,11 @@ impl HttpServiceError {
             | HttpServiceError::UnknownVersion { .. }
             | HttpServiceError::MissingPathParameter { .. }
             | HttpServiceError::InvalidPathParameter { .. }
-            | HttpServiceError::Authentication { .. } => None,
+            | HttpServiceError::Authentication { .. }
+            | HttpServiceError::ConceptDecode { .. }
+            | HttpServiceError::InvalidIIDFormatForGivenEntry { .. }
+            | HttpServiceError::ParsingValueFailedForGivenEntry { .. }
+            | HttpServiceError::TranslatingValueFailedForGivenEntry { .. } => None,
         }
     }
 }

@@ -15,12 +15,13 @@ use compiler::{
         expression::compiled_expression::ExpressionValueType,
         fetch::{AnnotatedFetchObject, AnnotatedFetchSome},
         function::{AnnotatedFunctionSignature, FunctionParameterAnnotation},
-        pipeline::{AnnotatedPipeline, AnnotatedStage},
+        pipeline::{AnnotatedGiven, AnnotatedPipeline, AnnotatedStage},
         type_annotations::{BlockAnnotations, TypeAnnotations},
     },
     query_structure::{
-        ConjunctionAnnotations, PipelineStructure, PipelineStructureAnnotations, PipelineVariableAnnotation,
-        PipelineVariableAnnotationAndModifier, QueryStructure, StageIndex, StructureVariableId,
+        ConjunctionAnnotations, GivenStructureAnnotations, PipelineStructure, PipelineStructureAnnotations,
+        PipelineVariableAnnotation, PipelineVariableAnnotationAndModifier, QueryStructure, StageIndex,
+        StructureVariableId,
     },
 };
 use concept::{
@@ -29,7 +30,10 @@ use concept::{
 };
 use encoding::value::value_type::ValueType;
 use ir::{
-    pattern::{ParameterID, Scope, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern},
+    pattern::{
+        ParameterID, Scope, Vertex, conjunction::Conjunction, nested_pattern::NestedPattern,
+        variable_category::VariableOptionality,
+    },
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::{Either, chain};
@@ -45,6 +49,7 @@ pub struct AnalysedQuery {
 #[derive(Debug)]
 pub struct QueryStructureAnnotations {
     pub preamble: Vec<FunctionStructureAnnotations>,
+    pub given: Option<GivenStructureAnnotations>,
     pub query: PipelineStructureAnnotations,
     pub fetch: Option<FetchStructureAnnotationsFields>,
 }
@@ -59,7 +64,9 @@ impl QueryStructureAnnotations {
         annotated_pipeline: &AnnotatedPipeline,
         query_structure: &QueryStructure,
     ) -> Result<Self, Box<ConceptReadError>> {
-        let AnnotatedPipeline { annotated_stages, annotated_fetch, annotated_preamble } = &annotated_pipeline;
+        let AnnotatedPipeline { annotated_stages, annotated_given, annotated_fetch, annotated_preamble } =
+            &annotated_pipeline;
+        let given = annotated_given.as_ref().map(build_given_annotations);
         let pipeline =
             build_pipeline_annotations(variable_registry, annotated_stages.as_slice(), &query_structure.query);
         let last_stage_annotations = LastStageAnnotations(annotated_stages.as_slice());
@@ -90,7 +97,7 @@ impl QueryStructureAnnotations {
             })
             .collect();
 
-        Ok(Self { preamble, query: pipeline, fetch })
+        Ok(Self { preamble, given, query: pipeline, fetch })
     }
 }
 
@@ -107,6 +114,28 @@ pub enum FetchStructureAnnotations {
 pub struct FunctionStructureAnnotations {
     pub signature: AnnotatedFunctionSignature,
     pub body: PipelineStructureAnnotations,
+}
+
+fn build_given_annotations(given: &AnnotatedGiven) -> GivenStructureAnnotations {
+    given
+        .variables
+        .iter()
+        .zip(given.expected_types.iter().zip(given.optionality.iter()))
+        .map(|(variable, (annotation, optionality))| {
+            let is_optional = *optionality == VariableOptionality::Optional;
+            let annotations = match annotation {
+                FunctionParameterAnnotation::AnyConcept => {
+                    debug_assert!(false, "This should be unreachable");
+                    PipelineVariableAnnotation::Instance(vec![])
+                }
+                FunctionParameterAnnotation::Concept(types) => {
+                    PipelineVariableAnnotation::Instance(types.iter().copied().collect())
+                }
+                FunctionParameterAnnotation::Value(value_type) => PipelineVariableAnnotation::Value(value_type.clone()),
+            };
+            (StructureVariableId::from(variable), PipelineVariableAnnotationAndModifier { is_optional, annotations })
+        })
+        .collect()
 }
 
 pub fn build_pipeline_annotations(
@@ -392,7 +421,7 @@ impl<'a> LastStageAnnotations<'a> {
                     None
                 }
             }
-            | AnnotatedStage::Delete { .. }
+            AnnotatedStage::Delete { .. }
             | AnnotatedStage::Select(_)
             | AnnotatedStage::Sort(_)
             | AnnotatedStage::Offset(_)

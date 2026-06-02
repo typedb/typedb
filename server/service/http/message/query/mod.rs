@@ -3,9 +3,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::borrow::Cow;
 
+use ::concept::{
+    error::ConceptDecodeError,
+    thing::{ThingAPI, attribute::Attribute, entity::Entity, relation::Relation},
+};
+use answer::{Thing, variable_value::VariableValue};
 use axum::response::{IntoResponse, Response};
+use bytes::util::HexBytesFormatter;
+use compiler::VariablePosition;
+use encoding::graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
+use executor::batch::Batch;
+use ir::translation::parse_iid;
 use options::QueryOptions;
+use query::query_manager::GivenRows;
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_INCLUDE_STRUCTURE_HTTP,
     DEFAULT_PREFETCH_SIZE,
@@ -15,7 +27,13 @@ use serde::{Deserialize, Serialize};
 use crate::service::{
     AnswerType, QueryType,
     http::{
-        message::{analyze::structure::AnalyzedPipelineResponse, body::JsonBody, transaction::TransactionOpenPayload},
+        error::HttpServiceError,
+        message::{
+            analyze::structure::AnalyzedPipelineResponse,
+            body::JsonBody,
+            query::concept::{AttributeResponse, EntityResponse, RelationResponse, ValueResponse, decode_value},
+            transaction::TransactionOpenPayload,
+        },
         transaction_service::QueryAnswer,
     },
 };
@@ -57,6 +75,7 @@ impl Into<QueryOptions> for QueryOptionsPayload {
 pub struct TransactionQueryPayload {
     pub query_options: Option<QueryOptionsPayload>,
     pub query: String,
+    pub given_rows: Option<GivenRowsPayload>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -64,6 +83,7 @@ pub struct TransactionQueryPayload {
 pub struct QueryPayload {
     pub query_options: Option<QueryOptionsPayload>,
     pub query: String,
+    pub given_rows: Option<GivenRowsPayload>,
     pub commit: Option<bool>,
 
     #[serde(flatten)]
@@ -133,5 +153,85 @@ impl IntoResponse for QueryAnswer {
             )),
         };
         (code, body).into_response()
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GivenRowsPayload(pub Vec<Vec<GivenEntryPayload>>);
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "kind")]
+pub enum GivenEntryPayload {
+    #[default]
+    Empty,
+    Entity(EntityResponse),
+    Relation(RelationResponse),
+    Attribute(AttributeResponse),
+    Value(ValueResponse),
+}
+
+macro_rules! concept_decode_error {
+    ($variant:ident, $iid:ident) => {
+        HttpServiceError::ConceptDecode {
+            typedb_source: Box::new(ConceptDecodeError::$variant {
+                iid: HexBytesFormatter::borrowed($iid.as_ref()).into_owned(),
+            }),
+        }
+    };
+}
+
+impl TryInto<GivenRows> for GivenRowsPayload {
+    type Error = HttpServiceError;
+    fn try_into(self) -> Result<GivenRows, Self::Error> {
+        let rows = self.0;
+        let len = rows.len();
+        let width = rows.first().map(|row| row.len() as u32).unwrap_or(0);
+        let mut batch = Batch::new(width, len);
+        rows.into_iter().try_for_each(|row| {
+            batch.append(|mut write_to| {
+                row.into_iter().enumerate().try_for_each(|(column, entry)| {
+                    let value: VariableValue<'static> = match entry {
+                        GivenEntryPayload::Empty => VariableValue::None,
+                        GivenEntryPayload::Value(value) => VariableValue::Value(decode_value(value)?),
+                        GivenEntryPayload::Entity(entity) => {
+                            let iid = parse_iid(entity.iid.as_str()).map_err(|_: ()| {
+                                HttpServiceError::InvalidIIDFormatForGivenEntry { iid: entity.iid.clone().to_owned() }
+                            })?;
+                            let vertex = ObjectVertex::try_decode(&iid)
+                                .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsEntity, iid))?;
+                            if !vertex.is_entity() {
+                                return Err(concept_decode_error!(CouldNotDecodeIIDAsEntity, iid));
+                            }
+                            VariableValue::Thing(Thing::Entity(Entity::new(vertex)))
+                        }
+                        GivenEntryPayload::Relation(relation) => {
+                            let iid = parse_iid(relation.iid.as_str()).map_err(|_: ()| {
+                                HttpServiceError::InvalidIIDFormatForGivenEntry { iid: relation.iid.clone().to_owned() }
+                            })?;
+                            let vertex = ObjectVertex::try_decode(&iid)
+                                .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsRelation, iid))?;
+                            if !vertex.is_relation() {
+                                return Err(concept_decode_error!(CouldNotDecodeIIDAsRelation, iid));
+                            }
+                            VariableValue::Thing(Thing::Relation(Relation::new(vertex)))
+                        }
+                        GivenEntryPayload::Attribute(attribute) => {
+                            let iid = parse_iid(attribute.iid.as_str()).map_err(|_: ()| {
+                                HttpServiceError::InvalidIIDFormatForGivenEntry {
+                                    iid: attribute.iid.clone().to_owned(),
+                                }
+                            })?;
+                            let vertex = AttributeVertex::try_decode(&iid)
+                                .ok_or_else(|| concept_decode_error!(CouldNotDecodeIIDAsAttribute, iid))?;
+                            VariableValue::Thing(Thing::Attribute(Attribute::new(vertex)))
+                        }
+                    };
+                    write_to.set(VariablePosition::new(column as u32), value);
+                    Ok::<_, HttpServiceError>(())
+                })
+            })
+        })?;
+        Ok(batch)
     }
 }

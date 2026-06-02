@@ -50,7 +50,7 @@ fn insert_data(
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
     let query = typeql::parse_query(query_string).unwrap().into_structure().into_pipeline();
     let pipeline = query_manager
-        .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query, query_string)
+        .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query, None, query_string)
         .unwrap();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let snapshot = Arc::into_inner(context.snapshot).unwrap();
@@ -127,6 +127,7 @@ fetch {
             thing_manager.clone(),
             &function_manager,
             &pipeline,
+            None,
             query_str,
         )
         .unwrap();

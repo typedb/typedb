@@ -144,7 +144,7 @@ fn compile_some(
                 available_functions,
                 &stages,
                 Some(fetch),
-                &input_variables,
+                &input_variables.iter().cloned().collect::<Vec<_>>(),
             )
             .map_err(|err| FetchCompilationError::SubFetchCompilation { typedb_source: Box::new(err) })?;
             let input_position_remapping = input_variables

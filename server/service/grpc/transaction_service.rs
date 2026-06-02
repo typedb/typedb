@@ -5,6 +5,7 @@
  */
 
 use std::{
+    borrow::Cow,
     collections::{HashMap, VecDeque},
     ops::{
         ControlFlow,
@@ -14,15 +15,30 @@ use std::{
     time::Duration,
 };
 
-use compiler::query_structure::PipelineStructure;
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use database::query::{
-    StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
-    execute_write_query_in_schema, execute_write_query_in_write,
+use answer::{Thing, variable_value::VariableValue};
+use bytes::util::HexBytesFormatter;
+use compiler::{VariablePosition, query_structure::PipelineStructure};
+use concept::{
+    error::ConceptDecodeError,
+    thing::{ThingAPI, attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager},
+    type_::type_manager::TypeManager,
 };
-use diagnostics::metrics::{
-    ActionKind, ClientEndpoint, ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics, WriteQueryMetrics,
+use database::{
+    database_manager::DatabaseManager,
+    query::{
+        StreamQueryOutputDescriptor, WriteQueryAnswer, WriteQueryResult, execute_schema_query,
+        execute_write_query_in_schema, execute_write_query_in_write,
+    },
+    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
+use diagnostics::{
+    diagnostics_manager::DiagnosticsManager,
+    metrics::{
+        ActionKind, ClientEndpoint, LoadKind, ReadQueryMetrics, SchemaQueryMetrics, TransactionMetrics,
+        WriteQueryMetrics,
+    },
+};
+use encoding::graph::thing::{ThingVertex, vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use executor::{
     ExecutionInterrupt, InterruptType,
     batch::Batch,
@@ -33,7 +49,7 @@ use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::QueryOptions;
-use query::error::QueryError;
+use query::{error::QueryError, query_manager::GivenRows};
 use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
@@ -60,6 +76,7 @@ use crate::{
         TransactionType,
         grpc::{
             analyze::{encode_analyzed_pipeline_for_query, encode_analyzed_query},
+            concept::decode_value,
             diagnostics::run_with_diagnostics_async,
             document::encode_document,
             error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
@@ -133,7 +150,7 @@ pub(crate) struct TransactionService {
 
     is_open: bool,
     transaction: Option<Transaction>,
-    query_queue: VecDeque<(Uuid, QueueOptions, typeql::query::Pipeline, String)>,
+    query_queue: VecDeque<(Uuid, QueueOptions, typeql::query::Pipeline, Option<GivenRows>, String)>,
     query_responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
 
@@ -627,9 +644,11 @@ impl TransactionService {
 
     async fn cancel_queued_read_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut write_queries = VecDeque::with_capacity(self.query_queue.len());
-        for (req_id, query_options, pipeline, source_query) in self.query_queue.drain(0..self.query_queue.len()) {
+        for (req_id, query_options, pipeline, given_rows, source_query) in
+            self.query_queue.drain(0..self.query_queue.len())
+        {
             if query_options.is_query() && is_write_pipeline(&pipeline) {
-                write_queries.push_back((req_id, query_options, pipeline, source_query));
+                write_queries.push_back((req_id, query_options, pipeline, given_rows, source_query));
             } else {
                 Self::respond_query_response(
                     &self.response_sender,
@@ -689,7 +708,7 @@ impl TransactionService {
 
     async fn cancel_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut read_queries = VecDeque::with_capacity(self.query_queue.len());
-        for (req_id, options, pipeline, source_query) in self.query_queue.drain(0..self.query_queue.len()) {
+        for (req_id, options, pipeline, given_rows, source_query) in self.query_queue.drain(0..self.query_queue.len()) {
             if options.is_query() && is_write_pipeline(&pipeline) {
                 Self::respond_query_response(
                     &self.response_sender,
@@ -700,7 +719,7 @@ impl TransactionService {
                 )
                 .await?;
             } else {
-                read_queries.push_back((req_id, options, pipeline, source_query));
+                read_queries.push_back((req_id, options, pipeline, given_rows, source_query));
             }
         }
         self.query_queue = read_queries;
@@ -710,14 +729,14 @@ impl TransactionService {
     async fn finish_queued_write_queries(&mut self, interrupt: InterruptType) -> Result<(), Status> {
         self.finish_running_write_query_no_transmit(interrupt).await?;
         let requests: Vec<_> = self.query_queue.drain(0..self.query_queue.len()).collect();
-        for (req_id, query_queue_options, pipeline, source_query) in requests.into_iter() {
+        for (req_id, query_queue_options, pipeline, given_rows, source_query) in requests.into_iter() {
             match (query_queue_options, is_write_pipeline(&pipeline)) {
                 (QueueOptions::Query(query_options), true) => {
-                    self.run_write_query(req_id, query_options, pipeline, source_query).await;
+                    self.run_write_query(req_id, query_options, pipeline, given_rows, source_query).await;
                     self.finish_running_write_query_no_transmit(interrupt).await?;
                 }
                 (queue_options, _) => {
-                    self.query_queue.push_back((req_id, queue_options, pipeline, source_query));
+                    self.query_queue.push_back((req_id, queue_options, pipeline, given_rows, source_query));
                 }
             }
         }
@@ -726,19 +745,26 @@ impl TransactionService {
 
     async fn may_accept_from_queue(&mut self) {
         debug_assert!(self.running_write_query.is_none());
-
         // unblock requests until the first write request, which we begin executing if it exists
-        while let Some((req_id, queue_options, query_pipeline, source_query)) = self.query_queue.pop_front() {
+        while let Some((req_id, queue_options, query_pipeline, given_rows, source_query)) = self.query_queue.pop_front()
+        {
             match (queue_options, is_write_pipeline(&query_pipeline)) {
                 (QueueOptions::Analyze, _) => {
+                    debug_assert!(given_rows.is_none());
                     self.run_analyse_query(req_id, query_pipeline, source_query).await;
                 }
                 (QueueOptions::Query(query_options), true) => {
-                    self.run_write_query(req_id, query_options, query_pipeline, source_query).await;
+                    self.run_write_query(req_id, query_options, query_pipeline, given_rows, source_query).await;
                     return;
                 }
                 (QueueOptions::Query(query_options), false) => {
-                    self.run_and_activate_read_transmitter(req_id, query_options, query_pipeline, source_query);
+                    self.run_and_activate_read_transmitter(
+                        req_id,
+                        query_options,
+                        query_pipeline,
+                        given_rows,
+                        source_query,
+                    );
                 }
             }
         }
@@ -764,9 +790,8 @@ impl TransactionService {
                 ImmediateAnalyzeResponse::non_fatal_err(TransactionServiceError::AnalyseQueryExpectsPipeline {});
             return Ok(Self::respond_analyze_response(&self.response_sender, req_id, response).await);
         };
-
         if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-            self.query_queue.push_back((req_id, QueueOptions::Analyze, pipeline, query));
+            self.query_queue.push_back((req_id, QueueOptions::Analyze, pipeline, None, query));
             // queued queries are not handled yet so there will be no query response yet
             Ok(Continue(()))
         } else {
@@ -810,23 +835,45 @@ impl TransactionService {
                 Ok(Self::respond_query_response(&self.response_sender, req_id, response).await)
             }
             typeql::query::QueryStructure::Pipeline(pipeline) => {
+                let given_rows = match given_rows_from_proto(query_req.given) {
+                    Ok(given_rows) => given_rows,
+                    Err(err) => {
+                        let response =
+                            ImmediateQueryResponse::non_fatal_err(TransactionServiceError::DecodingGivenRowsFailed {
+                                typedb_source: err,
+                            });
+                        return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
+                    }
+                };
                 #[allow(clippy::collapsible_else_if)]
                 if is_write_pipeline(&pipeline) {
                     if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-                        self.query_queue.push_back((req_id, QueueOptions::Query(query_options), pipeline, query));
+                        self.query_queue.push_back((
+                            req_id,
+                            QueueOptions::Query(query_options),
+                            pipeline,
+                            given_rows,
+                            query,
+                        ));
                         // queued queries are not handled yet so there will be no query response yet
                         Ok(Continue(()))
                     } else {
-                        self.run_write_query(req_id, query_options, pipeline, query).await;
+                        self.run_write_query(req_id, query_options, pipeline, given_rows, query).await;
                         Ok(Continue(()))
                     }
                 } else {
                     if !self.query_queue.is_empty() || self.running_write_query.is_some() {
-                        self.query_queue.push_back((req_id, QueueOptions::Query(query_options), pipeline, query));
+                        self.query_queue.push_back((
+                            req_id,
+                            QueueOptions::Query(query_options),
+                            pipeline,
+                            given_rows,
+                            query,
+                        ));
                         // queued queries are not handled yet so there will be no query response yet
                         Ok(Continue(()))
                     } else {
-                        self.run_and_activate_read_transmitter(req_id, query_options, pipeline, query);
+                        self.run_and_activate_read_transmitter(req_id, query_options, pipeline, given_rows, query);
                         // running read queries have no response on the main loop and will respond asynchronously
                         Ok(Continue(()))
                     }
@@ -910,11 +957,12 @@ impl TransactionService {
         req_id: Uuid,
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
+        given_rows: Option<GivenRows>,
         source_query: String,
     ) {
         debug_assert!(self.running_write_query.is_none());
         self.interrupt_and_close_responders(InterruptType::WriteQueryExecution).await;
-        let handle = match self.spawn_blocking_execute_write_query(query_options, pipeline, source_query) {
+        let handle = match self.spawn_blocking_execute_write_query(query_options, pipeline, given_rows, source_query) {
             Ok(handle) => {
                 // running write queries have no valid response yet (until they finish) and will respond asynchronously
                 handle
@@ -955,11 +1003,12 @@ impl TransactionService {
         req_id: Uuid,
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
+        given_rows: Option<GivenRows>,
         source_query: String,
     ) {
         let prefetch_size = query_options.prefetch_size;
         let (sender, receiver) = channel(prefetch_size);
-        let worker_handle = self.blocking_read_query_worker(sender, query_options, pipeline, source_query);
+        let worker_handle = self.blocking_read_query_worker(sender, query_options, pipeline, given_rows, source_query);
         let stream_transmitter = QueryStreamTransmitter::start_new(
             self.response_sender.clone(),
             receiver,
@@ -974,6 +1023,7 @@ impl TransactionService {
         &mut self,
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
+        given_rows: Option<GivenRows>,
         source_query: String,
     ) -> Result<JoinHandle<(Transaction, WriteQueryResult)>, TransactionServiceError> {
         debug_assert!(self.running_write_query.is_none());
@@ -981,13 +1031,25 @@ impl TransactionService {
         let interrupt = self.query_interrupt_receiver.clone();
         match self.transaction.take() {
             Some(Transaction::Schema(schema_transaction)) => Ok(spawn_blocking(move || {
-                let (transaction, result) =
-                    execute_write_query_in_schema(schema_transaction, query_options, pipeline, source_query, interrupt);
+                let (transaction, result) = execute_write_query_in_schema(
+                    schema_transaction,
+                    query_options,
+                    pipeline,
+                    given_rows,
+                    source_query,
+                    interrupt,
+                );
                 (Transaction::Schema(transaction), result)
             })),
             Some(Transaction::Write(write_transaction)) => Ok(spawn_blocking(move || {
-                let (transaction, result) =
-                    execute_write_query_in_write(write_transaction, query_options, pipeline, source_query, interrupt);
+                let (transaction, result) = execute_write_query_in_write(
+                    write_transaction,
+                    query_options,
+                    pipeline,
+                    given_rows,
+                    source_query,
+                    interrupt,
+                );
                 (Transaction::Write(transaction), result)
             })),
             Some(Transaction::Read(transaction)) => {
@@ -1183,6 +1245,7 @@ impl TransactionService {
         sender: Sender<StreamQueryResponse>,
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
+        given_rows: Option<GivenRows>,
         source_query: String,
     ) -> JoinHandle<()> {
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
@@ -1205,6 +1268,7 @@ impl TransactionService {
                     thing_manager.clone(),
                     &function_manager,
                     &pipeline,
+                    given_rows,
                     &source_query,
                 );
                 let pipeline = unwrap_or_execute_and_return!(pipeline, |err| {
@@ -1796,4 +1860,57 @@ impl QueueOptions {
     fn is_query(&self) -> bool {
         matches!(self, QueueOptions::Query(_))
     }
+}
+
+fn given_rows_from_proto(
+    given_rows: Option<typedb_protocol::query::req::GivenRows>,
+) -> Result<Option<Batch>, ConceptDecodeError> {
+    use typedb_protocol::{query::req::given_entry::Entry as EntryProto, thing::Thing as ThingProto};
+    let Some(given_rows) = given_rows else { return Ok(None) };
+    let rows = given_rows.rows;
+    let len = rows.len();
+    let width = rows.first().map(|row| row.entries.len() as u32).unwrap_or(0);
+    let mut batch = Batch::new(width, len);
+    rows.into_iter().try_for_each(|row| {
+        batch.append(|mut write_to| {
+            row.entries.into_iter().enumerate().try_for_each(|(column, entry)| {
+                let entry = entry.entry.expect("Missing proto file");
+                let value: VariableValue<'static> = match entry {
+                    EntryProto::Empty(_) => VariableValue::None,
+                    EntryProto::Value(value) => {
+                        VariableValue::Value(decode_value(value.value.expect("Missing proto field")).unwrap())
+                    }
+                    EntryProto::Thing(thing) => match thing.thing.expect("Missing proto field") {
+                        ThingProto::Entity(entity) => {
+                            let vertex = ObjectVertex::try_decode(entity.iid.as_slice()).ok_or_else(|| {
+                                ConceptDecodeError::CouldNotDecodeIIDAsEntity {
+                                    iid: HexBytesFormatter::owned(entity.iid),
+                                }
+                            })?;
+                            VariableValue::Thing(Thing::Entity(Entity::new(vertex)))
+                        }
+                        ThingProto::Relation(relation) => {
+                            let vertex = ObjectVertex::try_decode(relation.iid.as_slice()).ok_or_else(|| {
+                                ConceptDecodeError::CouldNotDecodeIIDAsRelation {
+                                    iid: HexBytesFormatter::owned(relation.iid),
+                                }
+                            })?;
+                            VariableValue::Thing(Thing::Relation(Relation::new(vertex)))
+                        }
+                        ThingProto::Attribute(attribute) => {
+                            let vertex = AttributeVertex::try_decode(attribute.iid.as_slice()).ok_or_else(|| {
+                                ConceptDecodeError::CouldNotDecodeIIDAsAttribute {
+                                    iid: HexBytesFormatter::owned(attribute.iid),
+                                }
+                            })?;
+                            VariableValue::Thing(Thing::Attribute(Attribute::new(vertex)))
+                        }
+                    },
+                };
+                write_to.set(VariablePosition::new(column as u32), value);
+                Ok::<_, ConceptDecodeError>(())
+            })
+        })
+    })?;
+    Ok(Some(batch))
 }

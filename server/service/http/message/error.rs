@@ -93,9 +93,14 @@ impl IntoResponse for HttpServiceError {
                 TransactionServiceError::TransactionTimeout { .. } => StatusCode::REQUEST_TIMEOUT,
                 TransactionServiceError::InvalidPrefetchSize { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::CannotOpen { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::DecodingGivenRowsFailed { .. } => StatusCode::BAD_REQUEST,
             },
             HttpServiceError::QueryClose { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::QueryCommit { .. } => StatusCode::BAD_REQUEST,
+            HttpServiceError::ConceptDecode { .. } => StatusCode::BAD_REQUEST,
+            HttpServiceError::InvalidIIDFormatForGivenEntry { .. } => StatusCode::BAD_REQUEST,
+            HttpServiceError::ParsingValueFailedForGivenEntry { .. } => StatusCode::BAD_REQUEST,
+            HttpServiceError::TranslatingValueFailedForGivenEntry { .. } => StatusCode::BAD_REQUEST,
         };
         (code, JsonBody(encode_error(self))).into_response()
     }

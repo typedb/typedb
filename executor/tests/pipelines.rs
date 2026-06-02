@@ -78,6 +78,7 @@ fn test_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            None,
             query_str,
         )
         .unwrap();
@@ -119,6 +120,7 @@ fn test_insert_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            None,
             query_str,
         )
         .unwrap();
@@ -156,6 +158,7 @@ fn test_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            None,
             query_str,
         )
         .unwrap();
@@ -177,6 +180,7 @@ fn test_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            None,
             query,
         )
         .unwrap();
@@ -195,6 +199,7 @@ fn test_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            None,
             query,
         )
         .unwrap();
@@ -223,6 +228,7 @@ fn test_match_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            None,
             query_str,
         )
         .unwrap();
@@ -247,6 +253,7 @@ fn test_match_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            None,
             query,
         )
         .unwrap();
@@ -265,6 +272,7 @@ fn test_match_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            None,
             query,
         )
         .unwrap();
@@ -288,6 +296,7 @@ fn test_match_delete_has() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
+            None,
             insert_query_str,
         )
         .unwrap();
@@ -325,6 +334,7 @@ fn test_match_delete_has() {
             context.thing_manager.clone(),
             &context.function_manager,
             &delete_query,
+            None,
             delete_query_str,
         )
         .unwrap();
@@ -367,6 +377,7 @@ fn test_insert_match_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            None,
             query_str,
         )
         .unwrap();
@@ -396,6 +407,7 @@ fn test_insert_match_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            None,
             query_str,
         )
         .unwrap();
@@ -428,6 +440,7 @@ fn test_match_sort() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
+            None,
             insert_query_str,
         )
         .unwrap();
@@ -450,6 +463,7 @@ fn test_match_sort() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            None,
             query,
         )
         .unwrap();
@@ -491,6 +505,7 @@ fn test_select() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
+            None,
             insert_query_str,
         )
         .unwrap();
@@ -514,6 +529,7 @@ fn test_select() {
                 context.thing_manager.clone(),
                 &context.function_manager,
                 &match_,
+                None,
                 query,
             )
             .unwrap();
@@ -533,6 +549,7 @@ fn test_select() {
                 context.thing_manager.clone(),
                 &context.function_manager,
                 &match_,
+                None,
                 query,
             )
             .unwrap();
@@ -558,6 +575,7 @@ fn test_require() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
+            None,
             insert_query_str,
         )
         .unwrap();
@@ -581,6 +599,7 @@ fn test_require() {
                 context.thing_manager.clone(),
                 &context.function_manager,
                 &match_,
+                None,
                 query,
             )
             .unwrap();

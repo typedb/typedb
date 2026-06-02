@@ -16,6 +16,7 @@ use concurrency::{IntervalTaskParameters, TokioTaskSpawner};
 use diagnostics::metrics::ActionKind;
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
+use query::query_manager::GivenRows;
 use resource::constants::common::SECONDS_IN_MINUTE;
 use system::concepts::{Credential, User};
 use tokio::{
@@ -41,7 +42,7 @@ use crate::{
                 authentication::{SigninPayload, encode_token},
                 body::{JsonBody, PlainTextBody},
                 database::{DatabasePath, encode_database, encode_databases},
-                query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
+                query::{GivenRowsPayload, QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 server::encode_servers,
                 transaction::{TransactionOpenPayload, TransactionPath, encode_transaction},
                 user::{CreateUserPayload, UpdateUserPayload, UserPath, encode_user, encode_users},
@@ -51,7 +52,7 @@ use crate::{
                 QueryAnswer, TransactionRequest, TransactionResponder, TransactionService, TransactionServiceResponse,
             },
         },
-        transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
+        transaction_service::{TRANSACTION_REQUEST_BUFFER_SIZE, TransactionServiceError},
     },
     state::ServerState,
 };
@@ -146,10 +147,18 @@ impl HTTPTypeDBService {
         }
     }
 
-    fn build_query_request(query_options_payload: Option<QueryOptionsPayload>, query: String) -> TransactionRequest {
+    fn build_query_request(
+        query_options_payload: Option<QueryOptionsPayload>,
+        given_rows: Option<GivenRows>,
+        query: String,
+    ) -> TransactionRequest {
         let query_options =
             query_options_payload.map(|options| options.into()).unwrap_or_else(|| QueryOptions::default_http());
-        TransactionRequest::Query(query_options, query)
+        TransactionRequest::Query(query_options, given_rows, query)
+    }
+
+    fn decode_given_rows(payload: Option<GivenRowsPayload>) -> Result<Option<GivenRows>, HttpServiceError> {
+        payload.map(|p| p.try_into()).transpose()
     }
 
     fn try_get_query_response(
@@ -672,9 +681,10 @@ impl HTTPTypeDBService {
                 if accessor != transaction.owner {
                     return Err(HttpServiceError::operation_not_permitted());
                 }
+                let given_rows = Self::decode_given_rows(payload.given_rows)?;
                 Self::transaction_request(
                     &transaction,
-                    Self::build_query_request(payload.query_options, payload.query),
+                    Self::build_query_request(payload.query_options, given_rows, payload.query),
                     true,
                 )
                 .await
@@ -697,9 +707,10 @@ impl HTTPTypeDBService {
                 let (transaction_info, _processing_time) =
                     Self::transaction_new(&service, accessor, payload.transaction_open_payload).await?;
 
+                let given_rows = Self::decode_given_rows(payload.given_rows)?;
                 let transaction_response = Self::transaction_request(
                     &transaction_info,
-                    Self::build_query_request(payload.query_options, payload.query),
+                    Self::build_query_request(payload.query_options, given_rows, payload.query),
                     true,
                 )
                 .await?;

@@ -30,7 +30,7 @@ use serde::{Deserialize, Serialize, Serializer};
 
 use crate::annotation::{
     function::{AnnotatedFunction, AnnotatedFunctionReturn},
-    pipeline::{AnnotatedPipeline, AnnotatedStage},
+    pipeline::{AnnotatedGiven, AnnotatedPipeline, AnnotatedStage},
     type_annotations::{BlockAnnotations, TypeAnnotations},
 };
 
@@ -96,6 +96,7 @@ pub fn extract_query_structure_from(
 ) -> QueryStructure {
     let parametrised_pipeline = extract_pipeline_structure_from(
         variable_registry,
+        annotated_pipeline.annotated_given.as_ref(),
         annotated_pipeline.annotated_stages.as_slice(),
         source_query,
     );
@@ -111,7 +112,7 @@ pub fn extract_query_structure_from(
 
 pub fn extract_function_structure_from(function: &AnnotatedFunction, source_query: &str) -> FunctionStructure {
     let parametrised_pipeline =
-        extract_pipeline_structure_from(&function.variable_registry, function.stages.as_slice(), source_query);
+        extract_pipeline_structure_from(&function.variable_registry, None, function.stages.as_slice(), source_query);
     let body = Arc::new(parametrised_pipeline)
         .with_parameters(Arc::new(function.parameter_registry.clone()), function.variable_registry.variable_names());
     let arguments = function.arguments.iter().map_into().collect();
@@ -121,11 +122,13 @@ pub fn extract_function_structure_from(function: &AnnotatedFunction, source_quer
 
 pub fn extract_pipeline_structure_from(
     variable_registry: &VariableRegistry,
+    annotated_given: Option<&AnnotatedGiven>,
     annotated_stages: &[AnnotatedStage],
     source_query: &str,
 ) -> ParametrisedPipelineStructure {
     let branch_ids_allocated = variable_registry.branch_ids_allocated();
     let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
+    builder.may_add_given(annotated_given);
     annotated_stages.into_iter().enumerate().for_each(|(index, stage)| builder.add_stage(stage, StageIndex(index)));
     let output_variables = annotated_stages
         .iter()
@@ -176,10 +179,12 @@ pub struct PipelineVariableAnnotationAndModifier {
 }
 
 pub type ConjunctionAnnotations = BTreeMap<StructureVariableId, PipelineVariableAnnotationAndModifier>;
+pub type GivenStructureAnnotations = BTreeMap<StructureVariableId, PipelineVariableAnnotationAndModifier>;
 pub type PipelineStructureAnnotations = Vec<ConjunctionAnnotations>;
 
 #[derive(Debug, Clone)]
 pub struct ParametrisedPipelineStructure {
+    pub given: Option<QueryStructureGiven>,
     pub stages: Vec<QueryStructureStage>,
     pub conjunctions: Vec<QueryStructureConjunction>,
     pub output_variables: Vec<StructureVariableId>,
@@ -207,7 +212,7 @@ impl ParametrisedPipelineStructure {
                 | QueryStructureStage::Put { block }
                 | QueryStructureStage::Update { block } => Some(block),
 
-                QueryStructureStage::Select { .. }
+                | QueryStructureStage::Select { .. }
                 | QueryStructureStage::Delete { .. } // Deleted edges are deleted.
                 | QueryStructureStage::Sort { .. }
                 | QueryStructureStage::Offset { .. }
@@ -223,6 +228,12 @@ impl ParametrisedPipelineStructure {
     pub fn resolve_conjunction_id(&self, stage_index: StageIndex, scope_id: ScopeId) -> QueryStructureConjunctionID {
         self.scope_to_conjunction_id.get(&(stage_index, scope_id)).unwrap().clone()
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "tag")]
+pub struct QueryStructureGiven {
+    pub variables: Vec<StructureVariableId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -307,6 +318,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
         Self {
             source_query,
             pipeline_structure: ParametrisedPipelineStructure {
+                given: None,
                 stages: Vec::new(),
                 conjunctions,
                 output_variables: Vec::new(),
@@ -315,6 +327,12 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 scope_to_conjunction_id: HashMap::new(),
             },
         }
+    }
+
+    pub fn may_add_given(&mut self, given: Option<&AnnotatedGiven>) {
+        self.pipeline_structure.given = given.map(|given| QueryStructureGiven {
+            variables: given.variables.iter().map(StructureVariableId::from).collect(),
+        });
     }
 
     pub fn add_stage(&mut self, stage: &AnnotatedStage, stage_index: StageIndex) {

@@ -11,16 +11,16 @@ use std::{
 };
 
 use answer::variable::Variable;
-use primitive::either::Either;
 use structural_equality::StructuralEquality;
 use typeql::{
     common::{Span, Spanned},
     query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage},
+    type_::NamedTypeAny,
 };
 
 use crate::{
     RepresentationError,
-    pattern::Pattern,
+    pattern::{Pattern, variable_category::VariableCategory},
     pipeline::{
         ParameterRegistry, VariableRegistry,
         block::{Block, BlockBuilder},
@@ -33,7 +33,7 @@ use crate::{
     translation::{
         PipelineTranslationContext,
         fetch::translate_fetch,
-        function::translate_typeql_function,
+        function::{function_argument_name_and_category, translate_typeql_function},
         match_::translate_match,
         modifiers::{
             translate_distinct, translate_limit, translate_offset, translate_require, translate_select, translate_sort,
@@ -46,6 +46,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct TranslatedPipeline {
     pub translated_preamble: Vec<Function>,
+    pub translated_given: Option<TranslatedGiven>,
     pub translated_stages: Vec<TranslatedStage>,
     pub translated_fetch: Option<FetchObject>,
     pub variable_registry: VariableRegistry,
@@ -57,11 +58,13 @@ impl TranslatedPipeline {
         translation_context: PipelineTranslationContext,
         value_parameters: ParameterRegistry,
         translated_preamble: Vec<Function>,
+        translated_given: Option<TranslatedGiven>,
         translated_stages: Vec<TranslatedStage>,
         translated_fetch: Option<FetchObject>,
     ) -> Self {
         TranslatedPipeline {
             translated_preamble,
+            translated_given: translated_given,
             translated_stages,
             translated_fetch,
             variable_registry: translation_context.variable_registry,
@@ -176,7 +179,7 @@ pub fn translate_pipeline(
 
     let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
-    let (translated_stages, translated_fetch) = translate_pipeline_stages(
+    let (translated_given, translated_stages, translated_fetch) = translate_pipeline_stages(
         all_function_signatures,
         &mut translation_context,
         &mut value_parameters,
@@ -187,6 +190,7 @@ pub fn translate_pipeline(
         translation_context,
         value_parameters,
         translated_preamble,
+        translated_given,
         translated_stages,
         translated_fetch,
     ))
@@ -197,22 +201,32 @@ pub(crate) fn translate_pipeline_stages(
     translation_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     stages: &[Stage],
-) -> Result<(Vec<TranslatedStage>, Option<FetchObject>), Box<RepresentationError>> {
+) -> Result<(Option<TranslatedGiven>, Vec<TranslatedStage>, Option<FetchObject>), Box<RepresentationError>> {
     let mut translated_stages: Vec<TranslatedStage> = Vec::with_capacity(stages.len());
+    let mut translated_given = None;
+    let mut translated_fetch = None;
+
     for (i, stage) in stages.iter().enumerate() {
         let translated = translate_stage(translation_context, value_parameters, all_function_signatures, stage)?;
         match translated {
-            Either::First(stage) => translated_stages.push(stage),
-            Either::Second(fetch) => {
+            TranslatedPipelinePart::Stage(stage) => translated_stages.push(stage),
+            TranslatedPipelinePart::Given(given) => {
+                if i != 0 {
+                    return Err(Box::new(RepresentationError::NonInitialGiven { source_span: stage.span() }));
+                } else {
+                    translated_given = Some(given);
+                }
+            }
+            TranslatedPipelinePart::Fetch(fetch) => {
                 if i != stages.len() - 1 {
                     return Err(Box::new(RepresentationError::NonTerminalFetch { source_span: stage.span() }));
                 } else {
-                    return Ok((translated_stages, Some(fetch)));
+                    translated_fetch = Some(fetch)
                 }
             }
         }
     }
-    Ok((translated_stages, None))
+    Ok((translated_given, translated_stages, translated_fetch))
 }
 
 fn translate_stage(
@@ -220,48 +234,98 @@ fn translate_stage(
     value_parameters: &mut ParameterRegistry,
     all_function_signatures: &impl FunctionSignatureIndex,
     typeql_stage: &TypeQLStage,
-) -> Result<Either<TranslatedStage, FetchObject>, Box<RepresentationError>> {
+) -> Result<TranslatedPipelinePart, Box<RepresentationError>> {
     match typeql_stage {
+        TypeQLStage::Given(given) => {
+            translate_given_stage(translation_context, given).map(TranslatedPipelinePart::Given)
+        }
         TypeQLStage::Match(match_) => {
             translate_match(translation_context, value_parameters, all_function_signatures, match_).and_then(
                 |builder| {
-                    Ok(Either::First(TranslatedStage::Match { block: builder.finish()?, source_span: match_.span() }))
+                    Ok(TranslatedPipelinePart::Stage(TranslatedStage::Match {
+                        block: builder.finish()?,
+                        source_span: match_.span(),
+                    }))
                 },
             )
         }
         TypeQLStage::Insert(insert) => translate_insert(translation_context, value_parameters, insert)
-            .map(|block| Either::First(TranslatedStage::Insert { block, source_span: insert.span() })),
+            .map(|block| TranslatedPipelinePart::Stage(TranslatedStage::Insert { block, source_span: insert.span() })),
         TypeQLStage::Update(update) => translate_update(translation_context, value_parameters, update)
-            .map(|block| Either::First(TranslatedStage::Update { block, source_span: update.span() })),
+            .map(|block| TranslatedPipelinePart::Stage(TranslatedStage::Update { block, source_span: update.span() })),
         TypeQLStage::Put(put) => translate_put(translation_context, value_parameters, put)
-            .map(|block| Either::First(TranslatedStage::Put { block, source_span: put.span() })),
+            .map(|block| TranslatedPipelinePart::Stage(TranslatedStage::Put { block, source_span: put.span() })),
         TypeQLStage::Delete(delete) => {
             translate_delete(translation_context, value_parameters, delete).map(|(block, deleted_variables)| {
-                Either::First(TranslatedStage::Delete { block, deleted_variables, source_span: delete.span() })
+                TranslatedPipelinePart::Stage(TranslatedStage::Delete {
+                    block,
+                    deleted_variables,
+                    source_span: delete.span(),
+                })
             })
         }
         TypeQLStage::Fetch(fetch) => {
             translate_fetch(translation_context, value_parameters, all_function_signatures, fetch)
-                .map(Either::Second)
+                .map(TranslatedPipelinePart::Fetch)
                 .map_err(|err| Box::new(RepresentationError::FetchRepresentation { typedb_source: err }))
         }
         TypeQLStage::Operator(modifier) => match modifier {
             TypeQLOperator::Select(select) => translate_select(translation_context, select)
-                .map(|filter| Either::First(TranslatedStage::Select(filter))),
-            TypeQLOperator::Sort(sort) => {
-                translate_sort(translation_context, sort).map(|sort| Either::First(TranslatedStage::Sort(sort)))
-            }
+                .map(|filter| TranslatedPipelinePart::Stage(TranslatedStage::Select(filter))),
+            TypeQLOperator::Sort(sort) => translate_sort(translation_context, sort)
+                .map(|sort| TranslatedPipelinePart::Stage(TranslatedStage::Sort(sort))),
             TypeQLOperator::Offset(offset) => translate_offset(translation_context, offset)
-                .map(|offset| Either::First(TranslatedStage::Offset(offset))),
-            TypeQLOperator::Limit(limit) => {
-                translate_limit(translation_context, limit).map(|limit| Either::First(TranslatedStage::Limit(limit)))
-            }
+                .map(|offset| TranslatedPipelinePart::Stage(TranslatedStage::Offset(offset))),
+            TypeQLOperator::Limit(limit) => translate_limit(translation_context, limit)
+                .map(|limit| TranslatedPipelinePart::Stage(TranslatedStage::Limit(limit))),
             TypeQLOperator::Reduce(reduce) => translate_reduce(translation_context, reduce)
-                .map(|reduce| Either::First(TranslatedStage::Reduce(reduce))),
+                .map(|reduce| TranslatedPipelinePart::Stage(TranslatedStage::Reduce(reduce))),
             TypeQLOperator::Require(require) => translate_require(translation_context, require)
-                .map(|require| Either::First(TranslatedStage::Require(require))),
+                .map(|require| TranslatedPipelinePart::Stage(TranslatedStage::Require(require))),
             TypeQLOperator::Distinct(distinct) => translate_distinct(translation_context, distinct)
-                .map(|distinct| Either::First(TranslatedStage::Distinct(distinct))),
+                .map(|distinct| TranslatedPipelinePart::Stage(TranslatedStage::Distinct(distinct))),
         },
     }
+}
+
+fn translate_given_stage(
+    context: &mut PipelineTranslationContext,
+    typeql_given: &typeql::query::pipeline::stage::Given,
+) -> Result<TranslatedGiven, Box<RepresentationError>> {
+    let mut variables = Vec::with_capacity(typeql_given.variables.len());
+    let mut labels = Vec::with_capacity(typeql_given.variables.len());
+    typeql_given.variables.iter().try_for_each(|arg| {
+        let all_info = function_argument_name_and_category(arg)
+            .map_err(|typedb_source| Box::new(RepresentationError::FunctionRepresentation { typedb_source }))?;
+        variables.push(context.register_input_variable(all_info)?);
+        labels.push(arg.type_.clone());
+        Ok::<(), Box<RepresentationError>>(())
+    })?;
+    Ok(TranslatedGiven { variables, labels, span: typeql_given.span() })
+}
+
+#[derive(Debug, Clone)]
+pub struct TranslatedGiven {
+    pub variables: Vec<Variable>,
+    pub labels: Vec<NamedTypeAny>,
+    pub span: Option<Span>,
+}
+
+impl StructuralEquality for TranslatedGiven {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.variables.hash_into(&mut hasher);
+        self.labels.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.variables.equals(&other.variables) && self.labels.equals(&other.labels)
+    }
+}
+
+enum TranslatedPipelinePart {
+    Given(TranslatedGiven),
+    Stage(TranslatedStage),
+    Fetch(FetchObject),
 }

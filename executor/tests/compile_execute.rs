@@ -79,6 +79,7 @@ fn setup(
             thing_manager.clone(),
             &FunctionManager::default(),
             &query,
+            None,
             data,
         )
         .unwrap();

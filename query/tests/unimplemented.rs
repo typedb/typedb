@@ -73,6 +73,7 @@ fn run_read_query(
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            None,
             query,
         )
         .map_err(|query_error| Either::Left(query_error))?;
@@ -99,6 +100,7 @@ fn run_write_query(
             context.thing_manager.clone(),
             &context.function_manager,
             &query_as_pipeline,
+            None,
             query,
         )
         .unwrap();

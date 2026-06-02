@@ -885,3 +885,21 @@ impl FromStr for Optional {
         })
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Parameter)]
+#[param(name = "with_given", regex = "(| with given rows)")]
+pub enum WithGiven {
+    False,
+    True,
+}
+
+impl FromStr for WithGiven {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            " with given rows" => Self::True,
+            "" => Self::False,
+            invalid => return Err(format!("Invalid `WithGiven`: {invalid}")),
+        })
+    }
+}

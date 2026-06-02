@@ -14,7 +14,7 @@ use compiler::executable::pipeline::ExecutablePipeline;
 use concept::thing::statistics::Statistics;
 use ir::{
     pipeline::{fetch::FetchObject, function::Function},
-    translation::pipeline::TranslatedStage,
+    translation::pipeline::{TranslatedGiven, TranslatedStage},
 };
 use moka::sync::{Cache, CacheBuilder};
 use resource::{
@@ -47,10 +47,11 @@ impl QueryCache {
     pub(crate) fn get(
         &self,
         preamble: Arc<Vec<Function>>,
+        given_rows: Arc<Option<TranslatedGiven>>,
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
     ) -> Option<ExecutablePipeline> {
-        let key = IRQuery::new(preamble.clone(), stages, fetch);
+        let key = IRQuery::new(preamble.clone(), given_rows, stages, fetch);
         self.cache.get(&key).map(|mut found| {
             let replacement = preamble.iter().map(|func| Arc::new(func.parameters.clone())).enumerate();
             found.executable_functions.replace_preamble_parameters(replacement);
@@ -62,11 +63,12 @@ impl QueryCache {
         &self,
         statistics_sequence_number: SequenceNumber,
         preamble: Arc<Vec<Function>>,
+        given_rows: Arc<Option<TranslatedGiven>>,
         stages: Arc<Vec<TranslatedStage>>,
         fetch: Arc<Option<FetchObject>>,
         pipeline: ExecutablePipeline,
     ) {
-        let key = IRQuery::new(preamble, stages, fetch);
+        let key = IRQuery::new(preamble, given_rows, stages, fetch);
         let read_lock = self.validity_requirements.read().unwrap();
         let ValidityRequirements { latest_schema_commit, latest_statistics } = &*read_lock;
         let may_insert = latest_schema_commit
@@ -127,14 +129,20 @@ fn is_pipeline_type_populations_outdated(statistics: &Statistics, pipeline: &Exe
 
 #[derive(Debug)]
 struct IRQuery {
-    preamable: Arc<Vec<Function>>,
+    preamble: Arc<Vec<Function>>,
+    given: Arc<Option<TranslatedGiven>>,
     stages: Arc<Vec<TranslatedStage>>,
     fetch: Arc<Option<FetchObject>>,
 }
 
 impl IRQuery {
-    fn new(preamable: Arc<Vec<Function>>, stages: Arc<Vec<TranslatedStage>>, fetch: Arc<Option<FetchObject>>) -> Self {
-        Self { preamable, stages, fetch }
+    fn new(
+        preamble: Arc<Vec<Function>>,
+        given: Arc<Option<TranslatedGiven>>,
+        stages: Arc<Vec<TranslatedStage>>,
+        fetch: Arc<Option<FetchObject>>,
+    ) -> Self {
+        Self { preamble: preamble, given, stages, fetch }
     }
 }
 
@@ -155,13 +163,17 @@ impl Eq for IRQuery {}
 impl StructuralEquality for IRQuery {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        self.preamable.hash_into(&mut hasher);
+        self.preamble.hash_into(&mut hasher);
+        self.given.hash_into(&mut hasher);
         self.stages.hash_into(&mut hasher);
         self.fetch.hash_into(&mut hasher);
         hasher.finish()
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.preamable.equals(&other.preamable) && self.stages.equals(&other.stages) && self.fetch.equals(&other.fetch)
+        self.preamble.equals(&other.preamble)
+            && self.given.equals(&other.given)
+            && self.stages.equals(&other.stages)
+            && self.fetch.equals(&other.fetch)
     }
 }

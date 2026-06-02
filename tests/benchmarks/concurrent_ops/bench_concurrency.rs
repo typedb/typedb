@@ -169,6 +169,7 @@ fn seed_persons(database: &Arc<Database<WALClient>>, count: usize) {
                 tx,
                 QueryOptions::default_grpc(),
                 pipeline,
+                None,
                 query_str,
                 ExecutionInterrupt::new_uninterruptible(),
             );
@@ -203,6 +204,7 @@ fn execute_insert_batch(
             tx,
             QueryOptions::default_grpc(),
             pipeline,
+            None,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
@@ -239,6 +241,7 @@ fn execute_update_batch(
             tx,
             QueryOptions::default_grpc(),
             pipeline,
+            None,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
@@ -277,6 +280,7 @@ fn execute_relation_batch(
             tx,
             QueryOptions::default_grpc(),
             pipeline,
+            None,
             query_str,
             ExecutionInterrupt::new_uninterruptible(),
         );
@@ -305,6 +309,7 @@ fn execute_read_query(database: &Arc<Database<WALClient>>, query_str: &str) {
             thing_manager.clone(),
             function_manager,
             &query,
+            None,
             query_str,
         )
         .unwrap();

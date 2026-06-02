@@ -125,7 +125,15 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
     let pipeline = query_manager
-        .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert, query_str)
+        .prepare_write_pipeline(
+            snapshot,
+            type_manager,
+            thing_manager,
+            &function_manager,
+            &typeql_insert,
+            None,
+            query_str,
+        )
         .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();
     let (iter, ctx) =
