@@ -4,15 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use itertools::Itertools;
 use std::ops::RangeInclusive;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct PrefixID {
     pub(crate) byte: u8,
 }
 
 impl PrefixID {
     pub const LENGTH: usize = 1;
+    pub const MAX: u8 = u8::MAX;
+
     pub const fn new(byte: u8) -> Self {
         PrefixID { byte }
     }
@@ -32,8 +35,6 @@ macro_rules! make_prefix_enum {
         }
 
         impl Prefix {
-            /// Every defined prefix, in declaration order. Useful for iterating over all prefixes
-            /// (e.g. for prefix-classification checks like [`Prefix::is_schema`]).
             pub const ALL: &'static [Prefix] = &[$(Self::$name,)*];
 
             pub const fn prefix_id(&self) -> PrefixID {
@@ -48,10 +49,10 @@ macro_rules! make_prefix_enum {
                 }
             }
 
-            pub fn from_prefix_id(prefix: PrefixID) -> Self {
+            pub fn from_prefix_id(prefix: PrefixID) -> Option<Self> {
                 match prefix.byte {
-                    $($byte => Self::$name,)*
-                    _ => unreachable!(),
+                    $($byte => Some(Self::$name),)*
+                    _ => None
                 }
             }
 
@@ -106,25 +107,14 @@ impl Prefix {
         }
     }
 
-    /// Maximal contiguous byte ranges, inclusive on both sides, that contain only
-    /// schema prefixes. Each emitted range is bounded by schema-prefix bytes and is
-    /// guaranteed to contain no data-prefix byte; reserved/unused bytes between two
-    /// schema prefixes are absorbed into the same range (storage has no keys at those
-    /// bytes, so including them in a scan is harmless).
-    ///
-    /// Returned in ascending byte order. Derived directly from [`Prefix::ALL`] and
-    /// [`Prefix::is_schema`], so adding or reclassifying a prefix automatically updates
-    /// the ranges without further bookkeeping.
-    ///
-    /// Intended for passing to `CachedReadSnapshot` constructors so they can open one
-    /// storage iterator per range, copying only the schema-side data into memory and
-    /// skipping the data-side keys that share the same rocksdb keyspace.
     pub fn schema_byte_ranges() -> Vec<RangeInclusive<u8>> {
-        let prefix_for =
-            |byte: u8| -> Option<Prefix> { Self::ALL.iter().copied().find(|p| p.prefix_id().byte == byte) };
+        let prefix_for = |byte: u8| -> Option<Prefix> {
+            Prefix::from_prefix_id(PrefixID::new(byte))
+        };
         let mut ranges: Vec<RangeInclusive<u8>> = Vec::new();
         let mut current: Option<(u8, u8)> = None;
-        for b in 0..=255u8 {
+        // TODO: I think this can probably go over ALL.iter().sorted_by_key(|prefix| prefix -> prefix id) and therefore simplify?
+        for b in 0..=PrefixID::MAX {
             match prefix_for(b) {
                 Some(p) if !p.is_schema() => {
                     if let Some((start, end)) = current.take() {

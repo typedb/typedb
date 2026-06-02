@@ -4,17 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-//! `CachedReadSnapshot` is a read-only `ReadableSnapshot` whose contents are
-//! materialised into in-memory per-keyspace `BTreeMap`s up front. All reads and
-//! range scans are served from those maps without ever consulting storage.
-//!
-//! It is intended for code paths that read the same keyspace ranges many times
-//! in quick succession (notably `TypeCache::new` and
-//! `CommitTimeValidation::validate`, which both make millions of small reads
-//! against the schema keyspace during a single schema commit). One end-to-end
-//! scan per `(keyspace, range)` at construction replaces the repeated MVCC
-//! iterator opens that would otherwise dominate commit time on large schemas.
-
 use std::{
     collections::BTreeMap,
     iter::empty,
@@ -55,17 +44,7 @@ pub struct CachedReadSnapshot {
 }
 
 impl CachedReadSnapshot {
-    /// Open a read snapshot at `open_sequence_number` and materialise, for each
-    /// `(keyspace_id, ranges)` entry of `keyspaces_ranges`, the keys whose
-    /// leading byte falls in any of `ranges`. One storage iterator is opened
-    /// per range; subsequent reads against the returned snapshot are served
-    /// entirely from memory.
-    ///
-    /// The per-keyspace `ranges` typically come from
-    /// `Prefix::schema_byte_ranges()` (defined in the encoding crate), which
-    /// derives the schema-side byte ranges of a keyspace directly from each
-    /// prefix's `is_schema` classification.
-    pub fn load_keyspaces<D>(
+    pub fn load_at<D>(
         storage: &Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
         keyspaces_ranges: Vec<(KeyspaceId, Vec<RangeInclusive<u8>>)>,
@@ -77,11 +56,6 @@ impl CachedReadSnapshot {
         Self::load_from_snapshot(&source, keyspaces_ranges)
     }
 
-    /// Materialise the merged view (storage + buffered writes) visible to
-    /// `source` for each `(keyspace_id, ranges)` entry of `keyspaces_ranges`
-    /// into in-memory `BTreeMap`s. Only keys whose leading byte falls in one
-    /// of the entry's `ranges` are loaded; one storage iterator is opened per
-    /// range.
     pub fn load_from_snapshot<S>(
         source: &S,
         keyspaces_ranges: Vec<(KeyspaceId, Vec<RangeInclusive<u8>>)>,
@@ -92,7 +66,7 @@ impl CachedReadSnapshot {
         let mut keyspaces: Box<[Option<KeyspaceBtree>; KEYSPACE_MAXIMUM_COUNT]> =
             Box::new(std::array::from_fn(|_| None));
         for (keyspace_id, ranges) in keyspaces_ranges {
-            let bt = keyspaces[keyspace_id.0 as usize].get_or_insert_with(BTreeMap::new);
+            let map = keyspaces[keyspace_id.0 as usize].get_or_insert_with(mapreeMap::new);
             for range in ranges {
                 let start_bytes = [*range.start()];
                 let end_bytes = [*range.end()];
@@ -104,10 +78,11 @@ impl CachedReadSnapshot {
                     RangeStart::Inclusive(start_key),
                     RangeEnd::EndPrefixInclusive(end_key),
                 );
-                let mut it = source.iterate_range(&key_range, StorageCounters::DISABLED);
-                while let Some(result) = it.next() {
+                let mut iterator = source.iterate_range(&key_range, StorageCounters::DISABLED);
+                while let Some(result) = iterator.next() {
+                    // TODO: create an error macro in this file and use that here and wrap it correctly upwards
                     let (key, value) = result.expect("CachedReadSnapshot load failed");
-                    bt.insert(ByteArray::copy(key.bytes()), ByteArray::copy(&*value));
+                    map.insert(key.into_bytes().into_array(), value.into_array());
                 }
             }
         }
@@ -119,14 +94,11 @@ impl CachedReadSnapshot {
         }
     }
 
-    fn keyspace_btree(&self, keyspace_id: KeyspaceId) -> Option<&KeyspaceBtree> {
+    fn keyspace_map(&self, keyspace_id: KeyspaceId) -> Option<&KeyspaceBtree> {
         self.keyspaces.get(keyspace_id.0 as usize).and_then(|o| o.as_ref())
     }
 }
 
-/// Translate a `KeyRange<StorageKey>` to a pair of byte bounds suitable for a
-/// `BTreeMap<ByteArray, _>::range::<[u8], _>` call. Owned `Vec<u8>` is returned
-/// so the caller can borrow them as `&[u8]` via `Bound::as_ref().map(...)`.
 fn key_range_as_byte_bounds<const PS: usize>(
     range: &KeyRange<StorageKey<'_, PS>>,
 ) -> (Bound<Vec<u8>>, Bound<Vec<u8>>) {
@@ -172,8 +144,8 @@ impl ReadableSnapshot for CachedReadSnapshot {
         key: StorageKeyReference<'_>,
         _storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        let Some(bt) = self.keyspace_btree(key.keyspace_id()) else { return Ok(None) };
-        Ok(bt.get(key.bytes()).map(|v| ByteArray::copy(&**v)))
+        let Some(map) = self.keyspace_map(key.keyspace_id()) else { return Ok(None) };
+        Ok(map.get(key.bytes()).map(|v| ByteArray::copy(&**v)))
     }
 
     fn get_last_existing<const INLINE_BYTES: usize>(
@@ -190,11 +162,12 @@ impl ReadableSnapshot for CachedReadSnapshot {
         _storage_counters: StorageCounters,
     ) -> SnapshotRangeIterator {
         let keyspace_id = range.start().get_value().keyspace_id();
-        let Some(bt) = self.keyspace_btree(keyspace_id) else {
+        let Some(map) = self.keyspace_map(keyspace_id) else {
             return SnapshotRangeIterator::new_buffered_only(BufferRangeIterator::new_empty());
         };
+        // TODO: investigate the rest of our code base i think we have established patterns for this?
         let (start, end) = key_range_as_byte_bounds(range);
-        let materialised: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> = bt
+        let materialised: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> = map
             .range::<[u8], _>((start.as_ref().map(Vec::as_slice), end.as_ref().map(Vec::as_slice)))
             .map(|(k, v)| (StorageKeyArray::new_raw(keyspace_id, k.clone()), Write::Insert { value: v.clone() }))
             .collect();
@@ -203,9 +176,9 @@ impl ReadableSnapshot for CachedReadSnapshot {
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, _buffered_only: bool) -> bool {
         let keyspace_id = range.start().get_value().keyspace_id();
-        let Some(bt) = self.keyspace_btree(keyspace_id) else { return false };
+        let Some(map) = self.keyspace_map(keyspace_id) else { return false };
         let (start, end) = key_range_as_byte_bounds(range);
-        bt.range::<[u8], _>((start.as_ref().map(Vec::as_slice), end.as_ref().map(Vec::as_slice))).next().is_some()
+        map.range::<[u8], _>((start.as_ref().map(Vec::as_slice), end.as_ref().map(Vec::as_slice))).next().is_some()
     }
 
     fn get_write(&self, _: StorageKeyReference<'_>) -> Option<&Write> {
@@ -220,10 +193,6 @@ impl ReadableSnapshot for CachedReadSnapshot {
         BufferRangeIterator::new_empty()
     }
 
-    /// This snapshot has no buffered writes — its contents are the merged view
-    /// of (storage + buffered writes) captured at load time, baked into the
-    /// in-memory `BTreeMap`s. As such there is no separate storage-only view to
-    /// expose, and this method returns the same iterator as `iterate_range`.
     fn iterate_storage_range<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
@@ -233,6 +202,7 @@ impl ReadableSnapshot for CachedReadSnapshot {
     }
 
     fn iterator_pool(&self) -> &IteratorPool {
+        // note: unused
         &self.iterator_pool
     }
 }

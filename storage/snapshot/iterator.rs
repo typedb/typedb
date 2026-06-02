@@ -33,10 +33,6 @@ impl SnapshotRangeIterator {
     pub(crate) fn new(mvcc_iterator: MVCCRangeIterator, buffered_iterator: Option<BufferRangeIterator>) -> Self {
         SnapshotRangeIterator { storage_iterator: Some(mvcc_iterator), buffered_iterator, ready_item_source: None }
     }
-
-    /// Construct an iterator with no storage backing, driven entirely by a buffered
-    /// (in-memory) source. Used by `CachedReadSnapshot`, where the entire dataset
-    /// has been materialised up front and storage is never consulted.
     pub fn new_buffered_only(buffered_iterator: BufferRangeIterator) -> Self {
         SnapshotRangeIterator {
             storage_iterator: None,
@@ -83,8 +79,7 @@ impl SnapshotRangeIterator {
 
     fn find_next_state(&mut self) {
         while self.ready_item_source.is_none() {
-            // Buffered-only path: when there is no MVCC storage iterator, drive the
-            // buffered iterator alone (skipping any tombstoned Delete entries).
+            // TODO: I think we can adapt the existing code below to incorporate cleanly that either can be not present without this separate loop
             if self.storage_iterator.is_none() {
                 if let Some(buffered_iterator) = self.buffered_iterator.as_mut() {
                     while let Some((_, Write::Delete)) = buffered_iterator.peek() {

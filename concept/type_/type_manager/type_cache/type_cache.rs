@@ -93,13 +93,7 @@ impl TypeCache {
     where
         D: DurabilityClient,
     {
-        // Load the schema-side keys of the schema keyspace into a `CachedReadSnapshot`
-        // once, then run all per-kind cache creators against it. Each subsequent read is
-        // a BTreeMap lookup instead of an MVCC iterator open against rocksdb — orders of
-        // magnitude cheaper on large schemas, where this rebuild is dominated by millions
-        // of small reads. Object-vertex and instance-edge data share this keyspace; we
-        // scan only the schema prefix ranges to avoid pulling them into the snapshot.
-        let snapshot = CachedReadSnapshot::load_keyspaces(
+        let snapshot = CachedReadSnapshot::load_at(
             &storage,
             open_sequence_number,
             vec![(EncodingKeyspace::DefaultOptimisedPrefix11.id(), Prefix::schema_byte_ranges())],

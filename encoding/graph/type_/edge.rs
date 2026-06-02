@@ -38,7 +38,7 @@ impl TypeEdge {
 
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        let prefix = Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX]));
+        let prefix = Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX])).expect("Unrecognized prefix byte");
         let from = TypeVertex::decode(bytes.clone().into_range(Self::range_from()));
         let to = TypeVertex::decode(bytes.clone().into_range(Self::range_to()));
         Self { prefix, from, to }

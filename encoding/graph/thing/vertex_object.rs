@@ -108,7 +108,7 @@ impl ThingVertex for ObjectVertex {
 
     fn decode(bytes: &[u8]) -> ObjectVertex {
         debug_assert_eq!(bytes.len(), Self::LENGTH);
-        let prefix = Prefix::from_prefix_id(PrefixID { byte: bytes[0] });
+        let prefix = Prefix::from_prefix_id(PrefixID { byte: bytes[0] }).expect("Unrecognized prefix byte");
         let type_id = TypeID::decode(bytes[Self::RANGE_TYPE_ID].try_into().unwrap());
         let object_id = ObjectID::decode(bytes[Self::range_object_id()].try_into().unwrap());
         Self { prefix, type_id, object_id }

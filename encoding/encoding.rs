@@ -167,6 +167,6 @@ pub trait Prefixed<const INLINE_SIZE: usize>: AsBytes<INLINE_SIZE> + Clone {
 
     fn prefix(&self) -> Prefix {
         let byte = self.clone().to_bytes()[Self::INDEX_PREFIX];
-        Prefix::from_prefix_id(PrefixID::new(byte))
+        Prefix::from_prefix_id(PrefixID::new(byte)).expect("Unrecognized prefix byte")
     }
 }
