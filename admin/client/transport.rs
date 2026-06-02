@@ -4,9 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-//! Platform-specific transport for the admin client. Unix uses a UDS addressed
-//! by filesystem path; Windows uses a Named Pipe addressed by pipe name.
-
 #[cfg(unix)]
 mod unix;
 #[cfg(windows)]
@@ -18,15 +15,9 @@ use tonic::transport::{Channel, Endpoint};
 
 use crate::error::AdminError;
 
-/// Endpoint identifier — a filesystem path string on Unix, a pipe name on Windows.
-///
-/// The CLI accepts the same `--socket-path` argument on both platforms; on Unix it's
-/// interpreted as a path, on Windows as a Named Pipe name (e.g. `\\.\pipe\typedb-admin`).
-pub type AdminEndpoint = Path;
-
 const DEFAULT_PLACEHOLDER_IP: &str = "http://127.0.0.1";
 
-pub async fn connect_channel(endpoint: &AdminEndpoint) -> Result<Channel, AdminError> {
+pub async fn connect_channel(endpoint: &Path) -> Result<Channel, AdminError> {
     #[cfg(unix)]
     {
         unix::verify_endpoint(endpoint)?;

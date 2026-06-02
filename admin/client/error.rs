@@ -18,11 +18,12 @@ typedb_error! {
         ScriptReadFailed(6, "Failed to read script '{path}'.", path: String, source: Arc<std::io::Error>),
         SocketPathInaccessible(7, "Admin socket '{path}' could not be inspected.", path: String, source: Arc<std::io::Error>),
         SocketNotASocket(8, "Admin endpoint at '{path}' is not a Unix socket; refusing to connect.", path: String),
-        SocketPermissionsTooWide(
+        SocketPermissionsUnexpected(
             9,
-            "Admin socket '{path}' has mode {mode:#o}; permissions are too wide for a local-only admin endpoint. Run `chmod 600 '{path}'` or restart the server to recreate the socket.",
+            "Admin socket '{path}' has mode {mode:#o}; expected {expected:#o}. Restart the server to recreate the socket with the correct mode.",
             path: String,
             mode: u32,
+            expected: u32,
         ),
     }
 }

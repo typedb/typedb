@@ -74,17 +74,14 @@ pub fn bind_admin_endpoint(path: &Path) -> Result<AdminListener, ServerOpenError
     }
 
     // Bracket the bind with a restrictive umask so the socket file is created with
-    // owner-only mode atomically. Without this there's a brief window where the
-    // socket exists with whatever the operator's umask happens to permit. The
-    // subsequent `set_permissions` is belt-and-braces.
+    // owner-only mode atomically.
     let listener = {
         let _restrictive_umask = ScopedUmask::new(PERMISSION_BITS_ALL & !ADMIN_SOCKET_FILE_MODE);
         UnixListener::bind(path)
     }
     .map_err(|source| {
         // The kernel returns EINVAL with a "SUN_LEN" message when sun_path doesn't fit
-        // (108 bytes on Linux, 104 on macOS/BSDs). Surface that as a specific error so
-        // the operator knows to pass a shorter --server.admin.socket-path.
+        // (108 bytes on Linux, 104 on macOS/BSDs)
         let msg = source.to_string();
         if source.kind() == io::ErrorKind::InvalidInput && (msg.contains("SUN_LEN") || msg.contains("too long")) {
             ServerOpenError::AdminSocketPathTooLong {
@@ -103,7 +100,6 @@ pub fn bind_admin_endpoint(path: &Path) -> Result<AdminListener, ServerOpenError
     Ok(AdminListener { inner: listener, path: path.to_path_buf() })
 }
 
-/// Best-effort unlink of the socket file. Already-removed is not an error.
 pub fn cleanup_admin_endpoint(path: &Path) {
     if let Err(err) = fs::remove_file(path) {
         if err.kind() != io::ErrorKind::NotFound {
@@ -121,8 +117,7 @@ fn set_process_umask(mask: u32) -> u32 {
 }
 
 /// RAII guard around the per-process umask. Held only across the `bind` call;
-/// other threads creating files during that window inherit the stricter mask
-/// harmlessly.
+/// other threads creating files during that window inherit the stricter mask harmlessly.
 struct ScopedUmask {
     previous: u32,
 }

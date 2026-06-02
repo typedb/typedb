@@ -33,7 +33,9 @@ rust_library(
 rust_test(
     name = "test_crate_client",
     crate = ":client",
-    deps = [],
+    deps = [
+        "//util/test:test_utils",
+    ],
 )
 
 checkstyle_test(

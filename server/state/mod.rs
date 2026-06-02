@@ -236,9 +236,7 @@ impl ServerState {
             .ok_or_else(|| ServerOpenError::AddressResolutionEmpty { address: address.to_string() })
     }
 
-    async fn resolve_endpoints(
-        config: &crate::parameters::config::Config,
-    ) -> Result<ResolvedEndpoints, ServerOpenError> {
+    async fn resolve_endpoints(config: &Config) -> Result<ResolvedEndpoints, ServerOpenError> {
         let server = &config.server;
         let monitoring = &config.diagnostics.monitoring;
         let grpc_listen_address = Self::resolve_address(&server.listen_address).await?;
@@ -248,14 +246,7 @@ impl ServerState {
             if server.http.enabled { Some(Self::resolve_address(&server.http.listen_address).await?) } else { None };
         let http_advertise_address = server.http.advertise_address.clone();
 
-        let admin_endpoint =
-            server.admin.enabled.then(|| server.admin.resolve_endpoint(&config.storage.data_directory));
-
-        let monitoring_address = if monitoring.enabled {
-            Some(SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, monitoring.port)))
-        } else {
-            None
-        };
+        let monitoring_address = monitoring.enabled.then(|| SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, monitoring.port)));
 
         let mut reserved = HashSet::from([grpc_listen_address]);
         if let Some(address) = http_listen_address {
@@ -268,6 +259,9 @@ impl ServerState {
                 return Err(ServerOpenError::MonitoringConflictingAddress { address });
             }
         }
+
+        let admin_endpoint =
+            server.admin.enabled.then(|| server.admin.resolve_endpoint(&config.storage.data_directory));
 
         let server_status = LocalServerStatus::new(
             PublicEndpointAddress::from_socket_addr(grpc_listen_address, grpc_advertise_address),

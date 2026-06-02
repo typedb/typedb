@@ -27,9 +27,7 @@ pub(super) fn verify_endpoint(path: &Path) -> Result<(), AdminError> {
     if !s.starts_with(r"\\.\pipe\") && !s.starts_with(r"\\?\pipe\") {
         return Err(AdminError::InvalidArgument {
             name: "socket-path".to_string(),
-            reason: format!(
-                "on Windows the admin endpoint must be a Named Pipe path (starting with \\\\.\\pipe\\); got '{s}'"
-            ),
+            reason: format!("the admin endpoint must be a Named Pipe path (starting with \\\\.\\pipe\\); got '{s}'"),
         });
     }
     Ok(())

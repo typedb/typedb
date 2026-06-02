@@ -5796,6 +5796,7 @@ dependencies = [
  "rpassword",
  "rustyline",
  "server_admin_proto",
+ "test_utils",
  "tokio",
  "tonic",
  "tower 0.4.13",

@@ -3,7 +3,6 @@
 # Do not modify this file.
 
 features = {}
-dev-dependencies = {}
 
 [package]
 	name = "typedb-admin"
@@ -13,6 +12,11 @@ dev-dependencies = {}
 [lib]
 	path = "lib.rs"
 	crate-type = ["lib"]
+
+[dev-dependencies]
+
+	[dev-dependencies.test_utils]
+		workspace = true
 
 [dependencies]
 

@@ -68,7 +68,6 @@ static SERVER_RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
 
 static SERVER: OnceCell<(TempDir, tokio::sync::watch::Sender<()>, String)> = OnceCell::const_new();
 
-// Serialises tests that mutate the admin user's password.
 static MUTATION_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 fn config_path() -> PathBuf {
