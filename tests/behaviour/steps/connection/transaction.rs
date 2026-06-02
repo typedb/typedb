@@ -44,7 +44,7 @@ async fn server_open_transaction_for_database(
     }
 }
 
-fn transaction_type_matches(tx: &ActiveTransaction, tx_type: &str) {
+fn assert_transaction_type_matches(tx: &ActiveTransaction, tx_type: &str) {
     match tx_type {
         "read" => assert_matches!(tx, ActiveTransaction::Read(_)),
         "write" => assert_matches!(tx, ActiveTransaction::Write(_)),
@@ -98,14 +98,14 @@ pub async fn transactions_in_parallel_are_open(context: &mut Context, are_open: 
 
 #[cucumber::then(expr = "transaction has type: {word}")]
 pub async fn transaction_has_type(context: &mut Context, tx_type: String) {
-    transaction_type_matches(context.transaction().unwrap(), &tx_type)
+    assert_transaction_type_matches(context.transaction().expect("Expected an active transaction"), &tx_type)
 }
 
 #[cucumber::then(expr = "transactions( in parallel) have type:")]
 pub async fn transactions_in_parallel_have_type(context: &mut Context, step: &Step) {
     let mut active_transaction_iter = context.get_concurrent_transactions().iter();
     for tx_type in util::iter_table(step) {
-        transaction_type_matches(active_transaction_iter.next().unwrap(), tx_type)
+        assert_transaction_type_matches(active_transaction_iter.next().unwrap(), tx_type)
     }
     assert!(active_transaction_iter.next().is_none(), "Opened more transactions than tested!")
 }
@@ -113,7 +113,7 @@ pub async fn transactions_in_parallel_have_type(context: &mut Context, step: &St
 #[apply(generic_step)]
 #[step(expr = "transaction commits{may_error}")]
 pub async fn transaction_commits(context: &mut Context, may_error: params::MayError) {
-    match context.take_transaction().unwrap() {
+    match context.take_transaction() {
         ActiveTransaction::Read(_) => {
             may_error.check::<(), BehaviourConnectionTestExecutionError>(Err(
                 BehaviourConnectionTestExecutionError::CannotCommitReadTransaction,
@@ -188,7 +188,7 @@ async fn test_schema_export(context: &mut Context, types_syntax: &str) {
                 let result = database_manager.delete_database(REIMPORT_DB);
                 drop(guard); // release the lock to avoid lock poisoning, which would crash
                 result.unwrap();
-                assert!(false, "Failed to execute schema re-import: {}", err);
+                panic!("Failed to execute schema re-import: {}", err);
             }
         }
     }
@@ -230,7 +230,7 @@ fn get_types_syntax(database: Arc<Database<WALClient>>) -> String {
 #[apply(generic_step)]
 #[step(expr = "transaction rollbacks{may_error}")]
 pub async fn transaction_rollbacks(context: &mut Context, may_error: params::MayError) {
-    match context.take_transaction().unwrap() {
+    match context.take_transaction() {
         ActiveTransaction::Read(_) => {
             may_error.check::<(), BehaviourConnectionTestExecutionError>(Err(
                 BehaviourConnectionTestExecutionError::CannotRollbackReadTransaction,

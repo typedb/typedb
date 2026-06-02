@@ -16,7 +16,7 @@ use compiler::annotation::function::{AnnotatedSchemaFunctions, annotate_stored_f
 use concept::{
     error::ConceptReadError,
     type_::{
-        annotation::{Annotation, AnnotationCategory, HasAnnotationCategory},
+        annotation::{AnnotationCategory, HasAnnotationCategory},
         type_manager::TypeManager,
     },
 };
@@ -37,7 +37,7 @@ use encoding::{
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{
-        FunctionReadError, FunctionRepresentationError,
+        FunctionReadError,
         function::ReturnOperation,
         function_signature::{
             FunctionID, FunctionIDAPI, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
@@ -46,7 +46,6 @@ use ir::{
     translation::{
         function::{FunctionAnnotation, build_signature, translate_typeql_function},
         pipeline::TranslatedStage,
-        tokens::translate_annotation,
     },
 };
 use itertools::Itertools;
