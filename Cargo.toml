@@ -493,7 +493,7 @@ features = {}
 
 		[workspace.dependencies.typedb-protocol]
 			features = []
-			rev = "810e94e12961e4408ee9433d010fd68691783973"
+			rev = "bb9c513d4dcff269feb88015dcf99354ad378657"
 			git = "https://github.com/typedb/typedb-protocol"
 			default-features = false
 
