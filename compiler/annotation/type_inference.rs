@@ -145,7 +145,7 @@ pub mod tests {
                     vec![TranslatedStage::Match { block: function_block, source_span: None }],
                     ReturnOperation::Stream(vec![f_var_animal], None),
                 ),
-                Vec::new(),
+                vec![],
             );
 
             let mut entry_context = PipelineTranslationContext::new();
