@@ -246,7 +246,8 @@ impl ServerState {
             if server.http.enabled { Some(Self::resolve_address(&server.http.listen_address).await?) } else { None };
         let http_advertise_address = server.http.advertise_address.clone();
 
-        let monitoring_address = monitoring.enabled.then(|| SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, monitoring.port)));
+        let monitoring_address =
+            monitoring.enabled.then(|| SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, monitoring.port)));
 
         let mut reserved = HashSet::from([grpc_listen_address]);
         if let Some(address) = http_listen_address {
