@@ -40,13 +40,6 @@ pub trait UserOperator: Debug + Send + Sync {
         credential_update: Option<Credential>,
     ) -> Result<(), ArcServerStateError>;
 
-    async fn reset_credential(
-        &self,
-        accessor: Accessor,
-        username: &str,
-        credential: Credential,
-    ) -> Result<(), ArcServerStateError>;
-
     async fn delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError>;
 
     async fn verify_password(&self, username: &str, password: &str) -> Result<(), ArcServerStateError>;
@@ -178,34 +171,6 @@ impl UserOperator for LocalUserOperator {
 
         let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
         user_manager.update(username, &user_update, &credential_update).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::UserCannotBeUpdated { typedb_source })
-        })?;
-
-        self.token_manager.invalidate_user(username).await;
-        self.transaction_operator.close_by_owner(username).await;
-        Ok(())
-    }
-
-    async fn reset_credential(
-        &self,
-        accessor: Accessor,
-        username: &str,
-        credential: Credential,
-    ) -> Result<(), ArcServerStateError> {
-        if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username) {
-            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
-        }
-
-        let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
-        // user_repository::update silently no-ops when the username doesn't match.
-        let exists = user_manager.contains(username).map_err(|typedb_source| {
-            arc_server_state_err(LocalServerStateError::UserCannotBeRetrieved { typedb_source })
-        })?;
-        if !exists {
-            return Err(arc_server_state_err(LocalServerStateError::UserNotFound {}));
-        }
-
-        user_manager.update(username, &None, &Some(credential)).map_err(|typedb_source| {
             arc_server_state_err(LocalServerStateError::UserCannotBeUpdated { typedb_source })
         })?;
 

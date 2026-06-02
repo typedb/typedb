@@ -77,7 +77,7 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
         let accessor = Accessor(DEFAULT_USER_NAME.to_string());
         self.server_state
             .users()
-            .reset_credential(accessor, &username, credential)
+            .update(accessor, &username, None, Some(credential))
             .await
             .map_err(|err| Status::internal(format!("{err:?}")))?;
 
