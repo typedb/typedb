@@ -17,8 +17,11 @@ use encoding::{
 };
 use error::typedb_error;
 use storage::{
-    MVCCStorage, durability_client::DurabilityClient, keyspace::KeyspaceSet, sequence_number::SequenceNumber,
-    snapshot::CachedReadSnapshot,
+    MVCCStorage,
+    durability_client::DurabilityClient,
+    keyspace::KeyspaceSet,
+    sequence_number::SequenceNumber,
+    snapshot::{CachedReadSnapshot, cached_read::CachedReadSnapshotLoadError},
 };
 
 use crate::type_::{
@@ -97,7 +100,8 @@ impl TypeCache {
             &storage,
             open_sequence_number,
             vec![(EncodingKeyspace::DefaultOptimisedPrefix11.id(), Prefix::schema_byte_ranges())],
-        );
+        )
+        .map_err(|typedb_source| TypeCacheCreateError::LoadSchemaSnapshot { typedb_source })?;
 
         let entity_type_caches = EntityTypeCache::create(&snapshot);
         let relation_type_caches = RelationTypeCache::create(&snapshot);
@@ -512,5 +516,6 @@ impl TypeCache {
 typedb_error! {
     pub TypeCacheCreateError(component = "TypeCache create", prefix = "TCC") {
         Empty(1, ""),
+        LoadSchemaSnapshot(2, "Failed to load schema keyspace into cached read snapshot.", typedb_source: CachedReadSnapshotLoadError),
     }
 }

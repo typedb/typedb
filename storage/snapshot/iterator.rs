@@ -79,22 +79,13 @@ impl SnapshotRangeIterator {
 
     fn find_next_state(&mut self) {
         while self.ready_item_source.is_none() {
-            // TODO: I think we can adapt the existing code below to incorporate cleanly that either can be not present without this separate loop
-            if self.storage_iterator.is_none() {
+            // Storage iterator absent, exhausted, or errored — drive the buffered iterator
+            // alone (skipping any tombstoned `Delete` entries). Folds what were two near-
+            // identical buffered-only fall-through paths into one.
+            let storage_peek = self.storage_iterator.as_mut().and_then(|iter| iter.peek());
+            let Some(Ok((storage_key, _storage_value))) = storage_peek else {
                 if let Some(buffered_iterator) = self.buffered_iterator.as_mut() {
                     while let Some((_, Write::Delete)) = buffered_iterator.peek() {
-                        buffered_iterator.next();
-                    }
-                    if buffered_iterator.peek().is_some() {
-                        self.ready_item_source = Some(ReadyItemSource::Buffered);
-                    }
-                }
-                break;
-            }
-            let Some(Ok((storage_key, _storage_value))) = self.storage_iterator.as_mut().unwrap().peek() else {
-                if let Some(buffered_iterator) = self.buffered_iterator.as_mut() {
-                    while let Some((_, Write::Delete)) = buffered_iterator.peek() {
-                        // SKIP buffered
                         buffered_iterator.next();
                     }
                     if buffered_iterator.peek().is_some() {

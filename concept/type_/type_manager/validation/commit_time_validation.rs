@@ -10,7 +10,7 @@ use encoding::{EncodingKeyspace, graph::definition::r#struct::StructDefinition, 
 use itertools::Itertools;
 use storage::{
     keyspace::KeyspaceSet,
-    snapshot::{CachedReadSnapshot, ReadableSnapshot},
+    snapshot::{CachedReadSnapshot, ReadableSnapshot, cached_read::CachedReadSnapshotLoadError},
 };
 
 use crate::{
@@ -97,7 +97,8 @@ impl CommitTimeValidation {
         let snapshot = CachedReadSnapshot::load_from_snapshot(
             snapshot,
             vec![(EncodingKeyspace::DefaultOptimisedPrefix11.id(), Prefix::schema_byte_ranges())],
-        );
+        )
+        .map_err(|typedb_source| Box::new(ConceptReadError::LoadSchemaSnapshot { typedb_source }))?;
         let mut errors = Vec::new();
         Self::validate_entity_types(&snapshot, type_manager, &mut errors)?;
         Self::validate_relation_types(&snapshot, type_manager, &mut errors)?;

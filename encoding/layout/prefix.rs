@@ -108,26 +108,17 @@ impl Prefix {
     }
 
     pub fn schema_byte_ranges() -> Vec<RangeInclusive<u8>> {
-        let prefix_for = |byte: u8| -> Option<Prefix> {
-            Prefix::from_prefix_id(PrefixID::new(byte))
-        };
         let mut ranges: Vec<RangeInclusive<u8>> = Vec::new();
         let mut current: Option<(u8, u8)> = None;
-        // TODO: I think this can probably go over ALL.iter().sorted_by_key(|prefix| prefix -> prefix id) and therefore simplify?
-        for b in 0..=PrefixID::MAX {
-            match prefix_for(b) {
-                Some(p) if !p.is_schema() => {
-                    if let Some((start, end)) = current.take() {
-                        ranges.push(start..=end);
-                    }
-                }
-                Some(_) => {
-                    current = Some(match current {
-                        Some((start, _)) => (start, b),
-                        None => (b, b),
-                    });
-                }
-                None => {}
+        for prefix in Self::ALL.iter().copied().sorted_by_key(|p| p.prefix_id()) {
+            let byte = prefix.prefix_id().byte;
+            if prefix.is_schema() {
+                current = Some(match current {
+                    Some((start, _)) => (start, byte),
+                    None => (byte, byte),
+                });
+            } else if let Some((start, end)) = current.take() {
+                ranges.push(start..=end);
             }
         }
         if let Some((start, end)) = current {

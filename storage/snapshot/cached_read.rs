@@ -11,7 +11,8 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, util::increment};
+use bytes::{Bytes, byte_array::ByteArray};
+use error::typedb_error;
 use lending_iterator::LendingIterator;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
@@ -26,8 +27,8 @@ use crate::{
     keyspace::{IteratorPool, KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
     sequence_number::SequenceNumber,
     snapshot::{
-        buffer::BufferRangeIterator,
-        iterator::SnapshotRangeIterator,
+        buffer::{BufferRangeIterator, compute_exclusive_end, range_start_as_bound},
+        iterator::{SnapshotIteratorError, SnapshotRangeIterator},
         snapshot::{ReadableSnapshot, SnapshotGetError},
         snapshot_id::SnapshotId,
         write::Write,
@@ -48,7 +49,7 @@ impl CachedReadSnapshot {
         storage: &Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
         keyspaces_ranges: Vec<(KeyspaceId, Vec<RangeInclusive<u8>>)>,
-    ) -> Self
+    ) -> Result<Self, CachedReadSnapshotLoadError>
     where
         D: DurabilityClient,
     {
@@ -59,14 +60,14 @@ impl CachedReadSnapshot {
     pub fn load_from_snapshot<S>(
         source: &S,
         keyspaces_ranges: Vec<(KeyspaceId, Vec<RangeInclusive<u8>>)>,
-    ) -> Self
+    ) -> Result<Self, CachedReadSnapshotLoadError>
     where
         S: ReadableSnapshot,
     {
         let mut keyspaces: Box<[Option<KeyspaceBtree>; KEYSPACE_MAXIMUM_COUNT]> =
             Box::new(std::array::from_fn(|_| None));
         for (keyspace_id, ranges) in keyspaces_ranges {
-            let map = keyspaces[keyspace_id.0 as usize].get_or_insert_with(mapreeMap::new);
+            let map = keyspaces[keyspace_id.0 as usize].get_or_insert_with(BTreeMap::new);
             for range in ranges {
                 let start_bytes = [*range.start()];
                 let end_bytes = [*range.end()];
@@ -80,52 +81,22 @@ impl CachedReadSnapshot {
                 );
                 let mut iterator = source.iterate_range(&key_range, StorageCounters::DISABLED);
                 while let Some(result) = iterator.next() {
-                    // TODO: create an error macro in this file and use that here and wrap it correctly upwards
-                    let (key, value) = result.expect("CachedReadSnapshot load failed");
+                    let (key, value) = result.map_err(|source| CachedReadSnapshotLoadError::Iterate { source })?;
                     map.insert(key.into_bytes().into_array(), value.into_array());
                 }
             }
         }
-        Self {
+        Ok(Self {
             open_sequence_number: source.open_sequence_number(),
             id: SnapshotId::new(),
             iterator_pool: IteratorPool::default(),
             keyspaces,
-        }
+        })
     }
 
     fn keyspace_map(&self, keyspace_id: KeyspaceId) -> Option<&KeyspaceBtree> {
         self.keyspaces.get(keyspace_id.0 as usize).and_then(|o| o.as_ref())
     }
-}
-
-fn key_range_as_byte_bounds<const PS: usize>(
-    range: &KeyRange<StorageKey<'_, PS>>,
-) -> (Bound<Vec<u8>>, Bound<Vec<u8>>) {
-    let start = match range.start() {
-        RangeStart::Inclusive(bytes) => Bound::Included(bytes.bytes().to_vec()),
-        RangeStart::ExcludeFirstWithPrefix(bytes) => Bound::Excluded(bytes.bytes().to_vec()),
-        RangeStart::ExcludePrefix(bytes) => {
-            let mut v = bytes.bytes().to_vec();
-            increment(&mut v).unwrap();
-            Bound::Included(v)
-        }
-    };
-    let end = match range.end() {
-        RangeEnd::Unbounded => Bound::Unbounded,
-        RangeEnd::EndPrefixExclusive(value) => Bound::Excluded(value.bytes().to_vec()),
-        RangeEnd::EndPrefixInclusive(value) => {
-            let mut v = value.bytes().to_vec();
-            increment(&mut v).unwrap();
-            Bound::Excluded(v)
-        }
-        RangeEnd::WithinStartAsPrefix => {
-            let mut v = range.start().get_value().bytes().to_vec();
-            increment(&mut v).unwrap();
-            Bound::Excluded(v)
-        }
-    };
-    (start, end)
 }
 
 impl ReadableSnapshot for CachedReadSnapshot {
@@ -165,10 +136,17 @@ impl ReadableSnapshot for CachedReadSnapshot {
         let Some(map) = self.keyspace_map(keyspace_id) else {
             return SnapshotRangeIterator::new_buffered_only(BufferRangeIterator::new_empty());
         };
-        // TODO: investigate the rest of our code base i think we have established patterns for this?
-        let (start, end) = key_range_as_byte_bounds(range);
+        let (range_start, range_end, _) = range.map(|sk| sk.as_bytes(), |w| w).into_raw();
+        let exclusive_end_bytes = compute_exclusive_end(&range_start, &range_end);
+        let end = if matches!(range_end, RangeEnd::Unbounded) {
+            Bound::Unbounded
+        } else {
+            Bound::Excluded(&*exclusive_end_bytes)
+        };
+        let start_as_bound = range_start_as_bound(range_start);
+        let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
         let materialised: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> = map
-            .range::<[u8], _>((start.as_ref().map(Vec::as_slice), end.as_ref().map(Vec::as_slice)))
+            .range::<[u8], _>((start_bytes, end))
             .map(|(k, v)| (StorageKeyArray::new_raw(keyspace_id, k.clone()), Write::Insert { value: v.clone() }))
             .collect();
         SnapshotRangeIterator::new_buffered_only(BufferRangeIterator::new(materialised))
@@ -177,8 +155,16 @@ impl ReadableSnapshot for CachedReadSnapshot {
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, _buffered_only: bool) -> bool {
         let keyspace_id = range.start().get_value().keyspace_id();
         let Some(map) = self.keyspace_map(keyspace_id) else { return false };
-        let (start, end) = key_range_as_byte_bounds(range);
-        map.range::<[u8], _>((start.as_ref().map(Vec::as_slice), end.as_ref().map(Vec::as_slice))).next().is_some()
+        let (range_start, range_end, _) = range.map(|sk| sk.as_bytes(), |w| w).into_raw();
+        let exclusive_end_bytes = compute_exclusive_end(&range_start, &range_end);
+        let end = if matches!(range_end, RangeEnd::Unbounded) {
+            Bound::Unbounded
+        } else {
+            Bound::Excluded(&*exclusive_end_bytes)
+        };
+        let start_as_bound = range_start_as_bound(range_start);
+        let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
+        map.range::<[u8], _>((start_bytes, end)).next().is_some()
     }
 
     fn get_write(&self, _: StorageKeyReference<'_>) -> Option<&Write> {
@@ -193,6 +179,10 @@ impl ReadableSnapshot for CachedReadSnapshot {
         BufferRangeIterator::new_empty()
     }
 
+    /// This snapshot has no buffered writes — its contents are the merged view
+    /// of (storage + buffered writes) captured at load time, baked into the
+    /// in-memory `BTreeMap`s. As such there is no separate storage-only view to
+    /// expose, and this method returns the same iterator as `iterate_range`.
     fn iterate_storage_range<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
@@ -202,7 +192,12 @@ impl ReadableSnapshot for CachedReadSnapshot {
     }
 
     fn iterator_pool(&self) -> &IteratorPool {
-        // note: unused
         &self.iterator_pool
+    }
+}
+
+typedb_error! {
+    pub CachedReadSnapshotLoadError(component = "Cached read snapshot load", prefix = "CRS") {
+        Iterate(1, "Failed to materialise a key range into the cached read snapshot.", source: Arc<SnapshotIteratorError>),
     }
 }

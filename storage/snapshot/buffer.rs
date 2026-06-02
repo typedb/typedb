@@ -185,13 +185,13 @@ impl WriteBuffer {
 
     pub(crate) fn iterate_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> BufferRangeIterator {
         let (range_start, range_end, _) = range.into_raw();
-        let exclusive_end_bytes = Self::compute_exclusive_end(&range_start, &range_end);
+        let exclusive_end_bytes = compute_exclusive_end(&range_start, &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
             Bound::Unbounded
         } else {
             Bound::Excluded(&*exclusive_end_bytes)
         };
-        let start_as_bound = Self::range_start_as_bound(range_start);
+        let start_as_bound = range_start_as_bound(range_start);
         let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
         // TODO: we shouldn't have to copy now that we use single-writer semantics
         BufferRangeIterator::new(
@@ -205,49 +205,15 @@ impl WriteBuffer {
     // TODO: if the iterate_range becomes zero-copy, then we can eliminate this method
     pub(crate) fn any_not_deleted_in_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> bool {
         let (range_start, range_end, _) = range.into_raw();
-        let exclusive_end_bytes = Self::compute_exclusive_end(&range_start, &range_end);
+        let exclusive_end_bytes = compute_exclusive_end(&range_start, &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
             Bound::Unbounded
         } else {
             Bound::Excluded(&*exclusive_end_bytes)
         };
-        let start_as_bound = Self::range_start_as_bound(range_start);
+        let start_as_bound = range_start_as_bound(range_start);
         let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
         self.writes.range::<[u8], _>((start_bytes, end)).any(|(_, write)| !write.is_delete())
-    }
-
-    fn range_start_as_bound<const INLINE: usize>(
-        range_start: RangeStart<Bytes<'_, INLINE>>,
-    ) -> Bound<Bytes<'_, INLINE>> {
-        match range_start {
-            RangeStart::Inclusive(bytes) => Bound::Included(bytes),
-            RangeStart::ExcludeFirstWithPrefix(bytes) => Bound::Excluded(bytes),
-            RangeStart::ExcludePrefix(bytes) => {
-                let mut cloned = bytes.clone().into_array();
-                cloned.increment().unwrap();
-                Bound::Included(Bytes::Array(cloned))
-            }
-        }
-    }
-
-    fn compute_exclusive_end<const INLINE: usize>(
-        start: &RangeStart<Bytes<'_, INLINE>>,
-        end: &RangeEnd<Bytes<'_, INLINE>>,
-    ) -> ByteArray<INLINE> {
-        match end {
-            RangeEnd::WithinStartAsPrefix => {
-                let mut start_plus_1 = start.get_value().clone().into_array();
-                increment(&mut start_plus_1).unwrap();
-                start_plus_1
-            }
-            RangeEnd::EndPrefixInclusive(value) => {
-                let mut end_plus_1 = value.clone().into_array();
-                increment(&mut end_plus_1).unwrap();
-                end_plus_1
-            }
-            RangeEnd::EndPrefixExclusive(value) => value.clone().into_array(),
-            RangeEnd::Unbounded => ByteArray::empty(),
-        }
     }
 
     pub(crate) fn writes(&self) -> &BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> {
@@ -264,6 +230,46 @@ impl WriteBuffer {
 
     pub fn clear(&mut self) {
         self.writes.clear()
+    }
+}
+
+/// Translate a `RangeStart<Bytes>` into the corresponding `Bound<Bytes>` over the
+/// raw byte ordering. For `ExcludePrefix` the bytes are cloned and incremented
+/// so the bound includes everything past the given prefix.
+pub(crate) fn range_start_as_bound<const INLINE: usize>(
+    range_start: RangeStart<Bytes<'_, INLINE>>,
+) -> Bound<Bytes<'_, INLINE>> {
+    match range_start {
+        RangeStart::Inclusive(bytes) => Bound::Included(bytes),
+        RangeStart::ExcludeFirstWithPrefix(bytes) => Bound::Excluded(bytes),
+        RangeStart::ExcludePrefix(bytes) => {
+            let mut cloned = bytes.clone().into_array();
+            cloned.increment().unwrap();
+            Bound::Included(Bytes::Array(cloned))
+        }
+    }
+}
+
+/// Compute the always-exclusive end bytes of a `KeyRange`, treating
+/// `RangeEnd::Unbounded` as an empty placeholder (callers must inspect
+/// `range_end` separately to pick `Bound::Unbounded`).
+pub(crate) fn compute_exclusive_end<const INLINE: usize>(
+    start: &RangeStart<Bytes<'_, INLINE>>,
+    end: &RangeEnd<Bytes<'_, INLINE>>,
+) -> ByteArray<INLINE> {
+    match end {
+        RangeEnd::WithinStartAsPrefix => {
+            let mut start_plus_1 = start.get_value().clone().into_array();
+            increment(&mut start_plus_1).unwrap();
+            start_plus_1
+        }
+        RangeEnd::EndPrefixInclusive(value) => {
+            let mut end_plus_1 = value.clone().into_array();
+            increment(&mut end_plus_1).unwrap();
+            end_plus_1
+        }
+        RangeEnd::EndPrefixExclusive(value) => value.clone().into_array(),
+        RangeEnd::Unbounded => ByteArray::empty(),
     }
 }
 
