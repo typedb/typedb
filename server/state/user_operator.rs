@@ -40,7 +40,12 @@ pub trait UserOperator: Debug + Send + Sync {
         credential_update: Option<Credential>,
     ) -> Result<(), ArcServerStateError>;
 
-    async fn reset_credential(&self, username: &str, credential: Credential) -> Result<(), ArcServerStateError>;
+    async fn reset_credential(
+        &self,
+        accessor: Accessor,
+        username: &str,
+        credential: Credential,
+    ) -> Result<(), ArcServerStateError>;
 
     async fn delete(&self, accessor: Accessor, username: &str) -> Result<(), ArcServerStateError>;
 
@@ -181,7 +186,16 @@ impl UserOperator for LocalUserOperator {
         Ok(())
     }
 
-    async fn reset_credential(&self, username: &str, credential: Credential) -> Result<(), ArcServerStateError> {
+    async fn reset_credential(
+        &self,
+        accessor: Accessor,
+        username: &str,
+        credential: Credential,
+    ) -> Result<(), ArcServerStateError> {
+        if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username) {
+            return Err(Arc::new(LocalServerStateError::OperationNotPermitted {}));
+        }
+
         let user_manager = self.get_user_manager().map_err(arc_server_state_err)?;
         // user_repository::update silently no-ops when the username doesn't match.
         let exists = user_manager.contains(username).map_err(|typedb_source| {

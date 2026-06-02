@@ -18,10 +18,11 @@ use std::{
     task::{Context, Poll},
 };
 
+use concurrency::TokioTaskSpawner;
 use tokio::{
     io::{AsyncRead, AsyncWrite, ReadBuf},
     net::windows::named_pipe::{NamedPipeServer, ServerOptions},
-    sync::mpsc,
+    sync::{mpsc, watch::Receiver},
 };
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::transport::server::Connected;
@@ -51,7 +52,11 @@ impl AdminListener {
 // https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-string-format
 const ADMIN_PIPE_SDDL: &str = "D:P(A;;GA;;;OW)(A;;GA;;;BA)(A;;GA;;;SY)";
 
-pub fn bind_admin_endpoint(pipe_name: &str) -> Result<AdminListener, ServerOpenError> {
+pub fn bind_admin_endpoint(
+    pipe_name: &str,
+    task_spawner: &TokioTaskSpawner,
+    mut shutdown_receiver: Receiver<()>,
+) -> Result<AdminListener, ServerOpenError> {
     let sd = SecurityDescriptor::from_sddl(ADMIN_PIPE_SDDL)
         .map_err(|source| ServerOpenError::AdminPipeBind { name: pipe_name.to_string(), source: Arc::new(source) })?;
 
@@ -62,7 +67,7 @@ pub fn bind_admin_endpoint(pipe_name: &str) -> Result<AdminListener, ServerOpenE
     let pipe_name_for_task = pipe_name.to_string();
     let sd_for_task = sd;
 
-    tokio::spawn(async move {
+    task_spawner.spawn(async move {
         let mut next = Some(first);
         loop {
             let server = match next.take() {
@@ -77,9 +82,14 @@ pub fn bind_admin_endpoint(pipe_name: &str) -> Result<AdminListener, ServerOpenE
                 },
             };
 
-            if let Err(err) = server.connect().await {
-                warn!("Admin pipe connect() failed: {err}");
-                continue;
+            tokio::select! {
+                connect_result = server.connect() => {
+                    if let Err(err) = connect_result {
+                        warn!("Admin pipe connect() failed: {err}");
+                        continue;
+                    }
+                }
+                _ = shutdown_receiver.changed() => break,
             }
 
             // Windows requires one pipe per one user connection.

@@ -6,10 +6,11 @@
 
 use std::sync::Arc;
 
+use resource::constants::server::DEFAULT_USER_NAME;
 use system::concepts::Credential;
 use tonic::{Request, Response, Status};
 
-use crate::{admin_proto, state::ServerState};
+use crate::{admin_proto, authentication::Accessor, state::ServerState};
 
 #[derive(Debug, Clone)]
 pub struct AdminService {
@@ -73,9 +74,10 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
         }
 
         let credential = Credential::new_password(&password);
+        let accessor = Accessor(DEFAULT_USER_NAME.to_string());
         self.server_state
             .users()
-            .reset_credential(&username, credential)
+            .reset_credential(accessor, &username, credential)
             .await
             .map_err(|err| Status::internal(format!("{err:?}")))?;
 

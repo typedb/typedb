@@ -306,14 +306,20 @@ impl Server {
                 &server_config.encryption,
                 server_state.clone(),
                 shutdown_receiver.clone(),
-                background_tasks_spawner,
+                background_tasks_spawner.clone(),
             );
             servers.push(Box::pin(http_server));
         }
 
         if let Some(admin_endpoint) = server_state.admin_endpoint().cloned() {
-            let admin_server = admin_serve_override
-                .unwrap_or_else(|| Self::serve_admin(admin_endpoint, server_state.clone(), shutdown_receiver.clone()));
+            let admin_server = admin_serve_override.unwrap_or_else(|| {
+                Self::serve_admin(
+                    admin_endpoint,
+                    server_state.clone(),
+                    background_tasks_spawner.clone(),
+                    shutdown_receiver.clone(),
+                )
+            });
             servers.push(Box::pin(admin_server));
         }
 
@@ -400,11 +406,13 @@ impl Server {
     fn serve_admin(
         endpoint: AdminPath,
         server_state: Arc<ServerState>,
+        task_spawner: TokioTaskSpawner,
         mut shutdown_receiver: Receiver<()>,
     ) -> AdminServeFuture {
         let admin_service = service::admin::AdminService::new(server_state);
+        let bind_shutdown_receiver = shutdown_receiver.clone();
         Box::pin(async move {
-            let listener = transport::bind_admin_endpoint(&endpoint)?;
+            let listener = transport::bind_admin_endpoint(&endpoint, &task_spawner, bind_shutdown_receiver)?;
             let endpoint_for_error = transport::endpoint_to_string(&endpoint);
             let endpoint_for_cleanup = endpoint.clone();
             let incoming = listener.into_incoming();
