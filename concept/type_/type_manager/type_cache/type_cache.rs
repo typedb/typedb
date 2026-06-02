@@ -21,7 +21,7 @@ use storage::{
     durability_client::DurabilityClient,
     keyspace::KeyspaceSet,
     sequence_number::SequenceNumber,
-    snapshot::{CachedReadSnapshot, cached_read::CachedReadSnapshotLoadError},
+    snapshot::{CachedReadSnapshot, CachedReadSnapshotLoadError},
 };
 
 use crate::type_::{

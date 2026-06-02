@@ -10,7 +10,7 @@ use encoding::{EncodingKeyspace, graph::definition::r#struct::StructDefinition, 
 use itertools::Itertools;
 use storage::{
     keyspace::KeyspaceSet,
-    snapshot::{CachedReadSnapshot, ReadableSnapshot, cached_read::CachedReadSnapshotLoadError},
+    snapshot::{CachedReadSnapshot, CachedReadSnapshotLoadError, ReadableSnapshot},
 };
 
 use crate::{

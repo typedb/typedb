@@ -4,14 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub use cached_read::CachedReadSnapshot;
 pub use snapshot::{
-    CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, SnapshotGetError,
-    WritableSnapshot, WriteSnapshot,
+    CachedReadSnapshot, CachedReadSnapshotLoadError, CommittableSnapshot, ReadSnapshot, ReadableSnapshot,
+    SchemaSnapshot, SnapshotError, SnapshotGetError, WritableSnapshot, WriteSnapshot,
 };
 
 pub mod buffer;
-pub mod cached_read;
 pub mod iterator;
 pub mod lock;
 pub(crate) mod pool;
