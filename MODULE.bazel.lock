@@ -1912,6 +1912,196 @@
           ]
         ]
       }
+    },
+    "@@typedb_dependencies+//distribution/artifact:rules.bzl%native_artifact_files": {
+      "general": {
+        "bzlTransitiveDigest": "j3hx3mUtu6z2mFVqzO+QxuHlrl18RFJ+k2KdWIGo83o=",
+        "usagesDigest": "OolJIzQnghyWR3LueJq47efikjM03bZ76//YzLxMEiM=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "typedb_console_artifact_linux-arm64": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
+            "attributes": {
+              "urls": [
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-arm64/versions/3.11.5/typedb-console-linux-arm64-3.11.5.tar.gz"
+              ],
+              "downloaded_file_path": "typedb-console-linux-arm64-3.11.5.tar.gz"
+            }
+          },
+          "typedb_console_artifact_linux-arm64-extracted": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "urls": [
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-arm64/versions/3.11.5/typedb-console-linux-arm64-3.11.5.tar.gz"
+              ],
+              "strip_prefix": "typedb-console-linux-arm64-3.11.5",
+              "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
+            }
+          },
+          "typedb_console_artifact_linux-x86_64": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
+            "attributes": {
+              "urls": [
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-x86_64/versions/3.11.5/typedb-console-linux-x86_64-3.11.5.tar.gz"
+              ],
+              "downloaded_file_path": "typedb-console-linux-x86_64-3.11.5.tar.gz"
+            }
+          },
+          "typedb_console_artifact_linux-x86_64-extracted": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "urls": [
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-linux-x86_64/versions/3.11.5/typedb-console-linux-x86_64-3.11.5.tar.gz"
+              ],
+              "strip_prefix": "typedb-console-linux-x86_64-3.11.5",
+              "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
+            }
+          },
+          "typedb_console_artifact_mac-arm64": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
+            "attributes": {
+              "urls": [
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-arm64/versions/3.11.5/typedb-console-mac-arm64-3.11.5.zip"
+              ],
+              "downloaded_file_path": "typedb-console-mac-arm64-3.11.5.zip"
+            }
+          },
+          "typedb_console_artifact_mac-arm64-extracted": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "urls": [
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-arm64/versions/3.11.5/typedb-console-mac-arm64-3.11.5.zip"
+              ],
+              "strip_prefix": "typedb-console-mac-arm64-3.11.5",
+              "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
+            }
+          },
+          "typedb_console_artifact_mac-x86_64": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
+            "attributes": {
+              "urls": [
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-x86_64/versions/3.11.5/typedb-console-mac-x86_64-3.11.5.zip"
+              ],
+              "downloaded_file_path": "typedb-console-mac-x86_64-3.11.5.zip"
+            }
+          },
+          "typedb_console_artifact_mac-x86_64-extracted": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "urls": [
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-mac-x86_64/versions/3.11.5/typedb-console-mac-x86_64-3.11.5.zip"
+              ],
+              "strip_prefix": "typedb-console-mac-x86_64-3.11.5",
+              "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
+            }
+          },
+          "typedb_console_artifact_windows-x86_64": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_file",
+            "attributes": {
+              "urls": [
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-windows-x86_64/versions/3.11.5/typedb-console-windows-x86_64-3.11.5.zip"
+              ],
+              "downloaded_file_path": "typedb-console-windows-x86_64-3.11.5.zip"
+            }
+          },
+          "typedb_console_artifact_windows-x86_64-extracted": {
+            "repoRuleId": "@@bazel_tools//tools/build_defs/repo:http.bzl%http_archive",
+            "attributes": {
+              "urls": [
+                "https://repo.typedb.com/public/public-release/raw/names/typedb-console-windows-x86_64/versions/3.11.5/typedb-console-windows-x86_64-3.11.5.zip"
+              ],
+              "strip_prefix": "typedb-console-windows-x86_64-3.11.5",
+              "build_file_content": "\nfilegroup(\n    name = \"all_files\",\n    srcs = glob([\"**/*\"]),\n    visibility = [\"//visibility:public\"],\n)\n                        "
+            }
+          }
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "typedb_bazel_distribution+",
+            "bazel_tools",
+            "bazel_tools"
+          ],
+          [
+            "typedb_dependencies+",
+            "bazel_tools",
+            "bazel_tools"
+          ],
+          [
+            "typedb_dependencies+",
+            "typedb_bazel_distribution",
+            "typedb_bazel_distribution+"
+          ]
+        ]
+      }
+    },
+    "@@typedb_dependencies+//library/maven:maven_extension.bzl%maven": {
+      "general": {
+        "bzlTransitiveDigest": "IpHT8ELY4NYAu4/ZrlB9T41Pl90PKHy4aWpZECETZUc=",
+        "usagesDigest": "svrwkqsfHKG1W7WAkIG6SEkYhkWH3QnlhhAt+vH/ZAw=",
+        "recordedFileInputs": {},
+        "recordedDirentsInputs": {},
+        "envVariables": {},
+        "generatedRepoSpecs": {
+          "typedb_maven": {
+            "repoRuleId": "@@rules_jvm_external+//private/rules:coursier.bzl%coursier_fetch",
+            "attributes": {
+              "user_provided_name": "typedb_maven",
+              "artifacts": [
+                "{ \"group\": \"com.eclipsesource.minimal-json\", \"artifact\": \"minimal-json\", \"version\": \"0.9.5\" }",
+                "{ \"group\": \"com.electronwill.night-config\", \"artifact\": \"core\", \"version\": \"3.6.5\" }",
+                "{ \"group\": \"com.electronwill.night-config\", \"artifact\": \"toml\", \"version\": \"3.6.5\" }",
+                "{ \"group\": \"com.fasterxml.jackson.core\", \"artifact\": \"jackson-core\", \"version\": \"2.16.0\" }",
+                "{ \"group\": \"com.fasterxml.jackson.core\", \"artifact\": \"jackson-databind\", \"version\": \"2.16.0\" }",
+                "{ \"group\": \"com.google.http-client\", \"artifact\": \"google-http-client\", \"version\": \"1.41.4\" }",
+                "{ \"group\": \"com.vdurmont\", \"artifact\": \"semver4j\", \"version\": \"3.1.0\" }",
+                "{ \"group\": \"commons-io\", \"artifact\": \"commons-io\", \"version\": \"2.3\" }",
+                "{ \"group\": \"info.picocli\", \"artifact\": \"picocli\", \"version\": \"4.6.1\" }",
+                "{ \"group\": \"org.kohsuke\", \"artifact\": \"github-api\", \"version\": \"1.101\" }",
+                "{ \"group\": \"org.openjdk.jmh\", \"artifact\": \"jmh-core\", \"version\": \"1.23\" }",
+                "{ \"group\": \"org.openjdk.jmh\", \"artifact\": \"jmh-generator-annprocess\", \"version\": \"1.23\" }",
+                "{ \"group\": \"org.zeroturnaround\", \"artifact\": \"zt-exec\", \"version\": \"1.10\" }",
+                "{ \"group\": \"com.electronwill.night-config\", \"artifact\": \"core\", \"version\": \"3.6.5\" }",
+                "{ \"group\": \"com.electronwill.night-config\", \"artifact\": \"toml\", \"version\": \"3.6.5\" }",
+                "{ \"group\": \"info.picocli\", \"artifact\": \"picocli\", \"version\": \"4.6.1\" }",
+                "{ \"group\": \"org.jetbrains.compose.compiler\", \"artifact\": \"compiler\", \"version\": \"1.5.7\" }",
+                "{ \"group\": \"org.zeroturnaround\", \"artifact\": \"zt-exec\", \"version\": \"1.10\" }",
+                "{ \"group\": \"com.eclipsesource.minimal-json\", \"artifact\": \"minimal-json\", \"version\": \"0.9.5\" }",
+                "{ \"group\": \"org.zeroturnaround\", \"artifact\": \"zt-exec\", \"version\": \"1.10\" }",
+                "{ \"group\": \"org.yaml\", \"artifact\": \"snakeyaml\", \"version\": \"2.2\" }"
+              ],
+              "excluded_artifacts": [
+                "{ \"group\": \"com.github.jnr\", \"artifact\": \"jnr-ffi\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-darwin-x86-64\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-darwin-aarch64\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-linux-x86-64\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-linux-aarch64\" }",
+                "{ \"group\": \"com.google.ortools\", \"artifact\": \"ortools-win32-x86-64\" }",
+                "{ \"group\": \"com.google.android.tools\", \"artifact\": \"dx\" }",
+                "{ \"group\": \"com.github.stefanbirkner\", \"artifact\": \"system-rules\" }"
+              ],
+              "repositories": [
+                "{ \"repo_url\": \"https://repo1.maven.org/maven2\" }",
+                "{ \"repo_url\": \"https://repo.maven.apache.org/maven2/\" }",
+                "{ \"repo_url\": \"https://repo.typedb.com/public/public-release/maven/\" }",
+                "{ \"repo_url\": \"https://repo.typedb.com/public/public-snapshot/maven/\" }",
+                "{ \"repo_url\": \"https://dl.google.com/dl/android/maven2\" }",
+                "{ \"repo_url\": \"https://maven.pkg.jetbrains.space/public/p/compose/dev\" }"
+              ],
+              "strict_visibility": true,
+              "version_conflict_policy": "pinned"
+            }
+          }
+        },
+        "recordedRepoMappingEntries": [
+          [
+            "typedb_dependencies+",
+            "rules_jvm_external",
+            "rules_jvm_external+"
+          ]
+        ]
+      }
     }
   },
   "facts": {
