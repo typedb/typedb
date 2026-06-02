@@ -233,9 +233,6 @@ impl WriteBuffer {
     }
 }
 
-/// Translate a `RangeStart<Bytes>` into the corresponding `Bound<Bytes>` over the
-/// raw byte ordering. For `ExcludePrefix` the bytes are cloned and incremented
-/// so the bound includes everything past the given prefix.
 pub(crate) fn range_start_as_bound<const INLINE: usize>(
     range_start: RangeStart<Bytes<'_, INLINE>>,
 ) -> Bound<Bytes<'_, INLINE>> {
@@ -250,9 +247,6 @@ pub(crate) fn range_start_as_bound<const INLINE: usize>(
     }
 }
 
-/// Compute the always-exclusive end bytes of a `KeyRange`, treating
-/// `RangeEnd::Unbounded` as an empty placeholder (callers must inspect
-/// `range_end` separately to pick `Bound::Unbounded`).
 pub(crate) fn compute_exclusive_end<const INLINE: usize>(
     start: &RangeStart<Bytes<'_, INLINE>>,
     end: &RangeEnd<Bytes<'_, INLINE>>,

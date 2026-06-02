@@ -88,12 +88,6 @@ impl CommitTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Vec<Box<SchemaValidationError>>, Box<ConceptReadError>> {
-        // Materialise the schema TX's merged view (storage + buffered writes) into a
-        // `CachedReadSnapshot` once, scanning only the schema prefix byte ranges of
-        // the schema keyspace. The per-type validators below collectively make millions
-        // of small reads against this snapshot; serving them from an in-memory BTreeMap
-        // rather than via MVCC iterators cuts the validate phase by ~5x on large
-        // schemas.
         let snapshot = CachedReadSnapshot::load_from_snapshot(
             snapshot,
             vec![(EncodingKeyspace::DefaultOptimisedPrefix11.id(), Prefix::schema_byte_ranges())],

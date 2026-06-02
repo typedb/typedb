@@ -97,18 +97,18 @@ features = {}
 	name = "test_database"
 
 [[test]]
-	path = "tests/statistics_synchronization.rs"
-	name = "test_statistics_synchronization"
-
-[[test]]
-	path = "tests/diagnostics_posthog_pii.rs"
-	name = "test_diagnostics_posthog_pii"
-
-[[test]]
 	path = "tests/test_transaction_isolation.rs"
 	name = "test_transaction_isolation"
 
 [[test]]
 	path = "tests/transaction.rs"
 	name = "test_transaction"
+
+[[test]]
+	path = "tests/statistics_synchronization.rs"
+	name = "test_statistics_synchronization"
+
+[[test]]
+	path = "tests/diagnostics_posthog_pii.rs"
+	name = "test_diagnostics_posthog_pii"
 

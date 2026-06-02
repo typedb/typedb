@@ -820,10 +820,6 @@ impl ReadableSnapshot for CachedReadSnapshot {
         BufferRangeIterator::new_empty()
     }
 
-    /// This snapshot has no buffered writes — its contents are the merged view
-    /// of (storage + buffered writes) captured at load time, baked into the
-    /// in-memory `BTreeMap`s. As such there is no separate storage-only view to
-    /// expose, and this method returns the same iterator as `iterate_range`.
     fn iterate_storage_range<const PS: usize>(
         &self,
         range: &KeyRange<StorageKey<'_, PS>>,
@@ -843,6 +839,7 @@ typedb_error! {
     }
 }
 
+// TODO: delete and roll into existing snapshot error type
 typedb_error! {
     pub CachedReadSnapshotLoadError(component = "Cached read snapshot load", prefix = "CRS") {
         Iterate(1, "Failed to materialise a key range into the cached read snapshot.", source: Arc<SnapshotIteratorError>),

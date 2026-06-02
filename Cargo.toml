@@ -94,20 +94,28 @@ features = {}
 	name = "test_fail_points"
 
 [[test]]
-	path = "tests/behaviour/query/main.rs"
-	name = "test_query"
+	path = "tests/benchmarks/concurrent_ops/bench_concurrency.rs"
+	name = "bench_concurrency"
+
+[[test]]
+	path = "tests/benchmarks/iam/bench_iam.rs"
+	name = "bench_iam"
+
+[[test]]
+	path = "tests/behaviour/connection/main.rs"
+	name = "test_connection"
 
 [[test]]
 	path = "tests/behaviour/concept/main.rs"
 	name = "test_concept"
 
 [[test]]
-	path = "tests/behaviour/service/http/debug/debug.rs"
-	name = "test_http_debug"
+	path = "tests/behaviour/service/http/connection/database.rs"
+	name = "test_http_database"
 
 [[test]]
-	path = "tests/behaviour/service/http/driver/query.rs"
-	name = "test_http_driver_query"
+	path = "tests/behaviour/service/http/connection/transaction.rs"
+	name = "test_http_transaction"
 
 [[test]]
 	path = "tests/behaviour/service/http/driver/concept.rs"
@@ -118,36 +126,28 @@ features = {}
 	name = "test_http_driver_http"
 
 [[test]]
-	path = "tests/behaviour/service/http/driver/connection.rs"
-	name = "test_http_driver_connection"
+	path = "tests/behaviour/service/http/driver/query.rs"
+	name = "test_http_driver_query"
 
 [[test]]
 	path = "tests/behaviour/service/http/driver/user.rs"
 	name = "test_http_driver_user"
 
 [[test]]
-	path = "tests/behaviour/service/http/connection/transaction.rs"
-	name = "test_http_transaction"
+	path = "tests/behaviour/service/http/driver/connection.rs"
+	name = "test_http_driver_connection"
 
 [[test]]
-	path = "tests/behaviour/service/http/connection/database.rs"
-	name = "test_http_database"
+	path = "tests/behaviour/service/http/debug/debug.rs"
+	name = "test_http_debug"
+
+[[test]]
+	path = "tests/behaviour/query/main.rs"
+	name = "test_query"
 
 [[test]]
 	path = "tests/behaviour/debug/debug.rs"
 	name = "test_debug"
-
-[[test]]
-	path = "tests/behaviour/connection/main.rs"
-	name = "test_connection"
-
-[[test]]
-	path = "tests/benchmarks/concurrent_ops/bench_concurrency.rs"
-	name = "bench_concurrency"
-
-[[test]]
-	path = "tests/benchmarks/iam/bench_iam.rs"
-	name = "bench_iam"
 
 [[bin]]
 	path = "main.rs"
@@ -156,7 +156,7 @@ features = {}
 
 [workspace]
 	resolver = "2"
-	members = ["ir", "query", "user", "answer", "util/project", "util/test", "concept/tests", "concept", "server", "server/service/admin/proto", "encoding/tests", "encoding", "system", "resource", "tests/behaviour/service/http/http_steps", "tests/behaviour/steps/params", "tests/behaviour/steps", "diagnostics", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "common/lending_iterator", "common/bytes", "common/error", "common/options", "common/concurrency", "common/cache", "common/iterator", "common/structural_equality", "common/primitive", "common/logger", "common/fail_point", "compiler", "database", "database/tools", "storage", "storage/tests", "function", "admin", "admin/client", "executor"]
+	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "admin", "admin/client", "encoding/tests", "encoding", "server", "server/service/admin/proto", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/cache", "common/bytes", "common/lending_iterator", "common/primitive", "common/fail_point", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
 
 	[workspace.dependencies]
 
@@ -185,14 +185,14 @@ features = {}
 			features = []
 			default-features = false
 
-		[workspace.dependencies.tokio-rustls]
-			features = ["logging", "ring", "tls12"]
-			version = "0.26.4"
-			default-features = false
-
 		[workspace.dependencies.rustyline]
 			features = ["custom-bindings", "fd-lock", "radix_trie", "with-file-history"]
 			version = "15.0.0"
+			default-features = false
+
+		[workspace.dependencies.tokio-rustls]
+			features = ["logging", "ring", "tls12"]
+			version = "0.26.4"
 			default-features = false
 
 		[workspace.dependencies.executor]
@@ -216,14 +216,14 @@ features = {}
 			tag = "3.11.0"
 			default-features = false
 
-		[workspace.dependencies.axum]
-			features = ["default", "form", "http1", "json", "matched-path", "original-uri", "query", "tokio", "tower-log", "tracing", "ws"]
-			version = "0.7.9"
-			default-features = false
-
 		[workspace.dependencies.cache]
 			path = "common/cache"
 			features = []
+			default-features = false
+
+		[workspace.dependencies.axum]
+			features = ["default", "form", "http1", "json", "matched-path", "original-uri", "query", "tokio", "tower-log", "tracing", "ws"]
+			version = "0.7.9"
 			default-features = false
 
 		[workspace.dependencies.ir]
@@ -376,14 +376,14 @@ features = {}
 			version = "4.6.1"
 			default-features = false
 
-		[workspace.dependencies.axum-server]
-			features = ["arc-swap", "default", "rustls", "rustls-pemfile", "rustls-pki-types", "tls-rustls-no-provider", "tokio-rustls"]
-			version = "0.7.3"
-			default-features = false
-
 		[workspace.dependencies.async-std]
 			features = ["alloc", "async-attributes", "async-channel", "async-global-executor", "async-io", "async-lock", "attributes", "crossbeam-utils", "default", "futures-channel", "futures-core", "futures-io", "futures-lite", "gloo-timers", "kv-log-macro", "log", "memchr", "once_cell", "pin-project-lite", "pin-utils", "slab", "std", "wasm-bindgen-futures"]
 			version = "1.13.2"
+			default-features = false
+
+		[workspace.dependencies.axum-server]
+			features = ["arc-swap", "default", "rustls", "rustls-pemfile", "rustls-pki-types", "tls-rustls-no-provider", "tokio-rustls"]
+			version = "0.7.3"
 			default-features = false
 
 		[workspace.dependencies.chrono]
@@ -441,14 +441,14 @@ features = {}
 			features = []
 			default-features = false
 
-		[workspace.dependencies.pprof]
-			features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
-			version = "0.13.0"
-			default-features = false
-
 		[workspace.dependencies.rustls-pemfile]
 			features = ["default", "std"]
 			version = "2.2.0"
+			default-features = false
+
+		[workspace.dependencies.pprof]
+			features = ["cpp", "criterion", "default", "flamegraph", "inferno"]
+			version = "0.13.0"
 			default-features = false
 
 		[workspace.dependencies.sysinfo]

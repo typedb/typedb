@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use itertools::Itertools;
 use std::ops::RangeInclusive;
+
+use itertools::Itertools;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct PrefixID {
