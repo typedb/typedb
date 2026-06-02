@@ -15,3 +15,4 @@ choco install .circleci\windows\dependencies.config --yes --no-progress
 REM permanently set variables for Bazel build
 SETX BAZEL_SH "C:\Program Files\Git\usr\bin\bash.exe"
 SETX CARGO_NET_GIT_FETCH_WITH_CLI true
+SETX CARGO_BAZEL_GENERATOR_URL="https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-win-x86_64"
