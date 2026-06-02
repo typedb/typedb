@@ -38,11 +38,11 @@ static EXTRACTED_ONCE: OnceLock<()> = OnceLock::new();
 fn extract_archive_once(archive_name: &str) {
     EXTRACTED_ONCE.get_or_init(|| {
         let extract_cmd = if archive_name.ends_with(".zip") {
-            let base = archive_name.trim_end_matches(".zip");
-            format!("unzip -o {archive_name} && mv {base} {EXTRACTED_DIR}")
+            let extracted_dir = archive_name.replace(".zip", "-0.0.0");
+            format!("unzip -o {archive_name} && mv {extracted_dir} {EXTRACTED_DIR}")
         } else if archive_name.ends_with(".tar.gz") {
-            let base = archive_name.trim_end_matches(".tar.gz");
-            format!("tar -xf {archive_name} && mv {base} {EXTRACTED_DIR}")
+            let extracted_dir = archive_name.replace(".tar.gz", "-0.0.0");
+            format!("tar -xf {archive_name} && mv {extracted_dir} {EXTRACTED_DIR}")
         } else {
             panic!("Expected .zip or .tar.gz, got {archive_name}");
         };

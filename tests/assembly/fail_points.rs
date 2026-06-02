@@ -80,7 +80,7 @@ fn start_server_with_env(env: Option<(&str, &str)>, expected_fail: Option<&str>)
                     break (process, port);
                 }
             }
-            if !buf.contains("SRO11") {
+            if !buf.contains("SRO12") {
                 panic!("Server process crashed for an unrelated reason: {buf}");
             }
         } else {

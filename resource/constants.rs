@@ -30,7 +30,6 @@ pub mod common {
     /// Unix mode-bit patterns
     pub const PERMISSION_BITS_ALL: u32 = 0o777;
     pub const PERMISSION_BITS_OWNER_RW: u32 = 0o600;
-    pub const PERMISSION_BITS_NON_OWNER: u32 = 0o077;
 }
 
 pub mod server {
