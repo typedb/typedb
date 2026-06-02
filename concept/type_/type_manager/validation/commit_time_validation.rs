@@ -6,9 +6,12 @@
 
 use std::collections::{HashMap, HashSet};
 
-use encoding::graph::definition::r#struct::StructDefinition;
+use encoding::{EncodingKeyspace, graph::definition::r#struct::StructDefinition, layout::prefix::Prefix};
 use itertools::Itertools;
-use storage::snapshot::ReadableSnapshot;
+use storage::{
+    keyspace::KeyspaceSet,
+    snapshot::{CachedReadSnapshot, CachedReadSnapshotLoadError, ReadableSnapshot},
+};
 
 use crate::{
     error::ConceptReadError,
@@ -85,11 +88,16 @@ impl CommitTimeValidation {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Vec<Box<SchemaValidationError>>, Box<ConceptReadError>> {
+        let snapshot = CachedReadSnapshot::load_from_snapshot(
+            snapshot,
+            vec![(EncodingKeyspace::DefaultOptimisedPrefix11.id(), Prefix::schema_byte_ranges())],
+        )
+        .map_err(|typedb_source| Box::new(ConceptReadError::LoadSchemaSnapshot { typedb_source }))?;
         let mut errors = Vec::new();
-        Self::validate_entity_types(snapshot, type_manager, &mut errors)?;
-        Self::validate_relation_types(snapshot, type_manager, &mut errors)?;
-        Self::validate_attribute_types(snapshot, type_manager, &mut errors)?;
-        Self::validate_struct_definitions(snapshot, type_manager, &mut errors)?;
+        Self::validate_entity_types(&snapshot, type_manager, &mut errors)?;
+        Self::validate_relation_types(&snapshot, type_manager, &mut errors)?;
+        Self::validate_attribute_types(&snapshot, type_manager, &mut errors)?;
+        Self::validate_struct_definitions(&snapshot, type_manager, &mut errors)?;
         Ok(errors)
     }
 

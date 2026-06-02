@@ -5,8 +5,8 @@
  */
 
 pub use snapshot::{
-    CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, SnapshotGetError,
-    WritableSnapshot, WriteSnapshot,
+    CachedReadSnapshot, CachedReadSnapshotLoadError, CommittableSnapshot, ReadSnapshot, ReadableSnapshot,
+    SchemaSnapshot, SnapshotError, SnapshotGetError, WritableSnapshot, WriteSnapshot,
 };
 
 pub mod buffer;

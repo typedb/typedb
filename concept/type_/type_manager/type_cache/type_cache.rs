@@ -10,11 +10,19 @@ use std::{
 };
 
 use encoding::{
+    EncodingKeyspace,
     graph::definition::{definition_key::DefinitionKey, r#struct::StructDefinition},
+    layout::prefix::Prefix,
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use storage::{MVCCStorage, sequence_number::SequenceNumber};
+use storage::{
+    MVCCStorage,
+    durability_client::DurabilityClient,
+    keyspace::KeyspaceSet,
+    sequence_number::SequenceNumber,
+    snapshot::{CachedReadSnapshot, CachedReadSnapshotLoadError},
+};
 
 use crate::type_::{
     Independent, KindAPI, Ordering, OwnerAPI, PlayerAPI,
@@ -81,16 +89,19 @@ selection::impl_has_object_cache!(EntityTypeCache, EntityType);
 selection::impl_has_object_cache!(RelationTypeCache, RelationType);
 
 impl TypeCache {
-    // If creation becomes slow, We should restore pre-fetching of the schema
-    //  with a single pass on disk (as it was in 1f339733feaf4542e47ff604462f107d2ade1f1a)
     pub fn new<D>(
         storage: Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
-    ) -> Result<Self, TypeCacheCreateError> {
-        // note: since we will parse out many heterogenous properties/edges from the schema, we will scan once into a vector,
-        //       then go through it again to pull out the type information.
-
-        let snapshot = storage.open_snapshot_read_at(open_sequence_number);
+    ) -> Result<Self, TypeCacheCreateError>
+    where
+        D: DurabilityClient,
+    {
+        let snapshot = CachedReadSnapshot::load_at(
+            &storage,
+            open_sequence_number,
+            vec![(EncodingKeyspace::DefaultOptimisedPrefix11.id(), Prefix::schema_byte_ranges())],
+        )
+        .map_err(|typedb_source| TypeCacheCreateError::LoadSchemaSnapshot { typedb_source })?;
 
         let entity_type_caches = EntityTypeCache::create(&snapshot);
         let relation_type_caches = RelationTypeCache::create(&snapshot);
@@ -505,5 +516,6 @@ impl TypeCache {
 typedb_error! {
     pub TypeCacheCreateError(component = "TypeCache create", prefix = "TCC") {
         Empty(1, ""),
+        LoadSchemaSnapshot(2, "Failed to load schema keyspace into cached read snapshot.", typedb_source: CachedReadSnapshotLoadError),
     }
 }

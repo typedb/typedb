@@ -185,13 +185,13 @@ impl WriteBuffer {
 
     pub(crate) fn iterate_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> BufferRangeIterator {
         let (range_start, range_end, _) = range.into_raw();
-        let exclusive_end_bytes = Self::compute_exclusive_end(&range_start, &range_end);
+        let exclusive_end_bytes = compute_exclusive_end(&range_start, &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
             Bound::Unbounded
         } else {
             Bound::Excluded(&*exclusive_end_bytes)
         };
-        let start_as_bound = Self::range_start_as_bound(range_start);
+        let start_as_bound = range_start_as_bound(range_start);
         let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
         // TODO: we shouldn't have to copy now that we use single-writer semantics
         BufferRangeIterator::new(
@@ -205,49 +205,15 @@ impl WriteBuffer {
     // TODO: if the iterate_range becomes zero-copy, then we can eliminate this method
     pub(crate) fn any_not_deleted_in_range<const INLINE: usize>(&self, range: KeyRange<Bytes<'_, INLINE>>) -> bool {
         let (range_start, range_end, _) = range.into_raw();
-        let exclusive_end_bytes = Self::compute_exclusive_end(&range_start, &range_end);
+        let exclusive_end_bytes = compute_exclusive_end(&range_start, &range_end);
         let end = if matches!(range_end, RangeEnd::Unbounded) {
             Bound::Unbounded
         } else {
             Bound::Excluded(&*exclusive_end_bytes)
         };
-        let start_as_bound = Self::range_start_as_bound(range_start);
+        let start_as_bound = range_start_as_bound(range_start);
         let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
         self.writes.range::<[u8], _>((start_bytes, end)).any(|(_, write)| !write.is_delete())
-    }
-
-    fn range_start_as_bound<const INLINE: usize>(
-        range_start: RangeStart<Bytes<'_, INLINE>>,
-    ) -> Bound<Bytes<'_, INLINE>> {
-        match range_start {
-            RangeStart::Inclusive(bytes) => Bound::Included(bytes),
-            RangeStart::ExcludeFirstWithPrefix(bytes) => Bound::Excluded(bytes),
-            RangeStart::ExcludePrefix(bytes) => {
-                let mut cloned = bytes.clone().into_array();
-                cloned.increment().unwrap();
-                Bound::Included(Bytes::Array(cloned))
-            }
-        }
-    }
-
-    fn compute_exclusive_end<const INLINE: usize>(
-        start: &RangeStart<Bytes<'_, INLINE>>,
-        end: &RangeEnd<Bytes<'_, INLINE>>,
-    ) -> ByteArray<INLINE> {
-        match end {
-            RangeEnd::WithinStartAsPrefix => {
-                let mut start_plus_1 = start.get_value().clone().into_array();
-                increment(&mut start_plus_1).unwrap();
-                start_plus_1
-            }
-            RangeEnd::EndPrefixInclusive(value) => {
-                let mut end_plus_1 = value.clone().into_array();
-                increment(&mut end_plus_1).unwrap();
-                end_plus_1
-            }
-            RangeEnd::EndPrefixExclusive(value) => value.clone().into_array(),
-            RangeEnd::Unbounded => ByteArray::empty(),
-        }
     }
 
     pub(crate) fn writes(&self) -> &BTreeMap<ByteArray<BUFFER_KEY_INLINE>, Write> {
@@ -267,13 +233,47 @@ impl WriteBuffer {
     }
 }
 
+pub(crate) fn range_start_as_bound<const INLINE: usize>(
+    range_start: RangeStart<Bytes<'_, INLINE>>,
+) -> Bound<Bytes<'_, INLINE>> {
+    match range_start {
+        RangeStart::Inclusive(bytes) => Bound::Included(bytes),
+        RangeStart::ExcludeFirstWithPrefix(bytes) => Bound::Excluded(bytes),
+        RangeStart::ExcludePrefix(bytes) => {
+            let mut cloned = bytes.clone().into_array();
+            cloned.increment().unwrap();
+            Bound::Included(Bytes::Array(cloned))
+        }
+    }
+}
+
+pub(crate) fn compute_exclusive_end<const INLINE: usize>(
+    start: &RangeStart<Bytes<'_, INLINE>>,
+    end: &RangeEnd<Bytes<'_, INLINE>>,
+) -> ByteArray<INLINE> {
+    match end {
+        RangeEnd::WithinStartAsPrefix => {
+            let mut start_plus_1 = start.get_value().clone().into_array();
+            increment(&mut start_plus_1).unwrap();
+            start_plus_1
+        }
+        RangeEnd::EndPrefixInclusive(value) => {
+            let mut end_plus_1 = value.clone().into_array();
+            increment(&mut end_plus_1).unwrap();
+            end_plus_1
+        }
+        RangeEnd::EndPrefixExclusive(value) => value.clone().into_array(),
+        RangeEnd::Unbounded => ByteArray::empty(),
+    }
+}
+
 // TODO: this iterator takes a 'snapshot' of the time it was opened at - we could have it read without clones and have it 'live' if the buffers are immutable
 pub struct BufferRangeIterator {
     inner: Peekable<<Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)> as IntoIterator>::IntoIter>,
 }
 
 impl BufferRangeIterator {
-    fn new(range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>) -> Self {
+    pub(crate) fn new(range: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, Write)>) -> Self {
         Self { inner: range.into_iter().peekable() }
     }
 

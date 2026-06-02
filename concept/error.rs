@@ -11,7 +11,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use storage::snapshot::{SnapshotGetError, iterator::SnapshotIteratorError};
+use storage::snapshot::{CachedReadSnapshotLoadError, SnapshotGetError, iterator::SnapshotIteratorError};
 
 use crate::{
     thing::thing_manager::validation::DataValidationError,
@@ -80,6 +80,7 @@ typedb_error! {
         InternalIncomparableTypes(25, "Internal error: incomparable types."),
         Format(26, "Formatting error.", source: fmt::Error),
         IidRepresentsWrongInstanceKind(27, "Could not read a concept of the expected kind by IID."),
+        LoadSchemaSnapshot(28, "Failed to load schema keyspace into cached read snapshot.", typedb_source: CachedReadSnapshotLoadError),
     }
 }
 
