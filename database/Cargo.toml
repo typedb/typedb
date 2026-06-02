@@ -18,6 +18,9 @@ features = {}
 	[dev-dependencies.test_utils]
 		workspace = true
 
+	[dev-dependencies.serde_json]
+		workspace = true
+
 [dependencies]
 
 	[dependencies.tokio]
@@ -104,4 +107,8 @@ features = {}
 [[test]]
 	path = "tests/statistics_synchronization.rs"
 	name = "test_statistics_synchronization"
+
+[[test]]
+	path = "tests/diagnostics_posthog_pii.rs"
+	name = "test_diagnostics_posthog_pii"
 
