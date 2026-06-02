@@ -419,6 +419,7 @@ impl Server {
             let serve_result = tonic::transport::Server::builder()
                 .add_service(admin_proto::type_db_admin_server::TypeDbAdminServer::new(admin_service))
                 .serve_with_incoming_shutdown(incoming, async {
+                    // The tonic server starts a shutdown process when this closure execution finishes
                     shutdown_receiver.changed().await.expect("Expected shutdown receiver signal");
                 })
                 .await

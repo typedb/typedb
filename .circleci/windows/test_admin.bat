@@ -15,9 +15,8 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 cargo test -p typedb-admin --lib
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-REM Windows arm of //tests/assembly:test_admin_assembly.
 cargo build -p typedb_server_bin -p typedb_admin_bin
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-cargo test -p typedb_admin_bin --test admin_assembly
+cargo test -p typedb_admin_bin --test test_admin_assembly
 if %errorlevel% neq 0 exit /b %errorlevel%
