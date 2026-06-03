@@ -53,9 +53,9 @@ commands:
         type: string
     steps:
       - run: |
-          export PLATFORM_IDENTIFIER=$(echo "$(uname -s)-$(uname -m)" | sed 's/x86_64/X86_64/;s/aarch64/ARM64/;s/arm64/ARM64')
-          echo "export CARGO_BAZEL_GENERATOR_URL=\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER" >> $BASH_ENV
-          echo "export CARGO_BAZEL_GENERATOR_SHA256=\$CARGO_BAZEL_GENERATOR_SHA256_$PLATFORM_IDENTIFIER" >> $BASH_ENV
+          export PLATFORM_IDENTIFIER=$(echo "$(uname -s)_<<parameters.bazel-arch>>" | sed 's/Darwin/MAC/;s/Linux/LINUX/;s/amd64/X86_64/;s/aarch64/ARM64/;s/arm64/ARM64/')
+          echo "export CARGO_BAZEL_GENERATOR_URL=\"\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
+          echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
 
           amazon-linux-extras install java-openjdk11 docker python3.8 -y
           yum install -y git tar gcc gcc-c++ file lsof which procps llvm-devel clang-devel wget
@@ -73,9 +73,9 @@ commands:
         type: string
     steps:
       - run: |
-          export PLATFORM_IDENTIFIER=$(echo "$(uname -s)-$(uname -m)" | sed 's/x86_64/X86_64/;s/aarch64/ARM64/;s/arm64/ARM64')
-          echo "export CARGO_BAZEL_GENERATOR_URL=\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER" >> $BASH_ENV
-          echo "export CARGO_BAZEL_GENERATOR_SHA256=\$CARGO_BAZEL_GENERATOR_SHA256_$PLATFORM_IDENTIFIER" >> $BASH_ENV
+          export PLATFORM_IDENTIFIER=$(echo "$(uname -s)_<<parameters.bazel-arch>>" | sed 's/Darwin/MAC/;s/Linux/LINUX/;s/amd64/X86_64/;s/arm64/ARM64/')
+          echo "export CARGO_BAZEL_GENERATOR_URL=\"\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
+          echo "export CARGO_BAZEL_GENERATOR_SHA256=\"\$CARGO_BAZEL_GENERATOR_SHA_$PLATFORM_IDENTIFIER\"" >> $BASH_ENV
 
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
           sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
