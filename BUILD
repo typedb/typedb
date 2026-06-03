@@ -273,7 +273,7 @@ alias(
     visibility = ["//tests/assembly:__subpackages__"],
 )
 alias(
-    name = "deploy-typedb-server",
+    name = "deploy-typedb-all",
     actual = select({
         "@typedb_bazel_distribution//platform:is_linux_arm64" : ":deploy-linux-arm64-targz",
         "@typedb_bazel_distribution//platform:is_linux_x86_64" : ":deploy-linux-x86_64-targz",
@@ -285,8 +285,16 @@ alias(
 
 # docker
 pkg_tar(
+    name = "docker-package-x86_64",
+    srcs = [":package-typedb-server"],
+    package_dir = "typedb-server-linux-x86_64",
+    extension = "tar.gz",
+    target_compatible_with = constraint_linux_x86_64,
+)
+
+pkg_tar(
     name = "docker-layer-x86_64",
-    deps = [":assemble-server-linux-x86_64-targz"],
+    deps = [":docker-package-x86_64"],
     package_dir = "/opt",
     extension = "tar.gz",
 )
@@ -309,8 +317,16 @@ oci_image(
 )
 
 pkg_tar(
+    name = "docker-package-arm64",
+    srcs = [":package-typedb-server"],
+    package_dir = "typedb-server-linux-arm64",
+    extension = "tar.gz",
+    target_compatible_with = constraint_linux_arm64,
+)
+
+pkg_tar(
     name = "docker-layer-arm64",
-    deps = [":assemble-server-linux-arm64-targz"],
+    deps = [":docker-package-arm64"],
     package_dir = "/opt",
     extension = "tar.gz",
 )
