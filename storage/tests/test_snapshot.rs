@@ -332,13 +332,19 @@ fn materialised_snapshot_matches_source_over_mixed_writes() {
     // get: present keys hit, tombstoned + out-of-range miss.
     assert_eq!(
         materialised
-            .get::<BUFFER_VALUE_INLINE>(StorageKey::Array(committed_key.clone()).as_reference(), StorageCounters::DISABLED)
+            .get::<BUFFER_VALUE_INLINE>(
+                StorageKey::Array(committed_key.clone()).as_reference(),
+                StorageCounters::DISABLED
+            )
             .unwrap(),
         Some(val_committed.clone())
     );
     assert_eq!(
         materialised
-            .get::<BUFFER_VALUE_INLINE>(StorageKey::Array(buffered_put.clone()).as_reference(), StorageCounters::DISABLED)
+            .get::<BUFFER_VALUE_INLINE>(
+                StorageKey::Array(buffered_put.clone()).as_reference(),
+                StorageCounters::DISABLED
+            )
             .unwrap(),
         Some(val_buffered.clone())
     );
@@ -365,11 +371,7 @@ fn materialised_snapshot_matches_source_over_mixed_writes() {
     assert_eq!(source_view, materialised_view);
     assert_eq!(
         materialised_view,
-        vec![
-            (committed_key, val_committed),
-            (buffered_put, val_buffered),
-            (buffered_insert, ByteArray::copy(&[3, 3])),
-        ],
+        vec![(committed_key, val_committed), (buffered_put, val_buffered), (buffered_insert, ByteArray::copy(&[3, 3])),],
     );
 
     // any_in_range over a range fully covered by the materialised set.
@@ -460,9 +462,7 @@ fn materialised_snapshot_load_from_at_sequence_number() {
     let materialised =
         MaterialisedSnapshot::load_from(&storage, seq_t0, vec![(Keyspace.id(), vec![0x07..=0x07])]).unwrap();
 
-    let key_range = KeyRange::new_within(
-        StorageKey::Array(StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x07]))),
-        false,
-    );
+    let key_range =
+        KeyRange::new_within(StorageKey::Array(StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x07]))), false);
     assert_eq!(collect_range(&materialised, &key_range), vec![(key_at_t0, ByteArray::copy(&[0]))]);
 }

@@ -678,21 +678,6 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
 
 type KeyspaceBtree = BTreeMap<ByteArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>>;
 
-/// A read-only snapshot whose contents have been pre-materialised into in-memory
-/// per-keyspace `BTreeMap`s at construction time. Every subsequent `get`,
-/// `iterate_range`, and `any_in_range` is served from those maps with no MVCC
-/// or rocksdb traffic, which is orders of magnitude cheaper on hot paths that
-/// re-read the same keyspace millions of times during a single transaction
-/// (notably `TypeCache::new` and `CommitTimeValidation::validate`).
-///
-/// The constructors take a `Vec<(KeyspaceId, Vec<RangeInclusive<u8>>)>` so only
-/// the keyspaces and leading-byte ranges the caller actually plans to read are
-/// loaded; any other keyspace queried at runtime is a programming error
-/// (`debug_assert`-checked).
-///
-/// When constructed via `load_from_snapshot` over a writable source, the merged
-/// (storage + buffered) view visible to the source at wrap time is baked in;
-/// mutations to the source after wrapping are *not* reflected.
 pub struct MaterialisedSnapshot {
     open_sequence_number: SequenceNumber,
     id: SnapshotId,
@@ -740,11 +725,7 @@ impl MaterialisedSnapshot {
                 }
             }
         }
-        Ok(Self {
-            open_sequence_number: source.open_sequence_number(),
-            id: SnapshotId::new(),
-            keyspaces,
-        })
+        Ok(Self { open_sequence_number: source.open_sequence_number(), id: SnapshotId::new(), keyspaces })
     }
 
     fn keyspace_map(&self, keyspace_id: KeyspaceId) -> Option<&KeyspaceBtree> {
@@ -846,10 +827,6 @@ impl ReadableSnapshot for MaterialisedSnapshot {
     }
 
     fn iterator_pool(&self) -> &IteratorPool {
-        // No MVCC iterators are ever opened against this snapshot — all reads
-        // are served from the in-memory BTreeMaps materialised at load time.
-        // The trait requires this method, so we hand out a thread-shared empty
-        // pool rather than carry a dead one per snapshot instance.
         static EMPTY_POOL: std::sync::OnceLock<IteratorPool> = std::sync::OnceLock::new();
         EMPTY_POOL.get_or_init(IteratorPool::default)
     }
