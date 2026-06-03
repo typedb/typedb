@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use resource::server_info::{EndpointInfo, ServingInfo, print_serving_block};
 use server_admin_proto as admin_proto;
 
 use crate::{
@@ -45,33 +46,17 @@ async fn server_version(client: &mut AdminClient) -> CommandResult {
 
 async fn server_status(client: &mut AdminClient) -> CommandResult {
     let res = execute_server_status(client).await?;
-
+    let info = ServingInfo {
+        grpc: res.grpc.as_ref().map(endpoint_from_proto).unwrap_or_default(),
+        http: res.http.as_ref().map(endpoint_from_proto),
+        admin: res.admin_address,
+        monitoring: res.monitoring_address,
+    };
     println!("Status: running");
-    println!("Serving:");
-
-    if let Some(grpc) = &res.grpc {
-        print!("  gRPC:  {}", grpc.listen_address);
-        if let Some(advertise_address) = &grpc.advertise_address {
-            if advertise_address != &grpc.listen_address {
-                print!(" (connect via {})", advertise_address);
-            }
-        }
-        println!();
-    }
-
-    if let Some(http) = &res.http {
-        print!("  HTTP:  {}", http.listen_address);
-        if let Some(advertise_address) = &http.advertise_address {
-            if advertise_address != &http.listen_address {
-                print!(" (connect via {})", advertise_address);
-            }
-        }
-        println!();
-    }
-
-    if let Some(admin_address) = &res.admin_address {
-        println!("  Admin: {admin_address}");
-    }
-
+    print_serving_block(&info);
     Ok(())
+}
+
+fn endpoint_from_proto(e: &admin_proto::EndpointStatus) -> resource::server_info::EndpointInfo {
+    EndpointInfo { listen: Some(e.listen_address.clone()), advertise: e.advertise_address.clone() }
 }

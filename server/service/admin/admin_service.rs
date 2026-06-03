@@ -45,20 +45,17 @@ impl admin_proto::type_db_admin_server::TypeDbAdmin for AdminService {
         _request: Request<admin_proto::server_status::Req>,
     ) -> Result<Response<admin_proto::server_status::Res>, Status> {
         let status = self.server_state.servers().status().await.map_err(|err| Status::internal(format!("{err:?}")))?;
-
         let grpc = admin_proto::EndpointStatus {
             listen_address: status.grpc_listen_address().unwrap_or_default().to_string(),
             advertise_address: status.grpc_advertise_address().map(str::to_string),
         };
-
         let http = status.http_listen_address().map(|listen| admin_proto::EndpointStatus {
             listen_address: listen.to_string(),
             advertise_address: status.http_advertise_address().map(str::to_string),
         });
-
         let admin_address = status.admin_address().map(|a| a.to_string());
-
-        Ok(Response::new(admin_proto::server_status::Res { grpc: Some(grpc), http, admin_address }))
+        let monitoring_address = status.monitoring_address().map(|a| a.to_string());
+        Ok(Response::new(admin_proto::server_status::Res { grpc: Some(grpc), http, admin_address, monitoring_address }))
     }
 
     async fn users_reset_password(

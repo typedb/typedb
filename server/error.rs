@@ -136,6 +136,9 @@ impl ServerStateError for LocalServerStateError {
 
             Self::DatabaseNotFound { .. } | Self::UserNotFound { .. } => NotFound,
 
+            Self::UserCannotBeUpdated { typedb_source: UserUpdateError::UserNotFound { .. } }
+            | Self::UserCannotBeDeleted { typedb_source: UserDeleteError::UserNotFound { .. } } => NotFound,
+
             Self::ConceptReadError { .. } | Self::FunctionReadError { .. } => Internal,
 
             Self::NotInitialised { .. }

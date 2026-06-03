@@ -25,6 +25,7 @@ message ServerStatus {
         EndpointStatus grpc = 1;
         optional EndpointStatus http = 2;
         optional string admin_address = 3;
+        optional string monitoring_address = 4;
     }
 }
 

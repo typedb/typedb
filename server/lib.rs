@@ -23,6 +23,7 @@ use resource::{
         },
     },
     distribution_info::DistributionInfo,
+    server_info::{EndpointInfo, ServingInfo, print_serving_block},
 };
 use tokio::sync::watch::{Receiver, Sender, channel};
 use tracing::info;
@@ -440,43 +441,19 @@ impl Server {
     }
 
     pub fn print_serving_information(server_status: &BoxServerStatus, encryption_config: &EncryptionConfig) {
-        const UNKNOWN: &str = "<UNKNOWN ADDRESS>";
-        const DISABLED: &str = "disabled";
-        println!("Serving:");
-
-        let grpc_listen_address = server_status.grpc_listen_address().unwrap_or(UNKNOWN);
-        match server_status.grpc_advertise_address() {
-            Some(grpc_advertise_address) if grpc_advertise_address != grpc_listen_address => {
-                println!("  gRPC:       {grpc_listen_address} (connect via {grpc_advertise_address})");
-            }
-            _ => println!("  gRPC:       {grpc_listen_address}"),
-        }
-
-        match server_status.http_listen_address() {
-            Some(http_listen_address) => match server_status.http_advertise_address() {
-                Some(http_advertise_address) if http_advertise_address != http_listen_address => {
-                    println!("  HTTP:       {http_listen_address} (connect via {http_advertise_address})");
-                }
-                _ => println!("  HTTP:       {http_listen_address}"),
+        let info = ServingInfo {
+            grpc: EndpointInfo {
+                listen: server_status.grpc_listen_address().map(str::to_string),
+                advertise: server_status.grpc_advertise_address().map(str::to_string),
             },
-            None => println!("  HTTP:       {DISABLED}"),
-        }
-
-        match server_status.admin_address() {
-            #[cfg(unix)]
-            Some(admin_address) => println!("  Admin:      {admin_address} (Unix socket)"),
-            #[cfg(windows)]
-            Some(admin_address) => println!("  Admin:      {admin_address} (Named Pipe)"),
-            None => println!("  Admin:      {DISABLED}"),
-        }
-
-        match server_status.monitoring_address() {
-            Some(monitoring_address) => {
-                println!("  Monitoring: http://{monitoring_address}/diagnostics (Prometheus scrape)");
-                println!("              http://{monitoring_address}/diagnostics?format=json (JSON)");
-            }
-            None => println!("  Monitoring: {DISABLED}"),
-        }
+            http: server_status.http_listen_address().map(|listen| EndpointInfo {
+                listen: Some(listen.to_string()),
+                advertise: server_status.http_advertise_address().map(str::to_string),
+            }),
+            admin: server_status.admin_address().map(str::to_string),
+            monitoring: server_status.monitoring_address().map(str::to_string),
+        };
+        print_serving_block(&info);
 
         if encryption_config.enabled {
             println!("TLS: enabled");
