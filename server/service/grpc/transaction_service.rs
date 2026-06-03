@@ -1864,9 +1864,10 @@ impl QueueOptions {
 
 fn given_rows_from_proto(
     given_rows: Option<typedb_protocol::query::req::GivenRows>,
-) -> Result<Option<Batch>, ConceptDecodeError> {
+) -> Result<Option<GivenRows>, ConceptDecodeError> {
     use typedb_protocol::{query::req::given_entry::Entry as EntryProto, thing::Thing as ThingProto};
     let Some(given_rows) = given_rows else { return Ok(None) };
+    let variables = given_rows.variables;
     let rows = given_rows.rows;
     let len = rows.len();
     let width = rows.first().map(|row| row.entries.len() as u32).unwrap_or(0);
@@ -1912,5 +1913,5 @@ fn given_rows_from_proto(
             })
         })
     })?;
-    Ok(Some(batch))
+    Ok(Some(GivenRows { variables, batch }))
 }

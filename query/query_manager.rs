@@ -66,8 +66,6 @@ use crate::{
     redefine, undefine,
 };
 
-pub type GivenRows = Batch;
-
 #[derive(Debug, Clone)]
 pub struct QueryManager {
     cache: Option<Arc<QueryCache>>,
@@ -211,7 +209,7 @@ impl QueryManager {
             pipeline_structure,
             ..
         } = executable_pipeline;
-        let given_rows = validate_given(executable_given.clone(), given_rows)?;
+        let given_rows_batch = validate_given(executable_given.clone(), given_rows, &variable_registry)?;
 
         // 4: Executor
         Pipeline::build_read_pipeline(
@@ -224,7 +222,7 @@ impl QueryManager {
             &executable_stages,
             executable_fetch,
             arced_parameters,
-            given_rows,
+            given_rows_batch,
             Arc::new(query_profile),
         )
         .map_err(|typedb_source| {
@@ -317,7 +315,7 @@ impl QueryManager {
             pipeline_structure,
             ..
         } = executable_pipeline;
-        let given_rows = match validate_given(executable_given.clone(), given_rows) {
+        let given_rows_batch = match validate_given(executable_given.clone(), given_rows, &variable_registry) {
             Ok(given_rows) => given_rows,
             Err(err) => return Err((snapshot, err)),
         };
@@ -333,7 +331,7 @@ impl QueryManager {
             executable_stages,
             executable_fetch,
             arced_parameters.clone(),
-            given_rows,
+            given_rows_batch,
             Arc::new(query_profile),
         ))
     }
@@ -553,22 +551,30 @@ fn annotate_and_compile_query(
 
 fn validate_given(
     given_executable: Option<Arc<GivenExecutable>>,
-    given_rows: Option<Batch>,
+    given_rows: Option<GivenRows>,
+    variable_registry: &VariableRegistry,
 ) -> Result<Batch, Box<QueryError>> {
-    let expected_width = given_executable.map(|executable| executable.variables().len() as u32);
-    match (expected_width, given_rows) {
+    match (given_executable, given_rows) {
         (None, Some(_)) => Err(Box::new(QueryError::UnexpectedGivenRowsProvided {})),
         (Some(_), None) => Err(Box::new(QueryError::NoGivenRowsProvided {})),
         (None, None) => Ok(Batch::new_single_empty_row()),
-        (Some(width), Some(batch)) => {
-            if width != batch.width() {
-                Err(Box::new(QueryError::GivenRowsWidthDoesNotMatchDeclared {
-                    declared_width: width,
-                    actual_width: batch.width(),
+        (Some(executable), Some(rows)) => {
+            let declared =
+                executable.variables().iter().map(|v| variable_registry.get_variable_name_or_unnamed(*v).to_owned()).collect();
+            if declared != rows.variables {
+                Err(Box::new(QueryError::GivenRowsVariablesDoesNotMatchDeclared {
+                    declared,
+                    given: rows.variables.clone(),
                 }))
             } else {
-                Ok(batch)
+                Ok(rows.batch)
             }
         }
     }
+}
+
+#[derive(Debug)]
+pub struct GivenRows {
+    pub variables: Vec<String>,
+    pub batch: Batch,
 }

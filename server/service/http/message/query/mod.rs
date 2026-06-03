@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::borrow::Cow;
 
 use ::concept::{
     error::ConceptDecodeError,
@@ -158,7 +157,10 @@ impl IntoResponse for QueryAnswer {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GivenRowsPayload(pub Vec<Vec<GivenEntryPayload>>);
+pub struct GivenRowsPayload {
+    pub variables: Vec<String>,
+    pub rows: Vec<Vec<GivenEntryPayload>>,
+}
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "kind")]
@@ -184,7 +186,8 @@ macro_rules! concept_decode_error {
 impl TryInto<GivenRows> for GivenRowsPayload {
     type Error = HttpServiceError;
     fn try_into(self) -> Result<GivenRows, Self::Error> {
-        let rows = self.0;
+        let variables = self.variables;
+        let rows = self.rows;
         let len = rows.len();
         let width = rows.first().map(|row| row.len() as u32).unwrap_or(0);
         let mut batch = Batch::new(width, len);
@@ -232,6 +235,6 @@ impl TryInto<GivenRows> for GivenRowsPayload {
                 })
             })
         })?;
-        Ok(batch)
+        Ok(GivenRows { variables, batch })
     }
 }

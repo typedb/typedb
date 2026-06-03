@@ -38,11 +38,11 @@ typedb_error! {
         PipelineStagesLimitExceeded(18, "Query pipeline has {actual} stages, which exceeds the maximum allowed {max}.", source_query: String, actual: usize, max: usize),
         NoGivenRowsProvided(21, "The query contains a given stage, but no given rows were provided."),
         UnexpectedGivenRowsProvided(22, "The query contains no given stage, but given rows were provided."),
-        GivenRowsWidthDoesNotMatchDeclared(
+        GivenRowsVariablesDoesNotMatchDeclared(
             23,
-            "The width of the given rows provided does not match that declared in the query.",
-            declared_width: u32,
-            actual_width: u32,
+            "The variables of the given rows provided does not match that declared in the query.",
+            declared: Vec<String>,
+            given: Vec<String>,
         ),
     }
 }
