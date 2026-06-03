@@ -16,5 +16,5 @@ REM permanently set variables for Bazel build
 SETX BAZEL_SH "C:\Program Files\Git\usr\bin\bash.exe"
 SETX CARGO_NET_GIT_FETCH_WITH_CLI true
 REM This doesn't take effect since windows still builds via Cargo
-SETX CARGO_BAZEL_GENERATOR_URL "https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-win-x86_64"
-SETX CARGO_BAZEL_GENERATOR_SHA256 "238e01c1bc97ce2671dddaa7435e56ebffcbbc43f5d6fb3f3d18f6afad148fbf"
+SETX CARGO_BAZEL_GENERATOR_URL %CARGO_BAZEL_GENERATOR_URL_WIN_X86_64%
+SETX CARGO_BAZEL_GENERATOR_SHA256 %CARGO_BAZEL_GENERATOR_SHA256_WIN_X86_64%

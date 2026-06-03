@@ -53,6 +53,10 @@ commands:
         type: string
     steps:
       - run: |
+          export PLATFORM_IDENTIFIER=$(echo "$(uname -s)-$(uname -m)" | sed 's/x86_64/X86_64/;s/aarch64/ARM64/;s/arm64/ARM64')
+          echo "export CARGO_BAZEL_GENERATOR_URL=\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER" >> $BASH_ENV
+          echo "export CARGO_BAZEL_GENERATOR_SHA256=\$CARGO_BAZEL_GENERATOR_SHA256_$PLATFORM_IDENTIFIER" >> $BASH_ENV
+
           amazon-linux-extras install java-openjdk11 docker python3.8 -y
           yum install -y git tar gcc gcc-c++ file lsof which procps llvm-devel clang-devel wget
 
@@ -69,6 +73,10 @@ commands:
         type: string
     steps:
       - run: |
+          export PLATFORM_IDENTIFIER=$(echo "$(uname -s)-$(uname -m)" | sed 's/x86_64/X86_64/;s/aarch64/ARM64/;s/arm64/ARM64')
+          echo "export CARGO_BAZEL_GENERATOR_URL=\$CARGO_BAZEL_GENERATOR_URL_$PLATFORM_IDENTIFIER" >> $BASH_ENV
+          echo "export CARGO_BAZEL_GENERATOR_SHA256=\$CARGO_BAZEL_GENERATOR_SHA256_$PLATFORM_IDENTIFIER" >> $BASH_ENV
+
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-darwin-<<parameters.bazel-arch>>"
           sudo mv "bazelisk-darwin-<<parameters.bazel-arch>>" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
@@ -93,14 +101,6 @@ commands:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
-          export PLATFORM_IDENTIFIER=$(echo "$(uname -s)-$(uname -m)" | sed 's/Darwin/mac/;s/Linux/linux/;s/aarch64/arm64/')
-          export CARGO_BAZEL_GENERATOR_URL="https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-$PLATFORM_IDENTIFIER"
-          case "$PLATFORM_IDENTIFIER" in
-            mac-arm64)   export CARGO_BAZEL_GENERATOR_SHA256="22ed6a2113e59cd5977ac0b8275dba12809b4bb382a01589eb09981e78a6bb06" ;;
-            mac-x86_64)  export CARGO_BAZEL_GENERATOR_SHA256="055017df3b1f4b5359b2c888b3354afd2f7b53741f6dd1c8338aa5de62f04e31" ;;
-            linux-arm64) export CARGO_BAZEL_GENERATOR_SHA256="9855b2963a0f9978ed1000a9f8ce5ebc2e14402bf69485656173dc9c047eb675" ;;
-            linux-x86_64) export CARGO_BAZEL_GENERATOR_SHA256="5ae8c4d39ea3762535acd25e6d372365d1ae64d8faa6e9c2e0d06d35a7470bc1" ;;
-          esac
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --config=ci --jobs=8 --define version=$(git rev-parse HEAD) //:deploy-typedb-server --compilation_mode=opt -- snapshot
 
@@ -109,14 +109,6 @@ commands:
       - run: |
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
-          export PLATFORM_IDENTIFIER=$(echo "$(uname -s)-$(uname -m)" | sed 's/Darwin/mac/;s/Linux/linux/;s/aarch64/arm64/')
-          export CARGO_BAZEL_GENERATOR_URL="https://repo.typedb.com/public/public-tools/raw/versions/0.0.0/cargo-bazel-$PLATFORM_IDENTIFIER"
-          case "$PLATFORM_IDENTIFIER" in
-            mac-arm64)   export CARGO_BAZEL_GENERATOR_SHA256="22ed6a2113e59cd5977ac0b8275dba12809b4bb382a01589eb09981e78a6bb06" ;;
-            mac-x86_64)  export CARGO_BAZEL_GENERATOR_SHA256="055017df3b1f4b5359b2c888b3354afd2f7b53741f6dd1c8338aa5de62f04e31" ;;
-            linux-arm64) export CARGO_BAZEL_GENERATOR_SHA256="9855b2963a0f9978ed1000a9f8ce5ebc2e14402bf69485656173dc9c047eb675" ;;
-            linux-x86_64) export CARGO_BAZEL_GENERATOR_SHA256="5ae8c4d39ea3762535acd25e6d372365d1ae64d8faa6e9c2e0d06d35a7470bc1" ;;
-          esac
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --config=ci --jobs=8 --define version=$(cat VERSION) //:deploy-typedb-server --compilation_mode=opt --//server:mode=published -- release
 
