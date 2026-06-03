@@ -224,7 +224,7 @@ macro_rules! get_annotations_declared_methods {
         fn $method_name:ident($type_:ty) -> $annotation_type:ident = $reader_method:ident | $cache_method:ident;
     )*) => {
         $(
-            pub(crate) fn $method_name(
+            pub fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_
             ) -> Result<MaybeOwns<'_, HashSet<$annotation_type>>, Box<ConceptReadError>> {
                 if let Some(cache) = &self.type_cache {
