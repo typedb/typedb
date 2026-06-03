@@ -6,7 +6,7 @@
 
 use std::{
     any::type_name,
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     error::Error,
     fmt,
     iter::empty,
@@ -29,7 +29,7 @@ use crate::{
     iterator::MVCCReadError,
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{IteratorPool, KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
+    keyspace::{IteratorPool, KeyspaceId},
     record::{CommitRecord, CommitType},
     sequence_number::SequenceNumber,
     snapshot::{
@@ -678,19 +678,33 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
 
 type KeyspaceBtree = BTreeMap<ByteArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>>;
 
-pub struct CachedReadSnapshot {
+/// A read-only snapshot whose contents have been pre-materialised into in-memory
+/// per-keyspace `BTreeMap`s at construction time. Every subsequent `get`,
+/// `iterate_range`, and `any_in_range` is served from those maps with no MVCC
+/// or rocksdb traffic, which is orders of magnitude cheaper on hot paths that
+/// re-read the same keyspace millions of times during a single transaction
+/// (notably `TypeCache::new` and `CommitTimeValidation::validate`).
+///
+/// The constructors take a `Vec<(KeyspaceId, Vec<RangeInclusive<u8>>)>` so only
+/// the keyspaces and leading-byte ranges the caller actually plans to read are
+/// loaded; any other keyspace queried at runtime is a programming error
+/// (`debug_assert`-checked).
+///
+/// When constructed via `load_from_snapshot` over a writable source, the merged
+/// (storage + buffered) view visible to the source at wrap time is baked in;
+/// mutations to the source after wrapping are *not* reflected.
+pub struct MaterialisedSnapshot {
     open_sequence_number: SequenceNumber,
     id: SnapshotId,
-    iterator_pool: IteratorPool,
-    keyspaces: Box<[Option<KeyspaceBtree>; KEYSPACE_MAXIMUM_COUNT]>,
+    keyspaces: HashMap<KeyspaceId, KeyspaceBtree>,
 }
 
-impl CachedReadSnapshot {
-    pub fn load_at<D>(
+impl MaterialisedSnapshot {
+    pub fn load_from<D>(
         storage: &Arc<MVCCStorage<D>>,
         open_sequence_number: SequenceNumber,
         keyspaces_ranges: Vec<(KeyspaceId, Vec<RangeInclusive<u8>>)>,
-    ) -> Result<Self, CachedReadSnapshotLoadError>
+    ) -> Result<Self, Arc<SnapshotIteratorError>>
     where
         D: DurabilityClient,
     {
@@ -701,14 +715,13 @@ impl CachedReadSnapshot {
     pub fn load_from_snapshot<S>(
         source: &S,
         keyspaces_ranges: Vec<(KeyspaceId, Vec<RangeInclusive<u8>>)>,
-    ) -> Result<Self, CachedReadSnapshotLoadError>
+    ) -> Result<Self, Arc<SnapshotIteratorError>>
     where
         S: ReadableSnapshot,
     {
-        let mut keyspaces: Box<[Option<KeyspaceBtree>; KEYSPACE_MAXIMUM_COUNT]> =
-            Box::new(std::array::from_fn(|_| None));
+        let mut keyspaces: HashMap<KeyspaceId, KeyspaceBtree> = HashMap::new();
         for (keyspace_id, ranges) in keyspaces_ranges {
-            let map = keyspaces[keyspace_id.0 as usize].get_or_insert_with(BTreeMap::new);
+            let map = keyspaces.entry(keyspace_id).or_default();
             for range in ranges {
                 let start_bytes = [*range.start()];
                 let end_bytes = [*range.end()];
@@ -722,7 +735,7 @@ impl CachedReadSnapshot {
                 );
                 let mut iterator = source.iterate_range(&key_range, StorageCounters::DISABLED);
                 while let Some(result) = iterator.next() {
-                    let (key, value) = result.map_err(|source| CachedReadSnapshotLoadError::Iterate { source })?;
+                    let (key, value) = result?;
                     map.insert(key.into_bytes().into_array(), value.into_array());
                 }
             }
@@ -730,17 +743,21 @@ impl CachedReadSnapshot {
         Ok(Self {
             open_sequence_number: source.open_sequence_number(),
             id: SnapshotId::new(),
-            iterator_pool: IteratorPool::default(),
             keyspaces,
         })
     }
 
     fn keyspace_map(&self, keyspace_id: KeyspaceId) -> Option<&KeyspaceBtree> {
-        self.keyspaces.get(keyspace_id.0 as usize).and_then(|o| o.as_ref())
+        debug_assert!(
+            self.keyspaces.contains_key(&keyspace_id),
+            "MaterialisedSnapshot asked for keyspace {:?}, which was not materialised at load time",
+            keyspace_id,
+        );
+        self.keyspaces.get(&keyspace_id)
     }
 }
 
-impl ReadableSnapshot for CachedReadSnapshot {
+impl ReadableSnapshot for MaterialisedSnapshot {
     const IMMUTABLE_SCHEMA: bool = true;
 
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -829,20 +846,18 @@ impl ReadableSnapshot for CachedReadSnapshot {
     }
 
     fn iterator_pool(&self) -> &IteratorPool {
-        &self.iterator_pool
+        // No MVCC iterators are ever opened against this snapshot — all reads
+        // are served from the in-memory BTreeMaps materialised at load time.
+        // The trait requires this method, so we hand out a thread-shared empty
+        // pool rather than carry a dead one per snapshot instance.
+        static EMPTY_POOL: std::sync::OnceLock<IteratorPool> = std::sync::OnceLock::new();
+        EMPTY_POOL.get_or_init(IteratorPool::default)
     }
 }
 
 typedb_error! {
     pub SnapshotError(component = "Snapshot error", prefix = "SST") {
         Commit(1, "Snapshot commit failed due to storage commit error.", typedb_source: StorageCommitError),
-    }
-}
-
-// TODO: delete and roll into existing snapshot error type
-typedb_error! {
-    pub CachedReadSnapshotLoadError(component = "Cached read snapshot load", prefix = "CRS") {
-        Iterate(1, "Failed to materialise a key range into the cached read snapshot.", source: Arc<SnapshotIteratorError>),
     }
 }
 

@@ -184,13 +184,6 @@ impl SnapshotRangeIterator {
         }
     }
 
-    fn storage_peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, &[u8]), SnapshotIteratorError>> {
-        match self.storage_iterator.as_mut().unwrap().peek()? {
-            &Ok((key, value)) => Some(Ok((key, value))),
-            Err(error) => Some(Err(SnapshotIteratorError::MVCCRead { source: error.clone() })),
-        }
-    }
-
     #[must_use]
     fn buffered_next(
         &mut self,
