@@ -273,7 +273,7 @@ alias(
     visibility = ["//tests/assembly:__subpackages__"],
 )
 alias(
-    name = "deploy-typedb-server",
+    name = "deploy-typedb-all",
     actual = select({
         "@typedb_bazel_distribution//platform:is_linux_arm64" : ":deploy-linux-arm64-targz",
         "@typedb_bazel_distribution//platform:is_linux_x86_64" : ":deploy-linux-x86_64-targz",
