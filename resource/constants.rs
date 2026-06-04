@@ -74,7 +74,7 @@ pub mod server {
     pub const PERF_COUNTERS_ENABLED: bool = true;
 
     pub const ADMIN_DEFAULT_SOCKET_FILENAME: &str = "admin.sock";
-    pub const ADMIN_DEFAULT_WINDOWS_PIPE_NAME: &str = "typedb-admin";
+    pub const ADMIN_DEFAULT_WINDOWS_PIPE_NAME: &str = "typedb_admin";
     pub const ADMIN_SOCKET_FILE_MODE: u32 = super::common::PERMISSION_BITS_OWNER_RW;
     pub const MONITORING_DEFAULT_PORT: u16 = 4104;
 

@@ -1,14 +1,36 @@
+# Hand-maintained — do NOT regenerate with the cargo sync tool.
+#
+# The bazel side compiles this crate's proto via `rust_tonic_compile`, so it has no
+# `cargo_build_script` target. Cargo builds use `build.rs` + `tonic-build` instead.
+# The sync tool's `rust_cargo_properties_aspect` (in typedb-dependencies) currently
+# doesn't emit any build-dep information for lib/bin targets, so a blind re-sync
+# would drop `[build-dependencies]` (and also rewrite `[lib] path` and `edition`).
+# `tool/rust/sync.sh` saves and restores this file around the sync invocation; the
+# CI `cargo-toml-sync` gate is intentionally disabled for the same reason.
+#
+# Keep formatting (indentation, dep tables, features={}) consistent with the sync
+# tool's output so that a diff vs. a hypothetical regenerated file is small.
+
+features = {}
+
 [package]
-name = "server_admin_proto"
-edition = "2021"
-version = "0.0.0"
+	name = "server_admin_proto"
+	edition = "2024"
+	version = "0.0.0"
 
 [lib]
-path = "lib.rs"
+	path = "lib.rs"
+	crate-type = ["lib"]
 
 [build-dependencies]
-tonic-build = "^0.12"
+
+	[build-dependencies.tonic-build]
+		version = "^0.12"
 
 [dependencies]
-prost = { workspace = true }
-tonic = { workspace = true }
+
+	[dependencies.prost]
+		workspace = true
+
+	[dependencies.tonic]
+		workspace = true

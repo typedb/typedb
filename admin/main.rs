@@ -12,7 +12,7 @@ use clap::Parser;
 #[command(name = "typedb-admin", about = "TypeDB administration tool (local-only)")]
 struct Args {
     /// Path to the local admin endpoint: a Unix socket file on Unix, a Named Pipe name
-    /// (e.g. \\.\pipe\typedb-admin) on Windows. Must match the configured endpoint on
+    /// (e.g. \\.\pipe\typedb_admin) on Windows. Must match the configured endpoint on
     /// the running server.
     #[arg(long)]
     socket_path: PathBuf,

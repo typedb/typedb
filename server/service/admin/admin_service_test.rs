@@ -41,7 +41,7 @@ fn test_admin_endpoint(server_dir: &Path) -> String {
 
 #[cfg(windows)]
 fn test_admin_endpoint(_server_dir: &Path) -> String {
-    format!(r"\\.\pipe\typedb-admin-test-{}", std::process::id())
+    format!(r"\\.\pipe\typedb_admin_test_{}", std::process::id())
 }
 
 #[cfg(unix)]
@@ -54,7 +54,7 @@ fn wrong_admin_endpoint() -> String {
 
 #[cfg(windows)]
 fn wrong_admin_endpoint() -> String {
-    format!(r"\\.\pipe\typedb-admin-wrong-{}", std::process::id())
+    format!(r"\\.\pipe\typedb_admin_wrong_{}", std::process::id())
 }
 
 static SERVER_RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {

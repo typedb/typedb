@@ -84,7 +84,7 @@ fn admin_endpoint(tag: &str) -> String {
 
 #[cfg(windows)]
 fn admin_endpoint(tag: &str) -> String {
-    format!(r"\\.\pipe\typedb-admin-{tag}-{}", std::process::id())
+    format!(r"\\.\pipe\typedb_admin_{tag}_{}", std::process::id())
 }
 
 fn data_dir(tag: &str) -> PathBuf {

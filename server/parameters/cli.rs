@@ -48,10 +48,14 @@ pub struct CLIArgs {
     #[arg(long = "server.admin.enabled")]
     pub server_admin_enabled: Option<bool>,
 
-    /// Filesystem path for the local Admin Unix domain socket.
-    /// Defaults to `<data-directory>/admin.sock`. The socket file is created
-    /// with mode 0600, so access is restricted to the server process owner.
-    #[arg(long = "server.admin.socket-path", value_name = "FILE")]
+    /// Path of the local Admin endpoint.
+    /// Linux/macOS: a Unix domain socket file. Default: `<data-directory>/admin.sock`.
+    /// The socket file is created with mode 0600, so access is restricted to the
+    /// server process owner.
+    /// Windows: a Named Pipe name (e.g. `\\.\pipe\typedb_admin`). Default:
+    /// `\\.\pipe\typedb_admin`. The pipe carries a DACL granting access only to
+    /// the server's owner, `LOCAL SYSTEM`, and `BUILTIN\Administrators`.
+    #[arg(long = "server.admin.socket-path", value_name = "PATH")]
     pub server_admin_socket_path: Option<String>,
 
     /// The amount of seconds generated authentication tokens will remain valid, specified in seconds.
