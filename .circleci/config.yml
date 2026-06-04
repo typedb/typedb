@@ -222,7 +222,7 @@ jobs:
     steps:
       - checkout
       - run: .circleci\windows\prepare.bat
-      - run: REM "Restore .circleci\windows\test_assembly.bat"
+      - run: .circleci\windows\test_assembly.bat
       - run: .circleci\windows\test_admin.bat
       - run: .circleci\windows\deploy_snapshot.bat
 
