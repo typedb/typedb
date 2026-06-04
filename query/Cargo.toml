@@ -41,6 +41,9 @@ features = {}
 
 [dependencies]
 
+	[dependencies.paste]
+		workspace = true
+
 	[dependencies.tokio]
 		workspace = true
 

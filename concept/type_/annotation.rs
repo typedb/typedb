@@ -655,7 +655,7 @@ macro_rules! FromAnnotation {
     (@cat $vis:vis $Enum:ident { $($inner:tt)* } $V:ident $($tail:tt)*) => { FromAnnotation! { @cat $vis $Enum { $($inner)* $V, } $($tail)* } };
     (@cat $vis:vis $Enum:ident { $($inner:tt)* }) => {
         ::paste::paste! {
-            #[derive(Clone, Eq, PartialEq, Ord, PartialOrd)]
+            #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
             $vis enum [<$Enum Category>] {
                 $($inner)*
             }

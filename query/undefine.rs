@@ -293,51 +293,32 @@ fn undefine_capability_annotation(
                 }),
             };
 
-            match (subtype, supertype) {
-                (TypeEnum::Entity(subtype), TypeEnum::Entity(supertype)) => {
-                    let declared_super = subtype
-                        .get_supertype(snapshot, type_manager)
-                        .map_err(|typedb_source| UndefineError::UnexpectedConceptRead { typedb_source })?;
-                    if declared_super != Some(supertype) {
-                        return Err(resolution_error);
+            macro_rules! unset_sub_annotation {
+                ($($T:ident),*) => {
+                    match (subtype, supertype) {
+                        $((TypeEnum::$T(subtype), TypeEnum::$T(supertype)) => {
+                            let declared_super = subtype
+                                .get_supertype(snapshot, type_manager)
+                                .map_err(|typedb_source| UndefineError::UnexpectedConceptRead { typedb_source })?;
+                            if declared_super != Some(supertype) {
+                                return Err(resolution_error);
+                            }
+                            let sub = Sub::<paste::paste!([<$T Type>])>::new(subtype, supertype);
+                            check_can_and_need_undefine_capability_annotation(
+                                snapshot,
+                                type_manager,
+                                sub,
+                                &annotation_category,
+                                annotation_undefinable,
+                            )?;
+                            sub.unset_annotation(snapshot, type_manager, thing_manager, annotation_category.clone())
+                        })*
+                        _ => return Err(resolution_error),
                     }
-                    Sub::<EntityType>::new(subtype, supertype).unset_annotation(
-                        snapshot,
-                        type_manager,
-                        thing_manager,
-                        annotation_category.clone(),
-                    )
-                }
-                (TypeEnum::Relation(subtype), TypeEnum::Relation(supertype)) => {
-                    let declared_super = subtype
-                        .get_supertype(snapshot, type_manager)
-                        .map_err(|typedb_source| UndefineError::UnexpectedConceptRead { typedb_source })?;
-                    if declared_super != Some(supertype) {
-                        return Err(resolution_error);
-                    }
-                    Sub::<RelationType>::new(subtype, supertype).unset_annotation(
-                        snapshot,
-                        type_manager,
-                        thing_manager,
-                        annotation_category.clone(),
-                    )
-                }
-                (TypeEnum::Attribute(subtype), TypeEnum::Attribute(supertype)) => {
-                    let declared_super = subtype
-                        .get_supertype(snapshot, type_manager)
-                        .map_err(|typedb_source| UndefineError::UnexpectedConceptRead { typedb_source })?;
-                    if declared_super != Some(supertype) {
-                        return Err(resolution_error);
-                    }
-                    Sub::<AttributeType>::new(subtype, supertype).unset_annotation(
-                        snapshot,
-                        type_manager,
-                        thing_manager,
-                        annotation_category.clone(),
-                    )
-                }
-                _ => return Err(resolution_error),
+                };
             }
+
+            unset_sub_annotation! { Entity, Relation, Attribute }
         }
         CapabilityBase::Alias(_) => {
             return Err(UndefineError::IllegalAnnotation {

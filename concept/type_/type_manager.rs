@@ -322,8 +322,7 @@ macro_rules! storage_save_annotation {
 macro_rules! storage_delete_annotation {
     ($snapshot:ident, $type_:ident, $annotation_category:ident, $get_func:path, $delete_func:ident) => {
         let annotations = $get_func($snapshot, $type_.clone())?;
-        let annotation_exists =
-            annotations.into_iter().any(|annotation| annotation.has_category(&$annotation_category));
+        let annotation_exists = annotations.iter().any(|annotation| annotation.has_category(&$annotation_category));
 
         if annotation_exists {
             match $annotation_category {
