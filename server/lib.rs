@@ -507,8 +507,17 @@ impl Server {
     }
 
     fn studio_connect_link(http_advertise_address: &str, encryption_config: &EncryptionConfig) -> String {
-        let scheme = if encryption_config.enabled { "https" } else { "http" };
-        format!("{STUDIO_URL}/connect?address={scheme}://{http_advertise_address}&username=admin")
+        let address = Self::ensure_http_scheme(http_advertise_address, encryption_config);
+        format!("{STUDIO_URL}/connect?address={address}&username=admin")
+    }
+
+    fn ensure_http_scheme(address: &str, encryption_config: &EncryptionConfig) -> String {
+        if address.starts_with("http://") || address.starts_with("https://") {
+            address.to_owned()
+        } else {
+            let scheme = if encryption_config.enabled { "https" } else { "http" };
+            format!("{scheme}://{address}")
+        }
     }
 
     fn console_connect_command(grpc_advertise_address: &str, encryption_config: &EncryptionConfig) -> String {
