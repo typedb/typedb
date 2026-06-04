@@ -8,7 +8,7 @@ package typedb.admin;
 service TypeDBAdmin {
     rpc server_version (ServerVersion.Req) returns (ServerVersion.Res);
     rpc server_status (ServerStatus.Req) returns (ServerStatus.Res);
-    rpc users_reset_password (UsersResetPassword.Req) returns (UsersResetPassword.Res);
+    rpc user_reset_password (UserResetPassword.Req) returns (UserResetPassword.Res);
 }
 
 message ServerVersion {
@@ -34,7 +34,7 @@ message EndpointStatus {
     optional string advertise_address = 2;
 }
 
-message UsersResetPassword {
+message UserResetPassword {
     message Req {
         string username = 1;
         string password = 2;

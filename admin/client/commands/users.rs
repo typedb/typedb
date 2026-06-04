@@ -42,9 +42,7 @@ async fn reset_password(client: &mut AdminClient, args: &[String]) -> CommandRes
         });
     }
 
-    client
-        .users_reset_password(admin_proto::users_reset_password::Req { username: username.clone(), password })
-        .await?;
+    client.user_reset_password(admin_proto::user_reset_password::Req { username: username.clone(), password }).await?;
     println!("Password updated for user '{username}'.");
     Ok(())
 }

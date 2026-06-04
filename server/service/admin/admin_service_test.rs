@@ -213,34 +213,34 @@ async fn wrong_endpoint_does_not_connect() {
 }
 
 #[tokio::test]
-async fn users_reset_password_succeeds_for_default_user() {
+async fn user_reset_password_succeeds_for_default_user() {
     let _guard = MUTATION_LOCK.lock().await;
     let endpoint = ensure_server_started().await;
     let mut client = TypeDbAdminClient::new(admin_channel(&endpoint).await);
 
     client
-        .users_reset_password(admin_proto::users_reset_password::Req {
+        .user_reset_password(admin_proto::user_reset_password::Req {
             username: DEFAULT_USER_NAME.to_string(),
             password: "a-new-password".to_string(),
         })
         .await
-        .expect("users_reset_password RPC failed");
+        .expect("user_reset_password RPC failed");
 
     client
-        .users_reset_password(admin_proto::users_reset_password::Req {
+        .user_reset_password(admin_proto::user_reset_password::Req {
             username: DEFAULT_USER_NAME.to_string(),
             password: DEFAULT_USER_PASSWORD.to_string(),
         })
         .await
-        .expect("users_reset_password RPC failed during cleanup");
+        .expect("user_reset_password RPC failed during cleanup");
 }
 
 #[tokio::test]
-async fn users_reset_password_rejects_empty_username() {
+async fn user_reset_password_rejects_empty_username() {
     let endpoint = ensure_server_started().await;
     let mut client = TypeDbAdminClient::new(admin_channel(&endpoint).await);
     let err = client
-        .users_reset_password(admin_proto::users_reset_password::Req {
+        .user_reset_password(admin_proto::user_reset_password::Req {
             username: String::new(),
             password: "anything".to_string(),
         })
@@ -250,11 +250,11 @@ async fn users_reset_password_rejects_empty_username() {
 }
 
 #[tokio::test]
-async fn users_reset_password_rejects_empty_password() {
+async fn user_reset_password_rejects_empty_password() {
     let endpoint = ensure_server_started().await;
     let mut client = TypeDbAdminClient::new(admin_channel(&endpoint).await);
     let err = client
-        .users_reset_password(admin_proto::users_reset_password::Req {
+        .user_reset_password(admin_proto::user_reset_password::Req {
             username: DEFAULT_USER_NAME.to_string(),
             password: String::new(),
         })
@@ -264,14 +264,14 @@ async fn users_reset_password_rejects_empty_password() {
 }
 
 #[tokio::test]
-async fn users_reset_password_accepts_special_characters() {
+async fn user_reset_password_accepts_special_characters() {
     let _guard = MUTATION_LOCK.lock().await;
     let endpoint = ensure_server_started().await;
     let mut client = TypeDbAdminClient::new(admin_channel(&endpoint).await);
 
     let special = r#"P@ss w0rd!#$%^&*()'"\"#;
     client
-        .users_reset_password(admin_proto::users_reset_password::Req {
+        .user_reset_password(admin_proto::user_reset_password::Req {
             username: DEFAULT_USER_NAME.to_string(),
             password: special.to_string(),
         })
@@ -279,7 +279,7 @@ async fn users_reset_password_accepts_special_characters() {
         .expect("special-char password should be accepted");
 
     client
-        .users_reset_password(admin_proto::users_reset_password::Req {
+        .user_reset_password(admin_proto::user_reset_password::Req {
             username: DEFAULT_USER_NAME.to_string(),
             password: DEFAULT_USER_PASSWORD.to_string(),
         })
@@ -288,12 +288,12 @@ async fn users_reset_password_accepts_special_characters() {
 }
 
 #[tokio::test]
-async fn users_reset_password_rejects_unknown_user() {
+async fn user_reset_password_rejects_unknown_user() {
     let _guard = MUTATION_LOCK.lock().await;
     let endpoint = ensure_server_started().await;
     let mut client = TypeDbAdminClient::new(admin_channel(&endpoint).await);
     let err = client
-        .users_reset_password(admin_proto::users_reset_password::Req {
+        .user_reset_password(admin_proto::user_reset_password::Req {
             username: "no-such-user".to_string(),
             password: "secret".to_string(),
         })
