@@ -20,8 +20,11 @@ use concept::{
     thing::thing_manager::ThingManager,
     type_::{
         Capability, OwnerAPI, PlayerAPI, TypeAPI,
-        annotation::{Annotation, AnnotationCategory},
+        annotation::{Annotation, AnnotationCategory, AnnotationMeta},
+        attribute_type::AttributeTypeAnnotation,
         entity_type::EntityTypeAnnotation,
+        relates::RelatesAnnotation,
+        relation_type::RelationTypeAnnotation,
         sub::Sub,
     },
 };
@@ -1036,17 +1039,27 @@ impl BuiltinCallExecutor {
         match self.builtin_id {
             BuiltinConceptFunctionID::Iid => self.execute_iid(input_row, output),
             BuiltinConceptFunctionID::Label => self.execute_label(context, input_row, output),
+
             BuiltinConceptFunctionID::GetDoc => self.execute_get_doc(context, input_row, output),
-            BuiltinConceptFunctionID::GetOwnsDoc => self.execute_get_owns_doc(context, input_row, output),
-            BuiltinConceptFunctionID::GetPlaysDoc => self.execute_get_plays_doc(context, input_row, output),
-            BuiltinConceptFunctionID::GetRelatesDoc => self.execute_get_relates_doc(context, input_row, output),
-            BuiltinConceptFunctionID::GetSubDoc => self.execute_get_sub_doc(context, input_row, output),
             BuiltinConceptFunctionID::GetMeta => self.execute_get_meta(context, input_row, output),
             BuiltinConceptFunctionID::GetAllMeta => self.execute_get_all_meta(context, input_row, output),
+
+            BuiltinConceptFunctionID::GetOwnsDoc => self.execute_get_owns_doc(context, input_row, output),
             BuiltinConceptFunctionID::GetOwnsMeta => self.execute_get_owns_meta(context, input_row, output),
+            BuiltinConceptFunctionID::GetOwnsAllMeta => todo!(),
+
+            BuiltinConceptFunctionID::GetPlaysDoc => self.execute_get_plays_doc(context, input_row, output),
             BuiltinConceptFunctionID::GetPlaysMeta => self.execute_get_plays_meta(context, input_row, output),
+            BuiltinConceptFunctionID::GetPlaysAllMeta => todo!(),
+
+            BuiltinConceptFunctionID::GetRelatesDoc => self.execute_get_relates_doc(context, input_row, output),
             BuiltinConceptFunctionID::GetRelatesMeta => self.execute_get_relates_meta(context, input_row, output),
+            BuiltinConceptFunctionID::GetRelatesAllMeta => todo!(),
+
+            BuiltinConceptFunctionID::GetSubDoc => self.execute_get_sub_doc(context, input_row, output),
             BuiltinConceptFunctionID::GetSubMeta => self.execute_get_sub_meta(context, input_row, output),
+            BuiltinConceptFunctionID::GetSubAllMeta => todo!(),
+
             BuiltinConceptFunctionID::GetFunDoc => self.execute_get_fun_doc(context, input_row, output),
             BuiltinConceptFunctionID::GetFunMeta => self.execute_get_fun_meta(context, input_row, output),
             BuiltinConceptFunctionID::GetFunAllMeta => todo!(),
@@ -1057,20 +1070,18 @@ impl BuiltinCallExecutor {
             | BuiltinConceptFunctionID::GetStructFieldDoc
             | BuiltinConceptFunctionID::GetStructFieldMeta
             | BuiltinConceptFunctionID::GetStructFieldAllMeta => {
-                return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+                Err(Box::new(ConceptReadError::UnimplementedFunctionality {
                     functionality: UnimplementedFeature::Structs,
-                }));
+                }))
             }
-
-            id @ (BuiltinConceptFunctionID::GetSubAllMeta
-            | BuiltinConceptFunctionID::GetOwnsAllMeta
-            | BuiltinConceptFunctionID::GetPlaysAllMeta
-            | BuiltinConceptFunctionID::GetRelatesAllMeta) => todo!("{id}"),
         }
     }
 
     fn execute_iid(&self, input_row: &MaybeOwnedRow<'_>, output: &mut FixedBatch) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { return Ok(()) };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // all concepts have IIDs
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let iid = input_row[self.argument_positions[0].as_usize()].as_thing().iid();
         row[return_position.as_usize()] = VariableValue::Value(Value::String(Cow::Owned(format!("{iid:x}"))));
@@ -1085,7 +1096,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { return Ok(()) };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // all types have labels
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let ty = input_row[self.argument_positions[0].as_usize()].as_type();
         let label = ty.get_label(&**context.snapshot(), context.type_manager())?;
@@ -1101,7 +1115,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         row[return_position.as_usize()] = get_type_doc(context, &input_row[self.argument_positions[0].as_usize()])?;
         let output_row = MaybeOwnedRow::new_owned(row, multiplicity, provenance);
@@ -1115,7 +1132,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let owner = &input_row[self.argument_positions[0].as_usize()];
         let attribute = &input_row[self.argument_positions[1].as_usize()];
@@ -1137,7 +1157,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let player = &input_row[self.argument_positions[0].as_usize()];
         let role = &input_row[self.argument_positions[1].as_usize()];
@@ -1159,7 +1182,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let relation = &input_row[self.argument_positions[0].as_usize()];
         let role = &input_row[self.argument_positions[1].as_usize()];
@@ -1181,7 +1207,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let subtype = &input_row[self.argument_positions[0].as_usize()];
         let supertype = &input_row[self.argument_positions[1].as_usize()];
@@ -1197,7 +1226,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         row[return_position.as_usize()] = get_type_meta(
             context,
@@ -1227,7 +1259,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let key = input_row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
         let category = &AnnotationCategory::Meta(key);
@@ -1248,7 +1283,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let key = input_row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
         let category = &AnnotationCategory::Meta(key);
@@ -1269,7 +1307,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let key = input_row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
         let category = &AnnotationCategory::Meta(key);
@@ -1293,7 +1334,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let key = &input_row[self.argument_positions[0].as_usize()];
         let subtype = &input_row[self.argument_positions[1].as_usize()];
@@ -1310,7 +1354,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing doc is equivalent to @doc("")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let function_name = &input_row[self.argument_positions[0].as_usize()];
         let function = context
@@ -1334,7 +1381,10 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
+        let Some(return_position) = self.assignment_positions[0] else {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(()); // a missing metadata annotation for a key is treated as @meta("key", "")
+        };
         let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
         let key = input_row[self.argument_positions[0].as_usize()].as_value().unwrap_string_ref().to_owned();
         let category = &AnnotationCategory::Meta(key);
