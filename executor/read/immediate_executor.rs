@@ -1247,10 +1247,31 @@ impl BuiltinCallExecutor {
         input_row: &MaybeOwnedRow<'_>,
         output: &mut FixedBatch,
     ) -> Result<(), Box<ConceptReadError>> {
-        let Some(return_position) = self.assignment_positions[0] else { todo!("Error") };
-        let (mut row, multiplicity, provenance) = row_into_parts_widened(input_row, return_position);
-        let meta = get_type_all_meta(context, &input_row[self.argument_positions[0].as_usize()])?;
-        todo!()
+        let key_return_position = self.assignment_positions[0];
+        let value_return_position = self.assignment_positions[1];
+        let metas = get_type_all_meta(context, &input_row[self.argument_positions[0].as_usize()])?;
+        if metas.is_empty() {
+            return Ok(());
+        } else if key_return_position.is_none() && value_return_position.is_none() {
+            output.append(|mut row| row.copy_from_row(input_row.as_reference()));
+            return Ok(());
+        }
+
+        let (mut row, multiplicity, provenance) = row_into_parts_widened(
+            input_row,
+            Ord::max(key_return_position, value_return_position).unwrap_or(VariablePosition::new(0)),
+        );
+        for (key, value) in metas {
+            if let Some(key_return_position) = key_return_position {
+                row[key_return_position.as_usize()] = key;
+            }
+            if let Some(value_return_position) = value_return_position {
+                row[value_return_position.as_usize()] = value;
+            }
+            let output_row = MaybeOwnedRow::new_owned(row.clone(), multiplicity, provenance);
+            output.append(|mut row| row.copy_from_row(output_row));
+        }
+        Ok(())
     }
 
     fn execute_get_owns_meta(
@@ -1575,26 +1596,56 @@ fn get_type_all_meta(
     ty: &VariableValue<'_>,
 ) -> Result<Vec<(VariableValue<'static>, VariableValue<'static>)>, Box<ConceptReadError>> {
     let snapshot = &**context.snapshot();
+    fn meta_to_tuple(meta: AnnotationMeta) -> (VariableValue<'static>, VariableValue<'static>) {
+        (
+            VariableValue::Value(Value::String(Cow::Owned(meta.key))),
+            VariableValue::Value(Value::String(Cow::Owned(meta.value))),
+        )
+    }
     match ty.as_type() {
         Type::Entity(ty) => Ok(context
             .type_manager()
             .get_entity_type_annotations_declared(snapshot, ty)?
-            .to_owned()
-            .into_iter()
+            .iter()
             .filter_map(|anno| match anno {
-                EntityTypeAnnotation::Meta(annotation_meta) => Some(annotation_meta),
+                EntityTypeAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
                 _ => None,
             })
-            .map(|meta| {
-                (
-                    VariableValue::Value(Value::String(Cow::Owned(meta.key))),
-                    VariableValue::Value(Value::String(Cow::Owned(meta.value))),
-                )
-            })
+            .map(meta_to_tuple)
             .collect()),
-        Type::Relation(ty) => todo!(),
-        Type::Attribute(ty) => todo!(),
-        Type::RoleType(ty) => todo!(),
+        Type::Relation(ty) => Ok(context
+            .type_manager()
+            .get_relation_type_annotations_declared(snapshot, ty)?
+            .iter()
+            .filter_map(|anno| match anno {
+                RelationTypeAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                _ => None,
+            })
+            .map(meta_to_tuple)
+            .collect()),
+        Type::Attribute(ty) => Ok(context
+            .type_manager()
+            .get_attribute_type_annotations_declared(snapshot, ty)?
+            .iter()
+            .filter_map(|anno| match anno {
+                AttributeTypeAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                _ => None,
+            })
+            .map(meta_to_tuple)
+            .collect()),
+        Type::RoleType(ty) => {
+            let relates = ty.get_relates_explicit(snapshot, context.type_manager())?;
+            Ok(context
+                .type_manager()
+                .get_relates_annotations_declared(snapshot, relates)?
+                .iter()
+                .filter_map(|anno| match anno {
+                    RelatesAnnotation::Meta(annotation_meta) => Some(annotation_meta.clone()),
+                    _ => None,
+                })
+                .map(meta_to_tuple)
+                .collect())
+        }
     }
 }
 
