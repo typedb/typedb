@@ -15,7 +15,7 @@ rust_test(
     ],
     data = ["@typedb_behaviour//connection:database.feature"],
     crate_features = ["bazel"],
-    tags = ["manual_build"],
+    tags = ["manual_build", "exclusive"],
 )
 
 rust_test(
@@ -28,7 +28,7 @@ rust_test(
     ],
     data = ["@typedb_behaviour//connection:transaction.feature"],
     crate_features = ["bazel"],
-    tags = ["manual_build"],
+    tags = ["manual_build", "exclusive"],
 )
 
 rustfmt_test(
