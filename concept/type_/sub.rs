@@ -54,7 +54,7 @@ macro_rules! impl_capability_for_sub {
                 &self,
                 snapshot: &mut impl WritableSnapshot,
                 type_manager: &TypeManager,
-                thing_manager: &ThingManager,
+                _thing_manager: &ThingManager,
                 annotation: SubAnnotation,
             ) -> Result<(), Box<ConceptWriteError>> {
                 match annotation {
@@ -67,7 +67,7 @@ macro_rules! impl_capability_for_sub {
                 &self,
                 snapshot: &mut impl WritableSnapshot,
                 type_manager: &TypeManager,
-                thing_manager: &ThingManager,
+                _thing_manager: &ThingManager,
                 annotation_category: AnnotationCategory,
             ) -> Result<(), Box<ConceptWriteError>> {
                 let sub_annotation = SubAnnotationCategory::try_from(annotation_category)
